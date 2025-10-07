@@ -144,29 +144,29 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
   };
 
   // Alternative: Simple light/dark toggle (most common use case)
-  const _simpleToggle = () => {
-    return (
-      <button
-        onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:ring-offset-2"
-        style={{
-          backgroundColor: isDark ? 'var(--forest-500)' : '#e5e7eb'
-        }}
-        aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
-        title={`Current: ${isDark ? 'Dark' : 'Light'} mode. Click to switch.`}
-      >
-        <span
-          className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
-            isDark ? 'translate-x-7' : 'translate-x-1'
-          }`}
-        />
-        <div className="absolute inset-0 flex items-center justify-between px-1.5">
-          <Sun className={`h-3.5 w-3.5 ${!isDark ? 'text-yellow-500' : 'text-gray-400'}`} />
-          <Moon className={`h-3.5 w-3.5 ${isDark ? 'text-blue-300' : 'text-gray-400'}`} />
-        </div>
-      </button>
-    );
-  };
+  // const simpleToggle = () => {
+  //   return (
+  //     <button
+  //       onClick={() => setTheme(isDark ? 'light' : 'dark')}
+  //       className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:ring-offset-2"
+  //       style={{
+  //         backgroundColor: isDark ? 'var(--forest-500)' : '#e5e7eb'
+  //       }}
+  //       aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
+  //       title={`Current: ${isDark ? 'Dark' : 'Light'} mode. Click to switch.`}
+  //     >
+  //       <span
+  //         className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ${
+  //           isDark ? 'translate-x-7' : 'translate-x-1'
+  //         }`}
+  //       />
+  //       <div className="absolute inset-0 flex items-center justify-between px-1.5">
+  //         <Sun className={`h-3.5 w-3.5 ${!isDark ? 'text-yellow-500' : 'text-gray-400'}`} />
+  //         <Moon className={`h-3.5 w-3.5 ${isDark ? 'text-blue-300' : 'text-gray-400'}`} />
+  //       </div>
+  //     </button>
+  //   );
+  // };
 
   // Enhanced toggle with system option (long press or right-click)
   const enhancedToggle = () => {
@@ -179,10 +179,10 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
       }
     };
 
-    const _getThemeIndicator = () => {
-      if (theme === 'system') return '🖥️'; // System icon
-      return isDark ? '🌙' : '☀️'; // Current theme
-    };
+    // const getThemeIndicator = () => {
+    //   if (theme === 'system') return '🖥️'; // System icon
+    //   return isDark ? '🌙' : '☀️'; // Current theme
+    // };
 
     return (
       <button

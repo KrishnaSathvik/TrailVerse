@@ -4,8 +4,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 
-// Load env vars
-dotenv.config({ path: './.env.development' });
+// Load env vars (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: './.env.development' });
+}
 
 // Validate environment variables
 const validateEnv = require('./src/config/validateEnv');

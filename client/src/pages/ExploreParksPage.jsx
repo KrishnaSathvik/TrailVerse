@@ -14,7 +14,7 @@ import { useParks } from '../hooks/useParks';
 import { useParkRatings } from '../hooks/useParkRatings';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchPrefetch } from '../hooks/useSmartPrefetch';
-import { logSearch } from '../utils/analytics';
+// import { logSearch } from '../utils/analytics';
 
 const ExploreParksPage = () => {
   const [searchParams] = useSearchParams();
@@ -51,12 +51,8 @@ const ExploreParksPage = () => {
   useEffect(() => {
     if (debouncedSearchTerm && debouncedSearchTerm.length > 2) {
       handleSearch(debouncedSearchTerm);
-      
-      // Track search query in analytics
-      const resultCount = filteredParks.length;
-      logSearch(debouncedSearchTerm, resultCount, 'parks');
     }
-  }, [debouncedSearchTerm, handleSearch, filteredParks.length]);
+  }, [debouncedSearchTerm, handleSearch]);
 
   // Get unique states and activities
   const uniqueStates = useMemo(() => {
