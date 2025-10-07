@@ -15,8 +15,8 @@
     "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-ga4": "^2.1.0",
     "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.63.0",
@@ -32,7 +32,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "GENERATE_SOURCEMAP=false SKIP_PREFLIGHT_CHECK=true DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "build": "GENERATE_SOURCEMAP=false SKIP_PREFLIGHT_CHECK=true DISABLE_ESLINT_PLUGIN=true craco build",
     "test": "craco test",
     "test:vitest": "vitest",
     "test:vitest:ui": "vitest --ui",
@@ -75,8 +75,8 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.6.2",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.3.4",
@@ -92,11 +92,9 @@
     "vitest": "^2.1.8"
   },
   "overrides": {
-    "ajv": "6.12.6",
-    "ajv-keywords": "3.5.2",
-    "schema-utils": "2.7.1",
-    "terser-webpack-plugin": {
-      "schema-utils": "3.3.0"
-    }
+    "schema-utils": "3.3.0",
+    "ajv": "8.12.0",
+    "ajv-keywords": "5.1.0",
+    "terser-webpack-plugin": "5.3.10"
   }
 }
