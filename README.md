@@ -370,4 +370,4 @@ npm run seed            # Seed database with sample data
 
 **Ready to explore America's National Parks? Start your adventure with TrailVerse! 🏞️✨**
 
-*Built with ❤️ for National Parks enthusiasts*
+*Built with ❤️ for National Parks enthusiasts*# GitHub Integration Test
