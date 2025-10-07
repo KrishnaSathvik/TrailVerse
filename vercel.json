@@ -19,8 +19,8 @@
       "destination": "/server/server.js"
     },
     {
-      "source": "/((?!api/).*)",
-      "destination": "/client/build/index.html"
+      "source": "/((?!api|static|_next).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -69,9 +69,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "CLIENT_URL": "https://trailverse.vercel.app",
-    "WEBSITE_URL": "https://trailverse.vercel.app"
+    "NODE_ENV": "production"
   },
   "redirects": [
     {
