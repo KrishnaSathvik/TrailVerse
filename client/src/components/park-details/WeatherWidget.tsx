@@ -38,16 +38,19 @@ const WeatherWidget: React.FC<_WeatherWidgetProps> = ({ latitude, longitude, par
       } catch (err: any) {
         console.error('Error fetching weather data:', err);
         
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         let _errorType = 'unknown';
         if (err.message?.includes('rate limit')) {
           setError('Weather data temporarily unavailable due to high usage. Please try again later.');
           _errorType = 'rate_limit';
         } else if (err.message?.includes('API key')) {
           setError('Weather service configuration issue. Please contact support.');
-          _errorType = 'api_key';
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const _errorType = 'api_key';
         } else {
           setError('Unable to load weather data. Please try again later.');
-          _errorType = 'general';
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const _errorType = 'general';
         }
         
         // Log weather widget error

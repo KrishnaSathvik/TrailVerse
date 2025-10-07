@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import blogService from '../../services/blogService';
+import testimonialService from '../../services/testimonialService';
 import api from '../../services/api';
+import TestimonialsManagement from '../../components/admin/TestimonialsManagement';
 import {
   Users, FileText, MapPin, Calendar,
   MessageSquare, Settings, Plus, Eye,
@@ -19,6 +21,8 @@ const AdminDashboard = () => {
     totalPosts: 0,
     totalParks: 63, // This is fixed as there are 63 National Parks
     totalTrips: 0,
+    totalTestimonials: 0,
+    pendingTestimonials: 0,
     monthlyGrowth: 0,
     activeUsers: 0,
     // Previous values for calculating changes
@@ -50,6 +54,9 @@ const AdminDashboard = () => {
       allPosts = [...publishedData.data, ...draftData.data];
       setPosts(allPosts);
 
+      // Fetch testimonials statistics
+      const testimonialsStats = await testimonialService.getTestimonialsStats();
+
       // Fetch real statistics from API
       const statsResponse = await api.get('/admin/stats');
       const activityResponse = await api.get('/admin/recent-activity');
@@ -68,6 +75,8 @@ const AdminDashboard = () => {
           totalPosts: allPosts.length,
           totalUsers: statsResponse.data?.data?.totalUsers || statsResponse.data?.totalUsers || 0,
           totalTrips: statsResponse.data?.data?.totalTrips || statsResponse.data?.totalTrips || 0,
+          totalTestimonials: testimonialsStats.total,
+          pendingTestimonials: testimonialsStats.pending,
           monthlyGrowth: statsResponse.data?.data?.monthlyGrowth || statsResponse.data?.monthlyGrowth || 0,
           activeUsers: statsResponse.data?.data?.activeUsers || statsResponse.data?.activeUsers || 0,
           // Mark API as connected
@@ -91,6 +100,8 @@ const AdminDashboard = () => {
         // Keep previous values if API fails
         totalUsers: prev.totalUsers || 0,
         totalTrips: prev.totalTrips || 0,
+        totalTestimonials: prev.totalTestimonials || 0,
+        pendingTestimonials: prev.pendingTestimonials || 0,
         monthlyGrowth: prev.monthlyGrowth || 0,
         activeUsers: prev.activeUsers || 0,
         // Mark API as not connected
@@ -242,7 +253,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           <StatCard
             icon={Users}
             label="Total Users"
@@ -266,6 +277,13 @@ const AdminDashboard = () => {
             label="Trip Plans"
             value={stats.totalTrips}
             apiConnected={stats.apiConnected}
+          />
+          <StatCard
+            icon={MessageSquare}
+            label="Testimonials"
+            value={stats.totalTestimonials}
+            apiConnected={stats.apiConnected}
+            badge={stats.pendingTestimonials > 0 ? `${stats.pendingTestimonials} pending` : null}
           />
           </div>
 
@@ -375,6 +393,25 @@ const AdminDashboard = () => {
                   </div>
                   <span className="font-medium">Manage Users</span>
                 </Link>
+
+                <button
+                  onClick={() => {
+                    const testimonialsSection = document.getElementById('testimonials-management');
+                    testimonialsSection?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition w-full text-left"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-purple-400" />
+                  </div>
+                  <span className="font-medium">Manage Testimonials</span>
+                  {stats.pendingTestimonials > 0 && (
+                    <span className="ml-auto px-2 py-1 bg-orange-500 text-white text-xs rounded-full">
+                      {stats.pendingTestimonials}
+                    </span>
+                  )}
+                </button>
 
                 <Link
                   to="/admin/performance"
@@ -556,13 +593,26 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Testimonials Management Section */}
+        <div id="testimonials-management" className="mt-12">
+          <div className="rounded-2xl p-6 backdrop-blur"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <TestimonialsManagement />
+          </div>
+        </div>
         </div>
       </section>
     </div>
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, apiConnected }) => {
+const StatCard = ({ icon: Icon, label, value, apiConnected, badge }) => {
   return (
     <div className="rounded-2xl p-6 backdrop-blur group hover:-translate-y-1 transition-all duration-300"
       style={{
@@ -581,7 +631,12 @@ const StatCard = ({ icon: Icon, label, value, apiConnected }) => {
         >
           <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
         </div>
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-end gap-1">
+          {badge && (
+            <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
+              {badge}
+            </span>
+          )}
           {!apiConnected && (
             <span className="text-xs text-orange-400">
               Offline
