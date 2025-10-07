@@ -1,5 +1,5 @@
 {
-  "buildCommand": "./build.sh",
+  "buildCommand": "bash ./build.sh",
   "outputDirectory": "client/build",
   "installCommand": "echo 'Dependencies handled in build script'",
   "headers": [
