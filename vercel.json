@@ -1,7 +1,7 @@
 {
   "buildCommand": "./build.sh",
   "outputDirectory": "client/build",
-  "framework": "create-react-app",
+  "installCommand": "echo 'Dependencies handled in build script'",
   "headers": [
     {
       "source": "/static/(.*)",
