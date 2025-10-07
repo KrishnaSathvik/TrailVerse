@@ -32,7 +32,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "build": "DISABLE_ESLINT_PLUGIN=true GENERATE_SOURCEMAP=false craco build",
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "test": "craco test",
     "test:vitest": "vitest",
     "test:vitest:ui": "vitest --ui",
