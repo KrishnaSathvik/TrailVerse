@@ -1,8 +1,13 @@
 {
-  "buildCommand": "./build.sh",
-  "outputDirectory": "build",
-  "installCommand": "cd client && npm install",
-  "framework": "create-react-app",
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
