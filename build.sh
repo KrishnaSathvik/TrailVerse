@@ -10,8 +10,10 @@ else
     echo "✅ REACT_APP_OPENWEATHER_API_KEY is set (length: ${#REACT_APP_OPENWEATHER_API_KEY})"
 fi
 
-# Navigate to client directory
+# Install client dependencies if not already installed
+echo "=== Installing client dependencies ==="
 cd client
+npm install
 
 # Create .env.production file with environment variables
 echo "=== Creating .env.production ==="
