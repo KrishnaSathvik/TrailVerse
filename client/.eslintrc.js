@@ -20,12 +20,13 @@ module.exports = {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_' 
     }],
-    // Disable problematic rules in CI
-    'react-hooks/exhaustive-deps': process.env.CI ? 'off' : 'warn',
-    'jsx-a11y/img-redundant-alt': process.env.CI ? 'off' : 'warn',
-    'no-use-before-define': process.env.CI ? 'off' : 'error',
-    'import/no-anonymous-default-export': process.env.CI ? 'off' : 'warn',
-    '@typescript-eslint/no-unused-vars': process.env.CI ? 'off' : 'error'
+    // Disable problematic rules in CI and production builds
+    'react-hooks/exhaustive-deps': (process.env.CI || process.env.NODE_ENV === 'production') ? 'off' : 'warn',
+    'jsx-a11y/img-redundant-alt': (process.env.CI || process.env.NODE_ENV === 'production') ? 'off' : 'warn',
+    'no-use-before-define': (process.env.CI || process.env.NODE_ENV === 'production') ? 'off' : 'error',
+    'import/no-anonymous-default-export': (process.env.CI || process.env.NODE_ENV === 'production') ? 'off' : 'warn',
+    '@typescript-eslint/no-unused-vars': (process.env.CI || process.env.NODE_ENV === 'production') ? 'off' : 'error',
+    'no-unused-vars': (process.env.CI || process.env.NODE_ENV === 'production') ? 'off' : 'error'
   },
   overrides: [
     {

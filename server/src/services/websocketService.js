@@ -11,9 +11,19 @@ class WebSocketService {
   initialize(server) {
     const { Server } = require('socket.io');
     
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://www.nationalparksexplorerusa.com',
+      'https://nationalparksexplorerusa.com'
+    ];
+
+    if (process.env.CLIENT_URL) {
+      allowedOrigins.push(process.env.CLIENT_URL);
+    }
+
     this.io = new Server(server, {
       cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        origin: allowedOrigins,
         methods: ['GET', 'POST'],
         credentials: true
       },
