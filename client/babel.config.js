@@ -22,6 +22,8 @@ module.exports = function(api) {
     plugins: [
       // Remove console statements in production builds
       ...(isProduction ? ['transform-remove-console'] : []),
+      // Add React Refresh with skipEnvCheck for production
+      ...(isProduction ? [['react-refresh/babel', { skipEnvCheck: true }]] : ['react-refresh/babel']),
     ],
   };
 };
