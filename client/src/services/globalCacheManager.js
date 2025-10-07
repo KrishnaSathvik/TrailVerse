@@ -228,8 +228,8 @@ class GlobalCacheManager {
               this.backgroundRefreshQueue.delete(cacheKey);
               this.cacheStats.backgroundRefreshes++;
             })
-            .catch(error => {
-              console.warn(`Background refresh failed for ${cacheKey}:`, error.message);
+            .catch(_error => {
+              console.warn(`Background refresh failed for ${cacheKey}:`, _error.message);
               this.backgroundRefreshQueue.delete(cacheKey);
             })
         );
