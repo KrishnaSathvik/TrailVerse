@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Debug: Print environment variables
+echo "Environment variables:"
+env | grep REACT_APP_ | head -5
+
 # Navigate to client directory
 cd client
 
