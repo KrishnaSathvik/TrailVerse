@@ -13,21 +13,12 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/server/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/client/build/$1"
+      "source": "/api/(.*)",
+      "destination": "/server/server.js"
     }
   ],
-  "functions": {
-    "server/server.js": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
@@ -60,15 +51,6 @@
       ]
     },
     {
-      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
       "source": "/api/(.*)",
       "headers": [
         {
@@ -84,8 +66,8 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "CLIENT_URL": "https://www.nationalparksexplorerusa.com",
-    "WEBSITE_URL": "https://www.nationalparksexplorerusa.com"
+    "CLIENT_URL": "https://trailverse.vercel.app",
+    "WEBSITE_URL": "https://trailverse.vercel.app"
   },
   "redirects": [
     {
