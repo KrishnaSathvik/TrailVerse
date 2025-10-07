@@ -1,6 +1,6 @@
 {
   "buildCommand": "./build.sh",
-  "outputDirectory": "build",
+  "outputDirectory": "client/build",
   "installCommand": "cd client && npm install",
   "framework": "create-react-app",
   "headers": [

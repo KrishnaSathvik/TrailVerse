@@ -2,7 +2,13 @@
 
 # Debug: Print environment variables
 echo "=== Environment Variables ==="
-env | grep REACT_APP_ | head -5
+env | grep REACT_APP_ | head -10
+echo "=== OpenWeatherAPI Key Status ==="
+if [ -z "$REACT_APP_OPENWEATHER_API_KEY" ]; then
+    echo "❌ REACT_APP_OPENWEATHER_API_KEY is NOT set"
+else
+    echo "✅ REACT_APP_OPENWEATHER_API_KEY is set (length: ${#REACT_APP_OPENWEATHER_API_KEY})"
+fi
 
 # Navigate to client directory
 cd client
@@ -26,7 +32,11 @@ EOF
 echo "=== .env.production contents ==="
 cat .env.production
 
-# Run build
+# Clean and run build
+echo "=== Cleaning previous build ==="
+rm -rf build
+rm -rf node_modules/.cache
+
 echo "=== Running build ==="
 npm run build
 
