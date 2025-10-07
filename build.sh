@@ -13,7 +13,7 @@ fi
 # Install client dependencies if not already installed
 echo "=== Installing client dependencies ==="
 cd client
-npm install
+npm install --legacy-peer-deps
 
 # Create .env.production file with environment variables
 echo "=== Creating .env.production ==="
