@@ -11,7 +11,13 @@ module.exports = function(api) {
           },
         },
       ],
-      '@babel/preset-react',
+      [
+        '@babel/preset-react',
+        {
+          development: !isProduction,
+          runtime: 'automatic',
+        },
+      ],
     ],
     plugins: [
       // Remove console statements in production builds
