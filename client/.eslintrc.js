@@ -13,8 +13,8 @@ module.exports = {
     }
   },
   rules: {
-    // Allow console statements in development
-    'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    // Allow console statements in development and CI
+    'no-console': (process.env.NODE_ENV === 'production' && !process.env.CI) ? 'warn' : 'off',
     // Allow unused imports if they start with underscore
     'no-unused-vars': ['error', { 
       argsIgnorePattern: '^_',
