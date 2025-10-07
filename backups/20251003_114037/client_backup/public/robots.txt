@@ -1,0 +1,29 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and auth pages
+Disallow: /admin/
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password/
+Disallow: /verify-email/
+Disallow: /profile
+
+# Sitemap
+Sitemap: https://www.nationalparksexplorerusa.com/sitemap.xml
+
+# Popular search engine bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Crawl-delay for slower bots
+User-agent: *
+Crawl-delay: 10

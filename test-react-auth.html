@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Auth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        iframe { width: 100%; height: 600px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>🧪 React Authentication Test</h1>
+    
+    <div class="section info">
+        <h3>Test Instructions:</h1>
+        <ol>
+            <li>Click "Open React App" to open your React application</li>
+            <li>Login with dev user: <strong>devteam@example.com</strong> / <strong>dev123</strong></li>
+            <li>Check the browser console for debugging logs</li>
+            <li>Refresh the page and see if you stay logged in</li>
+            <li>Check the console logs to see what's happening</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h3>React App</h3>
+        <button onclick="openReactApp()">Open React App</button>
+        <button onclick="checkLocalStorage()">Check localStorage</button>
+        <button onclick="clearLocalStorage()">Clear localStorage</button>
+        <div id="localStorageStatus"></div>
+    </div>
+
+    <div class="section">
+        <h3>React App (iframe)</h3>
+        <iframe id="reactApp" src="http://localhost:3000" title="React App"></iframe>
+    </div>
+
+    <script>
+        function openReactApp() {
+            window.open('http://localhost:3000', '_blank');
+        }
+
+        function checkLocalStorage() {
+            const statusDiv = document.getElementById('localStorageStatus');
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let html = '<h4>Current localStorage Status:</h4>';
+            html += `<p><strong>Token:</strong> ${token ? '✅ EXISTS' : '❌ NOT_FOUND'}</p>`;
+            html += `<p><strong>User:</strong> ${user ? '✅ EXISTS' : '❌ NOT_FOUND'}</p>`;
+            
+            if (token) {
+                html += `<p><strong>Token Preview:</strong> ${token.substring(0, 30)}...</p>`;
+            }
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    html += '<p><strong>User Data:</strong></p>';
+                    html += '<pre>' + JSON.stringify(userData, null, 2) + '</pre>';
+                } catch (error) {
+                    html += '<p class="error">Error parsing user data: ' + error.message + '</p>';
+                }
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('localStorageStatus').innerHTML = '<p>localStorage cleared!</p>';
+        }
+
+        // Check localStorage on page load
+        window.onload = function() {
+            checkLocalStorage();
+        };
+
+        // Check localStorage every 5 seconds
+        setInterval(checkLocalStorage, 5000);
+    </script>
+</body>
+</html>

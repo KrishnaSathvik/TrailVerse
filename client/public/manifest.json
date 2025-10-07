@@ -1,0 +1,45 @@
+{
+  "short_name": "TrailVerse",
+  "name": "TrailVerse",
+  "description": "Explore America's 63 National Parks with AI-powered trip planning",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#059669",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["travel", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Explore Parks",
+      "url": "/explore",
+      "icons": [{ "src": "icons/explore-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Plan Trip",
+      "url": "/plan-ai",
+      "icons": [{ "src": "icons/plan-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "View Map",
+      "url": "/map",
+      "icons": [{ "src": "icons/map-96x96.png", "sizes": "96x96" }]
+    }
+  ]
+}

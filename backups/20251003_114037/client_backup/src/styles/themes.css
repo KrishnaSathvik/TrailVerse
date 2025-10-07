@@ -1,0 +1,160 @@
+/* Dark Theme (Default) */
+.dark {
+  /* Backgrounds */
+  --bg-primary: #0A0E0F;
+  --bg-secondary: #131719;
+  --bg-tertiary: #1A1F21;
+  
+  /* Surfaces */
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.10);
+  --surface-active: rgba(255, 255, 255, 0.15);
+  
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(255, 255, 255, 0.20);
+  
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-tertiary: rgba(255, 255, 255, 0.60);
+  
+  /* Accents */
+  --accent-green: #22c55e;
+  --accent-blue: #0ea5e9;
+  --accent-orange: #f97316;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Light Theme - Modern Travel Aesthetic */
+.light {
+  /* Backgrounds - Warm, travel-inspired palette */
+  --bg-primary: #FEFCF9;  /* Warm white with cream undertone */
+  --bg-secondary: #F9F7F4;  /* Soft beige */
+  --bg-tertiary: #F4F1EC;  /* Light warm gray */
+  
+  /* Surfaces - Subtle glassmorphism for light mode */
+  --surface: rgba(255, 255, 255, 0.8);  /* Semi-transparent white */
+  --surface-hover: rgba(255, 255, 255, 0.9);  /* More opaque on hover */
+  --surface-active: rgba(255, 255, 255, 0.95);  /* Nearly opaque when active */
+  
+  /* Borders - Soft, natural borders */
+  --border: rgba(0, 0, 0, 0.08);  /* Very subtle dark borders */
+  --border-hover: rgba(0, 0, 0, 0.12);  /* Slightly more visible on hover */
+  
+  /* Text - Rich, readable colors */
+  --text-primary: #2D2B28;  /* Warm dark brown for primary text */
+  --text-secondary: rgba(45, 43, 40, 0.85);  /* Slightly transparent primary */
+  --text-tertiary: rgba(45, 43, 40, 0.65);  /* More transparent for tertiary */
+  
+  /* Accents - Travel-inspired colors */
+  --accent-green: #059669;  /* Deep emerald green (forest/nature) */
+  --accent-blue: #0369A1;   /* Deep sky blue (ocean/sky) */
+  --accent-orange: #EA580C; /* Warm orange (sunset/adventure) */
+  --accent-earth: #B45309;  /* Earth brown (mountains/terrain) */
+  --accent-sky: #0284C7;    /* Bright sky blue */
+  
+  /* Shadows - Soft, natural shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for theme changes */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Disable transitions on theme change to prevent flash */
+.theme-transitioning * {
+  transition: none !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-hover);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-active);
+}
+
+/* Custom focus styles */
+.focus-ring {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+
+/* Card styles */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Button styles */
+.btn-primary {
+  background: var(--accent-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--accent-green);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
+}
