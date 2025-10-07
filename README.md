@@ -372,3 +372,4 @@ npm run seed            # Seed database with sample data
 
 *Built with ❤️ for National Parks enthusiasts*# GitHub Integration Test
 # Updated Tue Oct  7 11:31:56 CDT 2025
+# Trigger new deployment with correct API URL Tue Oct  7 13:56:03 CDT 2025
