@@ -16,6 +16,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://trailverse.onrender.com/api/$1"
+    },
+    {
       "source": "/((?!api/|static/).*)",
       "destination": "/index.html"
     }
