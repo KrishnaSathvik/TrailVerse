@@ -21,7 +21,7 @@ const generateTrackingId = () => uuidv4();
 
 // Helper to generate tracking pixel
 const generateTrackingPixel = (trackingId) => {
-  return `<img src="${process.env.FRONTEND_URL || 'http://localhost:3000'}/api/email/track/open/${trackingId}" width="1" height="1" style="display:none;" alt="" />`;
+  return `<img src="${process.env.CLIENT_URL || 'https://www.nationalparksexplorerusa.com'}/api/email/track/open/${trackingId}" width="1" height="1" style="display:none;" alt="" />`;
 };
 
 // Helper to track email delivery
@@ -147,7 +147,7 @@ class SimpleEmailService {
         email: user.email,
         postTitle: post.title,
         postExcerpt: post.excerpt || post.content?.substring(0, 200) + '...',
-        postUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+        postUrl: `${process.env.CLIENT_URL || 'https://www.nationalparksexplorerusa.com'}/blog/${post.slug}`,
         trackingPixel: generateTrackingPixel(trackingId),
         trackingId
       });
@@ -202,7 +202,7 @@ class SimpleEmailService {
       const html = await compileTemplate('password-reset', {
         firstName: user.firstName || user.name,
         email: user.email,
-        resetUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`,
+        resetUrl: `${process.env.CLIENT_URL || 'https://www.nationalparksexplorerusa.com'}/reset-password?token=${resetToken}`,
         trackingPixel: generateTrackingPixel(trackingId),
         trackingId
       });
@@ -255,7 +255,7 @@ class SimpleEmailService {
       const html = await compileTemplate('email-verification', {
         firstName: user.firstName || user.name,
         email: user.email,
-        verificationUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
+        verificationUrl: `${process.env.CLIENT_URL || 'https://www.nationalparksexplorerusa.com'}/verify-email?token=${verificationToken}`,
         trackingPixel: generateTrackingPixel(trackingId),
         trackingId
       });
