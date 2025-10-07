@@ -18,6 +18,14 @@
       "destination": "/server/server.js"
     },
     {
+      "source": "/static/(.*)",
+      "destination": "/client/build/static/$1"
+    },
+    {
+      "source": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|json|txt|xml))",
+      "destination": "/client/build/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/client/build/index.html"
     }
