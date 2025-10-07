@@ -6,7 +6,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
-import { Home, ArrowLeft, Compass, Mountain } from 'lucide-react';
+import { Home, Compass, Mountain } from 'lucide-react';
 
 const NotFoundPage = () => {
   const navigate = useNavigate();
