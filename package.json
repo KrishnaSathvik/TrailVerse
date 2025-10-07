@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "TrailVerse - Your Universe of National Parks Exploration",
   "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
     "install:all": "npm install && npm run install:client && npm run install:server",
     "install:client": "cd client && npm install",
