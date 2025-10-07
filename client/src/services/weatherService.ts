@@ -8,8 +8,14 @@ const API_BASE = 'https://api.openweathermap.org/data/2.5';
 // Debug: Log API key status (remove in production)
 if (!OPENWEATHER_API_KEY) {
   console.warn('⚠️ REACT_APP_OPENWEATHER_API_KEY is not set! Weather data will fall back to sample data.');
+  console.warn('Environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
+    hasKey: !!process.env.REACT_APP_OPENWEATHER_API_KEY,
+    keyLength: process.env.REACT_APP_OPENWEATHER_API_KEY?.length || 0
+  });
 } else {
   console.log('✅ OpenWeatherAPI key loaded successfully');
+  console.log('Key length:', OPENWEATHER_API_KEY.length);
 }
 
 class WeatherService {
@@ -40,7 +46,8 @@ class WeatherService {
 
   async getWeather(latitude: number, longitude: number) {
     if (!OPENWEATHER_API_KEY) {
-      throw new Error('OpenWeatherAPI key not configured');
+      console.warn('OpenWeatherAPI key not configured, using fallback data');
+      return this.getFallbackWeatherData(latitude, longitude);
     }
 
     const params = {
@@ -96,7 +103,8 @@ class WeatherService {
 
   async getForecast(latitude: number, longitude: number) {
     if (!OPENWEATHER_API_KEY) {
-      throw new Error('OpenWeatherAPI key not configured');
+      console.warn('OpenWeatherAPI key not configured, using fallback data');
+      return this.getFallbackForecastData(latitude, longitude);
     }
 
     const params = {
