@@ -18,10 +18,6 @@
       "destination": "/server/server.js"
     },
     {
-      "source": "/static/(.*)",
-      "destination": "/client/build/static/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/client/build/index.html"
     }
