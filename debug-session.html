@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; max-height: 300px; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Session Debug Tool</h1>
+    
+    <div class="section info">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click "Login with Dev User" to authenticate</li>
+            <li>Check the localStorage status</li>
+            <li>Refresh the page (F5) and watch the console logs</li>
+            <li>Check if you're still logged in after refresh</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h3>Authentication Test</h3>
+        <button onclick="login()">Login with Dev User</button>
+        <button onclick="checkStatus()">Check Status</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <button onclick="simulateRefresh()">Simulate Page Refresh</button>
+        <div id="status"></div>
+    </div>
+
+    <div class="section">
+        <h3>Console Logs</h3>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="logs" class="log"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001/api';
+        let logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logs.push(logEntry);
+            console.log(logEntry);
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = logs.slice(-50).join('\n'); // Show last 50 logs
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateLogDisplay();
+        }
+
+        // Override localStorage methods to track changes
+        const originalSetItem = localStorage.setItem;
+        const originalRemoveItem = localStorage.removeItem;
+        const originalClear = localStorage.clear;
+
+        localStorage.setItem = function(key, value) {
+            log(`localStorage.setItem('${key}', '${value}')`, 'storage');
+            return originalSetItem.call(this, key, value);
+        };
+
+        localStorage.removeItem = function(key) {
+            log(`localStorage.removeItem('${key}')`, 'storage');
+            return originalRemoveItem.call(this, key);
+        };
+
+        localStorage.clear = function() {
+            log('localStorage.clear()', 'storage');
+            return originalClear.call(this);
+        };
+
+        async function login() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<p>Logging in...</p>';
+            log('Starting login process...', 'auth');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'devteam@example.com',
+                        password: 'dev123'
+                    })
+                });
+                
+                const data = await response.json();
+                log(`Login response: ${JSON.stringify(data)}`, 'auth');
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.data));
+                    statusDiv.innerHTML = '<div class="success"><p>✅ Login successful!</p></div>';
+                    log('Login successful, data stored in localStorage', 'success');
+                    checkStatus();
+                } else {
+                    statusDiv.innerHTML = '<div class="error"><p>❌ Login failed: ' + data.error + '</p></div>';
+                    log('Login failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error"><p>❌ Login error: ' + error.message + '</p></div>';
+                log('Login error: ' + error.message, 'error');
+            }
+        }
+
+        function checkStatus() {
+            const statusDiv = document.getElementById('status');
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            log('Checking localStorage status...', 'status');
+            
+            let html = '<h4>Current Status:</h4>';
+            html += `<p><strong>Token:</strong> ${token ? '✅ EXISTS' : '❌ NOT_FOUND'}</p>`;
+            html += `<p><strong>User:</strong> ${user ? '✅ EXISTS' : '❌ NOT_FOUND'}</p>`;
+            
+            if (token) {
+                html += `<p><strong>Token Preview:</strong> ${token.substring(0, 30)}...</p>`;
+            }
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    html += '<p><strong>User Data:</strong></p>';
+                    html += '<pre>' + JSON.stringify(userData, null, 2) + '</pre>';
+                    log('User data found and parsed successfully', 'success');
+                } catch (error) {
+                    html += '<p class="error">Error parsing user data: ' + error.message + '</p>';
+                    log('Error parsing user data: ' + error.message, 'error');
+                }
+            } else {
+                log('No user data found in localStorage', 'warning');
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+
+        function clearStorage() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('status').innerHTML = '<p>Storage cleared!</p>';
+            log('Storage manually cleared', 'warning');
+        }
+
+        function simulateRefresh() {
+            log('Simulating page refresh...', 'refresh');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        // Check status on page load
+        window.onload = function() {
+            log('Page loaded', 'page');
+            checkStatus();
+        };
+
+        // Track page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                log('Page became visible', 'page');
+                checkStatus();
+            } else {
+                log('Page became hidden', 'page');
+            }
+        });
+
+        // Track beforeunload
+        window.addEventListener('beforeunload', function() {
+            log('Page is about to unload', 'page');
+        });
+    </script>
+</body>
+</html>

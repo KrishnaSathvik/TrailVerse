@@ -1,0 +1,31 @@
+{
+  "name": "trailverse",
+  "version": "1.0.0",
+  "description": "TrailVerse - Your Universe of National Parks Exploration",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm run install:client && npm run install:server",
+    "install:client": "cd client && npm install",
+    "install:server": "cd server && npm install",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "cd client && npm start",
+    "dev:server": "cd server && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "test": "npm run test:client && npm run test:server",
+    "test:client": "cd client && npm run test:all",
+    "test:server": "cd server && npm test",
+    "test:watch": "concurrently \"cd client && npm run test:vitest\" \"cd server && npm run test:watch\"",
+    "test:coverage": "npm run test:client:coverage && npm run test:server:coverage",
+    "test:client:coverage": "cd client && npm run test:vitest:coverage",
+    "test:server:coverage": "cd server && npm run test:coverage"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "glob": "^11.0.3"
+  }
+}

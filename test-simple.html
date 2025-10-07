@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple localStorage Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple localStorage Test</h1>
+    
+    <div class="section">
+        <h3>Test localStorage Persistence</h3>
+        <button onclick="testStorage()">Test Storage</button>
+        <button onclick="checkStorage()">Check Storage</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function testStorage() {
+            const testData = {
+                id: '68e0755888500beb5b23a058',
+                name: 'Development Team',
+                email: 'devteam@example.com',
+                role: 'user'
+            };
+            
+            try {
+                localStorage.setItem('token', 'test-token-12345');
+                localStorage.setItem('user', JSON.stringify(testData));
+                document.getElementById('result').innerHTML = '<div class="success"><p>✅ Data stored successfully!</p></div>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<div class="error"><p>❌ Error storing data: ' + error.message + '</p></div>';
+            }
+        }
+
+        function checkStorage() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let html = '<h4>Current Storage:</h4>';
+            html += `<p><strong>Token:</strong> ${token || 'NOT_FOUND'}</p>`;
+            html += `<p><strong>User:</strong> ${user || 'NOT_FOUND'}</p>`;
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    html += '<pre>' + JSON.stringify(userData, null, 2) + '</pre>';
+                } catch (error) {
+                    html += '<p class="error">Error parsing user data: ' + error.message + '</p>';
+                }
+            }
+            
+            document.getElementById('result').innerHTML = html;
+        }
+
+        function clearStorage() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.getElementById('result').innerHTML = '<p>Storage cleared!</p>';
+        }
+
+        // Check storage on page load
+        window.onload = checkStorage;
+    </script>
+</body>
+</html>
