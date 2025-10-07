@@ -2,5 +2,11 @@
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "build",
   "installCommand": "cd client && npm install",
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
