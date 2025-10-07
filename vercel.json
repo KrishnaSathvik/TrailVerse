@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd client && npm run build",
+  "outputDirectory": "build",
+  "installCommand": "cd client && npm install",
+  "framework": "create-react-app"
+}
