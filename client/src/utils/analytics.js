@@ -11,7 +11,7 @@ export const initGA = () => {
     });
     console.log('✅ Google Analytics initialized');
   } else {
-    console.warn('⚠️ Google Analytics tracking ID not found. Set REACT_APP_GA_TRACKING_ID in your environment variables.');
+    console.warn('⚠️ Google Analytics tracking ID not found. Set VITE_GA_TRACKING_ID in your environment variables.');
   }
 };
 

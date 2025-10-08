@@ -9,6 +9,7 @@ import LoadingScreen from './components/common/LoadingScreen';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import PerformanceMonitor from './components/common/PerformanceMonitor';
 import ScrollToTop from './components/common/ScrollToTop';
+import CookieConsent from './components/common/CookieConsent';
 import PrivateRoute from './routes/PrivateRoute';
 import AdminRoute from './routes/AdminRoute';
 import { initGA, trackPageView } from './utils/analytics';
@@ -93,6 +94,7 @@ function App() {
                 <ScrollToTop />
                 <AnalyticsTracker />
                 <PerformanceMonitor />
+                <CookieConsent />
                 <Suspense fallback={<LoadingScreen />}>
                   <Routes>
             <Route path="/" element={<LandingPage />} />

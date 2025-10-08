@@ -186,67 +186,68 @@ const UnsubscribePage = () => {
   const getMessageIcon = () => {
     switch (messageType) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="w-5 h-5" style={{ color: 'var(--accent-green)' }} />;
       case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-5 h-5" style={{ color: 'var(--error)' }} />;
       case 'info':
-        return <AlertTriangle className="w-5 h-5 text-blue-500" />;
+        return <AlertTriangle className="w-5 h-5" style={{ color: 'var(--accent-blue)' }} />;
       default:
         return null;
     }
   };
 
-  const getMessageStyles = () => {
-    switch (messageType) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
-      case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading email preferences...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
+          <p style={{ color: 'var(--text-secondary)' }}>Loading email preferences...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <Mail className="w-8 h-8 text-green-600" />
+            <div 
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+              style={{ backgroundColor: 'var(--accent-green-light)' }}
+            >
+              <Mail className="w-8 h-8" style={{ color: 'var(--accent-green)' }} />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
               Email Preferences
             </h1>
-            <p className="text-gray-600">
+            <p style={{ color: 'var(--text-secondary)' }}>
               Manage your TrailVerse email subscriptions
             </p>
             {email && (
-              <p className="text-sm text-gray-500 mt-2">
-                Managing preferences for: <span className="font-medium">{email}</span>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-tertiary)' }}>
+                Managing preferences for: <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{email}</span>
               </p>
             )}
           </div>
 
           {/* Message */}
           {message && (
-            <div className={`rounded-lg border p-4 mb-6 ${getMessageStyles()}`}>
+            <div 
+              className="rounded-lg border p-4 mb-6"
+              style={{
+                backgroundColor: messageType === 'success' ? 'var(--accent-green-light)' : 
+                                messageType === 'error' ? 'rgba(239, 68, 68, 0.15)' : 
+                                'var(--surface-hover)',
+                borderColor: messageType === 'success' ? 'var(--accent-green)' : 
+                            messageType === 'error' ? 'var(--error)' : 
+                            'var(--border)',
+                color: 'var(--text-primary)'
+              }}
+            >
               <div className="flex items-center">
                 {getMessageIcon()}
                 <p className="ml-2 font-medium">{message}</p>
@@ -255,8 +256,16 @@ const UnsubscribePage = () => {
           )}
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <div 
+            className="rounded-lg p-6 mb-6"
+            style={{
+              backgroundColor: 'var(--surface-hover)',
+              borderColor: 'var(--border)',
+              borderWidth: '1px',
+              boxShadow: 'var(--shadow)'
+            }}
+          >
+            <h2 className="text-xl font-semibold mb-4 flex items-center" style={{ color: 'var(--text-primary)' }}>
               <Settings className="w-5 h-5 mr-2" />
               Quick Actions
             </h2>
@@ -302,46 +311,67 @@ const UnsubscribePage = () => {
           </div>
 
           {/* Email Preferences */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <div 
+            className="rounded-lg p-6"
+            style={{
+              backgroundColor: 'var(--surface-hover)',
+              borderColor: 'var(--border)',
+              borderWidth: '1px',
+              boxShadow: 'var(--shadow)'
+            }}
+          >
+            <h2 className="text-xl font-semibold mb-6 flex items-center" style={{ color: 'var(--text-primary)' }}>
               <Settings className="w-5 h-5 mr-2" />
               Email Preferences
             </h2>
 
             <div className="space-y-4">
               {/* Blog Notifications */}
-              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-lg">
+              <div 
+                className="flex items-center justify-between p-6 rounded-lg"
+                style={{ backgroundColor: 'var(--surface)' }}
+              >
                 <div>
-                  <h3 className="font-medium text-gray-900">Blog Notifications</h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>Blog Notifications</h3>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                     Get notified when we publish new blog posts about national parks, travel tips, and TrailVerse updates
                   </p>
                 </div>
                 <button
                   onClick={() => handlePreferenceChange('blogNotifications')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    preferences.blogNotifications ? 'bg-green-600' : 'bg-gray-200'
-                  }`}
+                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  style={{
+                    backgroundColor: preferences.blogNotifications ? 'var(--accent-green)' : 'var(--border)'
+                  }}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      preferences.blogNotifications ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full transition-transform`}
+                    style={{
+                      backgroundColor: 'var(--bg-primary)',
+                      transform: preferences.blogNotifications ? 'translateX(1.5rem)' : 'translateX(0.25rem)'
+                    }}
                   />
                 </button>
               </div>
 
               {/* Information about other emails */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div 
+                className="rounded-lg p-4"
+                style={{
+                  backgroundColor: 'rgba(14, 165, 233, 0.15)',
+                  borderColor: 'var(--accent-blue)',
+                  borderWidth: '1px'
+                }}
+              >
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 mt-0.5" style={{ color: 'var(--accent-blue)' }} fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h4 className="text-sm font-medium text-blue-900">About Other Emails</h4>
-                    <div className="mt-2 text-sm text-blue-800">
+                    <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>About Other Emails</h4>
+                    <div className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                       <p>Welcome, verification, and password reset emails are one-time transactional emails that you cannot unsubscribe from as they are essential for your account security and setup.</p>
                     </div>
                   </div>
@@ -350,7 +380,13 @@ const UnsubscribePage = () => {
             </div>
 
             {/* Save Preferences Button */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div 
+              className="mt-6 pt-6"
+              style={{
+                borderTopColor: 'var(--border)',
+                borderTopWidth: '1px'
+              }}
+            >
               <Button
                 onClick={handleUpdatePreferences}
                 disabled={submitting}
@@ -367,12 +403,19 @@ const UnsubscribePage = () => {
           </div>
 
           {/* Security Notice */}
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div 
+            className="mt-6 rounded-lg p-4"
+            style={{
+              backgroundColor: 'rgba(14, 165, 233, 0.15)',
+              borderColor: 'var(--accent-blue)',
+              borderWidth: '1px'
+            }}
+          >
             <div className="flex items-start">
-              <Shield className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
+              <Shield className="w-5 h-5 mt-0.5 mr-3" style={{ color: 'var(--accent-blue)' }} />
               <div>
-                <h3 className="font-medium text-blue-900">Security Notice</h3>
-                <p className="text-sm text-blue-800 mt-1">
+                <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>Security Notice</h3>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                   Your email preferences are secure and will only be used to send you the types of emails you've requested. 
                   You can change these preferences at any time by visiting this page again.
                 </p>

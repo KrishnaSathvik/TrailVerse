@@ -21,9 +21,12 @@
   
   /* Accents */
   --accent-green: #22c55e;
+  --accent-green-light: rgba(34, 197, 94, 0.15);
   --accent-blue: #0ea5e9;
   --accent-orange: #f97316;
+  --error: #ef4444;
   --error-red: #ef4444;
+  --warning: #f59e0b;
   
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
@@ -55,11 +58,14 @@
   
   /* Accents - Travel-inspired colors */
   --accent-green: #059669;  /* Deep emerald green (forest/nature) */
+  --accent-green-light: rgba(5, 150, 105, 0.15);  /* Light green background */
   --accent-blue: #0369A1;   /* Deep sky blue (ocean/sky) */
   --accent-orange: #EA580C; /* Warm orange (sunset/adventure) */
   --accent-earth: #B45309;  /* Earth brown (mountains/terrain) */
   --accent-sky: #0284C7;    /* Bright sky blue */
+  --error: #dc2626;         /* Error red for destructive actions */
   --error-red: #dc2626;     /* Error red for destructive actions */
+  --warning: #d97706;       /* Warning orange */
   
   /* Shadows - Soft, natural shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
@@ -128,11 +134,11 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Button styles */
+/* Button styles - All buttons now use consistent green and white styling */
 .btn-primary {
   background: var(--accent-green);
-  color: white;
-  border: none;
+  color: #ffffff;
+  border: 1px solid var(--accent-green);
   border-radius: 8px;
   padding: 12px 24px;
   font-weight: 600;
@@ -140,16 +146,16 @@ body {
 }
 
 .btn-primary:hover {
-  background: var(--accent-green);
-  opacity: 0.9;
+  background: #047857;
+  border-color: #047857;
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {
-  background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
+  background: var(--accent-green);
+  color: #ffffff;
+  border: 1px solid var(--accent-green);
   border-radius: 8px;
   padding: 12px 24px;
   font-weight: 600;
@@ -157,9 +163,13 @@ body {
 }
 
 .btn-secondary:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-hover);
+  background: #047857;
+  border-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
 }
+
+/* Button styling is now handled entirely by the Button component's internal CSS */
 
 /* Prose styles for blog content */
 .prose {
@@ -229,4 +239,263 @@ body {
 
 .prose em {
   color: var(--text-secondary);
+}
+
+/* Profile Tab Button Styling */
+.profile-tab-button {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+  overflow: hidden !important;
+}
+
+.profile-tab-button svg,
+.profile-tab-button span {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Ensure text is always visible and properly styled */
+.profile-tab-button span {
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ACTIVE TAB STYLING - Highest specificity */
+.profile-tab-button.profile-tab-active {
+  color: #ffffff !important;
+  background-color: var(--accent-green) !important;
+  border-color: var(--accent-green) !important;
+}
+
+.profile-tab-button.profile-tab-active * {
+  color: #ffffff !important;
+}
+
+.profile-tab-button.profile-tab-active svg {
+  color: #ffffff !important;
+}
+
+.profile-tab-button.profile-tab-active span {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+/* Force text visibility for active tabs */
+.profile-tab-button.profile-tab-active span,
+.profile-tab-button.profile-tab-active .text-xs {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* INACTIVE TAB STYLING */
+.profile-tab-button.profile-tab-inactive {
+  color: var(--text-tertiary) !important;
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.profile-tab-button.profile-tab-inactive * {
+  color: var(--text-tertiary) !important;
+}
+
+.profile-tab-button.profile-tab-inactive svg {
+  color: var(--text-tertiary) !important;
+}
+
+.profile-tab-button.profile-tab-inactive span {
+  color: var(--text-tertiary) !important;
+}
+
+/* Force text visibility for inactive tabs */
+.profile-tab-button.profile-tab-inactive span,
+.profile-tab-button.profile-tab-inactive .text-xs {
+  color: var(--text-tertiary) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Hover effects */
+.profile-tab-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.profile-tab-button.profile-tab-active:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-xl) !important;
+}
+
+/* Ensure consistent spacing and alignment */
+.profile-tab-button:focus {
+  outline: 2px solid var(--accent-green) !important;
+  outline-offset: 2px !important;
+}
+
+.profile-tab-button:active {
+  transform: translateY(0px) !important;
+}
+
+/* Better text wrapping for longer labels */
+.profile-tab-button span {
+  word-break: break-word !important;
+  hyphens: auto !important;
+  max-width: 100% !important;
+}
+
+/* Prevent tab expansion and overlapping */
+.profile-tab-button {
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+
+/* Ensure consistent tab sizing - removed width overrides */
+.profile-tab-button.profile-tab-active {
+  transform: none !important;
+}
+
+.profile-tab-button.profile-tab-inactive {
+  transform: none !important;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 1023px) {
+  .profile-tab-button {
+    min-height: 70px !important;
+    padding: 8px 4px !important;
+  }
+  
+  .profile-tab-button span {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+  }
+  
+  .profile-tab-button svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+/* Desktop tabs: equal pill size, don't wrap or stretch - MOVED TO profile-tab-row overrides */
+
+/* Ensure tab container doesn't overflow */
+.profile-tab-container {
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+/* Mobile tab container specific fixes */
+@media (max-width: 1023px) {
+  .profile-tab-container {
+    padding: 16px 8px !important;
+  }
+  
+  .profile-tab-container .grid {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+/* Desktop tab container */
+@media (min-width: 1024px) {
+  .profile-tab-container {
+    padding: 20px 0 !important;
+  }
+  
+  .profile-tab-container .grid {
+    width: 100% !important;
+    gap: 8px !important;
+  }
+}
+
+/* Prevent tabs from overflowing on larger screens */
+@media (min-width: 1280px) {
+  .profile-tab-button {
+    padding: 10px 6px !important;
+  }
+  
+  .profile-tab-button span {
+    font-size: 12px !important;
+  }
+  
+  .profile-tab-button svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* Center-when-fit, scroll-when-not: row-scoped overrides */
+@media (min-width: 1024px) {
+  /* Use a wrapper class to beat existing .profile-tab-button !important rules */
+  .profile-tab-row .profile-tab-button,
+  .profile-tab-row .profile-tab-button.profile-tab-active,
+  .profile-tab-row .profile-tab-button.profile-tab-inactive {
+    display: inline-flex !important;
+    width: auto !important;           /* <-- stop 100% width */
+    min-width: 9rem !important;       /* ~144px; smaller to fit 6 across */
+    min-height: 5rem !important;      /* ~80px */
+    padding: 10px 12px !important;
+    flex: 0 0 auto !important;        /* no grow/shrink */
+  }
+}
+
+/* Use theme colors for inactive content (optional but nicer) */
+.profile-tab-button.profile-tab-inactive,
+.profile-tab-button.profile-tab-inactive * {
+  color: var(--text-tertiary) !important;
+}
+
+/* Scrollbar hide for mobile tab container */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Theme Switcher Styling */
+.theme-switcher-toggle {
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface) !important;
+  transition: all 0.2s ease !important;
+}
+
+.theme-switcher-toggle:hover {
+  border-color: var(--border-hover) !important;
+  background-color: var(--surface-hover) !important;
+}
+
+.theme-switcher-toggle:focus {
+  outline: 2px solid var(--accent-green) !important;
+  outline-offset: 2px !important;
+}
+
+/* Enhanced border visibility for theme switcher */
+.theme-switcher-container {
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.theme-switcher-container:hover {
+  border-color: var(--border-hover) !important;
+  background-color: var(--surface-hover) !important;
 }

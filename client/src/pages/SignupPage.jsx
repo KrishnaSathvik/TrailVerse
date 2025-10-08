@@ -89,11 +89,20 @@ const SignupPage = () => {
         formData.password
       );
       
-      showToast('Account created successfully! Please check your email to verify your account.', 'success');
-      navigate('/');
+      showToast('Account created successfully! Check your email to verify your account.', 'success', 5000);
+      
+      // Redirect to login with verification message and prefilled email
+      navigate('/login', { 
+        state: { 
+          verificationSent: true,
+          email: formData.email,
+          firstName: formData.firstName
+        } 
+      });
     } catch (error) {
       console.error('Signup error:', error);
-      showToast('Failed to create account. Please try again.', 'error');
+      const errorMessage = error.response?.data?.error || 'Failed to create account. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -168,7 +177,7 @@ const SignupPage = () => {
             Join the adventure!
           </h1>
           <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Start exploring America&apos;s 63 National Parks with AI-powered trip planning and personalized recommendations.
+            Start exploring America&apos;s 470+ National Parks & Sites with AI-powered trip planning and personalized recommendations.
           </p>
         </div>
       </div>

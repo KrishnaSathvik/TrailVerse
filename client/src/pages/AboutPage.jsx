@@ -125,7 +125,7 @@ const AboutPage = () => {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO 
         title="About Krishna - National Parks Explorer & Astrophotographer | TrailVerse"
-        description="Meet Krishna, the creator of TrailVerse. Astrophotographer, Google Maps Level 8 contributor, and National Parks enthusiast sharing his journey through America's 63 parks."
+        description="Meet Krishna, the creator of TrailVerse. Astrophotographer, Google Maps Level 8 contributor, and National Parks enthusiast sharing his journey through America's 470+ parks and sites."
         keywords="about, Krishna, National Parks, astrophotography, Google Maps, travel, TrailVerse"
       />
       
@@ -470,12 +470,13 @@ const AboutPage = () => {
                 <div className="space-y-4">
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     <strong>TrailVerse</strong> combines my personal experiences visiting 16+ parks 
-                    with real-time weather data, detailed park information, interactive maps, and AI-powered 
-                    trip planning to help you create the perfect park adventure.
+                    with modern technology including Vite for lightning-fast development, React 18 for 
+                    smooth user interactions, and AI-powered trip planning to help you explore all 470+ National Parks and Sites.
                   </p>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Every feature is designed with fellow travelers in mind - from comprehensive trip planning 
-                    tools to seasonal guides and community reviews based on my own Google Maps contributions.
+                    Built with a modern tech stack deployed on Vercel (frontend) and Render (backend), 
+                    every feature is designed with fellow travelers in mind - from comprehensive trip planning 
+                    tools to real-time weather updates and community reviews based on my own Google Maps contributions.
                   </p>
                    <div className="mt-6">
                      <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
@@ -491,7 +492,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             React
+                             React 18
                            </span>
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -499,7 +500,15 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             Tailwind CSS
+                             Vite
+                           </span>
+                           <span className="px-2 py-1 rounded text-xs font-medium"
+                             style={{
+                               backgroundColor: 'var(--accent-green)',
+                               color: 'white'
+                             }}
+                           >
+                             Tailwind CSS v4
                            </span>
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -529,7 +538,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             Express
+                             Express.js
                            </span>
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -537,7 +546,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             MongoDB
+                             MongoDB Atlas
                            </span>
                          </div>
                        </div>
@@ -559,7 +568,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             Weather API
+                             OpenWeather API
                            </span>
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -567,7 +576,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             OpenAI
+                             OpenAI GPT
                            </span>
                          </div>
                        </div>
@@ -589,13 +598,21 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
+                             Render
+                           </span>
+                           <span className="px-2 py-1 rounded text-xs font-medium"
+                             style={{
+                               backgroundColor: 'var(--accent-green)',
+                               color: 'white'
+                             }}
+                           >
                              MongoDB Atlas
                            </span>
                          </div>
                        </div>
                        
                        <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Tools</h5>
+                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>State & Routing</h5>
                          <div className="flex flex-wrap gap-2">
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -603,7 +620,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             React Query
+                             TanStack Query
                            </span>
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -611,7 +628,15 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             React Router
+                             React Router v7
+                           </span>
+                           <span className="px-2 py-1 rounded text-xs font-medium"
+                             style={{
+                               backgroundColor: 'var(--accent-green)',
+                               color: 'white'
+                             }}
+                           >
+                             React Context
                            </span>
                          </div>
                        </div>
@@ -625,7 +650,7 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             AI Planning
+                             AI Trip Planning
                            </span>
                            <span className="px-2 py-1 rounded text-xs font-medium"
                              style={{
@@ -633,7 +658,23 @@ const AboutPage = () => {
                                color: 'white'
                              }}
                            >
-                             Real-time Events
+                             Real-time Weather
+                           </span>
+                           <span className="px-2 py-1 rounded text-xs font-medium"
+                             style={{
+                               backgroundColor: 'var(--accent-green)',
+                               color: 'white'
+                             }}
+                           >
+                             Interactive Maps
+                           </span>
+                           <span className="px-2 py-1 rounded text-xs font-medium"
+                             style={{
+                               backgroundColor: 'var(--accent-green)',
+                               color: 'white'
+                             }}
+                           >
+                             Event Calendar
                            </span>
                          </div>
                        </div>
