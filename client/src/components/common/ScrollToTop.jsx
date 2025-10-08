@@ -88,7 +88,7 @@ const ScrollToTop = () => {
         </button>
       )}
       
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;
@@ -102,40 +102,6 @@ const ScrollToTop = () => {
         
         .animate-fade-in {
           animation: fadeInUp 0.3s ease-out forwards;
-        }
-        
-        /* Enhanced focus ring for better accessibility */
-        button:focus {
-          box-shadow: var(--shadow-xl), 0 0 0 4px var(--accent-green-light) !important;
-        }
-        
-        /* Dark mode specific adjustments */
-        .dark button {
-          background: var(--surface) !important;
-          border-color: var(--border) !important;
-        }
-        
-        /* Light mode specific adjustments */
-        .light button {
-          background: var(--surface) !important;
-          border-color: var(--border) !important;
-        }
-        
-        /* Mobile-specific improvements */
-        @media (max-width: 640px) {
-          button {
-            bottom: 1rem !important;
-            right: 1rem !important;
-            width: 3rem !important;
-            height: 3rem !important;
-          }
-        }
-        
-        /* Ensure button doesn't interfere with scrollbar */
-        @media (min-width: 1024px) {
-          button {
-            right: calc(1rem + 10px) !important; /* Account for scrollbar width */
-          }
         }
       `}</style>
     </>

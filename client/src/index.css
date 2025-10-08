@@ -32,8 +32,8 @@
   --color-forest-200: #bbf7d0;
   --color-forest-300: #86efac;
   --color-forest-400: #4ade80;
-  --color-forest-500: #22c55e;
-  --color-forest-600: #16a34a;
+  --color-forest-500: var(--accent-green);
+  --color-forest-600: var(--accent-green-dark);
   --color-forest-700: #15803d;
   --color-forest-800: #166534;
   --color-forest-900: #14532d;
@@ -97,22 +97,85 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Button text selection prevention */
-button, .btn {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+/* Button text selection prevention - Comprehensive */
+button, .btn, button *, .btn *, button span, .btn span {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
-/* Prevent text selection on button click */
-button:active, .btn:active {
-  -webkit-tap-highlight-color: transparent;
+/* Prevent text selection and highlight on button interactions */
+button:active, .btn:active, button:focus, .btn:focus, button:hover, .btn:hover {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Prevent text highlight on selection */
+button::selection, .btn::selection, button *::selection, .btn *::selection, 
+button span::selection, .btn span::selection {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* Prevent text highlight on moz selection */
+button::-moz-selection, .btn::-moz-selection, button *::-moz-selection, .btn *::-moz-selection,
+button span::-moz-selection, .btn span::-moz-selection {
+  background: transparent !important;
+  color: inherit !important;
 }
 
 /* Remove default focus outline and add custom focus styles */
 button:focus, .btn:focus {
   outline: none;
+}
+
+/* Global button text selection prevention - Most aggressive */
+*[role="button"], input[type="button"], input[type="submit"], 
+button, .btn, a[role="button"], a[data-button-component="true"] {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+*[role="button"] *, input[type="button"] *, input[type="submit"] *,
+button *, .btn *, a[role="button"] *, a[data-button-component="true"] * {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  user-select: none !important;
+}
+
+/* Prevent text selection on ALL anchor tags that act as buttons */
+a[href], a[data-button-component="true"] {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+a[href] *, a[data-button-component="true"] * {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  user-select: none !important;
+}
+
+/* Specific rules for Events page and EventCard components */
+.event-card button, .event-card a, .event-card .btn,
+.events-page button, .events-page a, .events-page .btn {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+}
+
+.event-card button *, .event-card a *, .event-card .btn *,
+.events-page button *, .events-page a *, .events-page .btn * {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  user-select: none !important;
 }
 
 /* Ensure icons in buttons render properly */

@@ -297,7 +297,7 @@ const EventsPage = () => {
   }, [events]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="events-page min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO
         title="National Parks Events Calendar - Ranger Programs & Activities"
         description="Discover upcoming events, ranger programs, workshops, and special activities at America's National Parks. Plan your visit around exciting park events."

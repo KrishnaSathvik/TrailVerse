@@ -25,7 +25,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // Custom marker icon
-const createCustomIcon = (color = '#22c55e') => {
+const createCustomIcon = (color = 'var(--accent-green)') => {
   return L.divIcon({
     className: 'custom-marker',
     html: `
@@ -611,7 +611,7 @@ const MapPage = () => {
             
             {filteredParks.map(park => {
               // Determine marker color based on context
-              let markerColor = '#22c55e'; // Default green
+              let markerColor = 'var(--accent-green)'; // Default green
               if (selectedPark?.parkCode === park.parkCode) {
                 markerColor = '#3b82f6'; // Blue for selected
               } else if (searchTerm || filters.states.length > 0 || filters.activities.length > 0) {

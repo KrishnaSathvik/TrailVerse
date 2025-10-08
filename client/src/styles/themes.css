@@ -101,6 +101,31 @@ a[data-button-component="true"] * {
   color: inherit !important;
 }
 
+/* Prevent text selection on Button component */
+button[data-button-component="true"], 
+button[data-button-component="true"] *, 
+button[data-button-component="true"] span,
+a[data-button-component="true"], 
+a[data-button-component="true"] *,
+a[data-button-component="true"] span {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+button[data-button-component="true"]::selection,
+button[data-button-component="true"] *::selection,
+button[data-button-component="true"] span::selection,
+a[data-button-component="true"]::selection,
+a[data-button-component="true"] *::selection,
+a[data-button-component="true"] span::selection {
+  background: transparent !important;
+  color: inherit !important;
+}
+
 /* Disable transitions on theme change to prevent flash */
 .theme-transitioning * {
   transition: none !important;
@@ -154,18 +179,21 @@ a[data-button-component="true"] * {
 
 /* Button styles - Utility classes for buttons (main styling is in Button component) */
 .btn-primary {
-  background: var(--accent-green);
-  color: #ffffff;
-  border: 1px solid var(--accent-green);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 24px;
   font-weight: 600;
   transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary:hover {
-  background: var(--accent-green-dark);
-  border-color: var(--accent-green-dark);
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
@@ -327,21 +355,21 @@ a[data-button-component="true"] * {
 
 /* ACTIVE TAB STYLING - Highest specificity */
 .profile-tab-button.profile-tab-active {
-  color: #ffffff !important;
-  background-color: var(--accent-green) !important;
-  border-color: var(--accent-green) !important;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
 }
 
 .profile-tab-button.profile-tab-active * {
-  color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .profile-tab-button.profile-tab-active svg {
-  color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .profile-tab-button.profile-tab-active span {
-  color: #ffffff !important;
+  color: #000000 !important;
   font-weight: 700 !important;
   text-shadow: none !important;
 }
@@ -349,7 +377,7 @@ a[data-button-component="true"] * {
 /* Force text visibility for active tabs */
 .profile-tab-button.profile-tab-active span,
 .profile-tab-button.profile-tab-active .text-xs {
-  color: #ffffff !important;
+  color: #000000 !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -429,7 +457,8 @@ a[data-button-component="true"] * {
 @media (max-width: 1023px) {
   .profile-tab-button {
     min-height: 70px !important;
-    padding: 8px 4px !important;
+    padding: 10px 6px !important;
+    margin: 2px 0 !important;
   }
   
   .profile-tab-button span {
@@ -455,55 +484,71 @@ a[data-button-component="true"] * {
 /* Mobile tab container specific fixes */
 @media (max-width: 1023px) {
   .profile-tab-container {
-    padding: 16px 8px !important;
+    padding: 32px 16px !important;
+    margin: 24px 0 !important;
   }
   
   .profile-tab-container .grid {
     width: 100% !important;
     margin: 0 !important;
-  }
-}
-
-/* Desktop tab container */
-@media (min-width: 1024px) {
-  .profile-tab-container {
-    padding: 20px 0 !important;
-  }
-  
-  .profile-tab-container .grid {
-    width: 100% !important;
     gap: 8px !important;
   }
 }
 
-/* Prevent tabs from overflowing on larger screens */
-@media (min-width: 1280px) {
-  .profile-tab-button {
-    padding: 10px 6px !important;
+/* Desktop tab container - COMPLETE REWRITE */
+@media (min-width: 1024px) {
+  .profile-tab-container {
+    padding: 40px 20px !important;
+    margin: 40px 0 !important;
+    background: transparent !important;
   }
   
-  .profile-tab-button span {
-    font-size: 12px !important;
+  .profile-tab-container .grid {
+    width: 100% !important;
+    gap: 16px !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  
+  .profile-tab-button {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 140px !important;
+    min-height: 80px !important;
+    padding: 16px 12px !important;
+    margin: 4px 0 !important;
+    border-radius: 12px !important;
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.2s ease !important;
+    flex: 0 0 auto !important;
+  }
+  
+  .profile-tab-button.profile-tab-active {
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important;
+    color: #000000 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  .profile-tab-button.profile-tab-active * {
+    color: #000000 !important;
   }
   
   .profile-tab-button svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin-bottom: 8px !important;
   }
-}
-
-/* Center-when-fit, scroll-when-not: row-scoped overrides */
-@media (min-width: 1024px) {
-  /* Use a wrapper class to beat existing .profile-tab-button !important rules */
-  .profile-tab-row .profile-tab-button,
-  .profile-tab-row .profile-tab-button.profile-tab-active,
-  .profile-tab-row .profile-tab-button.profile-tab-inactive {
-    display: inline-flex !important;
-    width: auto !important;           /* <-- stop 100% width */
-    min-width: 9rem !important;       /* ~144px; smaller to fit 6 across */
-    min-height: 5rem !important;      /* ~80px */
-    padding: 10px 12px !important;
-    flex: 0 0 auto !important;        /* no grow/shrink */
+  
+  .profile-tab-button span {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
   }
 }
 
@@ -511,6 +556,19 @@ a[data-button-component="true"] * {
 .profile-tab-button.profile-tab-inactive,
 .profile-tab-button.profile-tab-inactive * {
   color: var(--text-tertiary) !important;
+}
+
+/* Force override ANY green styling on profile tabs */
+.profile-tab-button.profile-tab-active {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #000000 !important;
+}
+
+.profile-tab-button.profile-tab-active *,
+.profile-tab-button.profile-tab-active svg,
+.profile-tab-button.profile-tab-active span {
+  color: #000000 !important;
 }
 
 /* Scrollbar hide for mobile tab container */

@@ -5,7 +5,7 @@ import { MapPin, Navigation, ZoomIn, ZoomOut } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 // Custom marker icon
-const createCustomIcon = (color = '#22c55e') => {
+const createCustomIcon = (color = 'var(--accent-green)') => {
   return L.divIcon({
     className: 'custom-marker',
     html: `
@@ -74,7 +74,7 @@ const InteractiveMap = ({
             key={park.parkCode}
             position={[parseFloat(park.latitude), parseFloat(park.longitude)]}
             icon={createCustomIcon(
-              selectedPark?.parkCode === park.parkCode ? '#3b82f6' : '#22c55e'
+              selectedPark?.parkCode === park.parkCode ? '#3b82f6' : 'var(--accent-green)'
             )}
             eventHandlers={{
               click: () => onParkClick && onParkClick(park)

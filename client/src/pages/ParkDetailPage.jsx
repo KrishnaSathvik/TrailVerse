@@ -589,17 +589,17 @@ const ParkDetailPage = () => {
                                     className="flex items-center justify-center px-3 py-3 min-h-[60px] text-center transition-all duration-200 hover:scale-105 rounded-xl font-semibold text-xs"
                                     style={{
                                       backgroundColor: activeActivityTab === tab.id 
-                                        ? 'var(--accent-green)' 
+                                        ? '#ffffff' 
                                         : 'var(--surface)',
                                       color: activeActivityTab === tab.id 
-                                        ? '#ffffff' 
+                                        ? '#000000' 
                                         : 'var(--text-primary)',
                                       borderWidth: '1px',
                                       borderColor: activeActivityTab === tab.id 
-                                        ? 'var(--accent-green)' 
+                                        ? '#e5e7eb' 
                                         : 'var(--border)',
                                       boxShadow: activeActivityTab === tab.id 
-                                        ? '0 3px 8px rgba(34, 197, 94, 0.25)' 
+                                        ? '0 3px 8px rgba(0, 0, 0, 0.15)' 
                                         : '0 1px 4px rgba(0, 0, 0, 0.08)'
                                     }}
                                   >
