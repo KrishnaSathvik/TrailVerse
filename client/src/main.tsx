@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import reportWebVitals from './reportWebVitals';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+// import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 // Override console methods in production
 if (import.meta.env.PROD) {
@@ -39,16 +39,16 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker
-serviceWorkerRegistration.register({
-  onSuccess: () => console.log('Service Worker registered'),
-  onUpdate: (registration) => {
-    if (window.confirm('New version available! Reload to update?')) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      window.location.reload();
-    }
-  }
-});
+// Register service worker - DISABLED for Vite migration
+// serviceWorkerRegistration.register({
+//   onSuccess: () => console.log('Service Worker registered'),
+//   onUpdate: (registration) => {
+//     if (window.confirm('New version available! Reload to update?')) {
+//       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+//       window.location.reload();
+//     }
+//   }
+// });
 
 // Send to analytics
 reportWebVitals((metric) => {
