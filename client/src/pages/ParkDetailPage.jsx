@@ -586,17 +586,20 @@ const ParkDetailPage = () => {
                                   <button
                                     key={tab.id}
                                     onClick={() => setActiveActivityTab(activeActivityTab === tab.id ? null : tab.id)}
-                                    className={`
-                                      flex items-center justify-center px-3 py-3 min-h-[60px] text-center 
-                                      transition-all duration-200 hover:scale-105 rounded-xl font-semibold text-xs
-                                      ${activeActivityTab === tab.id 
-                                        ? 'bg-forest-500 text-white shadow-lg' 
-                                        : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50'
-                                      }
-                                    `}
+                                    className="flex items-center justify-center px-3 py-3 min-h-[60px] text-center transition-all duration-200 hover:scale-105 rounded-xl font-semibold text-xs"
                                     style={{
+                                      backgroundColor: activeActivityTab === tab.id 
+                                        ? 'var(--accent-green)' 
+                                        : 'var(--surface)',
+                                      color: activeActivityTab === tab.id 
+                                        ? 'white' 
+                                        : 'var(--text-primary)',
+                                      borderWidth: '1px',
+                                      borderColor: activeActivityTab === tab.id 
+                                        ? 'var(--accent-green)' 
+                                        : 'var(--border)',
                                       boxShadow: activeActivityTab === tab.id 
-                                        ? '0 3px 8px rgba(5, 150, 105, 0.25)' 
+                                        ? '0 3px 8px rgba(34, 197, 94, 0.25)' 
                                         : '0 1px 4px rgba(0, 0, 0, 0.08)'
                                     }}
                                   >
