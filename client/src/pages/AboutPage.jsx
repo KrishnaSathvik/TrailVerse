@@ -53,8 +53,8 @@ const AboutPage = () => {
     {
       icon: Mail,
       label: "Email",
-      url: `mailto:${process.env.REACT_APP_CONTACT_EMAIL || "trailverseteam@gmail.com"}`,
-      description: process.env.REACT_APP_CONTACT_EMAIL || "trailverseteam@gmail.com"
+      url: `mailto:${import.meta.env.VITE_CONTACT_EMAIL || "trailverseteam@gmail.com"}`,
+      description: import.meta.env.VITE_CONTACT_EMAIL || "trailverseteam@gmail.com"
     }
   ];
 

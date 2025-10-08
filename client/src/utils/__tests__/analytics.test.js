@@ -32,7 +32,7 @@ describe('Analytics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset environment
-    delete process.env.REACT_APP_GA_TRACKING_ID;
+    delete import.meta.env.VITE_GA_TRACKING_ID;
   });
 
   afterEach(() => {

@@ -17,7 +17,7 @@ const AdminRoute = ({ children }) => {
         const user = localStorage.getItem('user');
         
         // Use environment variable for admin email (fallback to default for development)
-        const expectedAdminEmail = process.env.REACT_APP_ADMIN_EMAIL || 'trailverseteam@gmail.com';
+        const expectedAdminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'trailverseteam@gmail.com';
         if (adminAuth === 'true' && adminEmail === expectedAdminEmail) {
           // If we have localStorage admin auth, verify JWT auth as well
           if (token && user) {
