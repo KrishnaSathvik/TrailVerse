@@ -867,11 +867,23 @@ const ProfilePage = () => {
                     Cancel
                   </Button>
                   <Button
-                    onClick={() => {
-                      // Save - keep the new avatar
-                      setIsChangingAvatar(false);
-                      setOriginalAvatar(null);
-                      showToast('Avatar updated! Click "Edit Profile" to save your profile.', 'success');
+                    onClick={async () => {
+                      try {
+                        // Save - keep the new avatar and save to database immediately
+                        setIsChangingAvatar(false);
+                        setOriginalAvatar(null);
+                        
+                        // Save avatar directly to database
+                        const updateData = {
+                          avatar: profileData.avatar
+                        };
+                        
+                        await userService.updateProfile(updateData);
+                        showToast('Avatar saved successfully!', 'success');
+                      } catch (error) {
+                        console.error('Error saving avatar:', error);
+                        showToast('Failed to save avatar. Please try again.', 'error');
+                      }
                     }}
                     variant="primary"
                     size="sm"
@@ -1060,90 +1072,6 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="space-y-8">
-                    {/* Avatar Selection with Live Preview */}
-                    {isEditing && (
-                      <div className="rounded-2xl p-6"
-                        style={{
-                          backgroundColor: 'var(--surface-hover)',
-                          borderWidth: '1px',
-                          borderColor: 'var(--border)'
-                        }}
-                      >
-                        <label className="block text-lg font-semibold mb-2"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          Customize Your Avatar
-                        </label>
-                        <p className="text-sm mb-4"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          💡 Tip: Use the "Random Avatar" button in your profile header for quick changes!
-                        </p>
-                        
-                        {/* Live Preview Section */}
-                        <div className="mb-6 p-6 rounded-xl text-center"
-                          style={{
-                            backgroundColor: 'var(--surface)',
-                            borderWidth: '2px',
-                            borderColor: 'var(--accent-green)',
-                            borderStyle: 'dashed'
-                          }}
-                        >
-                          <p className="text-sm font-medium mb-4"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            Live Preview
-                          </p>
-                          {profileData.avatar && !profileData.avatar.startsWith('http') ? (
-                            <div
-                              key={`preview-${profileData.avatar}-${profileData.avatarVersion}`}
-                              className="w-20 h-20 lg:w-24 lg:h-24 mx-auto rounded-full ring-4 ring-offset-4 flex items-center justify-center text-3xl lg:text-4xl bg-gradient-to-br from-purple-100 to-blue-100 shadow-lg transition-all duration-300"
-                              style={{ 
-                                backgroundColor: 'var(--surface-hover)',
-                                ringColor: 'var(--accent-green)',
-                                ringOffsetColor: 'var(--bg-primary)'
-                              }}
-                            >
-                              {profileData.avatar}
-                            </div>
-                          ) : (
-                            <img
-                              key={`preview-${profileData.avatar}-${profileData.avatarVersion}`}
-                              src={`${profileData.avatar}${profileData.avatar.includes('?') ? '&' : '?'}v=${profileData.avatarVersion}`}
-                              alt="Avatar Preview"
-                              className="w-20 h-20 lg:w-24 lg:h-24 mx-auto rounded-full ring-4 ring-offset-4 shadow-lg object-cover transition-all duration-300"
-                              style={{ 
-                                ringColor: 'var(--accent-green)',
-                                ringOffsetColor: 'var(--bg-primary)'
-                              }}
-                              loading="lazy"
-                              onError={(e) => {
-                                e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback';
-                              }}
-                            />
-                          )}
-                          <p className="text-xs mt-3"
-                            style={{ color: 'var(--text-tertiary)' }}
-                          >
-                            This is how your avatar will appear
-                          </p>
-                        </div>
-                        
-                        {/* Avatar Selector */}
-                        <AvatarSelector
-                          user={user}
-                          userStats={userStats}
-                          onAvatarChange={(newAvatar) => {
-                            setProfileData(prev => ({ 
-                              ...prev, 
-                              avatar: newAvatar,
-                              avatarVersion: Date.now() // Force image reload
-                            }));
-                          }}
-                        />
-                      </div>
-                    )}
-
                     {/* Personal Information Section */}
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 mb-6">
