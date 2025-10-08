@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Header from '../components/common/Header';
 import { useParks } from '../hooks/useParks';
+import { useTheme } from '../context/ThemeContext';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -68,6 +69,7 @@ const MapController = ({ center, zoom }) => {
 
 const MapPage = () => {
   const { data: allParks, isLoading } = useParks();
+  const { isDark } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPark, setSelectedPark] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false); // Start with map visible on mobile
@@ -236,9 +238,13 @@ const MapPage = () => {
 
   // Map tile layers
   const tileLayerUrls = {
-    street: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    street: isDark 
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+    terrain: isDark
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
   };
 
   return (

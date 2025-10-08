@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Navigation, ZoomIn, ZoomOut } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 import 'leaflet/dist/leaflet.css';
 
 // Custom marker icon
@@ -52,6 +53,7 @@ const InteractiveMap = ({
   selectedPark,
   className = ""
 }) => {
+  const { isDark } = useTheme();
   const [mapCenter, setMapCenter] = useState(center);
   const [mapZoom, setMapZoom] = useState(zoom);
 
@@ -66,7 +68,10 @@ const InteractiveMap = ({
         <MapController center={mapCenter} zoom={mapZoom} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url={isDark 
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          }
         />
         
         {parks.map(park => (
