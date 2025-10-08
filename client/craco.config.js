@@ -1,31 +1,24 @@
-const TerserPlugin = require('terser-webpack-plugin');
+const path = require('path');
 
-module.exports = {
-  webpack: {
-    configure: (config) => {
-      // Remove ForkTsChecker (which drags schema-utils v2 behavior)
-      config.plugins = config.plugins.filter(
-        (p) => !(p && p.constructor && p.constructor.name === 'ForkTsCheckerWebpackPlugin')
-      );
-
-      // Ensure modern terser
-      if (config.optimization && Array.isArray(config.optimization.minimizer)) {
-        config.optimization.minimizer = config.optimization.minimizer.map((m) => {
-          if (m && m.constructor && m.constructor.name === 'TerserPlugin') {
-            return new TerserPlugin({
-              parallel: true,
-              extractComments: false,
-              terserOptions: {
-                compress: { comparisons: false },
-                mangle: true,
-                format: { comments: false }
-              }
-            });
-          }
-          return m;
-        });
-      }
-      return config;
-    }
+module.exports = function override(config, env) {
+  const isProduction = env === 'production';
+  
+  // Disable fork-ts-checker-webpack-plugin to avoid ajv-keywords conflicts
+  if (config.plugins) {
+    config.plugins = config.plugins.filter(plugin => {
+      return plugin.constructor.name !== 'ForkTsCheckerWebpackPlugin';
+    });
   }
+  
+  if (isProduction) {
+    // Disable terser-webpack-plugin to avoid ajv-keywords formatMinimum error
+    config.optimization = {
+      ...config.optimization,
+      minimizer: config.optimization.minimizer.filter(plugin => {
+        return plugin.constructor.name !== 'TerserPlugin';
+      }),
+    };
+  }
+  
+  return config;
 };
