@@ -21,6 +21,7 @@
   
   /* Accents */
   --accent-green: #22c55e;
+  --accent-green-dark: #16a34a;
   --accent-green-light: rgba(34, 197, 94, 0.15);
   --accent-blue: #0ea5e9;
   --accent-orange: #f97316;
@@ -58,6 +59,7 @@
   
   /* Accents - Travel-inspired colors */
   --accent-green: #059669;  /* Deep emerald green (forest/nature) */
+  --accent-green-dark: #047857;  /* Darker green for hover states */
   --accent-green-light: rgba(5, 150, 105, 0.15);  /* Light green background */
   --accent-blue: #0369A1;   /* Deep sky blue (ocean/sky) */
   --accent-orange: #EA580C; /* Warm orange (sunset/adventure) */
@@ -81,6 +83,22 @@ body {
 
 * {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Exclude Button component from color transitions to prevent text visibility issues */
+button[data-button-component="true"], 
+button[data-button-component="true"] *, 
+a[data-button-component="true"], 
+a[data-button-component="true"] * {
+  transition: background-color 0.2s ease, border-color 0.2s ease !important;
+}
+
+/* Ensure Button component text is always visible and inherits color */
+button[data-button-component="true"], 
+button[data-button-component="true"] *, 
+a[data-button-component="true"], 
+a[data-button-component="true"] * {
+  color: inherit !important;
 }
 
 /* Disable transitions on theme change to prevent flash */
@@ -134,7 +152,7 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Button styles - All buttons now use consistent green and white styling */
+/* Button styles - Utility classes for buttons (main styling is in Button component) */
 .btn-primary {
   background: var(--accent-green);
   color: #ffffff;
@@ -146,16 +164,16 @@ body {
 }
 
 .btn-primary:hover {
-  background: #047857;
-  border-color: #047857;
+  background: var(--accent-green-dark);
+  border-color: var(--accent-green-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {
-  background: var(--accent-green);
-  color: #ffffff;
-  border: 1px solid var(--accent-green);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 24px;
   font-weight: 600;
@@ -163,13 +181,48 @@ body {
 }
 
 .btn-secondary:hover {
-  background: #047857;
-  border-color: #047857;
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
 
-/* Button styling is now handled entirely by the Button component's internal CSS */
+.btn-outline {
+  background: transparent;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: var(--accent-green);
+  color: #ffffff;
+  border-color: var(--accent-green);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-danger {
+  background: var(--error-red);
+  color: #ffffff;
+  border: 1px solid var(--error-red);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Note: Primary button styling is handled by the Button component */
 
 /* Prose styles for blog content */
 .prose {
