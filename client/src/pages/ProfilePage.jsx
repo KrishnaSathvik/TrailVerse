@@ -784,17 +784,14 @@ const ProfilePage = () => {
                   )}
                   {activeTab === 'profile' && isEditing && (
                     <div className="absolute -bottom-2 -right-2">
-                      <button
+                      <Button
                         onClick={() => setIsEditing(false)}
-                        className="p-2 rounded-xl font-semibold transition hover:opacity-80 shadow-lg"
-                        style={{
-                          backgroundColor: 'var(--accent-green)',
-                          color: 'white'
-                        }}
+                        variant="primary"
+                        size="xs"
+                        icon={Edit2}
+                        className="!p-2 !rounded-xl"
                         title="Change Avatar Style"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
+                      />
                     </div>
                   )}
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Cookie, Shield, Settings } from 'lucide-react';
+import Button from './Button';
 
 const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
@@ -138,47 +139,28 @@ const CookieConsent = () => {
 
               {/* Actions */}
               <div className="flex gap-2 mt-4">
-                <button
+                <Button
                   onClick={handleAcceptAll}
-                  className="flex-1 px-3 py-2 rounded-full text-sm font-semibold shadow-lg hover:shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--accent-green)',
-                    color: '#ffffff !important',
-                    boxShadow: '0 4px 6px rgba(34, 197, 94, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'var(--accent-green-dark)';
-                    e.target.style.setProperty('color', '#ffffff', 'important');
-                    e.target.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'var(--accent-green)';
-                    e.target.style.setProperty('color', '#ffffff', 'important');
-                    e.target.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.3)';
-                  }}
+                  variant="primary"
+                  size="sm"
+                  className="flex-1"
                 >
                   Accept
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleRejectAll}
-                  className="px-3 py-2 rounded-full text-sm font-semibold border transition hover:bg-white/5"
-                  style={{
-                    color: 'var(--text-primary)',
-                    borderColor: 'var(--border)'
-                  }}
+                  variant="secondary"
+                  size="sm"
                 >
                   Reject
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setShowSettings(true)}
-                  className="px-3 py-2 rounded-full text-sm font-semibold border transition hover:bg-white/5"
-                  style={{
-                    color: 'var(--text-primary)',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
+                  variant="secondary"
+                  size="sm"
+                  icon={Settings}
+                  className="px-3"
+                />
               </div>
             </div>
           ) : (
@@ -372,37 +354,21 @@ const CookieConsent = () => {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={handleAcceptSelected}
-                  className="flex-1 px-3 py-2 rounded-full text-sm font-semibold shadow-lg hover:shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--accent-green)',
-                    color: '#ffffff !important',
-                    boxShadow: '0 4px 6px rgba(34, 197, 94, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'var(--accent-green-dark)';
-                    e.target.style.setProperty('color', '#ffffff', 'important');
-                    e.target.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'var(--accent-green)';
-                    e.target.style.setProperty('color', '#ffffff', 'important');
-                    e.target.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.3)';
-                  }}
+                  variant="primary"
+                  size="sm"
+                  className="flex-1"
                 >
                   Save
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setShowSettings(false)}
-                  className="px-3 py-2 rounded-full text-sm font-semibold border transition hover:bg-white/5"
-                  style={{
-                    color: 'var(--text-primary)',
-                    borderColor: 'var(--border)'
-                  }}
+                  variant="secondary"
+                  size="sm"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

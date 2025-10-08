@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
+import Button from '../components/common/Button';
 import { useTheme } from '../context/ThemeContext';
 import { ChevronDown, Mail } from 'lucide-react';
 
@@ -196,25 +197,14 @@ const FAQPage = () => {
               >
                 Can&apos;t find the answer you&apos;re looking for? Our support team is here to help you plan your perfect National Park adventure.
               </p>
-              <a
+              <Button
                 href="mailto:trailverseteam@gmail.com"
-                className="inline-flex items-center gap-2 rounded-full text-white px-6 py-3 text-base font-semibold transition shadow-lg hover:shadow-xl"
-                style={{
-                  backgroundColor: 'var(--accent-green)',
-                  boxShadow: '0 4px 6px rgba(34, 197, 94, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = 'var(--accent-green-dark)';
-                  e.target.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'var(--accent-green)';
-                  e.target.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.3)';
-                }}
+                variant="primary"
+                size="md"
+                icon={Mail}
               >
-                <Mail className="h-4 w-4" />
                 Contact Support
-              </a>
+              </Button>
             </div>
           </div>
         </section>
