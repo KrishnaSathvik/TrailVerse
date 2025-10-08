@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
+import Button from '../components/common/Button';
 import { useTheme } from '../context/ThemeContext';
 import { 
   Compass, Mountain, Camera, MapPin, Award, 
@@ -157,27 +158,24 @@ const AboutPage = () => {
                       A travel enthusiast who loves exploring new places and sharing my experiences with others. From beautiful destinations to insightful travel tips, my blog is the perfect place to find inspiration for your next adventure. 🏞️ <strong>16 National Parks Explored</strong> • 📸 <strong>Nikon Z6ii Astrophotographer</strong> • 🗺️ <strong>Google Level 8 Contributor</strong>
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4">
-                      <button
+                      <Button
                         onClick={() => navigate('/explore')}
-                        className="inline-flex items-center gap-2 rounded-full bg-forest-500 hover:bg-forest-600 text-white px-6 py-3 text-base font-semibold transition shadow-lg hover:shadow-forest-500/50"
+                        variant="primary"
+                        size="md"
+                        icon={Compass}
                       >
-                        <Compass className="h-5 w-5" />
                         Explore Parks
-                      </button>
-                      <a
+                      </Button>
+                      <Button
                         href="https://instagram.com/astrobykrishna"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-base font-medium ring-1 backdrop-blur hover:bg-white/5 transition"
-                        style={{
-                          backgroundColor: 'var(--surface)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)'
-                        }}
+                        variant="secondary"
+                        size="md"
+                        icon={Instagram}
                       >
-                        <Instagram className="h-5 w-5" />
                         Follow Me
-                      </a>
+                      </Button>
                     </div>
                   </div>
 
