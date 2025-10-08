@@ -23,6 +23,7 @@ const BlogPage = () => {
   const [popularPosts, setPopularPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   
   // Responsive posts per page: 3 on mobile, 6 on desktop
@@ -50,6 +51,7 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
       try {
         // Clear cache to ensure fresh data
         blogService.clearBlogCache();
@@ -95,6 +97,7 @@ const BlogPage = () => {
         setTotalPages(data.pages || 1);
       } catch (error) {
         console.error('Error fetching blog data:', error);
+        setError('Failed to load blog posts. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -365,14 +368,36 @@ const BlogPage = () => {
                 </p>
               </div>
 
+              {/* Error State */}
+              {error && (
+                <div className="text-center py-24">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                    <X className="h-8 w-8 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Something went wrong
+                  </h3>
+                  <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+                    {error}
+                  </p>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="primary"
+                    size="md"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              )}
+
               {/* Posts Grid */}
-              {posts.length > 0 ? (
+              {!error && posts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                   {posts.map((post) => (
                     <BlogCard key={post._id} post={post} />
                   ))}
                 </div>
-              ) : (
+              ) : !error ? (
                 <div className="text-center py-24">
                   <Search className="h-16 w-16 mx-auto mb-4"
                     style={{ color: 'var(--text-tertiary)' }}
@@ -388,10 +413,10 @@ const BlogPage = () => {
                     Try adjusting your search or filters
                   </p>
                 </div>
-              )}
+              ) : null}
 
               {/* Pagination */}
-              {totalPages > 1 && (
+              {!error && totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2">
                   <Button
                     onClick={() => handlePageChange(currentPage - 1)}

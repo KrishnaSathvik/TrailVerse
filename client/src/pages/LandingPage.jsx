@@ -68,7 +68,7 @@ const LandingPage = () => {
     alternateName: 'TrailVerse',
     url: 'https://www.nationalparksexplorerusa.com',
     logo: 'https://www.nationalparksexplorerusa.com/logo.png',
-    description: 'Your guide to exploring America\'s 63 National Parks',
+    description: 'Your guide to exploring America\'s 470+ National Parks & Sites',
     sameAs: [
       'https://www.facebook.com/npeusa',
       'https://twitter.com/npeusa',
@@ -84,8 +84,8 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO
-        title="TrailVerse - Explore America's 63 National Parks"
-        description="Discover, plan, and explore America's 63 National Parks with AI-powered trip planning, interactive maps, real-time weather, events calendar, and expert travel guides. Start your adventure today!"
+        title="TrailVerse - Explore America's 470+ National Parks & Sites"
+        description="Discover, plan, and explore America's 470+ National Parks, Monuments, Historic Sites, and more with AI-powered trip planning, interactive maps, real-time weather, events calendar, and expert travel guides. Start your adventure today!"
         keywords="national parks USA, visit national parks, national park guide, park explorer, yellowstone, yosemite, grand canyon, zion, acadia, park planning, AI trip planner, hiking trails, camping, wildlife"
         url={import.meta.env.VITE_WEBSITE_URL || "https://www.nationalparksexplorerusa.com"}
         image="https://www.nationalparksexplorerusa.com/images/og-home.jpg"
@@ -139,8 +139,8 @@ const LandingPage = () => {
 
           {/* Subheadline */}
           <p className="mx-auto mt-6 max-w-4xl text-lg sm:text-xl leading-relaxed text-white/90">
-            Explore all 63 National Parks with AI-powered guidance, real-time weather,<br />
-            and personalized recommendations. Your perfect adventure starts here.
+            Explore 470+ National Parks, Monuments, and Historic Sites with AI-powered guidance,<br />
+            real-time weather, and personalized recommendations. Your perfect adventure starts here.
           </p>
 
 
@@ -251,7 +251,7 @@ const LandingPage = () => {
                   title: 'Discover',
                   phase: 'Exploration Phase',
                   icon: Compass,
-                  description: 'Browse all 63 National Parks with stunning imagery and detailed information.',
+                  description: 'Browse 470+ National Parks, Monuments, and Historic Sites with stunning imagery and detailed information.',
                   time: '2-3 minutes',
                   progress: 25,
                   color: 'text-forest-400'

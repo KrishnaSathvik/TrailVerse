@@ -11,28 +11,76 @@ const FAQPage = () => {
 
   const faqItems = [
     {
-      question: "How does AI trip planning work?",
-      answer: "Our AI analyzes your preferences, travel dates, and interests to create personalized itineraries for National Parks. It considers weather, crowds, activities, and optimal routes to suggest the perfect adventure for you."
+      question: "What is TrailVerse?",
+      answer: "TrailVerse is your comprehensive guide to exploring America's 470+ National Parks, Monuments, Historic Sites, and other protected areas. We combine AI-powered trip planning, real-time weather data, interactive maps, and community insights to help you discover and plan the perfect park adventure."
     },
     {
-      question: "Is TrailVerse completely free?",
-      answer: "Yes! TrailVerse is completely free to use. We believe everyone should have access to amazing National Park experiences without barriers."
+      question: "How does the AI trip planning work?",
+      answer: "Our AI analyzes your preferences, travel dates, interests, and available time to create personalized itineraries tailored to your style. It considers factors like weather conditions, seasonal attractions, crowd levels, trail difficulty, and optimal routes to suggest the perfect adventure. Simply provide your preferences, and let our AI craft a detailed plan for you."
     },
     {
-      question: "Can I use this for group trips?",
-      answer: "Absolutely! Our AI trip planner can accommodate solo travelers, couples, families, and large groups. Just specify your group size and preferences when planning."
+      question: "How do I get started with TrailVerse?",
+      answer: "Getting started is easy! Simply create a free account by clicking the 'Sign Up' button, enter your email and create a password. Once logged in, you can start exploring parks, saving favorites, using AI trip planning, viewing real-time weather, checking out NPS events, and reading travel guides. No credit card required to start exploring!"
     },
     {
-      question: "Does it work offline?",
-      answer: "While the AI planning requires an internet connection, you can download your itineraries and park information for offline access during your adventures."
+      question: "How do I save and track my favorite parks?",
+      answer: "Simply click the heart icon on any park card to add it to your favorites. You can access all your saved parks from your profile dashboard, where you can also mark parks as visited, track your journey across America's parks, and use your favorites for future trip planning."
+    },
+    {
+      question: "What parks are included?",
+      answer: "TrailVerse includes all 470+ units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, Preserves, and more. From iconic destinations like Yellowstone and Yosemite to hidden gems and historic sites, we cover them all."
     },
     {
       question: "How accurate is the weather information?",
-      answer: "We provide real-time weather data from reliable sources and update it every hour. Weather conditions can change quickly in National Parks, so we recommend checking updates regularly."
+      answer: "We provide real-time weather data from OpenWeather API, updated regularly throughout the day. However, weather conditions in National Parks can change rapidly, especially in mountainous areas. We recommend checking the official National Park Service website and local conditions before your trip for the most current information."
     },
     {
-      question: "What makes TrailVerse different?",
-      answer: "TrailVerse combines AI-powered trip planning with real-time data, community insights, and deep knowledge of all 63 National Parks to create truly personalized experiences you can't find anywhere else."
+      question: "Can I use TrailVerse offline?",
+      answer: "While most features require an internet connection for real-time data, AI planning, and weather updates, you can save your AI-generated itineraries and park information for offline reference. We recommend taking screenshots or downloading important trip details before heading to areas with limited connectivity."
+    },
+    {
+      question: "How do I find parks near me?",
+      answer: "Use our interactive Map page to explore parks by location. You can search by state, view parks on the map, filter by park type (National Park, Monument, Historic Site, etc.), and find parks closest to your location or desired destination."
+    },
+    {
+      question: "What are the park events and how do I use them?",
+      answer: "Our Events page displays live events from the National Park Service, including ranger programs, guided tours, educational activities, special celebrations, and seasonal events. You can filter events by date, park, or activity type, and save events you're interested in to plan your visit around special programs."
+    },
+    {
+      question: "How do I plan a trip with AI?",
+      answer: "Navigate to any park's detail page and look for the AI Trip Planning feature. Select your travel dates, duration, interests (hiking, photography, wildlife, history, etc.), fitness level, and other preferences. Our AI will generate a detailed day-by-day itinerary with activities, trails, viewpoints, and timing recommendations customized for you."
+    },
+    {
+      question: "Can I read travel guides and tips?",
+      answer: "Yes! Our Blog section features comprehensive travel guides, park-specific tips, photography advice, seasonal recommendations, packing lists, safety information, and insider insights. These articles are curated to help you make the most of your National Park adventures."
+    },
+    {
+      question: "How do I write reviews or share my experiences?",
+      answer: "After visiting a park, you can share your experience by leaving a review on the park's detail page. Share photos, rate your experience, provide tips for other visitors, and help build a community of National Park explorers. Your honest feedback helps others plan better trips."
+    },
+    {
+      question: "What makes TrailVerse different from other park websites?",
+      answer: "TrailVerse uniquely combines AI-powered personalized trip planning, real-time weather data, live NPS events, interactive maps, community reviews, and expert travel guides all in one modern, easy-to-use platform. Unlike official park websites that focus on one park at a time, we help you discover, compare, and plan visits across all 470+ parks with intelligent recommendations."
+    },
+    {
+      question: "Is my data safe and private?",
+      answer: "Absolutely. We take your privacy seriously and never sell your personal information. Your account data, favorites, and preferences are securely stored and used only to enhance your TrailVerse experience. Read our Privacy Policy for complete details on how we protect and use your information."
+    },
+    {
+      question: "How often is park information updated?",
+      answer: "We sync with the National Park Service API regularly to ensure park information, operating hours, alerts, and event data are current. Weather data updates multiple times per day. However, always check the official park website before traveling for the most critical updates like road closures or emergency alerts."
+    },
+    {
+      question: "Can I suggest features or report issues?",
+      answer: "Yes! We love hearing from our community. If you have feature suggestions, find bugs, or want to provide feedback, please contact us at trailverseteam@gmail.com. Your input helps us improve TrailVerse for everyone."
+    },
+    {
+      question: "Do you have a mobile app?",
+      answer: "TrailVerse is currently a responsive web application that works beautifully on mobile browsers, tablets, and desktops. You can access it from any device with a web browser. We may develop native mobile apps in the future based on user demand."
+    },
+    {
+      question: "How do I delete my account?",
+      answer: "If you wish to delete your account and all associated data, please contact us at trailverseteam@gmail.com with your request. We'll process your deletion promptly in accordance with our Privacy Policy."
     }
   ];
 
@@ -150,7 +198,19 @@ const FAQPage = () => {
               </p>
               <a
                 href="mailto:trailverseteam@gmail.com"
-                className="inline-flex items-center gap-2 rounded-full bg-forest-500 hover:bg-forest-600 text-white px-6 py-3 text-base font-semibold transition shadow-lg hover:shadow-forest-500/50"
+                className="inline-flex items-center gap-2 rounded-full text-white px-6 py-3 text-base font-semibold transition shadow-lg hover:shadow-xl"
+                style={{
+                  backgroundColor: 'var(--accent-green)',
+                  boxShadow: '0 4px 6px rgba(34, 197, 94, 0.3)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = 'var(--accent-green-dark)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'var(--accent-green)';
+                  e.target.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.3)';
+                }}
               >
                 <Mail className="h-4 w-4" />
                 Contact Support

@@ -7,7 +7,7 @@ const API_BASE = 'https://api.openweathermap.org/data/2.5';
 
 // Debug: Log API key status (remove in production)
 if (!OPENWEATHER_API_KEY) {
-  console.warn('⚠️ REACT_APP_OPENWEATHER_API_KEY is not set! Weather data will fall back to sample data.');
+  console.warn('⚠️ VITE_OPENWEATHER_API_KEY is not set! Weather data will fall back to sample data.');
   console.warn('Environment check:', {
     NODE_ENV: process.env.NODE_ENV,
     hasKey: !!import.meta.env.VITE_OPENWEATHER_API_KEY,

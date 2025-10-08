@@ -5,10 +5,12 @@ import {
   Mail, Globe, Edit2, Save, X, Trash2,
   Shield, ChevronRight,
   Download, Star, Clock, Plus,
-  CalendarDays, BookOpen, Compass
+  CalendarDays, BookOpen, Compass,
+  Eye, EyeOff, CheckCircle, AlertCircle, Lock
 } from 'lucide-react';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import Button from '../components/common/Button';
 // import OptimizedImage from '../components/common/OptimizedImage';
 import SavedParks from '../components/profile/SavedParks';
 import VisitedParks from '../components/profile/VisitedParks';
@@ -33,7 +35,7 @@ const ProfilePage = () => {
   const { favorites, removeFavorite, loading: favoritesLoading } = useFavorites();
   const { visitedParks, removeVisited, loading: visitedParksLoading } = useVisitedParks();
   const { trips } = useTrips();
-  const [activeTab, setActiveTab] = useState(null);
+  const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastLoadTime, setLastLoadTime] = useState(0);
@@ -75,6 +77,10 @@ const ProfilePage = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState({});
   const [deleteForm, setDeleteForm] = useState({
     password: '',
     confirmation: ''
@@ -351,6 +357,14 @@ const ProfilePage = () => {
         return;
       }
       
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Received non-JSON response:', contentType);
+        setEmailError('Email preferences service is temporarily unavailable');
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -422,6 +436,15 @@ const ProfilePage = () => {
         return;
       }
       
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Received non-JSON response while saving:', contentType);
+        setEmailError('Email preferences service is temporarily unavailable');
+        showToast('Email service temporarily unavailable', 'error');
+        return;
+      }
+
       const data = await response.json();
       
       if (data.success) {
@@ -463,26 +486,51 @@ const ProfilePage = () => {
     }
   };
 
+  // Password strength helper function
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, label: '', color: '' };
+    
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.length >= 12) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+    if (strength <= 2) return { strength, label: 'Weak', color: 'var(--error)' };
+    if (strength <= 3) return { strength, label: 'Fair', color: 'var(--warning)' };
+    if (strength <= 4) return { strength, label: 'Good', color: 'var(--accent-green)' };
+    return { strength, label: 'Strong', color: 'var(--accent-green)' };
+  };
+
   // Privacy & Security functions
   const handleChangePassword = async () => {
     try {
       setPrivacyLoading(true);
       setPrivacyError('');
       setPrivacyMessage('');
+      const newErrors = {};
 
       // Validate form
-      if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-        setPrivacyError('Please fill in all password fields');
-        return;
+      if (!passwordForm.currentPassword) {
+        newErrors.currentPassword = 'Current password is required';
       }
 
-      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-        setPrivacyError('New passwords do not match');
-        return;
+      if (!passwordForm.newPassword) {
+        newErrors.newPassword = 'New password is required';
+      } else if (passwordForm.newPassword.length < 8) {
+        newErrors.newPassword = 'Password must be at least 8 characters';
       }
 
-      if (passwordForm.newPassword.length < 8) {
-        setPrivacyError('New password must be at least 8 characters long');
+      if (!passwordForm.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your new password';
+      } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setPasswordErrors(newErrors);
+        setPrivacyError('Please fix the errors below');
         return;
       }
 
@@ -503,7 +551,11 @@ const ProfilePage = () => {
       if (data.success) {
         setPrivacyMessage('Password changed successfully!');
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setPasswordErrors({});
         setShowChangePasswordModal(false);
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
         showToast('Password updated successfully', 'success');
         
         // Clear success message after 3 seconds
@@ -516,6 +568,15 @@ const ProfilePage = () => {
       console.error('Error changing password:', error);
     } finally {
       setPrivacyLoading(false);
+    }
+  };
+
+  // Handle password field changes
+  const handlePasswordFieldChange = (field, value) => {
+    setPasswordForm({ ...passwordForm, [field]: value });
+    // Clear error for this field
+    if (passwordErrors[field]) {
+      setPasswordErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -686,7 +747,7 @@ const ProfilePage = () => {
 
       {/* Main Content */}
       <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Enhanced Profile Header */}
           <div className="rounded-3xl p-6 lg:p-8 backdrop-blur mb-8 shadow-xl"
             style={{
@@ -810,73 +871,97 @@ const ProfilePage = () => {
           </div>
 
           {/* Enhanced Tab Navigation */}
-          <div className="mb-8">
-            {/* Mobile: Horizontal scroll */}
-            <div className="flex overflow-x-auto gap-3 pb-2 lg:hidden scrollbar-hide">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsEditing(false);
-                      clearErrorStates();
-                    }}
-                    className={`flex-shrink-0 flex flex-col items-center gap-1 p-3 rounded-xl font-semibold transition min-w-[80px] ${
-                      activeTab === tab.id 
-                        ? 'scale-105 shadow-lg' 
-                        : 'hover:scale-102'
-                    }`}
-                    style={{
-                      backgroundColor: activeTab === tab.id ? 'var(--accent-green)' : 'var(--surface)',
-                      borderWidth: '2px',
-                      borderColor: activeTab === tab.id ? 'var(--accent-green)' : 'var(--border)',
-                      color: activeTab === tab.id ? 'white' : 'var(--text-secondary)',
-                      boxShadow: activeTab === tab.id ? 'var(--shadow-lg)' : 'var(--shadow)'
-                    }}
-                  >
-                    <Icon className="h-5 w-5" style={{ color: activeTab === tab.id ? 'white' : 'var(--text-secondary)' }} />
-                    <span className="text-xs text-center leading-tight font-medium">
-                      {tab.label}
-                    </span>
-                  </button>
-                );
-              })}
+          <div className="mb-8 mt-6 profile-tab-container">
+            {/* Mobile: Grid layout for better fit */}
+            <div className="lg:hidden px-2">
+              <div className="grid grid-cols-3 gap-2 w-full">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsEditing(false);
+                        clearErrorStates();
+                      }}
+                      className={`profile-tab-button flex flex-col items-center justify-center gap-1 p-2 rounded-lg font-medium transition-all duration-200 min-h-[70px] w-full ${
+                        isActive 
+                          ? 'shadow-md profile-tab-active' 
+                          : 'hover:shadow-sm profile-tab-inactive'
+                      }`}
+                      style={{
+                        backgroundColor: isActive ? 'var(--accent-green)' : 'var(--surface)',
+                        borderWidth: '1px',
+                        borderColor: isActive ? 'var(--accent-green)' : 'var(--border)',
+                        boxShadow: isActive ? 'var(--shadow-md)' : 'var(--shadow-sm)'
+                      }}
+                    >
+                      <Icon 
+                        className="h-4 w-4 flex-shrink-0" 
+                        style={{
+                          color: isActive ? '#ffffff' : 'var(--text-primary)'
+                        }}
+                      />
+                      <span 
+                        className="text-xs text-center leading-tight font-medium px-1"
+                        style={{
+                          color: isActive ? '#ffffff' : 'var(--text-primary)'
+                        }}
+                      >
+                        {tab.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             
-            {/* Desktop: Grid layout */}
-            <div className="hidden lg:grid lg:grid-cols-3 xl:grid-cols-7 gap-4">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsEditing(false);
-                      clearErrorStates();
-                    }}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl font-semibold transition hover:opacity-80 ${
-                      activeTab === tab.id 
-                        ? 'shadow-xl' 
-                        : 'hover:shadow-lg'
-                    }`}
-                    style={{
-                      backgroundColor: activeTab === tab.id ? 'var(--accent-green)' : 'var(--surface)',
-                      borderWidth: '2px',
-                      borderColor: activeTab === tab.id ? 'var(--accent-green)' : 'var(--border)',
-                      color: activeTab === tab.id ? 'white' : 'var(--text-secondary)',
-                      boxShadow: activeTab === tab.id ? 'var(--shadow-xl)' : 'var(--shadow)'
-                    }}
-                  >
-                    <Icon className="h-5 w-5" style={{ color: activeTab === tab.id ? 'white' : 'var(--text-secondary)' }} />
-                    <span className="text-sm text-center leading-tight font-medium">
-                      {tab.label}
-                    </span>
-                  </button>
-                );
-              })}
+            {/* Desktop tabs (single row, center-when-fit, scroll-when-not) */}
+            <div className="hidden lg:block overflow-x-auto scrollbar-hide">
+              <div className="profile-tab-row w-max mx-auto flex flex-nowrap gap-3 px-4">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setIsEditing(false);
+                        clearErrorStates();
+                      }}
+                      className={`profile-tab-button rounded-2xl font-semibold transition-all duration-200 ${
+                        isActive 
+                          ? 'shadow-lg profile-tab-active' 
+                          : 'hover:shadow-md profile-tab-inactive'
+                      }`}
+                      style={{
+                        backgroundColor: isActive ? 'var(--accent-green)' : 'var(--surface)',
+                        borderWidth: '1px',
+                        borderColor: isActive ? 'var(--accent-green)' : 'var(--border)',
+                        boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)'
+                      }}
+                    >
+                      <Icon 
+                        className="h-5 w-5 mb-2" 
+                        style={{
+                          color: isActive ? '#ffffff' : 'var(--accent-green)'
+                        }}
+                      />
+                      <span 
+                        className="text-base text-center"
+                        style={{
+                          color: isActive ? '#ffffff' : 'var(--text-tertiary)'
+                        }}
+                      >
+                        {tab.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -915,9 +1000,9 @@ const ProfilePage = () => {
                     backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
                   }}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                      <h3 className="text-3xl font-bold mb-2"
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div className="flex-1">
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         Profile Information
@@ -929,45 +1014,35 @@ const ProfilePage = () => {
                       </p>
                     </div>
                     {!isEditing ? (
-                      <button
+                      <Button
                         onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition hover:opacity-80"
-                        style={{
-                          backgroundColor: 'var(--accent-green)',
-                          color: 'white',
-                          boxShadow: 'var(--shadow-lg)'
-                        }}
+                        variant="primary"
+                        size="md"
+                        icon={Edit2}
+                        className="w-full sm:w-auto"
                       >
-                        <Edit2 className="h-5 w-5" />
                         Edit Profile
-                      </button>
+                      </Button>
                     ) : (
-                      <div className="flex gap-3">
-                        <button
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
                           onClick={handleCancelEdit}
-                          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition hover:opacity-80"
-                          style={{
-                            backgroundColor: 'var(--surface-hover)',
-                            borderWidth: '2px',
-                            borderColor: 'var(--border)',
-                            color: 'var(--text-secondary)'
-                          }}
+                          variant="secondary"
+                          size="md"
+                          icon={X}
+                          className="w-full sm:w-auto"
                         >
-                          <X className="h-5 w-5" />
                           Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={handleSaveProfile}
-                          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition hover:opacity-80"
-                          style={{
-                            backgroundColor: 'var(--accent-green)',
-                            color: 'white',
-                            boxShadow: 'var(--shadow-lg)'
-                          }}
+                          variant="primary"
+                          size="md"
+                          icon={Save}
+                          className="w-full sm:w-auto"
                         >
-                          <Save className="h-5 w-5" />
                           Save Changes
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1202,10 +1277,17 @@ const ProfilePage = () => {
 
               {/* Unified Favorites Tab */}
               {activeTab === 'favorites' && (
-                <div className="space-y-8">
+                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
+                  }}
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                      <h3 className="text-3xl font-bold mb-2"
+                    <div className="flex-1">
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         All Favorites
@@ -1328,10 +1410,17 @@ const ProfilePage = () => {
 
               {/* Adventures Tab - Combined Visited Parks and Trips */}
               {activeTab === 'adventures' && (
-                <div className="space-y-8">
-                  <div className="mb-8">
-                    <div>
-                      <h3 className="text-3xl font-bold mb-2"
+                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex-1">
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         Your Adventures
@@ -1427,42 +1516,94 @@ const ProfilePage = () => {
 
               {/* Reviews Tab */}
               {activeTab === 'reviews' && (
-                <div>
-                  <UserReviews />
+                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex-1">
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-2"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        My Reviews
+                      </h3>
+                      <p className="text-sm"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Share your experiences and help other explorers discover amazing parks
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Reviews Content */}
+                  <div className="rounded-2xl p-6 backdrop-blur"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.1 }}>
+                          <Star className="h-6 w-6" style={{ color: 'var(--accent-orange)' }} />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                            Park Reviews
+                          </h4>
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            Your reviews help others plan their adventures
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <UserReviews />
+                  </div>
                 </div>
               )}
 
               {/* Testimonials Tab */}
               {activeTab === 'testimonials' && (
-                <div>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <div>
-                      <h3 className="text-2xl font-bold"
+                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex-1">
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         Testimonials
                       </h3>
-                      <p className="text-sm mt-1"
+                      <p className="text-sm"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         Share your experiences and help other explorers
                       </p>
                     </div>
-                    <button
+                    <Button
                       onClick={() => {
                         // Trigger the testimonial form in UserTestimonials component
                         const event = new CustomEvent('openTestimonialForm');
                         window.dispatchEvent(event);
                       }}
-                      className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 w-full sm:w-auto justify-center"
-                      style={{
-                        backgroundColor: 'var(--accent-green)',
-                        color: 'white'
-                      }}
+                      variant="primary"
+                      size="lg"
+                      icon={Plus}
+                      className="w-full sm:w-auto justify-center"
                     >
-                      <Plus className="h-4 w-4" />
                       Submit Testimonial
-                    </button>
+                    </Button>
                   </div>
                   
                   <UserTestimonials />
@@ -1471,9 +1612,31 @@ const ProfilePage = () => {
 
               {/* Settings Tab */}
               {activeTab === 'settings' && (
-                <div className="space-y-6">
+                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex-1">
+                      <h3 className="text-2xl sm:text-3xl font-bold mb-2"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        Settings
+                      </h3>
+                      <p className="text-sm"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Manage your account preferences and privacy settings
+                      </p>
+                    </div>
+                  </div>
 
-                  {/* Notification Settings */}
+                  <div className="space-y-6">
+                    {/* Notification Settings */}
                   <div className="rounded-2xl p-8 backdrop-blur"
                     style={{
                       backgroundColor: 'var(--surface)',
@@ -1720,113 +1883,239 @@ const ProfilePage = () => {
                       </button>
                     </div>
                   </div>
+                  </div>
                 </div>
               )}
           </div>
         </div>
       </section>
 
-      {/* Change Password Modal */}
+      {/* Enhanced Change Password Modal */}
       {showChangePasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md"
-            style={{ backgroundColor: 'var(--surface)' }}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="rounded-2xl p-8 w-full max-w-lg shadow-2xl"
+            style={{ 
+              backgroundColor: 'var(--surface)',
+              borderColor: 'var(--border)',
+              borderWidth: '1px'
+            }}
           >
-            <h3 className="text-xl font-bold mb-4"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Change Password
-            </h3>
-            
-            <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: 'var(--accent-green-light)' }}
+              >
+                <Lock className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
+              </div>
               <div>
-                <label className="block text-sm font-medium mb-2"
+                <h3 className="text-2xl font-bold"
                   style={{ color: 'var(--text-primary)' }}
+                >
+                  Change Password
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Update your account security
+                </p>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {privacyError && (
+              <div 
+                className="mb-4 p-4 rounded-xl border flex items-start gap-3"
+                style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  borderColor: 'var(--error)'
+                }}
+              >
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--error)' }} />
+                <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>{privacyError}</p>
+              </div>
+            )}
+            
+            <div className="space-y-5">
+              {/* Current Password */}
+              <div>
+                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Current Password
                 </label>
-                <input
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{ 
-                    backgroundColor: 'var(--surface-hover)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                  placeholder="Enter current password"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => handlePasswordFieldChange('currentPassword', e.target.value)}
+                    className="w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition"
+                    style={{ 
+                      backgroundColor: 'var(--surface-hover)',
+                      borderColor: passwordErrors.currentPassword ? 'var(--error)' : 'var(--border)',
+                      borderWidth: '1px',
+                      color: 'var(--text-primary)'
+                    }}
+                    placeholder="Enter current password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {passwordErrors.currentPassword && (
+                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error)' }}>
+                    <AlertCircle className="h-3 w-3" />
+                    {passwordErrors.currentPassword}
+                  </p>
+                )}
               </div>
               
+              {/* New Password */}
               <div>
-                <label className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
+                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   New Password
                 </label>
-                <input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{ 
-                    backgroundColor: 'var(--surface-hover)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                  placeholder="Enter new password"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => handlePasswordFieldChange('newPassword', e.target.value)}
+                    className="w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition"
+                    style={{ 
+                      backgroundColor: 'var(--surface-hover)',
+                      borderColor: passwordErrors.newPassword ? 'var(--error)' : 'var(--border)',
+                      borderWidth: '1px',
+                      color: 'var(--text-primary)'
+                    }}
+                    placeholder="Enter new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                {/* Password Strength Indicator */}
+                {passwordForm.newPassword && (() => {
+                  const passwordStrength = getPasswordStrength(passwordForm.newPassword);
+                  return (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          Password strength:
+                        </span>
+                        <span className="text-xs font-medium" style={{ color: passwordStrength.color }}>
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                      <div 
+                        className="h-1.5 rounded-full overflow-hidden"
+                        style={{ backgroundColor: 'var(--surface-hover)' }}
+                      >
+                        <div
+                          className="h-full transition-all duration-300"
+                          style={{
+                            width: `${(passwordStrength.strength / 5) * 100}%`,
+                            backgroundColor: passwordStrength.color
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {passwordErrors.newPassword && (
+                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error)' }}>
+                    <AlertCircle className="h-3 w-3" />
+                    {passwordErrors.newPassword}
+                  </p>
+                )}
               </div>
               
+              {/* Confirm Password */}
               <div>
-                <label className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
+                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Confirm New Password
                 </label>
-                <input
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{ 
-                    backgroundColor: 'var(--surface-hover)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                  placeholder="Confirm new password"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => handlePasswordFieldChange('confirmPassword', e.target.value)}
+                    className="w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition"
+                    style={{ 
+                      backgroundColor: 'var(--surface-hover)',
+                      borderColor: passwordErrors.confirmPassword ? 'var(--error)' : 'var(--border)',
+                      borderWidth: '1px',
+                      color: 'var(--text-primary)'
+                    }}
+                    placeholder="Confirm new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {passwordErrors.confirmPassword && (
+                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error)' }}>
+                    <AlertCircle className="h-3 w-3" />
+                    {passwordErrors.confirmPassword}
+                  </p>
+                )}
+                {!passwordErrors.confirmPassword && passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword && (
+                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--accent-green)' }}>
+                    <CheckCircle className="h-3 w-3" />
+                    Passwords match
+                  </p>
+                )}
               </div>
             </div>
             
-            <div className="flex gap-3 mt-6">
-              <button
+            <div className="flex gap-3 mt-8">
+              <Button
                 onClick={() => {
                   setShowChangePasswordModal(false);
                   setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  setPasswordErrors({});
                   setPrivacyError('');
+                  setShowCurrentPassword(false);
+                  setShowNewPassword(false);
+                  setShowConfirmPassword(false);
                 }}
-                className="flex-1 px-4 py-2 rounded-lg border transition"
-                style={{ 
-                  backgroundColor: 'var(--surface-hover)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
+                variant="secondary"
+                size="lg"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleChangePassword}
                 disabled={privacyLoading}
-                className="flex-1 px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--accent-green)',
-                  color: 'white'
-                }}
+                variant="primary"
+                size="lg"
+                className="flex-1"
+                loading={privacyLoading}
               >
                 {privacyLoading ? 'Changing...' : 'Change Password'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1891,32 +2180,28 @@ const ProfilePage = () => {
             </div>
             
             <div className="flex gap-3 mt-6">
-              <button
+              <Button
                 onClick={() => {
                   setShowDeleteAccountModal(false);
                   setDeleteForm({ password: '', confirmation: '' });
                   setPrivacyError('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg border transition"
-                style={{ 
-                  backgroundColor: 'var(--surface-hover)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
+                variant="secondary"
+                size="lg"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleDeleteAccount}
                 disabled={privacyLoading}
-                className="flex-1 px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--error-red)',
-                  color: 'white'
-                }}
+                variant="danger"
+                size="lg"
+                className="flex-1"
+                loading={privacyLoading}
               >
                 {privacyLoading ? 'Deleting...' : 'Delete Account'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

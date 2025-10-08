@@ -186,7 +186,7 @@ const ExploreParksPage = () => {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: 'Explore National Parks',
-    description: 'Discover America\'s 63 National Parks with detailed guides, photos, activities, and planning tools.',
+    description: 'Discover America\'s 470+ National Parks, Monuments, and Historic Sites with detailed guides, photos, activities, and planning tools.',
     url: 'https://www.nationalparksexplorerusa.com/explore',
     mainEntity: {
       '@type': 'ItemList',
@@ -208,8 +208,8 @@ const ExploreParksPage = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO
-        title="Explore All 63 National Parks - Find Your Perfect Adventure"
-        description="Discover America's 63 National Parks with detailed guides, photos, activities, and planning tools. Find parks by state, activity, or search by name."
+        title="Explore All 470+ National Parks & Sites - Find Your Perfect Adventure"
+        description="Discover America's 470+ National Parks, Monuments, Historic Sites, and more with detailed guides, photos, activities, and planning tools. Find parks by state, activity, or search by name."
         keywords="national parks explorer, USA national parks, park finder, national park guide, hiking, camping, outdoor activities, park activities"
         url="https://www.nationalparksexplorerusa.com/explore"
         type="website"

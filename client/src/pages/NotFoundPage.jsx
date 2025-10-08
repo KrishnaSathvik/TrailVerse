@@ -22,7 +22,7 @@ const NotFoundPage = () => {
     mainEntity: {
       '@type': 'Thing',
       name: 'TrailVerse - National Parks Explorer',
-      description: 'Explore America\'s 63 National Parks'
+      description: 'Explore America\'s 470+ National Parks & Sites'
     }
   };
 
@@ -44,7 +44,7 @@ const NotFoundPage = () => {
         <div 
           className="absolute inset-0 w-full bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: 'url(/background1.png)',
+            backgroundImage: 'url(/background4.png)',
             filter: 'brightness(0.4)',
             width: '100vw',
             left: '50%',
@@ -96,13 +96,6 @@ const NotFoundPage = () => {
               size="lg"
               icon={Home}
               className="backdrop-blur"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderWidth: '1px',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                color: '#1f2937',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-              }}
             >
               Go Home
             </Button>
@@ -114,13 +107,6 @@ const NotFoundPage = () => {
                 size="lg"
                 icon={Compass}
                 className="backdrop-blur"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  borderWidth: '1px',
-                  borderColor: 'rgba(255, 255, 255, 0.3)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
               >
                 Explore Parks
               </Button>
@@ -131,13 +117,6 @@ const NotFoundPage = () => {
                 size="lg"
                 icon={Compass}
                 className="backdrop-blur"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  borderWidth: '1px',
-                  borderColor: 'rgba(255, 255, 255, 0.3)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
               >
                 Get Started
               </Button>

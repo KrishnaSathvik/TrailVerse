@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPosts: 0,
-    totalParks: 63, // This is fixed as there are 63 National Parks
+    totalParks: 470, // Total National Parks, Monuments, Historic Sites, and more
     totalTrips: 0,
     totalTestimonials: 0,
     pendingTestimonials: 0,

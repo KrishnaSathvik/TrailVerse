@@ -21,11 +21,8 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
       <div className="relative">
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="flex items-center gap-2 px-3 py-2 rounded-full transition"
+          className="theme-switcher-toggle flex items-center gap-2 px-3 py-2 rounded-full"
           style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)',
             color: 'var(--text-primary)'
           }}
           aria-label="Toggle theme"
@@ -44,12 +41,7 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
               onClick={() => setShowMenu(false)}
             />
             
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl shadow-xl z-20 p-2 backdrop-blur-xl"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+            <div className="theme-switcher-container absolute right-0 mt-2 w-64 rounded-2xl shadow-xl z-20 p-2"
             >
               <div className="px-3 py-2 mb-2">
                 <p className="text-xs font-semibold uppercase tracking-wider"
@@ -72,16 +64,21 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
                     }}
                     className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition ${
                       isActive
-                        ? 'bg-forest-500/20'
+                        ? ''
                         : 'hover:bg-white/5'
                     }`}
+                    style={{
+                      backgroundColor: isActive ? 'var(--accent-green-light)' : 'transparent'
+                    }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${
-                        isActive
-                          ? 'bg-forest-500/20 text-forest-500'
-                          : 'bg-white/5 text-gray-400'
-                      }`}>
+                      <div 
+                        className="h-9 w-9 rounded-lg flex items-center justify-center"
+                        style={{
+                          backgroundColor: isActive ? 'var(--accent-green-light)' : 'var(--surface-hover)',
+                          color: isActive ? 'var(--accent-green)' : 'var(--text-tertiary)'
+                        }}
+                      >
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="text-left">
@@ -98,7 +95,7 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
                       </div>
                     </div>
                     {isActive && (
-                      <Check className="h-4 w-4 text-forest-500" />
+                      <Check className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
                     )}
                   </button>
                 );
@@ -125,11 +122,8 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
     return (
       <button
         onClick={toggleTheme}
-        className="flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 hover:scale-105"
+        className="theme-switcher-toggle flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 hover:scale-105"
         style={{
-          backgroundColor: 'var(--surface)',
-          borderWidth: '1px',
-          borderColor: 'var(--border)',
           color: 'var(--text-primary)'
         }}
         aria-label={`Current theme: ${currentTheme?.label}. Click to cycle themes.`}
@@ -188,9 +182,11 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
       <button
         onClick={handleClick}
         onContextMenu={handleClick}
-        className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:ring-offset-2"
+        className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
         style={{
-          backgroundColor: isDark ? 'var(--forest-500)' : '#e5e7eb'
+          backgroundColor: isDark ? 'var(--accent-green)' : '#e5e7eb',
+          border: '1px solid var(--border)',
+          focusRingColor: 'var(--accent-green)'
         }}
         aria-label={`Current theme: ${theme}. Click to toggle, right-click for system.`}
         title={`Current: ${theme} mode. Click to toggle, right-click (or Cmd/Ctrl+click) for system mode.`}
@@ -205,7 +201,10 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
           <Moon className={`h-3.5 w-3.5 ${isDark ? 'text-blue-300' : 'text-gray-400'}`} />
         </div>
         {theme === 'system' && (
-          <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-forest-500 flex items-center justify-center">
+          <div 
+            className="absolute -top-1 -right-1 h-3 w-3 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: 'var(--accent-green)' }}
+          >
             <span className="text-xs">🖥️</span>
           </div>
         )}
