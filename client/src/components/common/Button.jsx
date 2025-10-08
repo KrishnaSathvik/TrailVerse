@@ -30,10 +30,14 @@ const Button = ({
     borderRadius: '9999px', // rounded-full
     cursor: disabled || loading ? 'not-allowed' : 'pointer',
     transition: 'all 0.2s ease-in-out',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    boxShadow: 'var(--shadow)',
     opacity: disabled || loading ? 0.6 : 1,
     // Prevent text selection and focus outline issues
     userSelect: 'none',
+    WebkitUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
     outline: 'none',
     ...style
   };
@@ -70,12 +74,12 @@ const Button = ({
   // Color variants - Proper distinction between all variants
   const variantStyles = {
     primary: {
-      backgroundColor: 'var(--accent-green)',
-      color: '#ffffff',
-      border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: 'var(--accent-green-dark)',
-      hoverBorderColor: 'var(--accent-green-dark)',
-      hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      backgroundColor: 'var(--surface)',
+      color: 'var(--text-primary)',
+      border: '1px solid var(--border)',
+      hoverBackgroundColor: 'var(--surface-hover)',
+      hoverBorderColor: 'var(--border-hover)',
+      hoverShadow: 'var(--shadow-lg)'
     },
     secondary: {
       backgroundColor: 'var(--surface)',
@@ -83,7 +87,7 @@ const Button = ({
       border: '1px solid var(--border)',
       hoverBackgroundColor: 'var(--surface-hover)',
       hoverBorderColor: 'var(--border-hover)',
-      hoverShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      hoverShadow: 'var(--shadow-lg)'
     },
     outline: {
       backgroundColor: 'transparent',
@@ -92,7 +96,7 @@ const Button = ({
       hoverBackgroundColor: 'var(--accent-green)',
       hoverColor: '#ffffff',
       hoverBorderColor: 'var(--accent-green)',
-      hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      hoverShadow: 'var(--shadow-lg)'
     },
     ghost: {
       backgroundColor: 'transparent',
@@ -100,7 +104,7 @@ const Button = ({
       border: '1px solid transparent',
       hoverBackgroundColor: 'var(--surface-hover)',
       hoverBorderColor: 'var(--border)',
-      hoverShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      hoverShadow: 'var(--shadow-lg)'
     },
     danger: {
       backgroundColor: 'var(--error-red)',
@@ -108,7 +112,7 @@ const Button = ({
       border: '1px solid var(--error-red)',
       hoverBackgroundColor: '#dc2626',
       hoverBorderColor: '#dc2626',
-      hoverShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2)'
+      hoverShadow: 'var(--shadow-lg)'
     },
     success: {
       backgroundColor: 'var(--accent-green)',
@@ -116,7 +120,7 @@ const Button = ({
       border: '1px solid var(--accent-green)',
       hoverBackgroundColor: 'var(--accent-green-dark)',
       hoverBorderColor: 'var(--accent-green-dark)',
-      hoverShadow: '0 10px 15px -3px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.2)'
+      hoverShadow: 'var(--shadow-lg)'
     }
   };
 

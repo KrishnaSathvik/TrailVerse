@@ -349,8 +349,8 @@ const LandingPage = () => {
                       )}
 
                       {step.features && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex -space-x-1">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
                             {step.features.map((feature, i) => {
                               const FeatureIcon = feature.icon;
                               return (

@@ -889,22 +889,22 @@ const ProfilePage = () => {
                           : 'hover:shadow-sm profile-tab-inactive'
                       }`}
                       style={{
-                        backgroundColor: isActive ? 'var(--accent-green)' : 'var(--surface)',
+                        backgroundColor: isActive ? '#ffffff' : 'var(--surface)',
                         borderWidth: '1px',
-                        borderColor: isActive ? 'var(--accent-green)' : 'var(--border)',
-                        boxShadow: isActive ? 'var(--shadow-md)' : 'var(--shadow-sm)'
+                        borderColor: isActive ? '#e5e7eb' : 'var(--border)',
+                        boxShadow: isActive ? '0 3px 8px rgba(0, 0, 0, 0.15)' : 'var(--shadow-sm)'
                       }}
                     >
                       <Icon 
                         className="h-4 w-4 flex-shrink-0" 
                         style={{
-                          color: isActive ? '#ffffff' : 'var(--text-primary)'
+                          color: isActive ? '#000000' : 'var(--text-primary)'
                         }}
                       />
                       <span 
                         className="text-xs text-center leading-tight font-medium px-1"
                         style={{
-                          color: isActive ? '#ffffff' : 'var(--text-primary)'
+                          color: isActive ? '#000000' : 'var(--text-primary)'
                         }}
                       >
                         {tab.label}
@@ -935,22 +935,22 @@ const ProfilePage = () => {
                           : 'hover:shadow-md profile-tab-inactive'
                       }`}
                       style={{
-                        backgroundColor: isActive ? 'var(--accent-green)' : 'var(--surface)',
+                        backgroundColor: isActive ? '#ffffff' : 'var(--surface)',
                         borderWidth: '1px',
-                        borderColor: isActive ? 'var(--accent-green)' : 'var(--border)',
-                        boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)'
+                        borderColor: isActive ? '#e5e7eb' : 'var(--border)',
+                        boxShadow: isActive ? '0 3px 8px rgba(0, 0, 0, 0.15)' : 'var(--shadow)'
                       }}
                     >
                       <Icon 
                         className="h-5 w-5 mb-2" 
                         style={{
-                          color: isActive ? '#ffffff' : 'var(--accent-green)'
+                          color: isActive ? '#000000' : 'var(--accent-green)'
                         }}
                       />
                       <span 
                         className="text-base text-center"
                         style={{
-                          color: isActive ? '#ffffff' : 'var(--text-tertiary)'
+                          color: isActive ? '#000000' : 'var(--text-tertiary)'
                         }}
                       >
                         {tab.label}
@@ -1749,7 +1749,7 @@ const ProfilePage = () => {
                             <div 
                               className="relative w-11 h-6 rounded-full transition-all duration-200 ease-in-out"
                               style={{
-                                backgroundColor: preferences[setting.id] ? '#22c55e' : '#d1d5db'
+                                backgroundColor: preferences[setting.id] ? 'var(--accent-green)' : 'var(--surface-hover)'
                               }}
                             >
                               <div 

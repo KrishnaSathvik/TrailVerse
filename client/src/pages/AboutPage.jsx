@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { 
   Compass, Mountain, Camera, MapPin, Award, 
   Globe, Mail, Instagram, 
-  Sparkles
+  Sparkles, Calendar
 } from 'lucide-react';
 
 const AboutPage = () => {
@@ -434,253 +434,375 @@ const AboutPage = () => {
           </div>
         </section>
 
-        {/* About This App Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
+        {/* About TrailVerse Section */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-4 mb-6">
+            {/* Header */}
+            <div className="text-center mb-16">
+              <div className="flex items-center justify-center gap-4 mb-8">
+                <div className="relative">
                 <img 
                   src="/logo.png" 
                   alt="TrailVerse Logo" 
-                  className="h-12 w-12 rounded-xl object-contain"
-                />
-                <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    className="h-16 w-16 rounded-2xl object-contain"
+                  />
+                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--accent-green)' }}
+                  >
+                    <Sparkles className="h-3 w-3 text-white" />
+                  </div>
+                </div>
+                <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-forest-400 to-forest-600 bg-clip-text text-transparent">
                   About TrailVerse
                 </h2>
               </div>
-              <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-xl max-w-4xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                 TrailVerse is my way of giving back to the travel community, combining my passion for 
-                National Parks with technology to help others discover these incredible places.
+                National Parks with cutting-edge technology to help others discover these incredible places.
               </p>
             </div>
 
-            <div className="max-w-4xl mx-auto">
-              <div className="rounded-2xl p-8 backdrop-blur"
+            {/* Mission Statement */}
+            <div className="max-w-6xl mx-auto mb-16">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
                 style={{
+                      backgroundColor: 'var(--accent-green-light)',
+                  borderWidth: '1px',
+                      borderColor: 'var(--accent-green)'
+                    }}
+                  >
+                    <Mountain className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'var(--accent-green)' }}>
+                      Our Mission
+                    </span>
+                  </div>
+                  <h3 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+                    Making National Parks Accessible to Everyone
+                </h3>
+                  <div className="space-y-4 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    <p>
+                      After visiting 16+ National Parks and contributing thousands of reviews on Google Maps, 
+                      I realized there was a gap in the market for comprehensive, AI-powered trip planning 
+                      specifically designed for America's incredible park system.
+                    </p>
+                    <p>
+                      TrailVerse bridges that gap by combining real-world experience with modern technology, 
+                      offering personalized itineraries, real-time weather updates, and community-driven insights 
+                      to help you make the most of your National Parks adventure.
+                    </p>
+                  </div>
+                  <div className="mt-8">
+                    <Button
+                      onClick={() => navigate('/explore')}
+                      variant="primary"
+                      size="lg"
+                      icon={Compass}
+                    >
+                      Start Exploring
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div className="rounded-2xl p-6 backdrop-blur"
+                             style={{
+                          backgroundColor: 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+                          style={{ backgroundColor: 'var(--accent-green)' }}
+                        >
+                          <Sparkles className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>470+</div>
+                        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Parks & Sites</div>
+                      </div>
+                      
+                      <div className="rounded-2xl p-6 backdrop-blur"
+                             style={{
+                          backgroundColor: 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+                          style={{ backgroundColor: 'var(--accent-blue)' }}
+                        >
+                          <MapPin className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>AI-Powered</div>
+                        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Trip Planning</div>
+                         </div>
+                       </div>
+                       
+                    <div className="space-y-4 mt-8">
+                      <div className="rounded-2xl p-6 backdrop-blur"
+                             style={{
+                          backgroundColor: 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+                          style={{ backgroundColor: 'var(--accent-orange)' }}
+                        >
+                          <Camera className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Real-time</div>
+                        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Weather & Events</div>
+                      </div>
+                      
+                      <div className="rounded-2xl p-6 backdrop-blur"
+                             style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)'
                 }}
               >
-                <h3 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                  Built With Passion
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
+                          style={{ backgroundColor: 'var(--accent-green)' }}
+                        >
+                          <Award className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Community</div>
+                        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Driven Reviews</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                         </div>
+                       </div>
+                       
+            {/* Key Features */}
+            <div className="max-w-6xl mx-auto mb-16">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                  Why TrailVerse?
                 </h3>
-                <div className="space-y-4">
+                <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                  Built by a traveler, for travelers - every feature is designed with real-world experience in mind.
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="group rounded-2xl p-8 backdrop-blur hover:-translate-y-1 transition-all duration-300"
+                             style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                    style={{ backgroundColor: 'var(--accent-green)' }}
+                  >
+                    <Sparkles className="h-6 w-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    AI Trip Planning
+                  </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    <strong>TrailVerse</strong> combines my personal experiences visiting 16+ parks 
-                    with modern technology including Vite for lightning-fast development, React 18 for 
-                    smooth user interactions, and AI-powered trip planning to help you explore all 470+ National Parks and Sites.
+                    Get personalized itineraries based on your interests, travel style, and time constraints. 
+                    Our AI learns from thousands of successful park visits to create your perfect adventure.
                   </p>
+                </div>
+
+                <div className="group rounded-2xl p-8 backdrop-blur hover:-translate-y-1 transition-all duration-300"
+                             style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                    style={{ backgroundColor: 'var(--accent-blue)' }}
+                  >
+                    <MapPin className="h-6 w-6 text-white" />
+                         </div>
+                  <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    Interactive Maps
+                  </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Built with a modern tech stack deployed on Vercel (frontend) and Render (backend), 
-                    every feature is designed with fellow travelers in mind - from comprehensive trip planning 
-                    tools to real-time weather updates and community reviews based on my own Google Maps contributions.
+                    Explore parks with our interactive maps featuring real-time weather, trail conditions, 
+                    and points of interest. Never miss a hidden gem or overlook a must-see attraction.
                   </p>
-                   <div className="mt-6">
-                     <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                       Tech Stack
-                     </h4>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                       <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Frontend</h5>
-                         <div className="flex flex-wrap gap-2">
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                       </div>
+                       
+                <div className="group rounded-2xl p-8 backdrop-blur hover:-translate-y-1 transition-all duration-300"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             React 18
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                    style={{ backgroundColor: 'var(--accent-orange)' }}
+                  >
+                    <Calendar className="h-6 w-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    Live Events Calendar
+                  </h4>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    Stay updated with real-time NPS events, ranger programs, and special activities. 
+                    Save events to your itinerary and never miss an opportunity to enhance your visit.
+                  </p>
+                </div>
+
+                <div className="group rounded-2xl p-8 backdrop-blur hover:-translate-y-1 transition-all duration-300"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Vite
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                    style={{ backgroundColor: 'var(--accent-green)' }}
+                  >
+                    <Mountain className="h-6 w-6 text-white" />
+                         </div>
+                  <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    Expert Insights
+                  </h4>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    Benefit from first-hand experience and detailed reviews from someone who's actually 
+                    visited these parks. Get insider tips and hidden gems you won't find elsewhere.
+                  </p>
+                       </div>
+                       
+                <div className="group rounded-2xl p-8 backdrop-blur hover:-translate-y-1 transition-all duration-300"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Tailwind CSS v4
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                    style={{ backgroundColor: 'var(--accent-blue)' }}
+                  >
+                    <Camera className="h-6 w-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    Visual Planning
+                  </h4>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    Browse stunning photography and detailed park information to help you visualize 
+                    your trip. See what awaits you before you even pack your bags.
+                  </p>
+                </div>
+
+                <div className="group rounded-2xl p-8 backdrop-blur hover:-translate-y-1 transition-all duration-300"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Lucide Icons
-                           </span>
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                    style={{ backgroundColor: 'var(--accent-orange)' }}
+                  >
+                    <Globe className="h-6 w-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    Modern Technology
+                  </h4>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    Built with the latest web technologies for fast, responsive performance. 
+                    Works seamlessly across all devices with offline capabilities.
+                  </p>
+                </div>
                          </div>
                        </div>
                        
-                       <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Backend</h5>
-                         <div className="flex flex-wrap gap-2">
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+            {/* Tech Stack */}
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                  Built With Modern Technology
+                </h3>
+                <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                  TrailVerse leverages cutting-edge technology to deliver the best possible experience.
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="rounded-2xl p-6 backdrop-blur"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Node.js
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Express.js
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             MongoDB Atlas
-                           </span>
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Frontend</h4>
+                  <div className="space-y-3">
+                    {['React 18', 'Vite', 'Tailwind CSS v4', 'Lucide Icons'].map((tech) => (
+                      <div key={tech} className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
+                      </div>
+                    ))}
                          </div>
                        </div>
                        
-                       <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>APIs & Services</h5>
-                         <div className="flex flex-wrap gap-2">
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                <div className="rounded-2xl p-6 backdrop-blur"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             NPS API
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             OpenWeather API
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             OpenAI GPT
-                           </span>
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Backend</h4>
+                  <div className="space-y-3">
+                    {['Node.js', 'Express.js', 'MongoDB Atlas'].map((tech) => (
+                      <div key={tech} className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-blue)' }} />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
+                      </div>
+                    ))}
                          </div>
                        </div>
                        
-                       <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Deployment</h5>
-                         <div className="flex flex-wrap gap-2">
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                <div className="rounded-2xl p-6 backdrop-blur"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Vercel
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Render
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             MongoDB Atlas
-                           </span>
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>APIs & AI</h4>
+                  <div className="space-y-3">
+                    {['NPS API', 'OpenWeather API', 'OpenAI GPT'].map((tech) => (
+                      <div key={tech} className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-orange)' }} />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
+                      </div>
+                    ))}
                          </div>
                        </div>
                        
-                       <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>State & Routing</h5>
-                         <div className="flex flex-wrap gap-2">
-                           <span className="px-2 py-1 rounded text-xs font-medium"
+                <div className="rounded-2xl p-6 backdrop-blur"
                              style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             TanStack Query
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             React Router v7
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             React Context
-                           </span>
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Deployment</h4>
+                  <div className="space-y-3">
+                    {['Vercel', 'Render', 'MongoDB Atlas'].map((tech) => (
+                      <div key={tech} className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
                          </div>
-                       </div>
-                       
-                       <div className="space-y-2">
-                         <h5 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Features</h5>
-                         <div className="flex flex-wrap gap-2">
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             AI Trip Planning
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Real-time Weather
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Interactive Maps
-                           </span>
-                           <span className="px-2 py-1 rounded text-xs font-medium"
-                             style={{
-                               backgroundColor: 'var(--accent-green)',
-                               color: 'white'
-                             }}
-                           >
-                             Event Calendar
-                           </span>
-                         </div>
+                    ))}
                        </div>
                      </div>
                    </div>
-                </div>
-              </div>
-
             </div>
           </div>
         </section>

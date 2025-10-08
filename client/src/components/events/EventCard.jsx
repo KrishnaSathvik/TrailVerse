@@ -16,7 +16,7 @@ const EventCard = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = fa
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden backdrop-blur group hover:-translate-y-1 transition-all duration-300"
+    <div className="event-card rounded-2xl overflow-hidden backdrop-blur group hover:-translate-y-1 transition-all duration-300"
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',

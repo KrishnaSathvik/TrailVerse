@@ -184,7 +184,7 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
         onContextMenu={handleClick}
         className="relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
         style={{
-          backgroundColor: isDark ? 'var(--accent-green)' : '#e5e7eb',
+          backgroundColor: isDark ? 'var(--surface-hover)' : '#e5e7eb',
           border: '1px solid var(--border)',
           focusRingColor: 'var(--accent-green)'
         }}
@@ -203,7 +203,7 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
         {theme === 'system' && (
           <div 
             className="absolute -top-1 -right-1 h-3 w-3 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'var(--accent-green)' }}
+            style={{ backgroundColor: 'var(--surface-active)' }}
           >
             <span className="text-xs">🖥️</span>
           </div>

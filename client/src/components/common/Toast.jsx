@@ -17,8 +17,8 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
     },
     error: {
       icon: AlertCircle,
-      iconColor: '#ef4444', // Red for errors
-      closeColor: '#000000' // Pure black for maximum contrast
+      iconColor: 'var(--error)',
+      closeColor: 'var(--text-primary)'
     },
     info: {
       icon: Info,

@@ -12,9 +12,9 @@ const OptimizedImage = ({
 
   if (error) {
     return (
-      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
+      <div className={`flex items-center justify-center ${className}`} style={{ backgroundColor: 'var(--surface)' }}>
         <div className="text-center p-4">
-          <p className="text-gray-500 text-sm">Image not available</p>
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Image not available</p>
         </div>
       </div>
     );
