@@ -175,7 +175,13 @@ const Button = ({
         <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
       )}
       {!loading && Icon && iconPosition === 'left' && iconElement}
-      <span style={{ color: 'inherit' }}>{children}</span>
+      <span style={{ 
+        color: 'inherit',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
+      }}>{children}</span>
       {!loading && Icon && iconPosition === 'right' && iconElement}
     </>
   );

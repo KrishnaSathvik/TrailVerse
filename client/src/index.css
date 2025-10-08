@@ -148,15 +148,15 @@ button *, .btn *, a[role="button"] *, a[data-button-component="true"] * {
   user-select: none !important;
 }
 
-/* Prevent text selection on ALL anchor tags that act as buttons */
-a[href], a[data-button-component="true"] {
+/* Prevent text selection on anchor tags that act as buttons */
+a[data-button-component="true"] {
   -webkit-user-select: none !important;
   -webkit-touch-callout: none !important;
   -webkit-tap-highlight-color: transparent !important;
   user-select: none !important;
 }
 
-a[href] *, a[data-button-component="true"] * {
+a[data-button-component="true"] * {
   -webkit-user-select: none !important;
   -webkit-touch-callout: none !important;
   user-select: none !important;

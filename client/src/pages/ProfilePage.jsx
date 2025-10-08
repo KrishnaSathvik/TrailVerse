@@ -757,7 +757,7 @@ const ProfilePage = () => {
               backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
             }}
           >
-            {/* Avatar Section - Larger & Centered */}
+            {/* Avatar Section - Larger & Centered with Random Generator */}
             <div className="mx-auto mb-6">
               <div className="relative inline-block">
                 {profileData.avatar && !profileData.avatar.startsWith('http') ? (
@@ -789,18 +789,31 @@ const ProfilePage = () => {
                     }}
                   />
                 )}
-                {activeTab === 'profile' && isEditing && (
-                  <div className="absolute -bottom-2 -right-2">
-                    <Button
-                      onClick={() => setIsEditing(false)}
-                      variant="primary"
-                      size="sm"
-                      icon={Edit2}
-                      className="!rounded-xl"
-                      title="Change Avatar Style"
-                    />
-                  </div>
-                )}
+                
+                {/* Random Avatar Generator Button - Floating on Avatar */}
+                <button
+                  onClick={() => {
+                    // Generate a random avatar
+                    const randomAvatar = getBestAvatar(user, userStats, 'travel');
+                    setProfileData(prev => ({ 
+                      ...prev, 
+                      avatar: randomAvatar,
+                      avatarVersion: Date.now()
+                    }));
+                    showToast('New avatar generated! Click to save or generate another.', 'success', 4000);
+                  }}
+                  className="absolute -top-2 -right-2 w-10 h-10 lg:w-12 lg:h-12 rounded-full shadow-lg transition-all hover:scale-110 hover:shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--accent-green)',
+                    color: '#ffffff',
+                    border: '3px solid var(--bg-primary)'
+                  }}
+                  title="Generate Random Avatar"
+                >
+                  <svg className="w-5 h-5 lg:w-6 lg:h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -844,14 +857,16 @@ const ProfilePage = () => {
             
             {/* Edit Profile Button */}
             {activeTab !== 'profile' && (
-              <Button
-                onClick={() => setActiveTab('profile')}
-                variant="secondary"
-                size="md"
-                icon={Edit2}
-              >
-                Edit Profile
-              </Button>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setActiveTab('profile')}
+                  variant="secondary"
+                  size="md"
+                  icon={Edit2}
+                >
+                  Edit Profile
+                </Button>
+              </div>
             )}
           </div>
 
@@ -1009,7 +1024,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div className="space-y-8">
-                    {/* Avatar Selection */}
+                    {/* Avatar Selection with Live Preview */}
                     {isEditing && (
                       <div className="rounded-2xl p-6"
                         style={{
@@ -1018,11 +1033,67 @@ const ProfilePage = () => {
                           borderColor: 'var(--border)'
                         }}
                       >
-                        <label className="block text-lg font-semibold mb-4"
+                        <label className="block text-lg font-semibold mb-2"
                           style={{ color: 'var(--text-primary)' }}
                         >
-                          Choose Your Avatar Style
+                          Customize Your Avatar
                         </label>
+                        <p className="text-sm mb-4"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          💡 Tip: Use the "Random Avatar" button in your profile header for quick changes!
+                        </p>
+                        
+                        {/* Live Preview Section */}
+                        <div className="mb-6 p-6 rounded-xl text-center"
+                          style={{
+                            backgroundColor: 'var(--surface)',
+                            borderWidth: '2px',
+                            borderColor: 'var(--accent-green)',
+                            borderStyle: 'dashed'
+                          }}
+                        >
+                          <p className="text-sm font-medium mb-4"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            Live Preview
+                          </p>
+                          {profileData.avatar && !profileData.avatar.startsWith('http') ? (
+                            <div
+                              key={`preview-${profileData.avatar}-${profileData.avatarVersion}`}
+                              className="w-20 h-20 lg:w-24 lg:h-24 mx-auto rounded-full ring-4 ring-offset-4 flex items-center justify-center text-3xl lg:text-4xl bg-gradient-to-br from-purple-100 to-blue-100 shadow-lg transition-all duration-300"
+                              style={{ 
+                                backgroundColor: 'var(--surface-hover)',
+                                ringColor: 'var(--accent-green)',
+                                ringOffsetColor: 'var(--bg-primary)'
+                              }}
+                            >
+                              {profileData.avatar}
+                            </div>
+                          ) : (
+                            <img
+                              key={`preview-${profileData.avatar}-${profileData.avatarVersion}`}
+                              src={`${profileData.avatar}${profileData.avatar.includes('?') ? '&' : '?'}v=${profileData.avatarVersion}`}
+                              alt="Avatar Preview"
+                              className="w-20 h-20 lg:w-24 lg:h-24 mx-auto rounded-full ring-4 ring-offset-4 shadow-lg object-cover transition-all duration-300"
+                              style={{ 
+                                ringColor: 'var(--accent-green)',
+                                ringOffsetColor: 'var(--bg-primary)'
+                              }}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback';
+                              }}
+                            />
+                          )}
+                          <p className="text-xs mt-3"
+                            style={{ color: 'var(--text-tertiary)' }}
+                          >
+                            This is how your avatar will appear
+                          </p>
+                        </div>
+                        
+                        {/* Avatar Selector */}
                         <AvatarSelector
                           user={user}
                           userStats={userStats}
