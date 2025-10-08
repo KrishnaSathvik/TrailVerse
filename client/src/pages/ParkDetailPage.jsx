@@ -17,7 +17,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import OptimizedImage from '../components/common/OptimizedImage';
-import WeatherWidget from '../components/park-details/WeatherWidget.tsx';
+import WeatherWidget from '../components/park-details/WeatherWidget.jsx';
 import ReviewSection from '../components/park-details/ReviewSection';
 import ShareButtons from '../components/common/ShareButtons';
 import Button from '../components/common/Button';

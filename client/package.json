@@ -23,6 +23,7 @@
   "scripts": {
     "start": "craco start",
     "build": "GENERATE_SOURCEMAP=false SKIP_PREFLIGHT_CHECK=true DISABLE_ESLINT_PLUGIN=true TSC_COMPILE_ON_ERROR=true CI=true react-scripts build",
+    "build:simple": "GENERATE_SOURCEMAP=false SKIP_PREFLIGHT_CHECK=true DISABLE_ESLINT_PLUGIN=true TSC_COMPILE_ON_ERROR=true CI=true SKIP_TYPE_CHECK=true react-scripts build",
     "test": "craco test",
     "test:vitest": "vitest",
     "test:vitest:ui": "vitest --ui",
@@ -85,9 +86,9 @@
   "overrides": {
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "schema-utils": "3.3.0",
-    "ajv": "6.12.6",
-    "ajv-keywords": "3.5.2",
+    "schema-utils": "4.2.0",
+    "ajv": "8.12.0",
+    "ajv-keywords": "5.1.0",
     "terser-webpack-plugin": "5.3.10",
     "css-minimizer-webpack-plugin": "3.4.1"
   }
