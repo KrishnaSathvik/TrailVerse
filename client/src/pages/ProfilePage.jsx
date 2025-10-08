@@ -26,7 +26,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useVisitedParks } from '../hooks/useVisitedParks';
 import { useTrips } from '../hooks/useTrips';
 import userService from '../services/userService';
-import { getBestAvatar } from '../utils/avatarGenerator';
+import { getBestAvatar, generateRandomAvatar } from '../utils/avatarGenerator';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -37,6 +37,8 @@ const ProfilePage = () => {
   const { trips } = useTrips();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingAvatar, setIsChangingAvatar] = useState(false);
+  const [originalAvatar, setOriginalAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastLoadTime, setLastLoadTime] = useState(0);
   const [lastStatsLoadTime, setLastStatsLoadTime] = useState(0);
@@ -789,31 +791,6 @@ const ProfilePage = () => {
                     }}
                   />
                 )}
-                
-                {/* Random Avatar Generator Button - Floating on Avatar */}
-                <button
-                  onClick={() => {
-                    // Generate a random avatar
-                    const randomAvatar = getBestAvatar(user, userStats, 'travel');
-                    setProfileData(prev => ({ 
-                      ...prev, 
-                      avatar: randomAvatar,
-                      avatarVersion: Date.now()
-                    }));
-                    showToast('New avatar generated! Click to save or generate another.', 'success', 4000);
-                  }}
-                  className="absolute -top-2 -right-2 w-10 h-10 lg:w-12 lg:h-12 rounded-full shadow-lg transition-all hover:scale-110 hover:shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--accent-green)',
-                    color: '#ffffff',
-                    border: '3px solid var(--bg-primary)'
-                  }}
-                  title="Generate Random Avatar"
-                >
-                  <svg className="w-5 h-5 lg:w-6 lg:h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
               </div>
             </div>
 
@@ -844,6 +821,65 @@ const ProfilePage = () => {
                     <span>{profileData.location}</span>
                   </div>
                 </>
+              )}
+            </div>
+            
+            {/* Change Avatar Button in Hero Section */}
+            <div className="mb-4">
+              {!isChangingAvatar ? (
+                <Button
+                  onClick={() => {
+                    // Store original avatar
+                    setOriginalAvatar(profileData.avatar);
+                    setIsChangingAvatar(true);
+                    
+                    // Generate new avatar
+                    const seed = user?.email || user?.firstName || 'traveler';
+                    const randomAvatar = generateRandomAvatar(seed);
+                    setProfileData(prev => ({ 
+                      ...prev, 
+                      avatar: randomAvatar,
+                      avatarVersion: Date.now()
+                    }));
+                  }}
+                  variant="primary"
+                  size="sm"
+                  icon={User}
+                >
+                  Change Avatar
+                </Button>
+              ) : (
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    onClick={() => {
+                      // Cancel - revert to original avatar
+                      setProfileData(prev => ({ 
+                        ...prev, 
+                        avatar: originalAvatar,
+                        avatarVersion: Date.now()
+                      }));
+                      setIsChangingAvatar(false);
+                      setOriginalAvatar(null);
+                    }}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      // Save - keep the new avatar
+                      setIsChangingAvatar(false);
+                      setOriginalAvatar(null);
+                      showToast('Avatar updated! Click "Edit Profile" to save your profile.', 'success');
+                    }}
+                    variant="primary"
+                    size="sm"
+                    icon={Save}
+                  >
+                    Save
+                  </Button>
+                </div>
               )}
             </div>
             
