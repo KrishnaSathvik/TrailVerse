@@ -617,21 +617,16 @@ const ExploreParksPage = () => {
                                 <button
                                   key={page}
                                   onClick={() => goToPage(page)}
-                                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                    page === currentPage
-                                      ? 'bg-forest-500 text-white'
-                                      : 'hover:bg-white/5'
+                                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                                    page === currentPage ? 'ring-2' : 'hover:bg-white/5'
                                   }`}
-                                  style={
-                                    page !== currentPage
-                                      ? {
-                                          backgroundColor: 'var(--surface)',
-                                          borderWidth: '1px',
-                                          borderColor: 'var(--border)',
-                                          color: 'var(--text-primary)'
-                                        }
-                                      : {}
-                                  }
+                                  style={{
+                                    backgroundColor: page === currentPage ? 'var(--surface-active)' : 'var(--surface)',
+                                    borderWidth: '1px',
+                                    borderColor: page === currentPage ? 'var(--border-hover)' : 'var(--border)',
+                                    color: 'var(--text-primary)',
+                                    boxShadow: page === currentPage ? 'var(--shadow-lg)' : 'var(--shadow)'
+                                  }}
                                 >
                                   {page}
                                 </button>

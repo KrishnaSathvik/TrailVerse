@@ -748,8 +748,8 @@ const ProfilePage = () => {
       {/* Main Content */}
       <section className="py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Enhanced Profile Header */}
-          <div className="rounded-3xl p-6 lg:p-8 backdrop-blur mb-8 shadow-xl"
+          {/* Profile Hero Section - Centered & Clean */}
+          <div className="rounded-3xl p-8 lg:p-12 text-center backdrop-blur mb-8 shadow-xl"
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -757,209 +757,173 @@ const ProfilePage = () => {
               backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
             }}
           >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8">
-              {/* Avatar Section */}
-              <div className="flex-shrink-0 mx-auto lg:mx-0">
-                <div className="relative">
-                  {profileData.avatar && !profileData.avatar.startsWith('http') ? (
-                    <div
-                      key={`${profileData.avatar}-${profileData.avatarVersion}`}
-                      className="w-16 h-16 lg:w-20 lg:h-20 rounded-full ring-2 ring-purple-500/20 flex items-center justify-center text-2xl lg:text-3xl bg-gradient-to-br from-purple-100 to-blue-100 shadow-md"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
-                    >
-                      {profileData.avatar}
-                    </div>
-                  ) : (
-                    <img
-                      key={`${profileData.avatar}-${profileData.avatarVersion}`}
-                      src={`${profileData.avatar}${profileData.avatar.includes('?') ? '&' : '?'}v=${profileData.avatarVersion}`}
-                      alt={`${profileData.firstName} ${profileData.lastName}`}
-                      className="w-16 h-16 lg:w-20 lg:h-20 rounded-full ring-2 ring-purple-500/20 shadow-md object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        console.log('Avatar image failed to load:', profileData.avatar);
-                        e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback';
-                      }}
-                    />
-                  )}
-                  {activeTab === 'profile' && isEditing && (
-                    <div className="absolute -bottom-2 -right-2">
-                      <Button
-                        onClick={() => setIsEditing(false)}
-                        variant="primary"
-                        size="xs"
-                        icon={Edit2}
-                        className="!p-2 !rounded-xl"
-                        title="Change Avatar Style"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Profile Info Section */}
-              <div className="flex-1 text-center lg:text-left min-w-0">
-                <h1 className="text-xl lg:text-2xl font-bold mb-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {profileData.firstName || profileData.lastName 
-                    ? `${profileData.firstName} ${profileData.lastName}`.trim()
-                    : 'Complete Your Profile'
-                  }
-                </h1>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                  <div className="flex items-center justify-center lg:justify-start gap-2 text-sm"
-                    style={{ color: 'var(--text-secondary)' }}
+            {/* Avatar Section - Larger & Centered */}
+            <div className="mx-auto mb-6">
+              <div className="relative inline-block">
+                {profileData.avatar && !profileData.avatar.startsWith('http') ? (
+                  <div
+                    key={`${profileData.avatar}-${profileData.avatarVersion}`}
+                    className="w-24 h-24 lg:w-32 lg:h-32 rounded-full ring-4 ring-offset-4 flex items-center justify-center text-4xl lg:text-5xl bg-gradient-to-br from-purple-100 to-blue-100 shadow-lg"
+                    style={{ 
+                      backgroundColor: 'var(--surface-hover)',
+                      ringColor: 'var(--accent-green)',
+                      ringOffsetColor: 'var(--bg-primary)'
+                    }}
                   >
-                    <Mail className="h-4 w-4" />
-                    <span className="truncate">{profileData.email}</span>
+                    {profileData.avatar}
                   </div>
-                  {profileData.location && (
-                    <div className="flex items-center justify-center lg:justify-start gap-2 text-sm"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      <MapPin className="h-4 w-4" />
-                      <span>{profileData.location}</span>
-                    </div>
-                  )}
-                </div>
-                {profileData.bio && (
-                  <p className="text-sm lg:text-base leading-relaxed max-w-2xl mx-auto lg:mx-0"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {profileData.bio}
-                  </p>
+                ) : (
+                  <img
+                    key={`${profileData.avatar}-${profileData.avatarVersion}`}
+                    src={`${profileData.avatar}${profileData.avatar.includes('?') ? '&' : '?'}v=${profileData.avatarVersion}`}
+                    alt={`${profileData.firstName} ${profileData.lastName}`}
+                    className="w-24 h-24 lg:w-32 lg:h-32 rounded-full ring-4 ring-offset-4 shadow-lg object-cover"
+                    style={{ 
+                      ringColor: 'var(--accent-green)',
+                      ringOffsetColor: 'var(--bg-primary)'
+                    }}
+                    loading="lazy"
+                    onError={(e) => {
+                      console.log('Avatar image failed to load:', profileData.avatar);
+                      e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback';
+                    }}
+                  />
+                )}
+                {activeTab === 'profile' && isEditing && (
+                  <div className="absolute -bottom-2 -right-2">
+                    <Button
+                      onClick={() => setIsEditing(false)}
+                      variant="primary"
+                      size="sm"
+                      icon={Edit2}
+                      className="!rounded-xl"
+                      title="Change Avatar Style"
+                    />
+                  </div>
                 )}
               </div>
-
-              {/* Enhanced Stats Section */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full lg:w-auto lg:flex-shrink-0">
-                {stats.map((stat, index) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div
-                      key={index}
-                      className="rounded-xl p-3 text-center transition hover:opacity-80"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)',
-                        boxShadow: 'var(--shadow)'
-                      }}
-                    >
-                      <div className="flex items-center justify-center mb-1">
-                        <Icon className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                      </div>
-                      <div className="text-lg font-bold mb-1"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {stat.value}
-                      </div>
-                      <div className="text-xs font-medium leading-tight"
-                        style={{ color: 'var(--text-tertiary)' }}
-                      >
-                        {stat.label}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
-          </div>
 
-          {/* Enhanced Tab Navigation */}
-          <div className="mb-8 mt-6 profile-tab-container">
-            {/* Mobile: Grid layout for better fit */}
-            <div className="lg:hidden px-2">
-              <div className="grid grid-cols-3 gap-2 w-full">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setIsEditing(false);
-                        clearErrorStates();
-                      }}
-                      className={`profile-tab-button flex flex-col items-center justify-center gap-1 p-2 rounded-lg font-medium transition-all duration-200 min-h-[70px] w-full ${
-                        isActive 
-                          ? 'shadow-md profile-tab-active' 
-                          : 'hover:shadow-sm profile-tab-inactive'
-                      }`}
-                      style={{
-                        backgroundColor: isActive ? '#ffffff' : 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: isActive ? '#e5e7eb' : 'var(--border)',
-                        boxShadow: isActive ? '0 3px 8px rgba(0, 0, 0, 0.15)' : 'var(--shadow-sm)'
-                      }}
-                    >
-                      <Icon 
-                        className="h-4 w-4 flex-shrink-0" 
-                        style={{
-                          color: isActive ? '#000000' : 'var(--text-primary)'
-                        }}
-                      />
-                      <span 
-                        className="text-xs text-center leading-tight font-medium px-1"
-                        style={{
-                          color: isActive ? '#000000' : 'var(--text-primary)'
-                        }}
-                      >
-                        {tab.label}
-                      </span>
-                    </button>
-                  );
-                })}
+            {/* Profile Info Section - Centered */}
+            <h1 className="text-3xl lg:text-4xl font-bold mb-3"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {profileData.firstName || profileData.lastName 
+                ? `${profileData.firstName} ${profileData.lastName}`.trim()
+                : 'Complete Your Profile'
+              }
+            </h1>
+            
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-4 text-base">
+              <div className="flex items-center gap-2"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <Mail className="h-4 w-4" />
+                <span>{profileData.email}</span>
               </div>
+              {profileData.location && (
+                <>
+                  <span style={{ color: 'var(--text-tertiary)' }}>•</span>
+                  <div className="flex items-center gap-2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    <MapPin className="h-4 w-4" />
+                    <span>{profileData.location}</span>
+                  </div>
+                </>
+              )}
             </div>
             
-            {/* Desktop tabs (single row, center-when-fit, scroll-when-not) */}
-            <div className="hidden lg:block overflow-x-auto scrollbar-hide">
-              <div className="profile-tab-row w-max mx-auto flex flex-nowrap gap-3 px-4">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setIsEditing(false);
-                        clearErrorStates();
-                      }}
-                      className={`profile-tab-button rounded-2xl font-semibold transition-all duration-200 ${
-                        isActive 
-                          ? 'shadow-lg profile-tab-active' 
-                          : 'hover:shadow-md profile-tab-inactive'
-                      }`}
-                      style={{
-                        backgroundColor: isActive ? '#ffffff' : 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: isActive ? '#e5e7eb' : 'var(--border)',
-                        boxShadow: isActive ? '0 3px 8px rgba(0, 0, 0, 0.15)' : 'var(--shadow)'
-                      }}
-                    >
-                      <Icon 
-                        className="h-5 w-5 mb-2" 
-                        style={{
-                          color: isActive ? '#000000' : 'var(--accent-green)'
-                        }}
-                      />
-                      <span 
-                        className="text-base text-center"
-                        style={{
-                          color: isActive ? '#000000' : 'var(--text-tertiary)'
-                        }}
-                      >
-                        {tab.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {profileData.bio && (
+              <p className="text-base leading-relaxed max-w-2xl mx-auto mb-6"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {profileData.bio}
+              </p>
+            )}
+            
+            {/* Edit Profile Button */}
+            {activeTab !== 'profile' && (
+              <Button
+                onClick={() => setActiveTab('profile')}
+                variant="secondary"
+                size="md"
+                icon={Edit2}
+              >
+                Edit Profile
+              </Button>
+            )}
+          </div>
+
+          {/* Stats Section - Prominent & Separate */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6 mb-10">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={index}
+                  className="group rounded-2xl p-6 lg:p-8 text-center cursor-pointer transition-all hover:-translate-y-1"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    boxShadow: 'var(--shadow)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                    e.currentTarget.style.borderColor = 'var(--border-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--shadow)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                  }}
+                >
+                  {/* Icon Circle */}
+                  <div className="inline-flex p-4 rounded-full mb-4"
+                    style={{ 
+                      backgroundColor: 'var(--accent-green-light)',
+                      color: 'var(--accent-green)'
+                    }}
+                  >
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  
+                  {/* Value */}
+                  <div className="text-3xl lg:text-4xl font-bold mb-2"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {stat.value}
+                  </div>
+                  
+                  {/* Label */}
+                  <div className="text-sm font-medium"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {stat.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Enhanced Tab Navigation - Now using Button component for consistency */}
+          <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab) => (
+              <Button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsEditing(false);
+                  clearErrorStates();
+                }}
+                variant={activeTab === tab.id ? 'primary' : 'secondary'}
+                size="md"
+                icon={tab.icon}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                {tab.label}
+              </Button>
+            ))}
           </div>
 
           {/* Main Content Area */}

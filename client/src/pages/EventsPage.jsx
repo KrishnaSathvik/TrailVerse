@@ -684,14 +684,22 @@ const EventsPage = () => {
                           if (pageNum > totalPages) return null;
                           
                           return (
-                            <Button
+                            <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              variant={currentPage === pageNum ? 'primary' : 'secondary'}
-                              size="sm"
+                              className={`px-3 py-2 rounded-full text-sm font-semibold transition ${
+                                currentPage === pageNum ? 'ring-2' : ''
+                              }`}
+                              style={{
+                                backgroundColor: currentPage === pageNum ? 'var(--surface-active)' : 'var(--surface)',
+                                borderWidth: '1px',
+                                borderColor: currentPage === pageNum ? 'var(--border-hover)' : 'var(--border)',
+                                color: 'var(--text-primary)',
+                                boxShadow: currentPage === pageNum ? 'var(--shadow-lg)' : 'var(--shadow)'
+                              }}
                             >
                               {pageNum}
-                            </Button>
+                            </button>
                           );
                         })}
                       </div>
