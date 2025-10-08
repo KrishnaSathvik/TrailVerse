@@ -1,7 +1,4 @@
 {
-    "buildCommand": "cd client && CI='' npm run build",
-    "outputDirectory": "client/build",
-    "installCommand": "cd client && npm ci",
     "rewrites": [
       { "source": "/api/(.*)", "destination": "https://trailverse.onrender.com/api/$1" },
       { "source": "/(.*)", "destination": "/index.html" }
