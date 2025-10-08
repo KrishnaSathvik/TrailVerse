@@ -592,7 +592,7 @@ const ParkDetailPage = () => {
                                         ? 'var(--accent-green)' 
                                         : 'var(--surface)',
                                       color: activeActivityTab === tab.id 
-                                        ? 'white' 
+                                        ? '#ffffff' 
                                         : 'var(--text-primary)',
                                       borderWidth: '1px',
                                       borderColor: activeActivityTab === tab.id 

@@ -67,55 +67,56 @@ const Button = ({
     }
   };
 
-  // Color variants - All buttons now use consistent green and white styling
+  // Color variants - Proper distinction between all variants
   const variantStyles = {
     primary: {
       backgroundColor: 'var(--accent-green)',
       color: '#ffffff',
       border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: '#047857',
-      hoverBorderColor: '#047857',
+      hoverBackgroundColor: 'var(--accent-green-dark)',
+      hoverBorderColor: 'var(--accent-green-dark)',
       hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
     },
     secondary: {
-      backgroundColor: 'var(--accent-green)',
-      color: '#ffffff',
-      border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: '#047857',
-      hoverBorderColor: '#047857',
-      hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      backgroundColor: 'var(--surface)',
+      color: 'var(--text-primary)',
+      border: '1px solid var(--border)',
+      hoverBackgroundColor: 'var(--surface-hover)',
+      hoverBorderColor: 'var(--border-hover)',
+      hoverShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
     },
     outline: {
-      backgroundColor: 'var(--accent-green)',
-      color: '#ffffff',
+      backgroundColor: 'transparent',
+      color: 'var(--accent-green)',
       border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: '#047857',
-      hoverBorderColor: '#047857',
+      hoverBackgroundColor: 'var(--accent-green)',
+      hoverColor: '#ffffff',
+      hoverBorderColor: 'var(--accent-green)',
       hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
     },
     ghost: {
-      backgroundColor: 'var(--accent-green)',
-      color: '#ffffff',
-      border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: '#047857',
-      hoverBorderColor: '#047857',
-      hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      backgroundColor: 'transparent',
+      color: 'var(--text-primary)',
+      border: '1px solid transparent',
+      hoverBackgroundColor: 'var(--surface-hover)',
+      hoverBorderColor: 'var(--border)',
+      hoverShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
     },
     danger: {
-      backgroundColor: 'var(--accent-green)',
+      backgroundColor: 'var(--error-red)',
       color: '#ffffff',
-      border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: '#047857',
-      hoverBorderColor: '#047857',
-      hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      border: '1px solid var(--error-red)',
+      hoverBackgroundColor: '#dc2626',
+      hoverBorderColor: '#dc2626',
+      hoverShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2)'
     },
     success: {
       backgroundColor: 'var(--accent-green)',
       color: '#ffffff',
       border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: '#047857',
-      hoverBorderColor: '#047857',
-      hoverShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      hoverBackgroundColor: 'var(--accent-green-dark)',
+      hoverBorderColor: 'var(--accent-green-dark)',
+      hoverShadow: '0 10px 15px -3px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.2)'
     }
   };
 
@@ -128,11 +129,9 @@ const Button = ({
     backgroundColor: currentVariant.backgroundColor,
     color: currentVariant.color,
     borderColor: currentVariant.border,
-    ...currentVariant,
-    // Ensure text is always visible
-    textShadow: 'none',
-    // Force text color inheritance
-    '--button-text-color': currentVariant.color
+    border: currentVariant.border,
+    // Ensure text is always visible and inherited by children
+    textShadow: 'none'
   };
 
   const handleMouseEnter = (e) => {
@@ -172,7 +171,7 @@ const Button = ({
         <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
       )}
       {!loading && Icon && iconPosition === 'left' && iconElement}
-      {children}
+      <span style={{ color: 'inherit' }}>{children}</span>
       {!loading && Icon && iconPosition === 'right' && iconElement}
     </>
   );
@@ -180,86 +179,38 @@ const Button = ({
   // If href is provided, render as anchor tag
   if (href) {
     return (
-      <>
-        <a
-          href={href}
-          target={target}
-          rel={rel}
-          className={className}
-          style={buttonStyles}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onClick={disabled || loading ? (e) => e.preventDefault() : onClick}
-          data-button-component="true"
-          {...props}
-        >
-          {content}
-        </a>
-        
-      {/* Ensure consistent green and white button styling - scoped to this component */}
-      <style jsx>{`
-        /* Only target this specific button element with data attribute */
-        a[data-button-component="true"] {
-          color: #ffffff !important;
-          background-color: var(--accent-green) !important;
-          border-color: var(--accent-green) !important;
-        }
-        
-        /* Ensure consistent styling in all themes */
-        .light a[data-button-component="true"],
-        .dark a[data-button-component="true"] {
-          color: #ffffff !important;
-          background-color: var(--accent-green) !important;
-        }
-        
-        /* Override any inherited text colors */
-        a[data-button-component="true"] * {
-          color: #ffffff !important;
-        }
-      `}</style>
-      </>
+      <a
+        href={href}
+        target={target}
+        rel={rel}
+        className={className}
+        style={buttonStyles}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={disabled || loading ? (e) => e.preventDefault() : onClick}
+        data-button-component="true"
+        {...props}
+      >
+        {content}
+      </a>
     );
   }
 
   // Otherwise render as button
   return (
-    <>
-      <button
-        type={type}
-        className={className}
-        style={buttonStyles}
-        disabled={disabled || loading}
-        onClick={onClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        data-button-component="true"
-        {...props}
-      >
-        {content}
-      </button>
-      
-      {/* Ensure consistent green and white button styling - scoped to this component */}
-      <style jsx>{`
-        /* Only target this specific button element with data attribute */
-        button[data-button-component="true"] {
-          color: #ffffff !important;
-          background-color: var(--accent-green) !important;
-          border-color: var(--accent-green) !important;
-        }
-        
-        /* Ensure consistent styling in all themes */
-        .light button[data-button-component="true"],
-        .dark button[data-button-component="true"] {
-          color: #ffffff !important;
-          background-color: var(--accent-green) !important;
-        }
-        
-        /* Override any inherited text colors */
-        button[data-button-component="true"] * {
-          color: #ffffff !important;
-        }
-      `}</style>
-    </>
+    <button
+      type={type}
+      className={className}
+      style={buttonStyles}
+      disabled={disabled || loading}
+      onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      data-button-component="true"
+      {...props}
+    >
+      {content}
+    </button>
   );
 };
 

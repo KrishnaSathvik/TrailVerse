@@ -140,17 +140,20 @@ const CookieConsent = () => {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={handleAcceptAll}
-                  className="flex-1 px-3 py-2 rounded-full text-sm font-semibold text-white transition shadow-lg hover:shadow-xl"
+                  className="flex-1 px-3 py-2 rounded-full text-sm font-semibold shadow-lg hover:shadow-xl"
                   style={{
                     backgroundColor: 'var(--accent-green)',
+                    color: '#ffffff !important',
                     boxShadow: '0 4px 6px rgba(34, 197, 94, 0.3)'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = 'var(--accent-green-dark)';
+                    e.target.style.setProperty('color', '#ffffff', 'important');
                     e.target.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.4)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.backgroundColor = 'var(--accent-green)';
+                    e.target.style.setProperty('color', '#ffffff', 'important');
                     e.target.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.3)';
                   }}
                 >
@@ -371,17 +374,20 @@ const CookieConsent = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleAcceptSelected}
-                  className="flex-1 px-3 py-2 rounded-full text-sm font-semibold text-white transition shadow-lg hover:shadow-xl"
+                  className="flex-1 px-3 py-2 rounded-full text-sm font-semibold shadow-lg hover:shadow-xl"
                   style={{
                     backgroundColor: 'var(--accent-green)',
+                    color: '#ffffff !important',
                     boxShadow: '0 4px 6px rgba(34, 197, 94, 0.3)'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = 'var(--accent-green-dark)';
+                    e.target.style.setProperty('color', '#ffffff', 'important');
                     e.target.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.4)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.backgroundColor = 'var(--accent-green)';
+                    e.target.style.setProperty('color', '#ffffff', 'important');
                     e.target.style.boxShadow = '0 4px 6px rgba(34, 197, 94, 0.3)';
                   }}
                 >

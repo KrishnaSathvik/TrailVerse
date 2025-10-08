@@ -12,15 +12,18 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
   const styles = {
     success: {
       icon: CheckCircle,
-      iconColor: 'var(--accent-green)'
+      iconColor: 'var(--accent-green)',
+      closeColor: 'var(--text-secondary)'
     },
     error: {
       icon: AlertCircle,
-      iconColor: '#ef4444' // Red for errors
+      iconColor: '#ef4444', // Red for errors
+      closeColor: '#000000' // Pure black for maximum contrast
     },
     info: {
       icon: Info,
-      iconColor: 'var(--accent-blue)'
+      iconColor: 'var(--accent-blue)',
+      closeColor: 'var(--text-secondary)'
     }
   };
 
@@ -44,10 +47,22 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
         <p className="flex-1 text-sm" style={{ color: 'var(--text-primary)' }}>{message}</p>
         <button 
           onClick={onClose} 
-          className="hover:opacity-75 transition-opacity"
-          style={{ color: style.iconColor }}
+          className="hover:opacity-75"
+          style={{ 
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            borderRadius: '4px'
+          }}
         >
-          <X className="h-5 w-5" />
+          <X 
+            className="h-5 w-5" 
+            style={{ 
+              color: style.closeColor,
+              strokeWidth: '2.5'
+            }} 
+          />
         </button>
       </div>
     </div>
