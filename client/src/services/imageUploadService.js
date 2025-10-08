@@ -71,13 +71,13 @@ class ImageUploadService {
 
   // Get image URL
   getImageUrl(filename) {
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
     return `${baseUrl}/images/file/${filename}`;
   }
 
   // Get thumbnail URL
   getThumbnailUrl(filename) {
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
     const thumbnailFilename = filename.replace(/(\.[^.]+)$/, '_thumb$1');
     return `${baseUrl}/images/file/${thumbnailFilename}`;
   }

@@ -5,7 +5,7 @@
 
 import globalCacheManager from './globalCacheManager';
 import npsApi from './npsApi';
-import weatherService from './weatherService.js';
+import weatherService from './weatherService.ts';
 
 class SmartPrefetchService {
   constructor() {

@@ -15,7 +15,7 @@ class WebSocketService {
       return this.socket;
     }
 
-    const serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+    const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     
     this.socket = io(serverUrl, {
       auth: {

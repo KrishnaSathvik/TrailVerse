@@ -87,7 +87,7 @@ const LandingPage = () => {
         title="TrailVerse - Explore America's 63 National Parks"
         description="Discover, plan, and explore America's 63 National Parks with AI-powered trip planning, interactive maps, real-time weather, events calendar, and expert travel guides. Start your adventure today!"
         keywords="national parks USA, visit national parks, national park guide, park explorer, yellowstone, yosemite, grand canyon, zion, acadia, park planning, AI trip planner, hiking trails, camping, wildlife"
-        url={process.env.REACT_APP_WEBSITE_URL || "https://www.nationalparksexplorerusa.com"}
+        url={import.meta.env.VITE_WEBSITE_URL || "https://www.nationalparksexplorerusa.com"}
         image="https://www.nationalparksexplorerusa.com/images/og-home.jpg"
         additionalStructuredData={organizationSchema}
       />

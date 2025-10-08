@@ -2,7 +2,7 @@ import axios from 'axios';
 import globalCacheManager from './globalCacheManager';
 // import type { WeatherData, ForecastData } from '../types/weather';
 
-const OPENWEATHER_API_KEY = process.env.REACT_APP_OPENWEATHER_API_KEY;
+const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 const API_BASE = 'https://api.openweathermap.org/data/2.5';
 
 // Debug: Log API key status (remove in production)
@@ -10,8 +10,8 @@ if (!OPENWEATHER_API_KEY) {
   console.warn('⚠️ REACT_APP_OPENWEATHER_API_KEY is not set! Weather data will fall back to sample data.');
   console.warn('Environment check:', {
     NODE_ENV: process.env.NODE_ENV,
-    hasKey: !!process.env.REACT_APP_OPENWEATHER_API_KEY,
-    keyLength: process.env.REACT_APP_OPENWEATHER_API_KEY?.length || 0
+    hasKey: !!import.meta.env.VITE_OPENWEATHER_API_KEY,
+    keyLength: import.meta.env.VITE_OPENWEATHER_API_KEY?.length || 0
   });
 } else {
   console.log('✅ OpenWeatherAPI key loaded successfully');

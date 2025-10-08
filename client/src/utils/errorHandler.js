@@ -148,7 +148,7 @@ export const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => 
  * @param {string} baseURL - Base URL to check
  * @returns {Promise<boolean>} - True if server is available
  */
-export const checkServerHealth = async (baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api') => {
+export const checkServerHealth = async (baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api') => {
   try {
     const response = await fetch(`${baseURL}/health`, {
       method: 'GET',

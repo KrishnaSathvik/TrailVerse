@@ -8,7 +8,7 @@ import cacheService from './cacheService';
 
 class EnhancedApiService {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
     this.timeout = 60000;
     this.retryAttempts = 3;
     this.retryDelay = 1000;

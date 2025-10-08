@@ -7,7 +7,7 @@ import reportWebVitals from './reportWebVitals';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 // Override console methods in production
-if (process.env.NODE_ENV === 'production') {
+if (import.meta.env.PROD) {
   // Keep console.error for debugging
   const originalError = console.error;
   const originalWarn = console.warn;
