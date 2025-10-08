@@ -867,6 +867,23 @@ const ProfilePage = () => {
                     Cancel
                   </Button>
                   <Button
+                    onClick={() => {
+                      // Generate another random avatar
+                      const seed = user?.email || user?.firstName || 'traveler';
+                      const randomAvatar = generateRandomAvatar(seed);
+                      setProfileData(prev => ({ 
+                        ...prev, 
+                        avatar: randomAvatar,
+                        avatarVersion: Date.now()
+                      }));
+                    }}
+                    variant="outline"
+                    size="sm"
+                    icon={User}
+                  >
+                    Generate New
+                  </Button>
+                  <Button
                     onClick={async () => {
                       try {
                         // Save - keep the new avatar and save to database immediately
