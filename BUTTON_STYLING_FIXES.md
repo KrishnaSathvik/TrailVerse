@@ -190,12 +190,32 @@ For cases where you need to style buttons outside the component:
    - Fixed danger variant to use red colors
    - Fixed success variant hover states
    - Cleaned up styling hierarchy
+   - Added color inheritance for text visibility
 
 2. `/client/src/styles/themes.css`
    - Fixed `.btn-secondary` to be distinct from primary
    - Added `.btn-outline` utility class
    - Added `.btn-danger` utility class
    - Updated hover states to use theme variables
+   - Added scoped color inheritance rules for Button component
+
+3. `/client/src/components/common/CookieConsent.jsx` (Follow-up Fix)
+   - Replaced hardcoded Accept/Reject/Settings buttons with Button component
+   - Replaced Save/Cancel buttons in settings panel with Button component
+   - Removed inline green styles and hover handlers
+
+4. `/client/src/pages/FAQPage.jsx` (Follow-up Fix)
+   - Replaced hardcoded "Contact Support" link with Button component
+   - Removed inline green styles and hover handlers
+
+5. `/client/src/pages/AboutPage.jsx` (Follow-up Fix)
+   - Replaced hardcoded "Explore Parks" button with Button component
+   - Replaced hardcoded "Follow Me" link with Button component
+   - Removed bg-forest-500 class usage
+
+6. `/client/src/pages/ProfilePage.jsx` (Follow-up Fix)
+   - Replaced hardcoded Edit avatar button with Button component
+   - Removed inline green styles
 
 ---
 
