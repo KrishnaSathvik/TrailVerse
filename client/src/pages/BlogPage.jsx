@@ -427,14 +427,22 @@ const BlogPage = () => {
                   />
 
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
+                    <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      variant={currentPage === page ? 'primary' : 'secondary'}
-                      size="md"
+                      className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+                        currentPage === page ? 'ring-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: currentPage === page ? 'var(--surface-active)' : 'var(--surface)',
+                        borderWidth: '1px',
+                        borderColor: currentPage === page ? 'var(--border-hover)' : 'var(--border)',
+                        color: 'var(--text-primary)',
+                        boxShadow: currentPage === page ? 'var(--shadow-lg)' : 'var(--shadow)'
+                      }}
                     >
                       {page}
-                    </Button>
+                    </button>
                   ))}
 
                   <Button
