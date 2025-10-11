@@ -164,7 +164,7 @@ const Header = () => {
             <div className="grid gap-2">
               {/* Theme Switcher */}
               <div className="flex items-center justify-center px-4 py-2">
-                <ThemeSwitcher compact />
+                <ThemeSwitcher showLabel />
               </div>
               
               {/* Navigation Items - Show only for authenticated users */}
