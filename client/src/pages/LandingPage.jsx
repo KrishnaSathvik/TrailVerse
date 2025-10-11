@@ -12,7 +12,7 @@ import { handleApiError, fallbackData } from '../utils/errorHandler';
 import { 
   Compass, Mountain, Sparkles, Clock, Shield, 
   MapPin, Calendar, Heart, Camera, BookOpen, Route,
-  Star
+  Star, Eye
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -435,7 +435,7 @@ const LandingPage = () => {
       {/* Testimonials Section */}
       <TestimonialsSection featured={true} limit={6} />
 
-      {/* CTA Section */}
+      {/* Features Preview Section */}
       <section className="py-16 pb-32 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="rounded-3xl p-12 sm:p-16 text-center backdrop-blur"
@@ -446,38 +446,25 @@ const LandingPage = () => {
               boxShadow: 'var(--shadow-xl)'
             }}
           >
-            <Mountain className="h-16 w-16 mx-auto mb-6 text-forest-400" />
+            <Sparkles className="h-16 w-16 mx-auto mb-6 text-forest-400" />
             <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4"
               style={{ color: 'var(--text-primary)' }}
             >
-              Ready to start your adventure?
+              Discover Our Features
             </h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto"
               style={{ color: 'var(--text-primary)' }}
             >
-              Join thousands of explorers discovering America&apos;s most beautiful places. 
-              Create your free account and start planning today.
+              From AI-powered trip planning to interactive maps and community reviews, explore all the tools that make TrailVerse special.
             </p>
-
-            {isAuthenticated ? (
-              <Button
-                onClick={() => navigate('/explore')}
-                variant="secondary"
-                size="xl"
-                icon={Sparkles}
-              >
-                Continue Exploring
-              </Button>
-            ) : (
-              <Button
-                onClick={() => navigate('/signup')}
-                variant="secondary"
-                size="xl"
-                icon={Sparkles}
-              >
-                Get Started
-              </Button>
-            )}
+            <Button
+              onClick={() => navigate('/features')}
+              variant="secondary"
+              size="xl"
+              icon={Eye}
+            >
+              Explore All Features
+            </Button>
           </div>
         </div>
       </section>

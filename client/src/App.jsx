@@ -35,6 +35,7 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'));
 const TestParkPage = lazy(() => import('./pages/TestParkPage'));
 const TestimonialsPage = lazy(() => import('./pages/TestimonialsPage'));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
 const FAQPage = lazy(() => import('./pages/FAQPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
@@ -202,6 +203,7 @@ function App() {
             />
             <Route path="/test/:parkCode" element={<TestParkPage />} />
             <Route path="/testimonials" element={<TestimonialsPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />

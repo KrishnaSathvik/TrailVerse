@@ -450,6 +450,8 @@ const PlanAIPage = () => {
       // Also refresh from backend to ensure consistency
       console.log('🗄️ Refreshing trips from backend...');
       await refetchUserTrips();
+      
+      showToast('Trip archived successfully', 'success');
     } catch (error) {
       console.error('Error archiving trip:', error);
       showToast('Failed to archive trip', 'error');
@@ -478,6 +480,8 @@ const PlanAIPage = () => {
       // Also refresh from backend to ensure consistency
       console.log('📦 Refreshing trips from backend...');
       await refetchUserTrips();
+      
+      showToast('Trip restored successfully', 'success');
     } catch (error) {
       console.error('Error restoring trip:', error);
       showToast('Failed to restore trip', 'error');
