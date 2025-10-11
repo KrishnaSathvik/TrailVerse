@@ -140,6 +140,22 @@ export const AuthProvider = ({ children }) => {
     console.log('✅ AuthContext: User data updated in state and localStorage');
   };
 
+  // Method to set user after email verification
+  const setUserAfterVerification = (userData, token) => {
+    console.log('✅ AuthContext: Setting user after email verification');
+    console.log('✅ AuthContext: User data:', userData);
+    console.log('✅ AuthContext: Token:', token ? `${token.substring(0, 30)}...` : 'null');
+    
+    // Store in localStorage
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Update state immediately
+    setUser(userData);
+    
+    console.log('✅ AuthContext: User authenticated after verification');
+  };
+
   const value = {
     user,
     loading,
@@ -147,6 +163,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUser,
+    setUserAfterVerification,
     isAuthenticated: !!user
   };
 

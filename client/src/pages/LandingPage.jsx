@@ -156,7 +156,6 @@ const LandingPage = () => {
         </div>
 
       </section>
-
       {/* Feature Pills */}
       <section id="features" className="relative z-10 -mt-16 py-16" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -435,7 +434,7 @@ const LandingPage = () => {
       {/* Testimonials Section */}
       <TestimonialsSection featured={true} limit={6} />
 
-      {/* Features Preview Section */}
+      {/* CTA Section */}
       <section className="py-16 pb-32 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-4xl mx-auto">
           <div className="rounded-3xl p-12 sm:p-16 text-center backdrop-blur"
@@ -446,29 +445,29 @@ const LandingPage = () => {
               boxShadow: 'var(--shadow-xl)'
             }}
           >
-            <Sparkles className="h-16 w-16 mx-auto mb-6 text-forest-400" />
+            <Mountain className="h-16 w-16 mx-auto mb-6 text-forest-400" />
             <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4"
               style={{ color: 'var(--text-primary)' }}
             >
-              Discover Our Features
+              Ready to start your adventure?
             </h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto"
               style={{ color: 'var(--text-primary)' }}
             >
-              From AI-powered trip planning to interactive maps and community reviews, explore all the tools that make TrailVerse special.
+              Join thousands of explorers discovering America&apos;s most beautiful places. 
+              Create your free account and start planning today.
             </p>
-            <Button
-              onClick={() => navigate('/features')}
-              variant="secondary"
-              size="xl"
-              icon={Eye}
-            >
-              Explore All Features
-            </Button>
+              <Button
+                onClick={() => navigate('/signup')}
+                variant="secondary"
+                size="xl"
+                icon={Sparkles}
+              >
+                Get Started
+              </Button>
           </div>
         </div>
       </section>
-
       <Footer />
     </div>
   );

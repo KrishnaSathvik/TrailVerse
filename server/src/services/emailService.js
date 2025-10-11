@@ -9,6 +9,11 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  // Additional options to improve deliverability
+  secure: true, // Use TLS
+  tls: {
+    rejectUnauthorized: true
   }
 });
 
@@ -54,8 +59,17 @@ class EmailService {
           address: process.env.EMAIL_USER
         },
         to: user.email,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_USER,
         subject: 'Welcome to TrailVerse! 🏞️',
-        html
+        html,
+        // Add headers to improve deliverability
+        headers: {
+          'X-Mailer': 'TrailVerse Email Service',
+          'X-Entity-Ref-ID': `welcome-${user._id}`,
+          'List-Unsubscribe': `<mailto:${process.env.SUPPORT_EMAIL || process.env.EMAIL_USER}?subject=unsubscribe>`,
+        },
+        // Add text version
+        text: `Hi ${user.firstName || user.name},\n\nWelcome to TrailVerse! 🏞️\n\nYour account has been verified and you're all set to start exploring America's 470+ National Parks and Sites.\n\nStart your adventure at: ${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}\n\nBest regards,\nThe TrailVerse Team`
       };
 
       await transporter.sendMail(mailOptions);
@@ -117,8 +131,18 @@ class EmailService {
           address: process.env.EMAIL_USER
         },
         to: user.email,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_USER,
         subject: 'Reset Your TrailVerse Password',
-        html
+        html,
+        // Add headers to improve deliverability
+        headers: {
+          'X-Mailer': 'TrailVerse Email Service',
+          'X-Priority': '1',
+          'Importance': 'high',
+          'X-Entity-Ref-ID': `reset-${user._id}`,
+        },
+        // Add text version
+        text: `Hi ${user.firstName || user.name},\n\nYou requested to reset your TrailVerse password. Click the link below to reset it:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.\n\nBest regards,\nThe TrailVerse Team`
       };
 
       await transporter.sendMail(mailOptions);
@@ -143,8 +167,20 @@ class EmailService {
           address: process.env.EMAIL_USER
         },
         to: user.email,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_USER,
         subject: 'Verify Your TrailVerse Account',
-        html
+        html,
+        // Add headers to improve deliverability and reduce spam score
+        headers: {
+          'X-Mailer': 'TrailVerse Email Service',
+          'X-Priority': '1',
+          'Importance': 'high',
+          'X-Entity-Ref-ID': `verify-${user._id}`,
+          'List-Unsubscribe': `<mailto:${process.env.SUPPORT_EMAIL || process.env.EMAIL_USER}?subject=unsubscribe>`,
+          'Precedence': 'bulk'
+        },
+        // Add text version for better deliverability
+        text: `Hi ${user.firstName || user.name},\n\nWelcome to TrailVerse! Please verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis link will expire in 24 hours.\n\nIf you didn't create a TrailVerse account, please ignore this email.\n\nBest regards,\nThe TrailVerse Team`
       };
 
       await transporter.sendMail(mailOptions);
