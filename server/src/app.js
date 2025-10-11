@@ -171,6 +171,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/blogs', require('./routes/blogs'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/ai/feedback', require('./routes/feedback'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/trips', require('./routes/trips'));
 app.use('/api/favorites', require('./routes/favorites'));

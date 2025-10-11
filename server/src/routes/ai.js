@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
 const { fetchRelevantFacts } = require('../services/factsService');
+const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 
 // Initialize AI clients
 let anthropic = null;
@@ -330,5 +331,9 @@ router.get('/test-models', protect, async (req, res) => {
 
 // Get token usage information
 router.get('/token-usage', protect, getTokenUsage);
+
+// AI Analytics routes
+router.get('/analytics', protect, getAIAnalytics);
+router.get('/learning-insights', protect, getLearningInsights);
 
 module.exports = router;

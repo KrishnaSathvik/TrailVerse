@@ -14,6 +14,7 @@ import PrivateRoute from './routes/PrivateRoute';
 import AdminRoute from './routes/AdminRoute';
 import { initGA, trackPageView } from './utils/analytics';
 import { setQueryClient } from './utils/cacheUtils';
+import localStorageMonitor from './utils/localStorageMonitor';
 
 // Lazy load all pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -81,6 +82,21 @@ function App() {
   useEffect(() => {
     initGA();
     console.log('🚀 National Parks Explorer App loaded successfully!');
+    
+    // Initialize localStorage monitoring
+    if (process.env.NODE_ENV === 'development') {
+      // Log status in development
+      localStorageMonitor.logStatus();
+    }
+    
+    // Start periodic monitoring (every 5 minutes in production, 1 minute in dev)
+    const interval = process.env.NODE_ENV === 'development' ? 60000 : 300000;
+    localStorageMonitor.startMonitoring(interval);
+    
+    // Cleanup on unmount
+    return () => {
+      localStorageMonitor.stopMonitoring();
+    };
   }, []);
 
   return (

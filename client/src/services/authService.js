@@ -36,6 +36,7 @@ api.interceptors.response.use(
 
 class AuthService {
   async signup(firstName, lastName, email, password) {
+    console.log('📝 AuthService: signup() called');
     const response = await api.post('/auth/signup', {
       firstName,
       lastName,
@@ -43,10 +44,11 @@ class AuthService {
       password
     });
     
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.data));
-    }
+    console.log('✅ AuthService: Signup response:', response.data);
+    
+    // Signup doesn't return a token - email verification is required
+    // User will get a token after verification or manual login
+    // Don't store anything in localStorage during signup
     
     return response.data;
   }

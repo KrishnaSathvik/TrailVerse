@@ -27,6 +27,11 @@ const ComparePage = () => {
     if (!allParks) return [];
     
     return allParks.filter(park => {
+      // Only show National Parks
+      if (park.designation !== 'National Park') {
+        return false;
+      }
+
       // Exclude already selected parks
       if (selectedParks.some(p => p.parkCode === park.parkCode)) {
         return false;
@@ -241,12 +246,12 @@ const ComparePage = () => {
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4"
               style={{ color: 'var(--text-primary)' }}
             >
-              Compare Parks
+              Compare National Parks
             </h1>
             <p className="text-lg sm:text-xl max-w-3xl"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Compare up to 4 national parks side-by-side. Activities, weather, facilities, 
+              Compare up to 4 National Parks side-by-side. Activities, weather, facilities, 
               and more to help you choose your next adventure.
             </p>
           </div>
@@ -262,7 +267,7 @@ const ComparePage = () => {
               <h2 className="text-2xl font-bold"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Select Parks to Compare
+                Select National Parks to Compare
               </h2>
               {selectedParks.length > 0 && (
                 <button
@@ -491,47 +496,8 @@ const ComparePage = () => {
                     </div>
                   </div>
 
-                  {/* Mobile Park Names Header */}
-                  <div className="lg:hidden"
-                    style={{ borderColor: 'var(--border)' }}
-                  >
-                    <div className="border border-b-0"
-                      style={{ borderColor: 'var(--border)' }}
-                    >
-                      <div className="flex w-full">
-                        <div className="flex-shrink-0 px-3 py-3 font-semibold text-sm text-left border-r"
-                          style={{ 
-                            backgroundColor: 'var(--surface-hover)',
-                            color: 'var(--text-secondary)',
-                            borderColor: 'var(--border)',
-                            width: enhancedParks.length <= 2 ? '120px' : 
-                                   enhancedParks.length === 3 ? '100px' : '90px'
-                          }}
-                        >
-                          Comparison
-                        </div>
-                        {enhancedParks.map((park) => {
-                          const availableWidth = enhancedParks.length <= 2 ? 'calc(50% - 60px)' : 
-                                               enhancedParks.length === 3 ? 'calc(33.333% - 33.33px)' : 
-                                               'calc(25% - 22.5px)';
-                          return (
-                            <div key={park.parkCode} className="px-3 py-3 font-semibold text-sm text-center border-r last:border-r-0"
-                              style={{ 
-                                backgroundColor: 'var(--surface-hover)',
-                                color: 'var(--text-primary)',
-                                borderColor: 'var(--border)',
-                                width: availableWidth
-                              }}
-                            >
-                              {park.fullName.split(' ').slice(0, 2).join(' ')}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
                   {/* Basic Information */}
-                  <ComparisonRow label="Basic Info">
+                  <ComparisonRow label="Basic Info" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm font-medium">{park.designation}</div>
@@ -543,7 +509,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Ratings & Reviews */}
-                  <ComparisonRow label="Ratings & Reviews">
+                  <ComparisonRow label="Ratings & Reviews" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1">
@@ -566,7 +532,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Weather Information */}
-                  <ComparisonRow label="Weather">
+                  <ComparisonRow label="Weather" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm font-medium">
@@ -587,12 +553,12 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Facilities */}
-                  <ComparisonRow label="Facilities">
+                  <ComparisonRow label="Facilities" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm">
                           <span className="font-medium">{park.facilities?.visitorCenters?.count || 0}</span> centers • 
-                          <span className="font-medium"> {park.facilities?.campgrounds?.count || park.facilities?.camping?.count || 0}</span> campgrounds
+                          <span className="font-medium"> {park.facilities?.campgrounds?.count || park.facilities?.camping?.count || 0}</span> camps
                         </div>
                         <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                           Food: {park.facilities?.foodServices ? 'Yes' : 'Limited'} • 
@@ -603,35 +569,35 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Accessibility */}
-                  <ComparisonRow label="Accessibility">
+                  <ComparisonRow label="Accessibility" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
-                      <div key={park.parkCode} className="flex items-center justify-center gap-2">
+                      <div key={park.parkCode} className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1">
                           {park.facilities?.accessibility?.wheelchairAccessible ? (
                             <Check className="h-4 w-4 text-green-400" />
                           ) : (
                             <X className="h-4 w-4 text-red-400" />
                           )}
-                          <span className="text-sm">
-                            {park.facilities?.accessibility?.wheelchairAccessible ? 'Wheelchair Accessible' : 'Limited Access'}
-                          </span>
                         </div>
+                        <span className="text-xs text-center">
+                          {park.facilities?.accessibility?.wheelchairAccessible ? 'Wheelchair Accessible' : 'Limited Access'}
+                        </span>
                       </div>
                     ))}
                   </ComparisonRow>
 
                   {/* Trip Planning */}
-                  <ComparisonRow label="Best Time to Visit">
+                  <ComparisonRow label="Best Time to Visit" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
-                      <div key={park.parkCode} className="flex flex-col gap-1">
+                      <div key={park.parkCode} className="flex flex-col gap-2">
                         <div className="flex flex-wrap gap-1 justify-center">
                           {(park.bestTimeToVisit?.months || ['Year Round']).map((month, index) => (
-                            <span key={index} className="px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium">
+                            <span key={index} className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium">
                               {month}
                             </span>
                           ))}
                         </div>
-                        <div className="text-xs leading-tight text-center" style={{ color: 'var(--text-tertiary)' }}>
+                        <div className="text-xs leading-relaxed text-center" style={{ color: 'var(--text-tertiary)' }}>
                           {park.bestTimeToVisit?.reasons?.slice(0, 2).join(' • ') || 'Good weather year-round'}
                         </div>
                       </div>
@@ -639,7 +605,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Crowd Level */}
-                  <ComparisonRow label="Crowd Level">
+                  <ComparisonRow label="Crowd Level" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-2 items-center">
                         <span
@@ -664,7 +630,7 @@ const ComparePage = () => {
 
                   {/* Common Activities */}
                   {comparisonData?.commonActivities && (comparisonData.commonActivities.commonToAll.length > 0 || comparisonData.commonActivities.mostlyCommon.length > 0) && (
-                    <ComparisonRow label="Activities">
+                    <ComparisonRow label="Activities" parkNames={enhancedParks.map(p => p.fullName)}>
                       {enhancedParks.map((park) => {
                         // Combine all activities into one list
                         const allActivities = [
@@ -699,7 +665,7 @@ const ComparePage = () => {
                   )}
 
                   {/* Quick Actions */}
-                  <ComparisonRow label="Quick Actions">
+                  <ComparisonRow label="Quick Actions" parkNames={enhancedParks.map(p => p.fullName)}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex justify-center">
                         <Link
@@ -785,7 +751,7 @@ const ComparisonSection = ({ title, icon: Icon, isExpanded, onToggle, children }
 };
 
 // Comparison Row Component
-const ComparisonRow = ({ label, children }) => {
+const ComparisonRow = ({ label, children, parkNames = [] }) => {
   const childArray = React.Children.toArray(children);
   
   return (
@@ -818,53 +784,52 @@ const ComparisonRow = ({ label, children }) => {
         </div>
       </div>
 
-      {/* Mobile Tabular Layout */}
+      {/* Mobile Card Layout */}
       <div className="lg:hidden">
-        {/* Responsive Table Row */}
-        <div className="border-b"
+        <div className="border-b p-4"
           style={{ borderColor: 'var(--border)' }}
         >
-          <div className="flex w-full"
-            style={{ 
-              borderColor: 'var(--border)'
-            }}
-          >
-            {/* Row Label */}
-            <div className="flex-shrink-0 px-3 py-3 font-semibold text-sm border-r"
-              style={{ 
-                color: 'var(--text-secondary)',
-                backgroundColor: 'var(--surface-hover)',
-                borderColor: 'var(--border)',
-                width: childArray.length <= 2 ? '120px' : 
-                       childArray.length === 3 ? '100px' : '90px'
-              }}
+          {/* Row Label */}
+          <div className="mb-3">
+            <h4 className="font-semibold text-sm"
+              style={{ color: 'var(--text-secondary)' }}
             >
               {label}
-            </div>
-            
-            {/* Park Data Columns - Responsive width based on number of parks */}
-            {childArray.map((child, index) => {
-              const availableWidth = childArray.length <= 2 ? 'calc(50% - 60px)' : 
-                                   childArray.length === 3 ? 'calc(33.333% - 33.33px)' : 
-                                   'calc(25% - 22.5px)';
-              return (
-                <div key={index} className="border-r last:border-r-0 overflow-hidden"
-                  style={{ 
-                    borderColor: 'var(--border)',
-                    width: availableWidth
-                  }}
-                >
-                  {/* Park Data */}
-                  <div className="p-2 text-sm min-h-[80px] flex items-center justify-center w-full"
-                    style={{ color: 'var(--text-primary)' }}
+            </h4>
+          </div>
+          
+          {/* Park Data Cards with Park Names */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {childArray.map((child, index) => (
+              <div key={index} 
+                className="p-3 rounded-lg"
+                style={{ 
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                {/* Park Name Header */}
+                {parkNames[index] && (
+                  <div className="mb-2 pb-2 border-b"
+                    style={{ borderColor: 'var(--border)' }}
                   >
-                    <div className="w-full text-center leading-relaxed overflow-hidden">
-                      {child}
-                    </div>
+                    <h5 className="font-semibold text-xs"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {parkNames[index]}
+                    </h5>
                   </div>
+                )}
+                
+                {/* Park Data */}
+                <div className="text-sm"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {child}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </div>

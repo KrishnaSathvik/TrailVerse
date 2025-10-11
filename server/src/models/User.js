@@ -66,6 +66,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  // DEPRECATED: savedParks will be removed in v2.0
+  // Use Favorite collection instead for more flexible park tracking
+  // This field is kept for backwards compatibility only
   savedParks: [{
     parkCode: {
       type: String,
@@ -159,8 +162,10 @@ userSchema.methods.comparePassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Method to save a park
+// DEPRECATED: Method to save a park
+// Use Favorite collection and favoriteController instead
 userSchema.methods.savePark = function(parkCode, parkName) {
+  console.warn('User.savePark() is deprecated. Use Favorite collection instead.');
   // Check if already saved
   const alreadySaved = this.savedParks.some(p => p.parkCode === parkCode);
   
@@ -175,19 +180,25 @@ userSchema.methods.savePark = function(parkCode, parkName) {
   return this.save();
 };
 
-// Method to remove a saved park
+// DEPRECATED: Method to remove a saved park
+// Use Favorite collection and favoriteController instead
 userSchema.methods.removeSavedPark = function(parkCode) {
+  console.warn('User.removeSavedPark() is deprecated. Use Favorite collection instead.');
   this.savedParks = this.savedParks.filter(p => p.parkCode !== parkCode);
   return this.save();
 };
 
-// Method to check if park is saved
+// DEPRECATED: Method to check if park is saved
+// Use Favorite collection and favoriteController instead
 userSchema.methods.isParkSaved = function(parkCode) {
+  console.warn('User.isParkSaved() is deprecated. Use Favorite collection instead.');
   return this.savedParks.some(p => p.parkCode === parkCode);
 };
 
-// Method to mark a park as visited
+// DEPRECATED: Method to mark a park as visited
+// Use VisitedPark collection instead
 userSchema.methods.markParkVisited = function(parkCode, visitDate = new Date()) {
+  console.warn('User.markParkVisited() is deprecated. Use VisitedPark collection instead.');
   const park = this.savedParks.find(p => p.parkCode === parkCode);
   if (park) {
     park.visited = true;
@@ -196,8 +207,10 @@ userSchema.methods.markParkVisited = function(parkCode, visitDate = new Date()) 
   return this.save();
 };
 
-// Method to get visited parks count
+// DEPRECATED: Method to get visited parks count
+// Use VisitedPark collection instead
 userSchema.methods.getVisitedParksCount = function() {
+  console.warn('User.getVisitedParksCount() is deprecated. Use VisitedPark collection instead.');
   return this.savedParks.filter(p => p.visited).length;
 };
 

@@ -25,7 +25,7 @@ const Footer = () => {
                 TrailVerse
               </span>
             </div>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
               Your Universe of National Parks Exploration
             </p>
           </div>
@@ -34,7 +34,7 @@ const Footer = () => {
           {/* Resources */}
           <div>
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Resources</h3>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-2 text-base sm:text-sm">
               <li><Link to="/faq" className="transition" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
               <li><a href="https://www.nps.gov" target="_blank" rel="noopener noreferrer" className="transition" style={{ color: 'var(--text-secondary)' }}>NPS Official Site</a></li>
               <li><Link to="/about" className="transition" style={{ color: 'var(--text-secondary)' }}>About Us</Link></li>
@@ -50,7 +50,7 @@ const Footer = () => {
               <Mail className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
               <a 
                 href="mailto:trailverseteam@gmail.com" 
-                className="text-sm transition hover:opacity-80" 
+                className="text-base sm:text-sm transition hover:opacity-80" 
                 style={{ color: 'var(--text-secondary)' }}
               >
                 trailverseteam@gmail.com
@@ -67,7 +67,7 @@ const Footer = () => {
           }}
         >
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-base sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
               &copy; {new Date().getFullYear()} TrailVerse. All rights reserved.
             </p>
           </div>

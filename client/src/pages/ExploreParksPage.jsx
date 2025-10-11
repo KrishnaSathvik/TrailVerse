@@ -26,7 +26,24 @@ const ExploreParksPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [currentPage, setCurrentPage] = useState(1);
-  const [parksPerPage] = useState(12);
+  
+  // Responsive parks per page: 6 on mobile, 12 on desktop
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const parksPerPage = isMobile ? 6 : 12;
+  
+  // Update mobile state on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const newIsMobile = window.innerWidth < 640;
+      if (newIsMobile !== isMobile) {
+        setIsMobile(newIsMobile);
+        // Reset to page 1 when switching between mobile/desktop to avoid empty pages
+        setCurrentPage(1);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobile]);
   
   const [filters, setFilters] = useState({
     nationalParksOnly: true,

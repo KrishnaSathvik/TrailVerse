@@ -99,7 +99,7 @@ const ForgotPasswordPage = () => {
               </p>
 
               <Link to="/login">
-                <Button variant="primary" size="lg" className="w-full">
+                <Button variant="secondary" size="lg" className="w-full">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Login
                 </Button>
@@ -215,7 +215,7 @@ const ForgotPasswordPage = () => {
               type="submit"
               disabled={loading}
               loading={loading}
-              variant="primary"
+              variant="secondary"
               size="lg"
               className="w-full"
             >

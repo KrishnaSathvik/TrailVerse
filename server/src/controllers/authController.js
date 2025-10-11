@@ -35,18 +35,35 @@ exports.signup = async (req, res, next) => {
     const verificationToken = user.getEmailVerificationToken();
     await user.save();
 
-    // Send verification email
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-    await emailService.sendEmailVerification(user, verificationUrl);
+    // Try to send verification email (don't let email failures prevent account creation)
+    let emailSent = false;
+    let emailError = null;
+    try {
+      const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+      await emailService.sendEmailVerification(user, verificationUrl);
+      emailSent = true;
+      console.log(`✅ Verification email sent successfully to ${user.email}`);
+    } catch (error) {
+      emailError = error.message;
+      console.error(`❌ Failed to send verification email to ${user.email}:`, error);
+      // Don't throw - let signup succeed even if email fails
+    }
 
     // Send admin notification (don't await to avoid blocking user response)
     emailService.sendAdminNewUserNotification(user).catch(error => {
       console.error('Failed to send admin notification:', error);
     });
 
+    // Return success even if email failed
+    const message = emailSent 
+      ? 'Account created! Please check your email to verify your account.'
+      : 'Account created! However, we had trouble sending the verification email. Please try logging in or contact support.';
+
     res.status(201).json({
       success: true,
-      message: 'Account created! Please check your email to verify your account.',
+      message,
+      emailSent,
+      ...(emailError && { emailError: 'Failed to send verification email' }),
       data: {
         id: user._id,
         name: user.name,
@@ -58,6 +75,14 @@ exports.signup = async (req, res, next) => {
       }
     });
   } catch (error) {
+    // If user creation failed due to database error after user was created
+    // This can happen if there's a race condition or connection issue
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists with this email'
+      });
+    }
     next(error);
   }
 };

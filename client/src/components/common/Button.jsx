@@ -2,7 +2,7 @@ import React from 'react';
 
 const Button = ({
   children,
-  variant = 'primary',
+  variant = 'secondary',
   size = 'md',
   disabled = false,
   loading = false,
@@ -38,6 +38,7 @@ const Button = ({
     MozUserSelect: 'none',
     msUserSelect: 'none',
     WebkitTapHighlightColor: 'transparent',
+    WebkitTouchCallout: 'none',
     outline: 'none',
     ...style
   };
@@ -74,17 +75,17 @@ const Button = ({
   // Color variants - Proper distinction between all variants
   const variantStyles = {
     primary: {
-      backgroundColor: 'var(--surface-active)',
-      color: 'var(--text-primary)',
-      border: '1px solid var(--accent-green)',
-      hoverBackgroundColor: 'var(--surface-hover)',
-      hoverBorderColor: 'var(--accent-green)',
+      backgroundColor: 'var(--accent-green)',
+      color: '#ffffff',
+      borderColor: 'var(--accent-green)',
+      hoverBackgroundColor: 'var(--accent-green-dark)',
+      hoverBorderColor: 'var(--accent-green-dark)',
       hoverShadow: 'var(--shadow-lg)'
     },
     secondary: {
       backgroundColor: 'var(--surface)',
       color: 'var(--text-primary)',
-      border: '1px solid var(--border)',
+      borderColor: 'var(--border)',
       hoverBackgroundColor: 'var(--surface-hover)',
       hoverBorderColor: 'var(--border-hover)',
       hoverShadow: 'var(--shadow-lg)'
@@ -92,7 +93,7 @@ const Button = ({
     outline: {
       backgroundColor: 'transparent',
       color: 'var(--accent-green)',
-      border: '1px solid var(--accent-green)',
+      borderColor: 'var(--accent-green)',
       hoverBackgroundColor: 'var(--accent-green)',
       hoverColor: '#ffffff',
       hoverBorderColor: 'var(--accent-green)',
@@ -101,7 +102,7 @@ const Button = ({
     ghost: {
       backgroundColor: 'transparent',
       color: 'var(--text-primary)',
-      border: '1px solid transparent',
+      borderColor: 'transparent',
       hoverBackgroundColor: 'var(--surface-hover)',
       hoverBorderColor: 'var(--border)',
       hoverShadow: 'var(--shadow-lg)'
@@ -109,7 +110,7 @@ const Button = ({
     danger: {
       backgroundColor: 'var(--error-red)',
       color: '#ffffff',
-      border: '1px solid var(--error-red)',
+      borderColor: 'var(--error-red)',
       hoverBackgroundColor: '#dc2626',
       hoverBorderColor: '#dc2626',
       hoverShadow: 'var(--shadow-lg)'
@@ -117,14 +118,14 @@ const Button = ({
     success: {
       backgroundColor: 'var(--accent-green)',
       color: '#ffffff',
-      border: '1px solid var(--accent-green)',
+      borderColor: 'var(--accent-green)',
       hoverBackgroundColor: 'var(--accent-green-dark)',
       hoverBorderColor: 'var(--accent-green-dark)',
       hoverShadow: 'var(--shadow-lg)'
     }
   };
 
-  const currentVariant = variantStyles[variant] || variantStyles.primary;
+  const currentVariant = variantStyles[variant] || variantStyles.secondary;
   const currentSize = sizeStyles[size] || sizeStyles.md;
 
   const buttonStyles = {
@@ -132,8 +133,9 @@ const Button = ({
     ...currentSize,
     backgroundColor: currentVariant.backgroundColor,
     color: currentVariant.color,
-    borderColor: currentVariant.border,
-    border: currentVariant.border,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: currentVariant.borderColor,
     // Ensure text is always visible and inherited by children
     textShadow: 'none'
   };
@@ -156,6 +158,20 @@ const Button = ({
     e.target.style.color = currentVariant.color;
   };
 
+  const handleMouseDown = (e) => {
+    if (disabled || loading) return;
+    // Add pressed state
+    e.target.style.transform = 'scale(0.98)';
+    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.1)';
+  };
+
+  const handleMouseUp = (e) => {
+    if (disabled || loading) return;
+    // Reset pressed state
+    e.target.style.transform = 'scale(1)';
+    e.target.style.boxShadow = currentVariant.hoverShadow || baseStyles.boxShadow;
+  };
+
   const iconElement = Icon && (
     <Icon 
       className={`${size === 'xs' ? 'h-3 w-3' : size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'}`}
@@ -172,16 +188,26 @@ const Button = ({
   const content = (
     <>
       {loading && (
-        <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+        <div 
+          className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" 
+          unselectable="on"
+        />
       )}
       {!loading && Icon && iconPosition === 'left' && iconElement}
-      <span style={{ 
-        color: 'inherit',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        MozUserSelect: 'none',
-        msUserSelect: 'none'
-      }}>{children}</span>
+      <span 
+        className="button-text-no-select"
+        unselectable="on"
+        style={{ 
+          color: 'inherit',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent',
+          pointerEvents: 'none'
+        }}
+      >{children}</span>
       {!loading && Icon && iconPosition === 'right' && iconElement}
     </>
   );
@@ -197,8 +223,12 @@ const Button = ({
         style={buttonStyles}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         onClick={disabled || loading ? (e) => e.preventDefault() : onClick}
         data-button-component="true"
+        unselectable="on"
+        draggable="false"
         {...props}
       >
         {content}
@@ -216,7 +246,11 @@ const Button = ({
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
       data-button-component="true"
+      unselectable="on"
+      draggable="false"
       {...props}
     >
       {content}

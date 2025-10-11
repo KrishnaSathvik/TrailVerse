@@ -82,25 +82,38 @@ const SignupPage = () => {
 
     try {
       // Call the actual signup API
-      await signup(
+      const response = await signup(
         formData.firstName,
         formData.lastName,
         formData.email,
         formData.password
       );
       
-      showToast('Account created successfully! Check your email to verify your account.', 'success', 5000);
+      console.log('✅ SignupPage: Signup successful, response:', response);
+      
+      // Show appropriate message based on email status
+      if (response.emailSent) {
+        showToast(response.message || 'Account created successfully! Check your email to verify your account.', 'success', 5000);
+      } else {
+        // Account created but email failed
+        showToast(
+          response.message || 'Account created! However, we had trouble sending the verification email. You can still log in.',
+          'warning',
+          7000
+        );
+      }
       
       // Redirect to login with verification message and prefilled email
       navigate('/login', { 
         state: { 
-          verificationSent: true,
+          verificationSent: response.emailSent,
+          emailWarning: !response.emailSent,
           email: formData.email,
           firstName: formData.firstName
         } 
       });
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('❌ SignupPage: Signup error:', error);
       const errorMessage = error.response?.data?.error || 'Failed to create account. Please try again.';
       showToast(errorMessage, 'error');
     } finally {
@@ -237,7 +250,7 @@ const SignupPage = () => {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    placeholder="John"
+                    placeholder="First name"
                     className={`w-full pl-11 pr-4 py-3.5 rounded-xl outline-none transition ${
                       errors.firstName ? 'ring-2 ring-red-500' : ''
                     }`}
@@ -283,7 +296,7 @@ const SignupPage = () => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    placeholder="Doe"
+                    placeholder="Last name"
                     className={`w-full pl-11 pr-4 py-3.5 rounded-xl outline-none transition ${
                       errors.lastName ? 'ring-2 ring-red-500' : ''
                     }`}
@@ -376,7 +389,7 @@ const SignupPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="Enter password"
                   className={`w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition ${
                     errors.password ? 'ring-2 ring-red-500' : ''
                   }`}
@@ -453,7 +466,7 @@ const SignupPage = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="Confirm password"
                   className={`w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition ${
                     errors.confirmPassword ? 'ring-2 ring-red-500' : ''
                   }`}
@@ -544,7 +557,7 @@ const SignupPage = () => {
               type="submit"
               disabled={isLoading}
               loading={isLoading}
-              variant="primary"
+              variant="secondary"
               size="lg"
               icon={ArrowRight}
               iconPosition="right"

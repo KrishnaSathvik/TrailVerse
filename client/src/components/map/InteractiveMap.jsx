@@ -106,11 +106,19 @@ const InteractiveMap = ({
         <button
           onClick={() => setMapZoom(mapZoom + 1)}
           className="p-2 rounded-lg backdrop-blur-xl transition hover:bg-white/10"
+          unselectable="on"
+          draggable="false"
           style={{
             backgroundColor: 'var(--surface)',
             borderWidth: '1px',
             borderColor: 'var(--border)',
-            color: 'var(--text-primary)'
+            color: 'var(--text-primary)',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            outline: 'none'
           }}
         >
           <ZoomIn className="h-4 w-4" />
@@ -118,11 +126,19 @@ const InteractiveMap = ({
         <button
           onClick={() => setMapZoom(mapZoom - 1)}
           className="p-2 rounded-lg backdrop-blur-xl transition hover:bg-white/10"
+          unselectable="on"
+          draggable="false"
           style={{
             backgroundColor: 'var(--surface)',
             borderWidth: '1px',
             borderColor: 'var(--border)',
-            color: 'var(--text-primary)'
+            color: 'var(--text-primary)',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            outline: 'none'
           }}
         >
           <ZoomOut className="h-4 w-4" />
@@ -133,11 +149,19 @@ const InteractiveMap = ({
             setMapZoom(4);
           }}
           className="p-2 rounded-lg backdrop-blur-xl transition hover:bg-white/10"
+          unselectable="on"
+          draggable="false"
           style={{
             backgroundColor: 'var(--surface)',
             borderWidth: '1px',
             borderColor: 'var(--border)',
-            color: 'var(--text-primary)'
+            color: 'var(--text-primary)',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            outline: 'none'
           }}
           title="Reset view"
         >

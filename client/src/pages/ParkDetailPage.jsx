@@ -157,7 +157,7 @@ const ParkDetailPage = () => {
           </p>
           <Button
             onClick={() => navigate('/explore')}
-            variant="primary"
+            variant="secondary"
             size="lg"
           >
             Back to Explore
@@ -229,8 +229,8 @@ const ParkDetailPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/90" />
 
         {/* Navigation Overlay */}
-        <div className="absolute top-0 left-0 right-0 z-10 pt-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <Button
               onClick={() => navigate('/explore')}
               variant="secondary"
@@ -251,12 +251,12 @@ const ParkDetailPage = () => {
         </div>
 
         {/* Park Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pb-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="absolute bottom-0 left-0 right-0 z-10 pb-4 sm:pb-6 lg:pb-8">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
 
             <div className="mt-6 flex items-end justify-between gap-6">
               <div className="flex-1 min-w-0">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur mb-3"
+                <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full backdrop-blur mb-3"
                   style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     borderWidth: '1px',
@@ -264,34 +264,35 @@ const ParkDetailPage = () => {
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
                   }}
                 >
-                  <MapPin className="h-3 w-3 text-white" />
+                  <MapPin className="h-3 w-3 text-white flex-shrink-0" />
                   <span className="text-xs font-semibold text-white uppercase tracking-wider">
                     {park.states}
                   </span>
                 </div>
 
-                {/* Desktop: All on one line, Mobile: Two lines */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-                  {/* Park Name and Visited Button */}
-                  <div className="flex items-center flex-1 min-w-0">
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-tight drop-shadow-lg"
-                      style={{
-                        whiteSpace: 'nowrap'
-                      }}
+                {/* Mobile-first responsive layout */}
+                <div className="space-y-3 mb-3">
+                  {/* Park Name - Full width on mobile, allows wrapping */}
+                  <div className="w-full">
+                    <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-tight drop-shadow-lg"
                       title={park.fullName}
                     >
                       {park.fullName}
                     </h1>
-                    
+                  </div>
+
+                  {/* Action Buttons - Visited button on first row */}
+                  <div className="space-y-3">
+                    {/* First row - Visited button */}
                     {isAuthenticated && (
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <div className="w-full">
                         <Button
                           onClick={handleMarkVisited}
                           disabled={markingAsVisited || removingVisited}
                           variant={isVisited ? 'success' : 'secondary'}
                           size="sm"
                           icon={isVisited ? MapPinCheck : MapPin}
-                          className="backdrop-blur whitespace-nowrap"
+                          className="backdrop-blur w-full sm:w-auto"
                           style={{
                             backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.1)',
                             borderWidth: '1px',
@@ -300,34 +301,35 @@ const ParkDetailPage = () => {
                           }}
                           title={isVisited ? "Remove from visited" : "Mark as visited"}
                         >
-                          {isVisited ? 'Visited' : 'Mark as Visited'}
+                          <span className="hidden sm:inline truncate">{isVisited ? 'Visited' : 'Mark as Visited'}</span>
+                          <span className="sm:hidden truncate">{isVisited ? 'Visited' : 'Mark Visited'}</span>
                         </Button>
                       </div>
                     )}
-                  </div>
 
-                  {/* Action Buttons - Favorite and Share */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <Button
-                      onClick={handleSavePark}
-                      disabled={savingPark}
-                      variant={isSaved ? 'danger' : 'secondary'}
-                      size="sm"
-                      icon={Heart}
-                      className="p-3 backdrop-blur"
-                      style={{
-                        backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
-                      }}
-                      title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
-                    />
+                    {/* Second row - Favorite and Share buttons */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Button
+                        onClick={handleSavePark}
+                        disabled={savingPark}
+                        variant={isSaved ? 'danger' : 'secondary'}
+                        size="sm"
+                        icon={Heart}
+                        className="p-3 backdrop-blur flex-shrink-0"
+                        style={{
+                          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
+                        }}
+                        title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+                      />
 
-                    <ShareButtons 
-                      url={window.location.href}
-                      title={park.fullName}
-                      description={park.description}
-                    />
+                      <ShareButtons 
+                        url={window.location.href}
+                        title={park.fullName}
+                        description={park.description}
+                      />
+                    </div>
                   </div>
                 </div>
                 
@@ -340,15 +342,15 @@ const ParkDetailPage = () => {
       </section>
 
       {/* Main Content */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-8 sm:py-10 lg:py-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Main Column */}
             <div className="flex-1 min-w-0">
               {/* Quick Info Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {/* Hours */}
-                <div className="rounded-2xl p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
+                <div className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -375,7 +377,7 @@ const ParkDetailPage = () => {
                 </div>
 
                 {/* Entrance Fee */}
-                <div className="rounded-2xl p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
+                <div className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -410,7 +412,7 @@ const ParkDetailPage = () => {
                 </div>
 
                 {/* Contact */}
-                <div className="rounded-2xl p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
+                <div className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -459,15 +461,15 @@ const ParkDetailPage = () => {
               </div>
 
               {/* Tabs */}
-              <div className="mb-8">
-                <div className="flex gap-1 pb-2 mb-6 overflow-x-auto scrollbar-hide">
+              <div className="mb-6 sm:mb-8">
+                <div className="flex gap-1 pb-2 mb-4 sm:mb-6 overflow-x-auto scrollbar-hide">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
                       <Button
                         key={tab.id}
                         onClick={() => handleTabChange(tab.id)}
-                        variant={activeTab === tab.id ? 'primary' : 'secondary'}
+                        variant={activeTab === tab.id ? 'secondary' : 'ghost'}
                         size="sm"
                         icon={Icon}
                         className="whitespace-nowrap flex-shrink-0"
@@ -479,7 +481,7 @@ const ParkDetailPage = () => {
                 </div>
 
                 {/* Tab Content */}
-                <div className="rounded-2xl p-8 backdrop-blur"
+                <div className="rounded-2xl p-4 sm:p-6 lg:p-8 backdrop-blur"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -531,7 +533,7 @@ const ParkDetailPage = () => {
                               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(park.fullName)}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              variant="primary"
+                              variant="secondary"
                               size="md"
                               icon={Navigation}
                               className="mt-4"
@@ -581,7 +583,7 @@ const ParkDetailPage = () => {
                           return (
                             <div>
                               {/* Category Tabs - All visible side by side */}
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pb-4 mb-6">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pb-4 mb-4 sm:mb-6">
                                 {categoryTabs.map((tab) => (
                                   <button
                                     key={tab.id}
@@ -789,7 +791,7 @@ const ParkDetailPage = () => {
             </div>
 
             {/* Sidebar */}
-            <aside className="lg:w-96 flex-shrink-0 space-y-6">
+            <aside className="lg:w-96 flex-shrink-0 space-y-4 sm:space-y-6">
               {/* Weather Widget */}
               {park.latitude && park.longitude && (
                 <WeatherWidget
@@ -800,7 +802,7 @@ const ParkDetailPage = () => {
               )}
 
               {/* Location Card */}
-              <div className="rounded-2xl p-6 backdrop-blur"
+              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -822,7 +824,7 @@ const ParkDetailPage = () => {
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(park.fullName)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
                     icon={Navigation}
                   >
@@ -832,7 +834,7 @@ const ParkDetailPage = () => {
               </div>
 
               {/* Plan Trip CTA */}
-              <div className="rounded-2xl p-6 text-center backdrop-blur"
+              <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -850,7 +852,7 @@ const ParkDetailPage = () => {
                 </p>
                 <Button
                   onClick={() => navigate(`/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`)}
-                  variant="primary"
+                  variant="secondary"
                   size="lg"
                   icon={Calendar}
                 >

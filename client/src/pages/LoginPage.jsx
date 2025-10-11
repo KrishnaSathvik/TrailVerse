@@ -13,6 +13,7 @@ const LoginPage = () => {
   
   // Get state passed from signup page
   const verificationSent = location.state?.verificationSent;
+  const emailWarning = location.state?.emailWarning;
   const prefilledEmail = location.state?.email;
   const firstName = location.state?.firstName;
   
@@ -24,6 +25,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showVerificationBanner, setShowVerificationBanner] = useState(verificationSent || false);
+  const [showEmailWarning, setShowEmailWarning] = useState(emailWarning || false);
   const [resendingEmail, setResendingEmail] = useState(false);
 
   // Auto-dismiss verification banner after 10 seconds
@@ -35,6 +37,16 @@ const LoginPage = () => {
       return () => clearTimeout(timer);
     }
   }, [showVerificationBanner]);
+
+  // Auto-dismiss email warning banner after 12 seconds
+  useEffect(() => {
+    if (showEmailWarning) {
+      const timer = setTimeout(() => {
+        setShowEmailWarning(false);
+      }, 12000);
+      return () => clearTimeout(timer);
+    }
+  }, [showEmailWarning]);
 
   const handleResendVerification = async () => {
     if (!prefilledEmail) {
@@ -165,6 +177,38 @@ const LoginPage = () => {
             </div>
           )}
 
+          {/* Email Warning Banner */}
+          {showEmailWarning && (
+            <div 
+              className="mb-6 p-4 rounded-xl border-2 flex items-start gap-3 animate-fade-in"
+              style={{
+                backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                borderColor: '#fbbf24',
+              }}
+            >
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: '#fbbf24' }} />
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  {firstName ? `Welcome, ${firstName}!` : 'Account Created'}
+                </h3>
+                <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Your account was created successfully, but we had trouble sending the verification email.
+                </p>
+                <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>
+                  You can still log in below, but some features may be limited until your email is verified.
+                  If you need help, please contact support.
+                </p>
+                <button
+                  onClick={() => setShowEmailWarning(false)}
+                  className="text-xs font-medium hover:opacity-80 transition"
+                  style={{ color: '#fbbf24' }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="mb-8">
             <h2 className="text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -291,7 +335,7 @@ const LoginPage = () => {
               type="submit"
               disabled={loading}
               loading={loading}
-              variant="primary"
+              variant="secondary"
               size="lg"
               className="w-full"
             >

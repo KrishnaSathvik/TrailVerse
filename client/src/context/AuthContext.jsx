@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
+import { migrateLegacyTrips } from '../services/tripHistoryService';
 
 const AuthContext = createContext();
 
@@ -58,6 +59,18 @@ export const AuthProvider = ({ children }) => {
           // Update localStorage with fresh data
           localStorage.setItem('user', JSON.stringify(response.data));
           console.log('✅ AuthContext: Updated localStorage with fresh user data');
+          
+          // Migrate legacy localStorage trips to database
+          if (response.data._id || response.data.id) {
+            const userId = response.data._id || response.data.id;
+            migrateLegacyTrips(userId).then(result => {
+              if (result.migrated > 0) {
+                console.log(`✅ AuthContext: Migrated ${result.migrated} legacy trips to database`);
+              }
+            }).catch(err => {
+              console.error('❌ AuthContext: Error migrating trips:', err);
+            });
+          }
         } catch (error) {
           console.log('❌ AuthContext: Server validation failed');
           console.log('❌ AuthContext: Error message:', error.message);
@@ -95,7 +108,9 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (firstName, lastName, email, password) => {
     const response = await authService.signup(firstName, lastName, email, password);
-    setUser(response.data);
+    // Don't set user state during signup - email verification is required
+    // User will be logged in after verification or manual login
+    console.log('✅ AuthContext: Signup successful, verification email sent');
     return response;
   };
 
@@ -113,12 +128,25 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (updatedUserData) => {
+    console.log('🔄 AuthContext: Updating user data:', updatedUserData);
+    setUser(prevUser => ({
+      ...prevUser,
+      ...updatedUserData
+    }));
+    // Also update localStorage
+    const currentUser = { ...user, ...updatedUserData };
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    console.log('✅ AuthContext: User data updated in state and localStorage');
+  };
+
   const value = {
     user,
     loading,
     signup,
     login,
     logout,
+    updateUser,
     isAuthenticated: !!user
   };
 

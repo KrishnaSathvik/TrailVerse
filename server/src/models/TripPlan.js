@@ -49,7 +49,13 @@ const tripPlanSchema = new mongoose.Schema({
       enum: ['claude', 'openai'],
       default: 'claude'
     },
-    model: String
+    model: String,
+    responseTime: Number,
+    userFeedback: {
+      type: String,
+      enum: ['up', 'down'],
+      default: null
+    }
   }],
   plan: {
     type: mongoose.Schema.Types.Mixed,

@@ -41,10 +41,7 @@ const AdminLoginPage = () => {
       
       // Check if user has admin role
       if (response.data.role === 'admin') {
-        // Store admin session in localStorage for AdminRoute component
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminEmail', formData.email);
-        
+        // JWT token already stored by authService - no need for additional localStorage flags
         showToast('Welcome back, Admin!', 'success');
         navigate('/admin');
       } else {

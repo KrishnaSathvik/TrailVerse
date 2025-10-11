@@ -61,18 +61,25 @@ const ProviderSelector = ({ selectedProvider, onProviderChange, providers = [] }
               }}
               disabled={unavailable}
               className={`relative p-4 rounded-xl text-left transition outline-none
-                ${isSelected ? 'ring-2 ring-purple-500' : 'hover:bg-white/5'}
+                ${isSelected ? 'ring-2' : 'hover:bg-white/5'}
                 ${unavailable ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
-                focus-visible:ring-2 focus-visible:ring-purple-500`}
+                focus-visible:ring-2`}
               style={{
                 backgroundColor: 'var(--surface)',
                 borderWidth: '1px',
-                borderColor: 'var(--border)'
+                borderColor: 'var(--border)',
+                ...(isSelected && { 
+                  ringColor: 'var(--accent-green)',
+                  boxShadow: '0 0 0 2px var(--accent-green)'
+                })
               }}
             >
               {isSelected && (
                 <div className="absolute top-2 right-2">
-                  <div className="h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center">
+                  <div 
+                    className="h-6 w-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--accent-green)' }}
+                  >
                     <Check className="h-4 w-4 text-white" />
                   </div>
                 </div>

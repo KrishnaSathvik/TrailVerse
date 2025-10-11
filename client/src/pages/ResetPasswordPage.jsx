@@ -280,7 +280,7 @@ const ResetPasswordPage = () => {
               type="submit"
               disabled={loading}
               loading={loading}
-              variant="primary"
+              variant="secondary"
               size="lg"
               className="w-full"
             >

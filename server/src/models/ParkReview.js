@@ -12,6 +12,11 @@ const parkReviewSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  userName: {
+    type: String,
+    required: true,
+    trim: true
+  },
   rating: {
     type: Number,
     required: true,
@@ -31,14 +36,16 @@ const parkReviewSchema = new mongoose.Schema({
     trim: true,
     maxlength: 2000
   },
-  visitDate: {
-    type: Date,
-    required: true
+  visitYear: {
+    type: Number,
+    required: true,
+    min: 1900,
+    max: new Date().getFullYear() + 1
   },
   visitDuration: {
     type: String,
     enum: ['Day Trip', 'Weekend', '3-5 Days', 'Week+', 'Multiple Visits'],
-    required: true
+    required: false
   },
   activities: [{
     type: String,

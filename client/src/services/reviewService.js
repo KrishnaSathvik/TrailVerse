@@ -25,7 +25,7 @@ api.interceptors.request.use(
 
 class ReviewService {
   async getParkReviews(parkCode) {
-    const response = await api.get(`/parks/${parkCode}/reviews`);
+    const response = await api.get(`/reviews/${parkCode}`);
     return response.data;
   }
 
@@ -43,13 +43,16 @@ class ReviewService {
       }
     }
 
-    // Add image URLs to review data
+    // Add image URLs to review data in the format expected by ParkReview model
     const reviewWithImages = {
       ...reviewData,
-      images: uploadedImages.map(img => img.url)
+      photos: uploadedImages.map(img => ({
+        url: img.url,
+        caption: ''
+      }))
     };
 
-    const response = await api.post(`/parks/${parkCode}/reviews`, reviewWithImages);
+    const response = await api.post(`/reviews/${parkCode}`, reviewWithImages);
     return response.data.data;
   }
 
@@ -90,7 +93,39 @@ class ReviewService {
   }
 
   async getUserReviews() {
-    const response = await api.get(`/reviews/user`);
+    const response = await api.get(`/reviews/user/my-reviews`);
+    return response.data;
+  }
+
+  async editReview(reviewId, reviewData, newImages = []) {
+    let uploadedImages = [];
+    
+    // Upload new images if provided
+    if (newImages && newImages.length > 0) {
+      try {
+        const uploadResult = await imageUploadService.uploadReviewImages(newImages, reviewId);
+        uploadedImages = uploadResult.data || uploadResult;
+      } catch (error) {
+        console.error('Error uploading review images:', error);
+        throw new Error('Failed to upload images. Please try again.');
+      }
+    }
+
+    // Add image URLs to review data in the format expected by ParkReview model
+    const reviewWithImages = {
+      ...reviewData,
+      photos: uploadedImages.map(img => ({
+        url: img.url,
+        caption: ''
+      }))
+    };
+
+    const response = await api.put(`/reviews/${reviewId}`, reviewWithImages);
+    return response.data.data;
+  }
+
+  async deleteReview(reviewId) {
+    const response = await api.delete(`/reviews/${reviewId}`);
     return response.data;
   }
 
