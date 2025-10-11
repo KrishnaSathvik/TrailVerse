@@ -92,7 +92,7 @@ const NotFoundPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
               onClick={() => navigate('/')}
-              variant="primary"
+              variant="secondary"
               size="lg"
               icon={Home}
               className="backdrop-blur"

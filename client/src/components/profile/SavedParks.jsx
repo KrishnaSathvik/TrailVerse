@@ -36,7 +36,7 @@ const SavedParks = ({ savedParks, onRemove }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {savedParks.map(park => (
         <div
           key={park.parkCode}
@@ -47,7 +47,7 @@ const SavedParks = ({ savedParks, onRemove }) => {
             borderColor: 'var(--border)'
           }}
         >
-          <div className="relative h-48 overflow-hidden">
+          <div className="relative h-40 sm:h-48 overflow-hidden">
             <OptimizedImage
               src={park.imageUrl || `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&fit=crop&crop=center`}
               alt={park.parkName}

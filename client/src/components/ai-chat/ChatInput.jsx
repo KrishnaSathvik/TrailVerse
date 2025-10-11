@@ -62,8 +62,8 @@ const ChatInput = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative" aria-label="Chat composer">
-      <div className="flex items-end gap-3">
+    <form onSubmit={handleSubmit} className="w-full relative" aria-label="Chat composer">
+      <div className="flex items-end gap-2 sm:gap-3">
         {/* Input Container */}
         <div className="flex-1 relative">
           <label htmlFor="chat-input" className="sr-only">Message</label>
@@ -79,31 +79,41 @@ const ChatInput = ({
             disabled={disabled}
             placeholder={placeholder}
             rows={1}
-            className="w-full px-4 py-3 pr-12 rounded-xl outline-none transition disabled:opacity-50 resize-none max-h-32 scrollbar-thin"
+            className="w-full px-4 sm:px-5 py-3 sm:py-3.5 pr-20 sm:pr-24 rounded-xl outline-none transition-all duration-200 disabled:opacity-50 resize-none max-h-32 scrollbar-thin text-sm sm:text-base leading-relaxed focus:ring-2 focus:ring-offset-0"
             style={{
-              backgroundColor: 'var(--surface-hover)',
+              backgroundColor: 'var(--surface)',
               borderWidth: '1px',
               borderColor: 'var(--border)',
-              color: 'var(--text-primary)'
+              color: 'var(--text-primary)',
+              minHeight: '48px',
+              maxHeight: '120px',
+              '--tw-ring-color': 'var(--accent-green)',
+              '--tw-ring-opacity': '0.3'
             }}
           />
 
-          {/* Action Buttons */}
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
+          {/* Action Buttons - Fixed positioning */}
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
               type="button"
-              className="p-1.5 rounded-lg hover:bg-white/5 transition"
-              style={{ color: 'var(--text-tertiary)' }}
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation"
+              style={{ 
+                color: 'var(--text-tertiary)',
+                backgroundColor: 'transparent'
+              }}
               title="Add emoji"
               onClick={() => onEmoji?.()}
               aria-label="Add emoji"
             >
-              <Smile className="h-4 w-4" />
+              <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
             <button
               type="button"
-              className="p-1.5 rounded-lg hover:bg-white/5 transition"
-              style={{ color: 'var(--text-tertiary)' }}
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation"
+              style={{ 
+                color: 'var(--text-tertiary)',
+                backgroundColor: 'transparent'
+              }}
               title="Attach file"
               onClick={() => {
                 // quick file picker for attachments
@@ -118,31 +128,38 @@ const ChatInput = ({
               }}
               aria-label="Attach file"
             >
-              <Paperclip className="h-4 w-4" />
+              <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>
 
-        {/* Send Button */}
+        {/* Send Button - Improved design */}
         <button
           type="submit"
           disabled={!message.trim() || disabled}
-          className="px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+          className="px-3 sm:px-6 py-3 sm:py-3.5 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-lg flex items-center gap-2 flex-shrink-0 justify-center touch-manipulation"
           style={{
-            backgroundColor: 'var(--accent-green)',
-            color: 'white'
+            backgroundColor: message.trim() && !disabled ? 'var(--accent-green)' : 'var(--surface-hover)',
+            color: message.trim() && !disabled ? 'white' : 'var(--text-tertiary)',
+            minHeight: '48px',
+            minWidth: '48px'
           }}
           aria-label="Send message"
         >
-          <Send className="h-4 w-4" />
-          <span className="hidden sm:inline">Send</span>
+          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="hidden sm:inline text-sm">Send</span>
         </button>
       </div>
 
-      {/* Character Count (optional) */}
-      {message.length > 0 && (
-        <div className="absolute -top-6 right-0 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          {message.length} characters
+      {/* Helper text */}
+      {message.length > 1500 && (
+        <div className="absolute -top-7 right-0 text-xs px-2 py-1 rounded-md" 
+          style={{ 
+            color: message.length > 2000 ? 'var(--error-red)' : 'var(--text-tertiary)',
+            backgroundColor: 'var(--surface)'
+          }}
+        >
+          {message.length} / 2000 characters
         </div>
       )}
     </form>

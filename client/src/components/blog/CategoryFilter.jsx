@@ -26,8 +26,17 @@ const CategoryFilter = ({ categories, selected, onSelect }) => {
               ? 'ring-1'
               : 'ring-1 hover:bg-white/5'
           }`}
-          style={
-            selected === category.id
+          unselectable="on"
+          draggable="false"
+          style={{
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            outline: 'none',
+            border: '1px solid',
+            ...(selected === category.id
               ? {
                   backgroundColor: 'var(--accent-green)',
                   borderColor: 'var(--accent-green)',
@@ -37,12 +46,12 @@ const CategoryFilter = ({ categories, selected, onSelect }) => {
                   backgroundColor: 'var(--surface)',
                   borderColor: 'var(--border)',
                   color: 'var(--text-secondary)'
-                }
-          }
+                })
+          }}
         >
-          <span className="text-sm">{category.label}</span>
+          <span className="button-text-no-select text-sm" unselectable="on">{category.label}</span>
           {category.count !== undefined && (
-            <span className="ml-2 text-xs opacity-75">({category.count})</span>
+            <span className="button-text-no-select ml-2 text-xs opacity-75" unselectable="on">({category.count})</span>
           )}
         </button>
       ))}

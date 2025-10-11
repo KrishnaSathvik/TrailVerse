@@ -74,28 +74,6 @@ const SavedEvents = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-            Saved Events
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {filteredEvents.length} of {savedEvents.length} saved events
-          </p>
-        </div>
-        
-        {savedEvents.length > 0 && (
-          <button
-            onClick={handleClearAll}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition hover:bg-red-500/10 text-red-400 hover:text-red-300"
-          >
-            <X className="h-4 w-4" />
-            Clear All
-          </button>
-        )}
-      </div>
-
       {/* Search */}
       {savedEvents.length > 0 && (
         <div className="mb-6">
@@ -127,82 +105,94 @@ const SavedEvents = () => {
           return (
             <div
               key={event.id}
-              className="rounded-xl p-5 backdrop-blur hover:-translate-y-0.5 transition-all duration-300"
+              className="group rounded-2xl p-4 sm:p-6 backdrop-blur hover:shadow-lg transition-all duration-300 border"
               style={{
                 backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
                 borderColor: 'var(--border)'
               }}
             >
-              <div className="flex gap-4">
+              {/* Header with date and actions */}
+              <div className="flex items-start justify-between mb-4">
                 {/* Date */}
-                <div className="flex-shrink-0 text-center bg-white rounded-xl p-3 shadow-lg h-fit">
-                  <div className="text-xs font-semibold text-gray-600 uppercase">
-                    {eventDate.toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {eventDate.getDate()}
+                <div className="flex-shrink-0">
+                  <div className="bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl p-3 text-white shadow-lg min-w-[50px] text-center">
+                    <div className="text-xs font-bold uppercase tracking-wider opacity-95">
+                      {eventDate.toLocaleDateString('en-US', { month: 'short' })}
+                    </div>
+                    <div className="text-2xl font-bold leading-none">
+                      {eventDate.getDate()}
+                    </div>
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-2 h-2 rounded-full ${category.color}`} />
-                        <span className="text-xs font-semibold" style={{ color: 'var(--text-tertiary)' }}>
-                          {category.label}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                        {event.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-                        <MapPin className="h-3 w-3" />
-                        <span>{event.parkName}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={event.id ? 
-                          `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}` :
-                          `https://www.nps.gov/${event.parkCode}/planyourvisit/events.htm`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-purple-400 hover:text-purple-300"
-                        title={event.id ? `View ${event.title}` : `View events at ${event.parkName}`}
-                      >
-                        View Event
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <a
+                    href={event.id ? 
+                      `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}` :
+                      `https://www.nps.gov/${event.parkCode}/planyourvisit/events.htm`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                    style={{
+                      backgroundColor: 'var(--accent-green)',
+                      color: 'white'
+                    }}
+                    title={event.id ? `View ${event.title}` : `View events at ${event.parkName}`}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span className="hidden sm:inline">View Event</span>
+                    <span className="sm:hidden">View</span>
+                  </a>
 
-                      <button
-                        onClick={() => handleRemoveEvent(event.id)}
-                        className="p-1.5 rounded-full transition-all duration-200 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300"
-                        title="Remove from saved events"
-                      >
-                        <Heart className="h-3 w-3 fill-current" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {typeof event.time === 'string' ? event.time : 'Time TBD'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span>{event.price}</span>
-                    </span>
-                  </div>
-
-                  <p className="text-sm line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                    {event.description}
-                  </p>
+                  <button
+                    onClick={() => handleRemoveEvent(event.id)}
+                    className="p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition-all duration-200 hover:scale-105"
+                    title="Remove from saved events"
+                  >
+                    <Heart className="h-4 w-4 fill-current" />
+                  </button>
                 </div>
+              </div>
+
+              {/* Event Content */}
+              <div className="space-y-3">
+                {/* Category and Title */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-2 h-2 rounded-full ${category.color}`} />
+                    <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded-full" 
+                      style={{ 
+                        backgroundColor: 'var(--surface-hover)',
+                        color: 'var(--text-tertiary)'
+                      }}
+                    >
+                      {category.label}
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight mb-2" style={{ color: 'var(--text-primary)' }}>
+                    {event.title}
+                  </h3>
+                </div>
+
+                {/* Location */}
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <span>{event.parkName}</span>
+                </div>
+
+                {/* Time and Price */}
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                    <Clock className="h-4 w-4" />
+                    <span>{typeof event.time === 'string' ? event.time : 'Time TBD'}</span>
+                  </div>
+                  <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="font-medium">{event.price}</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           );

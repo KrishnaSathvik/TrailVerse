@@ -1,16 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MessageCircle } from 'lucide-react';
-import { tripHistoryService } from '../../services/tripHistoryService';
+import tripService from '../../services/tripService';
 import { useToast } from '../../context/ToastContext';
 import TripSummaryCard from './TripSummaryCard';
 
 const TripHistoryList = ({ userId }) => {
   const { showToast } = useToast();
   const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const loadTrips = useCallback(() => {
-    const history = tripHistoryService.getTripHistory(userId);
-    setTrips(history.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+  const loadTrips = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      setLoading(true);
+      const response = await tripService.getUserTrips(userId);
+      const history = response.data || response || [];
+      // Filter out temporary conversations - only show explicitly saved trips
+      const savedTrips = history.filter(trip => trip.status !== 'temp');
+      setTrips(savedTrips.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+    } catch (error) {
+      console.error('Error loading trips:', error);
+      setTrips([]);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   useEffect(() => {
@@ -19,18 +33,28 @@ const TripHistoryList = ({ userId }) => {
     }
   }, [userId, loadTrips]);
 
-  const handleDelete = (tripId) => {
+  const handleDelete = async (tripId) => {
     if (window.confirm('Delete this trip conversation? This cannot be undone.')) {
-      tripHistoryService.deleteTrip(tripId);
-      loadTrips();
-      showToast('Trip deleted', 'success');
+      try {
+        await tripService.deleteTrip(tripId);
+        await loadTrips();
+        showToast('Trip deleted', 'success');
+      } catch (error) {
+        console.error('Error deleting trip:', error);
+        showToast('Failed to delete trip', 'error');
+      }
     }
   };
 
-  const handleArchive = (tripId) => {
-    tripHistoryService.archiveTrip(tripId);
-    loadTrips();
-    showToast('Trip archived', 'success');
+  const handleArchive = async (tripId) => {
+    try {
+      await tripService.archiveTrip(tripId);
+      await loadTrips();
+      showToast('Trip archived', 'success');
+    } catch (error) {
+      console.error('Error archiving trip:', error);
+      showToast('Failed to archive trip', 'error');
+    }
   };
 
   if (trips.length === 0) {

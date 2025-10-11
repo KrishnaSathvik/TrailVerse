@@ -436,6 +436,19 @@ const EventsPage = () => {
                 )}
               </Button>
 
+              {/* Mobile Clear Button */}
+              {activeFiltersCount > 0 && (
+                <Button
+                  onClick={clearAllFilters}
+                  variant="ghost"
+                  size="sm"
+                  icon={X}
+                  className="sm:hidden"
+                >
+                  Clear
+                </Button>
+              )}
+
               {/* Date Range Filter */}
               <select
                 value={filters.dateRange}
@@ -480,7 +493,7 @@ const EventsPage = () => {
             >
               <Button
                 onClick={() => setViewMode('grid')}
-                variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                 size="sm"
                 icon={List}
                 className="px-4 py-2"
@@ -489,7 +502,7 @@ const EventsPage = () => {
               </Button>
               <Button
                 onClick={() => setViewMode('calendar')}
-                variant={viewMode === 'calendar' ? 'primary' : 'ghost'}
+                variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
                 size="sm"
                 icon={CalendarDays}
                 className="px-4 py-2"
@@ -616,7 +629,7 @@ const EventsPage = () => {
                   </p>
                   <Button
                     onClick={() => window.location.reload()}
-                    variant="primary"
+                    variant="secondary"
                     size="lg"
                   >
                     Retry
@@ -642,7 +655,7 @@ const EventsPage = () => {
                   </p>
                   <Button
                     onClick={clearAllFilters}
-                    variant="primary"
+                    variant="secondary"
                     size="lg"
                   >
                     Clear Filters
@@ -885,7 +898,7 @@ const EventsPage = () => {
               </Button>
               <Button
                 onClick={() => setShowFilters(false)}
-                variant="primary"
+                variant="secondary"
                 size="lg"
                 className="flex-1"
               >

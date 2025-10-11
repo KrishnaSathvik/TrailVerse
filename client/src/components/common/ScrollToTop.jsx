@@ -6,18 +6,32 @@ const ScrollToTop = () => {
   const { pathname } = useLocation();
   const [isVisible, setIsVisible] = useState(false);
 
-  // Scroll to top when route changes
+  // Don't show scroll-to-top button on chat pages
+  const isChatPage = pathname.startsWith('/plan-ai') || pathname.includes('/chat');
+
+  // Scroll to top when route changes (except for chat pages)
   useEffect(() => {
+    // Don't auto-scroll on chat pages to preserve user's scroll position
+    if (isChatPage) {
+      return;
+    }
+    
     window.scrollTo({
       top: 0,
       left: 0,
       behavior: 'smooth'
     });
-  }, [pathname]);
+  }, [pathname, isChatPage]);
 
-  // Show/hide button based on scroll position
+  // Show/hide button based on scroll position (but not on chat pages)
   useEffect(() => {
     const toggleVisibility = () => {
+      // Don't show on chat pages
+      if (isChatPage) {
+        setIsVisible(false);
+        return;
+      }
+      
       // Show button when page is scrolled down 300px (reduced for better UX)
       if (window.pageYOffset > 300) {
         setIsVisible(true);
@@ -31,7 +45,7 @@ const ScrollToTop = () => {
     return () => {
       window.removeEventListener('scroll', toggleVisibility);
     };
-  }, []);
+  }, [isChatPage]);
 
   // Scroll to top smoothly
   const scrollToTop = () => {
@@ -40,6 +54,11 @@ const ScrollToTop = () => {
       behavior: 'smooth'
     });
   };
+
+  // Don't render anything on chat pages
+  if (isChatPage) {
+    return null;
+  }
 
   return (
     <>

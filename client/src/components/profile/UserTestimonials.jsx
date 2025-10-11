@@ -166,13 +166,7 @@ const UserTestimonials = () => {
           ))}
         </div>
       ) : testimonials.length === 0 ? (
-        <div className="text-center py-12 rounded-2xl backdrop-blur"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)'
-          }}
-        >
+        <div className="text-center py-12">
           <Award className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
           <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
             No Testimonials Yet

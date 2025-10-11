@@ -105,7 +105,7 @@ const EventCard = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = fa
             href={`https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            variant="primary"
+            variant="secondary"
             size="md"
             icon={ExternalLink}
             iconPosition="right"

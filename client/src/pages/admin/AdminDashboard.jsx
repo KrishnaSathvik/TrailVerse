@@ -132,14 +132,11 @@ const AdminDashboard = () => {
       // Import and use authService to logout properly
       const authService = (await import('../../services/authService')).default;
       authService.logout();
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      // Clear admin-specific localStorage
-      localStorage.removeItem('adminAuthenticated');
-      localStorage.removeItem('adminEmail');
       showToast('Logged out successfully', 'success');
       navigate('/admin/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      showToast('Logout failed', 'error');
     }
   };
 

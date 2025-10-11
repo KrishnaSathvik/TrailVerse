@@ -30,14 +30,22 @@ const ParkTabs = ({ activeTab, onTabChange }) => {
                     ? 'bg-forest-500 text-white'
                     : 'hover:bg-white/5'
                 }`}
-                style={
-                  activeTab !== tab.id
+                unselectable="on"
+                draggable="false"
+                style={{
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  MozUserSelect: 'none',
+                  msUserSelect: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none',
+                  ...(activeTab !== tab.id
                     ? { color: 'var(--text-secondary)' }
-                    : {}
-                }
+                    : {})
+                }}
               >
                 <Icon className="h-4 w-4" />
-                {tab.label}
+                <span className="button-text-no-select" unselectable="on">{tab.label}</span>
               </button>
             );
           })}

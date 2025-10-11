@@ -127,7 +127,7 @@ const Header = () => {
                 </Link>
                 <Button
                   onClick={() => navigate('/signup')}
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   icon={Sparkles}
                 >
@@ -231,7 +231,7 @@ const Header = () => {
                         navigate('/signup');
                         setMobileMenuOpen(false);
                       }}
-                      variant="primary"
+                      variant="secondary"
                       size="sm"
                       icon={Sparkles}
                     >

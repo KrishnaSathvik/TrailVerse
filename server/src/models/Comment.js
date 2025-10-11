@@ -32,4 +32,11 @@ const commentSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Add indexes for efficient querying
+commentSchema.index({ blogPost: 1, createdAt: -1 });
+commentSchema.index({ user: 1, createdAt: -1 });
+commentSchema.index({ isApproved: 1 });
+commentSchema.index({ blogPost: 1, isApproved: 1 });
+commentSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Comment', commentSchema);

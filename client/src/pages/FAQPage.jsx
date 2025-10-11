@@ -199,7 +199,7 @@ const FAQPage = () => {
               </p>
               <Button
                 href="mailto:trailverseteam@gmail.com"
-                variant="primary"
+                variant="secondary"
                 size="md"
                 icon={Mail}
               >

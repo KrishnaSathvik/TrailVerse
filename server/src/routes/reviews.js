@@ -29,12 +29,9 @@ const reviewValidation = [
     .trim()
     .isLength({ min: 10, max: 2000 })
     .withMessage('Comment must be between 10 and 2000 characters'),
-  body('visitDate')
-    .isISO8601()
-    .withMessage('Visit date must be a valid date'),
-  body('visitDuration')
-    .isIn(['Day Trip', 'Weekend', '3-5 Days', 'Week+', 'Multiple Visits'])
-    .withMessage('Invalid visit duration'),
+  body('visitYear')
+    .isInt({ min: 1900, max: new Date().getFullYear() + 1 })
+    .withMessage('Visit year must be a valid year'),
   body('activities')
     .optional()
     .isArray()

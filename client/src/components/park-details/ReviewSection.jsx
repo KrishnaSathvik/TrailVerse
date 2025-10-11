@@ -19,8 +19,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
   const [newReview, setNewReview] = useState({
     rating: 5,
     title: '',
-    content: '',
-    visitDate: ''
+    comment: '',
+    visitYear: new Date().getFullYear()
   });
 
   // Image upload states
@@ -41,8 +41,14 @@ const ReviewSection = ({ parkCode, parkName }) => {
       setLoading(true);
       const response = await reviewService.getParkReviews(parkCode);
       setReviews(response.data || []);
-      setAverageRating(response.averageRating || 0);
-      setTotalReviews(response.total || 0);
+      // Handle stats from backend response
+      if (response.stats) {
+        setAverageRating(response.stats.averageRating || 0);
+        setTotalReviews(response.stats.totalReviews || 0);
+      } else {
+        setAverageRating(response.averageRating || 0);
+        setTotalReviews(response.total || response.pagination?.totalReviews || 0);
+      }
     } catch (error) {
       console.error('Error fetching reviews:', error);
       showToast('Failed to load reviews', 'error');
@@ -125,13 +131,12 @@ const ReviewSection = ({ parkCode, parkName }) => {
       
       // Create review with images
       await reviewService.createReview(parkCode, {
-        ...newReview,
-        parkName
+        ...newReview
       }, selectedImages);
       
       showToast('Review submitted successfully!', 'success');
       setShowReviewForm(false);
-      setNewReview({ rating: 5, title: '', content: '', visitDate: '' });
+      setNewReview({ rating: 5, title: '', comment: '', visitYear: new Date().getFullYear() });
       setSelectedImages([]);
       setImagePreviews([]);
       setImageErrors([]);
@@ -283,8 +288,10 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   borderColor: 'var(--border)',
                   color: 'var(--text-primary)'
                 }}
-                placeholder="Give your review a title"
+                placeholder="Give your review a title (5-100 characters)"
                 required
+                minLength="5"
+                maxLength="100"
               />
             </div>
 
@@ -293,8 +300,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
                 Review
               </label>
               <textarea
-                value={newReview.content}
-                onChange={(e) => setNewReview({...newReview, content: e.target.value})}
+                value={newReview.comment}
+                onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
                 className="w-full px-4 py-2 rounded-lg"
                 style={{
                   backgroundColor: 'var(--surface-hover)',
@@ -303,19 +310,20 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   color: 'var(--text-primary)'
                 }}
                 rows="4"
-                placeholder="Share your experience..."
+                placeholder="Share your experience... (minimum 10 characters)"
                 required
+                minLength="10"
+                maxLength="2000"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Visit Date
+                Visit Year
               </label>
-              <input
-                type="date"
-                value={newReview.visitDate}
-                onChange={(e) => setNewReview({...newReview, visitDate: e.target.value})}
+              <select
+                value={newReview.visitYear}
+                onChange={(e) => setNewReview({...newReview, visitYear: parseInt(e.target.value)})}
                 className="w-full px-4 py-2 rounded-lg"
                 style={{
                   backgroundColor: 'var(--surface-hover)',
@@ -324,7 +332,16 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   color: 'var(--text-primary)'
                 }}
                 required
-              />
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
 
             {/* Image Upload Section */}
@@ -422,6 +439,7 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   setSelectedImages([]);
                   setImagePreviews([]);
                   setImageErrors([]);
+                  setNewReview({ rating: 5, title: '', comment: '', visitYear: new Date().getFullYear() });
                 }}
                 disabled={uploadingImages}
                 className="px-6 py-2 rounded-full disabled:opacity-50"
@@ -458,10 +476,10 @@ const ReviewSection = ({ parkCode, parkName }) => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex gap-3">
-                  {review.user?.avatar ? (
+                  {review.userId?.avatar ? (
                     <img
-                      src={review.user.avatar}
-                      alt={`${review.userName || 'User'}'s avatar`}
+                      src={review.userId.avatar}
+                      alt={`${review.userName || review.userId?.name || 'User'}'s avatar`}
                       className="w-12 h-12 rounded-full object-cover border-2"
                       style={{ borderColor: 'var(--border)' }}
                       onError={(e) => {
@@ -473,18 +491,18 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   ) : null}
                   <div 
                     className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white ${
-                      review.user?.avatar ? 'hidden' : 'flex'
+                      review.userId?.avatar ? 'hidden' : 'flex'
                     }`}
                     style={{ backgroundColor: 'var(--forest-500)' }}
                   >
-                    {review.userName?.charAt(0)?.toUpperCase() || 'U'}
+                    {review.userName?.charAt(0)?.toUpperCase() || review.userId?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        {review.userName || 'Anonymous'}
+                        {review.userName || review.userId?.name || 'Anonymous'}
                       </h4>
                     </div>
                     <div className="flex items-center gap-2">
@@ -501,7 +519,7 @@ const ReviewSection = ({ parkCode, parkName }) => {
                         ))}
                       </div>
                       <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {new Date(review.createdAt).toLocaleDateString()}
+                        {review.visitYear ? `Visited ${review.visitYear} • ` : ''}{new Date(review.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -519,11 +537,35 @@ const ReviewSection = ({ parkCode, parkName }) => {
               <p className="text-sm mb-4"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                {review.content}
+                {review.comment || review.content}
               </p>
 
               {/* Review Images */}
-              {review.images && review.images.length > 0 && (
+              {review.photos && review.photos.length > 0 && (
+                <div className="mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {review.photos.slice(0, 6).map((photo, index) => (
+                      <div key={index} className="relative group cursor-pointer">
+                        <img
+                          src={photo.url || photo}
+                          alt={photo.caption || `Review image ${index + 1}`}
+                          className="w-full h-20 object-cover rounded-lg border"
+                          style={{ borderColor: 'var(--border)' }}
+                          loading="lazy"
+                        />
+                        {index === 5 && review.photos.length > 6 && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                            <span className="text-white text-xs font-medium">
+                              +{review.photos.length - 6} more
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {review.images && review.images.length > 0 && !review.photos && (
                 <div className="mb-4">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {review.images.slice(0, 6).map((imageUrl, index) => (

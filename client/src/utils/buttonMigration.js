@@ -4,10 +4,10 @@
 export const BUTTON_MIGRATION_GUIDE = {
   // Common button patterns to replace
   patterns: {
-    // Primary buttons (green background)
+    // Primary buttons (green background) - DEPRECATED: Use secondary instead
     primary: {
       className: 'bg-forest-500 hover:bg-forest-600 text-white',
-      replacement: { variant: 'primary' }
+      replacement: { variant: 'secondary' }
     },
     
     // Secondary buttons (surface background)
@@ -87,7 +87,7 @@ export const BUTTON_MIGRATION_GUIDE = {
 // Helper function to determine button variant from className
 export const getVariantFromClassName = (className) => {
   if (className.includes('bg-forest-500') || className.includes('bg-green-500') || className.includes('var(--accent-green)')) {
-    return 'primary';
+    return 'secondary'; // Changed from primary to secondary
   }
   if (className.includes('bg-transparent') && className.includes('border-')) {
     return 'outline';
@@ -120,24 +120,24 @@ export const getIconFromJSX = (jsxString) => {
 export const MIGRATION_EXAMPLES = {
   // Example 1: Simple primary button
   before1: `<button className="px-4 py-2 bg-forest-500 text-white rounded-full">Click me</button>`,
-  after1: `<Button variant="primary" size="md">Click me</Button>`,
+  after1: `<Button variant="secondary" size="md">Click me</Button>`,
   
   // Example 2: Button with icon
   before2: `<button className="px-4 py-2 bg-forest-500 text-white rounded-full">
     <ArrowRight className="h-4 w-4" />
     Next
   </button>`,
-  after2: `<Button variant="primary" size="md" icon={ArrowRight}>Next</Button>`,
+  after2: `<Button variant="secondary" size="md" icon={ArrowRight}>Next</Button>`,
   
   // Example 3: Button with loading state
   before3: `<button disabled={loading} className="px-4 py-2 bg-forest-500 text-white rounded-full">
     {loading ? 'Loading...' : 'Submit'}
   </button>`,
-  after3: `<Button variant="primary" size="md" loading={loading}>Submit</Button>`,
+  after3: `<Button variant="secondary" size="md" loading={loading}>Submit</Button>`,
   
   // Example 4: Link button
   before4: `<a href="/path" className="px-4 py-2 bg-forest-500 text-white rounded-full">Go</a>`,
-  after4: `<Button href="/path" variant="primary" size="md">Go</Button>`
+  after4: `<Button href="/path" variant="secondary" size="md">Go</Button>`
 };
 
 export default BUTTON_MIGRATION_GUIDE;

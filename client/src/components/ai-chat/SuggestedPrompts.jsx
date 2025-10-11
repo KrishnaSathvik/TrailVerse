@@ -30,32 +30,38 @@ const SuggestedPrompts = ({ prompts, onSelect, title = "Suggested prompts" }) =>
   if (promptsToShow.length === 0) return null;
 
   return (
-    <div className="mb-4">
+    <div>
       {title && (
-        <p className="text-xs font-medium uppercase tracking-wider mb-3"
+        <p className="text-xs font-semibold uppercase tracking-wider mb-3"
           style={{ color: 'var(--text-tertiary)' }}
         >
           {title}
         </p>
       )}
       
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 w-full">
         {promptsToShow.map((prompt, index) => {
           const Icon = typeof prompt === 'object' ? prompt.icon : null;
           const text = typeof prompt === 'object' ? prompt.text : prompt;
-          const colorClass = typeof prompt === 'object' ? prompt.color : 'text-gray-600';
           
           return (
             <button
               key={index}
               onClick={() => onSelect(text)}
               aria-label={`Use prompt: ${text}`}
-              className="group flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              className="group flex items-center gap-2.5 px-3.5 sm:px-4 py-3 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 text-left"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+                color: 'var(--text-primary)',
+                minHeight: '48px'
+              }}
             >
               {Icon && (
-                <Icon className={`h-4 w-4 ${colorClass} group-hover:scale-110 transition-transform`} />
+                <Icon className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
               )}
-              <span className="group-hover:text-gray-800 transition-colors">
+              <span className="flex-1 leading-snug line-clamp-2">
                 {text}
               </span>
             </button>

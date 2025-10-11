@@ -160,7 +160,7 @@ const AboutPage = () => {
                     <div className="flex flex-col sm:flex-row gap-4">
                       <Button
                         onClick={() => navigate('/explore')}
-                        variant="primary"
+                        variant="secondary"
                         size="md"
                         icon={Compass}
                       >
@@ -496,7 +496,7 @@ const AboutPage = () => {
                   <div className="mt-8">
                     <Button
                       onClick={() => navigate('/explore')}
-                      variant="primary"
+                      variant="secondary"
                       size="lg"
                       icon={Compass}
                     >

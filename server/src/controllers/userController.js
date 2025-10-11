@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const TripPlan = require('../models/TripPlan');
-const Review = require('../models/Review');
+const Review = require('../models/ParkReview');
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -211,9 +211,15 @@ exports.getUserStats = async (req, res, next) => {
     // Get user's trips
     const trips = await TripPlan.find({ userId });
     
-    // Get user's favorites from Favorite model
+    // Get user's favorites from Favorite model (parks)
     const Favorite = require('../models/Favorite');
     const favorites = await Favorite.find({ user: userId });
+    
+    // Get user's favorite blogs count from BlogPost model
+    const BlogPost = require('../models/BlogPost');
+    const favoriteBlogs = await BlogPost.find({ 
+      'favorites': userId 
+    });
     
     // Get user's visited parks from VisitedPark model
     const VisitedPark = require('../models/VisitedPark');
@@ -228,7 +234,11 @@ exports.getUserStats = async (req, res, next) => {
     const parksVisited = visitedParks.length;
     
     const tripsPlanned = trips.length;
-    const favoritesCount = favorites.length;
+    
+    // Total favorites: Parks + Blogs (Events are stored in localStorage only)
+    const favoriteParksCount = favorites.length;
+    const favoriteBlogsCount = favoriteBlogs.length;
+    const favoritesCount = favoriteParksCount + favoriteBlogsCount;
     
     // Calculate total days from trips (planned days)
     const plannedDays = trips.reduce((total, trip) => {
@@ -269,6 +279,8 @@ exports.getUserStats = async (req, res, next) => {
       parksVisited,
       tripsPlanned,
       favoritesCount,
+      favoriteParksCount,
+      favoriteBlogsCount,
       plannedDays,
       actualVisitedDays,
       daysSinceAccountCreation,

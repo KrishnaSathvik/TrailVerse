@@ -165,7 +165,7 @@ const VerifyEmailPage = () => {
                 </div>
 
                 <Link to="/explore?filter=national-parks">
-                  <Button variant="primary" size="lg" className="w-full">
+                  <Button variant="secondary" size="lg" className="w-full">
                     <ArrowRight className="h-4 w-4 mr-2" />
                     Start Exploring Now
                   </Button>
@@ -194,7 +194,7 @@ const VerifyEmailPage = () => {
 
                 <div className="space-y-3">
                   <Link to="/signup">
-                    <Button variant="primary" size="lg" className="w-full">
+                    <Button variant="secondary" size="lg" className="w-full">
                       Sign Up Again
                     </Button>
                   </Link>

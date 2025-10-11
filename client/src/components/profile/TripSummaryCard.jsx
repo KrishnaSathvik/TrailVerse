@@ -9,11 +9,16 @@ import {
   ArrowRight,
   FileText,
   ArchiveRestore,
-  Trash2
+  Trash2,
+  Bot,
+  CheckCircle
 } from 'lucide-react';
 
-const TripSummaryCard = ({ trip, onArchive, onDelete }) => {
+const TripSummaryCard = ({ trip, onArchive, onDelete, onRestore, isDeleting = false, isRestoring = false }) => {
+  const tripId = trip._id || trip.id;
+  
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -23,6 +28,7 @@ const TripSummaryCard = ({ trip, onArchive, onDelete }) => {
   };
 
   const calculateDuration = () => {
+    if (!trip.formData?.startDate || !trip.formData?.endDate) return 'N/A';
     const start = new Date(trip.formData.startDate);
     const end = new Date(trip.formData.endDate);
     const ms = end.setHours(0,0,0,0) - start.setHours(0,0,0,0);
@@ -39,186 +45,246 @@ const TripSummaryCard = ({ trip, onArchive, onDelete }) => {
   };
 
   return (
-    <div className="rounded-2xl p-6 backdrop-blur hover:shadow-lg transition-all duration-200"
+    <div className="rounded-2xl p-4 sm:p-6 backdrop-blur hover:shadow-lg transition-all duration-200 relative"
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
-        borderColor: 'var(--border)'
+        borderColor: 'var(--border)',
+        opacity: (isDeleting || isRestoring) ? 0.5 : 1,
+        pointerEvents: (isDeleting || isRestoring) ? 'none' : 'auto'
       }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h4 className="text-xl font-bold"
+      <div className="mb-4">
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-start justify-between gap-3">
+            <h4 className="text-lg sm:text-xl font-bold flex-1"
               style={{ color: 'var(--text-primary)' }}
             >
-              {trip.parkName}
+              {trip.parkName || trip.title}
             </h4>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(trip.status)}`}
-              style={{ backgroundColor: 'var(--surface-hover)' }}
-            >
-              {trip.status}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${getStatusColor(trip.status)}`}
+                style={{ backgroundColor: 'var(--surface-hover)' }}
+              >
+                {trip.status || 'active'}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete && onDelete();
+                }}
+                className="p-1.5 rounded-lg hover:bg-red-500/10 transition"
+                style={{ color: 'var(--text-tertiary)' }}
+                title="Delete trip"
+                disabled={isDeleting || isRestoring}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           
-          {/* Trip Details */}
-          <div className="flex flex-wrap items-center gap-3 text-sm mb-3"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              {formatDate(trip.formData.startDate)} - {formatDate(trip.formData.endDate)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {trip.formData.groupSize} {trip.formData.groupSize === 1 ? 'person' : 'people'}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {calculateDuration()} days
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="h-4 w-4" />
-              {trip.summary?.totalMessages || 0} messages
-            </span>
-          </div>
+          {/* Trip Details - Better mobile layout */}
+          {trip.formData && (
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 text-sm"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {trip.formData.startDate && trip.formData.endDate && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{formatDate(trip.formData.startDate)} - {formatDate(trip.formData.endDate)}</span>
+                </span>
+              )}
+              {trip.formData.groupSize && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4 flex-shrink-0" />
+                  {trip.formData.groupSize} {trip.formData.groupSize === 1 ? 'person' : 'people'}
+                </span>
+              )}
+              {trip.formData.startDate && trip.formData.endDate && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  {calculateDuration()} days
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                {trip.conversation?.length || trip.summary?.totalMessages || 0} messages
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <Link
-            to={`/plan-ai/${trip.id}`}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition"
-            style={{
-              backgroundColor: 'var(--accent)',
-              color: 'white'
-            }}
-          >
-            <ArrowRight className="h-4 w-4" />
-            Continue Planning
-          </Link>
+        {/* Action Buttons - Better mobile layout */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          {trip.status === 'archived' ? (
+            <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition text-sm flex-1"
+              style={{
+                backgroundColor: 'var(--surface-hover)',
+                color: 'var(--text-secondary)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>Archived</span>
+            </div>
+          ) : (
+            <Link
+              to={`/plan-ai/${tripId}?chat=true`}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition text-sm flex-1"
+              style={{
+                backgroundColor: 'var(--accent-green)',
+                color: 'white'
+              }}
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Continue Chat</span>
+            </Link>
+          )}
           
-          <button
-            onClick={() => onArchive(trip.id)}
-            className="p-2 rounded-lg hover:bg-white/5 transition"
-            style={{ color: 'var(--text-tertiary)' }}
-            title="Archive"
-          >
-            <ArchiveRestore className="h-4 w-4" />
-          </button>
-          
-          <button
-            onClick={() => onDelete(trip.id)}
-            className="p-2 rounded-lg hover:bg-red-500/10 transition"
-            style={{ color: 'var(--text-tertiary)' }}
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {trip.status === 'archived' ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRestore && onRestore();
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition text-sm border"
+              style={{
+                backgroundColor: 'var(--accent-green)/10',
+                color: 'var(--accent-green)',
+                borderColor: 'var(--accent-green)/20'
+              }}
+              title="Restore trip"
+              disabled={isRestoring}
+            >
+              <ArchiveRestore className="h-4 w-4" />
+              <span className="hidden sm:inline">{isRestoring ? 'Restoring...' : 'Restore'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onArchive && onArchive();
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition text-sm border"
+              style={{
+                backgroundColor: 'var(--surface-hover)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border)'
+              }}
+              title="Archive trip"
+            >
+              <ArchiveRestore className="h-4 w-4" />
+              <span className="hidden sm:inline">Archive</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Trip Summary */}
       {trip.summary && (
-        <div className="mb-4">
-          {/* Key Topics */}
+        <div className="mt-4 pt-4 space-y-3 border-t" style={{ borderColor: 'var(--border)' }}>
+          {/* Key Topics - Better mobile layout */}
           {trip.summary.keyTopics && trip.summary.keyTopics.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {trip.summary.keyTopics.map((topic, index) => (
-                <span
-                  key={index}
-                  className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    color: 'var(--text-secondary)'
-                  }}
-                >
-                  <Tag className="h-3 w-3" />
-                  {topic}
-                </span>
-              ))}
+            <div>
+              <h5 className="text-xs font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                Topics Discussed
+              </h5>
+              <div className="flex flex-wrap gap-1.5">
+                {trip.summary.keyTopics.slice(0, 3).map((topic, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 rounded-md text-xs font-medium"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-secondary)'
+                    }}
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Plan Status */}
-          {trip.summary.hasPlan && (
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-medium text-green-500">
-                Trip plan generated
+          {trip.plan && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              style={{ backgroundColor: 'var(--accent-green)/10' }}
+            >
+              <FileText className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--accent-green)' }}>
+                Trip plan created
               </span>
             </div>
           )}
 
           {/* User Questions Preview */}
           {trip.summary.userQuestions && trip.summary.userQuestions.length > 0 && (
-            <div className="mb-3">
-              <h5 className="text-sm font-semibold mb-2"
-                style={{ color: 'var(--text-primary)' }}
+            <div>
+              <h5 className="text-xs font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: 'var(--text-tertiary)' }}
               >
-                Planning Focus:
+                Planning Focus
               </h5>
               <div className="space-y-1">
-                {trip.summary.userQuestions.slice(0, 2).map((question, index) => (
-                  <p key={index} className="text-sm"
+                {trip.summary.userQuestions.slice(0, 1).map((question, index) => (
+                  <p key={index} className="text-sm leading-relaxed line-clamp-2"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    • {question.length > 80 ? `${question.substring(0, 80)}...` : question}
+                    {question}
                   </p>
                 ))}
+                {trip.summary.userQuestions.length > 1 && (
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    +{trip.summary.userQuestions.length - 1} more question{trip.summary.userQuestions.length > 2 ? 's' : ''}
+                  </p>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Plan Preview */}
-          {trip.summary.planPreview && (
-            <div className="mb-3">
-              <h5 className="text-sm font-semibold mb-2"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Plan Preview:
-              </h5>
-              <p className="text-sm"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {trip.summary.planPreview}
-              </p>
             </div>
           )}
         </div>
       )}
 
-      {/* Trip Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t"
-        style={{ borderColor: 'var(--border)' }}
-      >
-        {[
-          { label: 'Budget', value: trip.formData.budget },
-          { label: 'Fitness', value: trip.formData.fitnessLevel },
-          { label: 'Accommodation', value: trip.formData.accommodation },
-          { label: 'Updated', value: formatDate(trip.updatedAt) }
-        ].map((stat, i) => (
-          <div key={i} className="text-center p-2 rounded-lg"
-            style={{
-              backgroundColor: 'var(--surface-hover)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)'
-            }}
-          >
-            <div className="text-xs mb-1"
-              style={{ color: 'var(--text-tertiary)' }}
+      {/* Message count already shown in trip details above - no need to duplicate */}
+
+      {/* Trip Stats - Better mobile layout */}
+      {trip.formData && (
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4"
+          style={{ borderColor: 'var(--border)' }}
+        >
+          {[
+            { label: 'Budget', value: trip.formData.budget },
+            { label: 'Fitness', value: trip.formData.fitnessLevel },
+            { label: 'Accommodation', value: trip.formData.accommodation },
+            { label: 'Updated', value: formatDate(trip.updatedAt) }
+          ].filter(stat => stat.value).map((stat, i) => (
+            <div key={i} className="text-center p-2 rounded-lg"
+              style={{
+                backgroundColor: 'var(--surface-hover)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)'
+              }}
             >
-              {stat.label}
+              <div className="text-xs mb-1 truncate"
+                style={{ color: 'var(--text-tertiary)' }}
+                title={stat.label}
+              >
+                {stat.label}
+              </div>
+              <div className="text-xs font-semibold truncate capitalize"
+                style={{ color: 'var(--text-primary)' }}
+                title={stat.value}
+              >
+                {stat.value}
+              </div>
             </div>
-            <div className="text-sm font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {stat.value}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

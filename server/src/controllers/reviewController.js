@@ -139,7 +139,8 @@ exports.createParkReview = async (req, res, next) => {
     const reviewData = {
       ...req.body,
       parkCode,
-      userId
+      userId,
+      userName: req.user.name || req.user.firstName + ' ' + req.user.lastName
     };
 
     const review = await ParkReview.create(reviewData);

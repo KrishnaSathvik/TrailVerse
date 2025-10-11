@@ -95,22 +95,28 @@ const LandingPage = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative w-full min-h-screen">
-        {/* Background Image */}
+      <section className="relative w-full min-h-screen overflow-hidden">
+        {/* Background Image - Mobile Optimized */}
         <div 
-          className="absolute inset-0 w-full bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 w-full bg-cover bg-no-repeat bg-center sm:bg-center md:bg-center lg:bg-top"
           style={{
             backgroundImage: 'url(/background10.png)',
             filter: 'brightness(0.7)',
+            backgroundSize: 'cover',
+            backgroundAttachment: 'scroll',
+            // Mobile-specific positioning
+            backgroundPosition: 'center 25%',
+            // Ensure full width coverage
             width: '100vw',
             left: '50%',
-            marginLeft: '-50vw'
+            marginLeft: '-50vw',
+            minHeight: '100vh'
           }}
         />
         
-        {/* Gradient Overlay */}
+        {/* Enhanced Gradient Overlay for Better Text Readability */}
         <div 
-          className="absolute inset-0 w-full bg-gradient-to-b from-black/10 via-black/20 to-black/40"
+          className="absolute inset-0 w-full bg-gradient-to-b from-black/20 via-black/30 to-black/60"
           style={{
             width: '100vw',
             left: '50%',
@@ -118,32 +124,35 @@ const LandingPage = () => {
           }}
         />
         
-        {/* Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-32 lg:pt-40 pb-32 lg:pb-48 text-center">
-          {/* Badge */}
-          <div 
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 ring-1 backdrop-blur mb-8 bg-white/10 border-white/20"
-          >
-            <Route className="h-4 w-4 text-white" />
-            <span className="text-xs font-medium uppercase tracking-wider text-white">
-              AI-Powered Trip Planning
-            </span>
+        {/* Content - Mobile Optimized */}
+        <div className="relative z-10 w-full flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 lg:pt-32 xl:pt-40 pb-24 sm:pb-32 lg:pb-48">
+          <div className="w-full max-w-7xl mx-auto text-center">
+            {/* Badge - Mobile Responsive */}
+            <div 
+              className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 sm:px-5 sm:py-2.5 ring-1 backdrop-blur mb-8 sm:mb-10 bg-white/10 border-white/20"
+            >
+              <Route className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              <span className="text-sm font-medium uppercase tracking-wider text-white">
+                AI-Powered Trip Planning
+              </span>
+            </div>
+
+            {/* Main Headline - Mobile Optimized */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-light tracking-tighter leading-[0.85] mb-6 sm:mb-8 text-white w-full">
+              <div className="block text-center">Discover America&apos;s</div>
+              <div className="block text-center font-semibold">Natural Wonders.</div>
+            </h1>
+
+            {/* Subheadline - Mobile Optimized */}
+            <div className="w-full max-w-4xl mx-auto mt-6 sm:mt-8 text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed text-white/90">
+              <p className="mb-3 text-center">
+                Explore 470+ National Parks with AI-powered guidance, real-time weather, and personalized recommendations.
+              </p>
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium text-center">
+                Your perfect adventure starts here.
+              </p>
+            </div>
           </div>
-
-          {/* Main Headline */}
-          <h1 className="text-5xl sm:text-6xl lg:text-8xl font-light tracking-tighter leading-none mb-6 text-white">
-            Discover America&apos;s
-            <br />
-            <span className="font-semibold">Natural Wonders.</span>
-          </h1>
-
-          {/* Subheadline */}
-          <p className="mx-auto mt-6 max-w-4xl text-lg sm:text-xl leading-relaxed text-white/90">
-            Explore 470+ National Parks, Monuments, and Historic Sites with AI-powered guidance,<br />
-            real-time weather, and personalized recommendations. Your perfect adventure starts here.
-          </p>
-
-
         </div>
 
       </section>
@@ -453,7 +462,7 @@ const LandingPage = () => {
             {isAuthenticated ? (
               <Button
                 onClick={() => navigate('/explore')}
-                variant="primary"
+                variant="secondary"
                 size="xl"
                 icon={Sparkles}
               >
@@ -462,7 +471,7 @@ const LandingPage = () => {
             ) : (
               <Button
                 onClick={() => navigate('/signup')}
-                variant="primary"
+                variant="secondary"
                 size="xl"
                 icon={Sparkles}
               >

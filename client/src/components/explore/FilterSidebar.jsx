@@ -71,14 +71,34 @@ const FilterSidebar = ({
                 <button
                   onClick={onClear}
                   className="text-xs font-medium text-forest-400 hover:text-forest-300"
+                  unselectable="on"
+                  draggable="false"
+                  style={{
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none',
+                    WebkitTapHighlightColor: 'transparent',
+                    outline: 'none'
+                  }}
                 >
-                  Clear all
+                  <span className="button-text-no-select" unselectable="on">Clear all</span>
                 </button>
               )}
               <button
                 onClick={onClose}
                 className="lg:hidden p-1 rounded-lg hover:bg-white/5"
-                style={{ color: 'var(--text-primary)' }}
+                unselectable="on"
+                draggable="false"
+                style={{ 
+                  color: 'var(--text-primary)',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  MozUserSelect: 'none',
+                  msUserSelect: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none'
+                }}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -129,17 +149,28 @@ const FilterSidebar = ({
                       ? 'bg-forest-500 text-white'
                       : 'ring-1 hover:bg-white/5'
                   }`}
-                  style={
-                    !filters.activities.includes(activity)
+                  unselectable="on"
+                  draggable="false"
+                  style={{
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none',
+                    WebkitTapHighlightColor: 'transparent',
+                    outline: 'none',
+                    ...(!filters.activities.includes(activity)
                       ? {
                           backgroundColor: 'var(--surface-hover)',
                           borderColor: 'var(--border)',
                           color: 'var(--text-secondary)'
                         }
-                      : {}
-                  }
+                      : {
+                          backgroundColor: '#059669',
+                          color: 'white'
+                        })
+                  }}
                 >
-                  {activity}
+                  <span className="button-text-no-select" unselectable="on">{activity}</span>
                 </button>
               ))}
             </div>

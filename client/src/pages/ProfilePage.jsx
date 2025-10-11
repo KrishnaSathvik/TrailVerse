@@ -15,7 +15,6 @@ import Button from '../components/common/Button';
 import SavedParks from '../components/profile/SavedParks';
 import VisitedParks from '../components/profile/VisitedParks';
 import SavedEvents from '../components/profile/SavedEvents';
-import TripHistoryList from '../components/profile/TripHistoryList';
 import UserTestimonials from '../components/profile/UserTestimonials';
 import UserReviews from '../components/profile/UserReviews';
 import AvatarSelector from '../components/profile/AvatarSelector';
@@ -24,17 +23,32 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useVisitedParks } from '../hooks/useVisitedParks';
-import { useTrips } from '../hooks/useTrips';
+import { useSavedEvents } from '../hooks/useSavedEvents';
+import { useUserReviews } from '../hooks/useUserReviews';
 import userService from '../services/userService';
 import { getBestAvatar, generateRandomAvatar } from '../utils/avatarGenerator';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
   const { showToast } = useToast();
   const { favorites, removeFavorite, loading: favoritesLoading } = useFavorites();
   const { visitedParks, removeVisited, loading: visitedParksLoading } = useVisitedParks();
-  const { trips } = useTrips();
+  const { savedEvents } = useSavedEvents();
+  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useUserReviews();
+  
+  // Debug reviews data
+  console.log('🔍 ProfilePage - Reviews data:', reviewsData);
+  console.log('🔍 ProfilePage - Reviews loading:', reviewsLoading);
+  console.log('🔍 ProfilePage - Reviews error:', reviewsError);
+  
+  // Test if we can manually call the API
+  React.useEffect(() => {
+    if (user && !reviewsLoading && !reviewsData && reviewsError) {
+      console.log('🔍 ProfilePage - Reviews API error:', reviewsError);
+      console.log('🔍 ProfilePage - Reviews error details:', reviewsError.response?.data);
+    }
+  }, [user, reviewsLoading, reviewsData, reviewsError]);
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
@@ -45,8 +59,8 @@ const ProfilePage = () => {
   const [lastEmailLoadTime, setLastEmailLoadTime] = useState(0);
   const [userStats, setUserStats] = useState({
     parksVisited: 0,
-    tripsPlanned: 0,
     favorites: 0,
+    reviews: 0,
     totalDays: 0
   });
 
@@ -93,6 +107,7 @@ const ProfilePage = () => {
 
   // Force re-render key for debugging
   const [renderKey, setRenderKey] = useState(0);
+  const [favoriteBlogsCount, setFavoriteBlogsCount] = useState(0);
 
   // Helper function to clear error states when switching tabs
   const clearErrorStates = () => {
@@ -106,12 +121,13 @@ const ProfilePage = () => {
       console.log('ProfilePage - Favorites tab active:', { 
         favoritesCount: favorites.length, 
         favoritesLoading, 
-        user: user?.id || user?._id 
+        user: user?.id || user?._id,
+        savedEventsCount: savedEvents.length
       });
-      // Refresh stats when favorites tab is activated
-      loadUserStats();
+      // Note: Stats are auto-updated by the useEffect at line 165
+      // No need to call loadUserStats here as it causes unnecessary API calls
     }
-  }, [favorites, favoritesLoading, activeTab, user]);
+  }, [favorites, favoritesLoading, activeTab, user, savedEvents]);
 
   // Debug logging for when SavedParks should render
   useEffect(() => {
@@ -132,26 +148,66 @@ const ProfilePage = () => {
     }
   }, [favorites.length]);
 
-  // Update userStats with real data
+  // Calculate total days since account creation (matches server logic)
+  const calculateTotalDays = (user) => {
+    if (!user || !user.createdAt) {
+      return 0;
+    }
+    const accountCreatedDate = new Date(user.createdAt);
+    const currentDate = new Date();
+    
+    // Use same calculation as server: Math.ceil with milliseconds difference
+    const daysSinceAccountCreation = Math.ceil((currentDate.getTime() - accountCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, daysSinceAccountCreation);
+  };
+
+
+  // Update userStats with real data - now includes all favorites
+  // This is the PRIMARY source of truth for stats display
   useEffect(() => {
+    const totalFavorites = favorites.length + favoriteBlogsCount + savedEvents.length;
     console.log('ProfilePage - Updating userStats with real data:', {
-      favorites: favorites.length,
+      favoriteParks: favorites.length,
+      favoriteBlogs: favoriteBlogsCount,
+      savedEvents: savedEvents.length,
+      totalFavorites,
       visitedParks: visitedParks.length,
-      trips: trips.length,
+      totalDays: calculateTotalDays(user),
       currentUserStats: userStats
     });
-    setUserStats(prev => ({
-      ...prev,
-      favorites: favorites.length,
-      parksVisited: visitedParks.length,
-      tripsPlanned: trips.length
-    }));
-  }, [favorites.length, visitedParks.length, trips.length]);
+    // Handle different possible data structures for reviews
+    let reviewsCount = 0;
+    if (reviewsData) {
+      if (Array.isArray(reviewsData)) {
+        reviewsCount = reviewsData.length;
+      } else if (reviewsData.data && Array.isArray(reviewsData.data)) {
+        reviewsCount = reviewsData.data.length;
+      } else if (reviewsData.reviews && Array.isArray(reviewsData.reviews)) {
+        reviewsCount = reviewsData.reviews.length;
+      }
+    }
+    
+    console.log('🔍 ProfilePage - Reviews count:', reviewsCount);
+    console.log('🔍 ProfilePage - Reviews data structure:', reviewsData);
+    console.log('🔍 ProfilePage - Setting userStats with reviews:', reviewsCount);
+    
+    setUserStats(prev => {
+      const newStats = {
+        ...prev,
+        favorites: totalFavorites,
+        parksVisited: visitedParks.length,
+        reviews: reviewsCount || 0, // Ensure it's never undefined
+        totalDays: calculateTotalDays(user)
+      };
+      console.log('🔍 ProfilePage - New userStats:', newStats);
+      return newStats;
+    });
+  }, [favorites.length, favoriteBlogsCount, savedEvents.length, visitedParks.length, reviewsData, user]);
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'favorites', label: 'All Favorites', icon: Heart },
-    { id: 'adventures', label: 'Adventures', icon: Compass },
+    { id: 'adventures', label: 'Visited Parks', icon: Compass },
     { id: 'reviews', label: 'My Reviews', icon: Star },
     { id: 'testimonials', label: 'Testimonials', icon: Star },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -160,10 +216,19 @@ const ProfilePage = () => {
   // Real stats based on actual user data
   const stats = [
     { label: 'Parks Visited', value: userStats.parksVisited, icon: MapPin },
-    { label: 'Trips Planned', value: userStats.tripsPlanned, icon: Calendar },
     { label: 'Favorites', value: userStats.favorites, icon: Heart },
+    { 
+      label: 'Reviews', 
+      value: reviewsLoading ? '...' : (userStats.reviews ?? 0), 
+      icon: Star,
+      loading: reviewsLoading 
+    },
     { label: 'Total Days', value: userStats.totalDays, icon: Clock }
   ];
+  
+  // Debug stats array
+  console.log('🔍 ProfilePage - Stats array:', stats);
+  console.log('🔍 ProfilePage - Current userStats:', userStats);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -171,14 +236,10 @@ const ProfilePage = () => {
       return;
     }
 
-    // Load user profile data sequentially to avoid rate limiting
-    const loadDataSequentially = async () => {
-      await loadProfileData();
-      // Wait a bit before loading stats to avoid rate limiting
-      setTimeout(() => loadUserStats(), 100);
-    };
-    
-    loadDataSequentially();
+    // Load user profile data
+    // Note: Stats are calculated automatically by the useEffect at line 167
+    // which combines favorites, blogs, and events from local data
+    loadProfileData();
   }, [isAuthenticated]); // Removed navigate from dependencies to prevent unnecessary re-renders
 
   // Load email preferences when user is available (with debounce)
@@ -273,7 +334,19 @@ const ProfilePage = () => {
       console.log('ProfilePage - Calling userService.getUserStats()');
       const stats = await userService.getUserStats();
       console.log('ProfilePage - Received stats from server:', stats);
-      setUserStats(stats);
+      
+      // Override totalDays with client calculation to ensure consistency
+      const clientCalculatedDays = calculateTotalDays(user);
+      
+      // IMPORTANT: Server stats include parks + blogs, but NOT events (stored in localStorage)
+      // So we need to add savedEvents.length to the server's favorites count
+      const totalFavoritesWithEvents = stats.favorites + savedEvents.length;
+      
+      setUserStats({
+        ...stats,
+        favorites: totalFavoritesWithEvents,
+        totalDays: clientCalculatedDays
+      });
       
       // Update avatar based on new stats
       const updatedUserData = {
@@ -303,12 +376,24 @@ const ProfilePage = () => {
         return;
       }
       
+      // Calculate reviews count for fallback
+      let fallbackReviewsCount = 0;
+      if (reviewsData) {
+        if (Array.isArray(reviewsData)) {
+          fallbackReviewsCount = reviewsData.length;
+        } else if (reviewsData.data && Array.isArray(reviewsData.data)) {
+          fallbackReviewsCount = reviewsData.data.length;
+        } else if (reviewsData.reviews && Array.isArray(reviewsData.reviews)) {
+          fallbackReviewsCount = reviewsData.reviews.length;
+        }
+      }
+      
       // Fallback to local data
       const fallbackStats = {
         parksVisited: visitedParks.length,
-        tripsPlanned: trips.length,
-        favorites: favorites.length,
-        totalDays: 0
+        favorites: favorites.length + favoriteBlogsCount + savedEvents.length,
+        reviews: fallbackReviewsCount,
+        totalDays: calculateTotalDays(user)
       };
       setUserStats(fallbackStats);
       
@@ -692,6 +777,8 @@ const ProfilePage = () => {
       // Update profile in database
       const updatedProfile = await userService.updateProfile(updateData);
       
+      // Update AuthContext with the new user data
+      updateUser(updatedProfile);
       
       // Update local state with server response
       setProfileData(prev => ({
@@ -701,8 +788,8 @@ const ProfilePage = () => {
         avatarVersion: Date.now() // Force image reload after save
       }));
 
-      // Refresh stats after profile update
-      loadUserStats();
+      // Note: Stats are auto-updated by the useEffect watching favorites/blogs/events
+      // No need to call loadUserStats() here
 
       setIsEditing(false);
       showToast('Profile updated successfully!', 'success');
@@ -749,9 +836,9 @@ const ProfilePage = () => {
 
       {/* Main Content */}
       <section className="py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-6xl mx-auto px-2 sm:px-4 lg:px-8">
           {/* Profile Hero Section - Centered & Clean */}
-          <div className="rounded-3xl p-8 lg:p-12 text-center backdrop-blur mb-8 shadow-xl"
+          <div className="rounded-3xl p-4 sm:p-6 lg:p-12 text-center backdrop-blur mb-6 sm:mb-8 shadow-xl"
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -842,7 +929,7 @@ const ProfilePage = () => {
                       avatarVersion: Date.now()
                     }));
                   }}
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   icon={User}
                 >
@@ -895,14 +982,18 @@ const ProfilePage = () => {
                           avatar: profileData.avatar
                         };
                         
-                        await userService.updateProfile(updateData);
+                        const updatedProfile = await userService.updateProfile(updateData);
+                        
+                        // Update AuthContext with the new avatar
+                        updateUser({ avatar: updatedProfile.avatar });
+                        
                         showToast('Avatar saved successfully!', 'success');
                       } catch (error) {
                         console.error('Error saving avatar:', error);
                         showToast('Failed to save avatar. Please try again.', 'error');
                       }
                     }}
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
                     icon={Save}
                   >
@@ -918,20 +1009,6 @@ const ProfilePage = () => {
               >
                 {profileData.bio}
               </p>
-            )}
-            
-            {/* Edit Profile Button */}
-            {activeTab !== 'profile' && (
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => setActiveTab('profile')}
-                  variant="secondary"
-                  size="md"
-                  icon={Edit2}
-                >
-                  Edit Profile
-                </Button>
-              </div>
             )}
           </div>
 
@@ -986,31 +1063,56 @@ const ProfilePage = () => {
             })}
           </div>
 
-          {/* Enhanced Tab Navigation - Now using Button component for consistency */}
-          <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide">
-            {tabs.map((tab) => (
-              <Button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  setIsEditing(false);
-                  clearErrorStates();
-                }}
-                variant={activeTab === tab.id ? 'primary' : 'secondary'}
-                size="md"
-                icon={tab.icon}
-                className="whitespace-nowrap flex-shrink-0"
-              >
-                {tab.label}
-              </Button>
-            ))}
+          {/* Tab Navigation - 2-row grid on mobile, single row on desktop */}
+          <div className="mb-8">
+            {/* Mobile: 2-row grid layout */}
+            <div className="block sm:hidden">
+              <div className="grid grid-cols-3 gap-2">
+                {tabs.map((tab) => (
+                  <Button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsEditing(false);
+                      clearErrorStates();
+                    }}
+                    variant={activeTab === tab.id ? 'secondary' : 'ghost'}
+                    size="sm"
+                    icon={tab.icon}
+                    className="text-xs whitespace-nowrap justify-start h-12"
+                  >
+                    <span>{tab.label}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Desktop: Horizontal tabs */}
+            <div className="hidden sm:flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+              {tabs.map((tab) => (
+                <Button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsEditing(false);
+                    clearErrorStates();
+                  }}
+                  variant={activeTab === tab.id ? 'secondary' : 'ghost'}
+                  size="md"
+                  icon={tab.icon}
+                  className="whitespace-nowrap flex-shrink-0"
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {/* Main Content Area */}
           <div className="min-w-0">
               {/* Default message when no tab is selected */}
               {!activeTab && (
-                <div className="rounded-2xl p-8 backdrop-blur text-center"
+                <div className="rounded-2xl p-4 sm:p-6 lg:p-8 backdrop-blur text-center"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1033,7 +1135,7 @@ const ProfilePage = () => {
 
               {/* Enhanced Profile Tab */}
               {activeTab === 'profile' && (
-                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1057,7 +1159,7 @@ const ProfilePage = () => {
                     {!isEditing ? (
                       <Button
                         onClick={() => setIsEditing(true)}
-                        variant="primary"
+                        variant="secondary"
                         size="md"
                         icon={Edit2}
                         className="w-full sm:w-auto"
@@ -1077,7 +1179,7 @@ const ProfilePage = () => {
                         </Button>
                         <Button
                           onClick={handleSaveProfile}
-                          variant="primary"
+                          variant="secondary"
                           size="md"
                           icon={Save}
                           className="w-full sm:w-auto"
@@ -1290,7 +1392,7 @@ const ProfilePage = () => {
 
               {/* Unified Favorites Tab */}
               {activeTab === 'favorites' && (
-                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1316,35 +1418,19 @@ const ProfilePage = () => {
                   {/* Favorites Sections */}
                   <div className="space-y-8">
                     {/* Favorite Parks Section */}
-                    <div className="rounded-2xl p-6 backdrop-blur"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-green)', opacity: 0.1 }}>
-                            <MapPin className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
-                          </div>
-                          <div>
-                            <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                              Favorite Parks
-                            </h4>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                              National parks you&apos;ve saved for future visits
-                            </p>
-                          </div>
+                    <div>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-green)', opacity: 0.1 }}>
+                          <MapPin className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
                         </div>
-                        <span className="px-3 py-1 rounded-full text-sm font-semibold"
-                          style={{
-                            backgroundColor: 'var(--surface-hover)',
-                            color: 'var(--text-secondary)'
-                          }}
-                        >
-                          {favoritesLoading ? 'Loading...' : `${favorites.length} parks`}
-                        </span>
+                        <div>
+                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                            Favorite Parks
+                          </h4>
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            National parks you&apos;ve saved for future visits
+                          </p>
+                        </div>
                       </div>
 
                       {favoritesLoading ? (
@@ -1367,39 +1453,25 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Favorite Blogs Section */}
-                    <div className="rounded-2xl p-6 backdrop-blur"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-blue)', opacity: 0.1 }}>
-                            <BookOpen className="h-6 w-6" style={{ color: 'var(--accent-blue)' }} />
-                          </div>
-                          <div>
-                            <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                              Favorite Blogs
-                            </h4>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                              Travel stories and guides you&apos;ve saved
-                            </p>
-                          </div>
+                    <div>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-blue)', opacity: 0.1 }}>
+                          <BookOpen className="h-6 w-6" style={{ color: 'var(--accent-blue)' }} />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                            Favorite Blogs
+                          </h4>
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            Travel stories and guides you&apos;ve saved
+                          </p>
                         </div>
                       </div>
-                      <FavoriteBlogs />
+                      <FavoriteBlogs onCountChange={setFavoriteBlogsCount} />
                     </div>
 
                     {/* Saved Events Section */}
-                    <div className="rounded-2xl p-6 backdrop-blur"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
+                    <div>
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.1 }}>
@@ -1421,9 +1493,9 @@ const ProfilePage = () => {
                 </div>
               )}
 
-              {/* Adventures Tab - Combined Visited Parks and Trips */}
+              {/* Adventures Tab - Visited Parks */}
               {activeTab === 'adventures' && (
-                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1436,47 +1508,18 @@ const ProfilePage = () => {
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Your Adventures
+                        Visited Park
                       </h3>
                       <p className="text-sm"
                         style={{ color: 'var(--text-secondary)' }}
                       >
-                        Track your visited parks and planned trips in one place
+                        Track your visited parks and experiences in one place
                       </p>
                     </div>
                   </div>
 
                   {/* Visited Parks Section */}
-                  <div className="rounded-2xl p-6 backdrop-blur"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-green)', opacity: 0.1 }}>
-                          <MapPin className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                            Visited Parks
-                          </h4>
-                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            National parks you&apos;ve explored and experienced
-                          </p>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-sm font-semibold"
-                        style={{
-                          backgroundColor: 'var(--surface-hover)',
-                          color: 'var(--text-secondary)'
-                        }}
-                      >
-                        {visitedParksLoading ? 'Loading...' : `${visitedParks.length} parks`}
-                      </span>
-                    </div>
+                  <div>
 
                     {visitedParksLoading ? (
                       <div className="flex items-center justify-center py-12">
@@ -1497,39 +1540,13 @@ const ProfilePage = () => {
                     )}
                   </div>
 
-                  {/* Trips Section */}
-                  <div className="rounded-2xl p-6 backdrop-blur"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-blue)', opacity: 0.1 }}>
-                          <Calendar className="h-6 w-6" style={{ color: 'var(--accent-blue)' }} />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                            Planned Trips
-                          </h4>
-                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            Trip summaries with key planning details and continue options
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <TripHistoryList userId={user?.id} />
-                  </div>
                 </div>
               )}
 
 
               {/* Reviews Tab */}
               {activeTab === 'reviews' && (
-                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1553,29 +1570,7 @@ const ProfilePage = () => {
                   </div>
 
                   {/* Reviews Content */}
-                  <div className="rounded-2xl p-6 backdrop-blur"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.1 }}>
-                          <Star className="h-6 w-6" style={{ color: 'var(--accent-orange)' }} />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                            Park Reviews
-                          </h4>
-                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            Your reviews help others plan their adventures
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
+                  <div>
                     <UserReviews />
                   </div>
                 </div>
@@ -1583,7 +1578,7 @@ const ProfilePage = () => {
 
               {/* Testimonials Tab */}
               {activeTab === 'testimonials' && (
-                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1610,7 +1605,7 @@ const ProfilePage = () => {
                         const event = new CustomEvent('openTestimonialForm');
                         window.dispatchEvent(event);
                       }}
-                      variant="primary"
+                      variant="secondary"
                       size="lg"
                       icon={Plus}
                       className="w-full sm:w-auto justify-center"
@@ -1625,7 +1620,7 @@ const ProfilePage = () => {
 
               {/* Settings Tab */}
               {activeTab === 'settings' && (
-                <div className="rounded-3xl p-8 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -1648,15 +1643,9 @@ const ProfilePage = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     {/* Notification Settings */}
-                  <div className="rounded-2xl p-8 backdrop-blur"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
+                  <div>
                     <h3 className="text-xl font-bold mb-4"
                       style={{ color: 'var(--text-primary)' }}
                     >
@@ -1783,13 +1772,7 @@ const ProfilePage = () => {
                   </div>
 
                   {/* Privacy & Security */}
-                  <div className="rounded-2xl p-8 backdrop-blur"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
+                  <div>
                     <h3 className="text-xl font-bold mb-4"
                       style={{ color: 'var(--text-primary)' }}
                     >
@@ -2122,7 +2105,7 @@ const ProfilePage = () => {
               <Button
                 onClick={handleChangePassword}
                 disabled={privacyLoading}
-                variant="primary"
+                variant="secondary"
                 size="lg"
                 className="flex-1"
                 loading={privacyLoading}

@@ -141,7 +141,7 @@ const CookieConsent = () => {
               <div className="flex gap-2 mt-4">
                 <Button
                   onClick={handleAcceptAll}
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   className="flex-1"
                 >
@@ -356,7 +356,7 @@ const CookieConsent = () => {
               <div className="flex gap-2">
                 <Button
                   onClick={handleAcceptSelected}
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   className="flex-1"
                 >

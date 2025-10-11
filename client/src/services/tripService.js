@@ -41,6 +41,12 @@ const tripService = {
   archiveTrip: async (tripId) => {
     const response = await api.put(`/trips/${tripId}`, { status: 'archived' });
     return response.data;
+  },
+
+  // Restore/Unarchive trip
+  unarchiveTrip: async (tripId) => {
+    const response = await api.put(`/trips/${tripId}`, { status: 'active' });
+    return response.data;
   }
 };
 

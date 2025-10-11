@@ -40,7 +40,7 @@ const ShareButtons = ({ url, title, description }) => {
   ];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       {shareLinks.map((link) => {
         const Icon = link.icon;
         return (
@@ -53,7 +53,13 @@ const ShareButtons = ({ url, title, description }) => {
             size="sm"
             icon={Icon}
             title={`Share on ${link.name}`}
-            style={{ padding: '0.75rem' }}
+            className="backdrop-blur"
+            style={{ 
+              padding: '0.5rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: '1px',
+              borderColor: 'rgba(255, 255, 255, 0.3)'
+            }}
           />
         );
       })}
@@ -64,7 +70,13 @@ const ShareButtons = ({ url, title, description }) => {
         size="sm"
         icon={Link2}
         title="Copy link"
-        style={{ padding: '0.75rem' }}
+        className="backdrop-blur"
+        style={{ 
+          padding: '0.5rem',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: '1px',
+          borderColor: 'rgba(255, 255, 255, 0.3)'
+        }}
       />
     </div>
   );

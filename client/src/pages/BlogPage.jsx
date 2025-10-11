@@ -330,7 +330,7 @@ const BlogPage = () => {
                     <Button
                       key={category.id}
                       onClick={() => handleCategoryChange(category.id)}
-                      variant={selectedCategory === category.id ? 'primary' : 'secondary'}
+                      variant={selectedCategory === category.id ? 'secondary' : 'ghost'}
                       size="md"
                       className="whitespace-nowrap"
                     >
@@ -382,7 +382,7 @@ const BlogPage = () => {
                   </p>
                   <Button
                     onClick={() => window.location.reload()}
-                    variant="primary"
+                    variant="secondary"
                     size="md"
                   >
                     Try Again

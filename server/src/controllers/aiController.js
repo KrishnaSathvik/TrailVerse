@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const TripPlan = require('../models/TripPlan');
 const openaiService = require('../services/openaiService');
+const aiLearningService = require('../services/aiLearningService');
 
 // Optional Claude service - only load if available
 let claudeService = null;
@@ -77,17 +78,28 @@ exports.chat = async (req, res, next) => {
       }));
     }
 
-    // Get AI response with system prompt based on provider
+    // Get personalized system prompt based on user feedback patterns
+    const personalizedSystemPrompt = await aiLearningService.getPersonalizedSystemPrompt(
+      req.user._id || req.user.id,
+      systemPrompt,
+      {
+        parkCode: userContext?.parkCode,
+        parkName: userContext?.parkName,
+        aiProvider: aiProvider
+      }
+    );
+
+    // Get AI response with personalized system prompt
     let aiResponse;
     if (aiProvider === 'claude' && claudeService) {
-      aiResponse = await claudeService.chat(messages, systemPrompt);
+      aiResponse = await claudeService.chat(messages, personalizedSystemPrompt);
     } else if (aiProvider === 'claude' && !claudeService) {
       return res.status(400).json({
         success: false,
         error: 'Claude service is not available. Please check your ANTHROPIC_API_KEY.'
       });
     } else {
-      aiResponse = await openaiService.chat(messages, systemPrompt);
+      aiResponse = await openaiService.chat(messages, personalizedSystemPrompt);
     }
 
     // Add AI response to conversation
