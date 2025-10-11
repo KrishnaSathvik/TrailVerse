@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
 import { CheckCircle, XCircle, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 
 const VerifyEmailPage = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const { setUserAfterVerification } = useAuth();
   const [status, setStatus] = useState('verifying'); // verifying, success, error
   const [message, setMessage] = useState('');
 
@@ -19,14 +21,16 @@ const VerifyEmailPage = () => {
         
         // If verification includes a token, auto-login the user
         if (response.token && response.data) {
-          // Store token and user data
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('user', JSON.stringify(response.data));
+          // Update AuthContext immediately with user data and token
+          setUserAfterVerification(response.data, response.token);
           
-          // Redirect to profile/dashboard after 3 seconds
+          console.log('✅ VerifyEmailPage: User authenticated after verification');
+          console.log('✅ VerifyEmailPage: Redirecting to explore page in 2 seconds...');
+          
+          // Redirect to explore page after 2 seconds (reduced from 3 for better UX)
           setTimeout(() => {
             navigate('/explore?filter=national-parks');
-          }, 3000);
+          }, 2000);
         }
       } catch (error) {
         setStatus('error');
@@ -35,7 +39,7 @@ const VerifyEmailPage = () => {
     };
 
     verifyEmail();
-  }, [token, navigate]);
+  }, [token, navigate, setUserAfterVerification]);
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -151,7 +155,7 @@ const VerifyEmailPage = () => {
                   {message || 'Your email has been verified successfully!'}
                 </p>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
-                  You&apos;re all set! Redirecting you to explore national parks...
+                  You&apos;ve been automatically signed in. Redirecting you to explore national parks...
                 </p>
                 
                 <div className="flex items-center justify-center gap-2 mb-6">
