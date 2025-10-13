@@ -4,7 +4,7 @@ import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
 import { useTheme } from '../context/ThemeContext';
-import { ChevronDown, Mail } from 'lucide-react';
+import { ChevronDown, Mail } from '@components/icons';
 
 const FAQPage = () => {
   useTheme();

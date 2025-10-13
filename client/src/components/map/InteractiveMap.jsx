@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Navigation, ZoomIn, ZoomOut } from 'lucide-react';
+import { MapPin, Navigation, ZoomIn, ZoomOut } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
 import 'leaflet/dist/leaflet.css';
 

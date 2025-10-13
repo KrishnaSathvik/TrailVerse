@@ -51,13 +51,100 @@ class NPSService {
     console.log('💾 Events cached for 30 minutes');
   }
 
-  // Get all parks
-  async getAllParks(limit = 500) {
+  // Get all parks with pagination to ensure we get all parks
+  async getAllParks(limit = 600) {
     try {
-      const response = await this.api.get('/parks', {
-        params: { limit }
+      let allParks = [];
+      let start = 0;
+      const pageSize = 100; // NPS API max per page is 100
+      
+      while (true) {
+        const response = await this.api.get('/parks', {
+          params: { 
+            limit: pageSize,
+            start: start
+          }
+        });
+        
+        const parks = response.data.data;
+        if (!parks || parks.length === 0) {
+          break; // No more parks to fetch
+        }
+        
+        allParks = allParks.concat(parks);
+        start += pageSize;
+        
+        // If we got fewer parks than requested, we've reached the end
+        if (parks.length < pageSize) {
+          break;
+        }
+        
+        // Safety limit to prevent infinite loops (but allow for 474+ parks)
+        if (allParks.length >= limit) {
+          break;
+        }
+      }
+      
+      const nationalParksCount = allParks.filter(park => park.designation === 'National Park').length;
+      console.log(`📊 Fetched ${allParks.length} total parks from NPS API`);
+      console.log(`🏞️ Found ${nationalParksCount} National Parks out of ${allParks.length} total parks`);
+      
+      // Debug: Count all different designations
+      const designations = {};
+      allParks.forEach(park => {
+        const designation = park.designation || 'Unknown';
+        designations[designation] = (designations[designation] || 0) + 1;
       });
-      return response.data.data;
+      
+      console.log('📋 Park designations breakdown:');
+      Object.entries(designations)
+        .sort((a, b) => b[1] - a[1]) // Sort by count descending
+        .forEach(([designation, count]) => {
+          console.log(`   ${designation}: ${count}`);
+        });
+      
+      // Specifically check for any parks that might be National Parks but with different designation
+      const potentialNationalParks = allParks.filter(park => {
+        const name = park.fullName?.toLowerCase() || '';
+        const designation = park.designation?.toLowerCase() || '';
+        return (
+          name.includes('national park') && 
+          designation !== 'national park' &&
+          !name.includes('national monument') &&
+          !name.includes('national historic') &&
+          !name.includes('national recreation')
+        );
+      });
+      
+      if (potentialNationalParks.length > 0) {
+        console.log('🔍 Potential National Parks with different designations:');
+        potentialNationalParks.forEach(park => {
+          console.log(`   ${park.fullName} - Designation: ${park.designation}`);
+        });
+      }
+      
+      // Check for recent National Parks that might be missing
+      const recentNationalParks = [
+        'New River Gorge National Park and Preserve',
+        'Indiana Dunes National Park',
+        'Gateway Arch National Park',
+        'Pinnacles National Park'
+      ];
+      
+      const missingParks = recentNationalParks.filter(recentPark => {
+        return !allParks.some(park => 
+          park.fullName?.toLowerCase().includes(recentPark.toLowerCase()) && 
+          park.designation === 'National Park'
+        );
+      });
+      
+      if (missingParks.length > 0) {
+        console.log('⚠️  Potentially missing recent National Parks:');
+        missingParks.forEach(park => {
+          console.log(`   ${park}`);
+        });
+      }
+      return allParks;
     } catch (error) {
       console.error('NPS API Error:', error.message);
       throw new Error(`Failed to fetch parks: ${error.message}`);

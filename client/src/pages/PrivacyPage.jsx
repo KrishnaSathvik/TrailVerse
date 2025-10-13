@@ -3,7 +3,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import { useTheme } from '../context/ThemeContext';
-import { Shield, Lock } from 'lucide-react';
+import { Shield, Lock } from '@components/icons';
 
 const PrivacyPage = () => {
   useTheme();

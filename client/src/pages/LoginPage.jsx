@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Button from '../components/common/Button';
-import { Lock, Mail, Eye, EyeOff, CheckCircle, AlertCircle, Check } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, CheckCircle, AlertCircle, Check } from '@components/icons';
 
 const LoginPage = () => {
   const navigate = useNavigate();

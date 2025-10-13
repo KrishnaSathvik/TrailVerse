@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Heart, X } from 'lucide-react';
+import { BookOpen, Heart, X } from '@components/icons';
 import blogService from '../../services/blogService';
 import { useToast } from '../../context/ToastContext';
 import OptimizedImage from '../common/OptimizedImage';

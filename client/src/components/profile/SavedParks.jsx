@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Heart, ChevronRight } from 'lucide-react';
+import { MapPin, Heart, ChevronRight } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 const SavedParks = ({ savedParks, onRemove }) => {
   // Debug logging

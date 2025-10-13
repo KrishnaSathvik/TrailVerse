@@ -6,9 +6,11 @@ import SEO from '../components/common/SEO';
 import CommentSection from '../components/blog/CommentSection';
 import LikeFavorite from '../components/blog/LikeFavorite';
 import ShareButtons from '../components/common/ShareButtons';
+import RelatedPosts from '../components/blog/RelatedPosts';
 import blogService from '../services/blogService';
 import { logBlogView } from '../utils/analytics';
-import { Calendar, Clock, Eye, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, Eye, ArrowLeft } from '@components/icons';
+import '../styles/blog-prose.css';
 
 const BlogPostPage = () => {
   const { slug } = useParams();
@@ -188,7 +190,7 @@ const BlogPostPage = () => {
 
         {/* Content */}
         <div 
-          className="prose prose-lg max-w-none"
+          className="blog-prose max-w-none"
           style={{ color: 'var(--text-primary)' }}
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
@@ -198,7 +200,7 @@ const BlogPostPage = () => {
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
-          <div className="mt-8 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="mt-8 pt-8 pb-8" style={{ borderTop: '1px solid var(--border)' }}>
             <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Tags:</h3>
             <div className="flex flex-wrap gap-2">
               {post.tags.map((tag, index) => (
@@ -228,7 +230,16 @@ const BlogPostPage = () => {
         )}
 
         {/* Comments Section */}
-        <CommentSection blogId={post._id} />
+        <div className="mt-12">
+          <CommentSection blogId={post._id} />
+        </div>
+
+        {/* Related Posts */}
+        <RelatedPosts 
+          currentPostId={post._id} 
+          category={post.category} 
+          tags={post.tags || []} 
+        />
       </article>
     </div>
   );

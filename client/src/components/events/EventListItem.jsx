@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Users, Clock, ArrowRight, Heart, HeartOff } from 'lucide-react';
+import { MapPin, Users, Clock, ArrowRight, Heart, HeartOff } from '@components/icons';
 
 const EventListItem = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
   const category = categories.find(c => c.id === event.category);

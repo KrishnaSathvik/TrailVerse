@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   ArrowLeft, Settings, Save, RefreshCw, 
   Database, Mail, Shield, Globe, Key
-} from 'lucide-react';
+} from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 

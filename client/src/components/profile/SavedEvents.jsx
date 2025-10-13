@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Clock, ExternalLink, Heart, X, CalendarDays } from 'lucide-react';
+import { Calendar, MapPin, Clock, ExternalLink, Heart, X, CalendarDays } from '@components/icons';
 import { useSavedEvents } from '../../hooks/useSavedEvents';
 import { useParks } from '../../hooks/useParks';
 

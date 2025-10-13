@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import Button from '../components/common/Button';
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from '@components/icons';
 
 const ResetPasswordPage = () => {
   const { token } = useParams();

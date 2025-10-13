@@ -11,7 +11,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight
-} from 'lucide-react';
+} from '@components/icons';
 import './SimpleRichTextEditor.css';
 
 const SimpleRichTextEditor = ({ value, onChange, placeholder = "Write your content here..." }) => {

@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { Sparkles, Brain, Check, Info } from 'lucide-react';
+import { Sparkles, Brain, Check, Info } from '@components/icons';
 
 const ProviderSelector = ({ selectedProvider, onProviderChange, providers = [] }) => {
   const providerIcons = {

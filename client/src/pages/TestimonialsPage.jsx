@@ -5,7 +5,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import TestimonialsSection from '../components/testimonials/TestimonialsSection';
 import TestimonialForm from '../components/testimonials/TestimonialForm';
-import { Plus, Search, Award, Star } from 'lucide-react';
+import { Plus, Search, Award, Star } from '@components/icons';
 
 const TestimonialsPage = () => {
   const { isAuthenticated } = useAuth();

@@ -1,8 +1,9 @@
 const BlogPost = require('../models/BlogPost');
 const User = require('../models/User');
-const emailService = require('../services/simpleEmailService');
+const emailService = require('../services/resendEmailService');
 const unsubscribeService = require('../services/unsubscribeService');
 const { getScheduledPostsInfo } = require('../services/schedulerService');
+const { clearCache } = require('../middleware/cache');
 
 // @desc    Get all blog posts with pagination
 // @route   GET /api/blogs
@@ -180,6 +181,9 @@ exports.createPost = async (req, res, next) => {
     
     console.log('✅ Blog post created successfully:', post._id);
     
+    // Clear server cache for blog posts
+    clearCache('blogs');
+    
     // Send email notifications if published
     if (status === 'published') {
       sendBlogNotifications(post).catch(err => 
@@ -243,6 +247,9 @@ exports.updatePost = async (req, res, next) => {
     
     await post.save();
     
+    // Clear server cache for blog posts
+    clearCache('blogs');
+    
     // Send notifications if newly published
     if (!wasPublished && post.status === 'published') {
       sendBlogNotifications(post).catch(err => 
@@ -272,6 +279,9 @@ exports.deletePost = async (req, res, next) => {
         error: 'Blog post not found'
       });
     }
+    
+    // Clear server cache for blog posts
+    clearCache('blogs');
     
     res.status(200).json({
       success: true,

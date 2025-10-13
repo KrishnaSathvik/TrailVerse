@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mountain } from 'lucide-react';
+import { Mountain } from '@components/icons';
 
 const LoadingScreen = ({ message = 'Loading...' }) => {
   return (

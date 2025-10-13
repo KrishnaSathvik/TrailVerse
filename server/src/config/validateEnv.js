@@ -10,8 +10,7 @@ const requiredEnvVars = [
   'OPENAI_API_KEY',
   'ANTHROPIC_API_KEY',
   'EMAIL_USER',
-  'EMAIL_PASS',
-  'WEBSITE_URL'
+  'EMAIL_PASS'
 ];
 
 const optionalEnvVars = [
@@ -20,7 +19,8 @@ const optionalEnvVars = [
   'OPENWEATHER_API_KEY',
   'RATE_LIMIT_WINDOW_MS',
   'RATE_LIMIT_MAX_REQUESTS',
-  'RATE_LIMIT_AUTH_MAX'
+  'RATE_LIMIT_AUTH_MAX',
+  'WEBSITE_URL'
 ];
 
 function validateEnvironment() {

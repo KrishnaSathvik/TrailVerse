@@ -183,6 +183,7 @@ app.use('/api/images', require('./routes/images'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api', require('./routes/comments'));
 app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/gmaps', require('./routes/gmaps')); // Google Maps proxy
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

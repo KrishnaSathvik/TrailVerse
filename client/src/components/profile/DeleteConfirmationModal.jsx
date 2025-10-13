@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, Loader2 } from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import reviewService from '../../services/reviewService';
 

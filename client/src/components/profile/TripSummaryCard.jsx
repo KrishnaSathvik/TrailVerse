@@ -12,7 +12,7 @@ import {
   Trash2,
   Bot,
   CheckCircle
-} from 'lucide-react';
+} from '@components/icons';
 
 const TripSummaryCard = ({ trip, onArchive, onDelete, onRestore, isDeleting = false, isRestoring = false }) => {
   const tripId = trip._id || trip.id;

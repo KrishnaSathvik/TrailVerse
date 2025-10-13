@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, DollarSign, Phone, Globe, MapPin } from 'lucide-react';
+import { Clock, DollarSign, Phone, Globe, MapPin } from '@components/icons';
 
 const QuickInfoCard = ({ park }) => {
   const infoItems = [

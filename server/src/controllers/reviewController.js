@@ -468,9 +468,19 @@ exports.getAllParkRatings = async (req, res, next) => {
       }
     ]);
 
+    // Convert array to object with parkCode as keys for easier frontend access
+    const parkRatingsMap = parkRatings.reduce((acc, park) => {
+      acc[park.parkCode] = {
+        averageRating: park.averageRating,
+        totalReviews: park.totalReviews,
+        ratingDistribution: park.ratingDistribution
+      };
+      return acc;
+    }, {});
+
     res.status(200).json({
       success: true,
-      data: parkRatings
+      data: parkRatingsMap
     });
 
   } catch (error) {

@@ -8,7 +8,7 @@ import {
   BarChart3, TrendingUp, Clock, Database, 
   Zap, AlertTriangle, CheckCircle, RefreshCw,
   Activity, Target, Lightbulb
-} from 'lucide-react';
+} from '@components/icons';
 import { usePerformanceMonitor } from '../../hooks/useSmartPrefetch';
 import globalCacheManager from '../../services/globalCacheManager';
 import performanceMonitor from '../../services/performanceMonitor';

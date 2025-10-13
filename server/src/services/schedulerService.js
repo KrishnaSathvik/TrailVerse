@@ -1,5 +1,5 @@
 const BlogPost = require('../models/BlogPost');
-const { sendBlogNotifications } = require('./emailService');
+const { sendBlogNotifications } = require('./resendEmailService');
 
 /**
  * Scheduler Service for Blog Posts

@@ -13,7 +13,7 @@ import {
   Compass, Mountain, Sparkles, Clock, Shield, 
   MapPin, Calendar, Heart, Camera, BookOpen, Route,
   Star, Eye
-} from 'lucide-react';
+} from '@components/icons';
 
 const LandingPage = () => {
   const navigate = useNavigate();

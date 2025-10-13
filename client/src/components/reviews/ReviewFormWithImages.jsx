@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Star, Camera, X, Upload, AlertCircle, 
   Loader2, Image as ImageIcon, Trash2 
-} from 'lucide-react';
+} from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import reviewService from '../../services/reviewService';

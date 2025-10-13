@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, CloudRain, Sun, Wind, Droplets, Eye, Loader2, Snowflake } from 'lucide-react';
+import { Cloud, CloudRain, Sun, Wind, Droplets, Eye, Loader2, Snowflake } from '@components/icons';
 import weatherService from '../../services/weatherService.ts';
 import { logWeatherWidgetUsage } from '../../utils/analytics';
 

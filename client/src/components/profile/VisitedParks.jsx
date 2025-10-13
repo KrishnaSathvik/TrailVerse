@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, Calendar, Star, Trash2, ChevronRight } from 'lucide-react';
+import { CheckCircle, Calendar, Star, Trash2, ChevronRight } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 
 const VisitedParks = ({ visitedParks, onRemove }) => {

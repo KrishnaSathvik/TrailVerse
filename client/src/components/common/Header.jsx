@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, X, LogOut, Sparkles } from 'lucide-react';
+import { Menu, X, LogOut, Sparkles } from '@components/icons';
 import ThemeSwitcher from './ThemeSwitcher';
 import Button from './Button';
 

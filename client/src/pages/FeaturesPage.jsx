@@ -10,7 +10,7 @@ import {
   Star, Shield, Clock, Users, MessageCircle, ArchiveRestore, Trash2,
   CheckCircle, Bot, Mountain, Globe, Zap, Eye, BarChart3, Mail,
   Settings, FileText, MessageSquare, TrendingUp, Award, Target
-} from 'lucide-react';
+} from '@components/icons';
 
 const FeaturesPage = () => {
   const navigate = useNavigate();

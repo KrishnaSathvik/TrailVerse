@@ -5,7 +5,7 @@ import {
   MessageSquare, CheckCircle, XCircle, Star, 
   Eye, EyeOff, Search, Calendar,
   MapPin, Clock
-} from 'lucide-react';
+} from '@components/icons';
 
 const TestimonialsManagement = () => {
   const { showToast } = useToast();

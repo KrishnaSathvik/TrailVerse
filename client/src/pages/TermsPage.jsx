@@ -3,7 +3,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import { useTheme } from '../context/ThemeContext';
-import { FileText, Shield } from 'lucide-react';
+import { FileText, Shield } from '@components/icons';
 
 const TermsPage = () => {
   useTheme();

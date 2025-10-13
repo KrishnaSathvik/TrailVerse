@@ -6,7 +6,7 @@ import TestimonialForm from '../testimonials/TestimonialForm';
 import { 
   Star, Edit, Trash2, Award, MapPin, 
   Clock, CheckCircle
-} from 'lucide-react';
+} from '@components/icons';
 
 const UserTestimonials = () => {
   const { user } = useAuth();

@@ -9,7 +9,7 @@ import {
   Compass, Mountain, Camera, MapPin, Award, 
   Globe, Mail, Instagram, 
   Sparkles, Calendar
-} from 'lucide-react';
+} from '@components/icons';
 
 const AboutPage = () => {
   const navigate = useNavigate();

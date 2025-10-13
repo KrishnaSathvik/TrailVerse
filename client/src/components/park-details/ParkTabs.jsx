@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Mountain, Camera, Calendar, MessageCircle } from 'lucide-react';
+import { Info, Mountain, Camera, Calendar, MessageCircle } from '@components/icons';
 
 const ParkTabs = ({ activeTab, onTabChange }) => {
   const tabs = [

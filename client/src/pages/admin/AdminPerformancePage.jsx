@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Zap } from '@components/icons';
 import PerformanceDashboard from '../../components/admin/PerformanceDashboard';
 
 const AdminPerformancePage = () => {

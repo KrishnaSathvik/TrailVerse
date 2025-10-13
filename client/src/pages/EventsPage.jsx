@@ -4,7 +4,7 @@ import {
   Search, X, CalendarDays,
   Sparkles, TrendingUp,
   AlertCircle, List
-} from 'lucide-react';
+} from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
@@ -564,7 +564,7 @@ const EventsPage = () => {
                     Parks ({availableParks.length})
                   </h4>
                   <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                    {availableParks.slice(0, 15).map(park => (
+                    {availableParks.map(park => (
                       <label key={park.code} className="flex items-center gap-2 cursor-pointer group">
                         <input
                           type="checkbox"
@@ -581,13 +581,6 @@ const EventsPage = () => {
                         </span>
                       </label>
                     ))}
-                    {availableParks.length > 15 && (
-                      <p className="text-xs text-center py-2"
-                        style={{ color: 'var(--text-tertiary)' }}
-                      >
-                        +{availableParks.length - 15} more parks
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, TrendingUp, Zap, Lightbulb } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, Lightbulb } from '@components/icons';
 
 const SuggestedPrompts = ({ prompts, onSelect, title = "Suggested prompts" }) => {
   const defaultPrompts = [
