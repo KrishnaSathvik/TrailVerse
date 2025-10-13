@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle } from '@components/icons';
 import tripService from '../../services/tripService';
 import { useToast } from '../../context/ToastContext';
 import TripSummaryCard from './TripSummaryCard';

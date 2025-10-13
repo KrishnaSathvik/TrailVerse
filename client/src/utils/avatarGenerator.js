@@ -1,94 +1,108 @@
 /**
  * Travel-themed avatar generation utilities
  * Provides multiple avatar generation methods with travel/nature themes
+ * Updated to use modern avatar APIs and more variety
  */
 
-// Travel-themed avatar styles with different themes
+// Modern DiceBear v9 styles (updated API)
+const DICEBEAR_STYLES = [
+  'adventurer',
+  'adventurer-neutral',
+  'avataaars',
+  'avataaars-neutral',
+  'big-ears',
+  'big-ears-neutral',
+  'big-smile',
+  'bottts',
+  'bottts-neutral',
+  'croodles',
+  'croodles-neutral',
+  'fun-emoji',
+  'icons',
+  'identicon',
+  'initials',
+  'lorelei',
+  'lorelei-neutral',
+  'micah',
+  'miniavs',
+  'notionists',
+  'notionists-neutral',
+  'open-peeps',
+  'personas',
+  'pixel-art',
+  'pixel-art-neutral',
+  'shapes',
+  'thumbs'
+];
+
+// Travel-themed color palettes
+const COLOR_PALETTES = {
+  forest: ['2c5530', '4a6741', '6b8e23', '228b22', '3d5a3d'],
+  ocean: ['006994', '1e88e5', '42a5f5', '64b5f6', '90caf9'],
+  sunset: ['ff6b35', 'f7931e', 'fdc700', 'ff8c42', 'fa6900'],
+  mountain: ['8b4513', 'cd853f', 'daa520', 'b8860b', '8b7355'],
+  desert: ['f4a460', 'cd853f', 'deb887', 'd2b48c', 'f5deb3'],
+  arctic: ['b0e0e6', '87ceeb', 'add8e6', 'b0c4de', 'd6e4f5'],
+  meadow: ['9acd32', 'adff2f', '7cfc00', '32cd32', '00fa9a'],
+  autumn: ['d2691e', 'ff7f50', 'ff8c00', 'ffa500', 'ff6347'],
+  spring: ['ffb6c1', 'ffc0cb', 'ffa6c9', 'ff85b3', 'ff73a8'],
+  tropical: ['00b8a9', '16a085', '1abc9c', '48c9b0', '52be80'],
+  twilight: ['9370db', '8470ff', '7b68ee', '6a5acd', '8a7aa8'],
+  lavender: ['e6e6fa', 'dda0dd', 'da70d6', 'ba55d3', '9370db'],
+  coral: ['ff7f50', 'ff6b6b', 'f08080', 'fa8072', 'e9967a'],
+  sage: ['9dc183', '8fbc8f', '90ee90', '98fb98', 'afeeee'],
+  earth: ['8b7355', 'a0826d', '967969', '8b7765', '9b8b80']
+};
+
+// Travel-themed avatar configurations
 const TRAVEL_AVATAR_STYLES = [
-  { style: 'avataaars', theme: 'outdoor', colors: ['2c5530', '4a6741', '6b8e23', '8b4513'] },
-  { style: 'personas', theme: 'adventure', colors: ['2c5530', '4a6741', '6b8e23', '8b4513'] },
-  { style: 'fun-emoji', theme: 'nature', colors: ['b6e3f4', 'c0aede', 'd1d4f9', 'ffd5dc'] },
-  { style: 'avataaars', theme: 'mountain', colors: ['8b4513', 'cd853f', 'daa520', '2c5530'] },
-  { style: 'personas', theme: 'forest', colors: ['2c5530', '4a6741', '6b8e23', '228b22'] },
-  { style: 'avataaars', theme: 'beach', colors: ['87ceeb', '4682b4', '5f9ea0', '20b2aa'] },
-  { style: 'fun-emoji', theme: 'desert', colors: ['f4a460', 'cd853f', 'daa520', 'b8860b'] },
-  { style: 'personas', theme: 'arctic', colors: ['b0e0e6', '87ceeb', 'add8e6', 'f0f8ff'] },
-  { style: 'bottts', theme: 'tech-explorer', colors: ['00b8d4', '00acc1', '0097a7', '00838f'] },
-  { style: 'adventurer', theme: 'trail-blazer', colors: ['ff6b35', 'f7931e', 'fdc700', 'c1666b'] },
-  { style: 'micah', theme: 'wanderer', colors: ['4a5759', '6c7a89', '95a5a6', 'bdc3c7'] },
-  { style: 'lorelei', theme: 'coastal', colors: ['48c9b0', '16a085', '1abc9c', '26d0ce'] },
-  { style: 'pixel-art', theme: 'retro-traveler', colors: ['e74c3c', 'c0392b', 'e67e22', 'd35400'] },
-  { style: 'notionists', theme: 'modern-nomad', colors: ['9b59b6', '8e44ad', '3498db', '2980b9'] },
-  { style: 'big-smile', theme: 'happy-camper', colors: ['f39c12', 'f1c40f', 'e67e22', 'd35400'] },
-  { style: 'miniavs', theme: 'micro-adventurer', colors: ['1abc9c', '16a085', '2ecc71', '27ae60'] }
+  { style: 'adventurer', theme: 'outdoor', palette: 'forest' },
+  { style: 'adventurer-neutral', theme: 'explorer', palette: 'mountain' },
+  { style: 'avataaars', theme: 'wanderer', palette: 'ocean' },
+  { style: 'avataaars-neutral', theme: 'nomad', palette: 'desert' },
+  { style: 'big-ears', theme: 'hiker', palette: 'meadow' },
+  { style: 'big-ears-neutral', theme: 'camper', palette: 'forest' },
+  { style: 'big-smile', theme: 'happy-traveler', palette: 'spring' },
+  { style: 'bottts', theme: 'tech-explorer', palette: 'twilight' },
+  { style: 'bottts-neutral', theme: 'robo-ranger', palette: 'arctic' },
+  { style: 'croodles', theme: 'doodler', palette: 'coral' },
+  { style: 'croodles-neutral', theme: 'sketcher', palette: 'lavender' },
+  { style: 'fun-emoji', theme: 'emoji-adventurer', palette: 'tropical' },
+  { style: 'lorelei', theme: 'coastal', palette: 'ocean' },
+  { style: 'lorelei-neutral', theme: 'beach-goer', palette: 'sunset' },
+  { style: 'micah', theme: 'minimalist', palette: 'sage' },
+  { style: 'miniavs', theme: 'micro-explorer', palette: 'earth' },
+  { style: 'notionists', theme: 'modern-nomad', palette: 'twilight' },
+  { style: 'notionists-neutral', theme: 'contemporary', palette: 'lavender' },
+  { style: 'open-peeps', theme: 'character', palette: 'spring' },
+  { style: 'personas', theme: 'persona', palette: 'autumn' },
+  { style: 'pixel-art', theme: 'retro', palette: 'sunset' },
+  { style: 'pixel-art-neutral', theme: '8bit-traveler', palette: 'twilight' },
+  { style: 'thumbs', theme: 'thumbs-up', palette: 'tropical' }
 ];
 
-// Adventure-themed avatar styles
-const ADVENTURE_AVATAR_STYLES = [
-  { style: 'avataaars', theme: 'climber', colors: ['262e33', '65c9ff', '5199e4', '8b4513'] },
-  { style: 'personas', theme: 'hiker', colors: ['2c5530', '4a6741', '6b8e23', '8b4513'] },
-  { style: 'avataaars', theme: 'explorer', colors: ['8b4513', 'cd853f', 'daa520', '2c5530'] },
-  { style: 'fun-emoji', theme: 'sports', colors: ['ff6b6b', '4ecdc4', '45b7d1', '96ceb4'] },
-  { style: 'adventurer', theme: 'peak-seeker', colors: ['34495e', '2c3e50', '95a5a6', '7f8c8d'] },
-  { style: 'bottts', theme: 'trail-bot', colors: ['27ae60', '229954', '1e8449', '186a3b'] },
-  { style: 'pixel-art', theme: '8bit-adventurer', colors: ['e74c3c', '922b21', 'cb4335', 'b03a2e'] },
-  { style: 'micah', theme: 'summit-chaser', colors: ['d35400', 'ba4a00', 'a04000', '873600'] },
-  { style: 'lorelei', theme: 'outdoor-enthusiast', colors: ['2874a6', '1f618d', '1a5276', '154360'] },
-  { style: 'big-smile', theme: 'thrill-seeker', colors: ['c0392b', 'a93226', '922b21', '7b241c'] },
-  { style: 'miniavs', theme: 'tiny-explorer', colors: ['e67e22', 'd68910', 'ca6f1e', 'af601a'] }
+// Boring Avatars variants (modern, colorful alternatives)
+const BORING_AVATARS_VARIANTS = [
+  'marble',
+  'beam',
+  'pixel',
+  'sunset',
+  'ring',
+  'bauhaus'
 ];
 
-// Nature-themed avatar styles  
-const NATURE_AVATAR_STYLES = [
-  { style: 'personas', theme: 'gardener', colors: ['2c5530', '4a6741', '6b8e23', '228b22'] },
-  { style: 'avataaars', theme: 'naturalist', colors: ['8b4513', 'cd853f', 'daa520', '2c5530'] },
-  { style: 'personas', theme: 'birdwatcher', colors: ['2c5530', '4a6741', '6b8e23', '8b4513'] },
-  { style: 'fun-emoji', theme: 'wildlife', colors: ['b6e3f4', 'c0aede', 'd1d4f9', 'ffd5dc'] },
-  { style: 'adventurer', theme: 'forest-dweller', colors: ['145a32', '196f3d', '1d8348', '239b56'] },
-  { style: 'bottts', theme: 'nature-bot', colors: ['52be80', '48c9b0', '45b39d', '58d68d'] },
-  { style: 'micah', theme: 'eco-warrior', colors: ['1e8449', '229954', '27ae60', '2ecc71'] },
-  { style: 'lorelei', theme: 'green-thumb', colors: ['7dcea0', '82e0aa', '7dcea0', '52be80'] },
-  { style: 'notionists', theme: 'botanist', colors: ['16a085', '1abc9c', '17a589', '138d75'] },
-  { style: 'pixel-art', theme: 'pixel-naturalist', colors: ['27ae60', '229954', '1e8449', '186a3b'] },
-  { style: 'big-smile', theme: 'nature-lover', colors: ['52be80', '48c9b0', '16a085', '1abc9c'] },
-  { style: 'miniavs', theme: 'mini-ranger', colors: ['27ae60', '2ecc71', '28b463', '239b56'] }
-];
-
-// Seasonal-themed avatar styles
-const SEASONAL_AVATAR_STYLES = [
-  { style: 'avataaars', theme: 'spring', colors: ['a8e6cf', '8fd3f4', 'ffd3b6', 'ffaaa5'] },
-  { style: 'personas', theme: 'summer', colors: ['ffd700', 'ff8c00', 'ff6347', 'ff4500'] },
-  { style: 'fun-emoji', theme: 'autumn', colors: ['d2691e', 'cd853f', 'daa520', 'b8860b'] },
-  { style: 'avataaars', theme: 'winter', colors: ['e0f2f7', 'b3e5fc', '81d4fa', '4fc3f7'] },
-  { style: 'adventurer', theme: 'spring-bloom', colors: ['ffb6c1', 'ffc0cb', 'ffb3ba', 'ffa6c9'] },
-  { style: 'lorelei', theme: 'summer-sun', colors: ['fff68f', 'ffec8b', 'ffefdb', 'ffdab9'] },
-  { style: 'micah', theme: 'autumn-leaves', colors: ['ff7f50', 'ff6347', 'cd5c5c', 'dc143c'] },
-  { style: 'notionists', theme: 'winter-frost', colors: ['f0f8ff', 'e6f3ff', 'd9ecff', 'cce5ff'] }
-];
-
-// Time-of-day themed avatar styles
-const DAYTIME_AVATAR_STYLES = [
-  { style: 'avataaars', theme: 'dawn', colors: ['ff9999', 'ffb380', 'ffc966', 'ffdb4d'] },
-  { style: 'personas', theme: 'morning', colors: ['fff68f', 'ffec8b', 'ffefdb', 'ffdab9'] },
-  { style: 'fun-emoji', theme: 'noon', colors: ['ffff00', 'ffd700', 'ffa500', 'ff8c00'] },
-  { style: 'avataaars', theme: 'sunset', colors: ['ff6b6b', 'ff8b94', 'ffa07a', 'ffb997'] },
-  { style: 'adventurer', theme: 'twilight', colors: ['9370db', '8a7aa8', '7a6faa', '6a5acd'] },
-  { style: 'lorelei', theme: 'night', colors: ['191970', '000080', '00008b', '0000cd'] },
-  { style: 'micah', theme: 'midnight', colors: ['2c3e50', '34495e', '1c2833', '17202a'] }
-];
-
-// Activity-based avatar styles
-const ACTIVITY_AVATAR_STYLES = [
-  { style: 'avataaars', theme: 'hiking', colors: ['8b4513', '6b4423', '5c4033', '4a3728'] },
-  { style: 'personas', theme: 'camping', colors: ['556b2f', '6b8e23', '808000', '9acd32'] },
-  { style: 'fun-emoji', theme: 'swimming', colors: ['4682b4', '5f9ea0', '48d1cc', '40e0d0'] },
-  { style: 'avataaars', theme: 'cycling', colors: ['ff6347', 'ff4500', 'ff69b4', 'ff1493'] },
-  { style: 'adventurer', theme: 'kayaking', colors: ['00ced1', '00bfff', '1e90ff', '4169e1'] },
-  { style: 'bottts', theme: 'climbing', colors: ['708090', '778899', '696969', '808080'] },
-  { style: 'micah', theme: 'fishing', colors: ['4682b4', '6495ed', '7b68ee', '6a5acd'] },
-  { style: 'lorelei', theme: 'birdwatching', colors: ['9370db', '8470ff', '7b68ee', '6a5acd'] },
-  { style: 'pixel-art', theme: 'photography', colors: ['696969', '808080', 'a9a9a9', 'c0c0c0'] },
-  { style: 'notionists', theme: 'stargazing', colors: ['191970', '483d8b', '4b0082', '663399'] }
+// Boring Avatars color schemes
+const BORING_COLORS = [
+  ['264653', '2a9d8f', 'e9c46a', 'f4a261', 'e76f51'], // Earthy
+  ['590d22', '800f2f', 'a4133c', 'c9184a', 'ff4d6d'], // Red passion
+  ['05668d', '028090', '00a896', '02c39a', 'f0f3bd'], // Ocean breeze
+  ['4a4e69', '9a8c98', 'c9ada7', 'f2e9e4', '22223b'], // Muted elegance
+  ['003049', 'd62828', 'f77f00', 'fcbf49', 'eae2b7'], // Warm contrast
+  ['6a4c93', '1982c4', '8ac926', 'ffca3a', 'ff595e'], // Vibrant mix
+  ['582f0e', '7f4f24', '936639', 'a68a64', 'b6ad90'], // Wood tones
+  ['ff6700', 'ebebeb', 'c0c0c0', '3a6ea5', '004e98'], // Modern tech
+  ['2b2d42', '8d99ae', 'edf2f4', 'ef233c', 'd90429'], // Bold minimal
+  ['f72585', 'b5179e', '7209b7', '560bad', '480ca8']  // Purple gradient
 ];
 
 /**
@@ -104,89 +118,105 @@ const getCurrentSeason = () => {
 };
 
 /**
- * Get current time of day
- * @returns {string} Time of day (dawn, morning, noon, sunset, twilight, night, midnight)
+ * Generate hash from string for consistent randomization
+ * @param {string} str - String to hash
+ * @returns {number} Hash number
  */
-const getTimeOfDay = () => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 7) return 'dawn';
-  if (hour >= 7 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'noon';
-  if (hour >= 17 && hour < 19) return 'sunset';
-  if (hour >= 19 && hour < 21) return 'twilight';
-  if (hour >= 21 && hour < 23) return 'night';
-  return 'midnight';
+const hashString = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
 };
 
 /**
- * Generate a random travel-themed avatar based on user data
+ * Generate Boring Avatars URL (modern, colorful alternative)
+ * @param {string} seed - Seed for consistent generation
+ * @param {string} variant - Avatar variant (marble, beam, pixel, sunset, ring, bauhaus)
+ * @param {Array} colors - Array of color hex codes (without #)
+ * @returns {string} Boring Avatars URL
+ */
+const generateBoringAvatar = (seed, variant = 'marble', colors = null) => {
+  const cleanSeed = encodeURIComponent(seed || 'user');
+  const selectedColors = colors || BORING_COLORS[hashString(seed) % BORING_COLORS.length];
+  const colorString = selectedColors.join(',');
+  
+  return `https://source.boringavatars.com/${variant}/120/${cleanSeed}?colors=${colorString}`;
+};
+
+/**
+ * Generate UI Avatars URL (text-based fallback)
+ * @param {string} name - Name to display
+ * @param {string} background - Background color hex (without #)
+ * @param {string} color - Text color hex (without #)
+ * @returns {string} UI Avatars URL
+ */
+const generateUIAvatar = (name, background = '6366f1', color = 'ffffff') => {
+  const cleanName = encodeURIComponent(name || 'User');
+  return `https://ui-avatars.com/api/?name=${cleanName}&background=${background}&color=${color}&size=200&bold=true&format=svg`;
+};
+
+/**
+ * Generate a random travel-themed avatar based on user data (IMPROVED VERSION)
+ * Uses modern DiceBear v9 API and Boring Avatars for better variety
  * @param {string} email - User's email for seed generation
  * @param {string} firstName - User's first name
  * @param {string} lastName - User's last name
  * @param {Object} userStats - User's travel stats
- * @param {Object} options - Additional options (useSeasonalTheme, useDaytimeTheme, useActivityTheme)
+ * @param {Object} options - Additional options (useBoring, variant)
  * @returns {string} Random travel-themed avatar URL
  */
 export const generateEmojiAvatar = (email, firstName, lastName, userStats = {}, options = {}) => {
-  // Use stats to influence avatar style selection
-  const { parksVisited = 0, tripsPlanned = 0, favorites = 0 } = userStats;
-  const { useSeasonalTheme = false, useDaytimeTheme = false, useActivityTheme = false } = options;
+  const { useBoring = false } = options;
   
-  let avatarStyles = TRAVEL_AVATAR_STYLES;
+  // Create unique seed for this avatar with timestamp AND random number for uniqueness
+  const timestamp = Date.now();
+  const randomNum = Math.floor(Math.random() * 1000000);
+  const baseSeed = email || `${firstName || ''}${lastName || ''}` || 'traveler';
+  const seed = `${baseSeed}-${timestamp}-${randomNum}`;
   
-  // Choose avatar style set based on options or user activity
-  if (useSeasonalTheme) {
-    avatarStyles = SEASONAL_AVATAR_STYLES;
-  } else if (useDaytimeTheme) {
-    avatarStyles = DAYTIME_AVATAR_STYLES;
-  } else if (useActivityTheme) {
-    avatarStyles = ACTIVITY_AVATAR_STYLES;
-  } else if (parksVisited > 10 || tripsPlanned > 5) {
-    avatarStyles = ADVENTURE_AVATAR_STYLES; // More adventurous avatars for very active users
-  } else if (parksVisited > 5 || tripsPlanned > 3) {
-    avatarStyles = ACTIVITY_AVATAR_STYLES; // Activity-based avatars for active users
-  } else if (favorites > 5) {
-    avatarStyles = NATURE_AVATAR_STYLES; // Nature-focused avatars for nature enthusiasts
-  } else if (favorites > 2) {
-    avatarStyles = SEASONAL_AVATAR_STYLES; // Seasonal avatars for engaged users
+  // 40% chance to use Boring Avatars (modern, colorful style)
+  if (useBoring || Math.random() > 0.6) {
+    const variant = BORING_AVATARS_VARIANTS[Math.floor(Math.random() * BORING_AVATARS_VARIANTS.length)];
+    const colors = BORING_COLORS[Math.floor(Math.random() * BORING_COLORS.length)];
+    return generateBoringAvatar(seed, variant, colors);
   }
   
-  // Select random avatar style
-  const randomIndex = Math.floor(Math.random() * avatarStyles.length);
-  const selectedStyle = avatarStyles[randomIndex];
-  
-  // Create unique seed for this avatar
-  const timestamp = Date.now();
-  const seed = `${email || 'traveler'}-${timestamp}`;
+  // Otherwise use DiceBear with modern styles
+  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
+  const palette = COLOR_PALETTES[selectedStyle.palette];
   const cleanSeed = encodeURIComponent(seed);
   
-  // Generate random colors from the theme
-  const randomColors = [...selectedStyle.colors].sort(() => 0.5 - Math.random());
-  const backgroundColor = randomColors.slice(0, 3).join(',');
-  const clothingColor = randomColors.slice(0, 2).join(',');
+  // Shuffle colors for variety
+  const shuffledColors = [...palette].sort(() => 0.5 - Math.random());
+  const backgroundColor = shuffledColors.join(',');
   
-  // Build the avatar URL with additional parameters for more variety
-  const baseUrl = `https://api.dicebear.com/7.x/${selectedStyle.style}/svg`;
+  // Build the DiceBear v9 URL
+  const baseUrl = `https://api.dicebear.com/9.x/${selectedStyle.style}/svg`;
   const params = new URLSearchParams({
     seed: cleanSeed,
     backgroundColor,
-    ...(selectedStyle.style !== 'fun-emoji' && selectedStyle.style !== 'bottts' && { clothingColor }),
-    ...(Math.random() > 0.5 && { flip: true }), // 50% chance of flipping avatar
-    ...(Math.random() > 0.7 && { rotate: Math.floor(Math.random() * 360) }) // 30% chance of rotation
+    size: '200',
+    radius: Math.floor(Math.random() * 50).toString(), // Random radius for more variety
+    ...(Math.random() > 0.5 && { flip: 'true' })
   });
   
   return `${baseUrl}?${params.toString()}`;
 };
 
 /**
- * Generate a DiceBear travel-themed avatar URL
+ * Generate a DiceBear travel-themed avatar URL (UPDATED to v9)
  * @param {string} seed - Seed for consistent generation (usually email or name)
  * @param {string} style - DiceBear style (avataaars, personas, etc.)
  * @returns {string} DiceBear avatar URL
  */
 export const generateDiceBearAvatar = (seed, style = 'avataaars') => {
   const cleanSeed = encodeURIComponent(seed || 'traveler');
-  return `https://api.dicebear.com/7.x/${style}/svg?seed=${cleanSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+  const colors = COLOR_PALETTES.ocean.join(',');
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${cleanSeed}&backgroundColor=${colors}&size=200`;
 };
 
 /**
@@ -196,7 +226,8 @@ export const generateDiceBearAvatar = (seed, style = 'avataaars') => {
  */
 export const generateTravelAvatar = (seed) => {
   const cleanSeed = encodeURIComponent(seed || 'traveler');
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&clothingColor=262e33,65c9ff,5199e4&hairColor=0e4429,2c1b18,a55728&skinColor=edb98a,fdbcb4,fd9841`;
+  const bgColors = COLOR_PALETTES.ocean.join(',');
+  return `https://api.dicebear.com/9.x/avataaars/svg?seed=${cleanSeed}&backgroundColor=${bgColors}&size=200`;
 };
 
 /**
@@ -206,7 +237,8 @@ export const generateTravelAvatar = (seed) => {
  */
 export const generateNatureAvatar = (seed) => {
   const cleanSeed = encodeURIComponent(seed || 'nature-lover');
-  return `https://api.dicebear.com/7.x/personas/svg?seed=${cleanSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&clothingColor=2c5530,4a6741,6b8e23&hairColor=8b4513,cd853f,daa520`;
+  const bgColors = COLOR_PALETTES.forest.join(',');
+  return `https://api.dicebear.com/9.x/personas/svg?seed=${cleanSeed}&backgroundColor=${bgColors}&size=200`;
 };
 
 /**
@@ -216,23 +248,31 @@ export const generateNatureAvatar = (seed) => {
  */
 export const generateAdventureAvatar = (seed) => {
   const cleanSeed = encodeURIComponent(seed || 'adventurer');
-  return `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${cleanSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+  const bgColors = COLOR_PALETTES.sunset.join(',');
+  return `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${cleanSeed}&backgroundColor=${bgColors}&size=200`;
 };
 
 /**
- * Get the best avatar based on user data and preferences
+ * Get the best avatar based on user data and preferences (IMPROVED)
  * @param {Object} user - User object with email, firstName, lastName
  * @param {Object} userStats - User's travel statistics
- * @param {string} preference - Avatar type preference ('emoji', 'dicebear', 'travel', 'nature', 'adventure')
+ * @param {string} preference - Avatar type preference ('emoji', 'dicebear', 'travel', 'nature', 'adventure', 'boring', 'ui')
  * @returns {string} Avatar URL or emoji
  */
 export const getBestAvatar = (user, userStats = {}, preference = 'travel') => {
   const { email, firstName, lastName } = user || {};
   const seed = email || `${firstName || ''}${lastName || ''}` || 'traveler';
+  const name = `${firstName || ''} ${lastName || ''}`.trim() || 'User';
   
   switch (preference) {
     case 'emoji':
       return generateEmojiAvatar(email, firstName, lastName, userStats);
+    case 'boring':
+      const variant = BORING_AVATARS_VARIANTS[hashString(seed) % BORING_AVATARS_VARIANTS.length];
+      const colors = BORING_COLORS[hashString(seed) % BORING_COLORS.length];
+      return generateBoringAvatar(seed, variant, colors);
+    case 'ui':
+      return generateUIAvatar(name);
     case 'dicebear':
       return generateDiceBearAvatar(seed);
     case 'travel':
@@ -297,185 +337,192 @@ export const getAvatarWithFallbacks = (user, userStats = {}, fallbacks = ['trave
 };
 
 /**
- * Generate a seasonal avatar based on current season
+ * Generate a seasonal avatar based on current season (UPDATED)
  * @param {string} seed - Seed for consistent generation
  * @returns {string} Seasonal avatar URL
  */
 export const generateSeasonalAvatar = (seed) => {
   const season = getCurrentSeason();
-  const seasonalStyles = SEASONAL_AVATAR_STYLES.filter(s => s.theme.includes(season));
-  const selectedStyle = seasonalStyles[Math.floor(Math.random() * seasonalStyles.length)] || SEASONAL_AVATAR_STYLES[0];
+  const paletteMap = {
+    spring: 'spring',
+    summer: 'tropical',
+    autumn: 'autumn',
+    winter: 'arctic'
+  };
   
+  const palette = COLOR_PALETTES[paletteMap[season]];
   const cleanSeed = encodeURIComponent(seed || 'seasonal-traveler');
-  const backgroundColor = selectedStyle.colors.join(',');
+  const backgroundColor = palette.join(',');
   
-  return `https://api.dicebear.com/7.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}`;
+  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
+  
+  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200`;
 };
 
 /**
- * Generate a time-of-day themed avatar
+ * Generate a time-of-day themed avatar (UPDATED)
  * @param {string} seed - Seed for consistent generation
  * @returns {string} Time-based avatar URL
  */
 export const generateDaytimeAvatar = (seed) => {
-  const timeOfDay = getTimeOfDay();
-  const daytimeStyles = DAYTIME_AVATAR_STYLES.filter(s => s.theme === timeOfDay);
-  const selectedStyle = daytimeStyles[0] || DAYTIME_AVATAR_STYLES[0];
+  // Use twilight/sunset colors for evening, ocean for day
+  const hour = new Date().getHours();
+  const paletteKey = (hour >= 6 && hour < 18) ? 'ocean' : 'twilight';
+  const palette = COLOR_PALETTES[paletteKey];
   
-  const cleanSeed = encodeURIComponent(seed || `${timeOfDay}-traveler`);
-  const backgroundColor = selectedStyle.colors.join(',');
+  const cleanSeed = encodeURIComponent(seed || 'daytime-traveler');
+  const backgroundColor = palette.join(',');
   
-  return `https://api.dicebear.com/7.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}`;
+  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
+  
+  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200`;
 };
 
 /**
- * Generate an activity-based avatar
+ * Generate an activity-based avatar (UPDATED)
  * @param {string} seed - Seed for consistent generation
  * @param {string} activity - Activity type (hiking, camping, swimming, etc.)
  * @returns {string} Activity-themed avatar URL
  */
 export const generateActivityAvatar = (seed, activity = null) => {
-  let selectedStyle;
+  const activityPaletteMap = {
+    hiking: 'forest',
+    camping: 'meadow',
+    swimming: 'ocean',
+    cycling: 'sunset',
+    default: 'earth'
+  };
   
-  if (activity) {
-    const activityStyles = ACTIVITY_AVATAR_STYLES.filter(s => s.theme === activity);
-    selectedStyle = activityStyles[0] || ACTIVITY_AVATAR_STYLES[0];
-  } else {
-    selectedStyle = ACTIVITY_AVATAR_STYLES[Math.floor(Math.random() * ACTIVITY_AVATAR_STYLES.length)];
-  }
-  
+  const paletteKey = activityPaletteMap[activity] || activityPaletteMap.default;
+  const palette = COLOR_PALETTES[paletteKey];
   const cleanSeed = encodeURIComponent(seed || `${activity || 'activity'}-enthusiast`);
-  const backgroundColor = selectedStyle.colors.join(',');
+  const backgroundColor = palette.join(',');
   
-  return `https://api.dicebear.com/7.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}`;
+  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
+  
+  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200`;
 };
 
 /**
- * Generate a random avatar from all available styles
+ * Generate a random avatar from all available styles (IMPROVED VERSION)
+ * Uses modern DiceBear v9 and Boring Avatars for better variety
  * @param {string} seed - Seed for consistent generation
  * @returns {string} Random avatar URL from any category
  */
 export const generateRandomAvatar = (seed) => {
-  const allStyles = [
-    ...TRAVEL_AVATAR_STYLES,
-    ...ADVENTURE_AVATAR_STYLES,
-    ...NATURE_AVATAR_STYLES,
-    ...SEASONAL_AVATAR_STYLES,
-    ...DAYTIME_AVATAR_STYLES,
-    ...ACTIVITY_AVATAR_STYLES
-  ];
+  // Add timestamp AND random number for MAXIMUM uniqueness
+  const timestamp = Date.now();
+  const randomNum = Math.floor(Math.random() * 1000000);
+  const uniqueSeed = `${seed || 'random'}-${timestamp}-${randomNum}`;
+  const cleanSeed = encodeURIComponent(uniqueSeed);
   
-  const selectedStyle = allStyles[Math.floor(Math.random() * allStyles.length)];
-  const cleanSeed = encodeURIComponent(seed || 'random-traveler');
-  const backgroundColor = selectedStyle.colors.join(',');
+  // 50% chance to use Boring Avatars (modern, colorful, and highly varied)
+  if (Math.random() > 0.5) {
+    const variant = BORING_AVATARS_VARIANTS[Math.floor(Math.random() * BORING_AVATARS_VARIANTS.length)];
+    const colors = BORING_COLORS[Math.floor(Math.random() * BORING_COLORS.length)];
+    return generateBoringAvatar(uniqueSeed, variant, colors);
+  }
+  
+  // Otherwise use DiceBear v9 with random style
+  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
+  const palette = COLOR_PALETTES[selectedStyle.palette];
+  
+  // Shuffle colors for variety
+  const shuffledColors = [...palette].sort(() => 0.5 - Math.random());
+  const backgroundColor = shuffledColors.join(',');
   
   const params = new URLSearchParams({
     seed: cleanSeed,
     backgroundColor,
-    ...(Math.random() > 0.5 && { flip: true }),
-    ...(Math.random() > 0.8 && { rotate: Math.floor(Math.random() * 360) })
+    size: '200',
+    radius: Math.floor(Math.random() * 50).toString(), // Random radius for more variety
+    ...(Math.random() > 0.5 && { flip: 'true' }),
+    ...(Math.random() > 0.7 && { rotate: Math.floor(Math.random() * 360).toString() })
   });
   
-  return `https://api.dicebear.com/7.x/${selectedStyle.style}/svg?${params.toString()}`;
+  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?${params.toString()}`;
 };
 
 /**
- * Get all available avatar style types
+ * Get all available avatar style types (UPDATED for v9)
  * @returns {Array} Array of style type names
  */
 export const getAvailableStyles = () => {
-  return [
-    'avataaars', 'personas', 'fun-emoji', 'bottts', 'adventurer',
-    'micah', 'lorelei', 'pixel-art', 'notionists', 'big-smile', 'miniavs'
-  ];
+  return DICEBEAR_STYLES;
 };
 
 /**
- * Get all available themes
+ * Get all available themes (UPDATED)
  * @returns {Object} Object with theme categories
  */
 export const getAvailableThemes = () => {
   return {
     travel: TRAVEL_AVATAR_STYLES.map(s => s.theme),
-    adventure: ADVENTURE_AVATAR_STYLES.map(s => s.theme),
-    nature: NATURE_AVATAR_STYLES.map(s => s.theme),
-    seasonal: SEASONAL_AVATAR_STYLES.map(s => s.theme),
-    daytime: DAYTIME_AVATAR_STYLES.map(s => s.theme),
-    activity: ACTIVITY_AVATAR_STYLES.map(s => s.theme)
+    palettes: Object.keys(COLOR_PALETTES),
+    boring: BORING_AVATARS_VARIANTS
   };
 };
 
 /**
- * Generate avatar with specific style and theme
+ * Generate avatar with specific style and palette (UPDATED)
  * @param {string} seed - Seed for consistent generation
  * @param {string} style - DiceBear style name
- * @param {string} theme - Theme category (travel, adventure, nature, seasonal, daytime, activity)
+ * @param {string} palette - Color palette name from COLOR_PALETTES
  * @returns {string} Themed avatar URL
  */
-export const generateThemedAvatar = (seed, style, theme = 'travel') => {
-  let styleSet;
+export const generateThemedAvatar = (seed, style = 'avataaars', palette = 'ocean') => {
+  const cleanSeed = encodeURIComponent(seed || 'themed-avatar');
+  const colors = COLOR_PALETTES[palette] || COLOR_PALETTES.ocean;
+  const backgroundColor = colors.join(',');
   
-  switch (theme.toLowerCase()) {
-    case 'adventure':
-      styleSet = ADVENTURE_AVATAR_STYLES;
-      break;
-    case 'nature':
-      styleSet = NATURE_AVATAR_STYLES;
-      break;
-    case 'seasonal':
-      styleSet = SEASONAL_AVATAR_STYLES;
-      break;
-    case 'daytime':
-      styleSet = DAYTIME_AVATAR_STYLES;
-      break;
-    case 'activity':
-      styleSet = ACTIVITY_AVATAR_STYLES;
-      break;
-    default:
-      styleSet = TRAVEL_AVATAR_STYLES;
-  }
+  // Validate style exists
+  const validStyle = DICEBEAR_STYLES.includes(style) ? style : 'avataaars';
   
-  const matchingStyles = styleSet.filter(s => s.style === style);
-  const selectedStyle = matchingStyles.length > 0 
-    ? matchingStyles[Math.floor(Math.random() * matchingStyles.length)]
-    : styleSet[0];
-  
-  const cleanSeed = encodeURIComponent(seed || `${theme}-${style}`);
-  const backgroundColor = selectedStyle.colors.join(',');
-  
-  return `https://api.dicebear.com/7.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}`;
+  return `https://api.dicebear.com/9.x/${validStyle}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200`;
 };
 
 /**
- * Generate a collection of different avatars for the same user
+ * Generate a collection of different avatars for the same user (IMPROVED)
+ * Mix of DiceBear v9 and Boring Avatars for variety
  * @param {string} seed - Seed for consistent generation
  * @param {number} count - Number of avatars to generate (default: 5)
- * @returns {Array} Array of avatar URLs
+ * @returns {Array} Array of avatar objects with url, type, and metadata
  */
 export const generateAvatarCollection = (seed, count = 5) => {
   const cleanSeed = seed || 'collection-user';
   const avatars = [];
-  const allStyles = [
-    ...TRAVEL_AVATAR_STYLES,
-    ...ADVENTURE_AVATAR_STYLES,
-    ...NATURE_AVATAR_STYLES,
-    ...SEASONAL_AVATAR_STYLES,
-    ...DAYTIME_AVATAR_STYLES,
-    ...ACTIVITY_AVATAR_STYLES
-  ];
   
-  // Shuffle and select unique styles
-  const shuffledStyles = [...allStyles].sort(() => 0.5 - Math.random());
+  // Mix DiceBear and Boring Avatars
+  const halfCount = Math.ceil(count / 2);
   
-  for (let i = 0; i < Math.min(count, shuffledStyles.length); i++) {
+  // Generate DiceBear avatars
+  const shuffledStyles = [...TRAVEL_AVATAR_STYLES].sort(() => 0.5 - Math.random());
+  for (let i = 0; i < Math.min(halfCount, shuffledStyles.length); i++) {
     const style = shuffledStyles[i];
-    const seedVariation = `${cleanSeed}-${i}`;
-    const backgroundColor = style.colors.join(',');
+    const seedVariation = `${cleanSeed}-dicebear-${i}`;
+    const palette = COLOR_PALETTES[style.palette];
+    const backgroundColor = palette.join(',');
     
     avatars.push({
-      url: `https://api.dicebear.com/7.x/${style.style}/svg?seed=${encodeURIComponent(seedVariation)}&backgroundColor=${backgroundColor}`,
+      url: `https://api.dicebear.com/9.x/${style.style}/svg?seed=${encodeURIComponent(seedVariation)}&backgroundColor=${backgroundColor}&size=200`,
+      type: 'dicebear',
       style: style.style,
       theme: style.theme
+    });
+  }
+  
+  // Generate Boring Avatars
+  const remainingCount = count - avatars.length;
+  for (let i = 0; i < remainingCount; i++) {
+    const variant = BORING_AVATARS_VARIANTS[i % BORING_AVATARS_VARIANTS.length];
+    const colors = BORING_COLORS[i % BORING_COLORS.length];
+    const seedVariation = `${cleanSeed}-boring-${i}`;
+    
+    avatars.push({
+      url: generateBoringAvatar(seedVariation, variant, colors),
+      type: 'boring',
+      style: variant,
+      theme: `${variant}-${i}`
     });
   }
   

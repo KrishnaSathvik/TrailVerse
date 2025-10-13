@@ -31,7 +31,9 @@ class UserService {
 
   async updateProfile(profileData) {
     console.log('UserService: Updating profile with data:', profileData);
-    const response = await api.put('/users/profile', profileData);
+    const response = await api.put('/users/profile', profileData, {
+      invalidateCache: ['userProfile', 'reviews', 'favorites'] // Clear user-related caches
+    });
     console.log('UserService: Profile update response:', response.data);
     return response.data.data;
   }
@@ -45,12 +47,16 @@ class UserService {
     const response = await api.post('/users/saved-parks', {
       parkCode,
       parkName
+    }, {
+      invalidateCache: ['favorites', 'userProfile'] // Clear favorites and profile cache
     });
     return response.data.data;
   }
 
   async removeSavedPark(parkCode) {
-    const response = await api.delete(`/users/saved-parks/${parkCode}`);
+    const response = await api.delete(`/users/saved-parks/${parkCode}`, {
+      invalidateCache: ['favorites', 'userProfile'] // Clear favorites and profile cache
+    });
     return response.data.data;
   }
 
@@ -68,6 +74,8 @@ class UserService {
     const response = await api.post('/users/saved-parks/visited', {
       parkCode,
       visitDate
+    }, {
+      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
     });
     return response.data.data;
   }
@@ -80,6 +88,8 @@ class UserService {
       parkName,
       imageUrl,
       notes
+    }, {
+      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
     });
     return response.data.data;
   }
@@ -99,12 +109,16 @@ class UserService {
       visitDate,
       rating,
       notes
+    }, {
+      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
     });
     return response.data.data;
   }
 
   async removeVisitedPark(parkCode) {
-    const response = await api.delete(`/users/visited-parks/${parkCode}`);
+    const response = await api.delete(`/users/visited-parks/${parkCode}`, {
+      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
+    });
     return response.data.data;
   }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Star, ThumbsUp } from 'lucide-react';
+import { Plus, MessageSquare, Star, ThumbsUp } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import ReviewFormWithImages from './ReviewFormWithImages';

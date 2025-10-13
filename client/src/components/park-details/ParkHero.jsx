@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Star, Share2, Heart, Download } from 'lucide-react';
+import { MapPin, Star, Share2, Heart, Download } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 import ShareButtons from '../common/ShareButtons';
 

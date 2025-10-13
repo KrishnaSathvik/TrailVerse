@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info } from '@components/icons';
 
 const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
   useEffect(() => {

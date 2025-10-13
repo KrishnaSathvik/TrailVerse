@@ -7,7 +7,7 @@ import {
   Download, Star, Clock, Plus,
   CalendarDays, BookOpen, Compass,
   Eye, EyeOff, CheckCircle, AlertCircle, Lock
-} from 'lucide-react';
+} from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Button from '../components/common/Button';

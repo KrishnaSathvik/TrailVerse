@@ -1,19 +1,19 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 // import { Link } from 'react-router-dom';
-import { MapPin, Clock, Users, ExternalLink, Heart, HeartOff } from 'lucide-react';
+import { MapPin, Clock, Users, ExternalLink, Heart, HeartOff } from '@components/icons';
 import Button from '../common/Button';
 
-const EventCard = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
-  const category = categories?.find(c => c.id === event.category);
-  const eventDate = new Date(event.date);
+const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
+  const category = useMemo(() => categories?.find(c => c.id === event.category), [categories, event.category]);
+  const eventDate = useMemo(() => new Date(event.date), [event.date]);
 
-  const handleSaveToggle = () => {
+  const handleSaveToggle = useCallback(() => {
     if (isSaved) {
       onUnsaveEvent?.(event.id);
     } else {
       onSaveEvent?.(event);
     }
-  };
+  }, [isSaved, event, onSaveEvent, onUnsaveEvent]);
 
   return (
     <div className="event-card rounded-2xl overflow-hidden backdrop-blur group hover:-translate-y-1 transition-all duration-300"
@@ -116,6 +116,8 @@ const EventCard = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = fa
       </div>
     </div>
   );
-};
+});
+
+EventCard.displayName = 'EventCard';
 
 export default EventCard;

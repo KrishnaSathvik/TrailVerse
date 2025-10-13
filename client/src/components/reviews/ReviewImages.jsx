@@ -6,7 +6,7 @@ import {
   X, 
   Download,
   Maximize2
-} from 'lucide-react';
+} from '@components/icons';
 import { useAnalytics } from '../../hooks/useAnalytics';
 
 const ReviewImages = ({ images, reviewId, parkCode }) => {

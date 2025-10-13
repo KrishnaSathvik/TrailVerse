@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
-const emailService = require('../services/emailService');
+const emailService = require('../services/resendEmailService');
 const crypto = require('crypto');
 
 // @desc    Register user

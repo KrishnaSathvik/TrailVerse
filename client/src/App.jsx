@@ -20,7 +20,7 @@ import localStorageMonitor from './utils/localStorageMonitor';
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const ExploreParksPage = lazy(() => import('./pages/ExploreParksPage'));
 const ParkDetailPage = lazy(() => import('./pages/ParkDetailPage'));
-const MapPage = lazy(() => import('./pages/MapPage'));
+const MapPageWrapper = lazy(() => import('./pages/MapPageWrapper'));
 const ComparePage = lazy(() => import('./pages/ComparePage'));
 const PlanAIPage = lazy(() => import('./pages/PlanAIPage'));
 const EventsPage = lazy(() => import('./pages/EventsPage'));
@@ -133,7 +133,7 @@ function App() {
               path="/map" 
               element={
                 <PrivateRoute>
-                  <MapPage />
+                  <MapPageWrapper />
                 </PrivateRoute>
               } 
             />

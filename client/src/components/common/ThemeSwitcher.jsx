@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Monitor, ChevronDown, Check } from 'lucide-react';
+import { Sun, Moon, Monitor, ChevronDown, Check } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
 
 const ThemeSwitcher = ({ showLabel = false, compact = false }) => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, ArrowRight, Shield } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, Shield } from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 
 const AdminLoginPage = () => {

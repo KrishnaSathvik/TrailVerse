@@ -65,7 +65,8 @@ class BlogService {
 
   async getBlogCategories() {
     const result = await enhancedApi.get('/blogs/categories', {}, { 
-      skipCache: true // Skip cache to get fresh data
+      cacheType: 'blogPosts',
+      ttl: 60 * 60 * 1000 // 1 hour - categories change infrequently
     });
     return result.data;
   }
@@ -116,6 +117,54 @@ class BlogService {
       ttl: 5 * 60 * 1000 // 5 minutes
     });
     return result.data;
+  }
+
+  async getRelatedPosts(currentPostId, category, tags = [], limit = 3) {
+    try {
+      // First try to fetch posts with the same category and tags
+      const params = {
+        limit: limit + 1, // Get one extra to exclude current post
+        page: 1,
+        category: category
+      };
+
+      const result = await enhancedApi.get('/blogs', params, { 
+        cacheType: 'blogPosts',
+        ttl: 30 * 60 * 1000 // 30 minutes
+      });
+
+      // Filter out current post and limit to desired count
+      let relatedPosts = (result.data.data || [])
+        .filter(post => post._id !== currentPostId)
+        .slice(0, limit);
+
+      // If we don't have enough posts, fetch more without category filter
+      if (relatedPosts.length < limit) {
+        const additionalParams = {
+          limit: limit * 2,
+          page: 1
+        };
+
+        const additionalResult = await enhancedApi.get('/blogs', additionalParams, { 
+          cacheType: 'blogPosts',
+          ttl: 30 * 60 * 1000
+        });
+
+        const additionalPosts = (additionalResult.data.data || [])
+          .filter(post => 
+            post._id !== currentPostId && 
+            !relatedPosts.find(rp => rp._id === post._id)
+          )
+          .slice(0, limit - relatedPosts.length);
+
+        relatedPosts = [...relatedPosts, ...additionalPosts];
+      }
+
+      return relatedPosts;
+    } catch (error) {
+      console.error('Error fetching related posts:', error);
+      return [];
+    }
   }
 }
 

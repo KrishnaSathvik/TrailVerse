@@ -6,7 +6,7 @@ import SimpleRichTextEditor from '../../components/SimpleRichTextEditor';
 import {
   ArrowLeft, Save, Eye, Image, Calendar, Tag,
   Upload, X, Plus, AlignLeft, Type, Trash2, FileText
-} from 'lucide-react';
+} from '@components/icons';
 
 const EditBlogPage = () => {
   const { id } = useParams();

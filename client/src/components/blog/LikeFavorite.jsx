@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Bookmark } from 'lucide-react';
+import { Heart, Bookmark } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import blogService from '../../services/blogService';

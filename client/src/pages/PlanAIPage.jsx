@@ -4,7 +4,7 @@ import {
   Sparkles, MapPin, Calendar, Users, Tent, 
   Utensils, ArrowRight, ArrowLeft, Loader2, ChevronDown,
   MessageCircle, Plus
-} from 'lucide-react';
+} from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Button from '../components/common/Button';

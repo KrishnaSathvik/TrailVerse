@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft, 
   MapPin, Calendar, Users, AlertCircle, X, Clock
-} from 'lucide-react';
+} from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { tripHistoryService } from '../../services/tripHistoryService';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
+import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check } from '@components/icons';
 
 
 const MessageBubble = ({

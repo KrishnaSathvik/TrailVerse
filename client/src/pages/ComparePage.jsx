@@ -4,7 +4,7 @@ import {
   Search, X, Plus, ChevronDown, ChevronUp, Check, 
   MapPin, Star, RefreshCw,
   TrendingUp, Mountain
-} from 'lucide-react';
+} from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import OptimizedImage from '../components/common/OptimizedImage';

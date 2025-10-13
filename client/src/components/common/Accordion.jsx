@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown } from '@components/icons';
 
 const Accordion = ({ items, defaultOpen = null, allowMultiple = false }) => {
   const [openItems, setOpenItems] = useState(

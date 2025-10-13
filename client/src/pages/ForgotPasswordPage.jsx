@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import authService from '../services/authService';
 import { useToast } from '../context/ToastContext';
 import Button from '../components/common/Button';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle } from '@components/icons';
 
 const ForgotPasswordPage = () => {
   const { showToast } = useToast();

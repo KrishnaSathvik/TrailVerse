@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot } from 'lucide-react';
+import { Bot } from '@components/icons';
 
 const TypingIndicator = ({ text = "AI is thinking..." }) => {
   return (

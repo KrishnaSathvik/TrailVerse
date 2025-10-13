@@ -5,10 +5,10 @@ export const useParkRatings = () => {
   return useQuery({
     queryKey: ['parkRatings'],
     queryFn: () => reviewService.getAllParkRatings(),
-    staleTime: 1000 * 60 * 15, // 15 minutes - ratings change more frequently than park data
-    cacheTime: 1000 * 60 * 60 * 2, // 2 hours - keep in cache for reasonable time
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes - ratings change frequently
+    cacheTime: 1000 * 60 * 30, // 30 minutes - keep in cache for reasonable time
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: 2,
   });
 };

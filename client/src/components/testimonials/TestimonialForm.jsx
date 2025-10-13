@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import testimonialService from '../../services/testimonialService';
-import { Star, Send, User, MapPin, Award } from 'lucide-react';
+import { Star, Send, User, MapPin, Award } from '@components/icons';
 
 const TestimonialForm = ({ onSuccess, onCancel }) => {
   const { user } = useAuth();

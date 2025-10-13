@@ -10,7 +10,7 @@ import {
   MessageSquare, Settings, Plus, Eye,
   Edit, Trash2, Activity, Clock, LogOut, Zap,
   Sparkles
-} from 'lucide-react';
+} from '@components/icons';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();

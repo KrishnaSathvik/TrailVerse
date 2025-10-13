@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Tag } from 'lucide-react';
+import { Clock, Tag } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 
-const BlogCard = ({ post }) => {
+const BlogCard = memo(({ post }) => {
   return (
     <Link
       to={`/blog/${post.slug}`}
@@ -74,6 +74,8 @@ const BlogCard = ({ post }) => {
       </div>
     </Link>
   );
-};
+});
+
+BlogCard.displayName = 'BlogCard';
 
 export default BlogCard;

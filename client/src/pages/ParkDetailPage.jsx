@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useParkDetails } from '../hooks/useParks';
 import { useParkPrefetch } from '../hooks/useSmartPrefetch';
@@ -7,7 +7,7 @@ import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone, 
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck
-} from 'lucide-react';
+} from '@components/icons';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -25,6 +25,7 @@ import Button from '../components/common/Button';
 const ParkDetailPage = () => {
   const { parkCode } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
@@ -156,11 +157,11 @@ const ParkDetailPage = () => {
             The park you&apos;re looking for doesn&apos;t exist
           </p>
           <Button
-            onClick={() => navigate('/explore')}
+            onClick={() => navigate(fromMobileMap ? '/map' : '/explore')}
             variant="secondary"
             size="lg"
           >
-            Back to Explore
+            {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
           </Button>
         </div>
       </div>
@@ -168,6 +169,9 @@ const ParkDetailPage = () => {
   }
 
   const { park, campgrounds, activities, alerts: _alerts, visitorCenters: _visitorCenters } = data;
+  
+  // Check if user came from mobile map page
+  const fromMobileMap = location.state?.fromMobileMap || false;
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Info },
     { id: 'activities', label: 'Things to Do', icon: Mountain },
@@ -232,7 +236,7 @@ const ParkDetailPage = () => {
         <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <Button
-              onClick={() => navigate('/explore')}
+              onClick={() => navigate(fromMobileMap ? '/map' : '/explore')}
               variant="secondary"
               size="md"
               icon={ArrowLeft}
@@ -245,7 +249,7 @@ const ParkDetailPage = () => {
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
               }}
             >
-              Back to Explore
+              {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
             </Button>
           </div>
         </div>
@@ -820,18 +824,22 @@ const ParkDetailPage = () => {
                   {park.addresses?.[0]?.city}, {park.addresses?.[0]?.stateCode} {park.addresses?.[0]?.postalCode}
                 </p>
                 {park.latitude && park.longitude && (
-                  <Button
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(park.fullName)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    variant="secondary"
-                    size="sm"
-                    icon={Navigation}
+                  <button
+                    onClick={() => navigate('/map', { state: { park } })}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-primary)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)'
+                    }}
                   >
+                    <Navigation className="h-4 w-4" />
                     View on Map
-                  </Button>
+                  </button>
                 )}
               </div>
+
 
               {/* Plan Trip CTA */}
               <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"

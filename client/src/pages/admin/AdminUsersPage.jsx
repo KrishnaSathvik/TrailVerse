@@ -4,7 +4,7 @@ import {
   ArrowLeft, Users, Search, 
   Eye, Edit, Trash2, 
   UserCheck
-} from 'lucide-react';
+} from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 

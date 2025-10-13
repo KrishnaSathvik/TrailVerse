@@ -1,70 +1,303 @@
-# Getting Started with Create React App
+# TrailVerse - Client Application 🌲
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> React + Vite frontend for TrailVerse - Your Universe of National Parks Exploration
 
-## Available Scripts
+## 🚀 Quick Start
 
-In the project directory, you can run:
+```bash
+# Install dependencies
+npm install
 
-### `npm start`
+# Start development server
+npm run dev
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# Build for production
+npm run build
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+# Preview production build
+npm run preview
 
-### `npm test`
+# Run tests
+npm run test
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Run tests with UI
+npm run test:ui
 
-### `npm run build`
+# Run E2E tests
+npm run test:e2e
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🛠️ Tech Stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Core
+- **React 18.3** - UI library with concurrent features
+- **Vite 5.4** - Build tool and dev server
+- **React Router 7.9** - Client-side routing
+- **TanStack Query 5.90** - Server state management
+- **Tailwind CSS 4.1** - Utility-first CSS
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Key Libraries
+- **React Helmet Async 2.0** - SEO management
+- **Google Maps JavaScript API** - Interactive maps with Places & Directions
+- **Lucide React 0.544** - Icons (193 icons)
+- **Axios 1.12** - HTTP client
+- **React Markdown 10.1** - Markdown rendering
+- **React GA4 2.1** - Analytics
+- **Web Vitals 2.1** - Performance monitoring
 
-### `npm run eject`
+### Testing
+- **Vitest 2.1** - Unit testing
+- **Testing Library 16.3** - Component testing
+- **Playwright 1.49** - E2E testing
+- **MSW 2.6** - API mocking
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 📁 Project Structure
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+src/
+├── components/       # UI components (100+)
+│   ├── ai-chat/     # AI chat interface
+│   ├── blog/        # Blog components
+│   ├── common/      # Shared components
+│   ├── explore/     # Park exploration
+│   ├── map/         # Interactive maps
+│   ├── park-details/# Park detail views
+│   ├── plan-ai/     # AI trip planning
+│   ├── profile/     # User profile
+│   ├── reviews/     # Review system
+│   └── testimonials/# Testimonials
+├── pages/           # Page components (33)
+├── services/        # API services (32)
+├── context/         # React contexts (3)
+├── hooks/           # Custom hooks (15)
+├── utils/           # Utility functions (10)
+└── styles/          # Global styles
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## ✨ Key Features
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 🤖 AI Trip Planning
+- Dual AI providers (OpenAI GPT-4 + Anthropic Claude)
+- Real-time conversation with streaming
+- Auto-save with database sync
+- Trip history with archive/restore
+- Feedback system for AI responses
 
-## Learn More
+### 🗺️ Park Exploration
+- Interactive maps with Google Maps JavaScript API
+- Search-first design with Places Autocomplete
+- Animated markers (drop + pulse effects)
+- Nearby essentials (restaurants, lodging, gas)
+- Route building with directions
+- Advanced filtering and search
+- Park comparison tool
+- Real-time weather and alerts
+- Virtualized lists for performance
+- Embedded maps on park detail pages
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 📝 Blog Platform
+- Rich text content with prose styling
+- Related posts by category
+- Comment system with likes
+- Favorite blogs
+- SEO optimization
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 👤 User Profiles
+- Avatar selection (12+ options)
+- Saved and visited parks
+- Trip history management
+- Email preferences
+- Privacy settings
 
-### Code Splitting
+### 💬 Community
+- Park reviews with images (up to 5)
+- Testimonials
+- Comments on blogs
+- Social sharing
+- Event calendar
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 🔧 Configuration
 
-### Analyzing the Bundle Size
+### Environment Variables
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Create a `.env` file:
 
-### Making a Progressive Web App
+```bash
+# API Configuration
+VITE_API_URL=http://localhost:5001/api
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+# External APIs
+REACT_APP_NPS_API_KEY=your_nps_api_key
 
-### Advanced Configuration
+# Analytics
+REACT_APP_GA_TRACKING_ID=G-XXXXXXXXXX
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+# Application
+REACT_APP_NAME=TrailVerse
+REACT_APP_URL=http://localhost:3001
 
-### Deployment
+# Environment
+VITE_APP_ENV=development
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Vite Configuration
 
-### `npm run build` fails to minify
+The project uses Vite with:
+- React plugin with Fast Refresh
+- Path aliases (@components, @utils, etc.)
+- Build optimizations
+- Code splitting
+- CSS preprocessing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 📊 Performance
+
+### Optimization Features
+- Code splitting with React.lazy
+- Image optimization with lazy loading
+- Virtualized lists for large datasets
+- Debounced search (300ms)
+- TanStack Query caching (30min stale time)
+- LocalStorage monitoring and cleanup
+- Resource hints (preconnect, prefetch)
+
+### Web Vitals Targets
+- **LCP**: < 2.5s
+- **FID**: < 100ms
+- **CLS**: < 0.1
+
+### Lighthouse Scores
+- Performance: 95+
+- Accessibility: 100
+- SEO: 100
+- Best Practices: 100
+
+## 🧪 Testing
+
+### Unit Tests
+```bash
+# Run all tests
+npm run test
+
+# Watch mode
+npm run test -- --watch
+
+# Coverage
+npm run test -- --coverage
+
+# UI mode
+npm run test:ui
+```
+
+### E2E Tests
+```bash
+# Run E2E tests (headless)
+npm run test:e2e
+
+# Run E2E tests (headed)
+npm run test:e2e:headed
+
+# Debug mode
+npx playwright test --debug
+```
+
+### Test Coverage
+- Unit tests: 85%+
+- Integration tests: 80%+
+- E2E tests: Core user flows
+
+## 🎨 Design System
+
+### Colors
+- Primary: Forest Green (#22c55e)
+- Secondary: Sky Blue (#0ea5e9)
+- Accent: Orange (#f97316)
+- Success: Green (#10b981)
+- Error: Red (#ef4444)
+
+### Typography
+- Font: Geist Sans
+- Sizes: text-xs to text-4xl
+- Line heights: 1.2 (headings), 1.5 (body)
+
+### Themes
+- Light mode
+- Dark mode
+- System preference
+
+## 🔒 Security
+
+- XSS protection with sanitization
+- CSRF token validation
+- Secure cookie handling
+- Input validation
+- Rate limiting awareness
+- Content Security Policy
+
+## 📦 Build & Deploy
+
+### Development Build
+```bash
+npm run dev
+# Runs on http://localhost:3001
+```
+
+### Production Build
+```bash
+npm run build
+# Output: dist/ directory
+```
+
+### Preview Production Build
+```bash
+npm run preview
+# Preview the production build locally
+```
+
+### Deployment (Vercel)
+- Automatic deployments from `main` branch
+- Environment variables configured in Vercel dashboard
+- Global CDN distribution
+- Serverless functions support
+
+## 🚀 Recent Updates (October 2025)
+
+- ✅ Google Maps integration (Places, Directions, animated markers)
+- ✅ Embedded park maps with nearby services
+- ✅ Enhanced blog system with related posts
+- ✅ LocalStorage monitoring and cleanup
+- ✅ Avatar selection system (12+ options)
+- ✅ Email preferences management
+- ✅ Privacy settings in profile
+- ✅ Trip history with archive/restore
+- ✅ Enhanced caching with smart prefetching
+- ✅ Image optimization with WebP
+- ✅ Performance improvements across the board
+- ✅ Cost-optimized Google Maps caching
+
+## 📚 Documentation
+
+- **Main README**: `/README.md`
+- **API Docs**: `/docs/`
+- **Component Guides**: `/docs/COMPONENTS.md`
+- **Testing Guide**: `/docs/TESTING.md`
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Write/update tests
+5. Ensure tests pass
+6. Submit a pull request
+
+## 📞 Support
+
+- **Email**: trailverseteam@gmail.com
+- **Website**: [nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)
+- **Documentation**: `/docs` folder
+
+---
+
+**Built with ❤️ by Krishna Sathvik Mantripragada**
+
+© 2025 TrailVerse. All rights reserved.

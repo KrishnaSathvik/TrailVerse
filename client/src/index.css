@@ -519,3 +519,87 @@ section {
 }
 
 /* Hero section mobile optimizations handled via inline styles and Tailwind classes */
+
+/* ============================================
+   GOOGLE MAPS PIN ANIMATIONS
+   ============================================ */
+
+/* Pin drop animation */
+@keyframes tv-pin-drop {
+  0%   { transform: translateY(-24px) scale(0.9); opacity: 0; }
+  60%  { transform: translateY(2px)  scale(1.02); opacity: 1; }
+  80%  { transform: translateY(-1px) scale(1.0); }
+  100% { transform: translateY(0)    scale(1.0); }
+}
+
+/* Pulse animation for pin */
+@keyframes tv-pin-pulse {
+  0%   { transform: scale(0.9); opacity: 0.8; }
+  70%  { transform: scale(1.3); opacity: 0; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* TrailVerse pin styles */
+.tv-pin {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #111827; /* default dark */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transform-origin: center bottom;
+  animation: tv-pin-drop 420ms cubic-bezier(.2,.8,.2,1) 1;
+}
+
+/* Color modifiers */
+.tv-pin.--green { background: #059669; }     /* emerald-600 */
+.tv-pin.--blue { background: #2563eb; }      /* blue-600 */
+.tv-pin.--orange { background: #f97316; }    /* orange-500 */
+.tv-pin.--red { background: #ef4444; }       /* red-500 */
+.tv-pin.--gray { background: #374151; }      /* gray-700 */
+
+/* Pin tip (triangle) */
+.tv-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid currentColor;
+  color: inherit;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* Pulse effect */
+.tv-pulse {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translate(-50%, 6px);
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.15;
+  animation: tv-pin-pulse 900ms ease-out 1;
+}
+
+/* Mini pin variant */
+.tv-pin.--mini {
+  width: 14px;
+  height: 14px;
+}
+
+.tv-pin.--mini::after {
+  border-left-width: 4px;
+  border-right-width: 4px;
+  border-top-width: 6px;
+}
+
+/* ============================================
+   END OF GOOGLE MAPS PIN ANIMATIONS
+   ============================================ */

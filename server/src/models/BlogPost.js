@@ -77,21 +77,30 @@ const blogPostSchema = new mongoose.Schema({
 
 // Add indexes for frequently queried fields
 // Note: slug index is already created by unique: true in schema
-blogPostSchema.index({ status: 1, publishedAt: -1 });
-blogPostSchema.index({ category: 1 });
-blogPostSchema.index({ tags: 1 });
-blogPostSchema.index({ featured: 1 });
-blogPostSchema.index({ views: -1 });
-blogPostSchema.index({ author: 1 });
+
+// Primary query patterns
+blogPostSchema.index({ status: 1, publishedAt: -1 }); // Main blog list
+blogPostSchema.index({ status: 1, featured: 1, publishedAt: -1 }); // Featured posts
+blogPostSchema.index({ category: 1, status: 1, publishedAt: -1 }); // Category filtering
+blogPostSchema.index({ tags: 1, status: 1, publishedAt: -1 }); // Tag filtering
+blogPostSchema.index({ views: -1, status: 1 }); // Popular posts
+
+// Secondary indexes
+blogPostSchema.index({ author: 1, status: 1 }); // Author's posts
+blogPostSchema.index({ scheduledAt: 1, status: 1 }); // Scheduled posts
 
 // Text index for search functionality
 blogPostSchema.index({ 
   title: 'text',
   excerpt: 'text',
   content: 'text'
+}, {
+  weights: {
+    title: 10,
+    excerpt: 5,
+    content: 1
+  }
 });
-blogPostSchema.index({ category: 1, status: 1 });
-blogPostSchema.index({ featured: 1, status: 1 });
 
 // Generate slug from title before saving
 blogPostSchema.pre('save', function(next) {

@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
   Search, X, MapPin, Star, ArrowRight, 
   Loader2, SlidersHorizontal, Grid, List, Compass,
   ChevronLeft, ChevronRight, ChevronDown
-} from 'lucide-react';
+} from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
@@ -17,15 +17,21 @@ import { useSearchPrefetch } from '../hooks/useSmartPrefetch';
 // import { logSearch } from '../utils/analytics';
 
 const ExploreParksPage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: allParks, isLoading, error } = useParks();
-  const { data: parkRatings } = useParkRatings();
+  const { data: parkRatings, isLoading: ratingsLoading, error: ratingsError } = useParkRatings();
   const { handleSearch } = useSearchPrefetch();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('name');
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Initialize currentPage from URL or default to 1
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    const page = pageParam ? parseInt(pageParam, 10) : 1;
+    return page > 0 ? page : 1;
+  });
   
   // Responsive parks per page: 6 on mobile, 12 on desktop
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
@@ -39,14 +45,19 @@ const ExploreParksPage = () => {
         setIsMobile(newIsMobile);
         // Reset to page 1 when switching between mobile/desktop to avoid empty pages
         setCurrentPage(1);
+        // Also remove page param from URL
+        const newSearchParams = new URLSearchParams(window.location.search);
+        newSearchParams.delete('page');
+        setSearchParams(newSearchParams, { replace: true });
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile]);
   
   const [filters, setFilters] = useState({
-    nationalParksOnly: true,
+    nationalParksOnly: true, // Keep default but fix the logic
     states: [],
     activities: []
   });
@@ -75,11 +86,14 @@ const ExploreParksPage = () => {
   const uniqueStates = useMemo(() => {
     if (!allParks || !Array.isArray(allParks)) return [];
     const states = new Set();
+    
+    
     allParks.forEach(park => {
       if (park && park.states) {
         park.states.split(',').forEach(state => states.add(state.trim()));
       }
     });
+    
     return Array.from(states).sort();
   }, [allParks]);
 
@@ -96,23 +110,75 @@ const ExploreParksPage = () => {
 
     // Search filter
     if (debouncedSearchTerm) {
-      result = result.filter(park =>
-        park.fullName.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        park.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        park.states.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-      );
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      result = result.filter(park => {
+        const parkStates = park.states ? park.states.split(',').map(s => s.trim().toLowerCase()) : [];
+        
+        // Map common state names to state codes for better searching
+        const stateNameMap = {
+          'alabama': 'al', 'alaska': 'ak', 'arizona': 'az', 'arkansas': 'ar', 'california': 'ca',
+          'colorado': 'co', 'connecticut': 'ct', 'delaware': 'de', 'florida': 'fl', 'georgia': 'ga',
+          'hawaii': 'hi', 'idaho': 'id', 'illinois': 'il', 'indiana': 'in', 'iowa': 'ia',
+          'kansas': 'ks', 'kentucky': 'ky', 'louisiana': 'la', 'maine': 'me', 'maryland': 'md',
+          'massachusetts': 'ma', 'michigan': 'mi', 'minnesota': 'mn', 'mississippi': 'ms', 'missouri': 'mo',
+          'montana': 'mt', 'nebraska': 'ne', 'nevada': 'nv', 'new hampshire': 'nh', 'new jersey': 'nj',
+          'new mexico': 'nm', 'new york': 'ny', 'north carolina': 'nc', 'north dakota': 'nd', 'ohio': 'oh',
+          'oklahoma': 'ok', 'oregon': 'or', 'pennsylvania': 'pa', 'rhode island': 'ri', 'south carolina': 'sc',
+          'south dakota': 'sd', 'tennessee': 'tn', 'texas': 'tx', 'utah': 'ut', 'vermont': 'vt',
+          'virginia': 'va', 'washington': 'wa', 'west virginia': 'wv', 'wisconsin': 'wi', 'wyoming': 'wy'
+        };
+        
+        const stateCode = stateNameMap[searchLower];
+        const searchTerms = [searchLower];
+        if (stateCode) {
+          searchTerms.push(stateCode);
+        }
+        
+        return (
+          park.fullName.toLowerCase().includes(searchLower) ||
+          park.description.toLowerCase().includes(searchLower) ||
+          parkStates.some(state => searchTerms.some(term => state.includes(term)))
+        );
+      });
     }
 
-    // National parks only
-    if (filters.nationalParksOnly) {
+    // National parks only - but allow other significant park types when searching
+    if (filters.nationalParksOnly && !debouncedSearchTerm) {
       result = result.filter(park => park.designation === 'National Park');
+    } else if (filters.nationalParksOnly && debouncedSearchTerm) {
+      // When searching, include National Parks, Monuments, and other significant sites
+      result = result.filter(park => {
+        const significantTypes = [
+          'National Park', 
+          'National Monument', 
+          'National Historic Site',
+          'National Historic Park',
+          'National Historical Park',
+          'National Memorial',
+          'National Recreation Area',
+          'National Preserve',
+          'National Seashore',
+          'National Lakeshore',
+          'National Battlefield',
+          'National Battlefield Park',
+          'National Military Park',
+          'National Historic Trail',
+          'National Scenic Trail',
+          'National Geologic Trail',
+          'National Wild and Scenic River',
+          'National Forest',
+          'National Grassland'
+        ];
+        return significantTypes.includes(park.designation);
+      });
     }
 
     // States filter
     if (filters.states.length > 0) {
-      result = result.filter(park =>
-        filters.states.some(state => park.states.includes(state))
-      );
+      result = result.filter(park => {
+        const parkStates = park.states ? park.states.split(',').map(s => s.trim()) : [];
+        return filters.states.some(state => parkStates.includes(state));
+      });
     }
 
     // Activities filter
@@ -146,57 +212,75 @@ const ExploreParksPage = () => {
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
+    // Also remove page param from URL when filters change
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('page');
+    setSearchParams(newSearchParams, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, filters, sortBy]);
 
   // Pagination handlers
-  const goToPage = (page) => {
+  const goToPage = useCallback((page) => {
     setCurrentPage(page);
+    // Update URL with page parameter
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (page === 1) {
+      newSearchParams.delete('page'); // Remove page param for page 1 to keep URL clean
+    } else {
+      newSearchParams.set('page', page.toString());
+    }
+    setSearchParams(newSearchParams, { replace: true }); // Use replace to avoid cluttering history
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [searchParams, setSearchParams]);
 
-  const goToPreviousPage = () => {
+  const goToPreviousPage = useCallback(() => {
     if (currentPage > 1) {
       goToPage(currentPage - 1);
     }
-  };
+  }, [currentPage, goToPage]);
 
-  const goToNextPage = () => {
+  const goToNextPage = useCallback(() => {
     if (currentPage < totalPages) {
       goToPage(currentPage + 1);
     }
-  };
+  }, [currentPage, totalPages, goToPage]);
 
-  const toggleStateFilter = (state) => {
+  const toggleStateFilter = useCallback((state) => {
     setFilters(prev => ({
       ...prev,
       states: prev.states.includes(state)
         ? prev.states.filter(s => s !== state)
         : [...prev.states, state]
     }));
-  };
+  }, []);
 
-  const toggleActivityFilter = (activity) => {
+  const toggleActivityFilter = useCallback((activity) => {
     setFilters(prev => ({
       ...prev,
       activities: prev.activities.includes(activity)
         ? prev.activities.filter(a => a !== activity)
         : [...prev.activities, activity]
     }));
-  };
+  }, []);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setFilters({
       nationalParksOnly: true,
       states: [],
       activities: []
     });
     setSearchTerm('');
-  };
+  }, []);
 
   const activeFiltersCount = 
-    (filters.nationalParksOnly ? 1 : 0) +
     filters.states.length +
     filters.activities.length;
+
+  // Calculate actual National Parks count from data
+  const nationalParksCount = useMemo(() => {
+    if (!allParks || !Array.isArray(allParks)) return 0;
+    return allParks.filter(park => park.designation === 'National Park').length;
+  }, [allParks]);
 
   // Generate structured data for the parks listing
   const parksStructuredData = {
@@ -354,20 +438,12 @@ const ExploreParksPage = () => {
                   borderColor: 'var(--border)'
                 }}
               >
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6">
                   <h3 className="text-lg font-semibold"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     Filters
                   </h3>
-                  {activeFiltersCount > 0 && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="text-sm font-medium text-forest-400 hover:text-forest-300"
-                    >
-                      Clear all
-                    </button>
-                  )}
                 </div>
 
                 {/* National Parks Only */}
@@ -383,7 +459,7 @@ const ExploreParksPage = () => {
                     <span className="text-sm font-medium group-hover:text-forest-400 transition"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      National Parks Only (63)
+                      {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({nationalParksCount})
                     </span>
                   </label>
                 </div>
@@ -393,10 +469,10 @@ const ExploreParksPage = () => {
                   <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    States
+                    States ({uniqueStates.length})
                   </h4>
                   <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                    {uniqueStates.slice(0, 15).map(state => (
+                    {uniqueStates.map(state => (
                       <label key={state} className="flex items-center gap-2 cursor-pointer group">
                         <input
                           type="checkbox"
@@ -732,7 +808,7 @@ const ExploreParksPage = () => {
                 <span className="text-sm font-medium"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  National Parks Only (63)
+                  {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({nationalParksCount})
                 </span>
               </label>
 
@@ -741,10 +817,10 @@ const ExploreParksPage = () => {
                 <h4 className="text-sm font-semibold mb-3"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  STATES
+                  STATES ({uniqueStates.length})
                 </h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {uniqueStates.slice(0, 15).map(state => (
+                  {uniqueStates.map(state => (
                     <label key={state} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -871,13 +947,13 @@ const ParkCard = ({ park, viewMode, rating }) => {
               <MapPin className="h-4 w-4" />
               <span className="text-sm">{park.states}</span>
             </div>
-            {rating ? (
+            {rating && rating.totalReviews > 0 ? (
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 <span className="text-sm font-semibold"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  {rating.averageRating}
+                  {rating.averageRating.toFixed(1)}
                 </span>
                 <span className="text-sm"
                   style={{ color: 'var(--text-tertiary)' }}
@@ -943,13 +1019,13 @@ const ParkCard = ({ park, viewMode, rating }) => {
             <MapPin className="h-4 w-4" />
             <span className="text-sm">{park.states}</span>
           </div>
-          {rating ? (
+          {rating && rating.totalReviews > 0 ? (
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
               <span className="text-sm font-semibold"
                 style={{ color: 'var(--text-primary)' }}
               >
-                {rating.averageRating}
+                {rating.averageRating.toFixed(1)}
               </span>
               <span className="text-sm"
                 style={{ color: 'var(--text-tertiary)' }}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Facebook, Twitter, Instagram, Link2, Mail } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Link2, Mail } from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import Button from './Button';
 

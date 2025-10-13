@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
-import { CheckCircle, XCircle, Loader2, Sparkles, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Sparkles, ArrowRight } from '@components/icons';
 
 const VerifyEmailPage = () => {
   const { token } = useParams();

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, SlidersHorizontal } from 'lucide-react';
+import { X, SlidersHorizontal } from '@components/icons';
 
 const FilterSidebar = ({ 
   filters, 

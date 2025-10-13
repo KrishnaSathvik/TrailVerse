@@ -6,7 +6,7 @@ const morgan = require('morgan');
 
 // Load env vars (only in development)
 if (process.env.NODE_ENV !== 'production') {
-  dotenv.config({ path: './.env.development' });
+  dotenv.config({ path: './.env' });
 }
 
 // Validate environment variables

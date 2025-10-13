@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import commentService from '../../services/commentService';
-import { MessageCircle, ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from 'lucide-react';
+import { MessageCircle, ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from '@components/icons';
 
 const CommentSection = ({ postId, comments: initialComments = [] }) => {
   const { user, isAuthenticated } = useAuth();

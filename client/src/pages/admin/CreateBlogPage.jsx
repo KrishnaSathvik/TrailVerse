@@ -6,7 +6,7 @@ import SimpleRichTextEditor from '../../components/SimpleRichTextEditor';
 import {
   ArrowLeft, Save, Eye, Image, Calendar, Tag,
   Upload, X, Plus, AlignLeft, Type, FileText
-} from 'lucide-react';
+} from '@components/icons';
 
 const CreateBlogPage = () => {
   const { showToast } = useToast();

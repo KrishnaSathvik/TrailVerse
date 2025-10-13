@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Mail, Shield, CheckCircle, XCircle, AlertTriangle,
   ArrowLeft, Settings, Bell, BellOff, Loader2
-} from 'lucide-react';
+} from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Button from '../components/common/Button';

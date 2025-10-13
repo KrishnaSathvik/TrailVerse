@@ -1,5 +1,6 @@
 import axios from 'axios';
 import globalCacheManager from './globalCacheManager';
+import cacheService from './cacheService';
 // import type { WeatherData, ForecastData } from '../types/weather';
 
 const OPENWEATHER_API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
@@ -160,17 +161,17 @@ class WeatherService {
   }
 
   // Helper method to get cached weather data
-  getCachedWeatherData(_cacheKey: string) {
-    // This is a synchronous method, but globalCacheManager.get is async
-    // For now, return null - this method might not be used in practice
-    return null;
+  getCachedWeatherData(cacheKey: string) {
+    // Get cached data synchronously from cacheService
+    // This is used as fallback when API fails or rate limits are hit
+    return cacheService.get(cacheKey, 'weather');
   }
 
   // Helper method to get cached forecast data
-  getCachedForecastData(_cacheKey: string) {
-    // This is a synchronous method, but globalCacheManager.get is async
-    // For now, return null - this method might not be used in practice
-    return null;
+  getCachedForecastData(cacheKey: string) {
+    // Get cached data synchronously from cacheService
+    // This is used as fallback when API fails or rate limits are hit
+    return cacheService.get(cacheKey, 'forecast');
   }
 
   // Fallback weather data when API is unavailable

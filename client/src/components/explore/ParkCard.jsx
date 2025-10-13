@@ -1,17 +1,17 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Star, Heart, ExternalLink } from 'lucide-react';
+import { MapPin, Star, Heart, ExternalLink } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 import { useParkRatings } from '../../hooks/useParkRatings';
 
-const ParkCard = ({ park, onSave, isSaved = false }) => {
+const ParkCard = memo(({ park, onSave, isSaved = false }) => {
   const { data: parkRatings } = useParkRatings();
   const parkRating = parkRatings?.[park.parkCode];
   
-  const handleSaveClick = (e) => {
+  const handleSaveClick = useCallback((e) => {
     e.preventDefault();
     onSave(park);
-  };
+  }, [park, onSave]);
 
   return (
     <Link
@@ -86,6 +86,8 @@ const ParkCard = ({ park, onSave, isSaved = false }) => {
       </div>
     </Link>
   );
-};
+});
+
+ParkCard.displayName = 'ParkCard';
 
 export default ParkCard;

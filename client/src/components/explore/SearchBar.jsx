@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, MapPin, Filter } from 'lucide-react';
+import { Search, X, MapPin, Filter } from '@components/icons';
 
 const SearchBar = ({ 
   value, 
