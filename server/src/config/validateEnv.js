@@ -9,8 +9,8 @@ const requiredEnvVars = [
   'NPS_API_KEY',
   'OPENAI_API_KEY',
   'ANTHROPIC_API_KEY',
-  'EMAIL_USER',
-  'EMAIL_PASS'
+  'RESEND_API_KEY',
+  'EMAIL_FROM_ADDRESS'
 ];
 
 const optionalEnvVars = [
@@ -20,7 +20,11 @@ const optionalEnvVars = [
   'RATE_LIMIT_WINDOW_MS',
   'RATE_LIMIT_MAX_REQUESTS',
   'RATE_LIMIT_AUTH_MAX',
-  'WEBSITE_URL'
+  'WEBSITE_URL',
+  'EMAIL_FROM_NAME',
+  'SUPPORT_EMAIL',
+  'ADMIN_EMAIL',
+  'GMAPS_SERVER_KEY'
 ];
 
 function validateEnvironment() {
@@ -48,9 +52,14 @@ function validateEnvironment() {
     invalid.push('MONGODB_URI (must start with mongodb:// or mongodb+srv://)');
   }
 
-  // Validate email configuration
-  if (process.env.EMAIL_USER && !process.env.EMAIL_USER.includes('@')) {
-    invalid.push('EMAIL_USER (must be a valid email address)');
+  // Validate email configuration (Resend)
+  if (process.env.EMAIL_FROM_ADDRESS && !process.env.EMAIL_FROM_ADDRESS.includes('@')) {
+    invalid.push('EMAIL_FROM_ADDRESS (must be a valid email address)');
+  }
+
+  // Validate Resend API key format
+  if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith('re_')) {
+    invalid.push('RESEND_API_KEY (must start with re_)');
   }
 
   // Report results
