@@ -30,11 +30,11 @@ class UserService {
   }
 
   async updateProfile(profileData) {
-    console.log('UserService: Updating profile with data:', profileData);
+
     const response = await api.put('/users/profile', profileData, {
       invalidateCache: ['userProfile', 'reviews', 'favorites'] // Clear user-related caches
     });
-    console.log('UserService: Profile update response:', response.data);
+
     return response.data.data;
   }
 
@@ -89,7 +89,7 @@ class UserService {
       imageUrl,
       notes
     }, {
-      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
+      invalidateCache: ['visitedParks'] // Clear visited parks cache
     });
     return response.data.data;
   }
@@ -110,14 +110,14 @@ class UserService {
       rating,
       notes
     }, {
-      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
+      invalidateCache: ['visitedParks'] // Clear visited parks cache
     });
     return response.data.data;
   }
 
   async removeVisitedPark(parkCode) {
     const response = await api.delete(`/users/visited-parks/${parkCode}`, {
-      invalidateCache: ['userProfile', 'favorites'] // Clear user profile and favorites cache
+      invalidateCache: ['visitedParks'] // Clear visited parks cache
     });
     return response.data.data;
   }

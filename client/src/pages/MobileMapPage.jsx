@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { MapPin, Star, ArrowRight, Loader2, X, Search } from '@components/icons';
-import { useParks } from '../hooks/useParks';
+import { useAllParks } from '../hooks/useParks';
 import { useParkRatings } from '../hooks/useParkRatings';
 import OptimizedImage from '../components/common/OptimizedImage';
 import Header from '../components/common/Header';
@@ -11,7 +11,8 @@ import { useTheme } from '../context/ThemeContext';
 
 const MobileMapPage = () => {
   const navigate = useNavigate();
-  const { data: allParks, isLoading: parksLoading } = useParks();
+  const { data: allParksData, isLoading: parksLoading } = useAllParks();
+  const allParks = allParksData?.data;
   const { data: parkRatings } = useParkRatings();
   const { isDark } = useTheme();
   

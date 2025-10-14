@@ -24,7 +24,7 @@ export const migrateLegacyTrips = async (userId) => {
   // Check if already migrated
   const migrated = localStorage.getItem(`${MIGRATION_FLAG_KEY}_${userId}`);
   if (migrated === 'true') {
-    console.log('[TripHistory] Already migrated to database');
+
     return { success: true, migrated: 0, message: 'Already migrated' };
   }
 
@@ -34,12 +34,11 @@ export const migrateLegacyTrips = async (userId) => {
     const userTrips = legacyTrips.filter(trip => trip.userId === userId && trip.status !== 'temp');
     
     if (userTrips.length === 0) {
-      console.log('[TripHistory] No legacy trips to migrate');
+
       localStorage.setItem(`${MIGRATION_FLAG_KEY}_${userId}`, 'true');
       return { success: true, migrated: 0, message: 'No trips to migrate' };
     }
 
-    console.log(`[TripHistory] Migrating ${userTrips.length} legacy trips to database...`);
     
     let migratedCount = 0;
     const errors = [];
@@ -78,7 +77,7 @@ export const migrateLegacyTrips = async (userId) => {
     // Clear legacy trips from localStorage after successful migration
     if (errors.length === 0) {
       localStorage.removeItem(LEGACY_TRIP_HISTORY_KEY);
-      console.log('[TripHistory] ✅ Successfully migrated all trips and cleared localStorage');
+
     }
 
     return {

@@ -8,11 +8,13 @@ import reviewService from '../../services/reviewService';
 import imageUploadService from '../../services/imageUploadService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const ReviewSection = ({ parkCode, parkName }) => {
   const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { subscribe, unsubscribe, subscribeToReviews } = useWebSocket();
   const [reviews, setReviews] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
@@ -49,6 +51,54 @@ const ReviewSection = ({ parkCode, parkName }) => {
   useEffect(() => {
     fetchReviews();
   }, [parkCode]);
+
+  // Setup WebSocket real-time sync for reviews
+  useEffect(() => {
+    if (!parkCode) return;
+
+    // Subscribe to reviews channel
+    subscribeToReviews();
+
+    // Handle review added from another device/tab
+    const handleReviewAdded = (review) => {
+      console.log('[Real-Time] Review added:', review);
+      if (review.parkCode === parkCode) {
+        setReviews(prev => {
+          // Avoid duplicates
+          if (prev.some(r => r._id === review._id)) return prev;
+          return [review, ...prev];
+        });
+        setTotalReviews(prev => prev + 1);
+        // Recalculate average rating
+        setAverageRating(prev => {
+          const total = reviews.reduce((sum, r) => sum + r.rating, review.rating);
+          return total / (reviews.length + 1);
+        });
+      }
+    };
+
+    // Handle review updated from another device/tab
+    const handleReviewUpdated = (review) => {
+      console.log('[Real-Time] Review updated:', review);
+      if (review.parkCode === parkCode) {
+        setReviews(prev => prev.map(r => r._id === review._id ? review : r));
+        // Recalculate average rating
+        const updatedReviews = reviews.map(r => r._id === review._id ? review : r);
+        const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
+        setAverageRating(updatedReviews.length > 0 ? total / updatedReviews.length : 0);
+      }
+    };
+
+    // Subscribe to WebSocket events
+    subscribe('reviewAdded', handleReviewAdded);
+    subscribe('reviewUpdated', handleReviewUpdated);
+
+    // Cleanup
+    return () => {
+      unsubscribe('reviewAdded', handleReviewAdded);
+      unsubscribe('reviewUpdated', handleReviewUpdated);
+    };
+  }, [parkCode, reviews.length, subscribe, unsubscribe, subscribeToReviews]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -189,11 +239,55 @@ const ReviewSection = ({ parkCode, parkName }) => {
     }
 
     try {
-      await reviewService.markHelpful(reviewId);
-      fetchReviews(); // Refresh reviews
+      const userIdToCheck = user?.id || user?._id;
+      const review = reviews.find(r => r._id === reviewId);
+      const hasVoted = review?.helpfulUsers?.some(id => id === userIdToCheck || id.toString() === userIdToCheck);
+      
+      console.log('[ReviewSection] Toggling helpful vote for review:', reviewId, 'hasVoted:', hasVoted);
+      
+      // Optimistic update
+      setReviews(prevReviews => 
+        prevReviews.map(r => {
+          if (r._id === reviewId) {
+            if (hasVoted) {
+              // Remove vote
+              return { 
+                ...r, 
+                helpfulVotes: Math.max(0, (r.helpfulVotes || 0) - 1),
+                helpfulUsers: (r.helpfulUsers || []).filter(id => 
+                  id !== userIdToCheck && id.toString() !== userIdToCheck
+                )
+              };
+            } else {
+              // Add vote
+              return { 
+                ...r, 
+                helpfulVotes: (r.helpfulVotes || 0) + 1,
+                helpfulUsers: [...(r.helpfulUsers || []), userIdToCheck]
+              };
+            }
+          }
+          return r;
+        })
+      );
+      
+      // Make API call
+      const result = await reviewService.markHelpful(reviewId);
+      console.log('[ReviewSection] Vote result:', result);
+      
+      if (result.action === 'added') {
+        showToast('Marked as helpful!', 'success');
+      } else if (result.action === 'removed') {
+        showToast('Vote removed', 'success');
+      }
+      
+      // Refresh to get server data and sync
+      setTimeout(() => fetchReviews(), 500);
     } catch (error) {
-      console.error('Error marking review as helpful:', error);
-      showToast('Failed to mark review as helpful', 'error');
+      console.error('Error toggling helpful vote:', error);
+      showToast('Failed to update vote', 'error');
+      // Rollback on error
+      fetchReviews();
     }
   };
 
@@ -956,18 +1050,35 @@ const ReviewSection = ({ parkCode, parkName }) => {
               )}
 
               {/* Helpful button - only show when not editing */}
-              {editingReviewId !== review._id && (
-                <div className="flex items-center gap-4 text-sm">
-                  <button 
-                    onClick={() => handleMarkHelpful(review._id)}
-                    className="flex items-center gap-1 hover:text-forest-400 transition"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    Helpful ({review.helpful?.length || 0})
-                  </button>
-                </div>
-              )}
+              {editingReviewId !== review._id && (() => {
+                const userIdToCheck = user?.id || user?._id;
+                const hasUserVoted = review.helpfulUsers?.some(id => 
+                  id === userIdToCheck || id.toString() === userIdToCheck
+                );
+                
+                return (
+                  <div className="flex items-center gap-4 text-sm">
+                    <button 
+                      onClick={() => handleMarkHelpful(review._id)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-all ${
+                        hasUserVoted 
+                          ? 'bg-blue-500/20 hover:bg-blue-500/30' 
+                          : 'hover:bg-gray-500/10'
+                      }`}
+                      style={{ 
+                        color: hasUserVoted ? '#3b82f6' : 'var(--text-tertiary)',
+                        borderWidth: '1px',
+                        borderColor: hasUserVoted ? '#3b82f6' : 'transparent'
+                      }}
+                    >
+                      <ThumbsUp 
+                        className={`h-4 w-4 ${hasUserVoted ? 'fill-blue-600' : ''}`}
+                      />
+                      <span>{hasUserVoted ? 'Helpful' : 'Mark Helpful'} ({review.helpfulVotes || 0})</span>
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>

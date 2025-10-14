@@ -16,13 +16,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  console.log('🔄 AuthContext: AuthProvider initialized/re-rendered');
+
 
   useEffect(() => {
     // Add localStorage event listener to track changes
     const handleStorageChange = (e) => {
       if (e.key === 'user' || e.key === 'token') {
-        console.log('🔔 AuthContext: localStorage change detected:', e.key, e.oldValue, '->', e.newValue);
+
       }
     };
     
@@ -30,16 +30,14 @@ export const AuthProvider = ({ children }) => {
     
     // Check if user is logged in on mount
     const validateToken = async () => {
-      console.log('🔍 AuthContext: Starting token validation...');
-      console.log('🔍 AuthContext: Page loaded at:', new Date().toISOString());
+
       
       const token = authService.getToken();
       const storedUser = authService.getCurrentUser();
       
-      console.log('🔍 AuthContext: Token exists:', !!token);
-      console.log('🔍 AuthContext: Token value:', token ? `${token.substring(0, 30)}...` : 'null');
-      console.log('🔍 AuthContext: Stored user exists:', !!storedUser);
-      console.log('🔍 AuthContext: Stored user data:', storedUser);
+
+
+
       
       if (token && storedUser) {
         console.log('✅ AuthContext: Restoring user from localStorage');
@@ -48,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         
         // Then validate token with server in background
         try {
-          console.log('🔄 AuthContext: Validating token with server...');
+
           const response = await authService.getMe();
           console.log('✅ AuthContext: Server validation successful');
           console.log('✅ AuthContext: Full server response:', response);
@@ -80,7 +78,7 @@ export const AuthProvider = ({ children }) => {
           
           // Only clear token if server returns 401 (unauthorized)
           if (error.response?.status === 401) {
-            console.log('🚪 AuthContext: Token expired or invalid, logging out');
+
             authService.logout();
             setUser(null);
           } else {
@@ -94,7 +92,7 @@ export const AuthProvider = ({ children }) => {
         if (!storedUser) console.log('❌ AuthContext: No user data in localStorage');
       }
       
-      console.log('🏁 AuthContext: Token validation complete, setting loading to false');
+
       setLoading(false);
     };
 
@@ -115,11 +113,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password, rememberMe = false) => {
-    console.log('🔐 AuthContext: login() called');
+
     const response = await authService.login(email, password, rememberMe);
-    console.log('🔐 AuthContext: Setting user state with:', response.data);
+
     setUser(response.data);
-    console.log('🔐 AuthContext: User state set, login complete');
+
     return response;
   };
 
@@ -129,7 +127,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUserData) => {
-    console.log('🔄 AuthContext: Updating user data:', updatedUserData);
+
     setUser(prevUser => ({
       ...prevUser,
       ...updatedUserData

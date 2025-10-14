@@ -4,90 +4,134 @@ import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
 import { useTheme } from '../context/ThemeContext';
-import { ChevronDown, Mail } from '@components/icons';
+import { ChevronDown, Mail, Sparkles, Mountain, Heart, Users, Shield } from '@components/icons';
 
 const FAQPage = () => {
   useTheme();
   const [openFaqItems, setOpenFaqItems] = useState([]);
 
-  const faqItems = [
+  const faqCategories = [
     {
-      question: "What is TrailVerse?",
-      answer: "TrailVerse is your comprehensive guide to exploring America's 470+ National Parks, Monuments, Historic Sites, and other protected areas. We combine AI-powered trip planning, real-time weather data, interactive maps, and community insights to help you discover and plan the perfect park adventure."
+      category: "Getting Started",
+      icon: Sparkles,
+      questions: [
+        {
+          question: "What is TrailVerse?",
+          answer: "TrailVerse is your comprehensive guide to exploring America's 470+ National Parks, Monuments, Historic Sites, and other protected areas. We combine AI-powered trip planning, real-time weather data, interactive maps, and community insights to help you discover and plan the perfect park adventure."
+        },
+        {
+          question: "How do I get started?",
+          answer: "Getting started is easy! Create a free account by clicking 'Sign Up', enter your email and create a password. Once logged in, you can explore parks, save favorites, use AI trip planning, view real-time weather, check NPS events, and read travel guides. No credit card required!"
+        },
+        {
+          question: "What makes TrailVerse different?",
+          answer: "TrailVerse uniquely combines AI-powered trip planning (Claude + ChatGPT), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks with personalized recommendations."
+        }
+      ]
     },
     {
-      question: "How does the AI trip planning work?",
-      answer: "Our AI analyzes your preferences, travel dates, interests, and available time to create personalized itineraries tailored to your style. It considers factors like weather conditions, seasonal attractions, crowd levels, trail difficulty, and optimal routes to suggest the perfect adventure. Simply provide your preferences, and let our AI craft a detailed plan for you."
+      category: "AI & Trip Planning",
+      icon: Sparkles,
+      questions: [
+        {
+          question: "How does AI trip planning work?",
+          answer: "Our AI analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It considers weather, seasonal attractions, trail difficulty, and optimal routes. Simply provide your preferences, and let our AI craft a detailed plan for you."
+        },
+        {
+          question: "Which AI providers do you offer?",
+          answer: "We offer two AI providers: OpenAI's GPT-4 (ChatGPT) and Anthropic's Claude. Both provide excellent recommendations. GPT-4 offers detailed itineraries, while Claude provides conversational responses. You can switch between providers mid-conversation, and your trip history is saved regardless of which AI you use."
+        },
+        {
+          question: "How does trip history and archiving work?",
+          answer: "All your AI conversations are automatically saved to your Trip History. Active trips appear in the 'Active' tab for easy continuation. Archive completed trips to the 'Archived' tab where you can restore them anytime with full context and conversation history preserved."
+        },
+        {
+          question: "Are my AI conversations private?",
+          answer: "Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time."
+        }
+      ]
     },
     {
-      question: "How do I get started with TrailVerse?",
-      answer: "Getting started is easy! Simply create a free account by clicking the 'Sign Up' button, enter your email and create a password. Once logged in, you can start exploring parks, saving favorites, using AI trip planning, viewing real-time weather, checking out NPS events, and reading travel guides. No credit card required to start exploring!"
+      category: "Parks & Features",
+      icon: Mountain,
+      questions: [
+        {
+          question: "What parks are included?",
+          answer: "TrailVerse includes all 470+ units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, and Preserves. From Yellowstone and Yosemite to hidden gems and historic sites, we cover them all."
+        },
+        {
+          question: "How do Google Maps features work?",
+          answer: "All devices get interactive maps with park markers and search. On desktop, you also get Google Places to find nearby restaurants, lodging, and gas stations, plus route planning with turn-by-turn directions. Mobile users enjoy smooth map browsing with park details."
+        },
+        {
+          question: "How accurate is the weather information?",
+          answer: "We provide real-time weather data from OpenWeather API with 5-day forecasts, updated regularly throughout the day. Weather in National Parks can change rapidly, so we recommend checking official NPS sources before your trip for critical updates."
+        },
+        {
+          question: "What are park events and how do I save them?",
+          answer: "Our Events page displays live ranger programs, guided tours, educational activities, and special events from the National Park Service. Filter by date, park, or activity type, and click the bookmark icon to save events to your profile for easy access."
+        }
+      ]
     },
     {
-      question: "How do I save and track my favorite parks?",
-      answer: "Simply click the heart icon on any park card to add it to your favorites. You can access all your saved parks from your profile dashboard, where you can also mark parks as visited, track your journey across America's parks, and use your favorites for future trip planning."
+      category: "Your Profile & Collections",
+      icon: Heart,
+      questions: [
+        {
+          question: "How do favorites and collections work?",
+          answer: "Click the heart icon on parks, blogs, or events to save them to your Favorites. Access all saved items from your profile dashboard, organized by type. Use your collections for trip planning and tracking your journey across America's parks."
+        },
+        {
+          question: "How do I track visited parks?",
+          answer: "Go to your Profile page and select 'Visited Parks' tab. Click 'Mark Park as Visited' to add a park, select the visit date, and add optional memories. This builds your personal National Park passport and tracks your adventure journey."
+        },
+        {
+          question: "How do I customize my avatar?",
+          answer: "TrailVerse offers 1000+ unique auto-generated avatar combinations! Go to your profile settings and click your avatar to open the Avatar Selector. Browse styles, use the random generator, or upload your own photo. Your avatar displays with all your reviews and comments."
+        }
+      ]
     },
     {
-      question: "What parks are included?",
-      answer: "TrailVerse includes all 470+ units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, Preserves, and more. From iconic destinations like Yellowstone and Yosemite to hidden gems and historic sites, we cover them all."
+      category: "Community & Support",
+      icon: Users,
+      questions: [
+        {
+          question: "How do I write reviews with photos?",
+          answer: "Visit any park's detail page and click 'Write Review'. Upload up to 5 photos per review (JPEG, PNG, GIF, or WebP, max 10MB each). We automatically optimize images for faster loading. Your reviews help other travelers plan better trips!"
+        },
+        {
+          question: "How do blog comments work?",
+          answer: "Our blog posts feature nested replies, likes, and threaded discussions. Comment on articles, reply to other users, like helpful comments, and edit or delete your own comments anytime. Join the community discussion around National Park topics!"
+        },
+        {
+          question: "Can I use TrailVerse offline?",
+          answer: "Yes! TrailVerse caches park information, saved trips, and favorites for offline access via Service Worker. Features requiring live data (AI planning, weather, maps, events) need internet. Install as a PWA for app-like offline functionality."
+        }
+      ]
     },
     {
-      question: "How accurate is the weather information?",
-      answer: "We provide real-time weather data from OpenWeather API, updated regularly throughout the day. However, weather conditions in National Parks can change rapidly, especially in mountainous areas. We recommend checking the official National Park Service website and local conditions before your trip for the most current information."
-    },
-    {
-      question: "Can I use TrailVerse offline?",
-      answer: "While most features require an internet connection for real-time data, AI planning, and weather updates, you can save your AI-generated itineraries and park information for offline reference. We recommend taking screenshots or downloading important trip details before heading to areas with limited connectivity."
-    },
-    {
-      question: "How do I find parks near me?",
-      answer: "Use our interactive Map page to explore parks by location. You can search by state, view parks on the map, filter by park type (National Park, Monument, Historic Site, etc.), and find parks closest to your location or desired destination."
-    },
-    {
-      question: "What are the park events and how do I use them?",
-      answer: "Our Events page displays live events from the National Park Service, including ranger programs, guided tours, educational activities, special celebrations, and seasonal events. You can filter events by date, park, or activity type, and save events you're interested in to plan your visit around special programs."
-    },
-    {
-      question: "How do I plan a trip with AI?",
-      answer: "Navigate to any park's detail page and look for the AI Trip Planning feature. Select your travel dates, duration, interests (hiking, photography, wildlife, history, etc.), fitness level, and other preferences. Our AI will generate a detailed day-by-day itinerary with activities, trails, viewpoints, and timing recommendations customized for you."
-    },
-    {
-      question: "Can I read travel guides and tips?",
-      answer: "Yes! Our Blog section features comprehensive travel guides, park-specific tips, photography advice, seasonal recommendations, packing lists, safety information, and insider insights. These articles are curated to help you make the most of your National Park adventures."
-    },
-    {
-      question: "How do I write reviews or share my experiences?",
-      answer: "After visiting a park, you can share your experience by leaving a review on the park's detail page. Share photos, rate your experience, provide tips for other visitors, and help build a community of National Park explorers. Your honest feedback helps others plan better trips."
-    },
-    {
-      question: "What makes TrailVerse different from other park websites?",
-      answer: "TrailVerse uniquely combines AI-powered personalized trip planning, real-time weather data, live NPS events, interactive maps, community reviews, and expert travel guides all in one modern, easy-to-use platform. Unlike official park websites that focus on one park at a time, we help you discover, compare, and plan visits across all 470+ parks with intelligent recommendations."
-    },
-    {
-      question: "Is my data safe and private?",
-      answer: "Absolutely. We take your privacy seriously and never sell your personal information. Your account data, favorites, and preferences are securely stored and used only to enhance your TrailVerse experience. Read our Privacy Policy for complete details on how we protect and use your information."
-    },
-    {
-      question: "How often is park information updated?",
-      answer: "We sync with the National Park Service API regularly to ensure park information, operating hours, alerts, and event data are current. Weather data updates multiple times per day. However, always check the official park website before traveling for the most critical updates like road closures or emergency alerts."
-    },
-    {
-      question: "Can I suggest features or report issues?",
-      answer: "Yes! We love hearing from our community. If you have feature suggestions, find bugs, or want to provide feedback, please contact us at trailverseteam@gmail.com. Your input helps us improve TrailVerse for everyone."
-    },
-    {
-      question: "Do you have a mobile app?",
-      answer: "TrailVerse is currently a responsive web application that works beautifully on mobile browsers, tablets, and desktops. You can access it from any device with a web browser. We may develop native mobile apps in the future based on user demand."
-    },
-    {
-      question: "How do I delete my account?",
-      answer: "If you wish to delete your account and all associated data, please contact us at trailverseteam@gmail.com with your request. We'll process your deletion promptly in accordance with our Privacy Policy."
+      category: "Privacy & Account",
+      icon: Shield,
+      questions: [
+        {
+          question: "Is my data safe and private?",
+          answer: "Absolutely. We never sell your personal information. Your account data, favorites, and preferences are securely stored and used only to enhance your TrailVerse experience. All data is encrypted in transit and at rest. Read our Privacy Policy for complete details."
+        },
+        {
+          question: "How do I delete my account?",
+          answer: "Go to your Profile > Settings > Privacy & Security section and click 'Delete Account'. Confirm your password and follow the prompts. All your data will be permanently deleted in accordance with our Privacy Policy."
+        },
+        {
+          question: "Can I contact support?",
+          answer: "Yes! We love hearing from our community. For feature suggestions, bug reports, or questions, contact us at trailverseteam@gmail.com. We typically respond within 24-48 hours."
+        }
+      ]
     }
   ];
 
-  const toggleFaqItem = (index) => {
+  const toggleFaqItem = (id) => {
     setOpenFaqItems(prev =>
-      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
@@ -113,8 +157,7 @@ const FAQPage = () => {
             <p className="text-lg sm:text-xl mb-8 max-w-3xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Find answers to common questions about TrailVerse, our AI trip planning, 
-              and how we can help craft your perfect park adventure.
+              Find answers to common questions about TrailVerse and start planning your perfect park adventure.
             </p>
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ring-1 backdrop-blur"
               style={{
@@ -124,56 +167,76 @@ const FAQPage = () => {
               }}
             >
               <Mail className="h-4 w-4" />
-              <span>Still have questions? Get in touch</span>
+              <span>Still have questions? Email us</span>
             </div>
           </div>
         </section>
 
-        {/* FAQ Section */}
+        {/* FAQ Section with Categories */}
         <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-4">
-              {faqItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="rounded-xl overflow-hidden backdrop-blur"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <button
-                    onClick={() => toggleFaqItem(index)}
-                    className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition"
+          <div className="max-w-4xl mx-auto space-y-16">
+            {faqCategories.map((category, categoryIndex) => (
+              <div key={categoryIndex}>
+                {/* Category Header */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--accent-green)' }}
                   >
-                    <span className="font-semibold text-left text-lg"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {item.question}
-                    </span>
-                    <ChevronDown
-                      className={`h-5 w-5 transition-transform duration-300 flex-shrink-0 ml-4 ${
-                        openFaqItems.includes(index) ? 'rotate-180' : ''
-                      }`}
-                      style={{ color: 'var(--text-secondary)' }}
-                    />
-                  </button>
-                  
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ${
-                      openFaqItems.includes(index) ? 'max-h-[300px]' : 'max-h-0'
-                    }`}
-                  >
-                    <div className="p-6 pt-0 text-base"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {item.answer}
-                    </div>
+                    <category.icon className="h-5 w-5 text-white" />
                   </div>
+                  <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {category.category}
+                  </h2>
                 </div>
-              ))}
-            </div>
+
+                {/* Questions in Category */}
+                <div className="space-y-3">
+                  {category.questions.map((item, questionIndex) => {
+                    const uniqueId = `${categoryIndex}-${questionIndex}`;
+                    return (
+                      <div
+                        key={uniqueId}
+                        className="rounded-xl overflow-hidden backdrop-blur"
+                        style={{
+                          backgroundColor: 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
+                        <button
+                          onClick={() => toggleFaqItem(uniqueId)}
+                          className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition text-left"
+                        >
+                          <span className="font-semibold text-lg pr-4"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {item.question}
+                          </span>
+                          <ChevronDown
+                            className={`h-5 w-5 transition-transform duration-300 flex-shrink-0 ${
+                              openFaqItems.includes(uniqueId) ? 'rotate-180' : ''
+                            }`}
+                            style={{ color: 'var(--text-secondary)' }}
+                          />
+                        </button>
+                        
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ${
+                            openFaqItems.includes(uniqueId) ? 'max-h-[400px]' : 'max-h-0'
+                          }`}
+                        >
+                          <div className="p-6 pt-0 text-base leading-relaxed"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            {item.answer}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -195,7 +258,7 @@ const FAQPage = () => {
               <p className="text-base mb-6 max-w-2xl mx-auto"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Can&apos;t find the answer you&apos;re looking for? Our support team is here to help you plan your perfect National Park adventure.
+                Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
               </p>
               <Button
                 href="mailto:trailverseteam@gmail.com"

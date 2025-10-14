@@ -378,6 +378,14 @@ exports.markParkAsVisited = async (req, res, next) => {
       notes: notes || ''
     });
     
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      const userId = (req.user.id || req.user._id).toString();
+      console.log('[Mark Visited] Notifying WebSocket for user:', userId);
+      wsService.sendToUserChannel(userId, 'visited', 'park_visited_added', visitedPark);
+    }
+    
     res.status(201).json({
       success: true,
       data: visitedPark
@@ -465,6 +473,14 @@ exports.removeVisitedPark = async (req, res, next) => {
         success: false,
         error: 'Visited park not found'
       });
+    }
+    
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      const userId = (req.user.id || req.user._id).toString();
+      console.log('[Remove Visited] Notifying WebSocket for user:', userId);
+      wsService.sendToUserChannel(userId, 'visited', 'park_visited_removed', { parkCode });
     }
     
     res.status(200).json({

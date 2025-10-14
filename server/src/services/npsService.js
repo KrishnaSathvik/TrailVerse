@@ -85,9 +85,11 @@ class NPSService {
         }
       }
       
-      const nationalParksCount = allParks.filter(park => park.designation === 'National Park').length;
+      const nationalParksCount = allParks.filter(park => 
+        park.designation && park.designation.toLowerCase().includes('national park')
+      ).length;
       console.log(`📊 Fetched ${allParks.length} total parks from NPS API`);
-      console.log(`🏞️ Found ${nationalParksCount} National Parks out of ${allParks.length} total parks`);
+      console.log(`🏞️ Found ${nationalParksCount} National Parks (including variations) out of ${allParks.length} total parks`);
       
       // Debug: Count all different designations
       const designations = {};
@@ -323,6 +325,85 @@ class NPSService {
     } catch (error) {
       console.error('NPS API Error (getEventsByPark):', error.message);
       return [];
+    }
+  }
+
+  // Get all activities across all parks
+  async getAllActivities(limit = 500) {
+    try {
+      console.log('🔄 Fetching all activities across all parks...');
+      
+      // First, get all parks
+      const allParks = await this.getAllParks(600);
+      const parkCodes = allParks.map(park => park.parkCode).filter(code => code);
+      
+      console.log(`📊 Fetching activities from ${parkCodes.length} parks...`);
+      
+      let allActivities = [];
+      
+      // Process parks in batches to avoid overwhelming the API
+      const batchSize = 10;
+      for (let i = 0; i < parkCodes.length; i += batchSize) {
+        const batch = parkCodes.slice(i, i + batchSize);
+        
+        // Process batch in parallel
+        const batchPromises = batch.map(async (parkCode) => {
+          try {
+            const response = await this.api.get('/thingstodo', {
+              params: { parkCode, limit: 50 }
+            });
+            
+            if (response.data.data && response.data.data.length > 0) {
+              // Add parkCode to each activity for reference
+              return response.data.data.map(activity => ({
+                ...activity,
+                parkCode: parkCode
+              }));
+            }
+            return [];
+          } catch (parkError) {
+            console.log(`No activities found for park ${parkCode}`);
+            return [];
+          }
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        allActivities = allActivities.concat(batchResults.flat());
+        
+        // Log progress
+        console.log(`📦 Processed ${Math.min(i + batchSize, parkCodes.length)}/${parkCodes.length} parks, found ${allActivities.length} activities so far`);
+        
+        // If we have enough activities, we can stop
+        if (allActivities.length >= limit) {
+          break;
+        }
+      }
+      
+      console.log(`✅ Total activities fetched: ${allActivities.length}`);
+      return allActivities.slice(0, limit);
+    } catch (error) {
+      console.error('NPS API Error (getAllActivities):', error.message);
+      throw new Error(`Failed to fetch all activities: ${error.message}`);
+    }
+  }
+
+  // Get activity by ID
+  async getActivityById(activityId) {
+    try {
+      const response = await this.api.get('/thingstodo', {
+        params: { id: activityId }
+      });
+      
+      if (response.data.data && response.data.data.length > 0) {
+        console.log(`✅ Activity found: ${response.data.data[0].title}`);
+        return response.data.data[0];
+      }
+      
+      console.log(`❌ Activity not found: ${activityId}`);
+      return null;
+    } catch (error) {
+      console.error(`❌ NPS API Error (getActivityById for ${activityId}):`, error.message);
+      throw new Error(`Failed to fetch activity ${activityId}: ${error.message}`);
     }
   }
 

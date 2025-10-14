@@ -52,7 +52,9 @@ class ReviewService {
       }))
     };
 
-    const response = await api.post(`/reviews/${parkCode}`, reviewWithImages);
+    const response = await api.post(`/reviews/${parkCode}`, reviewWithImages, {
+      invalidateCache: ['reviews'] // Clear reviews cache
+    });
     return response.data.data;
   }
 
@@ -79,21 +81,32 @@ class ReviewService {
       ]
     };
 
-    const response = await api.put(`/reviews/${reviewId}`, updatedReviewData);
+    const response = await api.put(`/reviews/${reviewId}`, updatedReviewData, {
+      invalidateCache: ['reviews'] // Clear reviews cache
+    });
     return response.data.data;
   }
 
   async deleteReview(reviewId) {
-    await api.delete(`/reviews/${reviewId}`);
+    await api.delete(`/reviews/${reviewId}`, {
+      invalidateCache: ['reviews'] // Clear reviews cache
+    });
   }
 
   async markHelpful(reviewId) {
-    const response = await api.put(`/reviews/${reviewId}/helpful`);
+    const response = await api.post(`/reviews/${reviewId}/vote`, { 
+      isHelpful: true // Backend expects isHelpful boolean
+    }, {
+      invalidateCache: ['reviews'] // Clear reviews cache so vote counts update
+    });
     return response.data.data;
   }
 
   async getUserReviews() {
-    const response = await api.get(`/reviews/user/my-reviews`);
+    const response = await api.get(`/reviews/user/my-reviews`, {
+      cacheType: 'reviews', // Use reviews cache type
+      skipCache: false
+    });
     return response.data;
   }
 
@@ -120,12 +133,16 @@ class ReviewService {
       }))
     };
 
-    const response = await api.put(`/reviews/${reviewId}`, reviewWithImages);
+    const response = await api.put(`/reviews/${reviewId}`, reviewWithImages, {
+      invalidateCache: ['reviews'] // Clear reviews cache
+    });
     return response.data.data;
   }
 
   async deleteReview(reviewId) {
-    const response = await api.delete(`/reviews/${reviewId}`);
+    const response = await api.delete(`/reviews/${reviewId}`, {
+      invalidateCache: ['reviews'] // Clear reviews cache
+    });
     return response.data;
   }
 

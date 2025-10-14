@@ -2,9 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import SyncStatus from './SyncStatus';
 
 const Footer = () => {
   useTheme();
+  const { isAuthenticated } = useAuth();
   
   return (
     <footer 
@@ -63,6 +66,9 @@ const Footer = () => {
                 trailverseteam@gmail.com
               </a>
             </div>
+            
+            {/* Sync Status - Only show for authenticated users */}
+            {isAuthenticated && <SyncStatus />}
           </div>
         </div>
 

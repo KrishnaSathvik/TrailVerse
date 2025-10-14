@@ -12,18 +12,50 @@ const {
 } = require('../controllers/imageUploadController');
 const { protect } = require('../middleware/auth');
 
-// All routes are protected except file serving
+// Multer error handler middleware
+const handleMulterError = (err, req, res, next) => {
+  if (err.name === 'MulterError') {
+    console.error('❌ Multer error:', err.message);
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        error: 'File size too large. Maximum size is 10MB.'
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        error: 'Too many files. Maximum 5 files per upload.'
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        success: false,
+        error: 'Unexpected field in upload.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      error: err.message
+    });
+  }
+  // Pass other errors to the next error handler
+  next(err);
+};
+
+// Public file serving route (no auth required) - MUST be before protect middleware
+// Use wildcard to capture full path including subdirectories (e.g., profile/image.jpg)
+router.get('/file/*', serveImage);
+
+// All other routes require authentication
 router.use(protect);
 
-// Image upload routes
-router.post('/upload', uploadMiddleware, uploadImages);
+// Image upload routes with error handling
+router.post('/upload', uploadMiddleware, handleMulterError, uploadImages);
 router.get('/', getUserImages);
 router.get('/stats', getImageStats);
 router.get('/:id', getImage);
 router.put('/:id', updateImage);
 router.delete('/:id', deleteImage);
-
-// Public file serving route (no auth required)
-router.get('/file/:filename', serveImage);
 
 module.exports = router;

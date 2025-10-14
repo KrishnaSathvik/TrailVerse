@@ -3,10 +3,15 @@ import { Link } from 'react-router-dom';
 import { BookOpen, Heart, X } from '@components/icons';
 import blogService from '../../services/blogService';
 import { useToast } from '../../context/ToastContext';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { useAuth } from '../../context/AuthContext';
+import cacheService from '../../services/cacheService';
 import OptimizedImage from '../common/OptimizedImage';
 
 const FavoriteBlogs = ({ onCountChange }) => {
   const { showToast } = useToast();
+  const { user, isAuthenticated } = useAuth();
+  const { subscribe, unsubscribe, subscribeToBlogs } = useWebSocket();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -16,9 +21,52 @@ const FavoriteBlogs = ({ onCountChange }) => {
     fetchFavoriteBlogs();
   }, []);
 
+  // Setup WebSocket real-time sync for blog favorites
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+
+    // Subscribe to blogs channel
+    subscribeToBlogs();
+
+    // Handle blog favorited from another tab/device
+    const handleBlogFavorited = (data) => {
+      console.log('[Real-Time] Blog favorited:', data);
+      
+      // Invalidate EnhancedApi cache
+      console.log('[Real-Time] 🔥 Invalidating EnhancedApi cache for blog favorites');
+      cacheService.clearByType('blogPosts');
+      
+      // Refetch to get updated list
+      fetchFavoriteBlogs(1);
+    };
+
+    // Handle blog unfavorited from another tab/device
+    const handleBlogUnfavorited = (data) => {
+      console.log('[Real-Time] Blog unfavorited:', data);
+      
+      // Invalidate EnhancedApi cache
+      console.log('[Real-Time] 🔥 Invalidating EnhancedApi cache for blog favorites');
+      cacheService.clearByType('blogPosts');
+      
+      // Remove from local state if present (count will update via useEffect)
+      setBlogs(prevBlogs => prevBlogs.filter(blog => blog._id !== data.blogId));
+    };
+
+    // Subscribe to WebSocket events
+    subscribe('blogFavorited', handleBlogFavorited);
+    subscribe('blogUnfavorited', handleBlogUnfavorited);
+
+    return () => {
+      unsubscribe('blogFavorited', handleBlogFavorited);
+      unsubscribe('blogUnfavorited', handleBlogUnfavorited);
+    };
+  }, [user, isAuthenticated, subscribe, unsubscribe, subscribeToBlogs, onCountChange]);
+
   const fetchFavoriteBlogs = async (pageNum = 1) => {
     try {
       setLoading(true);
+      console.log('[FavoriteBlogs] 📥 Fetching favorite blogs, page:', pageNum);
+      
       const result = await blogService.getFavoritedPosts({ 
         page: pageNum, 
         limit: 10 
@@ -26,22 +74,14 @@ const FavoriteBlogs = ({ onCountChange }) => {
       
       // Ensure result.data is an array
       const blogsData = result?.data || [];
+      console.log('[FavoriteBlogs] 📥 Received', blogsData.length, 'blog(s)');
       
       if (pageNum === 1) {
         setBlogs(blogsData);
-        // Notify parent of count change
-        if (onCountChange) {
-          onCountChange(blogsData.length);
-        }
+        // Don't call onCountChange here - will cause render warning
       } else {
-        setBlogs(prev => {
-          const newBlogs = [...prev, ...blogsData];
-          // Notify parent of count change
-          if (onCountChange) {
-            onCountChange(newBlogs.length);
-          }
-          return newBlogs;
-        });
+        setBlogs(prev => [...prev, ...blogsData]);
+        // Don't call onCountChange here - will cause render warning
       }
       
       setHasMore(blogsData.length === 10);
@@ -58,6 +98,14 @@ const FavoriteBlogs = ({ onCountChange }) => {
     }
   };
 
+  // Notify parent of count changes (in useEffect to avoid render warnings)
+  useEffect(() => {
+    if (onCountChange) {
+      console.log('[FavoriteBlogs] 🔄 Notifying parent of count:', blogs.length);
+      onCountChange(blogs.length);
+    }
+  }, [blogs.length, onCountChange]);
+
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
@@ -72,18 +120,28 @@ const FavoriteBlogs = ({ onCountChange }) => {
     });
   };
 
+  // Listen for visibility changes and refresh
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated) {
+        console.log('[FavoriteBlogs] 🔄 Page became visible, refreshing...');
+        fetchFavoriteBlogs(1);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated]);
+
   const handleRemoveFavorite = async (blogId) => {
     try {
       await blogService.toggleFavorite(blogId);
-      // Remove from local state
-      setBlogs(prevBlogs => {
-        const newBlogs = prevBlogs.filter(blog => blog._id !== blogId);
-        // Notify parent of count change
-        if (onCountChange) {
-          onCountChange(newBlogs.length);
-        }
-        return newBlogs;
-      });
+      // Remove from local state (count will update via useEffect)
+      setBlogs(prevBlogs => prevBlogs.filter(blog => blog._id !== blogId));
+      console.log('[FavoriteBlogs] 🔄 Removed blog from state');
       showToast('Removed from favorites', 'success');
     } catch (error) {
       console.error('Error removing favorite blog:', error);

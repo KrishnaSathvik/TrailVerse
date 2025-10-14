@@ -10,14 +10,15 @@ import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
 import { useEvents } from '../hooks/useEvents';
-import { useParks } from '../hooks/useParks';
+import { useAllParks } from '../hooks/useParks';
 import { useSavedEvents } from '../hooks/useSavedEvents';
 import EventCard from '../components/events/EventCard';
 import EventListItem from '../components/events/EventListItem';
 
 const EventsPage = () => {
   const { data: eventsData, isLoading, error } = useEvents();
-  const { data: allParks } = useParks();
+  const { data: allParksData } = useAllParks();
+  const allParks = allParksData?.data;
   const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
@@ -25,6 +26,7 @@ const EventsPage = () => {
 
   const [filters, setFilters] = useState({
     parks: [],
+    states: [],
     categories: [],
     dateRange: 'upcoming' // Default to upcoming events instead of all
   });
@@ -45,6 +47,15 @@ const EventsPage = () => {
     { id: 'lectures', label: 'Lectures', color: 'bg-indigo-500' },
     { id: 'cultural', label: 'Cultural Events', color: 'bg-purple-500' }
   ];
+
+  // Helper function to get park states
+  const getParkStates = (parkCode) => {
+    if (!parkCode || !allParks) return [];
+    const park = allParks.find(p => p.parkCode === parkCode);
+    if (!park || !park.states) return [];
+    // NPS API returns states as a comma-separated string like "CA,NV"
+    return park.states.split(',').map(s => s.trim());
+  };
 
   // Process and enhance NPS events data
   const events = useMemo(() => {
@@ -78,6 +89,9 @@ const EventsPage = () => {
           if (isNaN(date.getTime()) || date < today) {
             return null;
           }
+          
+          // Normalize the date to start of day for consistent comparison
+          date.setHours(0, 0, 0, 0);
           return date;
         } catch {
           return null;
@@ -143,6 +157,7 @@ const EventsPage = () => {
         description: stripHtml(event.description),
         parkCode: event.parkCode,
         parkName,
+        states: getParkStates(event.parkCode),
         category: getEventCategory(event),
         date: eventDate ? eventDate.toISOString().split('T')[0] : null,
         eventid: event.id, // Use the UUID format ID for NPS event links
@@ -188,9 +203,9 @@ const EventsPage = () => {
     }
   }, [events]);
 
-  // Filter events
+  // Filter and sort events by date
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
+    const filtered = events.filter(event => {
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         if (!event.title.toLowerCase().includes(search) &&
@@ -202,6 +217,14 @@ const EventsPage = () => {
 
       if (filters.parks.length > 0 && !filters.parks.includes(event.parkCode)) {
         return false;
+      }
+
+      if (filters.states.length > 0) {
+        // Check if event's park is in any of the selected states
+        const hasMatchingState = event.states.some(state => filters.states.includes(state));
+        if (!hasMatchingState) {
+          return false;
+        }
       }
 
       if (filters.categories.length > 0 && !filters.categories.includes(event.category)) {
@@ -224,7 +247,32 @@ const EventsPage = () => {
 
       return true;
     });
+
+    // Sort events by date (earliest first), then by title for events on the same date
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      // Primary sort: by date (earliest first)
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA - dateB;
+      }
+      
+      // Secondary sort: by title (alphabetical) for events on the same date
+      return a.title.localeCompare(b.title);
+    });
   }, [events, searchTerm, filters]);
+
+  // Debug: Log filtered and sorted events
+  React.useEffect(() => {
+    if (filteredEvents.length > 0) {
+      console.log('Filtered & Sorted Events (first 5):', filteredEvents.slice(0, 5).map(e => ({
+        title: e.title,
+        date: e.date,
+        parkName: e.parkName
+      })));
+    }
+  }, [filteredEvents]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
@@ -260,6 +308,15 @@ const EventsPage = () => {
     }));
   };
 
+  const toggleStateFilter = (stateCode) => {
+    setFilters(prev => ({
+      ...prev,
+      states: prev.states.includes(stateCode)
+        ? prev.states.filter(s => s !== stateCode)
+        : [...prev.states, stateCode]
+    }));
+  };
+
   const toggleCategoryFilter = (categoryId) => {
     setFilters(prev => ({
       ...prev,
@@ -272,6 +329,7 @@ const EventsPage = () => {
   const clearAllFilters = () => {
     setFilters({
       parks: [],
+      states: [],
       categories: [],
       dateRange: 'upcoming'
     });
@@ -281,6 +339,7 @@ const EventsPage = () => {
 
   const activeFiltersCount = 
     filters.parks.length +
+    filters.states.length +
     filters.categories.length +
     (filters.dateRange !== 'upcoming' ? 1 : 0);
 
@@ -294,6 +353,39 @@ const EventsPage = () => {
         name: event?.parkName || `${parkCode.toUpperCase()} National Park`
       };
     });
+  }, [events]);
+
+  // Get unique states from events with full state names
+  const availableStates = useMemo(() => {
+    const stateNames = {
+      'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+      'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+      'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+      'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+      'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+      'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+      'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+      'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+      'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+      'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+      'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+      'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+      'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia',
+      'AS': 'American Samoa', 'GU': 'Guam', 'MP': 'Northern Mariana Islands',
+      'PR': 'Puerto Rico', 'VI': 'U.S. Virgin Islands'
+    };
+    
+    const stateCodes = new Set();
+    events.forEach(event => {
+      event.states.forEach(state => stateCodes.add(state));
+    });
+    
+    return Array.from(stateCodes)
+      .map(code => ({
+        code,
+        name: stateNames[code] || code
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [events]);
 
   return (
@@ -436,19 +528,6 @@ const EventsPage = () => {
                 )}
               </Button>
 
-              {/* Mobile Clear Button */}
-              {activeFiltersCount > 0 && (
-                <Button
-                  onClick={clearAllFilters}
-                  variant="ghost"
-                  size="sm"
-                  icon={X}
-                  className="sm:hidden"
-                >
-                  Clear
-                </Button>
-              )}
-
               {/* Date Range Filter */}
               <select
                 value={filters.dateRange}
@@ -471,12 +550,14 @@ const EventsPage = () => {
                 <option value="all">All Dates</option>
               </select>
 
+              {/* Clear Button - Desktop only */}
               {activeFiltersCount > 0 && (
                 <Button
                   onClick={clearAllFilters}
                   variant="ghost"
                   size="sm"
                   icon={X}
+                  className="hidden sm:flex"
                 >
                   Clear
                 </Button>
@@ -527,6 +608,34 @@ const EventsPage = () => {
                 >
                   Filters
                 </h3>
+
+                {/* States */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    States ({availableStates.length})
+                  </h4>
+                  <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                    {availableStates.map(state => (
+                      <label key={state.code} className="flex items-center gap-2 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={filters.states.includes(state.code)}
+                          onChange={() => toggleStateFilter(state.code)}
+                          className="rounded border-2 w-4 h-4 text-purple-500 focus:ring-purple-500/50"
+                          style={{ borderColor: 'var(--border)' }}
+                        />
+                        <span className="text-sm group-hover:text-purple-400 transition truncate"
+                          style={{ color: 'var(--text-secondary)' }}
+                          title={state.name}
+                        >
+                          {state.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Categories */}
                 <div className="mb-6">
@@ -822,6 +931,33 @@ const EventsPage = () => {
                   <option value="next-month">Next Month</option>
                   <option value="all">All Dates</option>
                 </select>
+              </div>
+
+              {/* States */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  STATES ({availableStates.length})
+                </h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {availableStates.map(state => (
+                    <label key={state.code} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.states.includes(state.code)}
+                        onChange={() => toggleStateFilter(state.code)}
+                        className="rounded border-2 w-5 h-5 text-purple-500 focus:ring-purple-500/50"
+                        style={{ borderColor: 'var(--border)' }}
+                      />
+                      <span className="text-sm"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {state.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Categories */}

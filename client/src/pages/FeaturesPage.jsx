@@ -6,10 +6,9 @@ import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
 import { useTheme } from '../context/ThemeContext';
 import { 
-  Sparkles, Compass, MapPin, Calendar, Heart, Camera, BookOpen, Route,
-  Star, Shield, Clock, Users, MessageCircle, ArchiveRestore, Trash2,
-  CheckCircle, Bot, Mountain, Globe, Zap, Eye, BarChart3, Mail,
-  Settings, FileText, MessageSquare, TrendingUp, Award, Target
+  Sparkles, Compass, MapPin, Calendar, Heart, BookOpen, Route,
+  Star, Shield, Users, MessageCircle, MessageSquare, ArchiveRestore,
+  CheckCircle, Bot, Mountain, Globe, Zap, Cloud
 } from '@components/icons';
 
 const FeaturesPage = () => {
@@ -35,110 +34,129 @@ const FeaturesPage = () => {
           benefits: ["Personalized recommendations", "Budget optimization", "Fitness level matching", "Group size consideration"]
         },
         {
-          icon: MessageCircle,
-          title: "Conversation History",
-          description: "All your AI conversations are automatically saved. Continue planning sessions anytime with full context.",
-          benefits: ["Auto-save conversations", "Chat history management", "Archive & restore trips", "Seamless continuation"]
+          icon: ArchiveRestore,
+          title: "Conversation History & Archives",
+          description: "All your AI conversations are automatically saved. Archive completed trips and restore them anytime with full context.",
+          benefits: ["Auto-save conversations", "Archive & restore trips", "Trip history", "Seamless continuation"]
         }
       ]
     },
     {
-      category: "Comprehensive Park Discovery",
+      category: "Explore & Discover",
       icon: Mountain,
-      description: "Explore America's 470+ National Parks, Monuments, and Historic Sites",
+      description: "Find your perfect National Park with powerful search and real-time information",
       items: [
         {
           icon: MapPin,
           title: "Interactive Park Explorer",
-          description: "Discover parks by location, activities, and interests. Get detailed information about each destination.",
-          benefits: ["470+ destinations", "Advanced filtering", "Activity-based search", "Detailed park information"]
+          description: "Browse 470+ National Parks, Monuments, and Historic Sites with advanced filtering by state, activities, and amenities. Available on all devices.",
+          benefits: ["470+ destinations", "Advanced filtering", "Activity-based search", "Mobile-friendly"]
         },
         {
           icon: Globe,
-          title: "Interactive Map View",
-          description: "Visualize all National Parks on an interactive map. Filter by state, activities, and more.",
-          benefits: ["Real-time map visualization", "State-based filtering", "Activity overlays", "Park clustering"]
+          title: "Interactive Maps with Markers",
+          description: "View all parks on Google Maps with clickable markers. Search parks, zoom in on locations, and get park details instantly.",
+          benefits: ["Google Maps integration", "Park markers & search", "Click for details", "Works on all devices"]
+        },
+        {
+          icon: Route,
+          title: "Nearby Places & Directions",
+          description: "Find nearby restaurants, lodging, gas stations with Google Places. Plan routes and get turn-by-turn directions between parks.",
+          benefits: ["Nearby places search", "Route planning", "Turn-by-turn directions", "Distance calculations"],
+          badge: "Desktop Only"
+        },
+        {
+          icon: Cloud,
+          title: "Weather & Park Alerts",
+          description: "Real-time weather conditions, 5-day forecasts, and official NPS alerts about road closures, safety warnings, and park conditions.",
+          benefits: ["Current weather", "5-day forecasts", "Park alerts", "Safety warnings"]
         },
         {
           icon: Compass,
           title: "Park Comparison Tool",
-          description: "Compare multiple parks side-by-side to find the perfect destination for your trip.",
-          benefits: ["Side-by-side comparison", "Feature highlighting", "Decision support", "Quick selection"]
+          description: "Compare up to 4 parks side-by-side with detailed metrics to find the perfect destination for your trip.",
+          benefits: ["Side-by-side comparison", "Up to 4 parks", "Feature highlighting", "Decision support"]
+        },
+        {
+          icon: Mountain,
+          title: "Detailed Activity Information",
+          description: "Explore comprehensive details about activities at each park. Click any activity from park details to learn more about hiking, camping, wildlife viewing, and more.",
+          benefits: ["Activity deep-dives", "Trail information", "What to expect", "Preparation tips"]
         }
       ]
     },
     {
-      category: "Personal Trip Management",
+      category: "Your Personal Journey",
       icon: Calendar,
-      description: "Organize and track your National Park adventures",
+      description: "Track and organize your National Park adventures",
       items: [
         {
           icon: Heart,
-          title: "Favorites & Wishlist",
-          description: "Save parks you want to visit and manage your bucket list. Track your National Park journey.",
-          benefits: ["Personalized collections", "Bucket list tracking", "Easy organization", "Progress monitoring"]
+          title: "Favorites & Collections",
+          description: "Save parks, blogs, and events to your favorites. Organize everything you love in one place and build your personalized collection.",
+          benefits: ["Favorite parks", "Save blog articles", "Bookmark events", "Organized collections"]
         },
         {
           icon: CheckCircle,
           title: "Visited Parks Tracker",
-          description: "Mark parks as visited and keep a record of your adventures. Build your National Park passport.",
-          benefits: ["Adventure logging", "Progress tracking", "Memory preservation", "Achievement system"]
+          description: "Mark parks as visited with dates and memories. Keep a record of your adventures and build your National Park passport.",
+          benefits: ["Mark parks visited", "Add visit dates", "Memory preservation", "Achievement tracking"]
         },
         {
-          icon: ArchiveRestore,
-          title: "Trip History & Archives",
-          description: "All your trip plans are automatically saved. Archive completed trips and restore them anytime.",
-          benefits: ["Automatic trip saving", "Archive management", "History preservation", "Easy restoration"]
+          icon: Users,
+          title: "Your Profile & Reviews",
+          description: "Manage all your park reviews in one place. Choose from 1000+ unique auto-generated avatars or upload your own photo. Track your contributions and community impact.",
+          benefits: ["Review management", "1000+ avatar combos", "Upload custom photo", "Contribution tracking"]
         }
       ]
     },
     {
-      category: "Community & Reviews",
+      category: "Community & Content",
       icon: Users,
-      description: "Connect with fellow National Park enthusiasts",
+      description: "Learn from experts and connect with fellow park enthusiasts",
       items: [
         {
           icon: Star,
-          title: "Real User Reviews",
-          description: "Read authentic reviews from fellow park visitors. Share your experiences and help others plan.",
-          benefits: ["Authentic feedback", "Real experiences", "Community insights", "Trusted recommendations"]
+          title: "User Reviews with Photos",
+          description: "Read and write authentic reviews with up to 5 photos per review. Share your experiences and help others plan their trips.",
+          benefits: ["Photo reviews (5 max)", "Authentic feedback", "Community insights", "Verified users"]
+        },
+        {
+          icon: BookOpen,
+          title: "Expert Blog Articles",
+          description: "In-depth guides about National Parks, hiking tips, photography advice, and travel planning from experienced explorers.",
+          benefits: ["Expert knowledge", "Comprehensive guides", "Tips & tricks", "Regular updates"]
         },
         {
           icon: MessageSquare,
           title: "Community Discussions",
-          description: "Engage with the National Park community through comments and discussions.",
-          benefits: ["Community engagement", "Knowledge sharing", "Experience exchange", "Social connection"]
-        },
-        {
-          icon: Award,
-          title: "Verified Testimonials",
-          description: "Read verified testimonials from real users who have experienced our platform.",
-          benefits: ["Verified reviews", "Quality assurance", "Trust building", "Social proof"]
+          description: "Engage through blog comments, testimonials, and discussions. Like comments, reply to threads, and share knowledge with the community.",
+          benefits: ["Comment on blogs", "Like & reply", "Share testimonials", "Knowledge exchange"]
         }
       ]
     },
     {
-      category: "Educational Content",
-      icon: BookOpen,
-      description: "Learn about National Parks through expert content",
+      category: "Seamless Experience",
+      icon: Zap,
+      description: "Fast, reliable, and works everywhere you go",
       items: [
         {
-          icon: FileText,
-          title: "Expert Blog Articles",
-          description: "In-depth articles about National Parks, hiking tips, photography guides, and travel advice.",
-          benefits: ["Expert knowledge", "Comprehensive guides", "Regular updates", "Educational content"]
+          icon: Globe,
+          title: "Works Offline",
+          description: "Install as an app on your device with offline capabilities. Access cached park data, saved trips, and favorites even without internet.",
+          benefits: ["Install on device", "Offline access", "Cached content", "App-like experience"]
         },
         {
-          icon: Camera,
-          title: "Photo Galleries",
-          description: "Stunning photo collections from National Parks to inspire your next adventure.",
-          benefits: ["Visual inspiration", "Photography showcase", "Park beauty", "Motivation boost"]
+          icon: Zap,
+          title: "Real-Time Sync",
+          description: "Your favorites, reviews, and trip plans sync instantly across all your devices. Start planning on desktop, continue on mobile.",
+          benefits: ["Multi-device sync", "Instant updates", "Cross-platform", "Seamless experience"]
         },
         {
-          icon: Target,
-          title: "Activity Guides",
-          description: "Detailed guides for hiking, camping, wildlife watching, and other park activities.",
-          benefits: ["Activity-specific tips", "Safety information", "Skill development", "Preparation guides"]
+          icon: Shield,
+          title: "Fast & Secure",
+          description: "Lightning-fast loading with smart caching. Your data is protected with secure authentication, password management, and privacy controls.",
+          benefits: ["Quick loading", "Secure login", "Privacy controls", "Protected data"]
         }
       ]
     },
@@ -256,9 +274,21 @@ const FeaturesPage = () => {
                           <item.icon className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
                         </div>
                         
-                        <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-                          {item.title}
-                        </h3>
+                        <div className="flex items-center gap-2 mb-3 justify-center flex-wrap">
+                          <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                            {item.title}
+                          </h3>
+                          {item.badge && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full"
+                              style={{ 
+                                backgroundColor: 'var(--accent-blue)/10',
+                                color: 'var(--accent-blue)'
+                              }}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
                         
                         <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
                           {item.description}

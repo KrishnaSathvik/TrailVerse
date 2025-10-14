@@ -1,201 +1,315 @@
-import { io } from 'socket.io-client';
+/**
+ * WebSocket Service for Real-Time Updates
+ * Handles connection, reconnection, and real-time data synchronization
+ * Uses Socket.IO for WebSocket communication
+ */
+
+import io from 'socket.io-client';
 
 class WebSocketService {
   constructor() {
     this.socket = null;
     this.isConnected = false;
+    this.isAuthenticated = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    this.reconnectDelay = 1000;
     this.eventListeners = new Map();
+    this.pendingChannels = new Set(); // Track channels to subscribe to after auth
+    this.subscribedChannels = new Set(); // Track channels we're actually subscribed to
+    
+    this.setupPageEventListeners();
+    this.setupGlobalErrorHandlers();
   }
 
-  connect(token) {
-    if (this.socket && this.isConnected) {
-      return this.socket;
-    }
+  // Setup global error handlers
+  setupGlobalErrorHandlers() {
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason && event.reason.message && event.reason.message.includes('socket')) {
+        console.warn('[WebSocket] Unhandled promise rejection:', event.reason);
+        event.preventDefault(); // Prevent the error from appearing in console
+      }
+    });
+  }
 
-    const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-    
-    this.socket = io(serverUrl, {
-      auth: {
-        token: token
-      },
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-      reconnection: true,
-      reconnectionAttempts: this.maxReconnectAttempts,
-      reconnectionDelay: this.reconnectDelay
+  // Setup page event listeners
+  setupPageEventListeners() {
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && !this.isConnected) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          this.connect(token);
+        }
+      }
     });
 
-    this.setupEventListeners();
-    return this.socket;
+    // Handle online/offline status
+    window.addEventListener('online', () => {
+      if (!this.isConnected) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          this.connect(token);
+        }
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      if (this.socket && this.socket.connected) {
+        this.socket.disconnect();
+      }
+    });
   }
 
-  setupEventListeners() {
-    if (!this.socket) return;
+  // Connect to WebSocket server
+  connect(token) {
+    if (this.socket && this.socket.connected) {
+      console.log('[WebSocket] Already connected, skipping connection attempt');
+      return;
+    }
+
+    if (!token) {
+      console.log('[WebSocket] No token provided, cannot connect');
+      return;
+    }
+
+    try {
+      // Clean up existing connection if any
+      if (this.socket) {
+        console.log('[WebSocket] Cleaning up existing socket...');
+        this.socket.removeAllListeners(); // Remove all listeners first
+        this.socket.disconnect();
+        this.socket = null;
+      }
+
+      const wsUrl = import.meta.env.VITE_WS_URL || 
+                   (import.meta.env.MODE === 'production' 
+                     ? 'https://www.nationalparksexplorerusa.com' 
+                     : 'http://localhost:5001');
+      
+      
+      this.socket = io(wsUrl, {
+        auth: {
+          token
+        },
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: this.maxReconnectAttempts,
+        transports: ['websocket', 'polling'],
+        timeout: 10000
+      });
+      
+      // Setup Socket.IO event handlers
+      this.setupSocketEventHandlers();
+      
+    } catch (error) {
+      console.error('[WebSocket] Failed to create connection:', error);
+      this.socket = null;
+      this.isConnected = false;
+      this.emit('error', error);
+    }
+  }
+
+  // Setup Socket.IO event handlers
+  setupSocketEventHandlers() {
+    if (!this.socket) {
+      console.warn('[WebSocket] Cannot setup handlers - socket is null');
+      return;
+    }
+
+    console.log('[WebSocket] Setting up event handlers...');
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      console.log('[WebSocket] ✅ Connected to server, socket.id:', this.socket.id);
       this.isConnected = true;
       this.reconnectAttempts = 0;
-      this.emit('connection-status', { connected: true });
+      
+      // Authenticate with token
+      const token = localStorage.getItem('token');
+      if (token && this.socket) {
+        console.log('[WebSocket] 🔐 Sending authentication...');
+        this.socket.emit('authenticate', { token });
+      } else {
+        console.log('[WebSocket] ⚠️ No token available for authentication');
+      }
+      
+      // Notify listeners
+      this.emit('connected');
+    });
+
+    this.socket.on('authenticated', (data) => {
+      console.log('[WebSocket] Authenticated successfully', data);
+      this.isAuthenticated = true;
+      
+      // Notify listeners that authentication is complete
+      this.emit('authenticated', data);
+      
+      // Re-subscribe to any channels that were requested before authentication
+      // Small delay to ensure server has fully processed the authentication
+      setTimeout(() => {
+        console.log('[WebSocket] Re-subscribing to pending channels after authentication...');
+        this.resubscribeAllChannels();
+      }, 100);
+    });
+
+    this.socket.on('auth_error', (data) => {
+      console.error('[WebSocket] Authentication error:', data.message);
+      this.isAuthenticated = false;
+      this.emit('auth_error', data);
+    });
+
+    console.log('[WebSocket] 📡 Setting up subscription event listeners...');
+    
+    this.socket.on('subscribed', (data) => {
+      console.log(`[WebSocket] 🎉 ✓ SUBSCRIPTION CONFIRMED for channel: ${data.channel} (room: ${data.room})`);
+      console.log(`[WebSocket] 📊 Before: subscribedChannels =`, Array.from(this.subscribedChannels));
+      this.subscribedChannels.add(data.channel);
+      console.log(`[WebSocket] 📊 After: subscribedChannels =`, Array.from(this.subscribedChannels));
+      // Remove from pending since it's now subscribed
+      this.pendingChannels.delete(data.channel);
+      console.log(`[WebSocket] 📊 pendingChannels =`, Array.from(this.pendingChannels));
+    });
+
+    this.socket.on('subscription_error', (data) => {
+      console.error(`[WebSocket] ❌ ✗ SUBSCRIPTION FAILED for channel: ${data.channel} - ${data.error}`);
+      // Keep in pending channels to retry later
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+      console.log('[WebSocket] Disconnected:', reason);
       this.isConnected = false;
-      this.emit('connection-status', { connected: false, reason });
+      this.isAuthenticated = false;
+      // Clear subscribed channels so we resubscribe on reconnect
+      this.subscribedChannels.clear();
+      this.emit('disconnected', { reason });
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+      console.error('[WebSocket] Connection error:', error);
       this.reconnectAttempts++;
-      this.emit('connection-error', error);
+      this.isConnected = false;
+      this.emit('error', error);
+    });
+
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log('WebSocket reconnected after', attemptNumber, 'attempts');
-      this.isConnected = true;
-      this.emit('reconnected', { attempts: attemptNumber });
+
+      this.reconnectAttempts = 0;
     });
 
-    this.socket.on('reconnect_error', (error) => {
-      console.error('WebSocket reconnection error:', error);
+    // Listen for data update events
+    this.socket.on('favorite_added', (data) => {
+      console.log('[WebSocket] Received favorite_added event:', data);
+      this.emit('favoriteAdded', data);
     });
 
-    this.socket.on('reconnect_failed', () => {
-      console.error('WebSocket reconnection failed');
-      this.emit('reconnection-failed');
+    this.socket.on('favorite_removed', (data) => {
+      console.log('[WebSocket] Received favorite_removed event:', data);
+      this.emit('favoriteRemoved', data);
     });
 
-    // Handle custom events
-    this.socket.on('connected', (data) => {
-      console.log('WebSocket server confirmed connection:', data);
-      this.emit('server-connected', data);
+    this.socket.on('trip_created', (data) => {
+
+      this.emit('tripCreated', data);
     });
 
-    this.socket.on('chat-message', (data) => {
-      this.emit('chat-message', data);
+    this.socket.on('trip_updated', (data) => {
+
+      this.emit('tripUpdated', data);
     });
 
-    this.socket.on('user-typing', (data) => {
-      this.emit('user-typing', data);
+    this.socket.on('trip_deleted', (data) => {
+
+      this.emit('tripDeleted', data);
     });
 
-    this.socket.on('status-change', (data) => {
-      this.emit('status-change', data);
+    this.socket.on('review_added', (data) => {
+
+      this.emit('reviewAdded', data);
     });
 
-    this.socket.on('user-status-change', (data) => {
-      this.emit('user-status-change', data);
+    this.socket.on('review_updated', (data) => {
+      console.log('[WebSocket] Review updated:', data);
+      this.emit('reviewUpdated', data);
     });
 
-    this.socket.on('park-update', (data) => {
-      this.emit('park-update', data);
+    this.socket.on('review_deleted', (data) => {
+      console.log('[WebSocket] Review deleted:', data);
+      this.emit('reviewDeleted', data);
     });
 
-    this.socket.on('event-update', (data) => {
-      this.emit('event-update', data);
+    this.socket.on('review_vote_updated', (data) => {
+      console.log('[WebSocket] Review vote updated:', data);
+      this.emit('reviewVoteUpdated', data);
     });
 
-    this.socket.on('new-review', (data) => {
-      this.emit('new-review', data);
+    this.socket.on('preferences_updated', (data) => {
+
+      this.emit('preferencesUpdated', data);
     });
 
-    this.socket.on('new-blog-post', (data) => {
-      this.emit('new-blog-post', data);
+    this.socket.on('user_activity', (data) => {
+      console.log('[WebSocket] User activity:', data);
+      this.emit('userActivity', data);
     });
 
-    this.socket.on('notification', (data) => {
-      this.emit('notification', data);
+    // Listen for blog favorite events
+    this.socket.on('blog_favorited', (data) => {
+      console.log('[WebSocket] Blog favorited:', data);
+      this.emit('blogFavorited', data);
+    });
+
+    this.socket.on('blog_unfavorited', (data) => {
+      console.log('[WebSocket] Blog unfavorited:', data);
+      this.emit('blogUnfavorited', data);
+    });
+
+    // Listen for event registration events
+    this.socket.on('event_registered', (data) => {
+      console.log('[WebSocket] Event registered:', data);
+      this.emit('eventRegistered', data);
+    });
+
+    this.socket.on('event_unregistered', (data) => {
+      console.log('[WebSocket] Event unregistered:', data);
+      this.emit('eventUnregistered', data);
+    });
+
+    // Listen for visited parks events
+    this.socket.on('park_visited_added', (data) => {
+      console.log('[WebSocket] Park visited added:', data);
+      this.emit('parkVisitedAdded', data);
+    });
+
+    this.socket.on('park_visited_removed', (data) => {
+      console.log('[WebSocket] Park visited removed:', data);
+      this.emit('parkVisitedRemoved', data);
+    });
+
+    this.socket.on('pong', () => {
+      // Heartbeat response
     });
   }
 
+  // Disconnect from WebSocket server
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      this.isConnected = false;
     }
+    this.isConnected = false;
+    this.isAuthenticated = false;
+    // Clear subscribed channels so we resubscribe on reconnect
+    this.subscribedChannels.clear();
+    // Don't clear pendingChannels - we want to resubscribe on reconnect
+    this.emit('disconnected');
   }
 
-  // Room management
-  joinRoom(roomId) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('join-room', roomId);
-    }
-  }
-
-  leaveRoom(roomId) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('leave-room', roomId);
-    }
-  }
-
-  // Chat functionality
-  sendChatMessage(roomId, message, type = 'message') {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('chat-message', {
-        roomId,
-        message,
-        type
-      });
-    }
-  }
-
-  startTyping(roomId) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('typing-start', { roomId });
-    }
-  }
-
-  stopTyping(roomId) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('typing-stop', { roomId });
-    }
-  }
-
-  // Status management
-  setOnline() {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('set-online');
-    }
-  }
-
-  setAway() {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('set-away');
-    }
-  }
-
-  // Park updates
-  subscribeParkUpdates(parkCode) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('subscribe-park-updates', parkCode);
-    }
-  }
-
-  unsubscribeParkUpdates(parkCode) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('unsubscribe-park-updates', parkCode);
-    }
-  }
-
-  // Event updates
-  subscribeEventUpdates(eventId) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('subscribe-event-updates', eventId);
-    }
-  }
-
-  unsubscribeEventUpdates(eventId) {
-    if (this.socket && this.isConnected) {
-      this.socket.emit('unsubscribe-event-updates', eventId);
-    }
-  }
-
-  // Event listener management
+  // Subscribe to events
   on(event, callback) {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
@@ -203,6 +317,7 @@ class WebSocketService {
     this.eventListeners.get(event).push(callback);
   }
 
+  // Unsubscribe from events
   off(event, callback) {
     if (this.eventListeners.has(event)) {
       const listeners = this.eventListeners.get(event);
@@ -213,43 +328,156 @@ class WebSocketService {
     }
   }
 
+  // Emit events to listeners
   emit(event, data) {
     if (this.eventListeners.has(event)) {
       this.eventListeners.get(event).forEach(callback => {
         try {
           callback(data);
         } catch (error) {
-          console.error('Error in WebSocket event listener:', error);
+          console.error('[WebSocket] Error in event listener:', error);
         }
       });
     }
   }
 
-  // Utility methods
-  getConnectionStatus() {
+  // Get connection status
+  getStatus() {
     return {
-      connected: this.isConnected,
-      socket: !!this.socket
+      isConnected: this.isConnected,
+      isAuthenticated: this.isAuthenticated,
+      reconnectAttempts: this.reconnectAttempts,
+      socketId: this.socket?.id || null,
+      pendingChannels: Array.from(this.pendingChannels),
+      subscribedChannels: Array.from(this.subscribedChannels)
     };
   }
 
-  // Auto-reconnect with exponential backoff
-  reconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+  // Subscribe to specific data updates
+  subscribeToFavorites() {
+    this.subscribeToChannel('favorites');
+  }
+
+  subscribeToTrips() {
+    this.subscribeToChannel('trips');
+  }
+
+  subscribeToReviews() {
+    this.subscribeToChannel('reviews');
+  }
+
+  subscribeToPreferences() {
+    this.subscribeToChannel('preferences');
+  }
+
+  subscribeToBlogs() {
+    this.subscribeToChannel('blogs');
+  }
+
+  subscribeToEvents() {
+    this.subscribeToChannel('events');
+  }
+
+  subscribeToVisited() {
+    this.subscribeToChannel('visited');
+  }
+
+  // Generic channel subscription with authentication check
+  subscribeToChannel(channel) {
+    // Check if already subscribed
+    if (this.subscribedChannels.has(channel)) {
+      console.log(`[WebSocket] Already subscribed to channel: ${channel}, skipping`);
       return;
     }
+    
+    console.log(`[WebSocket] Subscribing to channel: ${channel}`);
+    this.pendingChannels.add(channel);
+    
+    if (this.socket && this.socket.connected && this.isAuthenticated) {
+      console.log(`[WebSocket] Emitting subscribe for channel: ${channel}`);
+      this.socket.emit('subscribe', { channel });
+    } else {
+      console.log(`[WebSocket] Subscription queued for ${channel} (will subscribe after auth)`);
+    }
+  }
 
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
-    setTimeout(() => {
-      if (this.socket) {
-        this.socket.connect();
-      }
-    }, delay);
+  // Resubscribe to all pending channels after authentication
+  resubscribeAllChannels() {
+    console.log('[WebSocket] 🔄 Resubscribing to all channels:', Array.from(this.pendingChannels));
+    console.log('[WebSocket] 🔄 Socket connected:', this.socket?.connected);
+    console.log('[WebSocket] 🔄 Is authenticated:', this.isAuthenticated);
+    
+    if (!this.socket || !this.socket.connected) {
+      console.error('[WebSocket] ❌ Cannot resubscribe - socket not connected!');
+      return;
+    }
+    
+    if (!this.isAuthenticated) {
+      console.error('[WebSocket] ❌ Cannot resubscribe - not authenticated!');
+      return;
+    }
+    
+    this.pendingChannels.forEach(channel => {
+      console.log(`[WebSocket] 📤 Emitting subscribe for channel: ${channel}`);
+      this.socket.emit('subscribe', { channel });
+    });
+    
+    console.log('[WebSocket] 🔄 Finished emitting all subscriptions');
+  }
+
+  // Unsubscribe from data updates
+  unsubscribeFromFavorites() {
+    this.unsubscribeFromChannel('favorites');
+  }
+
+  unsubscribeFromTrips() {
+    this.unsubscribeFromChannel('trips');
+  }
+
+  unsubscribeFromReviews() {
+    this.unsubscribeFromChannel('reviews');
+  }
+
+  unsubscribeFromPreferences() {
+    this.unsubscribeFromChannel('preferences');
+  }
+
+  unsubscribeFromBlogs() {
+    this.unsubscribeFromChannel('blogs');
+  }
+
+  unsubscribeFromEvents() {
+    this.unsubscribeFromChannel('events');
+  }
+
+  unsubscribeFromVisited() {
+    this.unsubscribeFromChannel('visited');
+  }
+
+  // Generic channel unsubscription
+  unsubscribeFromChannel(channel) {
+    console.log(`[WebSocket] Unsubscribing from channel: ${channel}`);
+    this.pendingChannels.delete(channel);
+    
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('unsubscribe', { channel });
+    }
+  }
+
+  // Send ping to keep connection alive
+  ping() {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('ping');
+    }
   }
 }
 
 // Create singleton instance
 const websocketService = new WebSocketService();
+
+// Make it available globally for debugging
+if (typeof window !== 'undefined') {
+  window.websocketService = websocketService;
+}
 
 export default websocketService;

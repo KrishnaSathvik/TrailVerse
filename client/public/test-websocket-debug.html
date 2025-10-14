@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Debug Test</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    #logs { background: #000; color: #0f0; padding: 20px; height: 500px; overflow-y: auto; }
+    button { margin: 5px; padding: 10px; }
+    .success { color: #0f0; }
+    .error { color: #f00; }
+    .info { color: #0ff; }
+  </style>
+</head>
+<body>
+  <h1>WebSocket Debug Tool</h1>
+  <div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="authenticate()">Authenticate</button>
+    <button onclick="subscribe()">Subscribe to Favorites</button>
+    <button onclick="checkStatus()">Check Status</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+  </div>
+  <div id="logs"></div>
+
+  <script>
+    let socket = null;
+    const token = localStorage.getItem('token');
+
+    function log(message, className = 'info') {
+      const logs = document.getElementById('logs');
+      const entry = document.createElement('div');
+      entry.className = className;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logs.appendChild(entry);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function clearLogs() {
+      document.getElementById('logs').innerHTML = '';
+    }
+
+    function connect() {
+      if (socket) {
+        log('Socket already exists, disconnecting first...', 'info');
+        socket.disconnect();
+      }
+
+      log('Connecting to ws://localhost:5001...', 'info');
+      socket = io('http://localhost:5001', {
+        transports: ['websocket', 'polling'],
+        timeout: 10000
+      });
+
+      socket.on('connect', () => {
+        log(`✅ Connected! Socket ID: ${socket.id}`, 'success');
+      });
+
+      socket.on('authenticated', (data) => {
+        log(`✅ Authenticated! User ID: ${data.userId}`, 'success');
+      });
+
+      socket.on('auth_error', (data) => {
+        log(`❌ Auth Error: ${data.message}`, 'error');
+      });
+
+      socket.on('subscribed', (data) => {
+        log(`🎉 ✅ SUBSCRIPTION CONFIRMED! Channel: ${data.channel}, Room: ${data.room}`, 'success');
+      });
+
+      socket.on('subscription_error', (data) => {
+        log(`❌ Subscription Error: ${data.error}`, 'error');
+      });
+
+      socket.on('favorite_added', (data) => {
+        log(`📥 Favorite added event: ${JSON.stringify(data)}`, 'success');
+      });
+
+      socket.on('favorite_removed', (data) => {
+        log(`📥 Favorite removed event: ${JSON.stringify(data)}`, 'success');
+      });
+
+      socket.on('disconnect', (reason) => {
+        log(`❌ Disconnected: ${reason}`, 'error');
+      });
+
+      socket.on('connect_error', (error) => {
+        log(`❌ Connection error: ${error.message}`, 'error');
+      });
+    }
+
+    function authenticate() {
+      if (!socket) {
+        log('❌ Not connected! Click Connect first.', 'error');
+        return;
+      }
+
+      if (!token) {
+        log('❌ No token found in localStorage!', 'error');
+        return;
+      }
+
+      log(`🔐 Sending authentication with token...`, 'info');
+      socket.emit('authenticate', { token });
+    }
+
+    function subscribe() {
+      if (!socket) {
+        log('❌ Not connected! Click Connect first.', 'error');
+        return;
+      }
+
+      log(`📤 Sending subscribe request for 'favorites'...`, 'info');
+      socket.emit('subscribe', { channel: 'favorites' });
+    }
+
+    function checkStatus() {
+      if (!socket) {
+        log('❌ Not connected!', 'error');
+        return;
+      }
+
+      log(`📊 Socket connected: ${socket.connected}`, 'info');
+      log(`📊 Socket ID: ${socket.id}`, 'info');
+      log(`📊 Token available: ${!!token}`, 'info');
+    }
+
+    // Auto-connect on page load if token exists
+    if (token) {
+      log('Token found, auto-connecting...', 'info');
+      setTimeout(() => {
+        connect();
+        setTimeout(() => {
+          authenticate();
+          setTimeout(() => {
+            subscribe();
+          }, 1000);
+        }, 1000);
+      }, 500);
+    } else {
+      log('⚠️ No token found. Please login first in main app.', 'error');
+    }
+  </script>
+</body>
+</html>
+

@@ -160,6 +160,16 @@ exports.registerForEvent = async (req, res, next) => {
 
     await event.registerUser(req.user.id);
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.sendToUserChannel(req.user.id, 'events', 'event_registered', { 
+        eventId: event._id,
+        eventTitle: event.title,
+        isRegistered: true
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Successfully registered for event'
@@ -196,6 +206,16 @@ exports.unregisterFromEvent = async (req, res, next) => {
     }
 
     await event.unregisterUser(req.user.id);
+
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.sendToUserChannel(req.user.id, 'events', 'event_unregistered', { 
+        eventId: event._id,
+        eventTitle: event.title,
+        isRegistered: false
+      });
+    }
 
     res.status(200).json({
       success: true,

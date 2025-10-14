@@ -17,12 +17,14 @@
     "postcss": "^8.5.6",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-dropzone": "^14.3.8",
     "react-ga4": "^2.1.0",
     "react-helmet-async": "^2.0.5",
     "react-leaflet": "^4.2.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.3",
     "remark-gfm": "^4.0.1",
+    "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.14",
     "vite": "^5.4.20",
     "web-vitals": "^2.1.4"
@@ -74,6 +76,7 @@
     "patch-package": "^8.0.1",
     "playwright": "^1.49.1",
     "postinstall-postinstall": "^2.1.0",
+    "terser": "^5.44.0",
     "typescript": "^4.9.5",
     "vitest": "^2.1.8"
   },

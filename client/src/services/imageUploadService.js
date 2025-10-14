@@ -75,11 +75,33 @@ class ImageUploadService {
     return `${baseUrl}/images/file/${filename}`;
   }
 
+  // Extract relative path from full URL (e.g., extract "profile/image.jpg" from "http://localhost:5001/uploads/profile/image.jpg")
+  extractRelativePath(url) {
+    if (!url) return null;
+    
+    // If it's already a relative path without domain, return as is
+    if (!url.startsWith('http')) return url;
+    
+    // Extract the path after /uploads/
+    const uploadsIndex = url.indexOf('/uploads/');
+    if (uploadsIndex !== -1) {
+      return url.substring(uploadsIndex + '/uploads/'.length);
+    }
+    
+    // If no /uploads/ found, try to extract just the filename
+    return url.split('/').pop();
+  }
+
   // Get thumbnail URL
-  getThumbnailUrl(filename) {
+  getThumbnailUrl(filenameOrUrl) {
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    const thumbnailFilename = filename.replace(/(\.[^.]+)$/, '_thumb$1');
-    return `${baseUrl}/images/file/${thumbnailFilename}`;
+    
+    // Extract relative path if it's a full URL
+    const relativePath = this.extractRelativePath(filenameOrUrl) || filenameOrUrl;
+    
+    // Replace extension with _thumb + extension
+    const thumbnailPath = relativePath.replace(/(\.[^.]+)$/, '_thumb$1');
+    return `${baseUrl}/images/file/${thumbnailPath}`;
   }
 
   // Helper method to validate image file
@@ -150,28 +172,45 @@ class ImageUploadService {
 
   // Helper method to resize image before upload
   async resizeImage(file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
       
       img.onload = () => {
-        // Calculate new dimensions
-        let { width, height } = img;
-        
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width *= ratio;
-          height *= ratio;
+        try {
+          // Calculate new dimensions
+          let { width, height } = img;
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width *= ratio;
+            height *= ratio;
+          }
+          
+          // Set canvas dimensions
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              // Clean up object URL
+              URL.revokeObjectURL(img.src);
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create image blob'));
+            }
+          }, file.type, quality);
+        } catch (error) {
+          reject(error);
         }
-        
-        // Set canvas dimensions
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw and compress
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(resolve, file.type, quality);
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error('Failed to load image'));
       };
       
       img.src = URL.createObjectURL(file);

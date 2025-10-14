@@ -56,6 +56,14 @@ exports.addFavorite = async (req, res, next) => {
       visitStatus: visitStatus || 'want-to-visit'
     });
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      const userId = (req.user.id || req.user._id).toString();
+      console.log('[ADD Favorite] Notifying WebSocket for user:', userId);
+      wsService.notifyFavoriteAdded(userId, favorite);
+    }
+
     res.status(201).json({
       success: true,
       data: favorite
@@ -70,16 +78,30 @@ exports.addFavorite = async (req, res, next) => {
 // @access  Private
 exports.removeFavorite = async (req, res, next) => {
   try {
+    console.log('[DELETE Favorite] Request received for parkCode:', req.params.parkCode);
+    console.log('[DELETE Favorite] User ID:', req.user.id);
+    
     const favorite = await Favorite.findOneAndDelete({
       user: req.user.id,
       parkCode: req.params.parkCode
     });
 
+    console.log('[DELETE Favorite] Favorite found:', !!favorite);
+
     if (!favorite) {
+      console.log('[DELETE Favorite] 404 - Favorite not found in database');
       return res.status(404).json({
         success: false,
         error: 'Favorite not found'
       });
+    }
+
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      const userId = (req.user.id || req.user._id).toString();
+      console.log('[REMOVE Favorite] Notifying WebSocket for user:', userId, 'parkCode:', req.params.parkCode);
+      wsService.notifyFavoriteRemoved(userId, req.params.parkCode);
     }
 
     res.status(200).json({

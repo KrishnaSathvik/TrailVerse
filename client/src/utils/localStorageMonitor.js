@@ -233,17 +233,15 @@ class LocalStorageMonitor {
     
     // If we're above warning threshold, clean expired cache
     if (stats.status === 'warning' || stats.status === 'critical') {
-      console.log('[LocalStorageMonitor] Performing automatic cleanup...');
       
       // First, remove expired entries
       const expiredResult = this.cleanExpiredCache();
-      console.log(`[LocalStorageMonitor] Removed ${expiredResult.removedCount} expired entries (${expiredResult.removedMB}MB)`);
       
       // If still above warning, remove LRU cache (free up 1MB)
       const newStats = this.getStats();
       if (newStats.status !== 'ok') {
         const lruResult = this.cleanLRUCache(1 * 1024 * 1024); // Free 1MB
-        console.log(`[LocalStorageMonitor] Removed ${lruResult.removedCount} LRU entries (${lruResult.freedMB}MB)`);
+
       }
       
       return true;
@@ -260,12 +258,12 @@ class LocalStorageMonitor {
     const breakdown = this.getBreakdown();
     
     console.group('[LocalStorageMonitor] Status Report');
-    console.log(`Status: ${stats.status.toUpperCase()}`);
-    console.log(`Usage: ${stats.usedMB}MB / ${stats.totalMB}MB (${stats.usagePercent}%)`);
-    console.log(`Remaining: ${stats.remainingMB}MB`);
-    console.log('\nBreakdown by category:');
+
+
+
+
     breakdown.forEach(item => {
-      console.log(`  ${item.category}: ${item.mb}MB (${item.percent}%)`);
+
     });
     console.groupEnd();
     

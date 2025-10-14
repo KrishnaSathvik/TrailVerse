@@ -14,7 +14,7 @@
 
 ## 🏞️ About TrailVerse
 
-TrailVerse is the **ultimate AI-powered platform** for exploring and planning trips to America's 63 National Parks. Built with cutting-edge technologies, it combines advanced AI integration, comprehensive park data, vibrant community features, and expert content - all in one seamless experience.
+TrailVerse is the **ultimate AI-powered platform** for exploring and planning trips to America's 470+ National Parks, Monuments, Historic Sites, and protected areas. Built with cutting-edge technologies, it combines advanced AI integration, comprehensive park data, vibrant community features, and expert content - all in one seamless experience.
 
 ### 🎯 What Makes TrailVerse Unique
 
@@ -45,16 +45,13 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
 - **Unique Parks Counter**: Track the number of unique parks discussed across all trips
 
 ### 🗺️ Park Exploration & Discovery
-- **All 63 National Parks**: Complete database with official NPS API integration
-- **Interactive Maps**: Google Maps JavaScript API with:
-  - Search-first experience with Places Autocomplete
-  - Animated park markers (drop + pulse animations)
-  - Nearby essentials discovery (restaurants, lodging, gas stations)
-  - Place details with photos, ratings, and business hours
-  - Route building with visual polylines
-  - Distance and duration calculations
+- **All 470+ Park Units**: Complete database with official NPS API integration covering National Parks, Monuments, Historic Sites, and more
+- **Interactive Maps**: Google Maps JavaScript API with platform-specific features:
+  - **All Devices**: Park markers with click details, search functionality, zoom controls
+  - **Desktop Only**: Google Places (nearby restaurants, lodging, gas stations), Route planning with directions, Distance calculations
+  - **Mobile**: Smooth map browsing with park markers and search
+  - Animated park markers with drop + pulse animations
   - Embedded maps on park detail pages
-  - Mobile-responsive design
   - Static map fallback for offline/errors
 - **Advanced Filtering**: Filter by state, activities, features, amenities, and difficulty
 - **Park Comparison**: Side-by-side comparison of multiple parks with detailed metrics
@@ -74,8 +71,9 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
 - **Secure Authentication**: JWT-based auth with email verification and password reset
 - **Email Verification**: Required email confirmation for account security
 - **User Profiles**: Customizable profiles with:
-  - Avatar selection (12+ unique, auto-generated avatars based on user preferences)
-  - Random avatar generator with travel-themed options
+  - Avatar selection (1000+ unique combinations from 26 visual styles and 40+ color themes)
+  - Random avatar generator with travel-themed designs
+  - Custom photo upload option
   - Bio and personal information
   - Park visit tracking with dates and memories
   - Favorites collections for parks, blogs, and events
@@ -138,7 +136,7 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
   - Save events to profile
   - Event details with descriptions and times
 - **Social Sharing**: Share parks, blogs, and experiences on social media
-- **User Avatars**: 12+ customizable avatars with smart generation for community identity
+- **User Avatars**: 1000+ avatar combinations (26 visual styles × 40+ color themes) with random generator or custom upload
 
 ### 🔧 Advanced Features
 - **Real-time Weather**: Current conditions and 5-day forecasts for all parks via OpenWeather API
@@ -647,7 +645,7 @@ TrailVerse/
 - **React Router 7.9** - Client-side routing with navigation guards
 - **TanStack Query 5.90** - Server state management, caching, and synchronization
 - **React Helmet Async 2.0** - Document head management for SEO
-- **React Leaflet 4.2** - Interactive maps with Leaflet integration
+- **Socket.io Client 4.8** - Real-time WebSocket communication for live sync
 - **Lucide React 0.544** - Beautiful, consistent icon library (193 icons)
 - **Axios 1.12** - Promise-based HTTP client with interceptors
 - **React GA4 2.1** - Google Analytics 4 integration
@@ -1144,17 +1142,19 @@ npm run migrate:email     # Migrate email preferences
 - **Real-time Updates** - Live alerts and closures from NPS API
 - **Weather Integration** - Current + 5-day forecasts for all parks
 - **Event Calendar** - Ranger programs and park events
-- **Interactive Maps** - Leaflet with custom markers and clustering
-- **Comparison Tools** - Side-by-side park analysis with metrics
+- **Interactive Maps** - Google Maps with custom markers and search (Places/Directions on desktop)
+- **Comparison Tools** - Side-by-side comparison of up to 4 parks with detailed metrics
+- **Activity Details** - Comprehensive activity information pages with deep-dive content
 - **Enhanced Park Service** - Optimized caching and batch processing
 
 ### Community Features
-- **Review System** - User reviews with images (up to 5 per review)
-- **Testimonials** - Community experiences with moderation
-- **Blog Platform** - Expert content with rich text and related posts
-- **Comment System** - Nested comments on blog posts
+- **Review System** - User reviews with up to 5 images per review
+- **Testimonials** - Community experiences with admin moderation
+- **Blog Platform** - Expert content with rich text, related posts, and comments
+- **Comment System** - Nested replies, likes, and threaded discussions on blog posts
 - **Social Sharing** - Share discoveries on social media
-- **Avatar System** - 12+ auto-generated avatars with smart selection
+- **Avatar System** - 1000+ avatar combinations (26 styles × 40+ themes) with random generator or custom upload
+- **Real-Time Sync** - WebSocket-powered instant sync across all devices
 
 ### Recent Improvements (October 2025)
 - **Google Maps Integration** - Complete replacement with Google Maps JavaScript API, Places API, and Directions API
@@ -1234,36 +1234,43 @@ This project is proprietary software. Unauthorized copying, modification, distri
 ## 📊 Project Stats
 
 - **Lines of Code**: 50,000+
-- **Components**: 100+
-- **Pages**: 33
-- **Services**: 32
-- **API Routes**: 23
-- **API Endpoints**: 50+
+- **Components**: 74+ React components
+- **Pages**: 33 pages (including admin pages)
+- **Services**: 32 frontend services + 14 backend services
+- **API Routes**: 23 route files
+- **API Endpoints**: 80+ REST endpoints
+- **Custom Hooks**: 18 custom React hooks
 - **Test Coverage**: 85%+
 - **Performance Score**: 95+ (Lighthouse)
 - **Accessibility Score**: 100 (Lighthouse)
 - **SEO Score**: 100 (Lighthouse)
 - **Best Practices**: 100 (Lighthouse)
+- **Avatar Combinations**: 1000+ unique options
+- **Documentation Files**: 164 comprehensive docs
 
 ---
 
 ## 📚 Recent Updates
 
 ### October 2025
-- ✅ **Google Maps Integration** - Complete map system with Places API, Directions, and animated markers
+- ✅ **Google Maps Integration** - Complete map system with Places API, Directions, and animated markers (desktop-specific features)
 - ✅ **Resend Email Service** - Professional email delivery with branded templates and tracking
 - ✅ **Embedded Park Maps** - Interactive Google Maps on park detail pages with nearby services
 - ✅ **Project Cleanup** - Removed 29 MB of unused files and organized 160 documentation files
-- ✅ **Enhanced Blog System** - Added related posts, comment system, likes, and favorites
-- ✅ **Profile Improvements** - Avatar selector, email preferences, privacy settings
+- ✅ **Enhanced Blog System** - Added related posts, comment system with nested replies, likes, and favorites
+- ✅ **Profile Improvements** - 1000+ avatar combinations (26 styles × 40+ themes), email preferences, privacy settings, review management
 - ✅ **LocalStorage Monitor** - Automatic monitoring and cleanup to prevent quota issues
-- ✅ **Image Optimization** - Sharp.js processing with WebP conversion for all uploads
+- ✅ **Image Optimization** - Sharp.js processing with WebP conversion for all uploads (up to 5 per review)
 - ✅ **Enhanced Caching** - Global cache manager with smart prefetching and batch processing
-- ✅ **Trip History** - Comprehensive trip management with active/archived tabs
+- ✅ **Trip History** - Comprehensive trip management with active/archived tabs and restore functionality
 - ✅ **Database Synchronization** - All trips now stored in database (removed localStorage dependency)
 - ✅ **Performance Optimization** - Improved Lighthouse scores across all metrics
 - ✅ **Security Updates** - Enhanced Helmet.js configuration and rate limiting
 - ✅ **Cost Optimization** - Aggressive caching for Google Maps API (3-day place details, 30-day photos)
+- ✅ **Page Redesigns** - FAQ page (5 categories, 17 questions), Privacy (818→280 lines), Terms (658→260 lines)
+- ✅ **Features Page Update** - Consolidated 10→5 categories, removed repetition, added platform-specific badges
+- ✅ **About Page Update** - Updated with complete feature descriptions, accurate tech stack, 1000+ avatars mention
+- ✅ **Real-Time WebSocket Sync** - Instant synchronization across all devices for favorites, reviews, and trip plans
 
 ---
 

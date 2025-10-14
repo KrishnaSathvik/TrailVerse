@@ -13,6 +13,7 @@ import { useToast } from '../context/ToastContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { useVisitedParks } from '../hooks/useVisitedParks';
 import { logParkView, logUserAction } from '../utils/analytics';
+import { processHtmlContent } from '../utils/htmlUtils';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
@@ -52,8 +53,9 @@ const ParkDetailPage = () => {
     }
   };
 
-  // Check if park is saved
+  // Check if park is saved - add logging to debug
   const isSaved = isParkFavorited(parkCode);
+  console.log(`[ParkDetail] isSaved for ${parkCode}:`, isSaved);
   
   // Check if park is visited
   const isVisited = isParkVisited(parkCode);
@@ -157,7 +159,13 @@ const ParkDetailPage = () => {
             The park you&apos;re looking for doesn&apos;t exist
           </p>
           <Button
-            onClick={() => navigate(fromMobileMap ? '/map' : '/explore')}
+            onClick={() => {
+              if (location.state?.from) {
+                navigate(`${location.state.from.pathname}${location.state.from.search}`);
+              } else {
+                navigate(fromMobileMap ? '/map' : '/explore');
+              }
+            }}
             variant="secondary"
             size="lg"
           >
@@ -174,7 +182,7 @@ const ParkDetailPage = () => {
   const fromMobileMap = location.state?.fromMobileMap || false;
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Info },
-    { id: 'activities', label: 'Things to Do', icon: Mountain },
+    { id: 'activities', label: 'Activities to Do', icon: Mountain },
     { id: 'camping', label: 'Camping', icon: Tent },
     { id: 'facilities', label: 'Facilities', icon: Utensils },
     { id: 'photos', label: 'Photos', icon: Camera },
@@ -236,7 +244,13 @@ const ParkDetailPage = () => {
         <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <Button
-              onClick={() => navigate(fromMobileMap ? '/map' : '/explore')}
+              onClick={() => {
+                if (location.state?.from) {
+                  navigate(`${location.state.from.pathname}${location.state.from.search}`);
+                } else {
+                  navigate(fromMobileMap ? '/map' : '/explore');
+                }
+              }}
               variant="secondary"
               size="md"
               icon={ArrowLeft}
@@ -555,7 +569,7 @@ const ParkDetailPage = () => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Things to Do
+                        Activities to Do
                       </h2>
                       {activities && activities.length > 0 ? (
                         (() => {
@@ -620,6 +634,13 @@ const ParkDetailPage = () => {
                                   {getDisplayActivities().map((activity, index) => (
                                     <div
                                       key={index}
+                                      onClick={() => {
+                                        if (activity.id) {
+                                          navigate(`/parks/${parkCode}/activity/${activity.id}`, {
+                                            state: { from: 'park-details' }
+                                          });
+                                        }
+                                      }}
                                       className="p-4 rounded-xl transition hover:-translate-y-0.5 cursor-pointer"
                                       style={{
                                         backgroundColor: 'var(--surface-hover)',
@@ -633,11 +654,13 @@ const ParkDetailPage = () => {
                                         {activity.title || activity.name}
                                       </h4>
                                       {activity.shortDescription && (
-                                        <p className="text-xs leading-relaxed mb-2"
+                                        <div 
+                                          className="text-xs leading-relaxed mb-2"
                                           style={{ color: 'var(--text-secondary)' }}
-                                        >
-                                          {activity.shortDescription}
-                                        </p>
+                                          dangerouslySetInnerHTML={{
+                                            __html: processHtmlContent(activity.shortDescription)
+                                          }}
+                                        />
                                       )}
                                       <div className="flex items-center gap-4 text-xs"
                                         style={{ color: 'var(--text-tertiary)' }}

@@ -1,17 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Calendar, Trash2, MessageSquare } from '@components/icons';
 import { useUserReviews } from '../../hooks/useUserReviews';
-import { useParks } from '../../hooks/useParks';
+import { useAllParks } from '../../hooks/useParks';
 import { useToast } from '../../context/ToastContext';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const UserReviews = () => {
   const { data, isLoading, error, refetch } = useUserReviews();
-  const { data: parksData, isLoading: parksLoading } = useParks();
+  const { data: allParksData, isLoading: parksLoading } = useAllParks();
+  const parksData = allParksData?.data;
   const { showToast } = useToast();
   
   const [deletingReview, setDeletingReview] = useState(null);
+
+  // Log when reviews data changes
+  useEffect(() => {
+    const reviews = data?.data || [];
+    console.log('[UserReviews] 🔄 Reviews data updated, count:', reviews.length);
+  }, [data]);
 
   // Create a mapping from parkCode to fullName
   const parkNameMap = useMemo(() => {
@@ -166,10 +173,10 @@ const UserReviews = () => {
             {review.comment || review.content}
           </p>
 
-          {review.helpful && review.helpful.length > 0 && (
+          {review.helpfulVotes > 0 && (
             <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                <span className="font-medium">{review.helpful.length} people found this helpful</span>
+                <span className="font-medium">{review.helpfulVotes} {review.helpfulVotes === 1 ? 'person' : 'people'} found this helpful</span>
               </div>
             </div>
           )}

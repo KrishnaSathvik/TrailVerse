@@ -73,6 +73,11 @@ const parkReviewSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Track which users have voted (to prevent duplicate votes)
+  helpfulUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   verified: {
     type: Boolean,
     default: false

@@ -161,11 +161,13 @@ class EnhancedApiService {
     if (!skipCache) {
       const cachedData = cacheService.get(cacheKey, cacheType);
       if (cachedData) {
+        console.log(`[EnhancedApi] 📦 Serving from cache [${cacheType}]: ${url}`);
         return { data: cachedData, fromCache: true };
       }
     }
 
     try {
+      console.log(`[EnhancedApi] 🌐 Fetching fresh data [${cacheType}]: ${url}`);
       const response = await this.api.get(url, {
         params,
         cacheType,
@@ -178,6 +180,7 @@ class EnhancedApiService {
         const config = cacheService.getCacheConfig(cacheType);
         if (ttl) config.ttl = ttl;
         cacheService.set(cacheKey, response.data, cacheType);
+        console.log(`[EnhancedApi] ✅ Cached response [${cacheType}]: ${url}`);
       }
 
       return { data: response.data, fromCache: false };
@@ -186,6 +189,7 @@ class EnhancedApiService {
       if (!skipCache) {
         const cachedData = cacheService.get(cacheKey, cacheType);
         if (cachedData) {
+          console.log(`[EnhancedApi] ⚠️ Network error, serving stale cache [${cacheType}]: ${url}`);
           return { data: cachedData, fromCache: true, error: error.message };
         }
       }
@@ -198,6 +202,8 @@ class EnhancedApiService {
    */
   async post(url, data = {}, options = {}) {
     const { invalidateCache = [], ...axiosOptions } = options;
+    
+    console.log(`[EnhancedApi] 📤 POST ${url}`, invalidateCache.length > 0 ? `(will invalidate: ${invalidateCache.join(', ')})` : '');
     
     // Debug logging for large requests
     const requestSize = JSON.stringify(data).length;
@@ -212,7 +218,10 @@ class EnhancedApiService {
     const response = await this.api.post(url, data, axiosOptions);
     
     // Invalidate related cache entries
-    this.invalidateCache(invalidateCache);
+    if (invalidateCache.length > 0) {
+      console.log(`[EnhancedApi] 🔥 POST complete, invalidating cache:`, invalidateCache);
+      this.invalidateCache(invalidateCache);
+    }
     
     return response;
   }
@@ -223,10 +232,15 @@ class EnhancedApiService {
   async put(url, data = {}, options = {}) {
     const { invalidateCache = [], ...axiosOptions } = options;
     
+    console.log(`[EnhancedApi] 📝 PUT ${url}`, invalidateCache.length > 0 ? `(will invalidate: ${invalidateCache.join(', ')})` : '');
+    
     const response = await this.api.put(url, data, axiosOptions);
     
     // Invalidate related cache entries
-    this.invalidateCache(invalidateCache);
+    if (invalidateCache.length > 0) {
+      console.log(`[EnhancedApi] 🔥 PUT complete, invalidating cache:`, invalidateCache);
+      this.invalidateCache(invalidateCache);
+    }
     
     return response;
   }
@@ -237,10 +251,15 @@ class EnhancedApiService {
   async delete(url, options = {}) {
     const { invalidateCache = [], ...axiosOptions } = options;
     
+    console.log(`[EnhancedApi] 🗑️ DELETE ${url}`, invalidateCache.length > 0 ? `(will invalidate: ${invalidateCache.join(', ')})` : '');
+    
     const response = await this.api.delete(url, axiosOptions);
     
     // Invalidate related cache entries
-    this.invalidateCache(invalidateCache);
+    if (invalidateCache.length > 0) {
+      console.log(`[EnhancedApi] 🔥 DELETE complete, invalidating cache:`, invalidateCache);
+      this.invalidateCache(invalidateCache);
+    }
     
     return response;
   }
@@ -286,11 +305,15 @@ class EnhancedApiService {
     patterns.forEach(pattern => {
       if (typeof pattern === 'string') {
         // Invalidate by type
+        console.log(`[EnhancedApi] 🔥 Invalidating cache type: ${pattern}`);
         cacheService.clearByType(pattern);
+        console.log(`[EnhancedApi] ✅ Cache type '${pattern}' invalidated`);
       } else if (pattern.url) {
         // Invalidate specific URL
         const cacheKey = cacheService.generateKey(pattern.url, pattern.params || {}, pattern.type || 'default');
+        console.log(`[EnhancedApi] 🔥 Invalidating cache key: ${cacheKey}`);
         cacheService.delete(cacheKey);
+        console.log(`[EnhancedApi] ✅ Cache key invalidated`);
       }
     });
   }

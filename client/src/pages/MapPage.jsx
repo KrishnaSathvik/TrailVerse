@@ -12,12 +12,14 @@ import SEO from '../components/common/SEO';
 import { useToast } from '../context/ToastContext';
 import { googlePlacesService as gps } from '../services/googlePlacesService';
 import { useTheme } from '../context/ThemeContext';
+import { useUserPreferences } from '../hooks/useUserPreferences';
 
 const MapPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { isDark } = useTheme();
+  const { updateMapState, updateNavigation, preferences } = useUserPreferences();
   
   // Get park data from navigation state
   const parkData = location.state?.park;
@@ -115,6 +117,26 @@ const MapPage = () => {
         return { lat, lng };
       };
       
+      // Save to server preferences (cross-device sync)
+      if (updateMapState) {
+        const mapState = {
+          lastSearchQuery: searchQuery,
+          lastSelectedPlace: selectedPlace ? {
+            name: selectedPlace.name,
+            lat: extractCoordinates(selectedPlace)?.lat,
+            lng: extractCoordinates(selectedPlace)?.lng,
+            placeId: selectedPlace.place_id
+          } : null,
+          lastMapCenter: savedMapCenter,
+          lastMapZoom: savedMapZoom
+        };
+
+        updateMapState(mapState).catch(err => 
+          console.error('Error saving map state to server:', err)
+        );
+      }
+
+      // Also save to localStorage for immediate access
       const serializableState = {
         selectedPlace: selectedPlace ? {
           ...selectedPlace,
@@ -140,7 +162,7 @@ const MapPage = () => {
       console.log('Saving state with photos and map position:', serializableState);
       localStorage.setItem('mapSearchState', JSON.stringify(serializableState));
     }
-  }, [selectedPlace, searchResults, searchQuery, showSidebar, sidebarContent, savedMapCenter, savedMapZoom]);
+  }, [selectedPlace, searchResults, searchQuery, showSidebar, sidebarContent, savedMapCenter, savedMapZoom, updateMapState]);
 
   // Restore search state from localStorage on page load
   useEffect(() => {

@@ -54,12 +54,7 @@ const EventListItem = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved 
                 <span>{event.parkName}</span>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                {event.price}
-              </div>
-              
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
                 <a
                   href={event.id ? 
                     `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}` :
@@ -90,7 +85,6 @@ const EventListItem = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved 
                   )}
                 </button>
               </div>
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs"

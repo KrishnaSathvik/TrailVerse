@@ -16,7 +16,7 @@ if (!OPENWEATHER_API_KEY) {
   });
 } else {
   console.log('✅ OpenWeatherAPI key loaded successfully');
-  console.log('Key length:', OPENWEATHER_API_KEY.length);
+
 }
 
 class WeatherService {

@@ -3,10 +3,273 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import { useTheme } from '../context/ThemeContext';
-import { Shield, Lock } from '@components/icons';
+import { Shield, Lock, Eye, AlertCircle } from '@components/icons';
 
 const PrivacyPage = () => {
   useTheme();
+
+  const sections = [
+    {
+      id: "introduction",
+      title: "Introduction",
+      icon: Shield,
+      content: (
+        <>
+          <p className="mb-4">
+            TrailVerse (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. 
+            This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our National Parks exploration platform.
+          </p>
+          <p className="mb-4">
+            By using TrailVerse, you agree to the collection and use of information in accordance with this policy. 
+            If you do not agree, please do not use our platform.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "collection",
+      title: "Information We Collect",
+      icon: Eye,
+      content: (
+        <>
+          <h3 className="text-lg font-semibold mb-3 mt-4">Account & Profile Information</h3>
+          <p className="mb-4">
+            When you create an account, we collect: name, email, password (encrypted), profile bio, avatar (custom upload or from 1000+ generated options), 
+            phone number, location, and website (all optional except email and password).
+          </p>
+
+          <h3 className="text-lg font-semibold mb-3 mt-4">Usage & Activity Data</h3>
+          <p className="mb-4">
+            We collect: favorite parks/blogs/events, visited parks with dates, AI trip conversations (GPT-4 & Claude), reviews with up to 5 photos per review, 
+            blog comments and likes, saved events, trip history (active & archived), search queries, map interactions, and filter preferences.
+          </p>
+
+          <h3 className="text-lg font-semibold mb-3 mt-4">Technical & Analytics Data</h3>
+          <p className="mb-4">
+            Automatically collected: browser type, device info, IP address, cookies/local storage, Service Worker cached data, 
+            WebSocket connections for real-time sync, performance metrics (Core Web Vitals), and Google Analytics data (anonymized).
+          </p>
+
+          <h3 className="text-lg font-semibold mb-3 mt-4">Third-Party Data</h3>
+          <p className="mb-4">
+            We integrate with: National Park Service API (park info, events, alerts), OpenWeather API (weather forecasts), 
+            OpenAI & Anthropic (AI trip planning - anonymized), Google Maps Platform (maps, places, directions), and Resend (email delivery).
+          </p>
+        </>
+      )
+    },
+    {
+      id: "usage",
+      title: "How We Use Your Information",
+      icon: AlertCircle,
+      content: (
+        <>
+          <p className="mb-4">We use collected information to:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li>Provide AI-powered trip planning with personalized recommendations</li>
+            <li>Save and sync favorites, reviews, and trip history across all your devices</li>
+            <li>Display real-time weather, park alerts, and NPS events</li>
+            <li>Enable interactive maps, nearby places search, and route planning</li>
+            <li>Process and optimize review images (resize, compress, convert to WebP)</li>
+            <li>Send important emails (verification, password resets, blog notifications)</li>
+            <li>Enable PWA functionality with offline cached content</li>
+            <li>Monitor performance and improve platform quality</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: "sharing",
+      title: "Information Sharing",
+      icon: Lock,
+      content: (
+        <>
+          <p className="mb-4 font-semibold">
+            We do NOT sell, trade, or rent your personal information to third parties.
+          </p>
+          <p className="mb-4">We only share information with:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li><strong>Service Providers:</strong> MongoDB Atlas (database), Vercel (frontend hosting), Render (backend & images), 
+            OpenAI & Anthropic (anonymized AI queries), Google Maps Platform, OpenWeather API, Resend (emails), Google Analytics</li>
+            <li><strong>Public Content:</strong> Your reviews, ratings, comments, and testimonials are visible to all users</li>
+            <li><strong>Legal Requirements:</strong> When required by law or to protect rights and safety</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: "security",
+      title: "Data Security",
+      icon: Shield,
+      content: (
+        <>
+          <p className="mb-4">We implement industry-standard security measures:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li>Password encryption using bcrypt hashing</li>
+            <li>HTTPS/SSL encryption for all data transmission</li>
+            <li>Secure database hosting with MongoDB Atlas</li>
+            <li>JWT authentication tokens for secure sessions</li>
+            <li>Regular security updates and monitoring</li>
+          </ul>
+          <p className="mb-4 text-sm italic">
+            While we strive to protect your information, no method of transmission over the Internet is 100% secure.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "cookies",
+      title: "Cookies & Local Storage",
+      icon: Eye,
+      content: (
+        <>
+          <p className="mb-4">
+            TrailVerse uses browser local storage (not traditional cookies) to enhance your experience:
+          </p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li><strong>Essential:</strong> Authentication tokens, session management</li>
+            <li><strong>Functional:</strong> Theme preferences, favorites, cached park data, AI chat state</li>
+            <li><strong>Analytics:</strong> Google Analytics session data (optional, via cookie consent)</li>
+            <li><strong>PWA/Offline:</strong> Service Worker cached content for offline access</li>
+          </ul>
+          <p className="mb-4">
+            Our LocalStorage Monitor automatically manages storage to prevent quota issues. 
+            You can clear all data through your browser settings or by logging out.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "rights",
+      title: "Your Privacy Rights",
+      icon: Shield,
+      content: (
+        <>
+          <p className="mb-4">You have the right to:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li><strong>Access:</strong> Request a copy of your personal information</li>
+            <li><strong>Correction:</strong> Update inaccurate or incomplete information</li>
+            <li><strong>Deletion:</strong> Delete your account and personal data from Profile Settings</li>
+            <li><strong>Opt-Out:</strong> Unsubscribe from marketing emails via unsubscribe links</li>
+            <li><strong>Data Portability:</strong> Request your data in a portable format</li>
+          </ul>
+          <p className="mb-4">
+            To exercise these rights, contact us at{' '}
+            <a href="mailto:trailverseteam@gmail.com" 
+               style={{ color: 'var(--accent-green)' }}
+               className="hover:opacity-80 transition">
+              trailverseteam@gmail.com
+            </a>
+            {' '}or manage preferences in your account settings.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "third-party",
+      title: "Third-Party Services",
+      icon: AlertCircle,
+      content: (
+        <>
+          <p className="mb-4">TrailVerse integrates with these third-party services:</p>
+          <div className="grid gap-3 mb-4">
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
+              <p className="font-semibold mb-1">Google Services</p>
+              <p className="text-sm">Maps, Places, Directions APIs • Analytics 4</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
+              <p className="font-semibold mb-1">AI Providers</p>
+              <p className="text-sm">OpenAI GPT-4 • Anthropic Claude (queries are anonymized)</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
+              <p className="font-semibold mb-1">Infrastructure</p>
+              <p className="text-sm">MongoDB Atlas • Vercel • Render • Resend Email</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
+              <p className="font-semibold mb-1">Data APIs</p>
+              <p className="text-sm">National Park Service • OpenWeather</p>
+            </div>
+          </div>
+          <p className="text-sm mb-4">
+            These services have their own privacy policies. Review them at: Google Privacy Policy, OpenAI Privacy Policy, 
+            Anthropic Privacy Policy, MongoDB Privacy Policy, and Resend Privacy Policy.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "retention",
+      title: "Data Retention",
+      icon: Lock,
+      content: (
+        <>
+          <p className="mb-4">We retain information as long as necessary to provide services:</p>
+          <ul className="list-disc pl-6 mb-4 space-y-2">
+            <li><strong>Account Data:</strong> While active and reasonable period after deletion</li>
+            <li><strong>Usage Data:</strong> Typically 12-24 months for analytics</li>
+            <li><strong>Public Content:</strong> May remain if others engaged with it (reviews, comments)</li>
+            <li><strong>Legal:</strong> As required by law or to resolve disputes</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      id: "children",
+      title: "Children's Privacy",
+      icon: Shield,
+      content: (
+        <>
+          <p className="mb-4">
+            TrailVerse is not intended for children under 13. We do not knowingly collect information from children under 13. 
+            Users between 13-18 should have parental consent. Contact us immediately if you believe a child has provided information.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "changes",
+      title: "Policy Updates",
+      icon: AlertCircle,
+      content: (
+        <>
+          <p className="mb-4">
+            We may update this Privacy Policy periodically. Changes will be posted on this page with an updated &quot;Last Updated&quot; date. 
+            Significant changes will be notified via email. Continued use after changes constitutes acceptance.
+          </p>
+        </>
+      )
+    },
+    {
+      id: "contact",
+      title: "Contact Us",
+      icon: Shield,
+      content: (
+        <>
+          <p className="mb-4">
+            Questions about this Privacy Policy? Contact us at:
+          </p>
+          <p className="mb-2">
+            <strong>Email:</strong>{' '}
+            <a href="mailto:trailverseteam@gmail.com" 
+               style={{ color: 'var(--accent-green)' }}
+               className="hover:opacity-80 transition">
+              trailverseteam@gmail.com
+            </a>
+          </p>
+          <p className="mb-2">
+            <strong>Website:</strong>{' '}
+            <a href="https://www.nationalparksexplorerusa.com" 
+               style={{ color: 'var(--accent-green)' }}
+               className="hover:opacity-80 transition"
+               target="_blank"
+               rel="noopener noreferrer">
+              www.nationalparksexplorerusa.com
+            </a>
+          </p>
+        </>
+      )
+    }
+  ];
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -20,8 +283,13 @@ const PrivacyPage = () => {
       
       <main className="pt-16">
         {/* Hero Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
+              style={{ backgroundColor: 'var(--accent-green)' }}
+            >
+              <Shield className="h-8 w-8 text-white" />
+            </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
               style={{ color: 'var(--text-primary)' }}
             >
@@ -30,8 +298,7 @@ const PrivacyPage = () => {
             <p className="text-lg sm:text-xl mb-8 max-w-3xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Your privacy is important to us. Learn how we collect, use, and protect your personal information 
-              while you explore America&apos;s National Parks with TrailVerse.
+              Your privacy is important to us. Learn how we protect your information.
             </p>
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ring-1 backdrop-blur"
               style={{
@@ -41,545 +308,79 @@ const PrivacyPage = () => {
               }}
             >
               <Lock className="h-4 w-4" />
-              <span>Last updated: {new Date().toLocaleDateString()}</span>
+              <span>Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>
         </section>
 
-        {/* Content Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        {/* Quick Summary Box */}
+        <section className="pb-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            <div className="space-y-8">
-              {/* Introduction */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
+            <div className="rounded-2xl p-6 sm:p-8 backdrop-blur border-2"
+              style={{
+                backgroundColor: 'var(--accent-green)/5',
+                borderColor: 'var(--accent-green)'
+              }}
+            >
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    1. Introduction
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    TrailVerse (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. 
-                    This Privacy Policy explains how we collect, use, disclose, and safeguard your information 
-                    when you use our National Parks exploration platform.
-                  </p>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    By using TrailVerse, you agree to the collection and use of information in accordance 
-                    with this policy. If you do not agree with our policies and practices, please do not 
-                    use our platform.
-                  </p>
+                <Shield className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
+                Privacy at a Glance
+              </h2>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>We Collect</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>Account info, favorites, reviews, AI conversations, usage data</p>
                 </div>
-              </div>
-
-              {/* Information We Collect */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    2. Information We Collect
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We collect several types of information to provide and improve our services:
-                  </p>
-                  
-                  <h3 className="text-lg font-semibold mb-2 mt-4" style={{ color: 'var(--text-primary)' }}>
-                    2.1 Information You Provide
-                  </h3>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Account Information:</strong> Name, email address, and password when you create an account</li>
-                    <li><strong>Profile Data:</strong> Optional profile information, preferences, and settings</li>
-                    <li><strong>Park Preferences:</strong> Parks you favorite, mark as visited, or save for future trips</li>
-                    <li><strong>Trip Planning Data:</strong> Travel dates, interests, fitness levels, and preferences for AI-generated itineraries</li>
-                    <li><strong>User Content:</strong> Reviews, comments, ratings, photos, and other content you post</li>
-                    <li><strong>Communications:</strong> Messages you send to us, including support requests and feedback</li>
-                  </ul>
-
-                  <h3 className="text-lg font-semibold mb-2 mt-4" style={{ color: 'var(--text-primary)' }}>
-                    2.2 Automatically Collected Information
-                  </h3>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Usage Data:</strong> Pages visited, features used, time spent, and interaction patterns</li>
-                    <li><strong>Device Information:</strong> Browser type, operating system, IP address, and device identifiers</li>
-                    <li><strong>Location Data:</strong> Approximate location based on IP address (we do not track precise GPS location)</li>
-                    <li><strong>Cookies & Similar Technologies:</strong> Data stored in cookies, local storage, and session storage</li>
-                    <li><strong>Analytics Data:</strong> Aggregated usage statistics to improve our platform</li>
-                  </ul>
-
-                  <h3 className="text-lg font-semibold mb-2 mt-4" style={{ color: 'var(--text-primary)' }}>
-                    2.3 Third-Party Information
-                  </h3>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>National Park Service:</strong> Public park information, events, and alerts via NPS API</li>
-                    <li><strong>Weather Data:</strong> Weather information from OpenWeather API based on park locations</li>
-                    <li><strong>AI Services:</strong> Anonymized data sent to OpenAI for trip planning (does not include personal identifiers)</li>
-                  </ul>
+                <div>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>We Never</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>Sell your data, share without consent, store passwords unencrypted</p>
                 </div>
-              </div>
-
-              {/* How We Use Your Information */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    3. How We Use Your Information
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We use the information we collect to:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li>Provide, maintain, and improve our AI trip planning services and features</li>
-                    <li>Create personalized park recommendations and itineraries based on your preferences</li>
-                    <li>Track your favorite parks, visited parks, and travel history</li>
-                    <li>Display relevant weather information and park alerts</li>
-                    <li>Enable you to share reviews, photos, and experiences with the community</li>
-                    <li>Send important account notifications, technical notices, and support messages</li>
-                    <li>Respond to your comments, questions, and customer support requests</li>
-                    <li>Monitor and analyze usage trends, patterns, and platform performance</li>
-                    <li>Detect, prevent, and address technical issues, fraud, and security threats</li>
-                    <li>Comply with legal obligations and enforce our Terms of Service</li>
-                    <li>Improve user experience and develop new features</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Information Sharing and Disclosure */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    4. Information Sharing and Disclosure
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We do not sell, trade, or rent your personal information to third parties. We may share 
-                    your information only in the following circumstances:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Service Providers:</strong> Trusted third-party vendors who help us operate our platform (MongoDB for database hosting, Vercel for frontend hosting, Render for backend hosting, OpenAI for AI services)</li>
-                    <li><strong>Public Content:</strong> Reviews, ratings, and content you choose to post publicly are visible to other users</li>
-                    <li><strong>Legal Requirements:</strong> When required by law, court order, or to protect rights, safety, and security</li>
-                    <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets (you will be notified)</li>
-                    <li><strong>With Your Consent:</strong> When you explicitly authorize us to share specific information</li>
-                  </ul>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    All service providers are contractually obligated to maintain the confidentiality and 
-                    security of your information.
-                  </p>
-                </div>
-              </div>
-
-              {/* Data Security */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    5. Data Security
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We implement industry-standard security measures to protect your personal information:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li>Password encryption using industry-standard hashing algorithms (bcrypt)</li>
-                    <li>HTTPS/SSL encryption for all data transmitted between your browser and our servers</li>
-                    <li>Secure database hosting on MongoDB Atlas with encryption at rest and in transit</li>
-                    <li>Regular security updates and vulnerability assessments</li>
-                    <li>Access controls and authentication requirements for sensitive operations</li>
-                    <li>Monitoring for suspicious activity and unauthorized access attempts</li>
-                  </ul>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    However, no method of transmission over the Internet or electronic storage is 100% secure. 
-                    While we strive to protect your information, we cannot guarantee absolute security.
-                  </p>
-                </div>
-              </div>
-
-              {/* Data Retention */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    6. Data Retention
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We retain your personal information for as long as necessary to provide our services 
-                    and fulfill the purposes outlined in this Privacy Policy, unless a longer retention 
-                    period is required or permitted by law.
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Account Data:</strong> Retained while your account is active and for a reasonable period after deletion</li>
-                    <li><strong>Usage Data:</strong> Typically retained for 12-24 months for analytics purposes</li>
-                    <li><strong>Communications:</strong> Retained as necessary to provide support and comply with legal obligations</li>
-                    <li><strong>Public Content:</strong> May be retained even after account deletion if others have engaged with it</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Your Privacy Rights */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    7. Your Privacy Rights
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    You have the following rights regarding your personal information:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Access:</strong> Request a copy of the personal information we hold about you</li>
-                    <li><strong>Correction:</strong> Update or correct inaccurate or incomplete information</li>
-                    <li><strong>Deletion:</strong> Request deletion of your account and personal data</li>
-                    <li><strong>Opt-Out:</strong> Unsubscribe from marketing emails and notifications</li>
-                    <li><strong>Data Portability:</strong> Request a copy of your data in a portable format</li>
-                    <li><strong>Restriction:</strong> Request that we limit how we use your information</li>
-                    <li><strong>Objection:</strong> Object to certain uses of your information</li>
-                  </ul>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    To exercise these rights, please contact us at{' '}
-                    <a href="mailto:trailverseteam@gmail.com" 
-                       style={{ color: 'var(--accent-green)' }}
-                       className="hover:opacity-80 transition">
-                      trailverseteam@gmail.com
-                    </a>
-                    {' '}or manage your preferences in your account settings.
-                  </p>
-                </div>
-              </div>
-
-              {/* Cookies and Local Storage */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    8. Cookies and Local Storage
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    TrailVerse uses browser local storage (similar to cookies) to enhance your experience. 
-                    We do not use traditional HTTP cookies, but local storage serves the same purpose 
-                    of storing data on your device.
-                  </p>
-
-                  <h3 className="text-lg font-semibold mb-3 mt-6" style={{ color: 'var(--text-primary)' }}>
-                    8.1 Types of Data We Store
-                  </h3>
-                  <div className="space-y-4 mb-6">
-                    <div 
-                      className="p-4 rounded-lg border"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                        Essential Storage (Always Active)
-                      </h4>
-                      <ul className="list-disc pl-6 space-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        <li>Authentication tokens - Keep you logged in securely</li>
-                        <li>User account information - Basic profile data</li>
-                        <li>Session management - Maintain secure sessions</li>
-                        <li>Security data - Prevent fraud and unauthorized access</li>
-                      </ul>
-                    </div>
-
-                    <div 
-                      className="p-4 rounded-lg border"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                        Functional Storage (Optional)
-                      </h4>
-                      <ul className="list-disc pl-6 space-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        <li>Theme preferences - Remember your dark/light mode choice</li>
-                        <li>Favorite parks - Save parks you want to visit</li>
-                        <li>Trip history - Store AI-generated trip plans</li>
-                        <li>AI chat state - Preserve conversation context</li>
-                        <li>Saved events - Bookmark park events</li>
-                        <li>User preferences - Personal settings and configurations</li>
-                      </ul>
-                    </div>
-
-                    <div 
-                      className="p-4 rounded-lg border"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                        Analytics Storage (Optional)
-                      </h4>
-                      <ul className="list-disc pl-6 space-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        <li>Analytics session ID - Track usage patterns</li>
-                        <li>Google Analytics data - Improve platform performance</li>
-                        <li>Usage statistics - Understand how features are used</li>
-                      </ul>
-                    </div>
-
-                    <div 
-                      className="p-4 rounded-lg border"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                        Performance Storage (Optional)
-                      </h4>
-                      <ul className="list-disc pl-6 space-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        <li>Park data cache - Faster loading of park information</li>
-                        <li>Performance reports - Monitor app speed and errors</li>
-                        <li>API response cache - Reduce server load and improve speed</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    8.2 Managing Your Cookie Preferences
-                  </h3>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    When you first visit TrailVerse, you'll see a cookie consent banner where you can:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Accept All</strong> - Enable all features and data storage</li>
-                    <li><strong>Reject All</strong> - Only essential features (limited functionality)</li>
-                    <li><strong>Customize</strong> - Choose specific categories to enable/disable</li>
-                  </ul>
-
-                  <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    8.3 Browser Controls
-                  </h3>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    You can also control local storage through your browser settings:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Chrome:</strong> Settings → Privacy and security → Site settings → View permissions and data stored across sites</li>
-                    <li><strong>Firefox:</strong> Settings → Privacy & Security → Cookies and Site Data → Manage Data</li>
-                    <li><strong>Safari:</strong> Preferences → Privacy → Manage Website Data</li>
-                    <li><strong>Edge:</strong> Settings → Cookies and site permissions → Manage and delete cookies and site data</li>
-                  </ul>
-
-                  <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    8.4 Impact of Disabling Storage
-                  </h3>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    If you disable local storage or reject non-essential categories:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li>You'll need to log in each time you visit</li>
-                    <li>Your theme preferences won't be saved</li>
-                    <li>Favorite parks and trip history won't persist</li>
-                    <li>AI conversations won't be saved between sessions</li>
-                    <li>Park data will load slower (no caching)</li>
-                    <li>We won't collect analytics data about your usage</li>
-                  </ul>
-
-                  <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    8.5 Third-Party Cookies
-                  </h3>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    TrailVerse may use third-party services that set their own cookies:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>Google Analytics</strong> - Only if you consent to analytics</li>
-                    <li><strong>OpenAI API</strong> - For AI trip planning (no personal data sent)</li>
-                    <li><strong>National Park Service API</strong> - For park data (no cookies set)</li>
-                    <li><strong>Weather Services</strong> - For real-time weather data (no cookies set)</li>
-                  </ul>
-
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    You can opt out of Google Analytics tracking by rejecting analytics cookies 
-                    in our consent banner, or by using browser extensions like Google Analytics Opt-out.
-                  </p>
-                </div>
-              </div>
-
-              {/* Third-Party Services */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    9. Third-Party Services
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    TrailVerse integrates with third-party services to provide functionality:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li><strong>National Park Service API:</strong> Public park data, events, and information</li>
-                    <li><strong>OpenWeather API:</strong> Real-time weather data for park locations</li>
-                    <li><strong>OpenAI API:</strong> AI-powered trip planning (anonymized data only)</li>
-                    <li><strong>Google Analytics:</strong> Usage analytics and platform performance monitoring</li>
-                    <li><strong>MongoDB Atlas:</strong> Secure database hosting and storage</li>
-                    <li><strong>Vercel & Render:</strong> Platform hosting and deployment</li>
-                  </ul>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    These services have their own privacy policies. We encourage you to review them.
-                  </p>
-                </div>
-              </div>
-
-              {/* Children's Privacy */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    10. Children&apos;s Privacy
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    TrailVerse is not intended for children under the age of 13. We do not knowingly 
-                    collect personal information from children under 13. If you are a parent or guardian 
-                    and believe your child has provided us with personal information, please contact us 
-                    immediately so we can delete such information.
-                  </p>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Users between 13 and 18 should have parental or guardian consent before using TrailVerse.
-                  </p>
-                </div>
-              </div>
-
-              {/* Changes to Privacy Policy */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    11. Changes to This Privacy Policy
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We may update this Privacy Policy from time to time to reflect changes in our practices, 
-                    technologies, legal requirements, or other factors. We will notify you of any material 
-                    changes by:
-                  </p>
-                  <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--text-secondary)' }}>
-                    <li>Updating the &quot;Last updated&quot; date at the top of this policy</li>
-                    <li>Sending you an email notification (if you have an account)</li>
-                    <li>Displaying a prominent notice on our platform</li>
-                  </ul>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Your continued use of TrailVerse after changes become effective constitutes acceptance 
-                    of the updated Privacy Policy.
-                  </p>
-                </div>
-              </div>
-
-              {/* International Users */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    12. International Users
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    TrailVerse is operated from the United States. If you are accessing our platform from 
-                    outside the United States, please be aware that your information may be transferred to, 
-                    stored, and processed in the United States where our servers and service providers are 
-                    located.
-                  </p>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    By using TrailVerse, you consent to the transfer of your information to the United States 
-                    and agree to be governed by United States data protection laws and regulations.
-                  </p>
-                </div>
-              </div>
-
-              {/* Contact Us */}
-              <div className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    13. Contact Us
-                  </h2>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    If you have any questions, concerns, or requests regarding this Privacy Policy or our 
-                    data practices, please contact us at:
-                  </p>
-                  <div className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    <p className="mb-2">
-                      <strong>Email:</strong>{' '}
-                      <a href="mailto:trailverseteam@gmail.com" 
-                         style={{ color: 'var(--accent-green)' }}
-                         className="hover:opacity-80 transition">
-                        trailverseteam@gmail.com
-                      </a>
-                    </p>
-                    <p className="mb-2"><strong>Service:</strong> TrailVerse</p>
-                    <p><strong>Platform:</strong> National Parks Explorer USA</p>
-                  </div>
-                  <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    We will respond to your inquiry within a reasonable timeframe, typically within 
-                    5-10 business days.
-                  </p>
+                <div>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Your Rights</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>Access, correct, delete, opt-out anytime from Profile Settings</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Privacy Commitment CTA */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        {/* Privacy Sections */}
+        <section className="py-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {sections.map((section, index) => (
+              <div 
+                key={section.id}
+                className="rounded-xl overflow-hidden backdrop-blur"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--accent-green)/10' }}
+                    >
+                      <section.icon className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                    </div>
+                    <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {index + 1}. {section.title}
+                    </h2>
+                  </div>
+                  <div style={{ color: 'var(--text-secondary)' }}>
+                    {section.content}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Contact CTA */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="rounded-3xl p-8 sm:p-12 text-center backdrop-blur"
               style={{
@@ -592,14 +393,24 @@ const PrivacyPage = () => {
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Your Privacy Matters
+                Questions About Privacy?
               </h2>
               <p className="text-base mb-6 max-w-2xl mx-auto"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                We are committed to protecting your privacy and being transparent about our data practices. 
-                Your trust is essential to our mission of helping you explore America&apos;s National Parks.
+                We&apos;re here to help. Contact us about any privacy concerns or questions.
               </p>
+              <a
+                href="mailto:trailverseteam@gmail.com"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition"
+                style={{
+                  backgroundColor: 'var(--accent-green)',
+                  color: 'white'
+                }}
+              >
+                <Shield className="h-5 w-5" />
+                Contact Us
+              </a>
             </div>
           </div>
         </section>
