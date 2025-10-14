@@ -6,7 +6,7 @@ import { useParkPrefetch } from '../hooks/useSmartPrefetch';
 import { 
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone, 
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
-  Wifi, Calendar, Star, MapPinCheck
+  Wifi, Calendar, Star, MapPinCheck, AlertTriangle
 } from '@components/icons';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -176,16 +176,17 @@ const ParkDetailPage = () => {
     );
   }
 
-  const { park, campgrounds, activities, alerts: _alerts, visitorCenters: _visitorCenters } = data;
+  const { park, campgrounds, activities, alerts, visitorCenters: _visitorCenters } = data;
   
   // Check if user came from mobile map page
   const fromMobileMap = location.state?.fromMobileMap || false;
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Info },
-    { id: 'activities', label: 'Activities to Do', icon: Mountain },
+    { id: 'activities', label: 'Activities', icon: Mountain },
     { id: 'camping', label: 'Camping', icon: Tent },
     { id: 'facilities', label: 'Facilities', icon: Utensils },
     { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
     { id: 'reviews', label: 'Reviews', icon: Star }
   ];
 
@@ -483,6 +484,7 @@ const ParkDetailPage = () => {
                 <div className="flex gap-1 pb-2 mb-4 sm:mb-6 overflow-x-auto scrollbar-hide">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
+                    const showBadge = tab.id === 'alerts' && alerts && alerts.length > 0;
                     return (
                       <Button
                         key={tab.id}
@@ -490,9 +492,24 @@ const ParkDetailPage = () => {
                         variant={activeTab === tab.id ? 'secondary' : 'ghost'}
                         size="sm"
                         icon={Icon}
-                        className="whitespace-nowrap flex-shrink-0"
+                        className="whitespace-nowrap flex-shrink-0 relative"
                       >
                         {tab.label}
+                        {showBadge && (
+                          <span 
+                            className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
+                            style={{
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              minWidth: '1.25rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {alerts.length}
+                          </span>
+                        )}
                       </Button>
                     );
                   })}
@@ -569,7 +586,7 @@ const ParkDetailPage = () => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Activities to Do
+                        Activities
                       </h2>
                       {activities && activities.length > 0 ? (
                         (() => {
@@ -803,6 +820,125 @@ const ParkDetailPage = () => {
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No photos available
                         </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'alerts' && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <AlertTriangle className="h-7 w-7" />
+                        Park Alerts & Notices
+                      </h2>
+                      {alerts && alerts.length > 0 ? (
+                        <div className="space-y-4">
+                          {alerts.map((alert, index) => {
+                            // Determine alert severity color
+                            const getSeverityStyle = (category) => {
+                              switch (category?.toLowerCase()) {
+                                case 'danger':
+                                case 'caution':
+                                  return {
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    borderColor: 'rgba(239, 68, 68, 0.3)',
+                                    iconColor: '#ef4444'
+                                  };
+                                case 'warning':
+                                  return {
+                                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                                    borderColor: 'rgba(251, 191, 36, 0.3)',
+                                    iconColor: '#fbbf24'
+                                  };
+                                case 'information':
+                                case 'park closure':
+                                  return {
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                                    iconColor: '#3b82f6'
+                                  };
+                                default:
+                                  return {
+                                    backgroundColor: 'var(--surface-hover)',
+                                    borderColor: 'var(--border)',
+                                    iconColor: 'var(--text-secondary)'
+                                  };
+                              }
+                            };
+
+                            const severityStyle = getSeverityStyle(alert.category);
+
+                            return (
+                              <div
+                                key={index}
+                                className="p-5 rounded-xl"
+                                style={{
+                                  backgroundColor: severityStyle.backgroundColor,
+                                  borderWidth: '1px',
+                                  borderColor: severityStyle.borderColor
+                                }}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <AlertTriangle 
+                                    className="h-5 w-5 flex-shrink-0 mt-0.5" 
+                                    style={{ color: severityStyle.iconColor }} 
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h3 className="text-lg font-semibold"
+                                        style={{ color: 'var(--text-primary)' }}
+                                      >
+                                        {alert.title}
+                                      </h3>
+                                      {alert.category && (
+                                        <span 
+                                          className="text-xs px-2 py-1 rounded-full font-medium uppercase tracking-wide"
+                                          style={{
+                                            backgroundColor: severityStyle.iconColor + '33',
+                                            color: severityStyle.iconColor
+                                          }}
+                                        >
+                                          {alert.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm leading-relaxed mb-3"
+                                      style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                      {alert.description}
+                                    </p>
+                                    {alert.url && (
+                                      <a
+                                        href={alert.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                                        style={{ color: severityStyle.iconColor }}
+                                      >
+                                        More information →
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full mb-4"
+                            style={{ backgroundColor: 'var(--surface-hover)' }}
+                          >
+                            <AlertTriangle className="h-8 w-8" style={{ color: 'var(--text-tertiary)' }} />
+                          </div>
+                          <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+                            No current alerts or notices for this park
+                          </p>
+                          <p className="text-sm mt-2" style={{ color: 'var(--text-tertiary)' }}>
+                            Check back later for updates on park conditions, closures, or safety information
+                          </p>
+                        </div>
                       )}
                     </div>
                   )}
