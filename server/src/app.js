@@ -216,12 +216,35 @@ app.use(require('./middleware/errorHandler'));
 // Create HTTP server
 const server = http.createServer(app);
 
-// Setup WebSocket
+// Setup WebSocket with proper CORS for production
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or postman)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'https://www.nationalparksexplorerusa.com',
+        'https://nationalparksexplorerusa.com',
+        process.env.CLIENT_URL
+      ].filter(Boolean);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log('[WebSocket] Rejected connection from origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  // Allow both WebSocket and polling transports
+  transports: ['websocket', 'polling'],
+  // Increase ping timeout for production reliability
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Initialize WebSocket service
