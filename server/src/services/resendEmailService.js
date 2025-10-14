@@ -185,56 +185,57 @@ class ResendEmailService {
         return;
       }
 
-      const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">🎉 New User Registration!</h1>
-          </div>
-          
-          <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; border-left: 4px solid #059669;">
-            <h2 style="color: #111827; margin: 0 0 20px 0;">User Details:</h2>
-            
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #374151;">Name:</td>
-                <td style="padding: 10px 0; color: #111827;">${user.name}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #374151;">Email:</td>
-                <td style="padding: 10px 0; color: #111827;">${user.email}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #374151;">Registration Date:</td>
-                <td style="padding: 10px 0; color: #111827;">${new Date(user.createdAt).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #374151;">Email Verified:</td>
-                <td style="padding: 10px 0; color: ${user.isEmailVerified ? '#059669' : '#dc2626'};">
-                  ${user.isEmailVerified ? '✅ Yes' : '❌ No'}
-                </td>
-              </tr>
-            </table>
-          </div>
-          
-          <div style="margin-top: 30px; text-align: center;">
-            <a href="${process.env.CLIENT_URL}/admin/dashboard" 
-               style="display: inline-block; background-color: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-              View Admin Dashboard
-            </a>
-          </div>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; text-align: center;">
-            <p>This is an automated notification from TrailVerse.</p>
-            <p>You're receiving this because you're an administrator.</p>
-          </div>
-        </div>
-      `;
+      // Get user statistics (import User model if needed)
+      let totalUsers = 'N/A';
+      let usersThisMonth = 'N/A';
+      
+      try {
+        const User = require('../models/User');
+        
+        // Get total users count
+        totalUsers = await User.countDocuments();
+        
+        // Get users registered this month
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        usersThisMonth = await User.countDocuments({
+          createdAt: { $gte: startOfMonth }
+        });
+      } catch (statsError) {
+        console.warn('⚠️ Could not fetch user statistics:', statsError.message);
+      }
+
+      // Format registration date
+      const registrationDate = new Date(user.createdAt).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+
+      // Determine verification status styling
+      const isVerified = user.isEmailVerified;
+      const verificationStatus = isVerified ? '✅ Verified' : '⏳ Pending Verification';
+      const statusBgColor = isVerified ? '#dcfce7' : '#fef3c7';
+      const statusTextColor = isVerified ? '#15803d' : '#92400e';
+
+      const html = await compileTemplate('admin-notification', {
+        userName: user.name,
+        userEmail: user.email,
+        userId: user._id.toString(),
+        registrationDate,
+        verificationStatus,
+        statusBgColor,
+        statusTextColor,
+        totalUsers,
+        usersThisMonth,
+        adminDashboardUrl: `${process.env.CLIENT_URL}/admin/dashboard`,
+        userProfileUrl: `${process.env.CLIENT_URL}/admin/users/${user._id}`
+      });
 
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
@@ -242,7 +243,8 @@ class ResendEmailService {
         subject: '🎉 New User Registration - TrailVerse',
         html,
         tags: [
-          { name: 'category', value: 'admin-notification' }
+          { name: 'category', value: 'admin-notification' },
+          { name: 'user-id', value: user._id.toString() }
         ]
       });
 
