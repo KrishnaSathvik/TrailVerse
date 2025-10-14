@@ -96,11 +96,7 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {event.price}
-          </div>
-          
+        <div className="flex items-center justify-end">
           <Button
             href={`https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}`}
             target="_blank"

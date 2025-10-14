@@ -2,298 +2,202 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 class WebSocketService {
-  constructor() {
-    this.clients = new Map(); // userId -> Set of socket connections
-    this.rooms = new Map(); // roomId -> Set of socket connections
-    this.io = null;
+  constructor(io) {
+    this.io = io;
+    this.connectedUsers = new Map(); // userId -> socketId
+    this.userSockets = new Map(); // socketId -> userId
+    this.userChannels = new Map(); // userId -> Set of channels
+    
+    this.setupEventHandlers();
   }
 
-  initialize(server) {
-    const { Server } = require('socket.io');
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'https://www.nationalparksexplorerusa.com',
-      'https://nationalparksexplorerusa.com'
-    ];
-
-    if (process.env.CLIENT_URL) {
-      allowedOrigins.push(process.env.CLIENT_URL);
-    }
-
-    this.io = new Server(server, {
-      cors: {
-        origin: allowedOrigins,
-        methods: ['GET', 'POST'],
-        credentials: true
-      },
-      transports: ['websocket', 'polling']
-    });
-
-    // Authentication middleware
-    this.io.use(async (socket, next) => {
-      try {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-        
-        if (!token) {
-          return next(new Error('Authentication error: No token provided'));
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
-        
-        if (!user) {
-          return next(new Error('Authentication error: User not found'));
-        }
-
-        socket.userId = user._id.toString();
-        socket.user = user;
-        next();
-      } catch (error) {
-        next(new Error('Authentication error: Invalid token'));
-      }
-    });
-
-    // Connection handling
+  setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`User ${socket.userId} connected via WebSocket`);
+      console.log('[WebSocket] Client connected:', socket.id);
       
-      // Add client to user's connection set
-      if (!this.clients.has(socket.userId)) {
-        this.clients.set(socket.userId, new Set());
-      }
-      this.clients.get(socket.userId).add(socket);
-
-      // Join user to their personal room
-      socket.join(`user:${socket.userId}`);
-
-      // Handle joining specific rooms
-      socket.on('join-room', (roomId) => {
-        socket.join(roomId);
-        if (!this.rooms.has(roomId)) {
-          this.rooms.set(roomId, new Set());
+      // Handle authentication
+      socket.on('authenticate', async (data) => {
+        console.log('[WebSocket] 🔐 Authentication request received');
+        try {
+          const { token } = data;
+          console.log('[WebSocket] 🔐 Token received, verifying...');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          console.log('[WebSocket] 🔐 Token decoded, user ID:', decoded.id);
+          const user = await User.findById(decoded.id);
+          
+          if (user) {
+            socket.userId = user._id.toString();
+            this.connectedUsers.set(user._id.toString(), socket.id);
+            this.userSockets.set(socket.id, user._id.toString());
+            this.userChannels.set(user._id.toString(), new Set());
+            
+            console.log('[WebSocket] ✅ User authenticated successfully:', user.email);
+            console.log('[WebSocket] ✅ socket.userId set to:', socket.userId);
+            console.log('[WebSocket] 📤 Sending authenticated event to client');
+            socket.emit('authenticated', { userId: user._id });
+            console.log('[WebSocket] 📤 authenticated event sent');
+          } else {
+            console.log('[WebSocket] ❌ User not found in database');
+            socket.emit('auth_error', { message: 'User not found' });
+          }
+        } catch (error) {
+          console.error('[WebSocket] ❌ Authentication error:', error.message);
+          socket.emit('auth_error', { message: 'Invalid token' });
         }
-        this.rooms.get(roomId).add(socket);
-        console.log(`User ${socket.userId} joined room: ${roomId}`);
       });
 
-      // Handle leaving rooms
-      socket.on('leave-room', (roomId) => {
-        socket.leave(roomId);
-        if (this.rooms.has(roomId)) {
-          this.rooms.get(roomId).delete(socket);
-        }
-        console.log(`User ${socket.userId} left room: ${roomId}`);
-      });
-
-      // Handle real-time chat messages
-      socket.on('chat-message', (data) => {
-        const { roomId, message, type = 'message' } = data;
+      // Handle subscription to channels
+      socket.on('subscribe', (data) => {
+        console.log(`[WebSocket] 📥 Received subscribe request:`, data);
+        console.log(`[WebSocket] 📥 socket.userId:`, socket.userId);
+        console.log(`[WebSocket] 📥 socket.id:`, socket.id);
         
-        // Broadcast to room (excluding sender)
-        socket.to(roomId).emit('chat-message', {
-          id: Date.now(),
-          userId: socket.userId,
-          user: {
-            id: socket.user._id,
-            name: socket.user.name,
-            avatar: socket.user.avatar
-          },
-          message,
-          type,
-          timestamp: new Date().toISOString()
-        });
-
-        console.log(`Chat message from ${socket.userId} in room ${roomId}: ${message}`);
+        if (socket.userId) {
+          const { channel } = data;
+          const userChannels = this.userChannels.get(socket.userId) || new Set();
+          userChannels.add(channel);
+          this.userChannels.set(socket.userId, userChannels);
+          
+          const room = `user_${socket.userId}_${channel}`;
+          socket.join(room);
+          console.log(`[WebSocket] ✅ ✓ User ${socket.userId} successfully subscribed to ${channel} (room: ${room})`);
+          
+          // Send confirmation back to client
+          console.log(`[WebSocket] 📤 Sending 'subscribed' event to client:`, { channel, room });
+          socket.emit('subscribed', { channel, room });
+          console.log(`[WebSocket] 📤 'subscribed' event sent!`);
+        } else {
+          console.log(`[WebSocket] ❌ ✗ Cannot subscribe - user not authenticated (socket.userId is undefined)`);
+          socket.emit('subscription_error', { channel: data.channel, error: 'Not authenticated' });
+        }
       });
 
-      // Handle typing indicators
-      socket.on('typing-start', (data) => {
-        const { roomId } = data;
-        socket.to(roomId).emit('user-typing', {
-          userId: socket.userId,
-          user: {
-            id: socket.user._id,
-            name: socket.user.name
-          },
-          isTyping: true
-        });
+      // Handle unsubscription from channels
+      socket.on('unsubscribe', (data) => {
+        if (socket.userId) {
+          const { channel } = data;
+          const userChannels = this.userChannels.get(socket.userId) || new Set();
+          userChannels.delete(channel);
+          this.userChannels.set(socket.userId, userChannels);
+          
+          socket.leave(`user_${socket.userId}_${channel}`);
+          console.log(`[WebSocket] User ${socket.userId} unsubscribed from ${channel}`);
+        }
       });
 
-      socket.on('typing-stop', (data) => {
-        const { roomId } = data;
-        socket.to(roomId).emit('user-typing', {
-          userId: socket.userId,
-          user: {
-            id: socket.user._id,
-            name: socket.user.name
-          },
-          isTyping: false
-        });
-      });
-
-      // Handle online status
-      socket.on('set-online', () => {
-        this.broadcastUserStatus(socket.userId, 'online');
-      });
-
-      socket.on('set-away', () => {
-        this.broadcastUserStatus(socket.userId, 'away');
-      });
-
-      // Handle park updates
-      socket.on('subscribe-park-updates', (parkCode) => {
-        socket.join(`park:${parkCode}`);
-        console.log(`User ${socket.userId} subscribed to park updates: ${parkCode}`);
-      });
-
-      socket.on('unsubscribe-park-updates', (parkCode) => {
-        socket.leave(`park:${parkCode}`);
-        console.log(`User ${socket.userId} unsubscribed from park updates: ${parkCode}`);
-      });
-
-      // Handle event updates
-      socket.on('subscribe-event-updates', (eventId) => {
-        socket.join(`event:${eventId}`);
-        console.log(`User ${socket.userId} subscribed to event updates: ${eventId}`);
-      });
-
-      socket.on('unsubscribe-event-updates', (eventId) => {
-        socket.leave(`event:${eventId}`);
-        console.log(`User ${socket.userId} unsubscribed from event updates: ${eventId}`);
+      // Handle ping/pong for heartbeat
+      socket.on('ping', () => {
+        socket.emit('pong');
       });
 
       // Handle disconnection
       socket.on('disconnect', () => {
-        console.log(`User ${socket.userId} disconnected from WebSocket`);
+        console.log('[WebSocket] Client disconnected:', socket.id);
         
-        // Remove from user's connection set
-        if (this.clients.has(socket.userId)) {
-          this.clients.get(socket.userId).delete(socket);
-          if (this.clients.get(socket.userId).size === 0) {
-            this.clients.delete(socket.userId);
-            // Broadcast offline status
-            this.broadcastUserStatus(socket.userId, 'offline');
-          }
+        if (socket.userId) {
+          this.connectedUsers.delete(socket.userId);
+          this.userSockets.delete(socket.id);
+          this.userChannels.delete(socket.userId);
         }
-
-        // Remove from all rooms
-        for (const [roomId, roomClients] of this.rooms.entries()) {
-          roomClients.delete(socket);
-          if (roomClients.size === 0) {
-            this.rooms.delete(roomId);
-          }
-        }
-      });
-
-      // Send connection confirmation
-      socket.emit('connected', {
-        userId: socket.userId,
-        timestamp: new Date().toISOString()
       });
     });
-
-    return this.io;
   }
 
-  // Broadcast message to specific user
-  broadcastToUser(userId, event, data) {
-    const userSockets = this.clients.get(userId);
-    if (userSockets) {
-      userSockets.forEach(socket => {
-        socket.emit(event, data);
-      });
+  // Send message to specific user
+  sendToUser(userId, event, data) {
+    const socketId = this.connectedUsers.get(userId);
+    if (socketId) {
+      this.io.to(socketId).emit(event, data);
+      return true;
     }
+    return false;
   }
 
-  // Broadcast message to room
-  broadcastToRoom(roomId, event, data) {
-    if (this.io) {
-      this.io.to(roomId).emit(event, data);
-    }
-  }
-
-  // Broadcast user status change
-  broadcastUserStatus(userId, status) {
-    const statusData = {
-      userId,
-      status,
-      timestamp: new Date().toISOString()
-    };
-
-    // Broadcast to user's friends/contacts (you can implement this based on your user relationships)
-    this.broadcastToUser(userId, 'status-change', statusData);
+  // Send message to user's channel
+  sendToUserChannel(userId, channel, event, data) {
+    const room = `user_${userId}_${channel}`;
+    console.log(`[WebSocket] Sending ${event} to room ${room} for user ${userId}`, data);
     
-    // Broadcast to any rooms the user is in
-    for (const [roomId, roomClients] of this.rooms.entries()) {
-      const userInRoom = Array.from(roomClients).some(socket => socket.userId === userId);
-      if (userInRoom) {
-        this.broadcastToRoom(roomId, 'user-status-change', statusData);
-      }
-    }
+    // Debug: Check if there are any sockets in this room
+    const socketsInRoom = this.io.sockets.adapter.rooms.get(room);
+    console.log(`[WebSocket] Sockets in room ${room}:`, socketsInRoom ? socketsInRoom.size : 0);
+    
+    this.io.to(room).emit(event, data);
+    return true;
   }
 
-  // Broadcast park update
-  broadcastParkUpdate(parkCode, updateType, data) {
-    this.broadcastToRoom(`park:${parkCode}`, 'park-update', {
-      parkCode,
-      updateType,
-      data,
-      timestamp: new Date().toISOString()
-    });
+  // Broadcast to all connected users
+  broadcast(event, data) {
+    this.io.emit(event, data);
   }
 
-  // Broadcast event update
-  broadcastEventUpdate(eventId, updateType, data) {
-    this.broadcastToRoom(`event:${eventId}`, 'event-update', {
-      eventId,
-      updateType,
-      data,
-      timestamp: new Date().toISOString()
-    });
+  // Broadcast to users subscribed to a specific channel
+  broadcastToChannel(channel, event, data) {
+    this.io.emit(event, { ...data, channel });
   }
 
-  // Broadcast new review
-  broadcastNewReview(parkCode, review) {
-    this.broadcastToRoom(`park:${parkCode}`, 'new-review', {
-      parkCode,
-      review,
-      timestamp: new Date().toISOString()
-    });
+  // Notify about favorite changes
+  notifyFavoriteAdded(userId, favorite) {
+    console.log(`[WebSocket] Notifying favorite added for user ${userId}:`, favorite.parkCode);
+    this.sendToUserChannel(userId, 'favorites', 'favorite_added', favorite);
   }
 
-  // Broadcast new blog post
-  broadcastNewBlogPost(post) {
-    if (this.io) {
-      this.io.emit('new-blog-post', {
-        post,
-        timestamp: new Date().toISOString()
-      });
-    }
+  notifyFavoriteRemoved(userId, parkCode) {
+    console.log(`[WebSocket] Notifying favorite removed for user ${userId}:`, parkCode);
+    this.sendToUserChannel(userId, 'favorites', 'favorite_removed', { parkCode });
   }
 
-  // Broadcast system notification
-  broadcastNotification(userId, notification) {
-    this.broadcastToUser(userId, 'notification', {
-      ...notification,
-      timestamp: new Date().toISOString()
-    });
+  // Notify about trip changes
+  notifyTripCreated(userId, trip) {
+    this.sendToUserChannel(userId, 'trips', 'trip_created', trip);
   }
 
-  // Get online users count
-  getOnlineUsersCount() {
-    return this.clients.size;
+  notifyTripUpdated(userId, trip) {
+    this.sendToUserChannel(userId, 'trips', 'trip_updated', trip);
   }
 
-  // Get room members count
-  getRoomMembersCount(roomId) {
-    return this.rooms.get(roomId)?.size || 0;
+  notifyTripDeleted(userId, tripId) {
+    this.sendToUserChannel(userId, 'trips', 'trip_deleted', { tripId });
   }
 
-  // Check if user is online
-  isUserOnline(userId) {
-    return this.clients.has(userId) && this.clients.get(userId).size > 0;
+  // Notify about review changes
+  notifyReviewAdded(userId, review) {
+    this.sendToUserChannel(userId, 'reviews', 'review_added', review);
+  }
+
+  notifyReviewUpdated(userId, review) {
+    this.sendToUserChannel(userId, 'reviews', 'review_updated', review);
+  }
+
+  notifyReviewDeleted(userId, reviewId) {
+    console.log(`[WebSocket] Notifying review deleted for user ${userId}:`, reviewId);
+    this.sendToUserChannel(userId, 'reviews', 'review_deleted', { reviewId });
+  }
+
+  // Notify about preference changes
+  notifyPreferencesUpdated(userId, preferences) {
+    this.sendToUserChannel(userId, 'preferences', 'preferences_updated', preferences);
+  }
+
+  // Notify about user activity
+  notifyUserActivity(userId, activity) {
+    this.sendToUser(userId, 'user_activity', activity);
+  }
+
+  // Get connected users count
+  getConnectedUsersCount() {
+    return this.connectedUsers.size;
+  }
+
+  // Get user's connection status
+  isUserConnected(userId) {
+    return this.connectedUsers.has(userId);
+  }
+
+  // Get user's subscribed channels
+  getUserChannels(userId) {
+    return Array.from(this.userChannels.get(userId) || []);
   }
 }
 
-module.exports = new WebSocketService();
+module.exports = WebSocketService;

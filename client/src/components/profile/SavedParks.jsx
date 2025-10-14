@@ -1,15 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Heart, ChevronRight } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 const SavedParks = ({ savedParks, onRemove }) => {
-  // Debug logging
-  console.log('SavedParks - Component rendered with:', {
-    savedParksCount: savedParks?.length || 0,
-    savedParks,
-    timestamp: new Date().toISOString()
-  });
-  
+  // Log when savedParks prop changes
+  useEffect(() => {
+    console.log('[SavedParks] 🔄 Received updated savedParks:', savedParks?.length || 0);
+    console.log('[SavedParks] 🔄 Park codes:', savedParks?.map(p => p.parkCode) || []);
+  }, [savedParks]);
+
   const handleRemove = async (parkCode) => {
     if (window.confirm('Remove this park from your saved list?')) {
       try {
@@ -21,7 +20,7 @@ const SavedParks = ({ savedParks, onRemove }) => {
   };
 
   if (!savedParks || savedParks.length === 0) {
-    console.log('SavedParks - Showing empty state:', { savedParks, length: savedParks?.length });
+    console.log('[SavedParks] No saved parks to display');
     return (
       <div className="text-center py-12">
         <MapPin className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
@@ -36,7 +35,8 @@ const SavedParks = ({ savedParks, onRemove }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+    <div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {savedParks.map(park => (
         <div
           key={park.parkCode}
@@ -95,6 +95,7 @@ const SavedParks = ({ savedParks, onRemove }) => {
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 };

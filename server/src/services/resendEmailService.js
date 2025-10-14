@@ -17,14 +17,14 @@ const compileTemplate = async (templateName, data) => {
     
     // Add common variables
     const commonData = {
-      logoUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/logo.png`,
+      logoUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/android-chrome-192x192.png`,
       websiteUrl: process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com',
       privacyUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/privacy`,
       termsUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/terms`,
       helpUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/faq`,
       dashboardUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/profile`,
       unsubscribeUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/unsubscribe?email=${data.email || ''}`,
-      supportEmail: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'support@nationalparksexplorerusa.com',
+      supportEmail: process.env.SUPPORT_EMAIL || 'trailverseteam@gmail.com',
       showAddress: false,
       ...data
     };
@@ -47,7 +47,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: user.email,
-        reply_to: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_ADDRESS,
+        reply_to: 'trailverseteam@gmail.com',
         subject: 'Welcome to TrailVerse! 🏞️',
         html,
         // Add tags for tracking
@@ -78,7 +78,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: user.email,
-        reply_to: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_ADDRESS,
+        reply_to: 'trailverseteam@gmail.com',
         subject: 'Verify Your TrailVerse Account',
         html,
         // Add tags for tracking
@@ -110,7 +110,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: user.email,
-        reply_to: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_ADDRESS,
+        reply_to: 'trailverseteam@gmail.com',
         subject: 'Reset Your TrailVerse Password',
         html,
         // Add tags for tracking
@@ -155,7 +155,7 @@ class ResendEmailService {
       const { data, error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: user.email,
-        reply_to: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_ADDRESS,
+        reply_to: 'trailverseteam@gmail.com',
         subject: `New Blog Post: ${post.title}`,
         html,
         // Add tags for tracking
@@ -255,6 +255,88 @@ class ResendEmailService {
     } catch (error) {
       console.error('❌ Error sending admin notification:', error);
       // Don't throw error to avoid breaking user registration
+    }
+  }
+
+  async sendFeatureAnnouncementEmail(user) {
+    try {
+      const html = await compileTemplate('feature-announcement', {
+        firstName: user.firstName || user.name,
+        email: user.email,
+        mapUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/map`,
+        shareUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}?ref=feature-announcement`
+      });
+
+      // Use a verified domain for Resend
+      const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev';
+      const fromName = process.env.EMAIL_FROM_NAME || 'TrailVerse';
+      
+      const { data, error } = await resend.emails.send({
+        from: `${fromName} <${fromAddress}>`,
+        to: user.email,
+        reply_to: 'trailverseteam@gmail.com',
+        subject: '🎉 New Features: Google Maps & Enhanced Experience - TrailVerse',
+        html,
+        tags: [
+          { name: 'category', value: 'feature-announcement' },
+          { name: 'user-type', value: 'existing' }
+        ]
+      });
+
+      if (error) {
+        console.error('❌ Error sending feature announcement email:', error);
+        throw error;
+      }
+
+      console.log(`✅ Feature announcement email sent to: ${user.email}`, data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error sending feature announcement email:', error);
+      throw error;
+    }
+  }
+
+  async sendBulkFeatureAnnouncement(users) {
+    try {
+      const results = [];
+      const batchSize = 1; // Process one at a time to respect rate limits
+      
+      for (let i = 0; i < users.length; i += batchSize) {
+        const batch = users.slice(i, i + batchSize);
+        
+        const batchPromises = batch.map(async (user) => {
+          try {
+            const result = await this.sendFeatureAnnouncementEmail(user);
+            return { success: true, user: user.email, data: result };
+          } catch (error) {
+            console.error(`❌ Failed to send feature announcement to ${user.email}:`, error);
+            return { success: false, user: user.email, error: error.message };
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+        
+        // Add delay between emails to respect rate limits (2 requests per second)
+        if (i + batchSize < users.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between emails
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.filter(r => !r.success).length;
+      
+      console.log(`📊 Bulk feature announcement completed: ${successCount} sent, ${failureCount} failed`);
+      
+      return {
+        total: users.length,
+        success: successCount,
+        failed: failureCount,
+        results
+      };
+    } catch (error) {
+      console.error('❌ Error sending bulk feature announcement:', error);
+      throw error;
     }
   }
 }

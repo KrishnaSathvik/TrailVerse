@@ -40,7 +40,8 @@ const VisitedParks = ({ visitedParks, onRemove }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+    <div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {visitedParks.map(park => (
         <div
           key={park.parkCode}
@@ -120,6 +121,7 @@ const VisitedParks = ({ visitedParks, onRemove }) => {
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 };

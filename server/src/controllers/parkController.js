@@ -1,16 +1,55 @@
 const npsService = require('../services/npsService');
 
-// @desc    Get all parks
-// @route   GET /api/parks
+// @desc    Get all parks with pagination
+// @route   GET /api/parks?page=1&limit=12
 // @access  Public
 exports.getAllParks = async (req, res, next) => {
   try {
-    const parks = await npsService.getAllParks();
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skipPagination = req.query.all === 'true'; // Allow fetching all parks with ?all=true
+    
+    // Fetch all parks from NPS service (cached internally)
+    const allParks = await npsService.getAllParks();
+    
+    // Apply national parks only filter if requested (strictly "National Park" designation)
+    const nationalParksOnly = req.query.nationalParksOnly === 'true';
+    let filteredParks = allParks;
+    
+    if (nationalParksOnly) {
+      // Include parks with "National Park" in their designation (61 parks)
+      filteredParks = allParks.filter(park => 
+        park.designation && park.designation.toLowerCase().includes('national park')
+      );
+    }
+    
+    // If client wants all parks (for filtering/searching), return everything
+    if (skipPagination) {
+      return res.status(200).json({
+        success: true,
+        count: filteredParks.length,
+        total: filteredParks.length,
+        page: 1,
+        pages: 1,
+        data: filteredParks
+      });
+    }
+    
+    // Apply pagination to filtered results
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedParks = filteredParks.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(filteredParks.length / limit);
     
     res.status(200).json({
       success: true,
-      count: parks.length,
-      data: parks
+      count: paginatedParks.length,
+      total: filteredParks.length,
+      page,
+      pages: totalPages,
+      hasMore: page < totalPages,
+      data: paginatedParks
     });
   } catch (error) {
     next(error);

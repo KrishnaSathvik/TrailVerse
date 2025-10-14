@@ -214,14 +214,14 @@ class PerformanceMonitor {
       // Largest Contentful Paint
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('LCP:', entry.startTime);
+
         }
       }).observe({ entryTypes: ['largest-contentful-paint'] });
       
       // First Input Delay
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('FID:', entry.processingStart - entry.startTime);
+
         }
       }).observe({ entryTypes: ['first-input'] });
       
@@ -229,7 +229,7 @@ class PerformanceMonitor {
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if (!entry.hadRecentInput) {
-            console.log('CLS:', entry.value);
+
           }
         }
       }).observe({ entryTypes: ['layout-shift'] });
@@ -274,10 +274,10 @@ class PerformanceMonitor {
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
       console.group('🚀 Performance Metrics');
-      console.log('API Calls:', this.metrics.apiCalls);
-      console.log('Cache Performance:', this.metrics.cache);
-      console.log('User Behavior:', this.metrics.userBehavior);
-      console.log('Average Response Time:', `${this.metrics.performance.averageResponseTime.toFixed(2)}ms`);
+
+
+
+
       console.groupEnd();
     }
     

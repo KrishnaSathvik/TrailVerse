@@ -15,11 +15,15 @@ import AdminRoute from './routes/AdminRoute';
 import { initGA, trackPageView } from './utils/analytics';
 import { setQueryClient } from './utils/cacheUtils';
 import localStorageMonitor from './utils/localStorageMonitor';
+import serviceWorkerManager from './utils/serviceWorkerRegistration';
+import offlineDataManager from './services/offlineDataManager';
+import { useIdleRefresh } from './hooks/useIdleRefresh';
 
 // Lazy load all pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const ExploreParksPage = lazy(() => import('./pages/ExploreParksPage'));
 const ParkDetailPage = lazy(() => import('./pages/ParkDetailPage'));
+const ActivityDetailPage = lazy(() => import('./pages/ActivityDetailPage'));
 const MapPageWrapper = lazy(() => import('./pages/MapPageWrapper'));
 const ComparePage = lazy(() => import('./pages/ComparePage'));
 const PlanAIPage = lazy(() => import('./pages/PlanAIPage'));
@@ -79,10 +83,25 @@ function AnalyticsTracker() {
   return null;
 }
 
+function IdleRefreshTracker() {
+  useIdleRefresh();
+  return null;
+}
+
 function App() {
   useEffect(() => {
     initGA();
     console.log('🚀 National Parks Explorer App loaded successfully!');
+    
+    // Initialize Service Worker for offline functionality
+    serviceWorkerManager.register().then(registered => {
+      if (registered) {
+        console.log('📱 Service Worker registered for offline functionality');
+      }
+    });
+    
+    // Initialize offline data manager
+    offlineDataManager.preloadCriticalData();
     
     // Initialize localStorage monitoring
     if (process.env.NODE_ENV === 'development') {
@@ -110,6 +129,7 @@ function App() {
                   <BrowserRouter>
                 <ScrollToTop />
                 <AnalyticsTracker />
+                <IdleRefreshTracker />
                 <PerformanceMonitor />
                 <CookieConsent />
                 <Suspense fallback={<LoadingScreen />}>
@@ -174,6 +194,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ParkDetailPage />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/parks/:parkCode/activity/:activityId" 
+              element={
+                <PrivateRoute>
+                  <ActivityDetailPage />
                 </PrivateRoute>
               } 
             />

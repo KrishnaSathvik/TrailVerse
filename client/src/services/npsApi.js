@@ -2,19 +2,43 @@ import enhancedApi from './enhancedApi';
 import globalCacheManager from './globalCacheManager';
 
 class NPSApi {
-  // Get all parks
-  async getAllParks() {
+  // Get all parks with pagination support
+  async getAllParks(page = 1, limit = 12, fetchAll = false, nationalParksOnly = true) {
+    const cacheKey = fetchAll ? 'all-parks' : `parks-page-${page}-limit-${limit}-nationalOnly-${nationalParksOnly}`;
+    
     const result = await globalCacheManager.get(
-      'all-parks',
+      cacheKey,
       'parks',
       async () => {
-        const result = await enhancedApi.get('/parks', {}, { 
+        const params = {};
+        if (fetchAll) {
+          params.all = 'true';
+        } else {
+          params.page = page;
+          params.limit = limit;
+        }
+        
+        // Add national parks only filter
+        if (nationalParksOnly) {
+          params.nationalParksOnly = 'true';
+        }
+        
+        const result = await enhancedApi.get('/parks', params, { 
           cacheType: 'parks',
           ttl: 24 * 60 * 60 * 1000 // 24 hours
         });
-        return result.data.data;
+        
+        // Return the full response with pagination metadata
+        return {
+          data: result.data.data,
+          total: result.data.total,
+          page: result.data.page,
+          pages: result.data.pages,
+          hasMore: result.data.hasMore
+        };
       }
     );
+    
     return result.data;
   }
 

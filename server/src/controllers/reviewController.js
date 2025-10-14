@@ -62,12 +62,21 @@ exports.getParkReviews = async (req, res, next) => {
       ParkReview.countDocuments(query)
     ]);
 
+    // Ensure helpfulUsers array exists for all reviews (for backward compatibility)
+    const reviewsWithHelpfulUsers = reviews.map(review => {
+      const reviewObj = review.toObject ? review.toObject() : review;
+      if (!reviewObj.helpfulUsers) {
+        reviewObj.helpfulUsers = [];
+      }
+      return reviewObj;
+    });
+
     // Get park stats
     const stats = await ParkReview.getParkStats(parkCode);
 
     res.status(200).json({
       success: true,
-      data: reviews,
+      data: reviewsWithHelpfulUsers,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / parseInt(limit)),
@@ -148,6 +157,12 @@ exports.createParkReview = async (req, res, next) => {
     // Populate user data for response
     await review.populate('userId', 'name avatar');
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.notifyReviewAdded(userId, review);
+    }
+
     res.status(201).json({
       success: true,
       data: review
@@ -190,6 +205,12 @@ exports.updateParkReview = async (req, res, next) => {
       { new: true, runValidators: true }
     ).populate('userId', 'name avatar');
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.notifyReviewUpdated(userId, updatedReview);
+    }
+
     res.status(200).json({
       success: true,
       data: updatedReview
@@ -227,6 +248,13 @@ exports.deleteParkReview = async (req, res, next) => {
 
     await ParkReview.findByIdAndDelete(reviewId);
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      console.log('[Delete Review] Notifying WebSocket for user:', userId);
+      wsService.notifyReviewDeleted(userId, reviewId);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Review deleted successfully'
@@ -237,13 +265,14 @@ exports.deleteParkReview = async (req, res, next) => {
   }
 };
 
-// @desc    Vote on a review (helpful/not helpful)
+// @desc    Vote on a review (helpful/not helpful) - Toggle vote
 // @route   POST /api/reviews/:reviewId/vote
 // @access  Private
 exports.voteOnReview = async (req, res, next) => {
   try {
     const { reviewId } = req.params;
     const { isHelpful } = req.body;
+    const userId = req.user.id || req.user._id;
 
     const review = await ParkReview.findById(reviewId);
     if (!review) {
@@ -253,21 +282,55 @@ exports.voteOnReview = async (req, res, next) => {
       });
     }
 
-    // For now, just increment votes (in production, you'd want to track who voted)
+    // Initialize helpfulUsers array if it doesn't exist
+    if (!review.helpfulUsers) {
+      review.helpfulUsers = [];
+    }
+
+    // Check if user has already voted
+    const userIdStr = userId.toString();
+    const hasVoted = review.helpfulUsers.some(id => id.toString() === userIdStr);
+
+    let action = '';
+    
     if (isHelpful) {
-      review.helpfulVotes += 1;
-    } else {
-      review.notHelpfulVotes += 1;
+      if (hasVoted) {
+        // User is removing their helpful vote
+        review.helpfulUsers = review.helpfulUsers.filter(id => id.toString() !== userIdStr);
+        review.helpfulVotes = Math.max(0, review.helpfulVotes - 1);
+        action = 'removed';
+        console.log('[Review Vote] User removed helpful vote:', userIdStr);
+      } else {
+        // User is adding a helpful vote
+        review.helpfulUsers.push(userId);
+        review.helpfulVotes += 1;
+        action = 'added';
+        console.log('[Review Vote] User added helpful vote:', userIdStr);
+      }
     }
 
     await review.save();
+
+    // Notify via WebSocket - send to everyone viewing the review
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      const reviewAuthorId = review.userId.toString();
+      console.log('[Review Vote] Notifying review author:', reviewAuthorId);
+      wsService.sendToUserChannel(reviewAuthorId, 'reviews', 'review_vote_updated', {
+        reviewId: review._id,
+        helpfulVotes: review.helpfulVotes,
+        helpfulUsers: review.helpfulUsers.map(id => id.toString()),
+        action
+      });
+    }
 
     res.status(200).json({
       success: true,
       data: {
         helpfulVotes: review.helpfulVotes,
-        notHelpfulVotes: review.notHelpfulVotes,
-        helpfulScore: review.helpfulScore
+        helpfulUsers: review.helpfulUsers.map(id => id.toString()),
+        hasVoted: review.helpfulUsers.some(id => id.toString() === userIdStr),
+        action
       }
     });
 
@@ -314,9 +377,18 @@ exports.getUserReviews = async (req, res, next) => {
       ParkReview.countDocuments({ userId })
     ]);
 
+    // Ensure helpfulUsers array exists for all reviews (for backward compatibility)
+    const reviewsWithHelpfulUsers = reviews.map(review => {
+      const reviewObj = review.toObject ? review.toObject() : review;
+      if (!reviewObj.helpfulUsers) {
+        reviewObj.helpfulUsers = [];
+      }
+      return reviewObj;
+    });
+
     res.status(200).json({
       success: true,
-      data: reviews,
+      data: reviewsWithHelpfulUsers,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / parseInt(limit)),

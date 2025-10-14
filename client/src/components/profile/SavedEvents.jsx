@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, ExternalLink, Heart, X, CalendarDays } from '@components/icons';
 import { useSavedEvents } from '../../hooks/useSavedEvents';
-import { useParks } from '../../hooks/useParks';
+import { useAllParks } from '../../hooks/useParks';
 
 const SavedEvents = () => {
   const { savedEvents, loading, unsaveEvent, clearAllSavedEvents } = useSavedEvents();
-  useParks();
+  useAllParks(); // Prefetch all parks data for park name lookups
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 

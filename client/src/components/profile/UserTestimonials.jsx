@@ -5,7 +5,7 @@ import testimonialService from '../../services/testimonialService';
 import TestimonialForm from '../testimonials/TestimonialForm';
 import { 
   Star, Edit, Trash2, Award, MapPin, 
-  Clock, CheckCircle
+  Clock, CheckCircle, RefreshCw
 } from '@components/icons';
 
 const UserTestimonials = () => {
@@ -19,17 +19,43 @@ const UserTestimonials = () => {
   useEffect(() => {
     loadUserTestimonials();
     
-    // Listen for custom event to open testimonial form from ProfilePage
+    // Listen for custom events
     const handleOpenForm = () => {
       setShowForm(true);
     };
     
+    const handleRefresh = () => {
+
+      loadUserTestimonials();
+    };
+    
     window.addEventListener('openTestimonialForm', handleOpenForm);
+    window.addEventListener('refreshTestimonials', handleRefresh);
     
     return () => {
       window.removeEventListener('openTestimonialForm', handleOpenForm);
+      window.removeEventListener('refreshTestimonials', handleRefresh);
     };
   }, []);
+
+  // Visibility-based refresh (polling removed for better performance - using WebSocket for real-time updates)
+  useEffect(() => {
+    if (!user) return;
+
+    // Refresh when page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+
+        loadUserTestimonials();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   const loadUserTestimonials = async () => {
     try {
@@ -45,6 +71,16 @@ const UserTestimonials = () => {
       showToast('Failed to load your testimonials', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await loadUserTestimonials();
+      showToast('Testimonials refreshed', 'success');
+    } catch (error) {
+      console.error('Error refreshing testimonials:', error);
+      showToast('Failed to refresh testimonials', 'error');
     }
   };
 
@@ -176,7 +212,28 @@ const UserTestimonials = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div>
+          {/* Header with refresh button */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Your Testimonials ({testimonials.length})
+            </h3>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition"
+              style={{
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          
+          <div className="space-y-4">
           {testimonials.map((testimonial) => (
             <div
               key={testimonial._id}
@@ -277,6 +334,7 @@ const UserTestimonials = () => {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>

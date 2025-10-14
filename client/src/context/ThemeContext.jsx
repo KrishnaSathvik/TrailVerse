@@ -62,6 +62,44 @@ export const ThemeProvider = ({ children }) => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
+  // Setup WebSocket real-time sync for preferences
+  useEffect(() => {
+    // Check if user is logged in by checking localStorage token
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Dynamically import WebSocket service to avoid circular dependency
+    let cleanupFunction = null;
+    
+    import('../services/websocketService').then((module) => {
+      const websocketService = module.default;
+      
+      // Subscribe to preferences channel
+      websocketService.subscribeToPreferences();
+
+      // Handle preferences updated from another device/tab
+      const handlePreferencesUpdated = (preferences) => {
+        console.log('[Real-Time] Preferences updated:', preferences);
+        if (preferences.theme && preferences.theme !== theme) {
+          setTheme(preferences.theme);
+        }
+      };
+
+      // Subscribe to WebSocket event
+      websocketService.on('preferencesUpdated', handlePreferencesUpdated);
+
+      // Store cleanup function
+      cleanupFunction = () => {
+        websocketService.off('preferencesUpdated', handlePreferencesUpdated);
+      };
+    });
+
+    // Cleanup
+    return () => {
+      if (cleanupFunction) cleanupFunction();
+    };
+  }, [theme]);
+
   const value = {
     theme,
     resolvedTheme,

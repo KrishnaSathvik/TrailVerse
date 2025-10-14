@@ -218,27 +218,41 @@ class CacheService {
    * Clear all cache entries of a specific type
    */
   clearByType(type) {
+    console.log(`[CacheService] 🗑️ Clearing cache by type: ${type}`);
+    console.log(`[CacheService] 📊 Memory cache size before: ${this.memoryCache.size}`);
+    
     const keysToDelete = [];
     
     // Collect memory cache keys
     for (const [key, entry] of this.memoryCache.entries()) {
+      console.log(`[CacheService] 🔍 Checking key: ${key}, entry.type: ${entry.type}`);
       if (entry.type === type) {
+        console.log(`[CacheService] ✅ Match found, will delete: ${key}`);
         keysToDelete.push(key);
       }
     }
     
+    console.log(`[CacheService] 🗑️ Deleting ${keysToDelete.length} entries from memory`);
+    
     // Delete from memory
-    keysToDelete.forEach(key => this.memoryCache.delete(key));
+    keysToDelete.forEach(key => {
+      this.memoryCache.delete(key);
+      console.log(`[CacheService] ✅ Deleted from memory: ${key}`);
+    });
     
     // Delete from localStorage
     keysToDelete.forEach(key => {
       try {
         const storageKey = this.storagePrefix + key;
         localStorage.removeItem(storageKey);
+        console.log(`[CacheService] ✅ Deleted from localStorage: ${storageKey}`);
       } catch (error) {
         console.warn('localStorage delete error:', error);
       }
     });
+    
+    console.log(`[CacheService] 📊 Memory cache size after: ${this.memoryCache.size}`);
+    console.log(`[CacheService] ✅ clearByType('${type}') complete`);
   }
 
   /**

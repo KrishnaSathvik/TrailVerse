@@ -10,7 +10,7 @@ import Footer from '../components/common/Footer';
 import Button from '../components/common/Button';
 import TripPlannerChat from '../components/plan-ai/TripPlannerChat';
 import TripSummaryCard from '../components/profile/TripSummaryCard';
-import { useParks } from '../hooks/useParks';
+import { useAllParks } from '../hooks/useParks';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTrips } from '../hooks/useTrips';
@@ -23,7 +23,8 @@ const PlanAIPage = () => {
   const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
-  const { data: allParks, isLoading: parksLoading, error: parksError } = useParks();
+  const { data: allParksData, isLoading: parksLoading, error: parksError } = useAllParks();
+  const allParks = allParksData?.data;
   const { trips: userTrips, loading: tripsLoading, refreshTrips: refetchUserTrips } = useTrips();
   const [showChat, setShowChat] = useState(false);
   const [chatFormData, setChatFormData] = useState(null);

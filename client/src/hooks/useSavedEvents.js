@@ -79,6 +79,33 @@ export const useSavedEvents = () => {
     loadSavedEvents();
   }, [loadSavedEvents]);
 
+  // Listen for cross-tab updates (localStorage changes in other tabs)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'savedEvents' || e.key === null) {
+        console.log('[SavedEvents] 🔄 LocalStorage changed in another tab, reloading...');
+        loadSavedEvents();
+      }
+    };
+
+    // Listen for custom event (same-tab updates)
+    const handleSavedEventsChanged = (e) => {
+      console.log('[SavedEvents] 🔄 Saved events changed:', e.detail);
+      loadSavedEvents();
+    };
+
+    // Storage event fires when localStorage changes in OTHER tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Custom event fires for same-tab updates
+    window.addEventListener('savedEventsChanged', handleSavedEventsChanged);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('savedEventsChanged', handleSavedEventsChanged);
+    };
+  }, [loadSavedEvents]);
+
   return {
     savedEvents,
     loading,

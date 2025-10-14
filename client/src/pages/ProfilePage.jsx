@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Settings, Heart, Calendar, MapPin,
@@ -17,8 +17,10 @@ import VisitedParks from '../components/profile/VisitedParks';
 import SavedEvents from '../components/profile/SavedEvents';
 import UserTestimonials from '../components/profile/UserTestimonials';
 import UserReviews from '../components/profile/UserReviews';
-import AvatarSelector from '../components/profile/AvatarSelector';
+import UnifiedAvatarSelector from '../components/profile/UnifiedAvatarSelector';
 import FavoriteBlogs from '../components/profile/FavoriteBlogs';
+import ProfileHero from '../components/profile/ProfileHero';
+import ProfileStats from '../components/profile/ProfileStats';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -38,15 +40,14 @@ const ProfilePage = () => {
   const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useUserReviews();
   
   // Debug reviews data
-  console.log('🔍 ProfilePage - Reviews data:', reviewsData);
-  console.log('🔍 ProfilePage - Reviews loading:', reviewsLoading);
-  console.log('🔍 ProfilePage - Reviews error:', reviewsError);
+
+
   
   // Test if we can manually call the API
   React.useEffect(() => {
     if (user && !reviewsLoading && !reviewsData && reviewsError) {
-      console.log('🔍 ProfilePage - Reviews API error:', reviewsError);
-      console.log('🔍 ProfilePage - Reviews error details:', reviewsError.response?.data);
+
+
     }
   }, [user, reviewsLoading, reviewsData, reviewsError]);
   const [activeTab, setActiveTab] = useState('profile');
@@ -57,12 +58,7 @@ const ProfilePage = () => {
   const [lastLoadTime, setLastLoadTime] = useState(0);
   const [lastStatsLoadTime, setLastStatsLoadTime] = useState(0);
   const [lastEmailLoadTime, setLastEmailLoadTime] = useState(0);
-  const [userStats, setUserStats] = useState({
-    parksVisited: 0,
-    favorites: 0,
-    reviews: 0,
-    totalDays: 0
-  });
+  // userStats is now computed with useMemo below (removed useState)
 
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -118,12 +114,6 @@ const ProfilePage = () => {
   // Debug logging for favorites (can be removed after testing)
   useEffect(() => {
     if (activeTab === 'favorites') {
-      console.log('ProfilePage - Favorites tab active:', { 
-        favoritesCount: favorites.length, 
-        favoritesLoading, 
-        user: user?.id || user?._id,
-        savedEventsCount: savedEvents.length
-      });
       // Note: Stats are auto-updated by the useEffect at line 165
       // No need to call loadUserStats here as it causes unnecessary API calls
     }
@@ -132,24 +122,20 @@ const ProfilePage = () => {
   // Debug logging for when SavedParks should render
   useEffect(() => {
     if (activeTab === 'favorites' && !favoritesLoading) {
-      console.log('ProfilePage - About to render SavedParks with:', { 
-        favoritesCount: favorites.length, 
-        favorites,
-        timestamp: new Date().toISOString()
-      });
+      // SavedParks component should render now
     }
   }, [activeTab, favoritesLoading, favorites]);
 
   // Force re-render when favorites change
   useEffect(() => {
     if (favorites.length > 0) {
-      console.log('ProfilePage - Favorites changed, incrementing render key');
+
       setRenderKey(prev => prev + 1);
     }
   }, [favorites.length]);
 
-  // Calculate total days since account creation (matches server logic)
-  const calculateTotalDays = (user) => {
+  // Calculate total days since account creation (matches server logic) - Memoized for performance
+  const calculateTotalDays = useCallback((user) => {
     if (!user || !user.createdAt) {
       return 0;
     }
@@ -159,22 +145,13 @@ const ProfilePage = () => {
     // Use same calculation as server: Math.ceil with milliseconds difference
     const daysSinceAccountCreation = Math.ceil((currentDate.getTime() - accountCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
     return Math.max(0, daysSinceAccountCreation);
-  };
+  }, []); // No dependencies - pure calculation
 
 
-  // Update userStats with real data - now includes all favorites
-  // This is the PRIMARY source of truth for stats display
-  useEffect(() => {
+  // Memoized userStats calculation - Prevents unnecessary recalculations (Performance optimization)
+  const userStats = useMemo(() => {
     const totalFavorites = favorites.length + favoriteBlogsCount + savedEvents.length;
-    console.log('ProfilePage - Updating userStats with real data:', {
-      favoriteParks: favorites.length,
-      favoriteBlogs: favoriteBlogsCount,
-      savedEvents: savedEvents.length,
-      totalFavorites,
-      visitedParks: visitedParks.length,
-      totalDays: calculateTotalDays(user),
-      currentUserStats: userStats
-    });
+    
     // Handle different possible data structures for reviews
     let reviewsCount = 0;
     if (reviewsData) {
@@ -187,48 +164,50 @@ const ProfilePage = () => {
       }
     }
     
-    console.log('🔍 ProfilePage - Reviews count:', reviewsCount);
-    console.log('🔍 ProfilePage - Reviews data structure:', reviewsData);
-    console.log('🔍 ProfilePage - Setting userStats with reviews:', reviewsCount);
+    const stats = {
+      parksVisited: visitedParks.length,
+      favorites: totalFavorites,
+      reviews: reviewsCount || 0, // Ensure it's never undefined
+      totalDays: calculateTotalDays(user)
+    };
     
-    setUserStats(prev => {
-      const newStats = {
-        ...prev,
-        favorites: totalFavorites,
-        parksVisited: visitedParks.length,
-        reviews: reviewsCount || 0, // Ensure it's never undefined
-        totalDays: calculateTotalDays(user)
-      };
-      console.log('🔍 ProfilePage - New userStats:', newStats);
-      return newStats;
-    });
-  }, [favorites.length, favoriteBlogsCount, savedEvents.length, visitedParks.length, reviewsData, user]);
+    console.log('[ProfilePage] 🔄 Stats recalculated:', stats);
+    
+    return stats;
+  }, [favorites.length, favoriteBlogsCount, savedEvents.length, visitedParks.length, reviewsData, user, calculateTotalDays]);
 
-  const tabs = [
+  // Memoized tabs array - Prevents recreation on every render (Performance optimization)
+  const tabs = useMemo(() => [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'favorites', label: 'All Favorites', icon: Heart },
     { id: 'adventures', label: 'Visited Parks', icon: Compass },
     { id: 'reviews', label: 'My Reviews', icon: Star },
     { id: 'testimonials', label: 'Testimonials', icon: Star },
     { id: 'settings', label: 'Settings', icon: Settings }
-  ];
+  ], []); // No dependencies - static array
 
-  // Real stats based on actual user data
-  const stats = [
-    { label: 'Parks Visited', value: userStats.parksVisited, icon: MapPin },
-    { label: 'Favorites', value: userStats.favorites, icon: Heart },
-    { 
-      label: 'Reviews', 
-      value: reviewsLoading ? '...' : (userStats.reviews ?? 0), 
-      icon: Star,
-      loading: reviewsLoading 
-    },
-    { label: 'Total Days', value: userStats.totalDays, icon: Clock }
-  ];
+  // Memoized stats array - Only recalculates when userStats or reviewsLoading changes
+  const stats = useMemo(() => {
+    const statsArray = [
+      { label: 'Parks Visited', value: userStats.parksVisited, icon: MapPin },
+      { label: 'Favorites', value: userStats.favorites, icon: Heart },
+      { 
+        label: 'Reviews', 
+        value: reviewsLoading ? '...' : (userStats.reviews ?? 0), 
+        icon: Star,
+        loading: reviewsLoading 
+      },
+      { label: 'Total Days', value: userStats.totalDays, icon: Clock }
+    ];
+    
+    console.log('[ProfilePage] 📊 Stats array updated:', statsArray);
+    
+    return statsArray;
+  }, [userStats, reviewsLoading]);
   
   // Debug stats array
-  console.log('🔍 ProfilePage - Stats array:', stats);
-  console.log('🔍 ProfilePage - Current userStats:', userStats);
+
+
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -271,7 +250,6 @@ const ProfilePage = () => {
       
       // Get fresh profile data from server
       const userProfile = await userService.getProfile();
-      
       
       // Update profile data with server data
       const updatedUserData = {
@@ -331,22 +309,14 @@ const ProfilePage = () => {
     
     try {
       setLastStatsLoadTime(now);
-      console.log('ProfilePage - Calling userService.getUserStats()');
-      const stats = await userService.getUserStats();
-      console.log('ProfilePage - Received stats from server:', stats);
+
+      // NOTE: Stats are now computed automatically via useMemo based on local data
+      // No need to fetch from server or update state
+      // The useMemo will recalculate whenever favorites, visitedParks, etc. change
+      console.log('[ProfilePage] Stats auto-calculated via useMemo');
       
       // Override totalDays with client calculation to ensure consistency
       const clientCalculatedDays = calculateTotalDays(user);
-      
-      // IMPORTANT: Server stats include parks + blogs, but NOT events (stored in localStorage)
-      // So we need to add savedEvents.length to the server's favorites count
-      const totalFavoritesWithEvents = stats.favorites + savedEvents.length;
-      
-      setUserStats({
-        ...stats,
-        favorites: totalFavoritesWithEvents,
-        totalDays: clientCalculatedDays
-      });
       
       // Update avatar based on new stats
       const updatedUserData = {
@@ -376,41 +346,9 @@ const ProfilePage = () => {
         return;
       }
       
-      // Calculate reviews count for fallback
-      let fallbackReviewsCount = 0;
-      if (reviewsData) {
-        if (Array.isArray(reviewsData)) {
-          fallbackReviewsCount = reviewsData.length;
-        } else if (reviewsData.data && Array.isArray(reviewsData.data)) {
-          fallbackReviewsCount = reviewsData.data.length;
-        } else if (reviewsData.reviews && Array.isArray(reviewsData.reviews)) {
-          fallbackReviewsCount = reviewsData.reviews.length;
-        }
-      }
-      
-      // Fallback to local data
-      const fallbackStats = {
-        parksVisited: visitedParks.length,
-        favorites: favorites.length + favoriteBlogsCount + savedEvents.length,
-        reviews: fallbackReviewsCount,
-        totalDays: calculateTotalDays(user)
-      };
-      setUserStats(fallbackStats);
-      
-      // Update avatar with fallback stats
-      const updatedUserData = {
-        ...user,
-        email: user?.email
-      };
-      
-      // Only update avatar if user doesn't have one selected
-      if (!profileData.avatar || profileData.avatar.includes('traveler')) {
-        setProfileData(prev => ({
-          ...prev,
-          avatar: getBestAvatar(updatedUserData, fallbackStats, 'travel'),
-          avatarVersion: Date.now()
-        }));
-      }
+      // NOTE: No need to set fallback stats - useMemo already computes stats from local data
+      // The userStats memoized value will automatically use favorites.length, visitedParks.length, etc.
+      console.log('[ProfilePage] Error loading stats, useMemo will use local data automatically');
     }
   };
 
@@ -419,7 +357,7 @@ const ProfilePage = () => {
     if (!user?.email) return;
     
     try {
-      console.log(`Loading email preferences for: ${user.email} (attempt ${retryCount + 1})`);
+
       const response = await fetch(`/api/email/preferences/${user.email}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -458,8 +396,8 @@ const ProfilePage = () => {
         const newPreferences = { emailNotifications: data.data.emailNotifications };
         setPreferences(newPreferences);
         setEmailError(''); // Clear any previous errors
-        console.log('Email preferences loaded:', data.data);
-        console.log('Updated preferences state:', newPreferences);
+
+
       } else {
         console.error('Failed to load email preferences:', data.error);
         setEmailError(data.error || 'Failed to load email preferences');
@@ -493,7 +431,6 @@ const ProfilePage = () => {
       setEmailError('');
       setEmailMessage('');
       
-      console.log(`Saving email preferences: ${user.email} (attempt ${retryCount + 1})`, { emailNotifications: newValue });
       
       const response = await fetch(`/api/email/preferences/${user.email}`, {
         method: 'PUT',
@@ -538,7 +475,6 @@ const ProfilePage = () => {
         setPreferences({ emailNotifications: newValue });
         setEmailMessage('Email preferences saved successfully!');
         showToast('Email preferences updated', 'success');
-        console.log('Email preferences saved:', data.data);
         
         // Clear success message after 3 seconds
         setTimeout(() => setEmailMessage(''), 3000);
@@ -757,7 +693,7 @@ const ProfilePage = () => {
     }
   };
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -773,7 +709,6 @@ const ProfilePage = () => {
         avatar: profileData.avatar
       };
 
-
       // Update profile in database
       const updatedProfile = await userService.updateProfile(updateData);
       
@@ -788,7 +723,7 @@ const ProfilePage = () => {
         avatarVersion: Date.now() // Force image reload after save
       }));
 
-      // Note: Stats are auto-updated by the useEffect watching favorites/blogs/events
+      // Note: Stats are auto-updated by the useMemo watching favorites/blogs/events
       // No need to call loadUserStats() here
 
       setIsEditing(false);
@@ -799,16 +734,71 @@ const ProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profileData, updateUser, showToast]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
     // Reset form data here if needed
-  };
+  }, []);
 
+  // Avatar change handlers (memoized)
+  const handleChangeAvatarStart = useCallback(() => {
+    setOriginalAvatar(profileData.avatar);
+    setIsChangingAvatar(true);
+    const seed = user?.email || user?.firstName || 'traveler';
+    const randomAvatar = generateRandomAvatar(seed);
+    setProfileData(prev => ({ 
+      ...prev, 
+      avatar: randomAvatar,
+      avatarVersion: Date.now()
+    }));
+  }, [profileData.avatar, user]);
 
+  const handleCancelAvatarChange = useCallback(() => {
+    setProfileData(prev => ({ 
+      ...prev, 
+      avatar: originalAvatar,
+      avatarVersion: Date.now()
+    }));
+    setIsChangingAvatar(false);
+    setOriginalAvatar(null);
+  }, [originalAvatar]);
 
-  const handleRemoveFavorite = async (parkCode) => {
+  const handleGenerateNewAvatar = useCallback(() => {
+    const seed = user?.email || user?.firstName || 'traveler';
+    const randomAvatar = generateRandomAvatar(seed);
+    setProfileData(prev => ({ 
+      ...prev, 
+      avatar: randomAvatar,
+      avatarVersion: Date.now()
+    }));
+  }, [user]);
+
+  // New unified avatar change handler
+  const handleAvatarChange = useCallback((newAvatar) => {
+    setProfileData(prev => ({ 
+      ...prev, 
+      avatar: newAvatar,
+      avatarVersion: Date.now()
+    }));
+  }, []);
+
+  const handleSaveAvatar = useCallback(async () => {
+    try {
+      setIsChangingAvatar(false);
+      setOriginalAvatar(null);
+      const updateData = { avatar: profileData.avatar };
+      const updatedProfile = await userService.updateProfile(updateData);
+      updateUser({ avatar: updatedProfile.avatar });
+      showToast('Avatar saved successfully!', 'success');
+    } catch (error) {
+      console.error('Error saving avatar:', error);
+      showToast('Failed to save avatar. Please try again.', 'error');
+    }
+  }, [profileData.avatar, updateUser, showToast]);
+
+  // Memoized handler functions - Prevents unnecessary re-creation (Performance optimization)
+  const handleRemoveFavorite = useCallback(async (parkCode) => {
     try {
       await removeFavorite(parkCode);
       showToast('Removed from favorites', 'success');
@@ -816,7 +806,8 @@ const ProfilePage = () => {
       showToast('Error removing favorite', 'error');
       console.error('Error removing favorite:', error);
     }
-  };
+  }, [removeFavorite, showToast]);
+
 
 
   if (loading) {
@@ -837,231 +828,20 @@ const ProfilePage = () => {
       {/* Main Content */}
       <section className="py-8">
         <div className="w-full max-w-6xl mx-auto px-2 sm:px-4 lg:px-8">
-          {/* Profile Hero Section - Centered & Clean */}
-          <div className="rounded-3xl p-4 sm:p-6 lg:p-12 text-center backdrop-blur mb-6 sm:mb-8 shadow-xl"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-              backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-            }}
-          >
-            {/* Avatar Section - Larger & Centered with Random Generator */}
-            <div className="mx-auto mb-6">
-              <div className="relative inline-block">
-                {profileData.avatar && !profileData.avatar.startsWith('http') ? (
-                  <div
-                    key={`${profileData.avatar}-${profileData.avatarVersion}`}
-                    className="w-24 h-24 lg:w-32 lg:h-32 rounded-full ring-4 ring-offset-4 flex items-center justify-center text-4xl lg:text-5xl bg-gradient-to-br from-purple-100 to-blue-100 shadow-lg"
-                    style={{ 
-                      backgroundColor: 'var(--surface-hover)',
-                      ringColor: 'var(--accent-green)',
-                      ringOffsetColor: 'var(--bg-primary)'
-                    }}
-                  >
-                    {profileData.avatar}
-                  </div>
-                ) : (
-                  <img
-                    key={`${profileData.avatar}-${profileData.avatarVersion}`}
-                    src={`${profileData.avatar}${profileData.avatar.includes('?') ? '&' : '?'}v=${profileData.avatarVersion}`}
-                    alt={`${profileData.firstName} ${profileData.lastName}`}
-                    className="w-24 h-24 lg:w-32 lg:h-32 rounded-full ring-4 ring-offset-4 shadow-lg object-cover"
-                    style={{ 
-                      ringColor: 'var(--accent-green)',
-                      ringOffsetColor: 'var(--bg-primary)'
-                    }}
-                    loading="lazy"
-                    onError={(e) => {
-                      console.log('Avatar image failed to load:', profileData.avatar);
-                      e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=fallback';
-                    }}
-                  />
-                )}
-              </div>
-            </div>
+          {/* Profile Hero Section - Extracted Component */}
+          <ProfileHero
+            profileData={profileData}
+            isChangingAvatar={isChangingAvatar}
+            onChangeAvatarStart={handleChangeAvatarStart}
+            onCancelAvatarChange={handleCancelAvatarChange}
+            onGenerateNewAvatar={handleGenerateNewAvatar}
+            onSaveAvatar={handleSaveAvatar}
+            onAvatarChange={handleAvatarChange}
+            user={user}
+          />
 
-            {/* Profile Info Section - Centered */}
-            <h1 className="text-3xl lg:text-4xl font-bold mb-3"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {profileData.firstName || profileData.lastName 
-                ? `${profileData.firstName} ${profileData.lastName}`.trim()
-                : 'Complete Your Profile'
-              }
-            </h1>
-            
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-4 text-base">
-              <div className="flex items-center gap-2"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Mail className="h-4 w-4" />
-                <span>{profileData.email}</span>
-              </div>
-              {profileData.location && (
-                <>
-                  <span style={{ color: 'var(--text-tertiary)' }}>•</span>
-                  <div className="flex items-center gap-2"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    <MapPin className="h-4 w-4" />
-                    <span>{profileData.location}</span>
-                  </div>
-                </>
-              )}
-            </div>
-            
-            {/* Change Avatar Button in Hero Section */}
-            <div className="mb-4">
-              {!isChangingAvatar ? (
-                <Button
-                  onClick={() => {
-                    // Store original avatar
-                    setOriginalAvatar(profileData.avatar);
-                    setIsChangingAvatar(true);
-                    
-                    // Generate new avatar
-                    const seed = user?.email || user?.firstName || 'traveler';
-                    const randomAvatar = generateRandomAvatar(seed);
-                    setProfileData(prev => ({ 
-                      ...prev, 
-                      avatar: randomAvatar,
-                      avatarVersion: Date.now()
-                    }));
-                  }}
-                  variant="secondary"
-                  size="sm"
-                  icon={User}
-                >
-                  Change Avatar
-                </Button>
-              ) : (
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    onClick={() => {
-                      // Cancel - revert to original avatar
-                      setProfileData(prev => ({ 
-                        ...prev, 
-                        avatar: originalAvatar,
-                        avatarVersion: Date.now()
-                      }));
-                      setIsChangingAvatar(false);
-                      setOriginalAvatar(null);
-                    }}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      // Generate another random avatar
-                      const seed = user?.email || user?.firstName || 'traveler';
-                      const randomAvatar = generateRandomAvatar(seed);
-                      setProfileData(prev => ({ 
-                        ...prev, 
-                        avatar: randomAvatar,
-                        avatarVersion: Date.now()
-                      }));
-                    }}
-                    variant="outline"
-                    size="sm"
-                    icon={User}
-                  >
-                    Generate New
-                  </Button>
-                  <Button
-                    onClick={async () => {
-                      try {
-                        // Save - keep the new avatar and save to database immediately
-                        setIsChangingAvatar(false);
-                        setOriginalAvatar(null);
-                        
-                        // Save avatar directly to database
-                        const updateData = {
-                          avatar: profileData.avatar
-                        };
-                        
-                        const updatedProfile = await userService.updateProfile(updateData);
-                        
-                        // Update AuthContext with the new avatar
-                        updateUser({ avatar: updatedProfile.avatar });
-                        
-                        showToast('Avatar saved successfully!', 'success');
-                      } catch (error) {
-                        console.error('Error saving avatar:', error);
-                        showToast('Failed to save avatar. Please try again.', 'error');
-                      }
-                    }}
-                    variant="secondary"
-                    size="sm"
-                    icon={Save}
-                  >
-                    Save
-                  </Button>
-                </div>
-              )}
-            </div>
-            
-            {profileData.bio && (
-              <p className="text-base leading-relaxed max-w-2xl mx-auto mb-6"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {profileData.bio}
-              </p>
-            )}
-          </div>
-
-          {/* Stats Section - Prominent & Separate */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6 mb-10">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={index}
-                  className="group rounded-2xl p-6 lg:p-8 text-center cursor-pointer transition-all hover:-translate-y-1"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    boxShadow: 'var(--shadow)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-                    e.currentTarget.style.borderColor = 'var(--border-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = 'var(--shadow)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                  }}
-                >
-                  {/* Icon Circle */}
-                  <div className="inline-flex p-4 rounded-full mb-4"
-                    style={{ 
-                      backgroundColor: 'var(--accent-green-light)',
-                      color: 'var(--accent-green)'
-                    }}
-                  >
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  
-                  {/* Value */}
-                  <div className="text-3xl lg:text-4xl font-bold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {stat.value}
-                  </div>
-                  
-                  {/* Label */}
-                  <div className="text-sm font-medium"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    {stat.label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {/* Stats Section - Extracted Component */}
+          <ProfileStats stats={stats} />
 
           {/* Tab Navigation - 2-row grid on mobile, single row on desktop */}
           <div className="mb-8">
@@ -1721,7 +1501,7 @@ const ProfilePage = () => {
                       {[
                         { id: 'emailNotifications', label: 'Blog Notifications', description: 'Receive blog post updates via email' }
                       ].map((setting) => {
-                        console.log('Rendering setting:', setting.id, 'value:', preferences[setting.id]);
+
                         return (
                         <div key={setting.id} className="flex items-center justify-between py-3 border-b last:border-b-0"
                           style={{ borderColor: 'var(--border)' }}
@@ -1745,7 +1525,7 @@ const ProfilePage = () => {
                               disabled={emailLoading}
                               onChange={(e) => {
                                 const newValue = e.target.checked;
-                                console.log('Toggle changed:', setting.id, 'from', preferences[setting.id], 'to', newValue);
+
                                 setPreferences({ ...preferences, [setting.id]: newValue });
                                 saveEmailPreferences(newValue);
                               }}

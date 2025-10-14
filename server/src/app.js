@@ -6,6 +6,8 @@ const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express();
 
@@ -77,8 +79,16 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Security middleware
-app.use(helmet());
+// Security middleware with custom configuration for image serving
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin images
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "https:", "http:"], // Allow images from any origin
+    },
+  },
+}));
 
 // CORS
 const allowedOrigins = [
@@ -167,8 +177,10 @@ app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/parks', require('./routes/enhancedParks')); // Enhanced parks routes first
 app.use('/api/parks', require('./routes/parks'));
+app.use('/api/activities', require('./routes/activities')); // Activities/Trails routes
 app.use('/api/users', require('./routes/users'));
 app.use('/api/user', require('./routes/userRoutes'));
+app.use('/api/users/preferences', require('./routes/userPreferences'));
 app.use('/api/blogs', require('./routes/blogs'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/ai/feedback', require('./routes/feedback'));
@@ -184,6 +196,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api', require('./routes/comments'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/gmaps', require('./routes/gmaps')); // Google Maps proxy
+app.use('/api/feature-announcement', require('./routes/featureAnnouncement')); // Feature announcement emails
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -200,4 +213,22 @@ app.use('/health', require('./routes/health'));
 // Error handler
 app.use(require('./middleware/errorHandler'));
 
-module.exports = app;
+// Create HTTP server
+const server = http.createServer(app);
+
+// Setup WebSocket
+const io = socketIo(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Initialize WebSocket service
+const WebSocketService = require('./services/websocketService');
+const wsService = new WebSocketService(io);
+
+// Make WebSocket service available globally
+app.set('wsService', wsService);
+
+module.exports = { app, server, wsService };

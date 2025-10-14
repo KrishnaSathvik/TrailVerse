@@ -13,13 +13,10 @@ if (process.env.NODE_ENV !== 'production') {
 const validateEnv = require('./src/config/validateEnv');
 validateEnv();
 
-// Import app
-const app = require('./src/app');
+// Import app with WebSocket support
+const { app, server, wsService } = require('./src/app');
 
-// Import WebSocket service
-const websocketService = require('./src/services/websocketService');
-
-// Database connection (we'll create this next)
+// Database connection
 const connectDB = require('./src/config/database');
 
 // Connect to database
@@ -27,12 +24,10 @@ connectDB();
 
 const PORT = process.env.PORT || 5001;
 
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`📡 WebSocket server ready for real-time updates`);
 });
-
-// Initialize WebSocket
-websocketService.initialize(server);
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {

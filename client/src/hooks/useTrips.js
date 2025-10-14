@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from './useWebSocket';
 import tripService from '../services/tripService';
 
 export const useTrips = () => {
   const { user, isAuthenticated } = useAuth();
+  const { subscribe, unsubscribe, subscribeToTrips } = useWebSocket();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -13,6 +15,48 @@ export const useTrips = () => {
       loadTrips();
     }
   }, [isAuthenticated, user]);
+
+  // Setup WebSocket real-time sync
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+
+    // Subscribe to trips channel
+    subscribeToTrips();
+
+    // Handle trip created from another device/tab
+    const handleTripCreated = (trip) => {
+      console.log('[Real-Time] Trip created:', trip);
+      setTrips(prev => {
+        // Avoid duplicates
+        if (prev.some(t => t._id === trip._id)) return prev;
+        return [trip, ...prev];
+      });
+    };
+
+    // Handle trip updated from another device/tab
+    const handleTripUpdated = (trip) => {
+      console.log('[Real-Time] Trip updated:', trip);
+      setTrips(prev => prev.map(t => t._id === trip._id ? trip : t));
+    };
+
+    // Handle trip deleted from another device/tab
+    const handleTripDeleted = (data) => {
+      console.log('[Real-Time] Trip deleted:', data);
+      setTrips(prev => prev.filter(t => t._id !== data.tripId));
+    };
+
+    // Subscribe to WebSocket events
+    subscribe('tripCreated', handleTripCreated);
+    subscribe('tripUpdated', handleTripUpdated);
+    subscribe('tripDeleted', handleTripDeleted);
+
+    // Cleanup
+    return () => {
+      unsubscribe('tripCreated', handleTripCreated);
+      unsubscribe('tripUpdated', handleTripUpdated);
+      unsubscribe('tripDeleted', handleTripDeleted);
+    };
+  }, [user, isAuthenticated, subscribe, unsubscribe, subscribeToTrips]);
 
   const loadTrips = async () => {
     if (!user) return;

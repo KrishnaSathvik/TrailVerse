@@ -1,181 +1,151 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import websocketService from '../services/websocketService';
 
 export const useWebSocket = () => {
-  const { user, getToken } = useAuth();
-  const isConnectedRef = useRef(false);
+  const { user, isAuthenticated } = useAuth();
+  const listenersRef = useRef(new Map());
 
-  const connect = useCallback(async () => {
-    if (!user || isConnectedRef.current) return;
-
-    try {
-      const token = getToken();
+  // Connect when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const token = localStorage.getItem('token');
       if (token) {
-        websocketService.connect(token);
-        isConnectedRef.current = true;
+        // Small delay to ensure server is ready
+        const connectTimer = setTimeout(() => {
+          websocketService.connect(token);
+        }, 100);
+        
+        return () => clearTimeout(connectTimer);
       }
-    } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
     }
-  }, [user, getToken]);
+    // Note: We DON'T disconnect on cleanup because WebSocket should persist
+    // across component mounts/unmounts. Only disconnect on logout.
+  }, [isAuthenticated, user]);
 
-  const disconnect = useCallback(() => {
-    if (isConnectedRef.current) {
-      websocketService.disconnect();
-      isConnectedRef.current = false;
+  // Subscribe to events
+  const subscribe = useCallback((event, callback) => {
+    websocketService.on(event, callback);
+    
+    // Store listener for cleanup
+    if (!listenersRef.current.has(event)) {
+      listenersRef.current.set(event, []);
+    }
+    listenersRef.current.get(event).push(callback);
+  }, []);
+
+  // Unsubscribe from events
+  const unsubscribe = useCallback((event, callback) => {
+    websocketService.off(event, callback);
+    
+    // Remove from stored listeners
+    if (listenersRef.current.has(event)) {
+      const listeners = listenersRef.current.get(event);
+      const index = listeners.indexOf(callback);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
     }
   }, []);
 
-  // Auto-connect when user is authenticated
-  useEffect(() => {
-    if (user && !isConnectedRef.current) {
-      connect();
-    } else if (!user && isConnectedRef.current) {
-      disconnect();
-    }
+  // Send message
+  const send = useCallback((message) => {
+    return websocketService.send(message);
+  }, []);
 
-    // Cleanup on unmount
+  // Get connection status
+  const getStatus = useCallback(() => {
+    return websocketService.getStatus();
+  }, []);
+
+  // Subscribe to data channels
+  const subscribeToFavorites = useCallback(() => {
+    websocketService.subscribeToFavorites();
+  }, []);
+
+  const subscribeToTrips = useCallback(() => {
+    websocketService.subscribeToTrips();
+  }, []);
+
+  const subscribeToReviews = useCallback(() => {
+    websocketService.subscribeToReviews();
+  }, []);
+
+  const subscribeToPreferences = useCallback(() => {
+    websocketService.subscribeToPreferences();
+  }, []);
+
+  const subscribeToBlogs = useCallback(() => {
+    websocketService.subscribeToBlogs();
+  }, []);
+
+  const subscribeToEvents = useCallback(() => {
+    websocketService.subscribeToEvents();
+  }, []);
+
+  const subscribeToVisited = useCallback(() => {
+    websocketService.subscribeToVisited();
+  }, []);
+
+  // Unsubscribe from data channels
+  const unsubscribeFromFavorites = useCallback(() => {
+    websocketService.unsubscribeFromFavorites();
+  }, []);
+
+  const unsubscribeFromTrips = useCallback(() => {
+    websocketService.unsubscribeFromTrips();
+  }, []);
+
+  const unsubscribeFromReviews = useCallback(() => {
+    websocketService.unsubscribeFromReviews();
+  }, []);
+
+  const unsubscribeFromPreferences = useCallback(() => {
+    websocketService.unsubscribeFromPreferences();
+  }, []);
+
+  const unsubscribeFromBlogs = useCallback(() => {
+    websocketService.unsubscribeFromBlogs();
+  }, []);
+
+  const unsubscribeFromEvents = useCallback(() => {
+    websocketService.unsubscribeFromEvents();
+  }, []);
+
+  const unsubscribeFromVisited = useCallback(() => {
+    websocketService.unsubscribeFromVisited();
+  }, []);
+
+  // Cleanup listeners on unmount
+  useEffect(() => {
     return () => {
-      if (isConnectedRef.current) {
-        disconnect();
-      }
-    };
-  }, [user, connect, disconnect]);
-
-  return {
-    connect,
-    disconnect,
-    isConnected: websocketService.getConnectionStatus().connected,
-    websocketService
-  };
-};
-
-export const useWebSocketEvent = (event, callback, deps = []) => {
-  const callbackRef = useRef(callback);
-
-  useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
-
-  useEffect(() => {
-    const wrappedCallback = (data) => {
-      callbackRef.current(data);
-    };
-
-    websocketService.on(event, wrappedCallback);
-
-    return () => {
-      websocketService.off(event, wrappedCallback);
-    };
-  }, [event, ...deps]);
-};
-
-export const useRealTimeChat = (roomId) => {
-  const [messages, setMessages] = useState([]);
-  const [typingUsers, setTypingUsers] = useState([]);
-
-  // Handle incoming messages
-  useWebSocketEvent('chat-message', (data) => {
-    if (data.roomId === roomId) {
-      setMessages(prev => [...prev, data]);
-    }
-  });
-
-  // Handle typing indicators
-  useWebSocketEvent('user-typing', (data) => {
-    if (data.roomId === roomId) {
-      setTypingUsers(prev => {
-        if (data.isTyping) {
-          return [...prev.filter(user => user.userId !== data.userId), data.user];
-        } else {
-          return prev.filter(user => user.userId !== data.userId);
-        }
+      listenersRef.current.forEach((listeners, event) => {
+        listeners.forEach(callback => {
+          websocketService.off(event, callback);
+        });
       });
-    }
-  });
-
-  const sendMessage = useCallback((message, type = 'message') => {
-    websocketService.sendChatMessage(roomId, message, type);
-  }, [roomId]);
-
-  const startTyping = useCallback(() => {
-    websocketService.startTyping(roomId);
-  }, [roomId]);
-
-  const stopTyping = useCallback(() => {
-    websocketService.stopTyping(roomId);
-  }, [roomId]);
-
-  return {
-    messages,
-    typingUsers,
-    sendMessage,
-    startTyping,
-    stopTyping
-  };
-};
-
-export const useParkUpdates = (parkCode) => {
-  const [updates, setUpdates] = useState([]);
-
-  useWebSocketEvent('park-update', (data) => {
-    if (data.parkCode === parkCode) {
-      setUpdates(prev => [...prev, data]);
-    }
-  });
-
-  useEffect(() => {
-    if (parkCode) {
-      websocketService.subscribeParkUpdates(parkCode);
-    }
-
-    return () => {
-      if (parkCode) {
-        websocketService.unsubscribeParkUpdates(parkCode);
-      }
+      listenersRef.current.clear();
     };
-  }, [parkCode]);
-
-  return updates;
-};
-
-export const useEventUpdates = (eventId) => {
-  const [updates, setUpdates] = useState([]);
-
-  useWebSocketEvent('event-update', (data) => {
-    if (data.eventId === eventId) {
-      setUpdates(prev => [...prev, data]);
-    }
-  });
-
-  useEffect(() => {
-    if (eventId) {
-      websocketService.subscribeEventUpdates(eventId);
-    }
-
-    return () => {
-      if (eventId) {
-        websocketService.unsubscribeEventUpdates(eventId);
-      }
-    };
-  }, [eventId]);
-
-  return updates;
-};
-
-export const useNotifications = () => {
-  const [notifications, setNotifications] = useState([]);
-
-  useWebSocketEvent('notification', (data) => {
-    setNotifications(prev => [...prev, data]);
-  });
-
-  const removeNotification = useCallback((id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
   }, []);
 
-  return { notifications, removeNotification };
+  return {
+    subscribe,
+    unsubscribe,
+    send,
+    getStatus,
+    subscribeToFavorites,
+    subscribeToTrips,
+    subscribeToReviews,
+    subscribeToPreferences,
+    subscribeToBlogs,
+    subscribeToEvents,
+    subscribeToVisited,
+    unsubscribeFromFavorites,
+    unsubscribeFromTrips,
+    unsubscribeFromReviews,
+    unsubscribeFromPreferences,
+    unsubscribeFromBlogs,
+    unsubscribeFromEvents,
+    unsubscribeFromVisited
+  };
 };
-
-export default useWebSocket;

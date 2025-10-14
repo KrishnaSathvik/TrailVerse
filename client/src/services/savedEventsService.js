@@ -24,6 +24,13 @@ export const savedEventsService = {
           savedAt: new Date().toISOString()
         }];
         localStorage.setItem(SAVED_EVENTS_KEY, JSON.stringify(updatedEvents));
+        
+        // Dispatch custom event for cross-tab sync
+        window.dispatchEvent(new CustomEvent('savedEventsChanged', { 
+          detail: { action: 'add', event, count: updatedEvents.length } 
+        }));
+        console.log('[SavedEvents] Event saved, dispatched cross-tab event');
+        
         return true;
       }
       return false; // Event already saved
@@ -39,6 +46,13 @@ export const savedEventsService = {
       const savedEvents = savedEventsService.getSavedEvents();
       const updatedEvents = savedEvents.filter(event => event.id !== eventId);
       localStorage.setItem(SAVED_EVENTS_KEY, JSON.stringify(updatedEvents));
+      
+      // Dispatch custom event for cross-tab sync
+      window.dispatchEvent(new CustomEvent('savedEventsChanged', { 
+        detail: { action: 'remove', eventId, count: updatedEvents.length } 
+      }));
+      console.log('[SavedEvents] Event removed, dispatched cross-tab event');
+      
       return true;
     } catch (error) {
       console.error('Error unsaving event:', error);

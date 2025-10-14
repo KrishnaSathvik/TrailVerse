@@ -507,6 +507,24 @@ exports.toggleFavorite = async (req, res, next) => {
     
     await post.save();
     
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      if (isFavorited) {
+        wsService.sendToUserChannel(userId, 'blogs', 'blog_unfavorited', { 
+          blogId: post._id,
+          isFavorited: false,
+          favoritesCount: post.favorites.length
+        });
+      } else {
+        wsService.sendToUserChannel(userId, 'blogs', 'blog_favorited', { 
+          blogId: post._id,
+          isFavorited: true,
+          favoritesCount: post.favorites.length
+        });
+      }
+    }
+    
     res.status(200).json({
       success: true,
       data: {

@@ -8,11 +8,12 @@ import {
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import OptimizedImage from '../components/common/OptimizedImage';
-import { useParks } from '../hooks/useParks';
+import { useAllParks } from '../hooks/useParks';
 import { useParkComparison } from '../hooks/useEnhancedParks';
 
 const ComparePage = () => {
-  const { data: allParks, isLoading } = useParks();
+  const { data: allParksData, isLoading } = useAllParks();
+  const allParks = allParksData?.data;
   const [selectedParks, setSelectedParks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSelector, setShowSelector] = useState(false);
@@ -21,6 +22,43 @@ const ComparePage = () => {
   });
 
   const maxParks = 4;
+
+  // Generate unique colors for each park in the comparison
+  const getParkColors = (parkCodes) => {
+    const colors = [
+      { bg: 'bg-blue-600/15', text: 'text-blue-700', border: 'border-blue-600/30' },
+      { bg: 'bg-green-600/15', text: 'text-green-700', border: 'border-green-600/30' },
+      { bg: 'bg-purple-600/15', text: 'text-purple-700', border: 'border-purple-600/30' },
+      { bg: 'bg-orange-600/15', text: 'text-orange-700', border: 'border-orange-600/30' },
+      { bg: 'bg-pink-600/15', text: 'text-pink-700', border: 'border-pink-600/30' },
+      { bg: 'bg-indigo-600/15', text: 'text-indigo-700', border: 'border-indigo-600/30' },
+      { bg: 'bg-teal-600/15', text: 'text-teal-700', border: 'border-teal-600/30' },
+      { bg: 'bg-red-600/15', text: 'text-red-700', border: 'border-red-600/30' }
+    ];
+    
+    // Create a color map that ensures unique colors for each park
+    const colorMap = {};
+    const usedColors = new Set();
+    
+    // First pass: assign colors based on park code hash
+    parkCodes.forEach(parkCode => {
+      let hash = 0;
+      for (let i = 0; i < parkCode.length; i++) {
+        hash = parkCode.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      let index = Math.abs(hash) % colors.length;
+      
+      // If color is already used, find the next available color
+      while (usedColors.has(index)) {
+        index = (index + 1) % colors.length;
+      }
+      
+      usedColors.add(index);
+      colorMap[parkCode] = colors[index];
+    });
+    
+    return colorMap;
+  };
 
   // Filter parks for selection
   const availableParks = useMemo(() => {
@@ -174,6 +212,9 @@ const ComparePage = () => {
       reasons: ['Pleasant weather', 'Shoulder season']
     };
   };
+
+  // Generate color map for all selected parks
+  const parkColors = getParkColors(parkCodes);
 
   // Get enhanced parks data or fallback to basic data
   // Ensure parks are always in the same order as selectedParks
@@ -483,21 +524,27 @@ const ComparePage = () => {
                       >
                         Comparison
                       </div>
-                      {enhancedParks.map((park) => (
-                        <div key={park.parkCode} className="flex-1 px-4 py-4 font-semibold text-sm text-center min-w-0"
-                          style={{ 
-                            backgroundColor: 'var(--surface-hover)',
-                            color: 'var(--text-primary)'
-                          }}
-                        >
-                          {park.fullName}
-                        </div>
-                      ))}
+                      {enhancedParks.map((park) => {
+                        const parkColor = parkColors[park.parkCode];
+                        return (
+                          <div key={park.parkCode} className="flex-1 px-4 py-4 font-semibold text-sm text-center min-w-0"
+                            style={{ 
+                              backgroundColor: 'var(--surface-hover)'
+                            }}
+                          >
+                            <span className={parkColor ? parkColor.text : ''}
+                              style={{ color: parkColor ? undefined : 'var(--text-primary)' }}
+                            >
+                              {park.fullName}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Basic Information */}
-                  <ComparisonRow label="Basic Info" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Basic Info" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm font-medium">{park.designation}</div>
@@ -509,7 +556,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Ratings & Reviews */}
-                  <ComparisonRow label="Ratings & Reviews" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Ratings & Reviews" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1">
@@ -532,7 +579,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Weather Information */}
-                  <ComparisonRow label="Weather" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Weather" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm font-medium">
@@ -553,7 +600,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Facilities */}
-                  <ComparisonRow label="Facilities" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Facilities" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm">
@@ -569,7 +616,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Accessibility */}
-                  <ComparisonRow label="Accessibility" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Accessibility" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1">
@@ -587,7 +634,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Trip Planning */}
-                  <ComparisonRow label="Best Time to Visit" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Best Time to Visit" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-2">
                         <div className="flex flex-wrap gap-1 justify-center">
@@ -605,7 +652,7 @@ const ComparePage = () => {
                   </ComparisonRow>
 
                   {/* Crowd Level */}
-                  <ComparisonRow label="Crowd Level" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Crowd Level" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-2 items-center">
                         <span
@@ -630,7 +677,7 @@ const ComparePage = () => {
 
                   {/* Common Activities */}
                   {comparisonData?.commonActivities && (comparisonData.commonActivities.commonToAll.length > 0 || comparisonData.commonActivities.mostlyCommon.length > 0) && (
-                    <ComparisonRow label="Activities" parkNames={enhancedParks.map(p => p.fullName)}>
+                    <ComparisonRow label="Activities" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                       {enhancedParks.map((park) => {
                         // Combine all activities into one list
                         const allActivities = [
@@ -665,7 +712,7 @@ const ComparePage = () => {
                   )}
 
                   {/* Quick Actions */}
-                  <ComparisonRow label="Quick Actions" parkNames={enhancedParks.map(p => p.fullName)}>
+                  <ComparisonRow label="Quick Actions" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex justify-center">
                         <Link
@@ -751,7 +798,7 @@ const ComparisonSection = ({ title, icon: Icon, isExpanded, onToggle, children }
 };
 
 // Comparison Row Component
-const ComparisonRow = ({ label, children, parkNames = [] }) => {
+const ComparisonRow = ({ label, children, parkNames = [], parkCodes = [], parkColors = {} }) => {
   const childArray = React.Children.toArray(children);
   
   return (
@@ -800,36 +847,41 @@ const ComparisonRow = ({ label, children, parkNames = [] }) => {
           
           {/* Park Data Cards with Park Names */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {childArray.map((child, index) => (
-              <div key={index} 
-                className="p-3 rounded-lg"
-                style={{ 
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                {/* Park Name Header */}
-                {parkNames[index] && (
-                  <div className="mb-2 pb-2 border-b"
-                    style={{ borderColor: 'var(--border)' }}
-                  >
-                    <h5 className="font-semibold text-xs"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {parkNames[index]}
-                    </h5>
-                  </div>
-                )}
-                
-                {/* Park Data */}
-                <div className="text-sm"
-                  style={{ color: 'var(--text-primary)' }}
+            {childArray.map((child, index) => {
+              const parkCode = parkCodes[index];
+              const parkColor = parkCode ? parkColors[parkCode] : null;
+              
+              return (
+                <div key={index} 
+                  className={`p-3 rounded-lg ${parkColor ? parkColor.border : ''}`}
+                  style={{ 
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: parkColor ? undefined : 'var(--border)'
+                  }}
                 >
-                  {child}
+                  {/* Park Name Header */}
+                  {parkNames[index] && (
+                    <div className={`mb-2 pb-2 border-b ${parkColor ? parkColor.border : ''}`}
+                      style={{ borderColor: parkColor ? undefined : 'var(--border)' }}
+                    >
+                      <h5 className={`font-semibold text-xs ${parkColor ? parkColor.text : ''}`}
+                        style={{ color: parkColor ? undefined : 'var(--text-secondary)' }}
+                      >
+                        {parkNames[index]}
+                      </h5>
+                    </div>
+                  )}
+                  
+                  {/* Park Data */}
+                  <div className="text-sm"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {child}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

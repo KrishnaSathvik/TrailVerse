@@ -56,7 +56,15 @@ exports.uploadMiddleware = upload.array('images', 5);
 // @access  Private
 exports.uploadImages = async (req, res, next) => {
   try {
+    console.log('📤 Image upload request received:', {
+      filesCount: req.files?.length || 0,
+      userId: req.user?.id,
+      category: req.body.category,
+      isPublic: req.body.isPublic
+    });
+
     if (!req.files || req.files.length === 0) {
+      console.log('❌ No files provided in request');
       return res.status(400).json({
         success: false,
         error: 'No images provided'
@@ -68,6 +76,14 @@ exports.uploadImages = async (req, res, next) => {
 
     for (const file of req.files) {
       try {
+        console.log('🖼️  Processing file:', {
+          filename: file.filename,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.path
+        });
+
         // Get image metadata
         const metadata = await sharp(file.path).metadata();
         
@@ -108,8 +124,17 @@ exports.uploadImages = async (req, res, next) => {
         });
 
         uploadedImages.push(imageUpload);
+        console.log('✅ Image uploaded successfully:', {
+          id: imageUpload._id,
+          filename: imageUpload.filename,
+          url: imageUpload.url
+        });
       } catch (processingError) {
-        console.error('Error processing image:', processingError);
+        console.error('❌ Error processing image:', {
+          error: processingError.message,
+          stack: processingError.stack,
+          file: file?.originalname
+        });
         // Clean up failed file
         try {
           await fs.unlink(file.path);
@@ -122,12 +147,25 @@ exports.uploadImages = async (req, res, next) => {
       }
     }
 
+    if (uploadedImages.length === 0) {
+      console.log('❌ All image uploads failed');
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upload images'
+      });
+    }
+
+    console.log(`✅ Successfully uploaded ${uploadedImages.length} image(s)`);
     res.status(201).json({
       success: true,
       count: uploadedImages.length,
       data: uploadedImages
     });
   } catch (error) {
+    console.error('❌ Image upload controller error:', {
+      error: error.message,
+      stack: error.stack
+    });
     next(error);
   }
 };
@@ -347,31 +385,75 @@ exports.getImageStats = async (req, res, next) => {
 };
 
 // @desc    Serve image file
-// @route   GET /api/images/file/:filename
+// @route   GET /api/images/file/*
 // @access  Public
 exports.serveImage = async (req, res, next) => {
   try {
-    const filename = req.params.filename;
-    const imagePath = path.join(__dirname, '../../uploads', filename);
+    // Extract the full file path from the wildcard (everything after /file/)
+    const filePath = req.params[0]; // Get wildcard content
+    
+    if (!filePath) {
+      return res.status(400).json({
+        success: false,
+        error: 'File path is required'
+      });
+    }
+
+    // Prevent directory traversal attacks
+    if (filePath.includes('..') || filePath.includes('~')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid file path'
+      });
+    }
+
+    const imagePath = path.join(__dirname, '../../uploads', filePath);
 
     // Check if file exists
     try {
       await fs.access(imagePath);
     } catch (error) {
+      console.error(`❌ Image file not found: ${imagePath}`);
       return res.status(404).json({
         success: false,
         error: 'Image file not found'
       });
     }
 
+    // Detect content type based on file extension
+    const ext = path.extname(filePath).toLowerCase();
+    const contentTypeMap = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml'
+    };
+    const contentType = contentTypeMap[ext] || 'application/octet-stream';
+
     // Set appropriate headers
-    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS for images
 
     // Stream the file
     const fileStream = require('fs').createReadStream(imagePath);
+    
+    // Handle stream errors
+    fileStream.on('error', (err) => {
+      console.error('❌ Error streaming file:', err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: 'Error serving image'
+        });
+      }
+    });
+    
     fileStream.pipe(res);
   } catch (error) {
+    console.error('❌ serveImage error:', error);
     next(error);
   }
 };

@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
   Search, X, MapPin, Star, ArrowRight, 
@@ -10,26 +10,37 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import OptimizedImage from '../components/common/OptimizedImage';
-import { useParks } from '../hooks/useParks';
+import { useParks, useAllParks } from '../hooks/useParks';
 import { useParkRatings } from '../hooks/useParkRatings';
 import { useDebounce } from '../hooks/useDebounce';
 import { useSearchPrefetch } from '../hooks/useSmartPrefetch';
 // import { logSearch } from '../utils/analytics';
 
 const ExploreParksPage = () => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: allParks, isLoading, error } = useParks();
   const { data: parkRatings, isLoading: ratingsLoading, error: ratingsError } = useParkRatings();
   const { handleSearch } = useSearchPrefetch();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('name');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   
-  // Initialize currentPage from URL or default to 1
+  // Track mount state and previous filter values to prevent resetting on first render
+  const hasMounted = useRef(false);
+  const prevFiltersRef = useRef({
+    search: '',
+    npOnly: true,
+    statesLen: 0,
+    actsLen: 0,
+  });
+  
+  // Initialize currentPage from URL parameter
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get('page');
     const page = pageParam ? parseInt(pageParam, 10) : 1;
+    console.log(`📄 INIT: Using page ${page} (URL param: ${pageParam})`);
     return page > 0 ? page : 1;
   });
   
@@ -37,30 +48,61 @@ const ExploreParksPage = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const parksPerPage = isMobile ? 6 : 12;
   
-  // Update mobile state on window resize
+  // Determine if we need to fetch all parks (for filtering) or use pagination
+  const [filters, setFilters] = useState({
+    nationalParksOnly: true,
+    states: [],
+    activities: []
+  });
+  
+  // Determine if we need all parks for filtering or sorting
+  // Note: When any client-side filter is active (search, states, activities) OR when sorting by state,
+  // we need all parks data for proper sorting across all parks
+  const hasActiveFilters = searchTerm || filters.states.length > 0 || filters.activities.length > 0;
+  const needsAllParks = hasActiveFilters || sortBy === 'state';
+  
+  // Use paginated query when no filters, all parks when filtering
+  const { data: paginatedData, isLoading: paginatedLoading, error: paginatedError } = useParks(
+    currentPage, 
+    parksPerPage,
+    filters.nationalParksOnly
+  );
+  const { data: allParksData, isLoading: allParksLoading, error: allParksError } = useAllParks();
+  
+  // Debug data fetching
+  console.log(`📊 DATA FETCH: currentPage=${currentPage}, parksPerPage=${parksPerPage}, needsAllParks=${needsAllParks}`);
+  console.log(`📊 DATA FETCH: paginatedData count=${paginatedData?.data?.length || 0}, allParksData count=${allParksData?.data?.length || 0}`);
+  
+  
+  // Choose which data source to use
+  const isLoading = needsAllParks ? allParksLoading : paginatedLoading;
+  const error = needsAllParks ? allParksError : paginatedError;
+  const allParks = needsAllParks ? allParksData?.data : paginatedData?.data;
+  const totalParks = needsAllParks ? allParksData?.total : paginatedData?.total;
+  const totalPages = needsAllParks ? null : paginatedData?.pages; // null means client-side pagination
+  
+  // Debug data source selection
+  console.log(`🎯 DATA SOURCE: needsAllParks=${needsAllParks}, allParks count=${allParks?.length || 0}, totalPages=${totalPages}`);
+  
+  
+  // Mark component as mounted
+  useEffect(() => {
+    hasMounted.current = true;
+  }, []);
+
+  // Update mobile state on window resize (don't reset page - just update the flag)
   useEffect(() => {
     const handleResize = () => {
       const newIsMobile = window.innerWidth < 640;
       if (newIsMobile !== isMobile) {
+        // Just update the flag; KEEP the page & URL
         setIsMobile(newIsMobile);
-        // Reset to page 1 when switching between mobile/desktop to avoid empty pages
-        setCurrentPage(1);
-        // Also remove page param from URL
-        const newSearchParams = new URLSearchParams(window.location.search);
-        newSearchParams.delete('page');
-        setSearchParams(newSearchParams, { replace: true });
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile]);
-  
-  const [filters, setFilters] = useState({
-    nationalParksOnly: true, // Keep default but fix the logic
-    states: [],
-    activities: []
-  });
 
   // Handle URL filter parameter
   useEffect(() => {
@@ -73,6 +115,32 @@ const ExploreParksPage = () => {
     }
   }, [searchParams]);
 
+  // Debug function - expose to window for testing
+  useEffect(() => {
+    window.debugPagination = {
+      getCurrentPage: () => currentPage,
+      getUrlPage: () => searchParams.get('page'),
+      goToPage: (page) => {
+        console.log(`Debug: Navigating to page ${page}`);
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.set('page', page.toString());
+        setSearchParams(newSearchParams);
+      }
+    };
+  }, [currentPage, searchParams, setSearchParams]);
+
+  // Close sort dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSortDropdown && !event.target.closest('.sort-dropdown-container')) {
+        setShowSortDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showSortDropdown]);
+
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Track search queries for smart prefetching and analytics
@@ -82,27 +150,27 @@ const ExploreParksPage = () => {
     }
   }, [debouncedSearchTerm, handleSearch]);
 
-  // Get unique states and activities
+  // Get unique states and activities (always use all parks data, not paginated subset)
   const uniqueStates = useMemo(() => {
-    if (!allParks || !Array.isArray(allParks)) return [];
+    const parksForStates = allParksData?.data || [];
+    if (!Array.isArray(parksForStates)) return [];
     const states = new Set();
     
-    
-    allParks.forEach(park => {
+    parksForStates.forEach(park => {
       if (park && park.states) {
         park.states.split(',').forEach(state => states.add(state.trim()));
       }
     });
     
     return Array.from(states).sort();
-  }, [allParks]);
+  }, [allParksData]);
 
   const popularActivities = [
     'Hiking', 'Camping', 'Wildlife Watching', 'Photography', 
     'Fishing', 'Boating', 'Biking', 'Climbing', 'Stargazing'
   ];
 
-  // Filter and sort parks
+  // Filter parks (without sorting - sorting will be applied later)
   const filteredParks = useMemo(() => {
     if (!allParks || !Array.isArray(allParks)) return [];
     
@@ -142,35 +210,11 @@ const ExploreParksPage = () => {
       });
     }
 
-    // National parks only - but allow other significant park types when searching
-    if (filters.nationalParksOnly && !debouncedSearchTerm) {
-      result = result.filter(park => park.designation === 'National Park');
-    } else if (filters.nationalParksOnly && debouncedSearchTerm) {
-      // When searching, include National Parks, Monuments, and other significant sites
-      result = result.filter(park => {
-        const significantTypes = [
-          'National Park', 
-          'National Monument', 
-          'National Historic Site',
-          'National Historic Park',
-          'National Historical Park',
-          'National Memorial',
-          'National Recreation Area',
-          'National Preserve',
-          'National Seashore',
-          'National Lakeshore',
-          'National Battlefield',
-          'National Battlefield Park',
-          'National Military Park',
-          'National Historic Trail',
-          'National Scenic Trail',
-          'National Geologic Trail',
-          'National Wild and Scenic River',
-          'National Forest',
-          'National Grassland'
-        ];
-        return significantTypes.includes(park.designation);
-      });
+    // National parks only filter (includes variations like "National Park & Preserve")
+    if (filters.nationalParksOnly) {
+      result = result.filter(park => 
+        park.designation && park.designation.toLowerCase().includes('national park')
+      );
     }
 
     // States filter
@@ -190,46 +234,96 @@ const ExploreParksPage = () => {
       );
     }
 
-    // Sort
-    result.sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.fullName.localeCompare(b.fullName);
-      } else if (sortBy === 'state') {
-        return a.states.localeCompare(b.states);
-      }
-      return 0;
-    });
-
     return result;
-  }, [allParks, debouncedSearchTerm, filters, sortBy]);
+  }, [allParks, debouncedSearchTerm, filters]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredParks.length / parksPerPage);
+  // Pagination calculations - Hybrid approach
+  // Server-side pagination (no filters and sort by name): Use server's pagination data
+  // Client-side pagination (with filters or sort by state): Calculate from filtered results
+  const calculatedTotalPages = needsAllParks ? Math.ceil(filteredParks.length / parksPerPage) : (totalPages || 1);
   const startIndex = (currentPage - 1) * parksPerPage;
   const endIndex = startIndex + parksPerPage;
-  const currentParks = filteredParks.slice(startIndex, endIndex);
+  
+  // currentParks: Apply sorting and pagination correctly
+  const currentParks = useMemo(() => {
+    let parks;
+    
+    if (needsAllParks) {
+      // For filtered results or state sorting: sort first, then paginate
+      let sortedParks = [...filteredParks];
+      
+      // Apply sorting
+      if (sortBy === 'name') {
+        sortedParks.sort((a, b) => a.fullName.localeCompare(b.fullName));
+      } else if (sortBy === 'state') {
+        sortedParks.sort((a, b) => a.states.localeCompare(b.states));
+      }
+      
+      // Apply pagination to sorted results
+      parks = sortedParks.slice(startIndex, endIndex);
+    } else {
+      // For server-paginated data with name sorting: sort the current page
+      parks = [...(allParks || [])];
+      
+      // Apply sorting to current page (only name sorting for server data)
+      if (sortBy === 'name') {
+        parks.sort((a, b) => a.fullName.localeCompare(b.fullName));
+      }
+    }
+    
+    return parks;
+  }, [needsAllParks, filteredParks, startIndex, endIndex, allParks, sortBy]);
 
-  // Reset page when filters change
+  // Reset page when filters change (but not on first mount)
   React.useEffect(() => {
-    setCurrentPage(1);
-    // Also remove page param from URL when filters change
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.delete('page');
-    setSearchParams(newSearchParams, { replace: true });
+    const prev = prevFiltersRef.current;
+    const changed =
+      prev.search !== debouncedSearchTerm ||
+      prev.npOnly !== filters.nationalParksOnly ||
+      prev.statesLen !== filters.states.length ||
+      prev.actsLen !== filters.activities.length;
+
+    if (hasMounted.current && changed) {
+      console.log(`🔄 FILTERS CHANGED: Resetting to page 1`);
+      setCurrentPage(1);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('page', '1');
+      setSearchParams(newSearchParams);
+    }
+    
+    prevFiltersRef.current = {
+      search: debouncedSearchTerm,
+      npOnly: filters.nationalParksOnly,
+      statesLen: filters.states.length,
+      actsLen: filters.activities.length,
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, filters, sortBy]);
+  }, [debouncedSearchTerm, filters.nationalParksOnly, filters.states.length, filters.activities.length]);
+
+  // Handle page reset when switching between server/client pagination due to sorting
+  React.useEffect(() => {
+    // If we're switching to client-side pagination (sort by state) and current page is too high,
+    // reset to page 1
+    if (needsAllParks && currentPage > 1) {
+      const maxPages = Math.ceil(filteredParks.length / parksPerPage);
+      if (currentPage > maxPages) {
+        setCurrentPage(1);
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.set('page', '1');
+        setSearchParams(newSearchParams);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsAllParks, filteredParks.length, currentPage]);
 
   // Pagination handlers
   const goToPage = useCallback((page) => {
     setCurrentPage(page);
+    
     // Update URL with page parameter
     const newSearchParams = new URLSearchParams(searchParams);
-    if (page === 1) {
-      newSearchParams.delete('page'); // Remove page param for page 1 to keep URL clean
-    } else {
-      newSearchParams.set('page', page.toString());
-    }
-    setSearchParams(newSearchParams, { replace: true }); // Use replace to avoid cluttering history
+    newSearchParams.set('page', page.toString());
+    setSearchParams(newSearchParams); // Create history entry for each page
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [searchParams, setSearchParams]);
 
@@ -240,10 +334,10 @@ const ExploreParksPage = () => {
   }, [currentPage, goToPage]);
 
   const goToNextPage = useCallback(() => {
-    if (currentPage < totalPages) {
+    if (currentPage < calculatedTotalPages) {
       goToPage(currentPage + 1);
     }
-  }, [currentPage, totalPages, goToPage]);
+  }, [currentPage, calculatedTotalPages, goToPage]);
 
   const toggleStateFilter = useCallback((state) => {
     setFilters(prev => ({
@@ -276,11 +370,15 @@ const ExploreParksPage = () => {
     filters.states.length +
     filters.activities.length;
 
-  // Calculate actual National Parks count from data
+  // Calculate actual National Parks count from ALL parks data (includes variations like "National Park & Preserve")
   const nationalParksCount = useMemo(() => {
-    if (!allParks || !Array.isArray(allParks)) return 0;
-    return allParks.filter(park => park.designation === 'National Park').length;
-  }, [allParks]);
+    // Always use allParksData for counting, not the paginated subset
+    const parksToCount = allParksData?.data || [];
+    if (!Array.isArray(parksToCount)) return 0;
+    return parksToCount.filter(park => 
+      park.designation && park.designation.toLowerCase().includes('national park')
+    ).length;
+  }, [allParksData]);
 
   // Generate structured data for the parks listing
   const parksStructuredData = {
@@ -356,7 +454,7 @@ const ExploreParksPage = () => {
             <p className="text-lg sm:text-xl max-w-3xl"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Discover {allParks?.length || 0} national parks and sites across America. 
+              Discover {filters.nationalParksOnly ? `${nationalParksCount} national parks` : `${allParksData?.data?.length || 0} parks and sites`} across America. 
               Find your next adventure with AI-powered recommendations.
             </p>
           </div>
@@ -402,9 +500,9 @@ const ExploreParksPage = () => {
                 Showing {filteredParks.length > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, filteredParks.length)} of {filteredParks.length} parks
               </span>
             </div>
-            {totalPages > 1 && (
+            {calculatedTotalPages > 1 && (
               <div className="flex items-center gap-2">
-                <span>Page {currentPage} of {totalPages}</span>
+                <span>Page {currentPage} of {calculatedTotalPages}</span>
               </div>
             )}
             {activeFiltersCount > 0 && (
@@ -552,24 +650,70 @@ const ExploreParksPage = () => {
                   </button>
 
                   {/* Sort */}
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-4 py-2.5 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none w-full"
+                  <div className="relative sort-dropdown-container">
+                    <button
+                      onClick={() => setShowSortDropdown(!showSortDropdown)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition backdrop-blur"
                       style={{
                         backgroundColor: 'var(--surface)',
                         borderWidth: '1px',
                         borderColor: 'var(--border)',
-                        color: 'var(--text-primary)'
+                        color: 'var(--text-primary)',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale'
                       }}
                     >
-                      <option value="name">Sort by Name</option>
-                      <option value="state">Sort by State</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    />
+                      <span>{sortBy === 'name' ? 'Sort by Name' : 'Sort by State'}</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}
+                        style={{ color: 'var(--text-tertiary)' }}
+                      />
+                    </button>
+                    
+                    {showSortDropdown && (
+                      <div className="absolute top-full left-0 mt-2 min-w-[180px] z-50 rounded-xl overflow-hidden backdrop-blur-xl"
+                        style={{
+                          backgroundColor: 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: 'var(--border)',
+                          boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            setSortBy('name');
+                            setShowSortDropdown(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                            sortBy === 'name' ? '' : 'hover:bg-white/5 dark:hover:bg-white/5'
+                          }`}
+                          style={{
+                            backgroundColor: sortBy === 'name' ? 'var(--surface-active)' : 'transparent',
+                            color: sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            WebkitFontSmoothing: 'antialiased',
+                            MozOsxFontSmoothing: 'grayscale'
+                          }}
+                        >
+                          Sort by Name
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSortBy('state');
+                            setShowSortDropdown(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                            sortBy === 'state' ? '' : 'hover:bg-white/5 dark:hover:bg-white/5'
+                          }`}
+                          style={{
+                            backgroundColor: sortBy === 'state' ? 'var(--surface-active)' : 'transparent',
+                            color: sortBy === 'state' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            WebkitFontSmoothing: 'antialiased',
+                            MozOsxFontSmoothing: 'grayscale'
+                          }}
+                        >
+                          Sort by State
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -665,12 +809,13 @@ const ExploreParksPage = () => {
                       park={park} 
                       viewMode={viewMode} 
                       rating={parkRatings?.[park.parkCode]}
+                      location={location}
                     />
                   ))}
                   </div>
 
                   {/* Pagination Controls */}
-                  {totalPages > 1 && (
+                  {calculatedTotalPages > 1 && (
                     <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4">
                       {/* Results Info */}
                       <div className="text-sm"
@@ -699,11 +844,11 @@ const ExploreParksPage = () => {
 
                         {/* Page Numbers */}
                         <div className="flex items-center gap-1">
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                          {Array.from({ length: calculatedTotalPages }, (_, i) => i + 1).map((page) => {
                             // Show first page, last page, current page, and pages around current page
                             if (
                               page === 1 ||
-                              page === totalPages ||
+                              page === calculatedTotalPages ||
                               (page >= currentPage - 1 && page <= currentPage + 1)
                             ) {
                               return (
@@ -743,10 +888,10 @@ const ExploreParksPage = () => {
                         {/* Next Button */}
                         <button
                           onClick={goToNextPage}
-                          disabled={currentPage === totalPages}
+                          disabled={currentPage === calculatedTotalPages}
                           className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{
-                            backgroundColor: currentPage === totalPages ? 'transparent' : 'var(--surface)',
+                            backgroundColor: currentPage === calculatedTotalPages ? 'transparent' : 'var(--surface)',
                             borderWidth: '1px',
                             borderColor: 'var(--border)',
                             color: 'var(--text-primary)'
@@ -904,11 +1049,15 @@ const ExploreParksPage = () => {
 };
 
 // Park Card Component
-const ParkCard = ({ park, viewMode, rating }) => {
+const ParkCard = ({ park, viewMode, rating, location }) => {
   if (viewMode === 'list') {
     return (
       <Link
-        to={`/parks/${park.parkCode}`}
+        to={{
+          pathname: `/parks/${park.parkCode}`,
+          search: location.search,
+        }}
+        state={{ from: { pathname: '/explore', search: location.search } }}
         className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
         style={{
           backgroundColor: 'var(--surface)',
@@ -970,7 +1119,11 @@ const ParkCard = ({ park, viewMode, rating }) => {
 
   return (
     <Link
-      to={`/parks/${park.parkCode}`}
+      to={{
+        pathname: `/parks/${park.parkCode}`,
+        search: location.search,
+      }}
+      state={{ from: { pathname: '/explore', search: location.search } }}
       className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300"
       style={{
         backgroundColor: 'var(--surface)',

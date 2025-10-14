@@ -58,6 +58,10 @@ export { default as Camera } from 'lucide-react/dist/esm/icons/camera';
 export { default as Sunrise } from 'lucide-react/dist/esm/icons/sunrise';
 export { default as Sunset } from 'lucide-react/dist/esm/icons/sunset';
 export { default as Compass } from 'lucide-react/dist/esm/icons/compass';
+export { default as Dog } from 'lucide-react/dist/esm/icons/dog';
+
+// Accessibility
+export { default as Accessibility } from 'lucide-react/dist/esm/icons/accessibility';
 
 // Location & Map
 export { default as MapPin } from 'lucide-react/dist/esm/icons/map-pin';
@@ -118,6 +122,7 @@ export { default as Utensils } from 'lucide-react/dist/esm/icons/utensils';
 export { default as Bed } from 'lucide-react/dist/esm/icons/bed';
 export { default as Fuel } from 'lucide-react/dist/esm/icons/fuel';
 export { default as Wifi } from 'lucide-react/dist/esm/icons/wifi';
+export { default as WifiOff } from 'lucide-react/dist/esm/icons/wifi-off';
 export { default as DollarSign } from 'lucide-react/dist/esm/icons/dollar-sign';
 export { default as CreditCard } from 'lucide-react/dist/esm/icons/credit-card';
 export { default as Gift } from 'lucide-react/dist/esm/icons/gift';

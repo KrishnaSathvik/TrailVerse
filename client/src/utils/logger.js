@@ -32,7 +32,7 @@ const logger = {
   // Log debug in development only
   log: (...args) => {
     if (isDevelopment) {
-      console.log(...args);
+
     }
   },
   
@@ -46,14 +46,14 @@ const logger = {
   // Performance logging (always enabled for monitoring)
   performance: (...args) => {
     if (isDevelopment || isProduction) {
-      console.log('[PERFORMANCE]', ...args);
+
     }
   },
   
   // Analytics logging (always enabled)
   analytics: (...args) => {
     if (isDevelopment || isProduction) {
-      console.log('[ANALYTICS]', ...args);
+
     }
   }
 };

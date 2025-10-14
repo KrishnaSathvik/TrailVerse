@@ -52,7 +52,6 @@ root.render(
 
 // Send to analytics
 reportWebVitals((metric) => {
-  console.log(metric);
   
   // Send to Google Analytics
   if (window.gtag) {

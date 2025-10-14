@@ -1,13 +1,16 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import userService from '../services/userService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useWebSocket } from './useWebSocket';
+import cacheService from '../services/cacheService';
 
 export const useVisitedParks = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { subscribe, unsubscribe, subscribeToVisited } = useWebSocket();
 
   // Query for visited parks
   const {
@@ -19,8 +22,9 @@ export const useVisitedParks = () => {
     queryKey: ['visitedParks'],
     queryFn: userService.getVisitedParks,
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 0, // Always consider stale so refetchOnMount works
+    refetchOnMount: true, // Always refetch when component mounts to get fresh data
+    refetchOnWindowFocus: false, // Don't refetch on window focus - WebSocket handles this
   });
 
   // Mutation for marking a park as visited
@@ -124,6 +128,91 @@ export const useVisitedParks = () => {
   const refreshVisitedParks = useCallback(() => {
     return refetch();
   }, [refetch]);
+
+  // Setup WebSocket real-time sync
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+
+    // Subscribe to visited channel
+    subscribeToVisited();
+
+    // Handle park visited added from another device/tab
+    const handleParkVisitedAdded = (visitedPark) => {
+      console.log('[Real-Time] Park visited added:', visitedPark);
+      
+      // Invalidate EnhancedApi cache
+      console.log('[Real-Time] 🔥 Invalidating EnhancedApi cache for visited parks');
+      cacheService.clearByType('visitedParks');
+      
+      // Update cache
+      queryClient.setQueryData(['visitedParks'], (old = []) => {
+        if (old.some(v => v.parkCode === visitedPark.parkCode)) {
+          console.log('[Real-Time] Duplicate visited park, skipping');
+          return old;
+        }
+        return [...old, visitedPark];
+      });
+    };
+
+    // Handle park visited removed from another device/tab
+    const handleParkVisitedRemoved = (data) => {
+      console.log('[Real-Time] Park visited removed:', data);
+      
+      // Invalidate EnhancedApi cache
+      console.log('[Real-Time] 🔥 Invalidating EnhancedApi cache for visited parks');
+      cacheService.clearByType('visitedParks');
+      
+      // Update cache
+      queryClient.setQueryData(['visitedParks'], (old = []) => {
+        return old.filter(v => v.parkCode !== data.parkCode);
+      });
+    };
+
+    // Subscribe to WebSocket events
+    subscribe('parkVisitedAdded', handleParkVisitedAdded);
+    subscribe('parkVisitedRemoved', handleParkVisitedRemoved);
+
+    return () => {
+      unsubscribe('parkVisitedAdded', handleParkVisitedAdded);
+      unsubscribe('parkVisitedRemoved', handleParkVisitedRemoved);
+    };
+  }, [user, isAuthenticated, subscribe, unsubscribe, subscribeToVisited, queryClient]);
+
+  // Auto-refresh functionality with visibility change and custom events
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Auto-refresh every 30 seconds (reduced from 10s since WebSocket now handles real-time)
+    const autoRefreshInterval = setInterval(() => {
+      console.log('[Auto-Refresh] Refreshing visited parks...');
+      queryClient.invalidateQueries(['visitedParks']);
+    }, 30000);
+
+    // Refresh when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated) {
+        console.log('[Visibility] Page became visible, refreshing visited parks...');
+        queryClient.invalidateQueries(['visitedParks']);
+      }
+    };
+
+    // Manual refresh event
+    const handleRefreshEvent = () => {
+      if (isAuthenticated) {
+        console.log('[Custom Event] Refresh visited parks event received');
+        queryClient.invalidateQueries(['visitedParks']);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('refreshVisitedParks', handleRefreshEvent);
+
+    return () => {
+      clearInterval(autoRefreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('refreshVisitedParks', handleRefreshEvent);
+    };
+  }, [isAuthenticated, queryClient]);
 
   return {
     visitedParks,

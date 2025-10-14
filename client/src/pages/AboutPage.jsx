@@ -604,11 +604,12 @@ const AboutPage = () => {
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
                   <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    AI Trip Planning
+                    Dual AI Trip Planning
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Get personalized itineraries based on your interests, travel style, and time constraints. 
-                    Our AI learns from thousands of successful park visits to create your perfect adventure.
+                    Choose between Claude and ChatGPT for personalized itineraries based on your interests, 
+                    travel style, and time constraints. Our AI learns from thousands of successful park visits 
+                    to create your perfect adventure with real-time conversation persistence.
                   </p>
                 </div>
 
@@ -628,8 +629,9 @@ const AboutPage = () => {
                     Interactive Maps
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Explore parks with our interactive maps featuring real-time weather, trail conditions, 
-                    and points of interest. Never miss a hidden gem or overlook a must-see attraction.
+                    View all parks on Google Maps with animated markers and search. Desktop users get full 
+                    Google Places integration with nearby restaurants, lodging, gas stations, route planning, 
+                    and turn-by-turn directions. Mobile users enjoy smooth map browsing with park details.
                   </p>
                        </div>
                        
@@ -646,11 +648,12 @@ const AboutPage = () => {
                     <Calendar className="h-6 w-6 text-white" />
                   </div>
                   <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    Live Events Calendar
+                    Live Events & Weather
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Stay updated with real-time NPS events, ranger programs, and special activities. 
-                    Save events to your itinerary and never miss an opportunity to enhance your visit.
+                    Stay updated with real-time NPS events, ranger programs, current weather conditions, 
+                    5-day forecasts, park alerts, and closures. Save events to your profile and plan with 
+                    confidence knowing the latest conditions.
                   </p>
                 </div>
 
@@ -667,11 +670,12 @@ const AboutPage = () => {
                     <Mountain className="h-6 w-6 text-white" />
                          </div>
                   <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    Expert Insights
+                    Community Reviews & Blog
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Benefit from first-hand experience and detailed reviews from someone who's actually 
-                    visited these parks. Get insider tips and hidden gems you won't find elsewhere.
+                    Write reviews with up to 5 photos per review. Read verified user reviews with images, 
+                    engage with expert blog content featuring guides and tips, leave comments with likes 
+                    and nested replies, and share your own experiences from real park visits.
                   </p>
                        </div>
                        
@@ -688,11 +692,12 @@ const AboutPage = () => {
                     <Camera className="h-6 w-6 text-white" />
                   </div>
                   <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    Visual Planning
+                    Smart Features & Tracking
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Browse stunning photography and detailed park information to help you visualize 
-                    your trip. See what awaits you before you even pack your bags.
+                    Save favorite parks, blogs, and events. Track visited locations with dates, manage trip 
+                    history with archive/restore, compare up to 4 parks side-by-side, choose from 1000+ avatar 
+                    options, and enjoy real-time sync across all devices.
                   </p>
                 </div>
 
@@ -709,11 +714,12 @@ const AboutPage = () => {
                     <Globe className="h-6 w-6 text-white" />
                   </div>
                   <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    Modern Technology
+                    PWA & Performance
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Built with the latest web technologies for fast, responsive performance. 
-                    Works seamlessly across all devices with offline capabilities.
+                    Install as a Progressive Web App with offline support, multi-layer caching, smart 
+                    prefetching, performance monitoring with Core Web Vitals tracking, and optimized 
+                    loading for instant navigation. Works seamlessly across all devices.
                   </p>
                 </div>
                          </div>
@@ -776,7 +782,7 @@ const AboutPage = () => {
                 >
                   <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>APIs & AI</h4>
                   <div className="space-y-3">
-                    {['NPS API', 'OpenWeather API', 'OpenAI GPT'].map((tech) => (
+                    {['NPS API', 'OpenWeather API', 'OpenAI GPT-4', 'Claude AI', 'Google Maps API', 'Google Places API', 'Resend Email'].map((tech) => (
                       <div key={tech} className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-orange)' }} />
                         <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
@@ -792,9 +798,9 @@ const AboutPage = () => {
                     borderColor: 'var(--border)'
                   }}
                 >
-                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Deployment</h4>
+                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Deployment & Tools</h4>
                   <div className="space-y-3">
-                    {['Vercel', 'Render', 'MongoDB Atlas'].map((tech) => (
+                    {['Vercel (Frontend)', 'Render (Backend)', 'MongoDB Atlas', 'Socket.io', 'TanStack Query', 'Google Analytics'].map((tech) => (
                       <div key={tech} className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
                         <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>

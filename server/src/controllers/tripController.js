@@ -71,6 +71,12 @@ exports.createTrip = async (req, res, next) => {
 
     const trip = await TripPlan.create(tripData);
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.notifyTripCreated(req.user.id, trip);
+    }
+
     res.status(201).json({
       success: true,
       data: trip
@@ -118,6 +124,12 @@ exports.updateTrip = async (req, res, next) => {
     await trip.save();
     console.log('🔄 TripController: Trip saved successfully with status:', trip.status);
 
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.notifyTripUpdated(req.user.id, trip);
+    }
+
     res.status(200).json({
       success: true,
       data: trip
@@ -151,6 +163,12 @@ exports.deleteTrip = async (req, res, next) => {
 
     trip.status = 'deleted';
     await trip.save();
+
+    // Notify via WebSocket
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      wsService.notifyTripDeleted(req.user.id, trip._id);
+    }
 
     res.status(200).json({
       success: true,
