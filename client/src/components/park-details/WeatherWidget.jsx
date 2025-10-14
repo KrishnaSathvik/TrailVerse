@@ -79,13 +79,40 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
         windSpeed: Math.round(current.wind?.speed || 8),
         visibility: Math.round((current.visibility || 10000) / 1609.34) // Convert meters to miles
       },
-      forecast: forecast?.list?.slice(0, 5).map((item, _index) => ({
-        day: new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }),
-        high: Math.round(item.main?.temp_max || 75),
-        low: Math.round(item.main?.temp_min || 55),
-        icon: getWeatherIconFromCode(item.weather?.[0]?.icon)
-      })) || []
+      forecast: forecast?.list ? groupForecastByDay(forecast.list) : []
     };
+  };
+
+  // Group forecast data by day to avoid duplicate day names
+  const groupForecastByDay = (forecastList) => {
+    const dailyForecast = {};
+    
+    // Group forecast entries by day
+    forecastList.forEach(item => {
+      const date = new Date(item.dt * 1000);
+      const dayKey = date.toDateString();
+      
+      if (!dailyForecast[dayKey]) {
+        dailyForecast[dayKey] = {
+          day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          temps: [],
+          icons: []
+        };
+      }
+      
+      dailyForecast[dayKey].temps.push(item.main?.temp || 70);
+      dailyForecast[dayKey].icons.push(item.weather?.[0]?.icon || '02d');
+    });
+    
+    // Convert to array and calculate high/low temps for each day
+    return Object.values(dailyForecast)
+      .slice(0, 5) // Limit to 5 days
+      .map(day => ({
+        day: day.day,
+        high: Math.round(Math.max(...day.temps)),
+        low: Math.round(Math.min(...day.temps)),
+        icon: getWeatherIconFromCode(day.icons[Math.floor(day.icons.length / 2)]) // Use middle forecast icon
+      }));
   };
 
   const getWeatherIconFromCode = (iconCode) => {
