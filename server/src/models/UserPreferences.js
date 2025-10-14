@@ -146,7 +146,7 @@ const userPreferencesSchema = new mongoose.Schema({
 });
 
 // Add indexes
-userPreferencesSchema.index({ user: 1 });
+// Note: user field already has unique index from schema definition
 userPreferencesSchema.index({ lastSyncAt: -1 });
 userPreferencesSchema.index({ 'devices.deviceId': 1 });
 
