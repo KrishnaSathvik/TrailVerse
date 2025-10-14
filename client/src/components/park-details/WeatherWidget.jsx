@@ -88,7 +88,7 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
     const dailyForecast = {};
     
     // Group forecast entries by day
-    forecastList.forEach(item => {
+    forecastList.forEach((item) => {
       const date = new Date(item.dt * 1000);
       const dayKey = date.toDateString();
       
@@ -113,6 +113,11 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
         low: Math.round(Math.min(...day.temps)),
         icon: getWeatherIconFromCode(day.icons[Math.floor(day.icons.length / 2)]) // Use middle forecast icon
       }));
+  };
+
+  // Helper function to convert Fahrenheit to Celsius
+  const fahrenheitToCelsius = (fahrenheit) => {
+    return Math.round((fahrenheit - 32) * 5/9);
   };
 
   const getWeatherIconFromCode = (iconCode) => {
@@ -200,6 +205,9 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
               style={{ color: 'var(--text-primary)' }}
             >
               {displayWeather.current.temp}°F
+              <span className="text-lg font-normal ml-2" style={{ color: 'var(--text-tertiary)' }}>
+                ({fahrenheitToCelsius(displayWeather.current.temp)}°C)
+              </span>
             </div>
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
               {displayWeather.current.condition}
@@ -251,10 +259,13 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
                 <span className="font-semibold"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  {day.high}°
+                  {day.high}°F
                 </span>
                 <span style={{ color: 'var(--text-tertiary)' }}>
-                  {day.low}°
+                  {day.low}°F
+                </span>
+                <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                  ({fahrenheitToCelsius(day.high)}°/{fahrenheitToCelsius(day.low)}°C)
                 </span>
               </div>
             </div>

@@ -82,11 +82,17 @@ class WebSocketService {
         this.socket = null;
       }
 
+      // Determine WebSocket URL
+      // In production, VITE_WS_URL should point to the backend server (e.g., Render)
+      // because Vercel doesn't support WebSocket connections
       const wsUrl = import.meta.env.VITE_WS_URL || 
                    (import.meta.env.MODE === 'production' 
-                     ? 'https://www.nationalparksexplorerusa.com' 
+                     ? window.location.origin 
                      : 'http://localhost:5001');
       
+      console.log('[WebSocket] Connecting to:', wsUrl);
+      console.log('[WebSocket] Mode:', import.meta.env.MODE);
+      console.log('[WebSocket] VITE_WS_URL:', import.meta.env.VITE_WS_URL);
       
       this.socket = io(wsUrl, {
         auth: {
@@ -97,7 +103,9 @@ class WebSocketService {
         reconnectionDelayMax: 5000,
         reconnectionAttempts: this.maxReconnectAttempts,
         transports: ['websocket', 'polling'],
-        timeout: 10000
+        timeout: 10000,
+        // Allow cross-origin connections
+        withCredentials: true
       });
       
       // Setup Socket.IO event handlers
