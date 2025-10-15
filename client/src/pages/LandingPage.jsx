@@ -81,15 +81,38 @@ const LandingPage = () => {
     }
   };
 
+  const videoSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: 'TrailVerse Demo - AI-Powered National Park Trip Planner',
+    description: 'See how TrailVerse makes planning your National Park adventures effortless. Explore 470+ parks, get AI-powered itineraries, and discover real-time weather and events in just 45 seconds.',
+    thumbnailUrl: [
+      'https://i.ytimg.com/vi/t5CfDyhHOwg/maxresdefault.jpg',
+      'https://i.ytimg.com/vi/t5CfDyhHOwg/hqdefault.jpg'
+    ],
+    uploadDate: '2025-10-15T00:00:00Z',
+    duration: 'PT45S',
+    contentUrl: 'https://youtu.be/t5CfDyhHOwg',
+    embedUrl: 'https://www.youtube.com/embed/t5CfDyhHOwg',
+    publisher: {
+      '@type': 'Organization',
+      name: 'TrailVerse',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.nationalparksexplorerusa.com/logo.png'
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO
         title="TrailVerse - Explore America's 470+ National Parks & Sites"
         description="Discover, plan, and explore America's 470+ National Parks, Monuments, Historic Sites, and more with AI-powered trip planning, interactive maps, real-time weather, events calendar, and expert travel guides. Start your adventure today!"
-        keywords="national parks USA, visit national parks, national park guide, park explorer, yellowstone, yosemite, grand canyon, zion, acadia, park planning, AI trip planner, hiking trails, camping, wildlife"
+        keywords="national parks USA, visit national parks, national park guide, park explorer, yellowstone, yosemite, grand canyon, zion, acadia, park planning, AI trip planner, hiking trails, camping, wildlife, video demo"
         url={import.meta.env.VITE_WEBSITE_URL || "https://www.nationalparksexplorerusa.com"}
         image="https://www.nationalparksexplorerusa.com/images/og-home.jpg"
-        additionalStructuredData={organizationSchema}
+        additionalStructuredData={[organizationSchema, videoSchema]}
       />
 
       <Header />
@@ -100,7 +123,7 @@ const LandingPage = () => {
         <div 
           className="absolute inset-0 w-full bg-cover bg-no-repeat bg-center sm:bg-center md:bg-center lg:bg-top"
           style={{
-            backgroundImage: 'url(/background13.png)',
+            backgroundImage: 'url(/background18.png)',
             filter: 'brightness(0.7)',
             backgroundSize: 'cover',
             backgroundAttachment: 'scroll',
@@ -156,8 +179,76 @@ const LandingPage = () => {
         </div>
 
       </section>
+
+      {/* Demo Video Section */}
+      <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="max-w-6xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <Eye className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
+              <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                See It In Action
+              </span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight mb-3"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Experience TrailVerse
+            </h2>
+            <p className="text-base sm:text-lg max-w-4xl mx-auto whitespace-nowrap overflow-hidden text-ellipsis px-4"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Watch how easy it is to discover, plan, and explore National Parks with our platform
+            </p>
+          </div>
+
+          {/* Video Container */}
+          <div className="rounded-3xl overflow-hidden backdrop-blur group relative"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              boxShadow: 'var(--shadow-xl)'
+            }}
+          >
+            {/* YouTube Video Embed */}
+            <div className="relative aspect-video bg-black">
+              <iframe
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/t5CfDyhHOwg?rel=0&modestbranding=1"
+                title="TrailVerse Demo - Explore National Parks with AI Trip Planning"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              ></iframe>
+            </div>
+
+            {/* Video Stats/Info Footer */}
+            <div className="p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-t"
+              style={{
+                backgroundColor: 'var(--surface-hover)',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  45 seconds
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Feature Pills */}
-      <section id="features" className="relative z-10 -mt-16 py-16" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <section id="features" className="relative z-10 py-16" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[

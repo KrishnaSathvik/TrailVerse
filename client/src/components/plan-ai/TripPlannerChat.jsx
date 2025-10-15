@@ -53,6 +53,7 @@ const TripPlannerChat = ({
 
   const messagesEndRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
+  const previousExistingTripIdRef = useRef(existingTripId);
 
   // Removed all scroll functionality to prevent unwanted scrolling
 
@@ -440,6 +441,29 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
       setSelectedProvider(providers[0].id);
     }
   }, [providersLoaded, providers, selectedProvider]);
+
+  // Reset currentTripId when explicitly starting a new chat
+  // (Component stays mounted when using "Start New Chat" or "Personalized Recommendations")
+  useEffect(() => {
+    const previousTripId = previousExistingTripIdRef.current;
+    
+    // Reset when explicitly starting new chat (isNewChat or isPersonalized URL flags)
+    // These flags indicate user clicked "Start New Chat" or "Get Recommendations"
+    if (isNewChat || isPersonalized) {
+      console.log('🆕 Starting NEW chat (explicit action) - resetting currentTripId');
+      setCurrentTripId(null);
+      setCurrentPlan(null);
+      localStorage.removeItem('planai-chat-state');
+    }
+    // Update existingTripId if it changed (loading different trip)
+    else if (existingTripId && existingTripId !== previousTripId) {
+      console.log('🔄 Loading existing trip:', existingTripId);
+      setCurrentTripId(existingTripId);
+    }
+    
+    // Update ref for next comparison
+    previousExistingTripIdRef.current = existingTripId;
+  }, [existingTripId, isNewChat, isPersonalized]);
 
   // Initialize chat after providers are loaded
   useEffect(() => {
@@ -927,6 +951,11 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         console.log('✅ Trip updated successfully:', updateResponse);
       } else {
         // Create new trip in database
+        console.log('🆕 Creating NEW trip in database:', {
+          parkName: parkName || 'General Planning',
+          parkCode: formData.parkCode || null,
+          messagesCount: messagesToSave.length
+        });
         const response = await tripService.createTrip({
           parkName: parkName || 'General Planning',
           parkCode: formData.parkCode || null,
@@ -940,6 +969,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         
         // Update currentTripId with the database ID
         const newTripId = response.data?._id || response._id;
+        console.log('✅ NEW trip created with ID:', newTripId);
         setCurrentTripId(newTripId);
       }
 

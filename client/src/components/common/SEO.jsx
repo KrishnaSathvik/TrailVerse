@@ -83,9 +83,17 @@ const SEO = ({
       
       {/* Additional Structured Data */}
       {additionalStructuredData && (
-        <script type="application/ld+json">
-          {JSON.stringify(additionalStructuredData)}
-        </script>
+        Array.isArray(additionalStructuredData) ? (
+          additionalStructuredData.map((schema, index) => (
+            <script key={index} type="application/ld+json">
+              {JSON.stringify(schema)}
+            </script>
+          ))
+        ) : (
+          <script type="application/ld+json">
+            {JSON.stringify(additionalStructuredData)}
+          </script>
+        )
       )}
 
       {/* Additional Meta Tags */}
