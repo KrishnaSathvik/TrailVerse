@@ -7,7 +7,7 @@ const Review = require('../models/ParkReview');
 // @access  Private
 exports.getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     res.status(200).json({
       success: true,
@@ -27,7 +27,7 @@ exports.updateProfile = async (req, res, next) => {
     
     console.log('Backend: Received profile update request:', { firstName, lastName, email, phone, location, website, bio, avatar });
     
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     // Update basic fields
     if (firstName) user.firstName = firstName;
@@ -148,7 +148,7 @@ exports.removeSavedPark = async (req, res, next) => {
 // @access  Private
 exports.getSavedParks = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     res.status(200).json({
       success: true,
@@ -318,7 +318,7 @@ exports.markParkVisited = async (req, res, next) => {
       });
     }
     
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({
         success: false,

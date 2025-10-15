@@ -520,6 +520,7 @@ const PlanAIPage = () => {
         existingTripId={tripId} // Pass trip ID
         isPersonalized={isPersonalized}
         isNewChat={isNewChat}
+        refreshTrips={refetchUserTrips}
       />
     );
   }

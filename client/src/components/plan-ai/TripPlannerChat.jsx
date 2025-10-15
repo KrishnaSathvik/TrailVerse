@@ -25,7 +25,8 @@ const TripPlannerChat = ({
   parkName, 
   existingTripId = null,
   isPersonalized = false,
-  isNewChat = false
+  isNewChat = false,
+  refreshTrips = null
 }) => {
   const { user, isAuthenticated } = useAuth();
   
@@ -90,6 +91,64 @@ const TripPlannerChat = ({
       console.error('Error getting user context:', error);
       return `🌟 Let's plan an amazing trip together!`;
     }
+  };
+
+  const createWelcomeBackMessage = (trip, existingMessages) => {
+    const userName = user?.name || user?.firstName || 'there';
+    const parkName = trip.parkName || 'this adventure';
+    const messageCount = existingMessages.length;
+    const lastActivity = trip.updatedAt ? new Date(trip.updatedAt).toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : 'recently';
+    
+    // Get conversation summary
+    const userQuestions = existingMessages.filter(msg => msg.role === 'user').slice(0, 3);
+    const hasPlan = existingMessages.some(msg => 
+      msg.role === 'assistant' && /(Day\s*\d+[:\-\s]|Itinerary|Schedule|Plan|## Day)/i.test(msg.content)
+    );
+    
+    // Get key topics from conversation
+    const allContent = existingMessages.map(msg => msg.content).join(' ').toLowerCase();
+    const topics = [];
+    if (allContent.includes('hiking') || allContent.includes('trail')) topics.push('hiking');
+    if (allContent.includes('photo') || allContent.includes('camera')) topics.push('photography');
+    if (allContent.includes('wildlife') || allContent.includes('animal')) topics.push('wildlife');
+    if (allContent.includes('camp') || allContent.includes('tent')) topics.push('camping');
+    if (allContent.includes('weather') || allContent.includes('season')) topics.push('weather');
+    
+    const topicsText = topics.length > 0 ? topics.slice(0, 3).join(', ') : 'general planning';
+
+    return {
+      id: Date.now(),
+      role: 'assistant',
+      content: `# 👋 Welcome Back, ${userName}!
+
+I'm **TrailVerse AI**, and I'm excited to continue planning your **${parkName}** adventure with you! 
+
+## 📋 Where We Left Off
+
+You last worked on this trip **${lastActivity}**, and we've had a great conversation with **${messageCount} messages** so far. Here's what we've been discussing:
+
+### 🎯 **Topics We've Covered**
+${topicsText}
+
+### 💬 **Recent Questions You Asked**
+${userQuestions.length > 0 ? userQuestions.map((q, i) => `${i + 1}. "${q.content.length > 60 ? q.content.substring(0, 60) + '...' : q.content}"`).join('\n') : 'We started with general planning questions'}
+
+${hasPlan ? '### ✅ **Progress Made**\nWe\'ve already created a detailed trip plan! You can ask me to modify it, add more details, or explore specific aspects.' : '### 🚀 **Ready to Continue**\nLet\'s keep building on our conversation and create an amazing itinerary!'}
+
+## 🎯 What Would You Like to Do Next?
+
+- **Continue planning** - Ask me about specific activities, timing, or logistics
+- **Refine details** - Modify dates, group size, or preferences  
+- **Get recommendations** - Explore new trails, activities, or hidden gems
+- **Ask questions** - I'm here to help with any aspect of your trip
+
+What's on your mind for this ${parkName} adventure? Let's pick up right where we left off! 🏔️✨`,
+      timestamp: new Date()
+    };
   };
 
   const showWelcomeMessage = useCallback(async () => {
@@ -283,7 +342,40 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
             // Fetch conversation from backend using conversationId
             const conversation = await conversationService.getConversation(trip.conversationId);
             console.log('🔄 Loaded conversation:', conversation);
-            setMessages(conversation.conversation || []);
+            const messagesToLoad = conversation.conversation || [];
+            
+          // Add welcome back message at the end if there are existing messages
+          if (messagesToLoad.length > 0) {
+            // Find the last welcome back message
+            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg => 
+              msg.role === 'assistant' && 
+              msg.content.includes('Welcome Back') && 
+              msg.content.includes('Where We Left Off')
+            );
+            
+            // Check if there are user messages after the last welcome back
+            const hasNewUserMessages = lastWelcomeBackIndex !== -1 && 
+              messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
+            
+            // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
+            if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
+              const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
+              setMessages([...messagesToLoad, welcomeBackMessage]);
+              console.log('🔄 Added welcome back message to end of existing conversation (conversationId)');
+              
+              // Auto-scroll to show the welcome back message
+              setTimeout(() => {
+                if (messagesEndRef.current) {
+                  messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
+            } else {
+              setMessages(messagesToLoad);
+              console.log('🔄 Welcome back message exists and no new user messages, not adding duplicate');
+            }
+          } else {
+            setMessages(messagesToLoad);
+          }
           } catch (error) {
             console.error('Error loading conversation:', error);
             // Fallback to empty messages if conversation fetch fails
@@ -297,7 +389,39 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
           const messagesToLoad = trip.conversation || trip.messages || [];
           console.log('🔄 Setting messages:', messagesToLoad.length, 'messages');
           console.log('🔄 Messages with feedback:', messagesToLoad.filter(m => m.userFeedback).map(m => ({ id: m.id, feedback: m.userFeedback })));
-          setMessages(messagesToLoad);
+          
+          // Add welcome back message at the end if there are existing messages
+          if (messagesToLoad.length > 0) {
+            // Find the last welcome back message
+            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg => 
+              msg.role === 'assistant' && 
+              msg.content.includes('Welcome Back') && 
+              msg.content.includes('Where We Left Off')
+            );
+            
+            // Check if there are user messages after the last welcome back
+            const hasNewUserMessages = lastWelcomeBackIndex !== -1 && 
+              messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
+            
+            // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
+            if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
+              const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
+              setMessages([...messagesToLoad, welcomeBackMessage]);
+              console.log('🔄 Added welcome back message to end of existing conversation');
+              
+              // Auto-scroll to show the welcome back message
+              setTimeout(() => {
+                if (messagesEndRef.current) {
+                  messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
+            } else {
+              setMessages(messagesToLoad);
+              console.log('🔄 Welcome back message exists and no new user messages, not adding duplicate');
+            }
+          } else {
+            setMessages(messagesToLoad);
+          }
         }
         
         setCurrentPlan(trip.plan);
@@ -790,27 +914,56 @@ WEATHER & LIVE INFO RESPONSES:
 
   const extractKeyTopics = (messages) => {
     const topics = new Set();
-    const allContent = messages.map(msg => msg.content).join(' ').toLowerCase();
     
-    // Common trip planning topics
+    // Focus on user messages for more accurate topic extraction
+    const userMessages = messages.filter(msg => msg.role === 'user');
+    const userContent = userMessages.map(msg => msg.content).join(' ').toLowerCase();
+    
+    // If no user messages, use all content but be more conservative
+    const allContent = userMessages.length > 0 ? userContent : messages.map(msg => msg.content).join(' ').toLowerCase();
+    
+    // More specific and context-aware topic keywords
     const topicKeywords = {
-      'hiking': ['hiking', 'trails', 'hike', 'walking'],
-      'photography': ['photo', 'photography', 'pictures', 'camera'],
-      'wildlife': ['wildlife', 'animals', 'birds', 'wildlife viewing'],
-      'camping': ['camping', 'campsite', 'tent', 'camp'],
-      'lodging': ['hotel', 'lodge', 'accommodation', 'stay'],
-      'dining': ['food', 'restaurant', 'dining', 'eat'],
-      'weather': ['weather', 'temperature', 'climate', 'season'],
-      'transportation': ['transport', 'car', 'drive', 'travel'],
-      'budget': ['budget', 'cost', 'price', 'expensive', 'cheap'],
-      'safety': ['safety', 'dangerous', 'safe', 'precautions']
+      'hiking': ['hiking', 'trails', 'hike', 'walking', 'trekking'],
+      'photography': ['photo', 'photography', 'pictures', 'camera', 'photograph'],
+      'wildlife': ['wildlife', 'animals', 'birds', 'wildlife viewing', 'animal watching'],
+      'camping': ['camping', 'campsite', 'tent', 'camp', 'backpacking'],
+      'lodging': ['hotel', 'lodge', 'accommodation', 'stay', 'accommodations'],
+      'dining': ['food', 'restaurant', 'dining', 'eat', 'meal', 'cuisine'],
+      'weather': ['weather', 'temperature', 'climate', 'season', 'forecast'],
+      'transportation': ['transport', 'car', 'drive', 'travel', 'transportation'],
+      'budget': ['budget', 'cost', 'price', 'expensive', 'cheap', 'affordable'],
+      'safety': ['safety', 'dangerous', 'safe', 'precautions', 'security'],
+      'farms': ['farm', 'farms', 'pumpkin', 'patch', 'agriculture', 'harvest'],
+      'festivals': ['festival', 'event', 'celebration', 'fair', 'market'],
+      'local': ['local', 'nearby', 'area', 'region', 'community'],
+      'parks': ['park', 'parks', 'national park', 'state park', 'recreation'],
+      'cities': ['city', 'downtown', 'urban', 'metropolitan', 'town']
     };
     
+    // Only add topics if they appear in user messages or are clearly relevant
     Object.entries(topicKeywords).forEach(([topic, keywords]) => {
-      if (keywords.some(keyword => allContent.includes(keyword))) {
+      const keywordCount = keywords.filter(keyword => allContent.includes(keyword)).length;
+      // Require at least 2 keyword matches for generic topics, 1 for specific ones
+      const threshold = ['farms', 'festivals', 'local', 'parks', 'cities'].includes(topic) ? 1 : 2;
+      if (keywordCount >= threshold) {
         topics.add(topic);
       }
     });
+    
+    // If no specific topics found, try to extract from user questions
+    if (topics.size === 0 && userMessages.length > 0) {
+      const firstUserMessage = userMessages[0].content.toLowerCase();
+      if (firstUserMessage.includes('farm') || firstUserMessage.includes('pumpkin')) {
+        topics.add('farms');
+      }
+      if (firstUserMessage.includes('park') || firstUserMessage.includes('national')) {
+        topics.add('parks');
+      }
+      if (firstUserMessage.includes('city') || firstUserMessage.includes('downtown')) {
+        topics.add('cities');
+      }
+    }
     
     return Array.from(topics).slice(0, 5); // Top 5 topics
   };
@@ -949,6 +1102,12 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
           status: 'active'
         });
         console.log('✅ Trip updated successfully:', updateResponse);
+        
+        // Force refresh of trips list to update message count
+        if (refreshTrips) {
+          console.log('🔄 Refreshing trips list to update message count');
+          refreshTrips();
+        }
       } else {
         // Create new trip in database
         console.log('🆕 Creating NEW trip in database:', {
@@ -959,7 +1118,8 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         const response = await tripService.createTrip({
           parkName: parkName || 'General Planning',
           parkCode: formData.parkCode || null,
-          formData,
+          title: parkName ? `${parkName} Trip Plan` : 'General Planning Session',
+          formData: formData || {},
           conversation: messagesToSave,
           summary: tripSummary,
           plan: currentPlan,
@@ -1013,10 +1173,10 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         // Create new trip in database
         const response = await tripService.createTrip({
           userId: user.id,
-          parkCode: formData.parkCode,
-          parkName,
-          title: `${parkName} Trip Plan`,
-          formData,
+          parkCode: formData.parkCode || null,
+          parkName: parkName || 'General Planning',
+          title: parkName ? `${parkName} Trip Plan` : 'General Planning Session',
+          formData: formData || {},
           plan: currentPlan,
           provider: selectedProvider,
           conversation: messagesToSave.map(msg => ({
@@ -1156,6 +1316,31 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Floating Back Button */}
+      <button
+        onClick={onBack}
+        className="fixed top-4 left-4 z-30 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-lg backdrop-blur-sm"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-primary)',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = 'var(--surface-hover)';
+          e.target.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = 'var(--surface)';
+          e.target.style.transform = 'translateY(0)';
+        }}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span className="hidden sm:inline text-sm font-semibold">Back to Planning</span>
+        <span className="sm:hidden text-sm font-semibold">Back</span>
+      </button>
+
       {/* Header - Redesigned */}
       <div className="sticky top-0 z-20 backdrop-blur-xl border-b"
           style={{
@@ -1165,24 +1350,9 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
           }}
         >
           <div className="max-w-5xl mx-auto w-full px-4 sm:px-6">
-            <div className="flex items-center justify-between py-3 sm:py-4">
-              {/* Back Button */}
-              <button
-                onClick={onBack}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 hover:-translate-x-0.5"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm">Back</span>
-              </button>
-
+            <div className="flex items-center justify-center py-3 sm:py-4">
               {/* Title */}
-              <div className="flex-1 text-center px-3 sm:px-6 min-w-0">
+              <div className="text-center min-w-0">
                 <h1 className="text-sm sm:text-base font-bold truncate" style={{ color: 'var(--text-primary)' }}>
                   {parkName}
                 </h1>
@@ -1207,22 +1377,6 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                   </div>
                 )}
               </div>
-
-              {/* Auto-Save Indicator */}
-              {messages.length >= 2 && (
-                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    color: 'var(--text-tertiary)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="hidden sm:inline">Auto-saved</span>
-                  <span className="sm:hidden">Saved</span>
-                </div>
-              )}
             </div>
 
             {/* Provider Selector */}

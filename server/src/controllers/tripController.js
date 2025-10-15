@@ -6,7 +6,7 @@ const TripPlan = require('../models/TripPlan');
 exports.getUserTrips = async (req, res, next) => {
   try {
     // Users can only view their own trips
-    if (req.user.id !== req.params.userId && req.user.role !== 'admin') {
+    if (req.user._id.toString() !== req.params.userId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized'
@@ -43,7 +43,7 @@ exports.getTrip = async (req, res, next) => {
     }
 
     // Users can only view their own trips
-    if (trip.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (trip.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized'
@@ -66,7 +66,7 @@ exports.createTrip = async (req, res, next) => {
   try {
     const tripData = {
       ...req.body,
-      userId: req.user.id
+      userId: req.user._id
     };
 
     const trip = await TripPlan.create(tripData);
@@ -74,7 +74,7 @@ exports.createTrip = async (req, res, next) => {
     // Notify via WebSocket
     const wsService = req.app.get('wsService');
     if (wsService) {
-      wsService.notifyTripCreated(req.user.id, trip);
+      wsService.notifyTripCreated(req.user._id, trip);
     }
 
     res.status(201).json({
@@ -101,7 +101,7 @@ exports.updateTrip = async (req, res, next) => {
     }
 
     // Users can only update their own trips
-    if (trip.userId.toString() !== req.user.id) {
+    if (trip.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized'
@@ -127,7 +127,7 @@ exports.updateTrip = async (req, res, next) => {
     // Notify via WebSocket
     const wsService = req.app.get('wsService');
     if (wsService) {
-      wsService.notifyTripUpdated(req.user.id, trip);
+      wsService.notifyTripUpdated(req.user._id, trip);
     }
 
     res.status(200).json({
@@ -154,7 +154,7 @@ exports.deleteTrip = async (req, res, next) => {
     }
 
     // Users can only delete their own trips
-    if (trip.userId.toString() !== req.user.id) {
+    if (trip.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized'
@@ -167,7 +167,7 @@ exports.deleteTrip = async (req, res, next) => {
     // Notify via WebSocket
     const wsService = req.app.get('wsService');
     if (wsService) {
-      wsService.notifyTripDeleted(req.user.id, trip._id);
+      wsService.notifyTripDeleted(req.user._id, trip._id);
     }
 
     res.status(200).json({
@@ -196,7 +196,7 @@ exports.addMessage = async (req, res, next) => {
     }
 
     // Users can only add messages to their own trips
-    if (trip.userId.toString() !== req.user.id) {
+    if (trip.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: 'Unauthorized'
