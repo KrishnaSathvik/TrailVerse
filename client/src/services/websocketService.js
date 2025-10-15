@@ -221,17 +221,17 @@ class WebSocketService {
     });
 
     this.socket.on('trip_created', (data) => {
-
+      console.log('[WebSocket] 🎉 Received trip_created event:', data);
       this.emit('tripCreated', data);
     });
 
     this.socket.on('trip_updated', (data) => {
-
+      console.log('[WebSocket] 🔄 Received trip_updated event:', data);
       this.emit('tripUpdated', data);
     });
 
     this.socket.on('trip_deleted', (data) => {
-
+      console.log('[WebSocket] 🗑️ Received trip_deleted event:', data);
       this.emit('tripDeleted', data);
     });
 

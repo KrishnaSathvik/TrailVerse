@@ -388,6 +388,8 @@ const PlanAIPage = () => {
     setChatFormData(defaultFormData);
     setSelectedParkName('');
     setShowChat(true);
+    // Add newchat flag to show proper welcome message
+    navigate('/plan-ai?newchat=true');
   };
 
   const handlePersonalizedRecommendations = () => {

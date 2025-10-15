@@ -161,7 +161,9 @@ export { default as Database } from 'lucide-react/dist/esm/icons/database';
 // Additional common icons
 export { default as Zap } from 'lucide-react/dist/esm/icons/zap';
 export { default as HelpCircle } from 'lucide-react/dist/esm/icons/help-circle';
+export { default as Play } from 'lucide-react/dist/esm/icons/play';
 export { default as PlayCircle } from 'lucide-react/dist/esm/icons/play-circle';
+export { default as Pause } from 'lucide-react/dist/esm/icons/pause';
 export { default as PauseCircle } from 'lucide-react/dist/esm/icons/pause-circle';
 export { default as RefreshCw } from 'lucide-react/dist/esm/icons/refresh-cw';
 export { default as Maximize } from 'lucide-react/dist/esm/icons/maximize';
