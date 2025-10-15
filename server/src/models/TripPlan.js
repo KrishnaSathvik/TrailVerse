@@ -12,11 +12,11 @@ const tripPlanSchema = new mongoose.Schema({
   },
   parkCode: {
     type: String,
-    required: true
+    required: false
   },
   parkName: {
     type: String,
-    required: true
+    required: false
   },
   formData: {
     startDate: Date,
@@ -70,6 +70,14 @@ const tripPlanSchema = new mongoose.Schema({
     type: String,
     enum: ['claude', 'openai'],
     default: 'claude'
+  },
+  summary: {
+    totalMessages: Number,
+    userQuestions: [String],
+    hasPlan: Boolean,
+    planPreview: String,
+    lastActivity: Date,
+    keyTopics: [String]
   }
 }, {
   timestamps: true

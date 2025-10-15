@@ -42,7 +42,15 @@ export const useTrips = () => {
     // Handle trip deleted from another device/tab
     const handleTripDeleted = (data) => {
       console.log('[Real-Time] Trip deleted:', data);
-      setTrips(prev => prev.filter(t => t._id !== data.tripId));
+      setTrips(prev => {
+        const filtered = prev.filter(t => {
+          const tripId = t._id || t.id;
+          const deletedId = data.tripId;
+          return tripId !== deletedId && tripId !== deletedId.toString();
+        });
+        console.log('[Real-Time] Filtered trips after deletion:', filtered.length, 'remaining');
+        return filtered;
+      });
     };
 
     // Subscribe to WebSocket events
@@ -108,7 +116,14 @@ export const useTrips = () => {
   const deleteTrip = async (tripId) => {
     try {
       await tripService.deleteTrip(tripId);
-      setTrips(prev => prev.filter(trip => trip._id !== tripId));
+      setTrips(prev => {
+        const filtered = prev.filter(trip => {
+          const currentId = trip._id || trip.id;
+          return currentId !== tripId && currentId !== tripId.toString();
+        });
+        console.log('[Local] Filtered trips after deletion:', filtered.length, 'remaining');
+        return filtered;
+      });
     } catch (err) {
       console.error('Error deleting trip:', err);
       throw err;

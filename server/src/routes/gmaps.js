@@ -6,6 +6,45 @@ const router = express.Router();
 const cache = new NodeCache({ stdTTL: 60 * 60 * 24 * 3 }); // 3 days default
 const KEY = process.env.GMAPS_SERVER_KEY;
 
+// Debug endpoint to check API key status
+router.get('/debug', (req, res) => {
+  res.json({
+    hasKey: !!KEY,
+    keyLength: KEY ? KEY.length : 0,
+    keyPrefix: KEY ? KEY.substring(0, 10) + '...' : 'none',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Debug endpoint to test Google Places API directly
+router.get('/debug-places', async (req, res) => {
+  try {
+    if (!KEY) {
+      return res.status(500).json({ error: 'GMAPS_SERVER_KEY not configured' });
+    }
+
+    const { lat = '40.7128', lng = '-74.0060', type = 'restaurant', radius = '1000' } = req.query;
+    
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${KEY}`;
+    
+    console.log('🔍 Testing Google Places API directly:', url);
+    
+    const response = await fetch(url);
+    const json = await response.json();
+    
+    res.json({
+      url,
+      status: json.status,
+      error_message: json.error_message,
+      results: json.results?.length || 0,
+      raw_response: json
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /**
  * @swagger
  * /api/gmaps/place/{placeId}:
@@ -129,6 +168,12 @@ router.get('/nearby', async (req, res) => {
       return res.json(hit);
     }
 
+    if (!KEY) {
+      console.error('❌ GMAPS_SERVER_KEY not configured in nearby search');
+      console.error('❌ Environment variables:', Object.keys(process.env).filter(key => key.includes('GMAPS')));
+      return res.status(500).json({ error: 'Google Maps API key not configured' });
+    }
+
     let url;
     
     // Handle park-specific attractions search
@@ -153,6 +198,16 @@ router.get('/nearby', async (req, res) => {
       error_message: json.error_message
     });
     
+    // Check for API errors
+    if (json.status !== 'OK') {
+      console.error('❌ Google Places API Error:', json.status, json.error_message);
+      return res.status(400).json({ 
+        error: 'Google Places API error', 
+        status: json.status, 
+        message: json.error_message 
+      });
+    }
+    
     // Debug: Check first result's rating data
     if (json.results && json.results.length > 0) {
       const firstResult = json.results[0];
@@ -164,9 +219,15 @@ router.get('/nearby', async (req, res) => {
       });
     }
     
+    // Check if we have results
+    if (!json.results || json.results.length === 0) {
+      console.log('🔍 No results found for search:', { lat, lng, type, radius });
+      return res.json([]);
+    }
+    
     // Fetch detailed place information for each result to get photos and complete data
     const items = [];
-    const placesToProcess = (json.results || []).slice(0, 50); // Get more results to find top 10 by rating
+    const placesToProcess = json.results.slice(0, 50); // Get more results to find top 10 by rating
     
     for (const place of placesToProcess) {
       try {
