@@ -15,6 +15,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userDataLoaded, setUserDataLoaded] = useState(false);
   
 
 
@@ -43,6 +44,8 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ AuthContext: Restoring user from localStorage');
         // Immediately restore user from localStorage for better UX
         setUser(storedUser);
+        // Mark as loaded if storedUser has createdAt
+        setUserDataLoaded(!!storedUser.createdAt);
         
         // Then validate token with server in background
         try {
@@ -54,6 +57,8 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ AuthContext: Server response data.data:', response.data.data);
           // Update user with fresh data from server
           setUser(response.data);
+          // Mark as fully loaded with server data
+          setUserDataLoaded(true);
           // Update localStorage with fresh data
           localStorage.setItem('user', JSON.stringify(response.data));
           console.log('✅ AuthContext: Updated localStorage with fresh user data');
@@ -81,15 +86,19 @@ export const AuthProvider = ({ children }) => {
 
             authService.logout();
             setUser(null);
+            setUserDataLoaded(false);
           } else {
             // For other errors (network, server down, etc.), keep user logged in
             console.warn('⚠️ AuthContext: Failed to validate token with server, but keeping user logged in:', error.message);
+            // Still mark as loaded if we have localStorage data
+            setUserDataLoaded(!!storedUser.createdAt);
           }
         }
       } else {
         console.log('❌ AuthContext: No valid token or user data found');
         if (!token) console.log('❌ AuthContext: No token in localStorage');
         if (!storedUser) console.log('❌ AuthContext: No user data in localStorage');
+        setUserDataLoaded(false);
       }
       
 
@@ -157,6 +166,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    userDataLoaded,
     signup,
     login,
     logout,

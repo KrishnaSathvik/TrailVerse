@@ -9,7 +9,14 @@ const { protect } = require('../middleware/auth');
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../../uploads');
-    const categoryDir = path.join(uploadDir, req.body.category || 'general');
+    const category = req.body.category || 'general';
+    const categoryDir = path.join(uploadDir, category);
+    
+    console.log('📁 Multer destination:', {
+      category: category,
+      categoryDir: categoryDir,
+      body: req.body
+    });
     
     try {
       await fs.mkdir(categoryDir, { recursive: true });
@@ -109,7 +116,7 @@ exports.uploadImages = async (req, res, next) => {
           thumbnailUrl: `${baseUrl}/${thumbnailRelativePath.replace(/\\/g, '/')}`,
           category,
           relatedId: relatedId || null,
-          relatedType: relatedType || null,
+          relatedType: relatedType || (category === 'profile' ? 'user' : null),
           metadata: {
             width: metadata.width,
             height: metadata.height,

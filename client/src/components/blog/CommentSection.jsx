@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import commentService from '../../services/commentService';
+import { getBestAvatar } from '../../utils/avatarGenerator';
 import { MessageCircle, ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from '@components/icons';
 
 const CommentSection = ({ postId, comments: initialComments = [] }) => {
@@ -169,7 +170,7 @@ const Comment = ({ comment, user, isAuthenticated, onReply, onDelete, onLike, is
   return (
     <div className={`flex gap-4 ${isReply ? 'ml-12' : ''}`}>
       <img
-        src={comment.user?.avatar || `https://i.pravatar.cc/150?u=${comment.userName}`}
+        src={comment.user?.avatar || getBestAvatar(comment.user || { userName: comment.userName }, {}, 'travel')}
         alt={comment.userName}
         className="w-10 h-10 rounded-full flex-shrink-0"
       />

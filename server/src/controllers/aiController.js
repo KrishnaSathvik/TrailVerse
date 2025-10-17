@@ -78,10 +78,18 @@ exports.chat = async (req, res, next) => {
       }));
     }
 
+    // Extract system prompt from messages if not provided separately
+    let effectiveSystemPrompt = systemPrompt;
+    if (!effectiveSystemPrompt && messages && messages.length > 0 && messages[0].role === 'system') {
+      effectiveSystemPrompt = messages[0].content;
+      // Remove system message from messages array since we'll add it back
+      messages = messages.slice(1);
+    }
+
     // Get personalized system prompt based on user feedback patterns
     const personalizedSystemPrompt = await aiLearningService.getPersonalizedSystemPrompt(
       req.user._id || req.user.id,
-      systemPrompt,
+      effectiveSystemPrompt,
       {
         parkCode: userContext?.parkCode,
         parkName: userContext?.parkName,

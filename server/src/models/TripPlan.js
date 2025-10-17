@@ -54,7 +54,8 @@ const tripPlanSchema = new mongoose.Schema({
     userFeedback: {
       type: String,
       enum: ['up', 'down'],
-      default: null
+      default: null,
+      required: false
     }
   }],
   plan: {

@@ -102,6 +102,9 @@ class AuthService {
     localStorage.removeItem('token');
     console.log('🚪 AuthService: Removing user from localStorage');
     localStorage.removeItem('user');
+    // Clear admin authentication flags
+    localStorage.removeItem('adminAuthenticated');
+    localStorage.removeItem('adminEmail');
     // Clear any corrupted data
     try {
       localStorage.removeItem('planai-chat-state');

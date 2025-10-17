@@ -133,7 +133,8 @@ exports.login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        isEmailVerified: user.isEmailVerified
+        isEmailVerified: user.isEmailVerified,
+        createdAt: user.createdAt
       },
       token
     });
