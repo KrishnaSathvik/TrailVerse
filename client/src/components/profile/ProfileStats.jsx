@@ -43,7 +43,16 @@ const ProfileStats = ({ stats }) => {
             <div className="text-3xl lg:text-4xl font-bold mb-2"
               style={{ color: 'var(--text-primary)' }}
             >
-              {stat.value}
+              {stat.loading ? (
+                <div className="flex items-center justify-center">
+                  <div 
+                    className="animate-spin rounded-full h-6 w-6 border-b-2"
+                    style={{ borderColor: 'var(--accent-green)' }}
+                  ></div>
+                </div>
+              ) : (
+                stat.value
+              )}
             </div>
             
             {/* Label */}

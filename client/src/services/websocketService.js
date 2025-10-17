@@ -265,6 +265,11 @@ class WebSocketService {
       this.emit('userActivity', data);
     });
 
+    this.socket.on('profile_updated', (data) => {
+      console.log('[WebSocket] Profile updated:', data);
+      this.emit('profileUpdated', data);
+    });
+
     // Listen for blog favorite events
     this.socket.on('blog_favorited', (data) => {
       console.log('[WebSocket] Blog favorited:', data);
@@ -460,6 +465,14 @@ class WebSocketService {
 
   unsubscribeFromVisited() {
     this.unsubscribeFromChannel('visited');
+  }
+
+  subscribeToProfile() {
+    this.subscribeToChannel('profile');
+  }
+
+  unsubscribeFromProfile() {
+    this.unsubscribeFromChannel('profile');
   }
 
   // Generic channel unsubscription

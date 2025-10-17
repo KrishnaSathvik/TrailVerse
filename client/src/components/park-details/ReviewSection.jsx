@@ -9,6 +9,7 @@ import imageUploadService from '../../services/imageUploadService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { getBestAvatar } from '../../utils/avatarGenerator';
 
 const ReviewSection = ({ parkCode, parkName }) => {
   const { isAuthenticated, user } = useAuth();
@@ -893,23 +894,19 @@ const ReviewSection = ({ parkCode, parkName }) => {
                 <>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex gap-3">
-                      {review.userId?.avatar ? (
-                        <img
-                          src={review.userId.avatar}
-                          alt={`${review.userName || review.userId?.name || 'User'}'s avatar`}
-                          className="w-12 h-12 rounded-full object-cover border-2"
-                          style={{ borderColor: 'var(--border)' }}
-                          onError={(e) => {
-                            // Fallback to initials if image fails to load
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
+                      <img
+                        src={review.userId?.avatar || getBestAvatar(review.userId || { userName: review.userName }, {}, 'travel')}
+                        alt={`${review.userName || review.userId?.name || 'User'}'s avatar`}
+                        className="w-12 h-12 rounded-full object-cover border-2"
+                        style={{ borderColor: 'var(--border)' }}
+                        onError={(e) => {
+                          // Fallback to initials if image fails to load
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
                       <div 
-                        className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white ${
-                          review.userId?.avatar ? 'hidden' : 'flex'
-                        }`}
+                        className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white hidden"
                         style={{ backgroundColor: 'var(--forest-500)' }}
                       >
                         {review.userName?.charAt(0)?.toUpperCase() || review.userId?.name?.charAt(0)?.toUpperCase() || 'U'}

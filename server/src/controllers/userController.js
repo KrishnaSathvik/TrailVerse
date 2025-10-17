@@ -56,6 +56,20 @@ exports.updateProfile = async (req, res, next) => {
       fullUser: user
     });
     
+    // Notify via WebSocket for real-time avatar updates
+    const wsService = req.app.get('wsService');
+    if (wsService) {
+      const userId = (req.user.id || req.user._id).toString();
+      console.log('[Profile Update] Notifying WebSocket for user:', userId);
+      wsService.sendToUserChannel(userId, 'profile', 'profile_updated', {
+        userId: user._id,
+        avatar: user.avatar,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        name: user.name
+      });
+    }
+    
     res.status(200).json({
       success: true,
       data: user

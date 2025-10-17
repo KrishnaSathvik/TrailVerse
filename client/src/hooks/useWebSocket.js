@@ -87,6 +87,10 @@ export const useWebSocket = () => {
     websocketService.subscribeToVisited();
   }, []);
 
+  const subscribeToProfile = useCallback(() => {
+    websocketService.subscribeToProfile();
+  }, []);
+
   // Unsubscribe from data channels
   const unsubscribeFromFavorites = useCallback(() => {
     websocketService.unsubscribeFromFavorites();
@@ -116,6 +120,10 @@ export const useWebSocket = () => {
     websocketService.unsubscribeFromVisited();
   }, []);
 
+  const unsubscribeFromProfile = useCallback(() => {
+    websocketService.unsubscribeFromProfile();
+  }, []);
+
   // Cleanup listeners on unmount
   useEffect(() => {
     return () => {
@@ -140,12 +148,14 @@ export const useWebSocket = () => {
     subscribeToBlogs,
     subscribeToEvents,
     subscribeToVisited,
+    subscribeToProfile,
     unsubscribeFromFavorites,
     unsubscribeFromTrips,
     unsubscribeFromReviews,
     unsubscribeFromPreferences,
     unsubscribeFromBlogs,
     unsubscribeFromEvents,
-    unsubscribeFromVisited
+    unsubscribeFromVisited,
+    unsubscribeFromProfile
   };
 };

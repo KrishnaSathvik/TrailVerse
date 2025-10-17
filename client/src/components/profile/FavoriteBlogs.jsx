@@ -102,6 +102,7 @@ const FavoriteBlogs = ({ onCountChange }) => {
   useEffect(() => {
     if (onCountChange) {
       console.log('[FavoriteBlogs] 🔄 Notifying parent of count:', blogs.length);
+      console.log('[FavoriteBlogs] 🔄 Blogs data:', blogs.map(b => ({ id: b._id, title: b.title })));
       onCountChange(blogs.length);
     }
   }, [blogs.length, onCountChange]);

@@ -27,13 +27,15 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useVisitedParks } from '../hooks/useVisitedParks';
 import { useSavedEvents } from '../hooks/useSavedEvents';
 import { useUserReviews } from '../hooks/useUserReviews';
+import { useWebSocket } from '../hooks/useWebSocket';
 import userService from '../services/userService';
 import { getBestAvatar, generateRandomAvatar } from '../utils/avatarGenerator';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, updateUser } = useAuth();
+  const { user, isAuthenticated, userDataLoaded, updateUser } = useAuth();
   const { showToast } = useToast();
+  const { subscribe, unsubscribe, subscribeToProfile } = useWebSocket();
   const { favorites, removeFavorite, loading: favoritesLoading } = useFavorites();
   const { visitedParks, removeVisited, loading: visitedParksLoading } = useVisitedParks();
   const { savedEvents } = useSavedEvents();
@@ -50,6 +52,47 @@ const ProfilePage = () => {
 
     }
   }, [user, reviewsLoading, reviewsData, reviewsError]);
+
+  // Setup WebSocket real-time sync for profile updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to profile updates
+    subscribeToProfile();
+
+    // Handle profile updates from other devices/tabs
+    const handleProfileUpdated = (data) => {
+      console.log('[Real-Time] Profile updated:', data);
+      if (data.userId === user._id || data.userId === user.id) {
+        // Update local state with new avatar
+        updateUser({
+          avatar: data.avatar,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          name: data.name
+        });
+        
+        // Update profile data state
+        setProfileData(prev => ({
+          ...prev,
+          avatar: data.avatar,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          avatarVersion: Date.now()
+        }));
+        
+        showToast('Profile updated from another device', 'info');
+      }
+    };
+
+    // Subscribe to WebSocket events
+    subscribe('profileUpdated', handleProfileUpdated);
+
+    // Cleanup
+    return () => {
+      unsubscribe('profileUpdated', handleProfileUpdated);
+    };
+  }, [user, subscribe, unsubscribe, subscribeToProfile, updateUser, showToast]);
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
@@ -104,6 +147,11 @@ const ProfilePage = () => {
   // Force re-render key for debugging
   const [renderKey, setRenderKey] = useState(0);
   const [favoriteBlogsCount, setFavoriteBlogsCount] = useState(0);
+  
+  // Debug favoriteBlogsCount changes
+  useEffect(() => {
+    console.log('[ProfilePage] 🔍 favoriteBlogsCount changed to:', favoriteBlogsCount);
+  }, [favoriteBlogsCount]);
 
   // Helper function to clear error states when switching tabs
   const clearErrorStates = () => {
@@ -152,6 +200,37 @@ const ProfilePage = () => {
   const userStats = useMemo(() => {
     const totalFavorites = favorites.length + favoriteBlogsCount + savedEvents.length;
     
+    // Debug logging for favorites count
+    console.log('[ProfilePage] 🔍 Favorites breakdown:');
+    console.log('[ProfilePage] 🔍 - Parks favorites:', favorites.length);
+    console.log('[ProfilePage] 🔍 - Blog favorites:', favoriteBlogsCount);
+    console.log('[ProfilePage] 🔍 - Event favorites:', savedEvents.length);
+    console.log('[ProfilePage] 🔍 - Total favorites:', totalFavorites);
+    console.log('[ProfilePage] 🔍 - Favorites data:', favorites);
+    console.log('[ProfilePage] 🔍 - Saved events data:', savedEvents);
+    
+    // Check for duplicates in favorites
+    const parkCodes = favorites.map(f => f.parkCode);
+    const uniqueParkCodes = [...new Set(parkCodes)];
+    if (parkCodes.length !== uniqueParkCodes.length) {
+      console.warn('[ProfilePage] ⚠️ Duplicate park codes found in favorites!', {
+        total: parkCodes.length,
+        unique: uniqueParkCodes.length,
+        duplicates: parkCodes.length - uniqueParkCodes.length
+      });
+    }
+    
+    // Check for duplicates in saved events
+    const eventIds = savedEvents.map(e => e.id);
+    const uniqueEventIds = [...new Set(eventIds)];
+    if (eventIds.length !== uniqueEventIds.length) {
+      console.warn('[ProfilePage] ⚠️ Duplicate event IDs found in saved events!', {
+        total: eventIds.length,
+        unique: uniqueEventIds.length,
+        duplicates: eventIds.length - uniqueEventIds.length
+      });
+    }
+    
     // Handle different possible data structures for reviews
     let reviewsCount = 0;
     if (reviewsData) {
@@ -164,14 +243,21 @@ const ProfilePage = () => {
       }
     }
     
+    // Calculate totalDays if we have createdAt, regardless of userDataLoaded status
+    // This allows showing days immediately if stored user has createdAt, or after server validation
+    const totalDays = user?.createdAt ? calculateTotalDays(user) : 0;
+    
     const stats = {
       parksVisited: visitedParks.length,
       favorites: totalFavorites,
       reviews: reviewsCount || 0, // Ensure it's never undefined
-      totalDays: calculateTotalDays(user)
+      totalDays: totalDays
     };
     
     console.log('[ProfilePage] 🔄 Stats recalculated:', stats);
+    console.log('[ProfilePage] 🔄 User createdAt:', user?.createdAt);
+    console.log('[ProfilePage] 🔄 UserDataLoaded:', userDataLoaded);
+    console.log('[ProfilePage] 🔄 TotalDays calculated:', totalDays);
     
     return stats;
   }, [favorites.length, favoriteBlogsCount, savedEvents.length, visitedParks.length, reviewsData, user, calculateTotalDays]);
@@ -197,13 +283,18 @@ const ProfilePage = () => {
         icon: Star,
         loading: reviewsLoading 
       },
-      { label: 'Total Days', value: userStats.totalDays, icon: Clock }
+      { 
+        label: 'Total Days', 
+        value: !user?.createdAt ? '...' : userStats.totalDays, 
+        icon: Clock,
+        loading: !user?.createdAt
+      }
     ];
     
     console.log('[ProfilePage] 📊 Stats array updated:', statsArray);
     
     return statsArray;
-  }, [userStats, reviewsLoading]);
+  }, [userStats, reviewsLoading, user?.createdAt]);
   
   // Debug stats array
 
@@ -316,7 +407,8 @@ const ProfilePage = () => {
       console.log('[ProfilePage] Stats auto-calculated via useMemo');
       
       // Override totalDays with client calculation to ensure consistency
-      const clientCalculatedDays = calculateTotalDays(user);
+      // Calculate if user has createdAt, regardless of userDataLoaded status
+      const clientCalculatedDays = user?.createdAt ? calculateTotalDays(user) : 0;
       
       // Update avatar based on new stats
       const updatedUserData = {

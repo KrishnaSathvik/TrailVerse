@@ -9,6 +9,8 @@ export const useSavedEvents = () => {
   const loadSavedEvents = useCallback(() => {
     try {
       const events = savedEventsService.getSavedEvents();
+      console.log('[useSavedEvents] 🔄 Loaded saved events:', events.length);
+      console.log('[useSavedEvents] 🔄 Events data:', events.map(e => ({ id: e.id, title: e.title })));
       setSavedEvents(events);
     } catch (error) {
       console.error('Error loading saved events:', error);

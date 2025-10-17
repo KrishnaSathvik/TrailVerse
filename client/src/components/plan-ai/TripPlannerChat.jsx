@@ -5,6 +5,7 @@ import {
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import { tripHistoryService } from '../../services/tripHistoryService';
 import tripService from '../../services/tripService';
 import conversationService from '../../services/conversationService';
@@ -28,13 +29,17 @@ const TripPlannerChat = ({
   isNewChat = false,
   refreshTrips = null
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
+  const { showToast } = useToast();
+  const { subscribe, unsubscribe, subscribeToProfile } = useWebSocket();
   
   // Debug user object to see avatar structure (remove in production)
   // console.log('🔍 TripPlannerChat - User object:', user);
   // console.log('🔍 TripPlannerChat - User avatar:', user?.avatar);
   // console.log('🔍 TripPlannerChat - User profilePicture:', user?.profilePicture);
-  const { showToast } = useToast();
+  // console.log('🔍 TripPlannerChat - User firstName:', user?.firstName);
+  // console.log('🔍 TripPlannerChat - User lastName:', user?.lastName);
+  // console.log('🔍 TripPlannerChat - User email:', user?.email);
   const [messages, setMessages] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPlan, setCurrentPlan] = useState(null);
@@ -491,6 +496,38 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
     setAvatarVersion(prev => prev + 1);
   }, [user?.avatar, user?.profilePicture, user?.profile?.avatar]);
 
+  // Setup WebSocket real-time sync for profile updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to profile updates
+    subscribeToProfile();
+
+    // Handle profile updates from other devices/tabs
+    const handleProfileUpdated = (data) => {
+      console.log('[Real-Time] Profile updated in TripPlannerChat:', data);
+      if (data.userId === user._id || data.userId === user.id) {
+        // Update user object with new profile data
+        if (data.avatar) {
+          console.log('🔄 Updating user avatar from real-time update:', data.avatar);
+          // Update the user object in AuthContext with the new avatar
+          updateUser({ avatar: data.avatar });
+        }
+        // Force re-render of message bubbles with new avatar
+        setAvatarVersion(prev => prev + 1);
+        console.log('🔄 Avatar version updated due to real-time profile update');
+      }
+    };
+
+    // Subscribe to WebSocket events
+    subscribe('profileUpdated', handleProfileUpdated);
+
+    // Cleanup
+    return () => {
+      unsubscribe('profileUpdated', handleProfileUpdated);
+    };
+  }, [user, subscribe, unsubscribe, subscribeToProfile]);
+
   // Update thinking message based on time elapsed
   useEffect(() => {
     let interval;
@@ -788,7 +825,64 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
     const currentYear = currentDate.getFullYear();
     const currentSeason = getCurrentSeason(currentMonth);
     
-    let prompt = `You are an expert national park travel assistant and comprehensive travel expert helping plan a trip to ${parkName}. You have extensive knowledge about all aspects of travel, national parks, weather, activities, logistics, and trip planning.
+    let prompt = `You are TrailVerse AI, an expert US travel assistant with comprehensive knowledge of travel destinations across the United States. You're passionate about helping people discover amazing places and experiences throughout America.
+
+## IMPORTANT - Scope Restrictions:
+**You answer questions about ALL US travel destinations including:**
+- **National Parks** (63 official National Parks)
+- **State Parks** and **Regional Parks**
+- **Local attractions** (farms, pumpkin patches, festivals, markets)
+- **Cities and towns** (downtown areas, neighborhoods, local culture)
+- **Beaches, lakes, rivers, and coastal areas**
+- **Mountains, forests, deserts, and natural areas**
+- **Theme parks, museums, and entertainment venues**
+- **Historic sites, monuments, and cultural attractions**
+- **Food scenes, breweries, wineries, and local dining**
+- **Events, festivals, and seasonal activities**
+- **Road trips and multi-destination itineraries**
+- **Accommodations, dining, and local amenities**
+- **Weather, seasons, and best times to visit**
+- **Travel logistics, transportation, and planning**
+
+**You CANNOT answer questions about:**
+- **International destinations** (outside the United States)
+- **Non-travel topics** (coding, math, general knowledge, politics, etc.)
+
+**If asked about international travel or non-travel topics, politely redirect:**
+"I specialize in US travel destinations and experiences. I can help you discover amazing places across America, from National Parks to local farms, cities to beaches, and everything in between. What US destination or experience are you interested in exploring?"
+
+## Your Expertise:
+- **Destination Recommendations**: Matching places to interests, seasons, and travel preferences
+- **Detailed Itineraries**: Day-by-day plans with activities, lodging, and dining
+- **Local Insights**: Hidden gems, local favorites, and authentic experiences
+- **Activity Suggestions**: Hiking, scenic drives, cultural experiences, food tours, festivals
+- **Practical Guidance**: Access, timing, logistics, and local tips
+- **Safety & Preparation**: Weather considerations, essential gear, and travel safety
+
+## Response Style:
+- **Enthusiastic & Encouraging**: Share your passion for travel and discovery
+- **Structured & Clear**: Use headers, bullet points, and organized sections
+- **Practical & Actionable**: Provide specific, implementable advice
+- **Safety-Conscious**: Always include relevant safety considerations
+- **Personalized**: Adapt to user's interests, experience, and travel style
+
+## Response Format:
+- Use **markdown formatting** for better readability
+- Include **emojis** to make responses engaging and scannable
+- Structure with **clear headers** and **bullet points**
+- Provide **specific recommendations** with reasoning
+- Include **practical tips** and **pro tips** where relevant
+
+## Context Awareness:
+- Consider the user's trip dates, group size, interests, and travel style
+- Reference specific destination features, seasons, and local conditions
+- Provide location-specific advice and recommendations
+- Suggest activities appropriate for the user's interests and experience level
+- Include local tips, hidden gems, and authentic experiences
+
+Remember: You're not just providing information - you're inspiring and enabling amazing travel experiences across America! Help users discover everything from National Parks to local farms, from big cities to small towns, and all the incredible destinations in between.
+
+You are helping plan a trip to ${parkName}. You have extensive knowledge about all aspects of travel, national parks, weather, activities, logistics, and trip planning.
 
 CURRENT CONTEXT:
 - Today's date: ${currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -820,7 +914,15 @@ TRIP DETAILS:
 
     prompt += `\n\nEXPERTISE & CAPABILITIES:
 You are a comprehensive travel expert with deep knowledge in:
-- National parks, trails, activities, and attractions
+- National Parks, State Parks, and Regional Parks
+- Local attractions (farms, pumpkin patches, festivals, markets)
+- Cities and towns (downtown areas, neighborhoods, local culture)
+- Beaches, lakes, rivers, and coastal areas
+- Mountains, forests, deserts, and natural areas
+- Theme parks, museums, and entertainment venues
+- Historic sites, monuments, and cultural attractions
+- Food scenes, breweries, wineries, and local dining
+- Events, festivals, and seasonal activities
 - Weather patterns, seasonal conditions, and climate data
 - Travel logistics, transportation, and accommodation
 - Budget planning, costs, and money-saving tips
@@ -864,12 +966,17 @@ RESPONSE INTELLIGENCE:
 TRAVEL EXPERTISE:
 - Be helpful and practical; when you're unsure or need specifics (permits, road/area closures, live weather), ask a brief clarifying question first or state typical conditions as "typical/average" and avoid exact now-casts
 - You have comprehensive knowledge about weather, seasons, conditions, and planning
-- You can provide detailed information about any aspect of travel and national parks
+- You can provide detailed information about any aspect of travel including National Parks, State Parks, local farms, cities, beaches, and all US destinations
 - You can give specific advice about what to expect during different seasons and months
 - You can recommend clothing, gear, and preparation based on weather and season
 - You can share historical weather data, seasonal averages, and typical conditions
 - You can help with all aspects of trip planning including weather considerations
-- Be confident and helpful - you have extensive knowledge about travel and weather patterns
+- You can recommend local farms, pumpkin patches, festivals, markets, and seasonal activities
+- You can suggest city attractions, downtown areas, local culture, and urban experiences
+- You can provide information about beaches, lakes, rivers, and coastal areas
+- You can recommend theme parks, museums, entertainment venues, and cultural attractions
+- You can suggest food scenes, breweries, wineries, and local dining experiences
+- Be confident and helpful - you have extensive knowledge about all US travel destinations and experiences
 
 WEATHER & LIVE INFO RESPONSES:
 - If provided LIVE FACTS in system messages (NPS/Weather), use them as ground truth
@@ -1424,7 +1531,23 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                   message={message.content}
                   isUser={message.role === 'user'}
                   timestamp={message.timestamp}
-                  userAvatar={message.role === 'user' ? (user?.avatar || user?.profilePicture || user?.profile?.avatar || getBestAvatar(user, {}, 'travel')) : null}
+                  userAvatar={message.role === 'user' ? (() => {
+                    // Try multiple avatar properties in order of preference
+                    const userAvatar = user?.avatar || user?.profilePicture || user?.profile?.avatar;
+                    if (userAvatar) {
+                      return userAvatar;
+                    }
+                    
+                    // Fallback to generated avatar
+                    const userForAvatar = {
+                      email: user?.email,
+                      firstName: user?.firstName,
+                      lastName: user?.lastName,
+                      name: user?.name
+                    };
+                    const generatedAvatar = getBestAvatar(userForAvatar, {}, 'travel');
+                    return generatedAvatar;
+                  })() : null}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,
                     userMessage: messages[messages.indexOf(message) - 1]?.content || '',
