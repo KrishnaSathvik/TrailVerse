@@ -18,6 +18,7 @@ const MessageBubble = ({
   const [showActions, setShowActions] = useState(false);
   const [feedbackState, setFeedbackState] = useState(initialFeedback); // Track feedback state
 
+
   // Update feedback state when initialFeedback prop changes
   useEffect(() => {
     if (initialFeedback) {

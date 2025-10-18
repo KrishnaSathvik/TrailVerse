@@ -147,7 +147,7 @@ class ResendEmailService {
         category: post.category,
         author: post.author,
         authorInitials: authorInitials,
-        readTime: post.readTime,
+        readTime: post.readTime ? `${post.readTime} min read` : '5 min read',
         tags: post.tags,
         slug: post.slug
       });
@@ -161,7 +161,7 @@ class ResendEmailService {
         // Add tags for tracking
         tags: [
           { name: 'category', value: 'blog-notification' },
-          { name: 'blog-category', value: post.category || 'general' }
+          { name: 'blog-category', value: (post.category || 'general').toLowerCase().replace(/[^a-z0-9-]/g, '-') }
         ]
       });
 

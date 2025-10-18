@@ -491,17 +491,17 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
 
   // Force re-render when user avatar changes
   useEffect(() => {
-    console.log('🔄 TripPlannerChat: User avatar changed:', user?.avatar);
     // Increment avatar version to force re-render of message bubbles
     setAvatarVersion(prev => prev + 1);
   }, [user?.avatar, user?.profilePicture, user?.profile?.avatar]);
 
-  // Setup WebSocket real-time sync for profile updates
+  // Setup WebSocket real-time sync for profile updates and trip updates
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to profile updates
+    // Subscribe to profile updates and trip updates
     subscribeToProfile();
+    subscribeToTrips();
 
     // Handle profile updates from other devices/tabs
     const handleProfileUpdated = (data) => {
@@ -519,14 +519,28 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
       }
     };
 
+    // Handle trip updates from other devices/tabs
+    const handleTripUpdated = (data) => {
+      console.log('[Real-Time] Trip updated in TripPlannerChat:', data);
+      if (data.userId === user._id || data.userId === user.id) {
+        // If this is the current trip being viewed, refresh the trips list
+        if (data.tripId === currentTripId && refreshTrips) {
+          console.log('🔄 Refreshing trips list due to real-time trip update');
+          refreshTrips();
+        }
+      }
+    };
+
     // Subscribe to WebSocket events
     subscribe('profileUpdated', handleProfileUpdated);
+    subscribe('tripUpdated', handleTripUpdated);
 
     // Cleanup
     return () => {
       unsubscribe('profileUpdated', handleProfileUpdated);
+      unsubscribe('tripUpdated', handleTripUpdated);
     };
-  }, [user, subscribe, unsubscribe, subscribeToProfile]);
+  }, [user, subscribe, unsubscribe, subscribeToProfile, subscribeToTrips, currentTripId, refreshTrips]);
 
   // Update thinking message based on time elapsed
   useEffect(() => {
@@ -1534,7 +1548,9 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                   userAvatar={message.role === 'user' ? (() => {
                     // Try multiple avatar properties in order of preference
                     const userAvatar = user?.avatar || user?.profilePicture || user?.profile?.avatar;
-                    if (userAvatar) {
+                    
+                    // If we have a valid avatar URL, return it
+                    if (userAvatar && typeof userAvatar === 'string' && userAvatar.trim() !== '') {
                       return userAvatar;
                     }
                     
@@ -1545,8 +1561,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                       lastName: user?.lastName,
                       name: user?.name
                     };
-                    const generatedAvatar = getBestAvatar(userForAvatar, {}, 'travel');
-                    return generatedAvatar;
+                    return getBestAvatar(userForAvatar, {}, 'travel');
                   })() : null}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,

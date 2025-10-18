@@ -183,28 +183,21 @@ function App() {
             />
             <Route 
               path="/blog/:slug" 
-              element={
-                <PrivateRoute>
-                  <BlogPostPage />
-                </PrivateRoute>
-              } 
+              element={<BlogPostPage />} 
             />
             <Route 
               path="/parks/:parkCode" 
-              element={
-                <PrivateRoute>
-                  <ParkDetailPage />
-                </PrivateRoute>
-              } 
+              element={<ParkDetailPage />} 
             />
             <Route 
               path="/parks/:parkCode/activity/:activityId" 
-              element={
-                <PrivateRoute>
-                  <ActivityDetailPage />
-                </PrivateRoute>
-              } 
+              element={<ActivityDetailPage />} 
             />
+            <Route 
+              path="/blog/:slug" 
+              element={<BlogPostPage />} 
+            />
+            
             <Route 
               path="/profile" 
               element={

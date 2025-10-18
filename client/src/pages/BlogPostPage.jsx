@@ -7,16 +7,21 @@ import CommentSection from '../components/blog/CommentSection';
 import LikeFavorite from '../components/blog/LikeFavorite';
 import ShareButtons from '../components/common/ShareButtons';
 import RelatedPosts from '../components/blog/RelatedPosts';
+import { useAuth } from '../context/AuthContext';
 import blogService from '../services/blogService';
 import { logBlogView } from '../utils/analytics';
 import { Calendar, Clock, Eye, ArrowLeft } from '@components/icons';
 import '../styles/blog-prose.css';
 
-const BlogPostPage = () => {
+const BlogPostPage = ({ isPublic = false }) => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = isPublic || !isAuthenticated;
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -104,6 +109,22 @@ const BlogPostPage = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're viewing a blog post. 
+            <button 
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to like, favorite, and access all features.
+          </p>
+        </div>
+      )}
+      
       <SEO
         title={post.title}
         description={post.excerpt}
@@ -125,17 +146,19 @@ const BlogPostPage = () => {
       <Header />
 
       <article className="max-w-4xl mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Link
-          to="/blog"
-          className="inline-flex items-center gap-2 mb-6 transition"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
-          onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Blog
-        </Link>
+        {/* Back Button - Only show for authenticated users */}
+        {!isPublicAccess && (
+          <Link
+            to="/blog"
+            className="inline-flex items-center gap-2 mb-6 transition"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
+            onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Blog
+          </Link>
+        )}
 
         {/* Category Badge */}
         <div className="mb-4">
@@ -196,7 +219,7 @@ const BlogPostPage = () => {
         />
 
         {/* Like and Favorite Buttons */}
-        <LikeFavorite post={post} onUpdate={setPost} />
+        <LikeFavorite post={post} onUpdate={setPost} isPublic={isPublicAccess} />
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
@@ -231,7 +254,7 @@ const BlogPostPage = () => {
 
         {/* Comments Section */}
         <div className="mt-12">
-          <CommentSection blogId={post._id} />
+          <CommentSection blogId={post._id} isPublic={isPublicAccess} />
         </div>
 
         {/* Related Posts */}
@@ -239,6 +262,7 @@ const BlogPostPage = () => {
           currentPostId={post._id} 
           category={post.category} 
           tags={post.tags || []} 
+          isPublic={isPublicAccess}
         />
       </article>
     </div>
