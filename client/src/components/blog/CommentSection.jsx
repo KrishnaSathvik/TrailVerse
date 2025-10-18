@@ -5,7 +5,7 @@ import commentService from '../../services/commentService';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 import { MessageCircle, ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from '@components/icons';
 
-const CommentSection = ({ postId, comments: initialComments = [] }) => {
+const CommentSection = ({ postId, comments: initialComments = [], isPublic = false }) => {
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [comments, setComments] = useState(initialComments);

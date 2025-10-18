@@ -409,6 +409,17 @@ exports.getBlogTags = async (req, res, next) => {
 // Helper function to send blog notifications
 async function sendBlogNotifications(post) {
   try {
+    // Check if Resend is properly configured
+    if (!process.env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY not found in environment variables');
+      return;
+    }
+    
+    if (!process.env.EMAIL_FROM_ADDRESS) {
+      console.error('❌ EMAIL_FROM_ADDRESS not found in environment variables');
+      return;
+    }
+    
     // Get all subscribed users
     const users = await User.find({
       emailNotifications: true
@@ -416,7 +427,12 @@ async function sendBlogNotifications(post) {
     
     console.log(`📧 Sending blog notification to ${users.length} subscribers`);
     
-    // Send emails directly using the simple email service
+    if (users.length === 0) {
+      console.log('⚠️ No subscribed users found');
+      return;
+    }
+    
+    // Send emails using Resend service
     const emailPromises = users.map(async (user) => {
       // Check if user should receive this email type
       const shouldReceive = await unsubscribeService.shouldReceiveEmail(user.email, 'blog_notification');

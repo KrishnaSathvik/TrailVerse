@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const TripPlan = require('../models/TripPlan');
 const openaiService = require('../services/openaiService');
 const aiLearningService = require('../services/aiLearningService');
+const { emitToUser } = require('../utils/websocket');
 
 // Optional Claude service - only load if available
 let claudeService = null;
@@ -118,11 +119,31 @@ exports.chat = async (req, res, next) => {
 
     await tripPlan.save();
 
+    // Emit WebSocket event for real-time trip updates
+    try {
+      emitToUserChannel(req.user._id || req.user.id, 'trips', 'trip_updated', {
+        tripId: tripPlan._id,
+        userId: req.user._id || req.user.id,
+        messageCount: tripPlan.conversation.length,
+        lastMessage: {
+          role: 'assistant',
+          content: aiResponse,
+          timestamp: new Date()
+        },
+        updatedAt: tripPlan.updatedAt
+      });
+    } catch (wsError) {
+      console.warn('Failed to emit WebSocket trip update:', wsError);
+      // Don't fail the request if WebSocket fails
+    }
+
     res.status(200).json({
       success: true,
       data: {
         conversationId: tripPlan._id,
-        message: aiResponse
+        content: aiResponse,
+        provider: aiProvider,
+        model: aiProvider === 'claude' ? 'claude-3-5-sonnet-20241022' : 'gpt-4'
       }
     });
   } catch (error) {

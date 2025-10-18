@@ -251,6 +251,10 @@ const io = socketIo(server, {
 const WebSocketService = require('./services/websocketService');
 const wsService = new WebSocketService(io);
 
+// Initialize WebSocket utility
+const { initializeWebSocketService } = require('./utils/websocket');
+initializeWebSocketService(wsService);
+
 // Make WebSocket service available globally
 app.set('wsService', wsService);
 

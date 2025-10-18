@@ -3,9 +3,16 @@ import { Facebook, Twitter, Instagram, Link2, Mail } from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import Button from './Button';
 
-const ShareButtons = ({ url, title, description }) => {
+const ShareButtons = ({ url, title, description, type = 'default' }) => {
   const { showToast } = useToast();
-  const shareUrl = url || window.location.href;
+  
+  // Generate share URL - all main routes are now public
+  const generatePublicUrl = () => {
+    if (url) return url;
+    return window.location.href;
+  };
+  
+  const shareUrl = generatePublicUrl();
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);

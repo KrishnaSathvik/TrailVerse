@@ -23,7 +23,7 @@ import ReviewSection from '../components/park-details/ReviewSection';
 import ShareButtons from '../components/common/ShareButtons';
 import Button from '../components/common/Button';
 
-const ParkDetailPage = () => {
+const ParkDetailPage = ({ isPublic = false }) => {
   const { parkCode } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,6 +31,9 @@ const ParkDetailPage = () => {
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
   const { isParkVisited, markAsVisited, removeVisited, markingAsVisited, removingVisited } = useVisitedParks();
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = isPublic || !isAuthenticated;
   const { data, isLoading, error } = useParkDetails(parkCode);
   const { recordParkView: _recordParkView } = useParkPrefetch(parkCode);
   const [activeTab, setActiveTab] = useState('overview');
@@ -62,9 +65,15 @@ const ParkDetailPage = () => {
 
   const handleSavePark = async () => {
     if (!isAuthenticated) {
-      showToast('Please login to save parks', 'warning');
-      navigate('/login');
-      return;
+      if (isPublic) {
+        showToast('Please login to save parks', 'warning');
+        navigate('/login');
+        return;
+      } else {
+        showToast('Please login to save parks', 'warning');
+        navigate('/login');
+        return;
+      }
     }
 
     try {
@@ -158,19 +167,21 @@ const ParkDetailPage = () => {
           <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
             The park you&apos;re looking for doesn&apos;t exist
           </p>
-          <Button
-            onClick={() => {
-              if (location.state?.from) {
-                navigate(`${location.state.from.pathname}${location.state.from.search}`);
-              } else {
-                navigate(fromMobileMap ? '/map' : '/explore');
-              }
-            }}
-            variant="secondary"
-            size="lg"
-          >
-            {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
-          </Button>
+          {!isPublicAccess && (
+            <Button
+              onClick={() => {
+                if (location.state?.from) {
+                  navigate(`${location.state.from.pathname}${location.state.from.search}`);
+                } else {
+                  navigate(fromMobileMap ? '/map' : '/explore');
+                }
+              }}
+              variant="secondary"
+              size="lg"
+            >
+              {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -215,6 +226,21 @@ const ParkDetailPage = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're viewing a park. 
+            <button 
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to save parks and access all features.
+          </p>
+        </div>
+      )}
       <SEO
         title={`${park.fullName} - Complete Guide & Travel Information`}
         description={`Explore ${park.fullName} in ${park.states}. ${park.description.substring(0, 150)}... Find activities, camping, weather, events, and plan your visit.`}
@@ -241,33 +267,35 @@ const ParkDetailPage = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/90" />
 
-        {/* Navigation Overlay */}
-        <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
-            <Button
-              onClick={() => {
-                if (location.state?.from) {
-                  navigate(`${location.state.from.pathname}${location.state.from.search}`);
-                } else {
-                  navigate(fromMobileMap ? '/map' : '/explore');
-                }
-              }}
-              variant="secondary"
-              size="md"
-              icon={ArrowLeft}
-              className="backdrop-blur hover:-translate-x-1"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderWidth: '1px',
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                color: '#1f2937',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
-              }}
-            >
-              {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
-            </Button>
+        {/* Navigation Overlay - Only show for authenticated users */}
+        {!isPublicAccess && (
+          <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+              <Button
+                onClick={() => {
+                  if (location.state?.from) {
+                    navigate(`${location.state.from.pathname}${location.state.from.search}`);
+                  } else {
+                    navigate(fromMobileMap ? '/map' : '/explore');
+                  }
+                }}
+                variant="secondary"
+                size="md"
+                icon={ArrowLeft}
+                className="backdrop-blur hover:-translate-x-1"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  borderWidth: '1px',
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                  color: '#1f2937',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                }}
+              >
+                {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Park Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pb-4 sm:pb-6 lg:pb-8">
@@ -340,7 +368,7 @@ const ParkDetailPage = () => {
                           borderWidth: '1px',
                           borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
                         }}
-                        title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+                        title={isSaved ? 'Remove from favorites' : (isPublicAccess ? 'Login to save parks' : 'Add to favorites')}
                       />
 
                       <ShareButtons 
@@ -955,8 +983,8 @@ const ParkDetailPage = () => {
 
             {/* Sidebar */}
             <aside className="lg:w-96 flex-shrink-0 space-y-4 sm:space-y-6">
-              {/* Weather Widget */}
-              {park.latitude && park.longitude && (
+              {/* Weather Widget - Only show for authenticated users */}
+              {!isPublicAccess && park.latitude && park.longitude && (
                 <WeatherWidget
                   latitude={park.latitude}
                   longitude={park.longitude}
@@ -1000,32 +1028,34 @@ const ParkDetailPage = () => {
               </div>
 
 
-              {/* Plan Trip CTA */}
-              <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <Mountain className="h-12 w-12 mx-auto mb-4 text-forest-400" />
-                <h3 className="text-xl font-semibold mb-2"
-                  style={{ color: 'var(--text-primary)' }}
+              {/* Plan Trip CTA - Only show for authenticated users */}
+              {!isPublicAccess && (
+                <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
                 >
-                  Plan Your Visit
-                </h3>
-                <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                  Let AI create a personalized itinerary for {park.fullName}
-                </p>
-                <Button
-                  onClick={() => navigate(`/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`)}
-                  variant="secondary"
-                  size="lg"
-                  icon={Calendar}
-                >
-                  Plan with AI
-                </Button>
-              </div>
+                  <Mountain className="h-12 w-12 mx-auto mb-4 text-forest-400" />
+                  <h3 className="text-xl font-semibold mb-2"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Plan Your Visit
+                  </h3>
+                  <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+                    Let AI create a personalized itinerary for {park.fullName}
+                  </p>
+                  <Button
+                    onClick={() => navigate(`/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`)}
+                    variant="secondary"
+                    size="lg"
+                    icon={Calendar}
+                  >
+                    Plan with AI
+                  </Button>
+                </div>
+              )}
             </aside>
           </div>
         </div>

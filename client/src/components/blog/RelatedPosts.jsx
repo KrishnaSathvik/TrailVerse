@@ -4,7 +4,7 @@ import { ArrowRight, Clock, Eye } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 import blogService from '../../services/blogService';
 
-const RelatedPosts = ({ currentPostId, category, tags = [] }) => {
+const RelatedPosts = ({ currentPostId, category, tags = [], isPublic = false }) => {
   const [relatedPosts, setRelatedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,30 +60,32 @@ const RelatedPosts = ({ currentPostId, category, tags = [] }) => {
         ))}
       </div>
 
-      {/* View All Link */}
-      <div className="mt-8 text-center">
-        <Link
-          to="/blog"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:-translate-y-1"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)',
-            color: 'var(--text-primary)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-            e.currentTarget.style.borderColor = 'var(--border-hover)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface)';
-            e.currentTarget.style.borderColor = 'var(--border)';
-          }}
-        >
-          Explore All Articles
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
+      {/* View All Link - Only show for authenticated users */}
+      {!isPublic && (
+        <div className="mt-8 text-center">
+          <Link
+            to="/blog"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:-translate-y-1"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              color: 'var(--text-primary)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+              e.currentTarget.style.borderColor = 'var(--border-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface)';
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
+          >
+            Explore All Articles
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </section>
   );
 };
