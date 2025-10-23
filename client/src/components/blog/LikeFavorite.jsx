@@ -26,11 +26,6 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
   }, [post, user]);
 
   const handleLike = async () => {
-    if (!user) {
-      showToast('Please login to like posts', 'error');
-      return;
-    }
-
     setLoading(true);
     try {
       const result = await blogService.toggleLike(post._id);
@@ -38,7 +33,7 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
       setLikesCount(result.likesCount);
       
       if (onUpdate) {
-        const userId = user._id || user.id;
+        const userId = user?._id || user?.id;
         onUpdate({
           ...post,
           likes: result.isLiked 
@@ -55,11 +50,6 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
   };
 
   const handleFavorite = async () => {
-    if (!user) {
-      showToast('Please login to favorite posts', 'error');
-      return;
-    }
-
     setLoading(true);
     try {
       const result = await blogService.toggleFavorite(post._id);
@@ -67,7 +57,7 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
       setFavoritesCount(result.favoritesCount);
       
       if (onUpdate) {
-        const userId = user._id || user.id;
+        const userId = user?._id || user?.id;
         onUpdate({
           ...post,
           favorites: result.isFavorited 
@@ -83,25 +73,21 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
     }
   };
 
-  if (!user && !isPublic) {
-    return null; // Don't show like/favorite buttons for non-logged-in users in private mode
-  }
+  // Always show likes/comments, but disable interaction for non-logged-in users
 
   return (
     <div className="flex items-center gap-4 mb-6">
       {/* Like Button */}
       <button
         onClick={handleLike}
-        disabled={loading || (isPublic && !user)}
+        disabled={loading}
         className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
           backgroundColor: isLiked ? 'var(--error-red)' : 'var(--surface)',
           color: isLiked ? 'white' : 'var(--text-primary)',
           border: '1px solid',
-          borderColor: isLiked ? 'var(--error-red)' : 'var(--border)',
-          opacity: (isPublic && !user) ? 0.6 : 1
+          borderColor: isLiked ? 'var(--error-red)' : 'var(--border)'
         }}
-        title={isPublic && !user ? 'Login to like posts' : ''}
       >
         <Heart 
           size={18} 
@@ -116,16 +102,14 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
       {/* Favorite Button */}
       <button
         onClick={handleFavorite}
-        disabled={loading || (isPublic && !user)}
+        disabled={loading}
         className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
           backgroundColor: isFavorited ? 'var(--accent-blue)' : 'var(--surface)',
           color: isFavorited ? 'white' : 'var(--text-primary)',
           border: '1px solid',
-          borderColor: isFavorited ? 'var(--accent-blue)' : 'var(--border)',
-          opacity: (isPublic && !user) ? 0.6 : 1
+          borderColor: isFavorited ? 'var(--accent-blue)' : 'var(--border)'
         }}
-        title={isPublic && !user ? 'Login to favorite posts' : ''}
       >
         <Bookmark 
           size={18} 

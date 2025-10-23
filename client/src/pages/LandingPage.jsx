@@ -161,9 +161,8 @@ const LandingPage = () => {
             </div>
 
             {/* Main Headline - Mobile Optimized */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-light tracking-tighter leading-[0.85] mb-6 sm:mb-8 text-white w-full">
-              <div className="block text-center">Discover America&apos;s</div>
-              <div className="block text-center font-semibold">Natural Wonders.</div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-light tracking-tighter leading-[0.85] mb-6 sm:mb-8 text-white w-full text-center">
+              Discover America&apos;s <span className="font-semibold">Natural Wonders.</span>
             </h1>
 
             {/* Subheadline - Mobile Optimized */}
@@ -545,16 +544,15 @@ const LandingPage = () => {
             <p className="text-lg mb-8 max-w-2xl mx-auto"
               style={{ color: 'var(--text-primary)' }}
             >
-              Join thousands of explorers discovering America&apos;s most beautiful places. 
-              Create your free account and start planning today.
+              Start exploring now! View the first 12 parks without signing up, then create your free account to unlock full trip planning and favorites.
             </p>
               <Button
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/explore')}
                 variant="secondary"
                 size="xl"
                 icon={Sparkles}
               >
-                Get Started
+                Explore Now
               </Button>
           </div>
         </div>

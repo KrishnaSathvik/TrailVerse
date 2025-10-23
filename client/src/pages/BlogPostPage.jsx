@@ -113,14 +113,14 @@ const BlogPostPage = ({ isPublic = false }) => {
       {isPublicAccess && (
         <div className="bg-blue-600 text-white py-2 px-4 text-center">
           <p className="text-sm">
-            You're viewing a blog post. 
+            You're viewing a blog post. You can like and comment below!
             <button 
               onClick={() => navigate('/login')}
               className="underline hover:no-underline ml-1 font-semibold"
             >
               Login
             </button>
-            {' '}to like, favorite, and access all features.
+            {' '}to save your favorites and access all features.
           </p>
         </div>
       )}

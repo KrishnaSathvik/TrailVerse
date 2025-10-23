@@ -87,50 +87,38 @@ const CommentSection = ({ postId, comments: initialComments = [], isPublic = fal
       </div>
 
       {/* Comment Form */}
-      {isAuthenticated ? (
-        <form onSubmit={handleSubmit} className="mb-8">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Share your thoughts..."
-            rows={4}
-            maxLength={500}
-            className="w-full px-4 py-3 rounded-xl outline-none resize-none mb-3"
-            style={{
-              backgroundColor: 'var(--surface-hover)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-              color: 'var(--text-primary)'
-            }}
-          />
-          <div className="flex justify-between items-center">
-            <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {newComment.length}/500
-            </span>
-            <button
-              type="submit"
-              disabled={submitting || !newComment.trim()}
-              className="px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: 'var(--accent-green)',
-                color: 'white'
-              }}
-            >
-              {submitting ? 'Posting...' : 'Post Comment'}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="mb-8 p-6 rounded-2xl text-center"
+      <form onSubmit={handleSubmit} className="mb-8">
+        <textarea
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder={isAuthenticated ? "Share your thoughts..." : "Share your thoughts... (Login to save your comment)"}
+          rows={4}
+          maxLength={500}
+          className="w-full px-4 py-3 rounded-xl outline-none resize-none mb-3"
           style={{
             backgroundColor: 'var(--surface-hover)',
             borderWidth: '1px',
-            borderColor: 'var(--border)'
+            borderColor: 'var(--border)',
+            color: 'var(--text-primary)'
           }}
-        >
-          <p style={{ color: 'var(--text-secondary)' }}>Please login to comment</p>
+        />
+        <div className="flex justify-between items-center">
+          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            {newComment.length}/500
+          </span>
+          <button
+            type="submit"
+            disabled={submitting || !newComment.trim()}
+            className="px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: 'var(--accent-green)',
+              color: 'white'
+            }}
+          >
+            {submitting ? 'Posting...' : 'Post Comment'}
+          </button>
         </div>
-      )}
+      </form>
 
       {/* Comments List */}
       {comments.length === 0 ? (
@@ -205,8 +193,7 @@ const Comment = ({ comment, user, isAuthenticated, onReply, onDelete, onLike, is
             </span>
             <button 
               onClick={() => onLike(comment._id)}
-              disabled={!isAuthenticated}
-              className={`flex items-center gap-1 hover:text-purple-400 transition disabled:opacity-50 ${
+              className={`flex items-center gap-1 hover:text-purple-400 transition ${
                 comment.likes?.includes(user?._id) ? 'text-purple-400' : ''
               }`}
             >

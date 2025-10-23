@@ -167,21 +167,19 @@ const ParkDetailPage = ({ isPublic = false }) => {
           <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
             The park you&apos;re looking for doesn&apos;t exist
           </p>
-          {!isPublicAccess && (
-            <Button
-              onClick={() => {
-                if (location.state?.from) {
-                  navigate(`${location.state.from.pathname}${location.state.from.search}`);
-                } else {
-                  navigate(fromMobileMap ? '/map' : '/explore');
-                }
-              }}
-              variant="secondary"
-              size="lg"
-            >
-              {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
-            </Button>
-          )}
+          <Button
+            onClick={() => {
+              if (location.state?.from) {
+                navigate(`${location.state.from.pathname}${location.state.from.search}`);
+              } else {
+                navigate(fromMobileMap ? '/map' : fromDailyFeed ? '/home' : '/explore');
+              }
+            }}
+            variant="secondary"
+            size="lg"
+          >
+            {fromMobileMap ? 'Back to Map' : fromDailyFeed ? 'Back to Daily Feed' : 'Back to Explore'}
+          </Button>
         </div>
       </div>
     );
@@ -189,8 +187,9 @@ const ParkDetailPage = ({ isPublic = false }) => {
 
   const { park, campgrounds, activities, alerts, visitorCenters: _visitorCenters } = data;
   
-  // Check if user came from mobile map page
+  // Check if user came from mobile map page or daily feed
   const fromMobileMap = location.state?.fromMobileMap || false;
+  const fromDailyFeed = location.state?.fromDailyFeed || location.state?.from?.pathname?.includes('/home') || false;
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Info },
     { id: 'activities', label: 'Activities', icon: Mountain },
@@ -267,35 +266,33 @@ const ParkDetailPage = ({ isPublic = false }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/90" />
 
-        {/* Navigation Overlay - Only show for authenticated users */}
-        {!isPublicAccess && (
-          <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
-              <Button
-                onClick={() => {
-                  if (location.state?.from) {
-                    navigate(`${location.state.from.pathname}${location.state.from.search}`);
-                  } else {
-                    navigate(fromMobileMap ? '/map' : '/explore');
-                  }
-                }}
-                variant="secondary"
-                size="md"
-                icon={ArrowLeft}
-                className="backdrop-blur hover:-translate-x-1"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  borderWidth: '1px',
-                  borderColor: 'rgba(255, 255, 255, 0.3)',
-                  color: '#1f2937',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
-                }}
-              >
-                {fromMobileMap ? 'Back to Map' : 'Back to Explore'}
-              </Button>
-            </div>
+        {/* Navigation Overlay */}
+        <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+            <Button
+              onClick={() => {
+                if (location.state?.from) {
+                  navigate(`${location.state.from.pathname}${location.state.from.search}`);
+                } else {
+                  navigate(fromMobileMap ? '/map' : fromDailyFeed ? '/home' : '/explore');
+                }
+              }}
+              variant="secondary"
+              size="md"
+              icon={ArrowLeft}
+              className="backdrop-blur hover:-translate-x-1"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                borderWidth: '1px',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                color: '#1f2937',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+              }}
+            >
+              {fromMobileMap ? 'Back to Map' : fromDailyFeed ? 'Back to Daily Feed' : 'Back to Explore'}
+            </Button>
           </div>
-        )}
+        </div>
 
         {/* Park Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pb-4 sm:pb-6 lg:pb-8">
@@ -682,7 +679,10 @@ const ParkDetailPage = ({ isPublic = false }) => {
                                       onClick={() => {
                                         if (activity.id) {
                                           navigate(`/parks/${parkCode}/activity/${activity.id}`, {
-                                            state: { from: 'park-details' }
+                                            state: { 
+                                              from: 'park-details',
+                                              originalState: location.state // Preserve original navigation state
+                                            }
                                           });
                                         }
                                       }}

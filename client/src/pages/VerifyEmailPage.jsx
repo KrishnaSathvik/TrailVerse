@@ -11,6 +11,27 @@ const VerifyEmailPage = () => {
   const { setUserAfterVerification } = useAuth();
   const [status, setStatus] = useState('verifying'); // verifying, success, error
   const [message, setMessage] = useState('');
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
+  const handleResendVerification = async () => {
+    if (!userEmail) {
+      setMessage('Please enter your email address to resend verification');
+      return;
+    }
+
+    setResendingEmail(true);
+    try {
+      await authService.resendVerification(userEmail);
+      setResendSuccess(true);
+      setMessage('Verification email has been resent! Please check your inbox.');
+    } catch (error) {
+      setMessage(error.response?.data?.error || 'Failed to resend verification email. Please try again.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -182,19 +203,71 @@ const VerifyEmailPage = () => {
               <>
                 <div 
                   className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
-                  style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)' }}
+                  style={{ backgroundColor: resendSuccess ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)' }}
                 >
-                  <XCircle className="h-8 w-8" style={{ color: 'var(--error)' }} />
+                  {resendSuccess ? (
+                    <CheckCircle className="h-8 w-8" style={{ color: 'var(--success)' }} />
+                  ) : (
+                    <XCircle className="h-8 w-8" style={{ color: 'var(--error)' }} />
+                  )}
                 </div>
                 <h2 className="text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
-                  Verification Failed
+                  {resendSuccess ? 'Email Sent!' : 'Verification Failed'}
                 </h2>
                 <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
                   {message || 'We couldn\'t verify your email address.'}
                 </p>
-                <p className="text-sm mb-8" style={{ color: 'var(--text-tertiary)' }}>
-                  The verification link may have expired or is invalid. Please try signing up again or contact support if the problem persists.
-                </p>
+                
+                {!resendSuccess && (
+                  <>
+                    <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
+                      The verification link may have expired or is invalid. You can request a new verification email below.
+                    </p>
+
+                    {/* Resend Verification Form */}
+                    <div className="mb-6">
+                      <div className="mb-4">
+                        <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          value={userEmail}
+                          onChange={(e) => setUserEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          className="w-full px-4 py-3 rounded-lg border-2 transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            borderColor: 'var(--border)',
+                            color: 'var(--text-primary)'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = 'var(--primary)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = 'var(--border)';
+                          }}
+                        />
+                      </div>
+                      <Button
+                        onClick={handleResendVerification}
+                        disabled={resendingEmail || !userEmail}
+                        size="lg"
+                        className="w-full"
+                      >
+                        {resendingEmail ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Sending...
+                          </>
+                        ) : (
+                          'Resend Verification Email'
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-3">
                   <Link to="/signup">

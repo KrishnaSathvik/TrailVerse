@@ -2,6 +2,7 @@ const { Resend } = require('resend');
 const handlebars = require('handlebars');
 const fs = require('fs').promises;
 const path = require('path');
+const reactEmailRenderer = require('./reactEmailRenderer');
 
 // Initialize Resend with API key
 const apiKey = process.env.RESEND_API_KEY || 're_55uKwRN8_Nz9u7nJ4drCscszKbQuKhUf5';
@@ -39,13 +40,15 @@ const compileTemplate = async (templateName, data) => {
 class ResendEmailService {
   async sendWelcomeEmail(user) {
     try {
-      const html = await compileTemplate('welcome', {
-        firstName: user.firstName || user.name,
-        email: user.email
+      // Use React Email template
+      const html = await reactEmailRenderer.renderWelcomeEmail({
+        username: user.firstName || user.name,
+        userEmail: user.email,
+        loginUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/login`
       });
 
       const { data, error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
         subject: 'Welcome to TrailVerse! 🏞️',
@@ -69,14 +72,15 @@ class ResendEmailService {
 
   async sendEmailVerification(user, verificationUrl) {
     try {
-      const html = await compileTemplate('email-verification', {
-        firstName: user.firstName || user.name,
-        email: user.email,
-        verificationUrl
+      // Use React Email template
+      const html = await reactEmailRenderer.renderVerificationEmail({
+        username: user.firstName || user.name,
+        verificationUrl,
+        verificationCode: user.verificationCode || '123456' // You might want to generate this
       });
 
       const { data, error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
         subject: 'Verify Your TrailVerse Account',
@@ -101,14 +105,15 @@ class ResendEmailService {
 
   async sendPasswordReset(user, resetUrl) {
     try {
-      const html = await compileTemplate('password-reset', {
-        firstName: user.firstName || user.name,
-        email: user.email,
-        resetUrl
+      // Use React Email template
+      const html = await reactEmailRenderer.renderPasswordResetEmail({
+        username: user.firstName || user.name,
+        resetUrl,
+        expirationTime: '1 hour'
       });
 
       const { data, error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
         subject: 'Reset Your TrailVerse Password',
@@ -133,30 +138,32 @@ class ResendEmailService {
 
   async sendBlogNotification(user, post) {
     try {
-      // Generate author initials for avatar
-      const authorInitials = post.author 
-        ? post.author.split(' ').map(name => name.charAt(0)).join('').toUpperCase().slice(0, 2) 
-        : 'TV';
-
-      const html = await compileTemplate('blog-notification', {
-        firstName: user.firstName || user.name,
-        email: user.email,
-        title: post.title,
-        excerpt: post.excerpt,
-        featuredImage: post.featuredImage,
-        category: post.category,
-        author: post.author,
-        authorInitials: authorInitials,
+      // Use React Email template
+      const html = await reactEmailRenderer.renderNewBlogEmail({
+        username: user.firstName || user.name,
+        blogTitle: post.title,
+        blogExcerpt: post.excerpt,
+        blogUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/blog/${post.slug}`,
+        blogImageUrl: post.featuredImage || 'https://via.placeholder.com/600x300/4F46E5/ffffff?text=TrailVerse+Blog',
+        blogCategory: post.category || 'Park Guides',
+        publishDate: post.createdAt ? new Date(post.createdAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }) : new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
         readTime: post.readTime ? `${post.readTime} min read` : '5 min read',
-        tags: post.tags,
-        slug: post.slug
+        authorName: post.author || 'TrailVerse Team'
       });
 
       const { data, error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
-        subject: `New Blog Post: ${post.title}`,
+        subject: `New TrailVerse Blog: ${post.title}`,
         html,
         // Add tags for tracking
         tags: [
@@ -223,7 +230,8 @@ class ResendEmailService {
       const statusBgColor = isVerified ? '#dcfce7' : '#fef3c7';
       const statusTextColor = isVerified ? '#15803d' : '#92400e';
 
-      const html = await compileTemplate('admin-notification', {
+      // Use React Email template
+      const html = await reactEmailRenderer.renderAdminNotificationEmail({
         userName: user.name,
         userEmail: user.email,
         userId: user._id.toString(),
@@ -233,12 +241,12 @@ class ResendEmailService {
         statusTextColor,
         totalUsers,
         usersThisMonth,
-        adminDashboardUrl: `${process.env.CLIENT_URL}/admin/dashboard`,
-        userProfileUrl: `${process.env.CLIENT_URL}/admin/users/${user._id}`
+        adminDashboardUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/admin/dashboard`,
+        userProfileUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/admin/users/${user._id}`
       });
 
       const { data, error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
         to: adminEmail,
         subject: '🎉 New User Registration - TrailVerse',
         html,
@@ -338,6 +346,80 @@ class ResendEmailService {
       };
     } catch (error) {
       console.error('❌ Error sending bulk feature announcement:', error);
+      throw error;
+    }
+  }
+
+  async sendUnsubscribeConfirmation(user, reason = 'all emails') {
+    try {
+      // Use React Email template
+      const html = await reactEmailRenderer.renderUnsubscribeEmail({
+        username: user.firstName || user.name,
+        userEmail: user.email,
+        resubscribeUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/resubscribe?token=${user._id}`,
+        preferencesUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/preferences`,
+        reason
+      });
+
+      const { data, error } = await resend.emails.send({
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
+        to: user.email,
+        reply_to: 'trailverseteam@gmail.com',
+        subject: 'You\'ve been unsubscribed from TrailVerse',
+        html,
+        // Add tags for tracking
+        tags: [
+          { name: 'category', value: 'unsubscribe' }
+        ]
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`✅ Unsubscribe confirmation sent to: ${user.email}`, data);
+    } catch (error) {
+      console.error('❌ Error sending unsubscribe confirmation:', error);
+      throw error;
+    }
+  }
+
+  async sendAccountDeletionConfirmation(user, deletionDate = null) {
+    try {
+      // Use React Email template
+      const html = await reactEmailRenderer.renderAccountDeletionEmail({
+        username: user.firstName || user.name,
+        userEmail: user.email,
+        deletionDate: deletionDate || new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        dataRetentionPeriod: '30 days',
+        reactivationUrl: `${process.env.CLIENT_URL || 'https://nationalparksexplorerusa.com'}/reactivate?token=${user._id}`,
+        supportEmail: 'trailverseteam@gmail.com'
+      });
+
+      const { data, error } = await resend.emails.send({
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
+        to: user.email,
+        reply_to: 'trailverseteam@gmail.com',
+        subject: 'Your TrailVerse account has been deleted',
+        html,
+        // Add tags for tracking
+        tags: [
+          { name: 'category', value: 'account-deletion' },
+          { name: 'user-id', value: user._id.toString() }
+        ]
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`✅ Account deletion confirmation sent to: ${user.email}`, data);
+    } catch (error) {
+      console.error('❌ Error sending account deletion confirmation:', error);
       throw error;
     }
   }

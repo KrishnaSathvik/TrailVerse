@@ -93,6 +93,7 @@ app.use(helmet({
 // CORS
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'https://www.nationalparksexplorerusa.com',
   'https://nationalparksexplorerusa.com'
 ];
@@ -184,6 +185,7 @@ app.use('/api/users/preferences', require('./routes/userPreferences'));
 app.use('/api/blogs', require('./routes/blogs'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/ai/feedback', require('./routes/feedback'));
+app.use('/api/feed', require('./routes/dailyFeed'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/trips', require('./routes/trips'));
 app.use('/api/favorites', require('./routes/favorites'));

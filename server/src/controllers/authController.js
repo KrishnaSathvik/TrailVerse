@@ -214,6 +214,62 @@ exports.forgotPassword = async (req, res, next) => {
   }
 };
 
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+exports.resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
+      });
+    }
+    
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found with this email'
+      });
+    }
+    
+    // Check if user is already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is already verified'
+      });
+    }
+    
+    // Generate new verification token
+    const verificationToken = user.getEmailVerificationToken();
+    await user.save();
+    
+    // Send verification email
+    try {
+      const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+      await emailService.sendEmailVerification(user, verificationUrl);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent successfully'
+      });
+    } catch (error) {
+      console.error(`❌ Failed to send verification email to ${user.email}:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to send verification email. Please try again.'
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Reset password
 // @route   PUT /api/auth/reset-password/:token
 // @access  Public

@@ -29,6 +29,11 @@ class CacheService {
       events: { ttl: 15 * 60 * 1000, storage: 'memory' }, // 15 minutes
       reviews: { ttl: 10 * 60 * 1000, storage: 'memory' }, // 10 minutes
       
+      // Daily feed - refresh frequently to get new content
+      dailyFeed: { ttl: 5 * 60 * 1000, storage: 'memory' }, // 5 minutes
+      parkOfDay: { ttl: 60 * 60 * 1000, storage: 'memory' }, // 1 hour (changes daily)
+      natureFact: { ttl: 60 * 60 * 1000, storage: 'memory' }, // 1 hour (changes daily)
+      
       // AI conversations - no cache (real-time)
       aiConversations: { ttl: 0, storage: 'none' },
       

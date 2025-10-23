@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
   Search, X, MapPin, Star, ArrowRight, 
@@ -10,6 +10,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import OptimizedImage from '../components/common/OptimizedImage';
+import { useAuth } from '../context/AuthContext';
 import { useParks, useAllParks } from '../hooks/useParks';
 import { useParkRatings } from '../hooks/useParkRatings';
 import { useDebounce } from '../hooks/useDebounce';
@@ -18,9 +19,14 @@ import { useSearchPrefetch } from '../hooks/useSmartPrefetch';
 
 const ExploreParksPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: parkRatings, isLoading: ratingsLoading, error: ratingsError } = useParkRatings();
   const { handleSearch } = useSearchPrefetch();
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false);
@@ -37,7 +43,12 @@ const ExploreParksPage = () => {
   });
   
   // Initialize currentPage from URL parameter
+  // For public users, always use page 1 regardless of URL parameter
   const [currentPage, setCurrentPage] = useState(() => {
+    if (isPublicAccess) {
+      console.log(`📄 PUBLIC: Forcing page 1 for public access`);
+      return 1;
+    }
     const pageParam = searchParams.get('page');
     const page = pageParam ? parseInt(pageParam, 10) : 1;
     console.log(`📄 INIT: Using page ${page} (URL param: ${pageParam})`);
@@ -89,6 +100,17 @@ const ExploreParksPage = () => {
   useEffect(() => {
     hasMounted.current = true;
   }, []);
+
+  // Force public users to stay on page 1
+  useEffect(() => {
+    if (isPublicAccess && currentPage !== 1) {
+      console.log(`📄 PUBLIC: Redirecting from page ${currentPage} to page 1`);
+      setCurrentPage(1);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('page', '1');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [isPublicAccess, currentPage, searchParams, setSearchParams]);
 
   // Update mobile state on window resize (don't reset page - just update the flag)
   useEffect(() => {
@@ -318,6 +340,12 @@ const ExploreParksPage = () => {
 
   // Pagination handlers
   const goToPage = useCallback((page) => {
+    // Prevent public users from navigating to pages other than 1
+    if (isPublicAccess && page !== 1) {
+      console.log(`📄 PUBLIC: Blocked navigation to page ${page} - public users restricted to page 1`);
+      return;
+    }
+    
     setCurrentPage(page);
     
     // Update URL with page parameter
@@ -325,7 +353,7 @@ const ExploreParksPage = () => {
     newSearchParams.set('page', page.toString());
     setSearchParams(newSearchParams); // Create history entry for each page
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [searchParams, setSearchParams]);
+  }, [isPublicAccess, searchParams, setSearchParams]);
 
   const goToPreviousPage = useCallback(() => {
     if (currentPage > 1) {
@@ -406,6 +434,22 @@ const ExploreParksPage = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're viewing the first page of {calculatedTotalPages} pages. 
+            <button 
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to explore all {totalParks} parks, search, and access all features.
+          </p>
+        </div>
+      )}
+      
       <SEO
         title="Explore All 470+ National Parks & Sites - Find Your Perfect Adventure"
         description="Discover America's 470+ National Parks, Monuments, Historic Sites, and more with detailed guides, photos, activities, and planning tools. Find parks by state, activity, or search by name."
@@ -459,36 +503,38 @@ const ExploreParksPage = () => {
             </p>
           </div>
 
-          {/* Search Bar */}
-          <div className="mt-8 max-w-3xl">
-            <div className="relative">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
-                style={{ color: 'var(--text-tertiary)' }}
-              />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search parks by name, state, or description..."
-                className="w-full pl-14 pr-14 py-5 rounded-2xl text-base font-medium outline-none transition"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+          {/* Search Bar - Hidden for public users */}
+          {!isPublicAccess && (
+            <div className="mt-8 max-w-3xl">
+              <div className="relative">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
                   style={{ color: 'var(--text-tertiary)' }}
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
+                />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search parks by name, state, or description..."
+                  className="w-full pl-14 pr-14 py-5 rounded-2xl text-base font-medium outline-none transition"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quick Stats */}
           <div className="mt-8 flex flex-wrap items-center gap-6 text-sm"
@@ -505,7 +551,7 @@ const ExploreParksPage = () => {
                 <span>Page {currentPage} of {calculatedTotalPages}</span>
               </div>
             )}
-            {activeFiltersCount > 0 && (
+            {!isPublicAccess && activeFiltersCount > 0 && (
               <button
                 onClick={clearAllFilters}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white/5 transition"
@@ -527,7 +573,8 @@ const ExploreParksPage = () => {
       <section className="pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters - Desktop */}
+            {/* Sidebar Filters - Desktop - Hidden for public users */}
+            {!isPublicAccess && (
             <aside className="hidden lg:block lg:w-80 flex-shrink-0">
               <div className="sticky top-24 rounded-2xl p-6 backdrop-blur"
                 style={{
@@ -623,13 +670,15 @@ const ExploreParksPage = () => {
                 </div>
               </div>
             </aside>
+            )}
 
             {/* Main Content Area */}
             <div className="flex-1 min-w-0">
               {/* Toolbar */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  {/* Mobile Filter Button */}
+                  {/* Mobile Filter Button - Hidden for public users */}
+                  {!isPublicAccess && (
                   <button
                     onClick={() => setShowFilters(true)}
                     className="lg:hidden flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition"
@@ -648,6 +697,7 @@ const ExploreParksPage = () => {
                       </span>
                     )}
                   </button>
+                  )}
 
                   {/* Sort */}
                   <div className="relative sort-dropdown-container">
@@ -814,8 +864,9 @@ const ExploreParksPage = () => {
                   ))}
                   </div>
 
-                  {/* Pagination Controls */}
-                  {calculatedTotalPages > 1 && (
+
+                  {/* Pagination Controls - Hidden for public users */}
+                  {!isPublicAccess && calculatedTotalPages > 1 && (
                     <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4">
                       {/* Results Info */}
                       <div className="text-sm"
@@ -910,8 +961,8 @@ const ExploreParksPage = () => {
         </div>
       </section>
 
-      {/* Mobile Filters Modal */}
-      {showFilters && (
+      {/* Mobile Filters Modal - Hidden for public users */}
+      {!isPublicAccess && showFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}

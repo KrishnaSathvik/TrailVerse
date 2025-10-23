@@ -8,7 +8,8 @@ import { useTheme } from '../context/ThemeContext';
 import { 
   Sparkles, Compass, MapPin, Calendar, Heart, BookOpen, Route,
   Star, Shield, Users, MessageCircle, MessageSquare, ArchiveRestore,
-  CheckCircle, Bot, Mountain, Globe, Zap, Cloud
+  CheckCircle, Bot, Mountain, Globe, Zap, Cloud, Sun, Moon, 
+  Sunrise, Sunset, Thermometer, Eye, Cookie
 } from '@components/icons';
 
 const FeaturesPage = () => {
@@ -193,8 +194,8 @@ const FeaturesPage = () => {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO 
         title="Features - TrailVerse | Comprehensive National Park Planning Tools"
-        description="Discover all the powerful features that make TrailVerse the ultimate National Park planning platform. AI-powered trip planning, interactive maps, community reviews, and more."
-        keywords="National Parks features, AI trip planning, park discovery tools, community reviews, travel planning features"
+        description="Discover all the powerful features that make TrailVerse the ultimate National Park planning platform. AI-powered trip planning, daily nature feeds, interactive maps, community reviews, and more."
+        keywords="National Parks features, AI trip planning, daily nature feed, park discovery tools, community reviews, travel planning features"
       />
 
       <Header />
@@ -231,8 +232,138 @@ const FeaturesPage = () => {
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            From AI-powered trip planning to community reviews, TrailVerse provides all the tools you need to discover, plan, and enjoy America's National Parks.
+            From AI-powered trip planning and daily nature feeds to community reviews, TrailVerse provides all the tools you need to discover, plan, and enjoy America's National Parks.
           </p>
+        </div>
+      </section>
+
+      {/* Daily Feed Highlight */}
+      <section className="py-8 sm:py-12" style={{ backgroundColor: 'var(--surface)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4"
+              style={{
+                backgroundColor: 'var(--accent-green)/10',
+                color: 'var(--accent-green)'
+              }}
+            >
+              <Sun className="h-4 w-4" />
+              <span className="text-sm font-medium">New Feature</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Your Daily Nature Companion
+            </h2>
+            <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              Start each day with a personalized National Park recommendation, complete with weather insights, 
+              astronomy data, and AI-powered recommendations tailored just for you.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent-green)/10' }}
+                >
+                  <Sparkles className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    AI-Powered Park Selection
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    Our AI analyzes your location, preferences, and current conditions to recommend the perfect park for today.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent-green)/10' }}
+                >
+                  <Moon className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Complete Weather & Astronomy Data
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    Get sunrise/sunset times, moon phases, weather conditions, and stargazing opportunities for today's featured park.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent-green)/10' }}
+                >
+                  <Zap className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Lightning-Fast Performance
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    Smart caching ensures your daily feed loads instantly. Data updates once per day for optimal performance.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="rounded-2xl p-6 backdrop-blur"
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <div className="text-sm font-medium ml-2" style={{ color: 'var(--text-secondary)' }}>
+                    Today in Nature
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                      <Mountain className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Olympic National Park
+                      </h4>
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        Washington • National Park
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Sunrise className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>6:42 AM</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Sunset className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>7:15 PM</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Thermometer className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>40°F</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Moon className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>Waxing Crescent</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -318,6 +449,7 @@ const FeaturesPage = () => {
         </div>
       </section>
 
+
       {/* Competitive Advantages */}
       <section className="py-8 sm:py-12" style={{ backgroundColor: 'var(--surface)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -330,11 +462,11 @@ const FeaturesPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {competitiveAdvantages.map((advantage, index) => (
-              <div key={index} className="rounded-2xl p-6 sm:p-8 backdrop-blur"
+              <div key={index} className="rounded-2xl p-6 sm:p-8"
                 style={{
-                  backgroundColor: 'var(--bg-primary)',
+                  backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)'
                 }}
@@ -350,14 +482,11 @@ const FeaturesPage = () => {
                     <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                       {advantage.title}
                     </h3>
-                    <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                       {advantage.description}
                     </p>
-                    <div className="text-sm font-medium px-3 py-2 rounded-lg"
-                      style={{ 
-                        backgroundColor: 'var(--accent-green)/10',
-                        color: 'var(--accent-green)' 
-                      }}
+                    <div className="text-sm font-medium"
+                      style={{ color: 'var(--accent-green)' }}
                     >
                       {advantage.comparison}
                     </div>

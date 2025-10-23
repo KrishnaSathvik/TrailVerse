@@ -9,10 +9,12 @@ import SEO from '../components/common/SEO';
 import OptimizedImage from '../components/common/OptimizedImage';
 import BlogCard from '../components/blog/BlogCard';
 import Button from '../components/common/Button';
+import { useAuth } from '../context/AuthContext';
 import blogService from '../services/blogService';
 
 const BlogPage = () => {
-  const _navigate = useNavigate();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -25,6 +27,9 @@ const BlogPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
   
   // Responsive posts per page: 3 on mobile, 6 on desktop
   const [postsPerPage, setPostsPerPage] = useState(6); // Default to desktop
@@ -136,6 +141,22 @@ const BlogPage = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're viewing our blog. You can like posts and comment!
+            <button 
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to save your favorites and access all features.
+          </p>
+        </div>
+      )}
+      
       <SEO
         title="National Parks Blog - Expert Travel Guides & Adventure Tips"
         description="Read expert guides, travel tips, and adventure stories about America's National Parks. Get insider knowledge for your next park visit."

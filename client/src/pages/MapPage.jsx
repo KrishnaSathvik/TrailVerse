@@ -4,25 +4,41 @@ import { Helmet } from 'react-helmet-async';
 import { 
   ArrowLeft, MapPin, Utensils, Bed, Fuel, 
   Search, X, Loader2, ExternalLink, Route, Clock, 
-  ChevronRight, Star, DollarSign, Phone,
+  ChevronRight, Star, DollarSign, Phone, Globe,
   Heart, Calendar, ChevronDown, ChevronUp, Info
 } from '@components/icons';
 import Header from '../components/common/Header';
 import SEO from '../components/common/SEO';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { googlePlacesService as gps } from '../services/googlePlacesService';
 import { useTheme } from '../context/ThemeContext';
 import { useUserPreferences } from '../hooks/useUserPreferences';
+import { useAllParks } from '../hooks/useParks';
 
 const MapPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const { isDark } = useTheme();
   const { updateMapState, updateNavigation, preferences } = useUserPreferences();
+  const { data: allParksData } = useAllParks();
+  const allParks = allParksData?.data;
   
-  // Get park data from navigation state
-  const parkData = location.state?.park;
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
+  
+  // Pre-selected popular national parks for public users (using park codes)
+  const publicParks = [
+    { name: 'Yellowstone National Park', location: 'Wyoming, Montana, Idaho', parkCode: 'yell' },
+    { name: 'Grand Canyon National Park', location: 'Arizona', parkCode: 'grca' },
+    { name: 'Yosemite National Park', location: 'California', parkCode: 'yose' },
+    { name: 'Great Smoky Mountains National Park', location: 'Tennessee, North Carolina', parkCode: 'grsm' }
+  ];
+  
+  // Get park data from navigation state or local state
+  const [parkData, setParkData] = useState(location.state?.park);
   
   // Refs
   const mapRef = useRef(null);
@@ -46,13 +62,23 @@ const MapPage = () => {
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [showSidebar, setShowSidebar] = useState(!!parkData); // Show sidebar if coming from park details
   const [sidebarContent, setSidebarContent] = useState(parkData ? 'park' : 'search'); // 'search', 'park', 'place'
+  const [previousSidebarContent, setPreviousSidebarContent] = useState('search'); // Track previous content for back button
   const [routeInfo, setRouteInfo] = useState(null);
   const [showRoutePanel, setShowRoutePanel] = useState(false);
   const [routeFrom, setRouteFrom] = useState('');
   const [routeTo, setRouteTo] = useState('');
   const [savedMapCenter, setSavedMapCenter] = useState(null);
   const [savedMapZoom, setSavedMapZoom] = useState(null);
+  const [googlePlaceData, setGooglePlaceData] = useState(null);
   const [localStorageRestored, setLocalStorageRestored] = useState(false);
+  const [resultsBounds, setResultsBounds] = useState(null); // Store bounds for all results
+  const [resultsZoom, setResultsZoom] = useState(null); // Store zoom level for results view
+  const [isRouteMode, setIsRouteMode] = useState(false); // Track if we're in route mode
+
+  // Debug route mode changes
+  useEffect(() => {
+    console.log('Route mode changed:', isRouteMode, 'activeCategory:', activeCategory);
+  }, [isRouteMode, activeCategory]);
   
   // Route planning state
   const [routeWaypoints, setRouteWaypoints] = useState([]);
@@ -539,21 +565,101 @@ const MapPage = () => {
       service.textSearch(request, (results, status) => {
         setIsSearching(false);
         if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          setSearchResults(results.slice(0, 20));
-          setSidebarContent('search');
-          setShowSidebar(true);
-          
-          // Clear existing search markers
-          markersRef.current.forEach(marker => marker.setMap(null));
-          markersRef.current = [];
+          // For public users, check if they selected one of the pre-selected parks
+          if (isPublicAccess) {
+            const selectedPublicPark = publicParks.find(park => 
+              park.name.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            if (selectedPublicPark && allParks) {
+              // Find the actual park data from the API
+              const actualPark = allParks.find(park => park.parkCode === selectedPublicPark.parkCode);
+              
+              if (actualPark && actualPark.latitude && actualPark.longitude) {
+                const lat = parseFloat(actualPark.latitude);
+                const lng = parseFloat(actualPark.longitude);
+                
+                console.log('Found park data for search:', actualPark.name, 'at:', lat, lng);
+                console.log('Raw coordinates:', actualPark.latitude, actualPark.longitude);
+                console.log('Parsed coordinates:', lat, lng);
+                console.log('Is valid lat:', !isNaN(lat) && isFinite(lat));
+                console.log('Is valid lng:', !isNaN(lng) && isFinite(lng));
+                
+                // Validate coordinates before using them
+                if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && 
+                    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                
+                // Set the park data directly like authenticated users
+                setParkData(actualPark);
+                setSidebarContent('park');
+                setShowSidebar(true);
+                
+                // Fetch Google Places data for real ratings, hours, phone, etc.
+                fetchGooglePlaceData(actualPark.fullName, lat, lng);
+                
+                // Center map on the selected park
+                if (mapInstanceRef.current) {
+                  mapInstanceRef.current.setCenter({
+                    lat: lat,
+                    lng: lng
+                  });
+                  mapInstanceRef.current.setZoom(12);
+                }
+                
+                // Clear existing markers and add marker for selected park
+                markersRef.current.forEach(marker => marker.setMap(null));
+                markersRef.current = [];
+                
+                const marker = new window.google.maps.Marker({
+                  position: { lat: lat, lng: lng },
+                  map: mapInstanceRef.current,
+                  title: actualPark.fullName || actualPark.name,
+                  icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
+                        <circle cx="12" cy="9" r="3" fill="white"/>
+                      </svg>
+                    `),
+                    scaledSize: new window.google.maps.Size(24, 24)
+                  }
+                });
+                markersRef.current.push(marker);
+                
+                return;
+                } else {
+                  console.error('Invalid coordinates for park:', actualPark.name, 'lat:', lat, 'lng:', lng);
+                  showToast('Invalid park coordinates', 'error');
+                }
+              } else {
+                console.error('Could not find park data for:', selectedPublicPark.parkCode);
+                showToast('Park data not available', 'error');
+              }
+            } else {
+              // If not a pre-selected park, show no results
+              setSearchResults([]);
+              setSidebarContent('search');
+              setShowSidebar(true);
+              return;
+            }
+          } else {
+            // For authenticated users, show all results
+            setSearchResults(results.slice(0, 20));
+            setSidebarContent('search');
+            setShowSidebar(true);
+            
+            // Clear existing search markers
+            markersRef.current.forEach(marker => marker.setMap(null));
+            markersRef.current = [];
 
-          // Add markers for search results
-          results.slice(0, 20).forEach((place, index) => {
-            if (place.geometry?.location) {
-              const marker = new window.google.maps.Marker({
-                position: place.geometry.location,
-                map: mapInstanceRef.current,
-                title: place.name,
+            // Add markers for search results
+            const limitedResults = results.slice(0, 20);
+            limitedResults.forEach((place, index) => {
+              if (place.geometry?.location) {
+                const marker = new window.google.maps.Marker({
+                  position: place.geometry.location,
+                  map: mapInstanceRef.current,
+                  title: place.name,
                 icon: {
                   path: window.google.maps.SymbolPath.CIRCLE,
                   scale: 8,
@@ -582,18 +688,29 @@ const MapPage = () => {
                   infoWindowRef.current.close();
                 }
                 
-                // Update sidebar with place details (NO popup on map)
-                setSelectedPlace(place);
-                setSidebarContent('place');
-                setShowSidebar(true);
+                // Check if we're in route mode
+                if (isRouteMode) {
+                  // In route mode - show minimal place card with just name and add to route
+                  setPreviousSidebarContent(sidebarContent);
+                  setSelectedPlace(place);
+                  setSidebarContent('route-place');
+                  setShowSidebar(true);
+                } else {
+                  // Normal mode - show full place details
+                  setPreviousSidebarContent(sidebarContent);
+                  setSelectedPlace(place);
+                  setSidebarContent('place');
+                  setShowSidebar(true);
+                }
                 
                 console.log('Updated sidebar with place:', place.name);
               });
 
-              markersRef.current.push(marker);
-            }
-          });
-          } else {
+                markersRef.current.push(marker);
+              }
+            });
+          }
+        } else {
           setSearchResults([]);
         }
       });
@@ -607,20 +724,82 @@ const MapPage = () => {
   const handleMapSearch = useCallback(async () => {
     if (!searchQuery.trim() || !mapInstanceRef.current) return;
 
-            setIsSearching(true);
-            try {
-      // Use Google Places API for search
-      const service = new window.google.maps.places.PlacesService(mapInstanceRef.current);
-      
-      const request = {
-        query: searchQuery,
-        fields: ['place_id', 'name', 'geometry', 'formatted_address', 'rating', 'user_ratings_total', 'photos', 'price_level', 'opening_hours', 'website', 'formatted_phone_number', 'types', 'vicinity', 'reviews']
-      };
-
-      service.textSearch(request, (results, status) => {
-        setIsSearching(false);
+    setIsSearching(true);
+    try {
+      // For public users, check if they selected one of the pre-selected parks
+      if (isPublicAccess) {
+        const selectedPublicPark = publicParks.find(park => 
+          park.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
         
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        if (selectedPublicPark && allParks) {
+          // Find the actual park data from the API
+          const actualPark = allParks.find(park => park.parkCode === selectedPublicPark.parkCode);
+          
+          if (actualPark && actualPark.latitude && actualPark.longitude) {
+            const lat = parseFloat(actualPark.latitude);
+            const lng = parseFloat(actualPark.longitude);
+            
+            console.log('Found park data for map search:', actualPark.name, 'at:', lat, lng);
+            
+            if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && 
+                lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+              
+              // Set the park data directly
+              setParkData(actualPark);
+              setSidebarContent('park');
+              setShowSidebar(true);
+              
+              // Center map on the park
+              const parkLocation = new window.google.maps.LatLng(lat, lng);
+              mapInstanceRef.current.setCenter(parkLocation);
+              mapInstanceRef.current.setZoom(12);
+              
+              // Clear existing markers
+              markersRef.current.forEach(marker => marker.setMap(null));
+              markersRef.current = [];
+              
+              // Add marker for the selected park
+              const marker = new window.google.maps.Marker({
+                position: parkLocation,
+                map: mapInstanceRef.current,
+                title: actualPark.fullName,
+                icon: {
+                  url: '/park-marker.svg',
+                  scaledSize: new window.google.maps.Size(24, 24)
+                }
+              });
+              markersRef.current.push(marker);
+              
+              setIsSearching(false);
+              return;
+            } else {
+              console.error('Invalid coordinates for park:', actualPark.name, 'lat:', lat, 'lng:', lng);
+              showToast('Invalid park coordinates', 'error');
+            }
+          } else {
+            console.error('Could not find park data for:', selectedPublicPark.parkCode);
+            showToast('Park data not available', 'error');
+          }
+        } else {
+          // If not a pre-selected park, show no results
+          showToast('Please search for one of the available parks: Yellowstone, Grand Canyon, Yosemite, or Great Smoky Mountains', 'info');
+          setIsSearching(false);
+          return;
+        }
+      } else {
+        // For authenticated users, use Google Places API for search
+        const service = new window.google.maps.places.PlacesService(mapInstanceRef.current);
+        
+        const request = {
+          query: searchQuery,
+          fields: ['place_id', 'name', 'geometry', 'formatted_address', 'rating', 'user_ratings_total', 'photos', 'price_level', 'opening_hours', 'website', 'formatted_phone_number', 'types', 'vicinity', 'reviews']
+        };
+
+        service.textSearch(request, (results, status) => {
+          setIsSearching(false);
+          
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
           // Take the first result and center the map on it
           const firstResult = results[0];
           
@@ -684,18 +863,42 @@ const MapPage = () => {
                     console.log('First photo object:', place.photos[0]);
                     console.log('First photo keys:', Object.keys(place.photos[0]));
                   }
-                  setSelectedPlace(place);
-                  setSidebarContent('place');
-                  setShowSidebar(true);
-                  setActiveCategory(null);
+                  // Check if we're in route mode
+                  if (isRouteMode) {
+                    // In route mode - show minimal place card with just name and add to route
+                    setPreviousSidebarContent(sidebarContent);
+                    setSelectedPlace(place);
+                    setSidebarContent('route-place');
+                    setShowSidebar(true);
+                    setActiveCategory(null);
+                  } else {
+                    // Normal mode - show full place details
+                    setPreviousSidebarContent(sidebarContent);
+                    setSelectedPlace(place);
+                    setSidebarContent('place');
+                    setShowSidebar(true);
+                    setActiveCategory(null);
+                  }
                   console.log('Showing place info card for:', place.name);
                 } else {
                 // Fallback to basic result if details fail
                 console.log('Details fetch failed, using basic result');
-                setSelectedPlace(firstResult);
-                setSidebarContent('place');
-                setShowSidebar(true);
-                setActiveCategory(null);
+                // Check if we're in route mode
+                if (isRouteMode) {
+                  // In route mode - show minimal place card with just name and add to route
+                  setPreviousSidebarContent(sidebarContent);
+                  setSelectedPlace(firstResult);
+                  setSidebarContent('route-place');
+                  setShowSidebar(true);
+                  setActiveCategory(null);
+                } else {
+                  // Normal mode - show full place details
+                  setPreviousSidebarContent(sidebarContent);
+                  setSelectedPlace(firstResult);
+                  setSidebarContent('place');
+                  setShowSidebar(true);
+                  setActiveCategory(null);
+                }
               }
             });
             
@@ -707,11 +910,47 @@ const MapPage = () => {
           console.log('No results found for:', searchQuery);
         }
       });
+      }
     } catch (error) {
       console.error('Map search error:', error);
-                    setIsSearching(false);
-                  }
+      setIsSearching(false);
+    }
   }, [searchQuery]);
+
+  // Function to fetch Google Places data for a park
+  const fetchGooglePlaceData = useCallback(async (parkName, lat, lng) => {
+    try {
+      console.log('🔍 Fetching Google Places data for:', parkName, 'at', lat, lng);
+      
+      // First, search for the park using text search
+      const searchUrl = `/api/gmaps/textsearch?query=${encodeURIComponent(parkName)}&location=${lat},${lng}&radius=50000`;
+      const searchResponse = await fetch(searchUrl);
+      const searchData = await searchResponse.json();
+      
+      if (searchData.success && searchData.results && searchData.results.length > 0) {
+        // Find the best match (usually the first result for national parks)
+        const bestMatch = searchData.results[0];
+        console.log('📍 Found Google Place:', bestMatch.name, 'ID:', bestMatch.place_id);
+        
+        // Now get detailed information
+        const detailsUrl = `/api/gmaps/placedetails?place_id=${bestMatch.place_id}`;
+        const detailsResponse = await fetch(detailsUrl);
+        const detailsData = await detailsResponse.json();
+        
+        if (detailsData.success && detailsData.result) {
+          console.log('✅ Got Google Places details:', detailsData.result);
+          setGooglePlaceData(detailsData.result);
+          return detailsData.result;
+        }
+      }
+      
+      console.log('⚠️ No Google Places data found for:', parkName);
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching Google Places data:', error);
+      return null;
+    }
+  }, []);
 
   // Handle search suggestions (autocomplete)
   const handleSearchSuggestions = useCallback(async (query) => {
@@ -721,6 +960,30 @@ const MapPage = () => {
       return;
     }
 
+    // For public users, show pre-selected parks instead of Google Places suggestions
+    if (isPublicAccess) {
+      const filteredParks = publicParks.filter(park => 
+        park.name.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      if (filteredParks.length > 0) {
+        setSearchSuggestions(filteredParks.map(park => ({
+          description: park.name,
+          place_id: `public_${park.name.replace(/\s+/g, '_').toLowerCase()}`,
+          structured_formatting: {
+            main_text: park.name,
+            secondary_text: park.location
+          }
+        })));
+        setShowSuggestions(true);
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+      return;
+    }
+
+    // For authenticated users, use Google Places API
     try {
       const service = new window.google.maps.places.AutocompleteService();
       const request = {
@@ -742,10 +1005,10 @@ const MapPage = () => {
       setSearchSuggestions([]);
       setShowSuggestions(false);
     }
-  }, []);
+  }, [isPublicAccess, publicParks]);
 
   // Load nearby places by category
-  const loadNearbyPlaces = useCallback(async (category) => {
+  const loadNearbyPlaces = useCallback(async (category, inRouteMode = false) => {
     if (!mapInstanceRef.current) {
       console.error('Map instance not available');
       return;
@@ -753,6 +1016,8 @@ const MapPage = () => {
 
     setLoadingCategory(category);
     console.log('Loading nearby places for category:', category);
+    console.log('Is public access:', isPublicAccess);
+    console.log('Current search results:', searchResults);
     
     try {
       const center = mapInstanceRef.current.getCenter();
@@ -780,10 +1045,16 @@ const MapPage = () => {
         ...prev,
         [category]: places
       }));
+      
+      console.log('Updated nearbyPlaces state for category:', category, 'with', places.length, 'places');
 
       // Only change sidebar content if we're not in route mode
-      if (activeCategory !== 'routes') {
+      console.log('loadNearbyPlaces - isRouteMode:', isRouteMode, 'inRouteMode:', inRouteMode, 'activeCategory:', activeCategory, 'category:', category);
+      if (!isRouteMode && !inRouteMode) {
         setSidebarContent('search');
+        console.log('Setting sidebar content to search');
+      } else {
+        console.log('Keeping current sidebar content in route mode');
       }
       setShowSidebar(true);
 
@@ -838,13 +1109,15 @@ const MapPage = () => {
               }
               
               // Check if we're in route mode
-              if (activeCategory === 'routes') {
+              if (isRouteMode) {
                 // In route mode - show minimal place card with just name and add to route
+                setPreviousSidebarContent(sidebarContent);
                 setSelectedPlace(place);
                 setSidebarContent('route-place');
                 setShowSidebar(true);
                     } else {
                 // Normal mode - show full place details
+                setPreviousSidebarContent(sidebarContent);
                 setSelectedPlace(place);
                 setSidebarContent('place');
                 setShowSidebar(true);
@@ -862,38 +1135,23 @@ const MapPage = () => {
         console.log(`Added ${markersRef.current.length} markers to map`);
         
         // Auto-zoom to show all places
-        if (markersRef.current.length > 0) {
-          const bounds = new window.google.maps.LatLngBounds();
-          
-          // Extend bounds to include all markers
-          markersRef.current.forEach(marker => {
-              bounds.extend(marker.getPosition());
-            });
-          
-          // Also include the current map center to ensure context
-          const currentCenter = mapInstanceRef.current.getCenter();
-          bounds.extend(currentCenter);
-          
-          // Fit the map to show all markers with some padding
-          mapInstanceRef.current.fitBounds(bounds);
-          
-          // Set a minimum zoom level to prevent zooming out too far
-          const listener = window.google.maps.event.addListener(mapInstanceRef.current, 'idle', () => {
-            if (mapInstanceRef.current.getZoom() > 15) {
-              mapInstanceRef.current.setZoom(15);
-            }
-            window.google.maps.event.removeListener(listener);
-          });
-          
+        if (places.length > 0) {
+          // Use the new fitResultsInView function
+          fitResultsInView(places);
           console.log('Map bounds adjusted to show all places');
         }
       }
                 } catch (error) {
       console.error(`Error loading nearby ${category}:`, error);
+      console.error('Error details:', error.response?.data || error.message);
+      setNearbyPlaces(prev => ({
+        ...prev,
+        [category]: []
+      }));
     } finally {
       setLoadingCategory(null);
     }
-  }, [categories]);
+  }, [categories, isPublicAccess, searchResults]);
 
   // Route planning functions
   const addWaypoint = useCallback((place) => {
@@ -1043,26 +1301,32 @@ const MapPage = () => {
     console.log('Current active category:', activeCategory);
     console.log('Current nearby places:', nearbyPlaces);
     console.log('Is in route mode?', activeCategory === 'routes');
+    console.log('Is public access:', isPublicAccess);
+    console.log('Current search results:', searchResults);
     
     if (categoryId === 'routes') {
       // Handle routes category specially
       setActiveCategory('routes');
       setSidebarContent('routes');
       setShowSidebar(true);
+      setIsRouteMode(true);
+      console.log('Route mode activated');
     } else if (activeCategory === 'routes' && categoryId !== 'routes') {
       // When in route mode, clicking other categories should show pins and keep route sidebar open
       console.log('In route mode - loading category pins:', categoryId);
       setActiveCategory(categoryId);
       setSearchQuery(''); // Clear search when selecting category
       setSearchResults([]);
-      // Keep the route sidebar open - don't change sidebarContent
+      // Keep route mode active and keep the route sidebar open - don't change sidebarContent
+      setIsRouteMode(true);
       
+      // Call loadNearbyPlaces with route mode parameter
       if (!nearbyPlaces[categoryId]) {
         console.log('Loading new places for category:', categoryId);
-        loadNearbyPlaces(categoryId);
+        loadNearbyPlaces(categoryId, true); // Pass true for route mode
       } else {
         console.log('Re-adding existing markers for category:', categoryId);
-        loadNearbyPlaces(categoryId);
+        loadNearbyPlaces(categoryId, true); // Pass true for route mode
       }
     } else if (activeCategory === categoryId) {
       // Deselect category
@@ -1071,12 +1335,17 @@ const MapPage = () => {
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
       setShowSidebar(false);
+      setIsRouteMode(false); // Exit route mode when deselecting
+      console.log('Route mode deactivated - deselecting');
     } else {
       // Select new category
       console.log('Selecting new category:', categoryId);
       setActiveCategory(categoryId);
       setSearchQuery(''); // Clear search when selecting category
       setSearchResults([]);
+      setIsRouteMode(false); // Exit route mode when selecting categories normally
+      console.log('Route mode deactivated - selecting new category');
+      console.log('Set active category to:', categoryId);
       
       if (!nearbyPlaces[categoryId]) {
         console.log('Loading new places for category:', categoryId);
@@ -1116,6 +1385,55 @@ const MapPage = () => {
     return searchResults;
   };
 
+  // Function to calculate bounds for all results and fit them in view
+  const fitResultsInView = useCallback((results) => {
+    if (!mapInstanceRef.current || !results || results.length === 0) return;
+
+    const bounds = new window.google.maps.LatLngBounds();
+    let validResults = 0;
+
+    results.forEach(place => {
+      const lat = place.lat || place.geometry?.location?.lat;
+      const lng = place.lng || place.geometry?.location?.lng;
+      
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        bounds.extend(new window.google.maps.LatLng(lat, lng));
+        validResults++;
+      }
+    });
+
+    if (validResults > 0) {
+      // Store the bounds and zoom for later use
+      setResultsBounds(bounds);
+      setResultsZoom(mapInstanceRef.current.getZoom());
+      
+      // Fit the map to show all results
+      mapInstanceRef.current.fitBounds(bounds);
+      
+      // Add some padding
+      const listener = window.google.maps.event.addListener(mapInstanceRef.current, 'bounds_changed', () => {
+        if (mapInstanceRef.current.getZoom() > 15) {
+          mapInstanceRef.current.setZoom(15);
+        }
+        window.google.maps.event.removeListener(listener);
+      });
+    }
+  }, []);
+
+  // Function to zoom to a specific place
+  const zoomToPlace = useCallback((place) => {
+    if (!mapInstanceRef.current || !place) return;
+
+    const lat = place.lat || place.geometry?.location?.lat;
+    const lng = place.lng || place.geometry?.location?.lng;
+    
+    if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+      const location = new window.google.maps.LatLng(lat, lng);
+      mapInstanceRef.current.setCenter(location);
+      mapInstanceRef.current.setZoom(16); // Zoom in close to the place
+    }
+  }, []);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO
@@ -1126,7 +1444,23 @@ const MapPage = () => {
         type="website"
       />
       
-        <Header />
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're using our interactive map. Search for Yellowstone, Grand Canyon, Yosemite, or Great Smoky Mountains to explore!
+            <button
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to search all parks and save favorites.
+          </p>
+        </div>
+      )}
+
+      <Header />
 
       {/* Main Container */}
       <div className="flex h-screen">
@@ -1166,7 +1500,7 @@ const MapPage = () => {
 
             {/* Sidebar Content */}
             <div className="flex-1 overflow-y-auto">
-              {/* Park Details */}
+              {/* Park Details - Simple like authenticated users */}
               {sidebarContent === 'park' && parkData && (
                 <div className="p-4">
                   {/* Park Photos */}
@@ -1179,15 +1513,15 @@ const MapPage = () => {
                             src={image.url}
                             alt={`${parkData.fullName} photo ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
                         ))}
-              </div>
-          </div>
-                )}
-                
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="mb-4">
                     <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{parkData.fullName}</h1>
                     <div className={`flex items-center gap-2 text-sm mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -1195,59 +1529,9 @@ const MapPage = () => {
                       <span>National Park</span>
                       <span>•</span>
                       <span>{parkData.states}</span>
-                          </div>
-                    <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{parkData.description}</p>
-                </div>
-
-                  {/* Quick Access to Nearby Services */}
-                  <div className="mb-4">
-                    <h3 className={`text-lg font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>Nearby Services</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                    <button
-                        onClick={() => handleCategoryClick('restaurant')}
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-green-500 hover:bg-green-50 transition"
-                    >
-                        <Utensils className="h-6 w-6 text-green-500" />
-                        <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Restaurants</span>
-                    </button>
-                      <button
-                        onClick={() => handleCategoryClick('lodging')}
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition"
-                      >
-                        <Bed className="h-6 w-6 text-blue-500" />
-                        <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Hotels</span>
-                      </button>
-                      <button
-                        onClick={() => handleCategoryClick('gas_station')}
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition"
-                      >
-                        <Fuel className="h-6 w-6 text-orange-500" />
-                        <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Gas</span>
-                      </button>
-                <button
-                        onClick={() => handleCategoryClick('tourist_attraction')}
-                        className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition"
-                >
-                        <Calendar className="h-6 w-6 text-purple-500" />
-                        <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Things to Do</span>
-                      </button>
                     </div>
-              </div>
-              
-              
-                  {/* Address */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin className={`h-5 w-5 mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-400'}`} />
-                      <div>
-                        <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Address</p>
-                        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {parkData.addresses?.[0]?.line1}<br />
-                          {parkData.addresses?.[0]?.city}, {parkData.addresses?.[0]?.stateCode} {parkData.addresses?.[0]?.postalCode}
-                        </p>
-                </div>
-                </div>
-              </div>
+                    <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{parkData.description}</p>
+                  </div>
             </div>
           )}
           
@@ -1257,15 +1541,32 @@ const MapPage = () => {
                   <div className={`border rounded-lg p-4 shadow-sm ${
                     isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
                   }`}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Route className="h-5 w-5 text-purple-600" />
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                          <Route className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedPlace.name}</h3>
+                          <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{selectedPlace.formatted_address || selectedPlace.vicinity}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedPlace.name}</h3>
-                        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{selectedPlace.formatted_address || selectedPlace.vicinity}</p>
-                      </div>
-              </div>
+                      <button
+                        onClick={() => {
+                          setSidebarContent(previousSidebarContent);
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isDark 
+                            ? 'bg-gray-600 hover:bg-gray-500 text-gray-300 hover:text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900'
+                        }`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back
+                      </button>
+                    </div>
               
                       <button
                       onClick={() => {
@@ -1375,6 +1676,30 @@ const MapPage = () => {
                   })()}
                         
                   <div className="mb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <button
+                        onClick={() => {
+                          // Go back to the previous sidebar content
+                          setSidebarContent(previousSidebarContent);
+                          
+                          // Zoom out to show all results
+                          const currentResults = getCurrentResults();
+                          if (currentResults.length > 0) {
+                            fitResultsInView(currentResults);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isDark 
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900'
+                        }`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to Results
+                      </button>
+                    </div>
                     <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedPlace.name}</h1>
                     <div className={`flex items-center gap-2 text-sm mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       {selectedPlace.rating && (
@@ -1551,9 +1876,36 @@ const MapPage = () => {
               {/* Routes Planning */}
               {sidebarContent === 'routes' && (
                 <div className="p-4">
+                  {/* Back to Park Button - Top */}
+                  {parkData && (
+                    <div className="mb-4">
+                      <button
+                        onClick={() => {
+                          setSidebarContent('park');
+                          
+                          // Zoom out to show all results when going back to park
+                          const currentResults = getCurrentResults();
+                          if (currentResults.length > 0) {
+                            fitResultsInView(currentResults);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isDark 
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900'
+                        }`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to Park
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-2">Plan Your Route</h2>
-                    <p className="text-sm text-gray-600">Add places to create a custom route with directions</p>
+                    <h2 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Plan Your Route</h2>
+                    <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Add places to create a custom route with directions</p>
                     {routeWaypoints.length > 1 && (
                       <p className="text-xs text-gray-500 mt-1">💡 Drag places to reorder your route</p>
               )}
@@ -1656,6 +2008,33 @@ const MapPage = () => {
               {/* Search Results */}
               {sidebarContent === 'search' && (
                 <div className={`p-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {/* Back to Park Button - Top */}
+                  {activeCategory && parkData && (
+                    <div className="mb-4">
+                      <button
+                        onClick={() => {
+                          setSidebarContent('park');
+                          
+                          // Zoom out to show all results when going back to park
+                          const currentResults = getCurrentResults();
+                          if (currentResults.length > 0) {
+                            fitResultsInView(currentResults);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isDark 
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900'
+                        }`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back to Park
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between mb-4">
                     <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       {activeCategory ? `Top ${getCurrentResults().length} ${categories.find(c => c.id === activeCategory)?.label}` : 'Results'}
@@ -1680,16 +2059,23 @@ const MapPage = () => {
                             infoWindowRef.current.close();
                           }
                           
-                          setSelectedPlace(place);
-                          setSidebarContent('place');
+                          // Zoom to the selected place
+                          zoomToPlace(place);
                           
-                          const lat = place.lat || place.geometry?.location?.lat;
-                          const lng = place.lng || place.geometry?.location?.lng;
-                          if (lat && lng) {
-                            mapInstanceRef.current.setCenter({ lat, lng });
-                            mapInstanceRef.current.setZoom(12);
-                            
-                            // Just center the map on the place (no info popup)
+                          // Check if we're in route mode
+                          console.log('Sidebar click - isRouteMode:', isRouteMode, 'activeCategory:', activeCategory, 'sidebarContent:', sidebarContent);
+                          if (isRouteMode) {
+                            // In route mode - show minimal place card with just name and add to route
+                            console.log('Showing route-place for:', place.name);
+                            setPreviousSidebarContent(sidebarContent);
+                            setSelectedPlace(place);
+                            setSidebarContent('route-place');
+                          } else {
+                            // Normal mode - show full place details
+                            console.log('Showing full place details for:', place.name);
+                            setPreviousSidebarContent(sidebarContent);
+                            setSelectedPlace(place);
+                            setSidebarContent('place');
                           }
                           
                           console.log('Updated sidebar and map for place:', place.name);
@@ -1817,7 +2203,87 @@ const MapPage = () => {
                         onClick={() => {
                           setSearchQuery(suggestion.description);
                           setShowSuggestions(false);
-                          // Use the suggestion's place_id to get exact location
+                          
+                          // For public users with mock place_ids, handle directly
+                          if (isPublicAccess && suggestion.place_id?.startsWith('public_')) {
+                            const parkName = suggestion.description;
+                            const selectedPublicPark = publicParks.find(park => park.name === parkName);
+                            
+                            if (selectedPublicPark && allParks) {
+                              // Find the actual park data from the API
+                              const actualPark = allParks.find(park => park.parkCode === selectedPublicPark.parkCode);
+                              
+                              if (actualPark && actualPark.latitude && actualPark.longitude) {
+                                const lat = parseFloat(actualPark.latitude);
+                                const lng = parseFloat(actualPark.longitude);
+                                
+                                console.log('Found park data:', actualPark.name, 'at:', lat, lng);
+                                console.log('Raw coordinates:', actualPark.latitude, actualPark.longitude);
+                                console.log('Parsed coordinates:', lat, lng);
+                                console.log('Is valid lat:', !isNaN(lat) && isFinite(lat));
+                                console.log('Is valid lng:', !isNaN(lng) && isFinite(lng));
+                                
+                                // Validate coordinates before using them
+                                if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && 
+                                    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                                  
+                                  // Set the park data directly like authenticated users
+                                console.log('Setting park data for public user:', actualPark);
+                                console.log('Park data fields:', {
+                                  fullName: actualPark.fullName,
+                                  name: actualPark.name,
+                                  states: actualPark.states,
+                                  description: actualPark.description,
+                                  images: actualPark.images
+                                });
+                                setParkData(actualPark);
+                                setSidebarContent('park');
+                                setShowSidebar(true);
+                                
+                                // Fetch Google Places data for real ratings, hours, phone, etc.
+                                fetchGooglePlaceData(actualPark.fullName, lat, lng);
+                                
+                                // Center map on the selected park
+                                if (mapInstanceRef.current) {
+                                  mapInstanceRef.current.setCenter({
+                                    lat: lat,
+                                    lng: lng
+                                  });
+                                  mapInstanceRef.current.setZoom(12);
+                                }
+                                
+                                // Clear existing markers and add marker for selected park
+                                markersRef.current.forEach(marker => marker.setMap(null));
+                                markersRef.current = [];
+                                
+                                const marker = new window.google.maps.Marker({
+                                  position: { lat: lat, lng: lng },
+                                  map: mapInstanceRef.current,
+                                  title: actualPark.fullName || actualPark.name,
+                                  icon: {
+                                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
+                                        <circle cx="12" cy="9" r="3" fill="white"/>
+                                      </svg>
+                                    `),
+                                    scaledSize: new window.google.maps.Size(24, 24)
+                                  }
+                                });
+                                markersRef.current.push(marker);
+                                } else {
+                                  console.error('Invalid coordinates for park:', actualPark.name, 'lat:', lat, 'lng:', lng);
+                                  showToast('Invalid park coordinates', 'error');
+                                }
+                              } else {
+                                console.error('Could not find park data for:', selectedPublicPark.parkCode);
+                                showToast('Park data not available', 'error');
+                              }
+                            }
+                            return;
+                          }
+                          
+                          // For authenticated users, use Google Places API
                           if (suggestion.place_id) {
                             const service = new window.google.maps.places.PlacesService(mapInstanceRef.current);
                             const request = {
@@ -1871,11 +2337,22 @@ const MapPage = () => {
                                 });
                                 markersRef.current.push(marker);
                                 
-                                // Always show place info card directly (like Google Maps)
-                                setSelectedPlace(place);
-                                setSidebarContent('place');
-                                setShowSidebar(true);
-                                setActiveCategory(null);
+                                // Check if we're in route mode
+                                if (isRouteMode) {
+                                  // In route mode - show minimal place card with just name and add to route
+                                  setPreviousSidebarContent(sidebarContent);
+                                  setSelectedPlace(place);
+                                  setSidebarContent('route-place');
+                                  setShowSidebar(true);
+                                  setActiveCategory(null);
+                                } else {
+                                  // Normal mode - show full place details
+                                  setPreviousSidebarContent(sidebarContent);
+                                  setSelectedPlace(place);
+                                  setSidebarContent('place');
+                                  setShowSidebar(true);
+                                  setActiveCategory(null);
+                                }
                                 console.log('Showing place info card for suggestion:', place.name);
                                 
                                 console.log('Map centered on suggestion:', place.name, 'at:', place.geometry.location.lat(), place.geometry.location.lng());

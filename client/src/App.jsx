@@ -2,6 +2,7 @@ import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
+import { Analytics } from '@vercel/analytics/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -21,6 +22,7 @@ import { useIdleRefresh } from './hooks/useIdleRefresh';
 
 // Lazy load all pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const DailyFeedPage = lazy(() => import('./pages/DailyFeedPage'));
 const ExploreParksPage = lazy(() => import('./pages/ExploreParksPage'));
 const ParkDetailPage = lazy(() => import('./pages/ParkDetailPage'));
 const ActivityDetailPage = lazy(() => import('./pages/ActivityDetailPage'));
@@ -132,6 +134,7 @@ function App() {
                 <IdleRefreshTracker />
                 <PerformanceMonitor />
                 <CookieConsent />
+                <Analytics />
                 <Suspense fallback={<LoadingScreen />}>
                   <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -142,45 +145,18 @@ function App() {
             <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
             <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route 
-              path="/explore" 
+              path="/home" 
               element={
                 <PrivateRoute>
-                  <ExploreParksPage />
+                  <DailyFeedPage />
                 </PrivateRoute>
               } 
             />
-            <Route 
-              path="/map" 
-              element={
-                <PrivateRoute>
-                  <MapPageWrapper />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/compare" 
-              element={
-                <PrivateRoute>
-                  <ComparePage />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/events" 
-              element={
-                <PrivateRoute>
-                  <EventsPage />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/blog" 
-              element={
-                <PrivateRoute>
-                  <BlogPage />
-                </PrivateRoute>
-              } 
-            />
+            <Route path="/explore" element={<ExploreParksPage />} />
+            <Route path="/map" element={<MapPageWrapper />} />
+            <Route path="/compare" element={<ComparePage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/blog" element={<BlogPage />} />
             <Route 
               path="/blog/:slug" 
               element={<BlogPostPage />} 
@@ -193,10 +169,6 @@ function App() {
               path="/parks/:parkCode/activity/:activityId" 
               element={<ActivityDetailPage />} 
             />
-            <Route 
-              path="/blog/:slug" 
-              element={<BlogPostPage />} 
-            />
             
             <Route 
               path="/profile" 
@@ -206,22 +178,8 @@ function App() {
                 </PrivateRoute>
               } 
             />
-            <Route 
-              path="/plan-ai" 
-              element={
-                <PrivateRoute>
-                  <PlanAIPage />
-                </PrivateRoute>
-              } 
-            />
-            <Route 
-              path="/plan-ai/:tripId" 
-              element={
-                <PrivateRoute>
-                  <PlanAIPage />
-                </PrivateRoute>
-              } 
-            />
+            <Route path="/plan-ai" element={<PlanAIPage />} />
+            <Route path="/plan-ai/:tripId" element={<PlanAIPage />} />
             <Route path="/test/:parkCode" element={<TestParkPage />} />
             <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/features" element={<FeaturesPage />} />

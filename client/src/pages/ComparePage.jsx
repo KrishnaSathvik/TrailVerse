@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, X, Plus, ChevronDown, ChevronUp, Check, 
   MapPin, Star, RefreshCw,
@@ -7,13 +7,17 @@ import {
 } from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 import OptimizedImage from '../components/common/OptimizedImage';
 import { useAllParks } from '../hooks/useParks';
 import { useParkComparison } from '../hooks/useEnhancedParks';
+import { useAuth } from '../context/AuthContext';
 
 const ComparePage = () => {
   const { data: allParksData, isLoading } = useAllParks();
   const allParks = allParksData?.data;
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [selectedParks, setSelectedParks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSelector, setShowSelector] = useState(false);
@@ -21,7 +25,11 @@ const ComparePage = () => {
     summary: true
   });
 
-  const maxParks = 4;
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
+  
+  // Limit parks: 2 for public users, 4 for authenticated users
+  const maxParks = isPublicAccess ? 2 : 4;
 
   // Generate unique colors for each park in the comparison
   const getParkColors = (parkCodes) => {
@@ -258,6 +266,30 @@ const ComparePage = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <SEO
+        title="Compare National Parks - Side-by-Side Park Comparison Tool"
+        description="Compare National Parks side-by-side with detailed information about activities, weather, facilities, and more. Find the perfect park for your next adventure."
+        keywords="compare national parks, park comparison, national park comparison tool, park features comparison, activities comparison, weather comparison"
+        url="https://www.nationalparksexplorerusa.com/compare"
+        type="website"
+      />
+      
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're comparing parks. You can compare up to 2 parks. 
+            <button 
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to compare up to 4 parks and save your comparisons.
+          </p>
+        </div>
+      )}
+
       <Header />
 
       {/* Hero Section */}

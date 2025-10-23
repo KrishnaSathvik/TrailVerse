@@ -1,20 +1,25 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { MapPin, Star, ArrowRight, Loader2, X, Search } from '@components/icons';
+import SEO from '../components/common/SEO';
 import { useAllParks } from '../hooks/useParks';
 import { useParkRatings } from '../hooks/useParkRatings';
 import OptimizedImage from '../components/common/OptimizedImage';
 import Header from '../components/common/Header';
 import cacheService from '../services/cacheService';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const MobileMapPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { data: allParksData, isLoading: parksLoading } = useAllParks();
   const allParks = allParksData?.data;
   const { data: parkRatings } = useParkRatings();
   const { isDark } = useTheme();
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
   
   // Debug parks loading (remove in production)
   console.log('Parks loading state:', { parksLoading, allParks: allParks?.length });
@@ -177,9 +182,26 @@ const MobileMapPage = () => {
       return aName.localeCompare(bName);
     });
 
-    setSearchSuggestions(sortedMatches.slice(0, 8)); // Limit to 8 suggestions
-    setSearchResults(sortedMatches);
-  }, [allParks]);
+    // For public users, limit to 3-4 national parks
+    let limitedResults = sortedMatches;
+    if (isPublicAccess) {
+      // Filter for national parks and limit to 3-4 results
+      const nationalParks = sortedMatches.filter(park => 
+        park.designation?.toLowerCase().includes('national park') ||
+        park.designation?.toLowerCase().includes('national monument') ||
+        park.designation?.toLowerCase().includes('national preserve')
+      );
+      limitedResults = nationalParks.slice(0, 4);
+      
+      // If no national parks found, show first 3-4 results
+      if (limitedResults.length === 0) {
+        limitedResults = sortedMatches.slice(0, 3);
+      }
+    }
+    
+    setSearchSuggestions(limitedResults.slice(0, 8)); // Limit to 8 suggestions
+    setSearchResults(limitedResults);
+  }, [allParks, isPublicAccess]);
 
   // Handle search input
   const handleSearchInput = useCallback((e) => {
@@ -468,9 +490,11 @@ const MobileMapPage = () => {
   if (parksLoading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-        <Helmet>
-          <title>Map - Trailverse</title>
-        </Helmet>
+        <SEO
+          title="Loading Map - TrailVerse"
+          description="Loading interactive map of National Parks"
+          noindex={true}
+        />
         <div className="text-center">
           <Loader2 className="h-12 w-12 text-green-600 animate-spin mx-auto mb-4" />
           <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>Loading parks...</p>
@@ -481,10 +505,29 @@ const MobileMapPage = () => {
 
   return (
     <div className="h-screen flex flex-col">
-      <Helmet>
-        <title>Explore Parks Map - Trailverse</title>
-        <meta name="description" content="Explore all National Parks on an interactive map" />
-      </Helmet>
+      <SEO
+        title="Mobile Map - Explore National Parks on Interactive Map"
+        description="Explore all National Parks on our mobile-optimized interactive map. Find parks near you, view details, and plan your next adventure."
+        keywords="mobile map, national parks map, interactive map, park finder, mobile park explorer"
+        url="https://www.nationalparksexplorerusa.com/map"
+        type="website"
+      />
+
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're using our interactive map.
+            <button
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to see all parks, save favorites, and access full map features.
+          </p>
+        </div>
+      )}
 
       {/* Header */}
       <Header />

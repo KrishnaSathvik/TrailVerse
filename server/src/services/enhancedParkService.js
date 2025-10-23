@@ -27,23 +27,30 @@ class EnhancedParkService {
   }
 
   // Enhanced weather data with seasonal averages
-  async getWeatherData(park) {
-    const cacheKey = `weather-${park.parkCode}`;
+  async getWeatherData(parkOrLocation) {
+    const isPark = !!parkOrLocation.parkCode;
+    const lat = parseFloat(parkOrLocation.latitude);
+    const lon = parseFloat(parkOrLocation.longitude);
+    const cacheKey = isPark
+      ? `weather-${parkOrLocation.parkCode}`
+      : `weather-${lat.toFixed(3)},${lon.toFixed(3)}`;
     const cached = this.getCachedData(cacheKey);
     if (cached) {
-      console.log(`Using cached weather data for ${park.parkCode}`);
+      console.log(`Using cached weather data for ${isPark ? parkOrLocation.parkCode : `${lat},${lon}`}`);
       return cached;
     }
 
     try {
-      const lat = parseFloat(park.latitude);
-      const lon = parseFloat(park.longitude);
-
-      if (!lat || !lon) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
         throw new Error('Invalid coordinates');
       }
 
-      console.log(`Fetching weather for ${park.parkCode} at ${lat}, ${lon}`);
+      console.log(`Fetching weather for ${isPark ? parkOrLocation.parkCode : 'location'} at ${lat}, ${lon}`);
+
+      // Check if API key is available
+      if (!OPENWEATHER_API_KEY) {
+        throw new Error('OpenWeather API key not configured');
+      }
 
       // Get current weather and forecast
       const [currentResponse, forecastResponse] = await Promise.all([
@@ -53,7 +60,8 @@ class EnhancedParkService {
             lon,
             appid: OPENWEATHER_API_KEY,
             units: 'imperial'
-          }
+          },
+          timeout: 5000
         }),
         axios.get(`${OPENWEATHER_BASE}/forecast`, {
           params: {
@@ -61,7 +69,8 @@ class EnhancedParkService {
             lon,
             appid: OPENWEATHER_API_KEY,
             units: 'imperial'
-          }
+          },
+          timeout: 5000
         })
       ]);
 
@@ -103,11 +112,16 @@ class EnhancedParkService {
       return weatherData;
 
     } catch (error) {
-      console.error(`Weather API Error for ${park.parkCode}:`, error.message);
+      console.error(`Weather API Error for ${cacheKey}:`, error.message);
       
-      // Return fallback data based on park location
-      console.log(`Using fallback weather data for ${park.parkCode}`);
-      return this.getFallbackWeatherData(park);
+      // Only return fallback if coordinates are valid
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        console.log(`Using fallback weather data for ${cacheKey}`);
+        return this.getFallbackWeatherData({ latitude: lat, longitude: lon });
+      } else {
+        // Re-throw error for invalid coordinates
+        throw error;
+      }
     }
   }
 
@@ -147,21 +161,37 @@ class EnhancedParkService {
   }
 
   // Fallback weather data based on park location
-  getFallbackWeatherData(park) {
-    const lat = parseFloat(park.latitude);
+  getFallbackWeatherData(parkOrLocation) {
+    const lat = parseFloat(parkOrLocation.latitude);
     
-    // Simple latitude-based temperature estimation
+    // More realistic latitude-based temperature estimation
     let baseTemp = 70; // Base temperature
-    if (lat > 45) baseTemp = 50; // Northern parks
-    else if (lat < 30) baseTemp = 80; // Southern parks
+    if (lat > 50) baseTemp = 45; // Far northern parks (Alaska, etc.)
+    else if (lat > 45) baseTemp = 55; // Northern parks (Montana, etc.)
+    else if (lat > 40) baseTemp = 65; // Mid-latitude parks
+    else if (lat > 35) baseTemp = 75; // Southern mid-latitude
+    else if (lat > 30) baseTemp = 80; // Southern parks
+    else baseTemp = 85; // Very southern parks
+
+    // Add some seasonal variation
+    const month = new Date().getMonth();
+    let seasonalAdjustment = 0;
+    if (month >= 5 && month <= 7) seasonalAdjustment = 10; // Summer
+    else if (month >= 11 || month <= 1) seasonalAdjustment = -15; // Winter
+    else if (month >= 2 && month <= 4) seasonalAdjustment = 5; // Spring
+    else seasonalAdjustment = -5; // Fall
+
+    const adjustedTemp = Math.round(baseTemp + seasonalAdjustment);
 
     return {
       current: {
-        temperature: baseTemp,
+        temperature: adjustedTemp,
+        temp: adjustedTemp, // For UI compatibility
         condition: 'Partly Cloudy',
         humidity: 60,
         windSpeed: 5,
-        feelsLike: baseTemp
+        feelsLike: adjustedTemp,
+        uvi: 4
       },
       seasonal: {
         summer: { high: baseTemp + 15, low: baseTemp - 5, avg: baseTemp + 5 },

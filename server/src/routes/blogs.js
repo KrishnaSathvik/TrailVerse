@@ -15,7 +15,7 @@ const {
   publishScheduledPosts,
   getScheduledPosts
 } = require('../controllers/blogController');
-const { protect, admin } = require('../middleware/auth');
+const { protect, admin, optionalAuth } = require('../middleware/auth');
 const { cacheMiddleware } = require('../middleware/cache');
 
 /**
@@ -317,7 +317,7 @@ router.get('/favorites', protect, getFavoritedPosts);
  *       404:
  *         description: Blog post not found
  */
-router.post('/:id/like', protect, toggleLike);
+router.post('/:id/like', optionalAuth, toggleLike);
 
 /**
  * @swagger
@@ -343,7 +343,7 @@ router.post('/:id/like', protect, toggleLike);
  *       404:
  *         description: Blog post not found
  */
-router.post('/:id/favorite', protect, toggleFavorite);
+router.post('/:id/favorite', optionalAuth, toggleFavorite);
 
 /**
  * @swagger

@@ -12,6 +12,7 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
+    { path: '/home', label: 'Daily Feed' },
     { path: '/explore', label: 'Explore' },
     { path: '/plan-ai', label: 'Plan AI' },
     { path: '/events', label: 'Events' },
@@ -22,12 +23,17 @@ const Header = () => {
 
   // Add Profile to nav items for authenticated users
   const allNavItems = isAuthenticated ? [...navItems, { path: '/profile', label: 'Profile' }] : navItems;
+  
+  // For unauthenticated users, show only public pages (exclude Daily Feed and Profile)
+  const publicNavItems = navItems.filter(item => 
+    item.path !== '/home' && item.path !== '/profile'
+  );
 
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -53,10 +59,9 @@ const Header = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation Pills - Show only for authenticated users */}
-          {isAuthenticated && (
-            <div className="hidden md:flex items-center gap-2">
-              {allNavItems.map((item) => (
+          {/* Desktop Navigation Pills - Show for both authenticated and unauthenticated users */}
+          <div className="hidden md:flex items-center gap-2">
+            {(isAuthenticated ? allNavItems : publicNavItems).map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
@@ -85,7 +90,6 @@ const Header = () => {
                 </Link>
               ))}
             </div>
-          )}
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
@@ -167,8 +171,8 @@ const Header = () => {
                 <ThemeSwitcher showLabel />
               </div>
               
-              {/* Navigation Items - Show only for authenticated users */}
-              {isAuthenticated && allNavItems.map((item) => (
+              {/* Navigation Items - Show for both authenticated and unauthenticated users */}
+              {(isAuthenticated ? allNavItems : publicNavItems).map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}

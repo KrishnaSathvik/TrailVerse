@@ -122,10 +122,85 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password, rememberMe = false) => {
-
     const response = await authService.login(email, password, rememberMe);
 
     setUser(response.data);
+
+    // Check if user came from AI chat
+    const returnToChat = localStorage.getItem('returnToChat');
+    if (returnToChat) {
+      try {
+        const chatContext = JSON.parse(returnToChat);
+        
+        // Migrate anonymous conversation
+        const migrationResponse = await fetch('/api/auth/migrate-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${response.data.token}`
+          },
+          body: JSON.stringify({
+            anonymousId: chatContext.anonymousId
+          })
+        });
+        
+        if (migrationResponse.ok) {
+          const migrationData = await migrationResponse.json();
+          // Clear the stored context
+          localStorage.removeItem('returnToChat');
+          // Redirect to chat with migrated conversation
+          window.location.href = `/plan-ai/${migrationData.data.tripId}?chat=true`;
+          return response;
+        }
+      } catch (error) {
+        console.error('Error migrating chat:', error);
+        // Clear context on error and continue with normal flow
+        localStorage.removeItem('returnToChat');
+      }
+    } else {
+      // Check for any anonymous session to migrate (even if not from chat)
+      try {
+        const anonymousSession = localStorage.getItem('anonymousSession');
+        if (anonymousSession) {
+          const sessionData = JSON.parse(anonymousSession);
+          
+          // Check if session is not too old (24 hours)
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (sessionAge < maxAge && sessionData.anonymousId) {
+            // Migrate anonymous conversation
+            const migrationResponse = await fetch('/api/auth/migrate-chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${response.data.token}`
+              },
+              body: JSON.stringify({
+                anonymousId: sessionData.anonymousId
+              })
+            });
+            
+            if (migrationResponse.ok) {
+              const migrationData = await migrationResponse.json();
+              // Clear the anonymous session
+              localStorage.removeItem('anonymousSession');
+              console.log('✅ Migrated anonymous session to user account');
+              // Redirect to the migrated trip
+              window.location.href = `/plan-ai/${migrationData.data.tripId}?chat=true`;
+              return response;
+            }
+          } else {
+            // Session too old, clear it
+            localStorage.removeItem('anonymousSession');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking/migrating anonymous session:', error);
+        // Clear session on error
+        localStorage.removeItem('anonymousSession');
+      }
+    }
 
     return response;
   };
@@ -148,7 +223,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Method to set user after email verification
-  const setUserAfterVerification = (userData, token) => {
+  const setUserAfterVerification = async (userData, token) => {
     console.log('✅ AuthContext: Setting user after email verification');
     console.log('✅ AuthContext: User data:', userData);
     console.log('✅ AuthContext: Token:', token ? `${token.substring(0, 30)}...` : 'null');
@@ -159,6 +234,82 @@ export const AuthProvider = ({ children }) => {
     
     // Update state immediately
     setUser(userData);
+    
+    // Check if user came from AI chat
+    const returnToChat = localStorage.getItem('returnToChat');
+    if (returnToChat) {
+      try {
+        const chatContext = JSON.parse(returnToChat);
+        
+        // Migrate anonymous conversation
+        const migrationResponse = await fetch('/api/auth/migrate-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            anonymousId: chatContext.anonymousId
+          })
+        });
+        
+        if (migrationResponse.ok) {
+          const migrationData = await migrationResponse.json();
+          // Clear the stored context
+          localStorage.removeItem('returnToChat');
+          // Redirect to chat with migrated conversation
+          window.location.href = `/plan-ai/${migrationData.data.tripId}?chat=true`;
+          return;
+        }
+      } catch (error) {
+        console.error('Error migrating chat after verification:', error);
+        // Clear context on error and continue with normal flow
+        localStorage.removeItem('returnToChat');
+      }
+    } else {
+      // Check for any anonymous session to migrate (even if not from chat)
+      try {
+        const anonymousSession = localStorage.getItem('anonymousSession');
+        if (anonymousSession) {
+          const sessionData = JSON.parse(anonymousSession);
+          
+          // Check if session is not too old (24 hours)
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (sessionAge < maxAge && sessionData.anonymousId) {
+            // Migrate anonymous conversation
+            const migrationResponse = await fetch('/api/auth/migrate-chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                anonymousId: sessionData.anonymousId
+              })
+            });
+            
+            if (migrationResponse.ok) {
+              const migrationData = await migrationResponse.json();
+              // Clear the anonymous session
+              localStorage.removeItem('anonymousSession');
+              console.log('✅ Migrated anonymous session to user account after verification');
+              // Redirect to the migrated trip
+              window.location.href = `/plan-ai/${migrationData.data.tripId}?chat=true`;
+              return;
+            }
+          } else {
+            // Session too old, clear it
+            localStorage.removeItem('anonymousSession');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking/migrating anonymous session after verification:', error);
+        // Clear session on error
+        localStorage.removeItem('anonymousSession');
+      }
+    }
     
     console.log('✅ AuthContext: User authenticated after verification');
   };

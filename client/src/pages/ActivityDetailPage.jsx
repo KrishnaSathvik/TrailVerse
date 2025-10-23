@@ -42,7 +42,10 @@ const ActivityDetailPage = ({ isPublic = false }) => {
     if (fromTrailsPage) {
       navigate('/trails');
     } else if (fromParkDetails) {
-      navigate(`/parks/${parkCode}`);
+      // Preserve the original navigation state when going back to park details
+      navigate(`/parks/${parkCode}`, { 
+        state: location.state?.originalState || location.state 
+      });
     } else {
       navigate(-1);
     }

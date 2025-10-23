@@ -27,7 +27,7 @@ exports.getComments = async (req, res, next) => {
 
 // @desc    Create comment
 // @route   POST /api/blogs/:blogId/comments
-// @access  Private
+// @access  Public (optional auth)
 exports.createComment = async (req, res, next) => {
   try {
     const { blogId } = req.params;
@@ -42,10 +42,14 @@ exports.createComment = async (req, res, next) => {
       });
     }
     
+    // For anonymous users, use IP address and generate a name
+    const userName = req.user ? req.user.name : `Anonymous User ${req.ip.slice(-4)}`;
+    const userId = req.user ? req.user.id : req.ip;
+    
     const comment = await Comment.create({
       blogPost: blogId,
-      user: req.user.id,
-      userName: req.user.name,
+      user: userId,
+      userName: userName,
       content
     });
     
@@ -95,7 +99,7 @@ exports.deleteComment = async (req, res, next) => {
 
 // @desc    Like comment
 // @route   PUT /api/comments/:id/like
-// @access  Private
+// @access  Public (optional auth)
 exports.likeComment = async (req, res, next) => {
   try {
     const comment = await Comment.findById(req.params.id);
@@ -107,14 +111,16 @@ exports.likeComment = async (req, res, next) => {
       });
     }
     
-    const alreadyLiked = comment.likes.includes(req.user.id);
+    // For anonymous users, use IP address as identifier
+    const identifier = req.user ? req.user.id : req.ip;
+    const alreadyLiked = comment.likes.includes(identifier);
     
     if (alreadyLiked) {
       // Unlike
-      comment.likes = comment.likes.filter(id => id.toString() !== req.user.id);
+      comment.likes = comment.likes.filter(id => id.toString() !== identifier);
     } else {
       // Like
-      comment.likes.push(req.user.id);
+      comment.likes.push(identifier);
     }
     
     await comment.save();

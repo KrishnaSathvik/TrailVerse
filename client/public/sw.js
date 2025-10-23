@@ -80,13 +80,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // Skip development server requests
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    // In development, only handle API requests and specific assets
+    if (url.pathname.startsWith('/api/')) {
+      event.respondWith(handleApiRequest(request));
+      return;
+    }
+    
+    // Skip source files and dev server requests
+    if (url.pathname.includes('/src/') || 
+        url.pathname.includes('/pages/') || 
+        url.pathname.includes('/components/') ||
+        url.pathname.includes('/@') ||
+        url.pathname.includes('/__vite') ||
+        url.pathname.includes('/node_modules/') ||
+        url.pathname.match(/\.(jsx|ts|tsx)$/)) {
+      return; // Let the request pass through to dev server
+    }
+  }
+  
   // Handle API requests
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApiRequest(request));
     return;
   }
   
-  // Handle static assets
+  // Handle static assets (only in production or for specific asset types)
   if (request.destination === 'document' || 
       request.destination === 'script' || 
       request.destination === 'style' ||
@@ -219,14 +239,39 @@ async function handleApiRequest(request) {
 
 // Handle static asset requests
 async function handleStaticRequest(request) {
+  const url = new URL(request.url);
+  
+  // Skip development source files (jsx, ts, tsx, etc.)
+  if (url.pathname.match(/\.(jsx|ts|tsx|js)$/) && 
+      (url.pathname.includes('/src/') || url.pathname.includes('/pages/') || url.pathname.includes('/components/'))) {
+    // Let Vite dev server handle these files
+    return fetch(request).catch(error => {
+      console.log('[SW] Dev server request failed, letting it pass through:', error);
+      throw error;
+    });
+  }
+  
+  // Skip HMR and dev server requests
+  if (url.pathname.includes('/@') || url.pathname.includes('/__vite') || url.pathname.includes('/node_modules/')) {
+    return fetch(request).catch(error => {
+      console.log('[SW] HMR request failed, letting it pass through:', error);
+      throw error;
+    });
+  }
+  
   try {
     // Try network first for static assets
     const networkResponse = await fetch(request);
     
     if (networkResponse.ok) {
-      // Cache successful responses
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      // Only cache production assets (not source files)
+      if (url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/) && 
+          !url.pathname.includes('/src/') && 
+          !url.pathname.includes('/pages/') && 
+          !url.pathname.includes('/components/')) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, networkResponse.clone());
+      }
     }
     
     return networkResponse;
@@ -252,8 +297,15 @@ async function handleStaticRequest(request) {
       }
     }
     
-    // Fallback to network error
-    throw error;
+    // Fallback to network error - but don't throw, return error response
+    return new Response(
+      `Service Worker: Failed to fetch ${url.pathname}`,
+      { 
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/plain' }
+      }
+    );
   }
 }
 

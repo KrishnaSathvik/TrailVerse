@@ -7,6 +7,7 @@ import {
 } from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
 import TripPlannerChat from '../components/plan-ai/TripPlannerChat';
 import TripSummaryCard from '../components/profile/TripSummaryCard';
@@ -22,6 +23,9 @@ const PlanAIPage = () => {
   const { tripId } = useParams(); // Get trip ID from URL
   const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useAuth();
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
   const { showToast } = useToast();
   const { data: allParksData, isLoading: parksLoading, error: parksError } = useAllParks();
   const allParks = allParksData?.data;
@@ -344,10 +348,26 @@ const PlanAIPage = () => {
   };
 
   const handleGenerate = () => {
-    if (!isAuthenticated) {
-      showToast('Please sign in to generate trip plans', 'error');
-      navigate('/login');
-      return;
+    // Check if anonymous user has already used 3 messages
+    if (isPublicAccess) {
+      try {
+        const savedSession = localStorage.getItem('anonymousSession');
+        if (savedSession) {
+          const sessionData = JSON.parse(savedSession);
+          
+          // Check if session is not too old (24 hours)
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
+            showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking anonymous session:', error);
+        // Continue with normal flow if there's an error
+      }
     }
 
     const selectedPark = allParks?.find(p => p.parkCode === formData.parkCode);
@@ -360,6 +380,7 @@ const PlanAIPage = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
   };
+
 
   const handleBackToForm = () => {
     // Always return to main Plan AI page (unified page)
@@ -527,6 +548,30 @@ const PlanAIPage = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <SEO
+        title="AI Trip Planner - Plan Your Perfect National Park Adventure"
+        description="Plan your perfect National Park trip with our AI-powered trip planner. Get personalized recommendations, itineraries, and travel tips for your next adventure."
+        keywords="AI trip planner, national park trip planning, AI travel planner, park itinerary, travel planning, AI recommendations, trip planning tool"
+        url="https://www.nationalparksexplorerusa.com/plan-ai"
+        type="website"
+      />
+      
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You can chat 3 messages with our AI trip planner.
+            <button
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}for unlimited AI planning, save trips, and access all features.
+          </p>
+        </div>
+      )}
+
       <Header />
 
       {/* Hero */}

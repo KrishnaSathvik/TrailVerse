@@ -459,7 +459,7 @@ async function sendBlogNotifications(post) {
 
 // @desc    Like/Unlike a blog post
 // @route   POST /api/blogs/:id/like
-// @access  Private
+// @access  Public (optional auth)
 exports.toggleLike = async (req, res, next) => {
   try {
     const post = await BlogPost.findById(req.params.id);
@@ -471,15 +471,16 @@ exports.toggleLike = async (req, res, next) => {
       });
     }
     
-    const userId = req.user.id || req.user._id;
-    const isLiked = post.likes.includes(userId);
+    // For anonymous users, use IP address as identifier
+    const identifier = req.user ? (req.user.id || req.user._id) : req.ip;
+    const isLiked = post.likes.includes(identifier);
     
     if (isLiked) {
       // Unlike
-      post.likes = post.likes.filter(like => like.toString() !== userId);
+      post.likes = post.likes.filter(like => like.toString() !== identifier);
     } else {
       // Like
-      post.likes.push(userId);
+      post.likes.push(identifier);
     }
     
     await post.save();
@@ -498,7 +499,7 @@ exports.toggleLike = async (req, res, next) => {
 
 // @desc    Favorite/Unfavorite a blog post
 // @route   POST /api/blogs/:id/favorite
-// @access  Private
+// @access  Public (optional auth)
 exports.toggleFavorite = async (req, res, next) => {
   try {
     const post = await BlogPost.findById(req.params.id);
@@ -510,34 +511,37 @@ exports.toggleFavorite = async (req, res, next) => {
       });
     }
     
-    const userId = req.user.id || req.user._id;
-    const isFavorited = post.favorites.includes(userId);
+    // For anonymous users, use IP address as identifier
+    const identifier = req.user ? (req.user.id || req.user._id) : req.ip;
+    const isFavorited = post.favorites.includes(identifier);
     
     if (isFavorited) {
       // Unfavorite
-      post.favorites = post.favorites.filter(fav => fav.toString() !== userId);
+      post.favorites = post.favorites.filter(fav => fav.toString() !== identifier);
     } else {
       // Favorite
-      post.favorites.push(userId);
+      post.favorites.push(identifier);
     }
     
     await post.save();
     
-    // Notify via WebSocket
-    const wsService = req.app.get('wsService');
-    if (wsService) {
-      if (isFavorited) {
-        wsService.sendToUserChannel(userId, 'blogs', 'blog_unfavorited', { 
-          blogId: post._id,
-          isFavorited: false,
-          favoritesCount: post.favorites.length
-        });
-      } else {
-        wsService.sendToUserChannel(userId, 'blogs', 'blog_favorited', { 
-          blogId: post._id,
-          isFavorited: true,
-          favoritesCount: post.favorites.length
-        });
+    // Notify via WebSocket (only for authenticated users)
+    if (req.user) {
+      const wsService = req.app.get('wsService');
+      if (wsService) {
+        if (isFavorited) {
+          wsService.sendToUserChannel(identifier, 'blogs', 'blog_unfavorited', { 
+            blogId: post._id,
+            isFavorited: false,
+            favoritesCount: post.favorites.length
+          });
+        } else {
+          wsService.sendToUserChannel(identifier, 'blogs', 'blog_favorited', { 
+            blogId: post._id,
+            isFavorited: true,
+            favoritesCount: post.favorites.length
+          });
+        }
       }
     }
     

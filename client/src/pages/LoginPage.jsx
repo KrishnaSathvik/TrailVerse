@@ -56,14 +56,11 @@ const LoginPage = () => {
 
     setResendingEmail(true);
     try {
-      // This would call a resend verification endpoint
-      // For now, we'll show a message
+      await authService.resendVerification(prefilledEmail);
       showToast('Verification email has been resent! Please check your inbox.', 'success', 5000);
-      
-      // In production, you would call:
-      // await authService.resendVerification(prefilledEmail);
     } catch (error) {
-      showToast('Failed to resend verification email. Please try again.', 'error');
+      const errorMessage = error.response?.data?.error || 'Failed to resend verification email. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setResendingEmail(false);
     }
@@ -77,7 +74,7 @@ const LoginPage = () => {
       console.log('Login attempt with rememberMe:', rememberMe);
       await login(formData.email, formData.password, rememberMe);
       showToast('Welcome back!', 'success');
-      navigate('/explore?filter=national-parks');
+      navigate('/home');
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Login failed';
       

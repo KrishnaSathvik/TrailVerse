@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, Tag, Filter, 
   Search, X, CalendarDays,
@@ -9,6 +10,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
+import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../hooks/useEvents';
 import { useAllParks } from '../hooks/useParks';
 import { useSavedEvents } from '../hooks/useSavedEvents';
@@ -16,10 +18,15 @@ import EventCard from '../components/events/EventCard';
 import EventListItem from '../components/events/EventListItem';
 
 const EventsPage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { data: eventsData, isLoading, error } = useEvents();
   const { data: allParksData } = useAllParks();
   const allParks = allParksData?.data;
   const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
+  
+  // Determine if this is a public access (not authenticated)
+  const isPublicAccess = !isAuthenticated;
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -206,6 +213,16 @@ const EventsPage = () => {
   // Filter and sort events by date
   const filteredEvents = useMemo(() => {
     const filtered = events.filter(event => {
+      // For public users, only show events up to current date
+      if (isPublicAccess) {
+        const eventDate = new Date(event.date);
+        const currentDate = new Date();
+        currentDate.setHours(23, 59, 59, 999); // End of today
+        if (eventDate > currentDate) {
+          return false;
+        }
+      }
+      
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         if (!event.title.toLowerCase().includes(search) &&
@@ -398,8 +415,24 @@ const EventsPage = () => {
         type="website"
       />
       
+      {/* Public Access Banner */}
+      {isPublicAccess && (
+        <div className="bg-blue-600 text-white py-2 px-4 text-center">
+          <p className="text-sm">
+            You're viewing events up to today's date.
+            <button
+              onClick={() => navigate('/login')}
+              className="underline hover:no-underline ml-1 font-semibold"
+            >
+              Login
+            </button>
+            {' '}to see future events, save favorites, and access all features.
+          </p>
+        </div>
+      )}
+
       <Header />
-      
+
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16 sm:py-20">
         <div className="absolute inset-0 opacity-30">
@@ -427,7 +460,7 @@ const EventsPage = () => {
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4"
               style={{ color: 'var(--text-primary)' }}
             >
-              Discover Events
+              Live National Parks Events
             </h1>
             <p className="text-lg sm:text-xl max-w-3xl"
               style={{ color: 'var(--text-secondary)' }}
@@ -438,71 +471,75 @@ const EventsPage = () => {
 
           </div>
 
-          {/* Search Bar */}
-          <div className="mt-8 max-w-3xl">
-            <div className="relative">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
-                style={{ color: 'var(--text-tertiary)' }}
-              />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search events by name, park, or description..."
-                className="w-full pl-14 pr-14 py-5 rounded-2xl text-base font-medium outline-none transition"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+          {/* Search Bar - Hidden for public users */}
+          {!isPublicAccess && (
+            <div className="mt-8 max-w-3xl">
+              <div className="relative">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
                   style={{ color: 'var(--text-tertiary)' }}
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Events', value: events.length, icon: CalendarDays },
-              { label: 'This Month', value: (() => {
-                const today = new Date();
-                const monthKey = `${today.getFullYear()}-${today.getMonth()}`;
-                return eventsByMonth[monthKey]?.length || 0;
-              })(), icon: TrendingUp },
-              { label: 'Categories', value: categories.length, icon: Tag },
-              { label: 'Parks Featured', value: availableParks.length, icon: MapPin }
-            ].map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={index}
-                  className="rounded-2xl p-4 backdrop-blur text-center"
+                />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search events by name, park, or description..."
+                  className="w-full pl-14 pr-14 py-5 rounded-2xl text-base font-medium outline-none transition"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
-                    borderColor: 'var(--border)'
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)'
                   }}
-                >
-                  <Icon className="h-5 w-5 mx-auto mb-2" style={{ color: 'var(--text-secondary)' }} />
-                  <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                    {stat.value}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 transition"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Stats - Hidden for public users */}
+          {!isPublicAccess && (
+            <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Events', value: events.length, icon: CalendarDays },
+                { label: 'This Month', value: (() => {
+                  const today = new Date();
+                  const monthKey = `${today.getFullYear()}-${today.getMonth()}`;
+                  return eventsByMonth[monthKey]?.length || 0;
+                })(), icon: TrendingUp },
+                { label: 'Categories', value: categories.length, icon: Tag },
+                { label: 'Parks Featured', value: availableParks.length, icon: MapPin }
+              ].map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <div
+                    key={index}
+                    className="rounded-2xl p-4 backdrop-blur text-center"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
+                    <Icon className="h-5 w-5 mx-auto mb-2" style={{ color: 'var(--text-secondary)' }} />
+                    <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                      {stat.value}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      {stat.label}
+                    </div>
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                    {stat.label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -512,46 +549,50 @@ const EventsPage = () => {
           {/* Toolbar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              {/* Mobile Filter Button */}
-              <Button
-                onClick={() => setShowFilters(true)}
-                variant="secondary"
-                size="md"
-                icon={Filter}
-                className="sm:hidden"
-              >
-                Filters
-                {activeFiltersCount > 0 && (
-                  <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500 text-white">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </Button>
+              {/* Mobile Filter Button - Hidden for public users */}
+              {!isPublicAccess && (
+                <Button
+                  onClick={() => setShowFilters(true)}
+                  variant="secondary"
+                  size="md"
+                  icon={Filter}
+                  className="sm:hidden"
+                >
+                  Filters
+                  {activeFiltersCount > 0 && (
+                    <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500 text-white">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </Button>
+              )}
 
-              {/* Date Range Filter */}
-              <select
-                value={filters.dateRange}
-                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                className="px-4 py-2.5 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)',
-                  backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3e%3c/svg%3e")',
-                  backgroundPosition: 'right 0.75rem center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '1.5em 1.5em'
-                }}
-              >
-                <option value="upcoming">Upcoming</option>
-                <option value="this-month">This Month</option>
-                <option value="next-month">Next Month</option>
-                <option value="all">All Dates</option>
-              </select>
+              {/* Date Range Filter - Hidden for public users */}
+              {!isPublicAccess && (
+                <select
+                  value={filters.dateRange}
+                  onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                  className="px-4 py-2.5 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)',
+                    backgroundImage: 'url("data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3e%3cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3e%3c/svg%3e")',
+                    backgroundPosition: 'right 0.75rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em'
+                  }}
+                >
+                  <option value="upcoming">Upcoming</option>
+                  <option value="this-month">This Month</option>
+                  <option value="next-month">Next Month</option>
+                  <option value="all">All Dates</option>
+                </select>
+              )}
 
-              {/* Clear Button - Desktop only */}
-              {activeFiltersCount > 0 && (
+              {/* Clear Button - Desktop only - Hidden for public users */}
+              {!isPublicAccess && activeFiltersCount > 0 && (
                 <Button
                   onClick={clearAllFilters}
                   variant="ghost"
@@ -594,8 +635,9 @@ const EventsPage = () => {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters - Desktop */}
-            <aside className="hidden sm:block lg:w-80 flex-shrink-0">
+            {/* Sidebar Filters - Desktop - Hidden for public users */}
+            {!isPublicAccess && (
+              <aside className="hidden sm:block lg:w-80 flex-shrink-0">
               <div className="sticky top-24 rounded-2xl p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
@@ -694,6 +736,7 @@ const EventsPage = () => {
                 </div>
               </div>
             </aside>
+            )}
 
             {/* Main Content Area */}
             <div className="flex-1 min-w-0">
@@ -874,8 +917,8 @@ const EventsPage = () => {
         </div>
       </section>
 
-      {/* Mobile Filters Modal */}
-      {showFilters && (
+      {/* Mobile Filters Modal - Hidden for public users */}
+      {!isPublicAccess && showFilters && (
         <div className="fixed inset-0 z-50 sm:hidden">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}

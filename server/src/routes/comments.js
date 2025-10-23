@@ -6,11 +6,11 @@ const {
   deleteComment,
   likeComment
 } = require('../controllers/commentController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 
 router.get('/blogs/:blogId/comments', getComments);
-router.post('/blogs/:blogId/comments', protect, createComment);
+router.post('/blogs/:blogId/comments', optionalAuth, createComment);
 router.delete('/comments/:id', protect, deleteComment);
-router.put('/comments/:id/like', protect, likeComment);
+router.put('/comments/:id/like', optionalAuth, likeComment);
 
 module.exports = router;

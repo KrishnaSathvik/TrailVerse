@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   MapPin, Calendar, Users, AlertCircle, X, Clock
@@ -29,9 +30,10 @@ const TripPlannerChat = ({
   isNewChat = false,
   refreshTrips = null
 }) => {
+  const navigate = useNavigate();
   const { user, isAuthenticated, updateUser } = useAuth();
   const { showToast } = useToast();
-  const { subscribe, unsubscribe, subscribeToProfile } = useWebSocket();
+  const { subscribe, unsubscribe, subscribeToProfile, subscribeToTrips } = useWebSocket();
   
   // Debug user object to see avatar structure (remove in production)
   // console.log('🔍 TripPlannerChat - User object:', user);
@@ -56,6 +58,11 @@ const TripPlannerChat = ({
   const [parkInput, setParkInput] = useState('');
   const [isStartingFresh, setIsStartingFresh] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
+  const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
+  const [anonymousId, setAnonymousId] = useState(null);
+  const [messageCount, setMessageCount] = useState(0);
+  const [canSendMore, setCanSendMore] = useState(true);
+  const [isSessionRestored, setIsSessionRestored] = useState(false);
 
   const messagesEndRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
@@ -575,7 +582,9 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
 
   const loadProviders = useCallback(async () => {
     try {
-      const response = await api.get('/ai/providers');
+      // Use different endpoint based on authentication status
+      const endpoint = isAnonymous ? '/ai/providers-anonymous' : '/ai/providers';
+      const response = await api.get(endpoint);
       const data = response.data;
       
       if (data.providers && data.providers.length > 0) {
@@ -590,7 +599,7 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
       showToast('Failed to load AI providers', 'error');
       setProvidersLoaded(true);
     }
-  }, []); // Removed showToast from dependencies to prevent infinite loop
+  }, [isAnonymous]); // Added isAnonymous dependency
 
   const getCurrentSeason = (month) => {
     if (month >= 3 && month <= 5) return 'Spring';
@@ -605,10 +614,83 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
     return months[month - 1];
   };
 
+  // Clear anonymous session when user logs in
+  const clearAnonymousSession = useCallback(() => {
+    localStorage.removeItem('anonymousSession');
+    setAnonymousId(null);
+    setMessageCount(0);
+    setCanSendMore(true);
+    setIsSessionRestored(false);
+  }, []);
+
+  // Save anonymous session data to localStorage
+  const saveAnonymousSession = useCallback((sessionData) => {
+    if (isAnonymous && sessionData.anonymousId) {
+      const sessionToSave = {
+        anonymousId: sessionData.anonymousId,
+        messageCount: sessionData.messageCount || 0,
+        canSendMore: sessionData.canSendMore !== undefined ? sessionData.canSendMore : true,
+        parkName,
+        formData,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('anonymousSession', JSON.stringify(sessionToSave));
+    }
+  }, [isAnonymous, parkName, formData]);
+
+  // Restore anonymous session from localStorage
+  const restoreAnonymousSession = useCallback(() => {
+    if (isAnonymous && !isAuthenticated) {
+      try {
+        const savedSession = localStorage.getItem('anonymousSession');
+        if (savedSession) {
+          const sessionData = JSON.parse(savedSession);
+          
+          // Check if session is not too old (24 hours)
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (sessionAge < maxAge) {
+            setAnonymousId(sessionData.anonymousId);
+            setMessageCount(sessionData.messageCount);
+            setCanSendMore(sessionData.canSendMore);
+            setIsSessionRestored(true);
+            
+            console.log('🔄 Restored anonymous session:', sessionData);
+            return true;
+          } else {
+            // Session too old, clear it
+            localStorage.removeItem('anonymousSession');
+            console.log('🔄 Anonymous session expired, cleared');
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring anonymous session:', error);
+        localStorage.removeItem('anonymousSession');
+      }
+    }
+    return false;
+  }, [isAnonymous, isAuthenticated]);
+
+  // Restore anonymous session on mount
+  useEffect(() => {
+    if (isAnonymous && !isAuthenticated) {
+      restoreAnonymousSession();
+    }
+  }, [isAnonymous, isAuthenticated, restoreAnonymousSession]);
+
+  // Clear anonymous session when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && isAnonymous) {
+      clearAnonymousSession();
+      setIsAnonymous(false);
+    }
+  }, [isAuthenticated, isAnonymous, clearAnonymousSession]);
+
   // Load available providers
   useEffect(() => {
     loadProviders();
-  }, [loadProviders]);
+  }, [loadProviders, isAnonymous]);
 
   // Set default provider when providers are loaded
   useEffect(() => {
@@ -731,23 +813,90 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
         { role: 'user', content: messageText.trim() }
       ];
 
-      // Call enhanced AI service
-      const data = await aiService.chat({
-        messages: msgs,
-        provider: selectedProvider,
-        temperature: 0.4,
-        top_p: 0.9,
-        max_tokens: 2000,
-        conversationId: currentTripId,
-        signal: controller.signal,
-        metadata: {
-          parkCode: formData.parkCode,
-          parkName,
-          lat: formData.coordinates?.lat,
-          lon: formData.coordinates?.lon,
-          userId: user?.id
+      // Call appropriate AI service based on authentication status
+      let data;
+      if (isAnonymous) {
+        data = await aiService.chatAnonymous({
+          messages: msgs,
+          provider: selectedProvider,
+          temperature: 0.4,
+          top_p: 0.9,
+          max_tokens: 2000,
+          signal: controller.signal,
+          metadata: {
+            parkCode: formData.parkCode,
+            parkName,
+            lat: formData.coordinates?.lat,
+            lon: formData.coordinates?.lon,
+            formData: formData
+          }
+        });
+        
+        // Update anonymous session info
+        if (data.anonymousId) {
+          setAnonymousId(data.anonymousId);
         }
-      });
+        if (data.messageCount !== undefined) {
+          setMessageCount(data.messageCount);
+        }
+        if (data.canSendMore !== undefined) {
+          setCanSendMore(data.canSendMore);
+        }
+        
+        // Save session data to localStorage
+        saveAnonymousSession({
+          anonymousId: data.anonymousId,
+          messageCount: data.messageCount,
+          canSendMore: data.canSendMore
+        });
+      } else {
+        data = await aiService.chat({
+          messages: msgs,
+          provider: selectedProvider,
+          temperature: 0.4,
+          top_p: 0.9,
+          max_tokens: 2000,
+          conversationId: currentTripId,
+          signal: controller.signal,
+          metadata: {
+            parkCode: formData.parkCode,
+            parkName,
+            lat: formData.coordinates?.lat,
+            lon: formData.coordinates?.lon,
+            userId: user?.id
+          }
+        });
+      }
+
+      // Check if this is a conversion message
+      if (data.isConversionMessage) {
+        // Update anonymous session state to show conversion UI
+        setCanSendMore(false);
+        setMessageCount(data.messageCount || 0);
+        
+        // Save session data to localStorage
+        saveAnonymousSession({
+          anonymousId: data.anonymousId,
+          messageCount: data.messageCount,
+          canSendMore: false
+        });
+        
+        // Add the conversion message to the chat
+        const responseTime = Date.now() - thinkingStartTime;
+        const assistantMessage = {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: data.content,
+          timestamp: new Date(),
+          provider: data.provider,
+          model: data.model,
+          responseTime: responseTime,
+          isConversionMessage: true
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        return; // Don't continue with normal processing
+      }
 
       // Add AI response
       const responseTime = Date.now() - thinkingStartTime;
@@ -1197,9 +1346,38 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
     setParkInput('');
   };
 
+  const handleSignupFromChat = () => {
+    // Store chat context for redirect after signup
+    const chatContext = {
+      anonymousId,
+      parkName,
+      formData,
+      messages: messages,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('returnToChat', JSON.stringify(chatContext));
+    
+    // Navigate to signup with chat flag
+    navigate('/signup?from=chat');
+  };
+
+  const handleLoginFromChat = () => {
+    // Store chat context for redirect after login
+    const chatContext = {
+      anonymousId,
+      parkName,
+      formData,
+      messages: messages,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('returnToChat', JSON.stringify(chatContext));
+    
+    // Navigate to login with chat flag
+    navigate('/login?from=chat');
+  };
 
   const autoSaveConversation = async (messagesToSave) => {
-    if (!user || !messagesToSave || messagesToSave.length < 2) return;
+    if (!user || !messagesToSave || messagesToSave.length < 2 || isAnonymous) return;
 
     console.log('🔄 Auto-saving conversation:', {
       currentTripId,
@@ -1429,6 +1607,76 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
             >
               Go Back
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show warning message if user has exhausted their 3 messages
+  if (isAnonymous && !canSendMore && messageCount >= 3) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        {/* Floating Back Button */}
+        <button
+          onClick={onBack}
+          className="fixed top-4 left-4 z-30 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-lg backdrop-blur-sm"
+          style={{
+            backgroundColor: 'var(--surface)',
+            borderWidth: '1px',
+            borderColor: 'var(--border)',
+            color: 'var(--text-primary)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'var(--surface-hover)';
+            e.target.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'var(--surface)';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline text-sm font-semibold">Back to Planning</span>
+          <span className="sm:hidden text-sm font-semibold">Back</span>
+        </button>
+
+        {/* Warning Message */}
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-8 border border-blue-200 dark:border-blue-800">
+              <div className="text-6xl mb-6">🚀</div>
+              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                Ready to Continue Planning?
+              </h2>
+              <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>
+                You've already used your 3 free questions! Create an account to get unlimited AI planning help, save your trips, and access your conversation history.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={handleSignupFromChat}
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-lg"
+                >
+                  Create Account
+                </button>
+                <button
+                  onClick={handleLoginFromChat}
+                  className="px-8 py-4 bg-white hover:bg-gray-50 text-blue-600 font-semibold rounded-xl border border-blue-200 transition-colors text-lg"
+                >
+                  Login
+                </button>
+              </div>
+              <p className="text-sm mt-4" style={{ color: 'var(--text-tertiary)' }}>
+                With an account, you can:
+              </p>
+              <ul className="text-sm mt-2 space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                <li>• Ask unlimited questions</li>
+                <li>• Save your trip plans</li>
+                <li>• Access your conversation history</li>
+                <li>• Get personalized recommendations</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -1688,6 +1936,40 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
           </div>
         </div>
 
+      {/* Conversion Message for Anonymous Users */}
+      {isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-4">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+            <div className="text-center">
+              <div className="text-4xl mb-4">🚀</div>
+              <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+                Ready to Continue Planning?
+              </h3>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+                {isSessionRestored 
+                  ? `You've already used your 3 free questions! Create an account to get unlimited AI planning help, save your trips, and access your conversation history.`
+                  : `You've used your 3 free questions! Create an account to get unlimited AI planning help, save your trips, and access your conversation history.`
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={handleSignupFromChat}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+                >
+                  Create Account
+                </button>
+                <button
+                  onClick={handleLoginFromChat}
+                  className="px-6 py-3 bg-white hover:bg-gray-50 text-blue-600 font-semibold rounded-xl border border-blue-200 transition-colors"
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input Area - Responsive width */}
       <div className="sticky bottom-0 z-20 backdrop-blur-xl border-t chat-input-area"
           style={{
@@ -1713,8 +1995,8 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
               onSend={handleSendMessage}
               onAttach={(file) => showToast(`Attached: ${file.name}`, 'success')}
               onEmoji={() => showToast('Emoji picker coming soon', 'success')}
-              disabled={isGenerating}
-              placeholder="Ask me about your trip..."
+              disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
+              placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Create an account to continue chatting..." : "Ask me about your trip..."}
             />
           </div>
         </div>

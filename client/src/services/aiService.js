@@ -41,6 +41,43 @@ class AIService {
   }
 
   /**
+   * Anonymous chat - no authentication required
+   */
+  async chatAnonymous({
+    messages,               // [{role:'system'|'user'|'assistant', content:string}]
+    provider,               // 'claude' | 'openai' | ...
+    model,                  // optional model override per provider
+    temperature = 0.4,
+    top_p = 0.9,
+    max_tokens = 2000,
+    stream = false,
+    signal,                 // AbortController.signal (optional)
+    metadata                // optional: { parkCode, parkName, lat, lon, formData }
+  }) {
+    const body = {
+      messages,
+      provider,
+      model,
+      temperature,
+      top_p,
+      max_tokens,
+      stream,
+      metadata
+    };
+
+    const response = await enhancedApi.post(
+      '/ai/chat-anonymous',
+      body,
+      {
+        skipCache: true,
+        signal // pass through to Axios/fetch in your enhancedApi
+      }
+    );
+
+    return response.data?.data;
+  }
+
+  /**
    * Back-compat: simple single-turn ask (kept for convenience).
    * Not recommended for planning—use chat() instead.
    */
