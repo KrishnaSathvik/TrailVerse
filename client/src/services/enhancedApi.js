@@ -164,6 +164,8 @@ class EnhancedApiService {
         console.log(`[EnhancedApi] 📦 Serving from cache [${cacheType}]: ${url}`);
         return { data: cachedData, fromCache: true };
       }
+    } else {
+      console.log(`[EnhancedApi] 🔄 Skipping cache for [${cacheType}]: ${url}`);
     }
 
     try {
@@ -175,12 +177,14 @@ class EnhancedApiService {
         ...axiosOptions
       });
 
-      // Cache successful responses
+      // Cache successful responses (unless skipCache is true)
       if (response.data && !skipCache) {
         const config = cacheService.getCacheConfig(cacheType);
         if (ttl) config.ttl = ttl;
         cacheService.set(cacheKey, response.data, cacheType);
         console.log(`[EnhancedApi] ✅ Cached response [${cacheType}]: ${url}`);
+      } else if (skipCache) {
+        console.log(`[EnhancedApi] 🔄 Not caching response due to skipCache flag [${cacheType}]: ${url}`);
       }
 
       return { data: response.data, fromCache: false };

@@ -26,12 +26,12 @@ const DailyFeedPage = () => {
       console.log(`📱 Device: ${navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'}`);
       console.log(`📅 Query Key: ['dailyFeed', '${new Date().toDateString()}', '${user?._id}']`);
       console.log(`🔍 React Query cache check: Looking for existing data`);
-      return dailyFeedService.getDailyFeed(user._id);
+      return dailyFeedService.getDailyFeed(user._id, false); // Use smart caching
     },
     staleTime: 24 * 60 * 60 * 1000, // 24 hours - one park per day
     cacheTime: 24 * 60 * 60 * 1000, // Keep in cache for 24 hours
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Don't refetch on component mount if data is fresh
+    refetchOnMount: true, // Refetch on mount to ensure fresh data when user logs in
     refetchOnReconnect: false, // Don't refetch on network reconnect
     retry: 2,
     retryDelay: 1000,
@@ -42,6 +42,12 @@ const DailyFeedPage = () => {
       console.log(`📅 Date: ${new Date().toDateString()}`);
       console.log(`⏰ Data updated at: ${new Date(dataUpdatedAt).toLocaleString()}`);
       console.log(`🔄 Is stale: ${isStale}`);
+      
+      // Debug: Log the complete data structure received
+      console.log('🔍 Complete frontend data:', JSON.stringify(data, null, 2));
+      console.log('🔍 Park of Day data:', data?.parkOfDay);
+      console.log('🔍 Weather Data:', data?.weatherData);
+      console.log('🔍 Astro Data:', data?.astroData);
     },
     onError: (error) => {
       console.error('❌ React Query: Daily feed error:', error);
@@ -50,49 +56,27 @@ const DailyFeedPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <Header />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Skeleton Header */}
-          <div className="mb-8">
-            <div className="h-8 bg-gray-200 rounded-lg w-64 mb-2 animate-pulse"></div>
-            <div className="h-6 bg-gray-200 rounded-lg w-48 animate-pulse"></div>
-          </div>
-          
-          {/* Skeleton Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Park of Day Skeleton */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2">
-              <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
-                <div className="h-48 bg-gray-200 rounded-xl mb-4 animate-pulse"></div>
-                <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-2 animate-pulse"></div>
-                <div className="h-4 bg-gray-200 rounded-lg w-full mb-4 animate-pulse"></div>
-                <div className="flex gap-3">
-                  <div className="h-10 bg-gray-200 rounded-full w-24 animate-pulse"></div>
-                  <div className="h-10 bg-gray-200 rounded-full w-20 animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Other Cards Skeleton */}
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="col-span-1">
-                <div className="rounded-2xl p-6 h-48" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
-                  <div className="h-6 bg-gray-200 rounded-lg w-1/2 mb-4 animate-pulse"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded-lg w-full animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded-lg w-1/2 animate-pulse"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
+          <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
+            Loading your daily feed...
+          </p>
         </div>
-        <Footer />
       </div>
     );
   }
+
+  // Debug: Log the current state
+  console.log('🔍 DailyFeedPage render state:', {
+    isLoading,
+    error,
+    hasData: !!dailyFeed,
+    dataKeys: dailyFeed ? Object.keys(dailyFeed) : 'no data',
+    parkOfDay: dailyFeed?.parkOfDay,
+    weatherData: dailyFeed?.weatherData,
+    astroData: dailyFeed?.astroData
+  });
 
   if (error) {
     return (
@@ -110,6 +94,35 @@ const DailyFeedPage = () => {
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 Today's featured park will be available once the connection is restored.
               </p>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If no data is available, show a fallback
+  if (!dailyFeed || !dailyFeed.parkOfDay) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <div className="rounded-2xl p-8" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
+              <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                No data available
+              </h1>
+              <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+                We're having trouble loading today's featured park. Please try refreshing the page.
+              </p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="px-6 py-3"
+                style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+              >
+                Refresh Page
+              </Button>
             </div>
           </div>
         </div>
@@ -143,6 +156,7 @@ const DailyFeedPage = () => {
             })}
           </p>
         </div>
+
 
         {/* Daily Feed Layout */}
         <div className="space-y-8">

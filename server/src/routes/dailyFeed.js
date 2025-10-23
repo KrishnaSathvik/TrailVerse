@@ -7,7 +7,8 @@ const {
   getParkOfDay,
   getNatureFact,
   testAuth,
-  testAIInsights
+  testAIInsights,
+  debugDailyFeed
 } = require('../controllers/dailyFeedController');
 
 // All routes are protected (require authentication)
@@ -15,6 +16,9 @@ router.use(protect);
 
 // @route   GET /api/feed/daily
 // @desc    Get personalized daily feed
+// @access  Private
+// @route   GET /api/feed/daily
+// @desc    Get personalized daily feed (with smart caching)
 // @access  Private
 router.get('/daily', cacheMiddleware(300), getDailyFeed); // 5 minutes cache
 
@@ -39,5 +43,10 @@ router.get('/test-auth', testAuth);
 // @desc    Test AI insights generation
 // @access  Private
 router.get('/test-ai', testAIInsights);
+
+// @route   GET /api/feed/debug
+// @desc    Debug daily feed data
+// @access  Private
+router.get('/debug', debugDailyFeed);
 
 module.exports = router;

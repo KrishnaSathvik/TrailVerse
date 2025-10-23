@@ -13,7 +13,8 @@ router.get('/debug', (req, res) => {
     keyLength: KEY ? KEY.length : 0,
     keyPrefix: KEY ? KEY.substring(0, 10) + '...' : 'none',
     environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    allEnvVars: Object.keys(process.env).filter(key => key.includes('GMAPS') || key.includes('GOOGLE'))
   });
 });
 
@@ -171,7 +172,16 @@ router.get('/nearby', async (req, res) => {
     if (!KEY) {
       console.error('❌ GMAPS_SERVER_KEY not configured in nearby search');
       console.error('❌ Environment variables:', Object.keys(process.env).filter(key => key.includes('GMAPS')));
-      return res.status(500).json({ error: 'Google Maps API key not configured' });
+      console.error('❌ All environment variables:', Object.keys(process.env).sort());
+      return res.status(500).json({ 
+        error: 'Google Maps API key not configured',
+        debug: {
+          hasKey: !!KEY,
+          keyLength: KEY ? KEY.length : 0,
+          environment: process.env.NODE_ENV,
+          availableEnvVars: Object.keys(process.env).filter(key => key.includes('GMAPS'))
+        }
+      });
     }
 
     let url;
@@ -201,10 +211,43 @@ router.get('/nearby', async (req, res) => {
     // Check for API errors
     if (json.status !== 'OK') {
       console.error('❌ Google Places API Error:', json.status, json.error_message);
+      console.error('❌ Request URL:', url);
+      console.error('❌ Full API Response:', JSON.stringify(json, null, 2));
+      
+      // Handle specific error cases
+      if (json.status === 'REQUEST_DENIED') {
+        return res.status(400).json({ 
+          error: 'Google Places API access denied. Check API key and billing.',
+          status: json.status, 
+          message: json.error_message,
+          debug: {
+            hasKey: !!KEY,
+            keyLength: KEY ? KEY.length : 0,
+            url: url.replace(KEY, 'HIDDEN_KEY')
+          }
+        });
+      }
+      
+      if (json.status === 'INVALID_REQUEST') {
+        return res.status(400).json({ 
+          error: 'Invalid request to Google Places API',
+          status: json.status, 
+          message: json.error_message,
+          debug: {
+            url: url.replace(KEY, 'HIDDEN_KEY'),
+            params: { lat, lng, type, radius, parkName }
+          }
+        });
+      }
+      
       return res.status(400).json({ 
         error: 'Google Places API error', 
         status: json.status, 
-        message: json.error_message 
+        message: json.error_message,
+        debug: {
+          url: url.replace(KEY, 'HIDDEN_KEY'),
+          params: { lat, lng, type, radius, parkName }
+        }
       });
     }
     

@@ -45,9 +45,16 @@ const userSchema = new mongoose.Schema({
     ]
   },
   location: {
-    type: String,
-    trim: true,
-    maxlength: [100, 'Location cannot be more than 100 characters']
+    type: mongoose.Schema.Types.Mixed, // Can be String or Object
+    validate: {
+      validator: function(v) {
+        // Allow string (legacy) or object with latitude/longitude
+        return typeof v === 'string' || 
+               (typeof v === 'object' && v !== null && 
+                typeof v.latitude === 'number' && typeof v.longitude === 'number');
+      },
+      message: 'Location must be a string or object with latitude and longitude'
+    }
   },
   website: {
     type: String,

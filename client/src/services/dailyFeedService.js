@@ -1,11 +1,15 @@
 import api from './api';
 
 class DailyFeedService {
-  async getDailyFeed(userId = null) {
+  async getDailyFeed(userId = null, forceRefresh = false) {
     console.log('🌐 Service: Making API call to /feed/daily');
     console.log(`👤 User ID: ${userId}`);
+    console.log(`🔄 Force refresh: ${forceRefresh}`);
     
-    const response = await api.get('/feed/daily');
+    const response = await api.get('/feed/daily', {
+      skipCache: false, // Use smart caching
+      params: {} // No refresh parameter
+    });
     
     console.log('🌐 Service: API response received', response.data?.cached ? '(cached from DB)' : '(fresh from DB)');
     

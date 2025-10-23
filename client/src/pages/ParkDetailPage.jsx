@@ -353,20 +353,23 @@ const ParkDetailPage = ({ isPublic = false }) => {
 
                     {/* Second row - Favorite and Share buttons */}
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <Button
-                        onClick={handleSavePark}
-                        disabled={savingPark}
-                        variant={isSaved ? 'danger' : 'secondary'}
-                        size="sm"
-                        icon={Heart}
-                        className="p-3 backdrop-blur flex-shrink-0"
-                        style={{
-                          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
-                          borderWidth: '1px',
-                          borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
-                        }}
-                        title={isSaved ? 'Remove from favorites' : (isPublicAccess ? 'Login to save parks' : 'Add to favorites')}
-                      />
+                      {/* Only show favorite button for authenticated users */}
+                      {isAuthenticated && (
+                        <Button
+                          onClick={handleSavePark}
+                          disabled={savingPark}
+                          variant={isSaved ? 'danger' : 'secondary'}
+                          size="sm"
+                          icon={Heart}
+                          className="p-3 backdrop-blur flex-shrink-0"
+                          style={{
+                            backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
+                            borderWidth: '1px',
+                            borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
+                          }}
+                          title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+                        />
+                      )}
 
                       <ShareButtons 
                         url={window.location.href}

@@ -45,19 +45,44 @@ exports.getDailyFeed = async (req, res, next) => {
       });
     }
 
-    // Get user location or default to NYC
-    const userLocation = user.location || { latitude: 40.7128, longitude: -74.0060 };
-    console.log('📍 Using location:', userLocation);
+    // Use default location for weather/astro data
+    const userLocation = { latitude: 40.7128, longitude: -74.0060 }; // Default to NYC
 
     const today = new Date().toDateString();
     const todayISO = new Date().toISOString().split('T')[0]; // Format: 2025-10-22
+    const forceRefresh = false; // Use smart caching - only generate fresh data for new dates
     console.log(`📅 Checking database for daily feed on ${today} (ISO: ${todayISO})`);
+    console.log(`🔄 Smart caching: Using database cache for same day`);
     
-    // Check if we have existing daily feed in database
-    const existingFeed = await DailyFeed.findOrCreateDailyFeed(userId, todayISO);
+    // Check if we have existing daily feed in database (unless force refresh is requested)
+    let existingFeed = null;
+    if (!forceRefresh) {
+      existingFeed = await DailyFeed.findOrCreateDailyFeed(userId, todayISO);
+    } else {
+      console.log(`🔄 Force refresh: Deleting existing daily feed for user ${userId} on ${todayISO}`);
+      // Delete existing feed to force regeneration
+      const deleteResult = await DailyFeed.deleteOne({ userId, date: todayISO });
+      console.log(`🔄 Force refresh: Delete result:`, {
+        deletedCount: deleteResult.deletedCount,
+        acknowledged: deleteResult.acknowledged
+      });
+    }
     
     if (existingFeed) {
       console.log(`📦 Returning daily feed from database for user ${userId} on ${today}`);
+      console.log(`📊 Cached feed data structure:`, {
+        hasParkOfDay: !!existingFeed.parkOfDay,
+        parkName: existingFeed.parkOfDay?.name,
+        hasWeatherData: !!existingFeed.weatherData,
+        weatherCondition: existingFeed.weatherData?.current?.condition,
+        hasAstroData: !!existingFeed.astroData,
+        sunrise: existingFeed.astroData?.sunrise,
+        hasWeatherInsights: !!existingFeed.weatherInsights,
+        hasNatureFact: !!existingFeed.natureFact
+      });
+      
+      // Debug: Log the actual data structure
+      console.log(`🔍 Full database data:`, JSON.stringify(existingFeed, null, 2));
       
       // Set cache-busting headers to prevent browser caching
       res.set({
@@ -163,6 +188,9 @@ exports.getDailyFeed = async (req, res, next) => {
       astroSunset: dailyFeed.astroData?.sunset,
       astroMoonPhase: dailyFeed.astroData?.moonPhase
     });
+    
+    // Debug: Log the complete data structure being generated
+    console.log(`🔍 Complete generated data:`, JSON.stringify(dailyFeed, null, 2));
     
     console.log(`📊 Controller: Complete astroData:`, dailyFeed.astroData);
     console.log(`📊 Controller: Complete natureFact:`, dailyFeed.natureFact);
@@ -276,6 +304,60 @@ exports.testAuth = async (req, res, next) => {
 };
 
 
+// @desc    Debug daily feed data
+// @route   GET /api/feed/debug
+// @access  Private
+exports.debugDailyFeed = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const todayISO = new Date().toISOString().split('T')[0];
+    
+    console.log('🐛 Debug: Checking daily feed data for user:', userId);
+    
+    // Check what's in the database
+    const dbFeed = await DailyFeed.findOne({ userId, date: todayISO });
+    
+    if (dbFeed) {
+      console.log('🐛 Debug: Found database feed:', {
+        hasParkOfDay: !!dbFeed.parkOfDay,
+        parkName: dbFeed.parkOfDay?.name,
+        hasWeatherData: !!dbFeed.weatherData,
+        weatherCondition: dbFeed.weatherData?.current?.condition,
+        hasAstroData: !!dbFeed.astroData,
+        sunrise: dbFeed.astroData?.sunrise,
+        hasWeatherInsights: !!dbFeed.weatherInsights,
+        hasNatureFact: !!dbFeed.natureFact,
+        generatedAt: dbFeed.generatedAt
+      });
+    } else {
+      console.log('🐛 Debug: No database feed found');
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        userId,
+        todayISO,
+        hasDbFeed: !!dbFeed,
+        dbFeed: dbFeed ? {
+          hasParkOfDay: !!dbFeed.parkOfDay,
+          parkName: dbFeed.parkOfDay?.name,
+          hasWeatherData: !!dbFeed.weatherData,
+          weatherCondition: dbFeed.weatherData?.current?.condition,
+          hasAstroData: !!dbFeed.astroData,
+          sunrise: dbFeed.astroData?.sunrise,
+          hasWeatherInsights: !!dbFeed.weatherInsights,
+          hasNatureFact: !!dbFeed.natureFact,
+          generatedAt: dbFeed.generatedAt
+        } : null
+      }
+    });
+  } catch (error) {
+    console.error('🐛 Debug error:', error);
+    next(error);
+  }
+};
+
 // @desc    Test AI insights generation
 // @route   GET /api/feed/test-ai
 // @access  Private
@@ -364,6 +446,16 @@ async function getPersonalizedParkOfDay(user) {
     // Get user's saved parks and visited parks
     const savedParks = user.savedParks || [];
     const visitedParks = savedParks.filter(park => park.visited).map(park => park.parkCode);
+    const favoriteParks = savedParks.filter(park => park.favorite).map(park => park.parkCode);
+    
+    // Get user preferences for additional personalization
+    let userPreferences = null;
+    try {
+      const UserPreferences = require('../models/UserPreferences');
+      userPreferences = await UserPreferences.getOrCreate(user._id);
+    } catch (prefError) {
+      console.warn('Could not fetch user preferences:', prefError.message);
+    }
     
     // Get all parks with timeout
     const allParks = await Promise.race([
@@ -383,19 +475,40 @@ async function getPersonalizedParkOfDay(user) {
       return getFallbackParkOfDay();
     }
     
-    // Filter out visited parks from National Parks
-    const unvisitedNationalParks = nationalParks.filter(park => !visitedParks.includes(park.parkCode));
+    // Apply user preferences for park selection
+    let candidateParks = nationalParks;
+    
+    // If user prefers favorites first and has favorites, prioritize them
+    if (userPreferences?.preferences?.display?.showFavoritesFirst && favoriteParks.length > 0) {
+      const favoriteNationalParks = nationalParks.filter(park => favoriteParks.includes(park.parkCode));
+      if (favoriteNationalParks.length > 0) {
+        candidateParks = favoriteNationalParks;
+        console.log(`⭐ Prioritizing ${favoriteNationalParks.length} favorite parks for user`);
+      }
+    }
+    
+    // Filter out visited parks if user prefers not to see them
+    const showVisitedParks = userPreferences?.preferences?.display?.showVisitedParks !== false;
+    if (!showVisitedParks) {
+      candidateParks = candidateParks.filter(park => !visitedParks.includes(park.parkCode));
+      console.log(`🚫 Filtering out visited parks for user`);
+    }
     
     // If no unvisited National Parks, fall back to visited National Parks
-    const unvisitedParks = unvisitedNationalParks.length > 0 ? unvisitedNationalParks : 
+    const unvisitedParks = candidateParks.length > 0 ? candidateParks : 
       nationalParks.filter(park => visitedParks.includes(park.parkCode));
     
-    // Use date-based seed for consistent daily park selection
+    // Use all unvisited parks for selection
+    const locationBasedParks = unvisitedParks;
+    
+    // Use user-specific date-based seed for personalized daily park selection
     const today = new Date().toDateString();
-    const seed = today.split('').reduce((a, b) => {
+    const userSeed = user._id.toString().slice(-6); // Use last 6 chars of user ID
+    const dateSeed = today.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
       return a & a;
     }, 0);
+    const seed = dateSeed + parseInt(userSeed, 16); // Combine date and user for personalization
     
     // Create seeded random function
     const seededRandom = (seed) => {
@@ -403,8 +516,8 @@ async function getPersonalizedParkOfDay(user) {
       return x - Math.floor(x);
     };
     
-    const randomIndex = Math.floor(seededRandom(seed) * unvisitedParks.length);
-    const randomPark = unvisitedParks[randomIndex] || nationalParks[Math.floor(seededRandom(seed + 1) * nationalParks.length)];
+    const randomIndex = Math.floor(seededRandom(seed) * locationBasedParks.length);
+    const randomPark = locationBasedParks[randomIndex] || nationalParks[Math.floor(seededRandom(seed + 1) * nationalParks.length)];
     
     // Debug logging
     console.log('🎯 Selected Park for Daily Feed:', {
@@ -413,7 +526,20 @@ async function getPersonalizedParkOfDay(user) {
       designation: randomPark.designation,
       hasImages: randomPark.images && randomPark.images.length > 0,
       imageUrl: randomPark.images?.[0]?.url,
-      description: randomPark.description ? randomPark.description.substring(0, 100) + '...' : 'No description'
+      description: randomPark.description ? randomPark.description.substring(0, 100) + '...' : 'No description',
+      personalization: {
+        userId: user._id.toString().slice(-6),
+        totalParks: nationalParks.length,
+        candidateParks: candidateParks.length,
+        unvisitedParks: unvisitedParks.length,
+        locationBased: locationBasedParks.length,
+        userLocation: 'Not used',
+        favoriteParks: favoriteParks.length,
+        visitedParks: visitedParks.length,
+        showFavoritesFirst: userPreferences?.preferences?.display?.showFavoritesFirst || false,
+        showVisitedParks: userPreferences?.preferences?.display?.showVisitedParks !== false,
+        seed: seed
+      }
     });
     
     // Get weather for the park using enhanced weather service (with timeout)
@@ -751,7 +877,7 @@ async function getPersonalizedRecommendations(user, park, weatherData, astroData
     - Moon Phase: ${astro?.moonPhase || 'Unknown'}
     - Sunrise: ${astro?.sunrise || 'Unknown'}, Sunset: ${astro?.sunset || 'Unknown'}
     - Park Type: National Park
-    - User Location: ${user.location ? `${user.location.latitude}, ${user.location.longitude}` : 'Unknown'}
+    - User Location: Not used
     
     Generate recommendations that are:
     - Specific to this park and current conditions

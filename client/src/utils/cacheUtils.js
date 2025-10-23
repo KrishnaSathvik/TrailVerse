@@ -34,6 +34,7 @@ export const CACHE_KEYS = {
   PARK_RATINGS: ['parkRatings'],
   BLOG_POSTS: ['blogPosts'],
   EVENTS: ['events'],
+  DAILY_FEED: (userId) => ['dailyFeed', new Date().toDateString(), userId],
 };
 
 // Prefetch park data for better UX
@@ -75,6 +76,10 @@ export const invalidateCache = {
   ratings: () => {
     const queryClient = getQueryClient();
     return queryClient?.invalidateQueries({ queryKey: CACHE_KEYS.PARK_RATINGS });
+  },
+  dailyFeed: (userId) => {
+    const queryClient = getQueryClient();
+    return queryClient?.invalidateQueries({ queryKey: CACHE_KEYS.DAILY_FEED(userId) });
   },
   all: () => {
     const queryClient = getQueryClient();

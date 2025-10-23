@@ -103,17 +103,17 @@ const ProfilePage = () => {
   const [lastEmailLoadTime, setLastEmailLoadTime] = useState(0);
   // userStats is now computed with useMemo below (removed useState)
 
-  const [profileData, setProfileData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    location: '',
-    bio: '',
-    website: '',
-    avatar: getBestAvatar(user, {}, 'travel'),
-    avatarVersion: Date.now() // Force image reload when avatar changes
-  });
+    const [profileData, setProfileData] = useState({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      bio: '',
+      website: '',
+      location: '',
+      avatar: getBestAvatar(user, {}, 'travel'),
+      avatarVersion: Date.now() // Force image reload when avatar changes
+    });
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true
@@ -348,17 +348,17 @@ const ProfilePage = () => {
         email: userProfile.email || user?.email
       };
       
-      setProfileData({
-        firstName: userProfile.firstName || user?.name?.split(' ')[0] || '',
-        lastName: userProfile.lastName || user?.name?.split(' ').slice(1).join(' ') || '',
-        email: userProfile.email || user?.email || '',
-        phone: userProfile.phone || '',
-        location: userProfile.location || '',
-        bio: userProfile.bio || '',
-        website: userProfile.website || '',
-        avatar: userProfile.avatar || profileData.avatar || getBestAvatar(updatedUserData, userStats, 'travel'),
-        avatarVersion: Date.now()
-      });
+    setProfileData({
+      firstName: userProfile.firstName || user?.name?.split(' ')[0] || '',
+      lastName: userProfile.lastName || user?.name?.split(' ').slice(1).join(' ') || '',
+      email: userProfile.email || user?.email || '',
+      phone: userProfile.phone || '',
+      bio: userProfile.bio || '',
+      website: userProfile.website || '',
+      location: userProfile.location || '',
+      avatar: userProfile.avatar || profileData.avatar || getBestAvatar(updatedUserData, userStats, 'travel'),
+      avatarVersion: Date.now()
+    });
     } catch (error) {
       console.error('Error loading profile data:', error);
       
@@ -374,17 +374,17 @@ const ProfilePage = () => {
       }
       
       // Fallback to user context data
-      setProfileData({
-        firstName: user?.name?.split(' ')[0] || '',
-        lastName: user?.name?.split(' ').slice(1).join(' ') || '',
-        email: user?.email || '',
-        phone: '',
-        location: '',
-        bio: '',
-        website: '',
-        avatar: user?.avatar || profileData.avatar || getBestAvatar(user, userStats, 'travel'),
-        avatarVersion: Date.now()
-      });
+    setProfileData({
+      firstName: user?.name?.split(' ')[0] || '',
+      lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+      email: user?.email || '',
+      phone: '',
+      bio: '',
+      website: '',
+      location: '',
+      avatar: user?.avatar || profileData.avatar || getBestAvatar(user, userStats, 'travel'),
+      avatarVersion: Date.now()
+    });
       showToast('Failed to load profile data', 'error');
     } finally {
       setLoading(false);
@@ -790,16 +790,16 @@ const ProfilePage = () => {
       setLoading(true);
       
       // Prepare profile data for API
-      const updateData = {
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        email: profileData.email,
-        phone: profileData.phone,
-        location: profileData.location,
-        website: profileData.website,
-        bio: profileData.bio,
-        avatar: profileData.avatar
-      };
+    const updateData = {
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      email: profileData.email,
+      phone: profileData.phone,
+      website: profileData.website,
+      bio: profileData.bio,
+      location: profileData.location,
+      avatar: profileData.avatar
+    };
 
       // Update profile in database
       const updatedProfile = await userService.updateProfile(updateData);
@@ -1154,50 +1154,50 @@ const ProfilePage = () => {
                         />
                       </div>
 
-                      {/* Phone and Location Grid */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-semibold mb-3"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Phone Number
-                          </label>
-                          <input
-                            type="tel"
-                            value={profileData.phone}
-                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                            disabled={!isEditing}
-                            placeholder="Enter your phone number"
-                            className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
-                            style={{
-                              backgroundColor: 'var(--surface-hover)',
-                              borderWidth: '2px',
-                              borderColor: isEditing ? 'var(--border-hover)' : 'var(--border)',
-                              color: 'var(--text-primary)'
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-3"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Location
-                          </label>
-                          <input
-                            type="text"
-                            value={profileData.location}
-                            onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                            disabled={!isEditing}
-                            placeholder="Enter your location"
-                            className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
-                            style={{
-                              backgroundColor: 'var(--surface-hover)',
-                              borderWidth: '2px',
-                              borderColor: isEditing ? 'var(--border-hover)' : 'var(--border)',
-                              color: 'var(--text-primary)'
-                            }}
-                          />
-                        </div>
+                      {/* Phone Number */}
+                      <div>
+                        <label className="block text-sm font-semibold mb-3"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={profileData.phone}
+                          onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                          disabled={!isEditing}
+                          placeholder="Enter your phone number"
+                          className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
+                          style={{
+                            backgroundColor: 'var(--surface-hover)',
+                            borderWidth: '2px',
+                            borderColor: isEditing ? 'var(--border-hover)' : 'var(--border)',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                      </div>
+
+                      {/* Location */}
+                      <div>
+                        <label className="block text-sm font-semibold mb-3"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          Location
+                        </label>
+                        <input
+                          type="text"
+                          value={profileData.location}
+                          onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                          disabled={!isEditing}
+                          placeholder="Enter your location (e.g., New York, NY)"
+                          className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
+                          style={{
+                            backgroundColor: 'var(--surface-hover)',
+                            borderWidth: '2px',
+                            borderColor: isEditing ? 'var(--border-hover)' : 'var(--border)',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
                       </div>
                     </div>
 

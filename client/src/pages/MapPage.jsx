@@ -77,8 +77,8 @@ const MapPage = () => {
 
   // Debug route mode changes
   useEffect(() => {
-    console.log('Route mode changed:', isRouteMode, 'activeCategory:', activeCategory);
-  }, [isRouteMode, activeCategory]);
+    console.log('Route mode changed:', isRouteMode, 'activeCategory:', activeCategory, 'sidebarContent:', sidebarContent);
+  }, [isRouteMode, activeCategory, sidebarContent]);
   
   // Route planning state
   const [routeWaypoints, setRouteWaypoints] = useState([]);
@@ -1009,6 +1009,7 @@ const MapPage = () => {
 
   // Load nearby places by category
   const loadNearbyPlaces = useCallback(async (category, inRouteMode = false) => {
+    console.log('🚀 loadNearbyPlaces called with category:', category, 'inRouteMode:', inRouteMode, 'current isRouteMode:', isRouteMode);
     if (!mapInstanceRef.current) {
       console.error('Map instance not available');
       return;
@@ -1109,14 +1110,17 @@ const MapPage = () => {
               }
               
               // Check if we're in route mode
-              if (isRouteMode) {
+              console.log('🎯 Marker click - isRouteMode:', isRouteMode, 'inRouteMode:', inRouteMode, 'place:', place.name);
+              if (isRouteMode || inRouteMode) {
                 // In route mode - show minimal place card with just name and add to route
+                console.log('Showing route-place for marker:', place.name);
                 setPreviousSidebarContent(sidebarContent);
                 setSelectedPlace(place);
                 setSidebarContent('route-place');
                 setShowSidebar(true);
                     } else {
                 // Normal mode - show full place details
+                console.log('Showing full place details for marker:', place.name);
                 setPreviousSidebarContent(sidebarContent);
                 setSelectedPlace(place);
                 setSidebarContent('place');
@@ -1300,7 +1304,7 @@ const MapPage = () => {
     console.log('Category button clicked:', categoryId);
     console.log('Current active category:', activeCategory);
     console.log('Current nearby places:', nearbyPlaces);
-    console.log('Is in route mode?', activeCategory === 'routes');
+    console.log('Is in route mode?', activeCategory === 'routes', 'isRouteMode state:', isRouteMode);
     console.log('Is public access:', isPublicAccess);
     console.log('Current search results:', searchResults);
     
@@ -1311,14 +1315,15 @@ const MapPage = () => {
       setShowSidebar(true);
       setIsRouteMode(true);
       console.log('Route mode activated');
-    } else if (activeCategory === 'routes' && categoryId !== 'routes') {
+    } else if (isRouteMode && categoryId !== 'routes') {
       // When in route mode, clicking other categories should show pins and keep route sidebar open
-      console.log('In route mode - loading category pins:', categoryId);
+      console.log('✅ ROUTE MODE PATH: In route mode - loading category pins:', categoryId, 'current isRouteMode:', isRouteMode);
       setActiveCategory(categoryId);
       setSearchQuery(''); // Clear search when selecting category
       setSearchResults([]);
       // Keep route mode active and keep the route sidebar open - don't change sidebarContent
       setIsRouteMode(true);
+      console.log('Set isRouteMode to true for category:', categoryId);
       
       // Call loadNearbyPlaces with route mode parameter
       if (!nearbyPlaces[categoryId]) {
@@ -1339,7 +1344,7 @@ const MapPage = () => {
       console.log('Route mode deactivated - deselecting');
     } else {
       // Select new category
-      console.log('Selecting new category:', categoryId);
+      console.log('❌ NORMAL PATH: Selecting new category:', categoryId, 'This will reset route mode!');
       setActiveCategory(categoryId);
       setSearchQuery(''); // Clear search when selecting category
       setSearchResults([]);
@@ -1366,6 +1371,16 @@ const MapPage = () => {
     }
     setRouteInfo(null);
     setShowRoutePanel(false);
+    // Reset route mode and show park card
+    setIsRouteMode(false);
+    setActiveCategory(null);
+    if (parkData) {
+      setSidebarContent('park');
+      setShowSidebar(true);
+    } else {
+      setSidebarContent('search');
+      setShowSidebar(true);
+    }
   };
 
   // Handle search submission
@@ -1994,6 +2009,19 @@ const MapPage = () => {
                         setRouteInfo(null);
                         if (directionsRenderer) {
                           directionsRenderer.setMap(null);
+                        }
+                        // Reset route mode and show park card
+                        console.log('🧹 Clearing route - parkData exists:', !!parkData);
+                        setIsRouteMode(false);
+                        setActiveCategory(null);
+                        if (parkData) {
+                          console.log('📍 Showing park card after route clear');
+                          setSidebarContent('park');
+                          setShowSidebar(true);
+                        } else {
+                          console.log('🔍 Showing search after route clear');
+                          setSidebarContent('search');
+                          setShowSidebar(true);
                         }
                         showToast('Route cleared', 'info', 2000);
                       }}

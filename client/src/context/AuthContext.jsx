@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
+import { invalidateCache } from '../utils/cacheUtils';
 
 const AuthContext = createContext();
 
@@ -62,6 +63,12 @@ export const AuthProvider = ({ children }) => {
           // Update localStorage with fresh data
           localStorage.setItem('user', JSON.stringify(response.data));
           console.log('✅ AuthContext: Updated localStorage with fresh user data');
+          
+          // Invalidate daily feed cache to ensure fresh data for the restored user
+          if (response.data?._id) {
+            console.log('🔄 AuthContext: Invalidating daily feed cache for restored user');
+            invalidateCache.dailyFeed(response.data._id);
+          }
           
           // Migrate legacy localStorage trips to database
           if (response.data._id || response.data.id) {
@@ -125,6 +132,12 @@ export const AuthProvider = ({ children }) => {
     const response = await authService.login(email, password, rememberMe);
 
     setUser(response.data);
+    
+    // Invalidate daily feed cache to ensure fresh data for the logged-in user
+    if (response.data?._id) {
+      console.log('🔄 AuthContext: Invalidating daily feed cache for new user');
+      invalidateCache.dailyFeed(response.data._id);
+    }
 
     // Check if user came from AI chat
     const returnToChat = localStorage.getItem('returnToChat');

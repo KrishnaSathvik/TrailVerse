@@ -100,11 +100,15 @@ dailyFeedSchema.index({ userId: 1, date: 1 }, { unique: true });
 // Static method to find or create daily feed
 dailyFeedSchema.statics.findOrCreateDailyFeed = async function(userId, date) {
   try {
-    // Try to find existing feed
-    let dailyFeed = await this.findOne({ userId, date });
+    // Try to find existing feed and convert to plain object
+    let dailyFeed = await this.findOne({ userId, date }).lean();
     
     if (dailyFeed) {
       console.log(`📦 Found existing daily feed in DB for user ${userId} on ${date}`);
+      // Convert _id to string for consistency
+      if (dailyFeed._id) {
+        dailyFeed._id = dailyFeed._id.toString();
+      }
       return dailyFeed;
     }
     
