@@ -297,6 +297,8 @@ router.get('/nearby', async (req, res) => {
             })) || [],
             opening_hours: result.opening_hours ? {
               weekday_text: result.opening_hours.weekday_text,
+              // Note: open_now is deprecated but still functional
+              // Consider using PlacesService.getDetails() with isOpen() method in future
               open_now: result.opening_hours.open_now
             } : null,
             website: result.website,

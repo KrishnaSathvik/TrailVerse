@@ -71,7 +71,7 @@ class ImageUploadService {
 
   // Get image URL
   getImageUrl(filename) {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5001/api');
     return `${baseUrl}/images/file/${filename}`;
   }
 
@@ -94,7 +94,7 @@ class ImageUploadService {
 
   // Get thumbnail URL
   getThumbnailUrl(filenameOrUrl) {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5001/api');
     
     // Extract relative path if it's a full URL
     const relativePath = this.extractRelativePath(filenameOrUrl) || filenameOrUrl;

@@ -78,12 +78,20 @@
     <link rel="manifest" href="/site.webmanifest" />
 
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0L8NH38B4Y"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-0L8NH38B4Y');
+      // Only load Google Analytics if tracking ID is provided
+      const GA_TRACKING_ID = '%VITE_GA_TRACKING_ID%';
+      if (GA_TRACKING_ID && GA_TRACKING_ID !== '%VITE_GA_TRACKING_ID%') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`;
+        document.head.appendChild(script);
+        
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', GA_TRACKING_ID);
+      }
     </script>
 
     <!-- Preconnect to external domains -->

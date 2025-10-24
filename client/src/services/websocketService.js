@@ -87,7 +87,7 @@ class WebSocketService {
       // because Vercel doesn't support WebSocket connections
       const wsUrl = import.meta.env.VITE_WS_URL || 
                    (import.meta.env.MODE === 'production' 
-                     ? window.location.origin 
+                     ? 'https://trailverse.onrender.com'
                      : 'http://localhost:5001');
       
       console.log('[WebSocket] Connecting to:', wsUrl);

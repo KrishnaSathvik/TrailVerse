@@ -1632,15 +1632,17 @@ const MapPage = () => {
                                   console.error('Error calling getUrl:', error);
                                   // Fallback to manual construction
                                   if (photo.photo_reference) {
-                                    photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${import.meta.env.VITE_GMAPS_WEB_KEY}`;
+                                    // Use backend proxy for photo requests to avoid API key issues
+                                    photoUrl = `/api/gmaps/photo?photo_reference=${photo.photo_reference}&maxwidth=400`;
                                   }
                                 }
                               } else if (photo.url) {
                                 photoUrl = photo.url;
                                 console.log('Using direct URL:', photoUrl);
                               } else if (photo.photo_reference) {
-                                photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${import.meta.env.VITE_GMAPS_WEB_KEY}`;
-                                console.log('Using photo_reference, result:', photoUrl);
+                                // Use backend proxy for photo requests to avoid API key issues
+                                photoUrl = `/api/gmaps/photo?photo_reference=${photo.photo_reference}&maxwidth=400`;
+                                console.log('Using backend photo proxy:', photoUrl);
                               }
                               
                               console.log(`Photo ${index + 1}:`, { 
@@ -1759,6 +1761,7 @@ const MapPage = () => {
                             <p className={`text-sm font-medium mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Hours</p>
                             <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                               {selectedPlace.opening_hours.isOpen?.() ? 'Open now' : 
+                               // Fallback to deprecated open_now property for compatibility
                                selectedPlace.opening_hours.open_now ? 'Open now' : 'Closed'}
                             </p>
                             {selectedPlace.opening_hours.weekday_text && (

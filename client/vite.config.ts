@@ -2,9 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: '/',
   plugins: [react()],
+  define: {
+    // Replace environment variables in HTML during build
+    '%VITE_GA_TRACKING_ID%': JSON.stringify(process.env.VITE_GA_TRACKING_ID || ''),
+  },
   resolve: {
     alias: {
       '@components': path.resolve(__dirname, 'src/components'),
@@ -60,4 +64,4 @@ export default defineConfig({
       }
     }
   }
-});
+}));

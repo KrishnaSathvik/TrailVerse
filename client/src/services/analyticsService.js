@@ -6,7 +6,7 @@ class AnalyticsService {
     this.queue = [];
     this.batchSize = 10;
     this.flushInterval = 30000; // 30 seconds
-    this.endpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/analytics/track`;
+    this.endpoint = `${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5001/api')}/analytics/track`;
     
     // Start periodic flush
     setInterval(() => this.flush(), this.flushInterval);
