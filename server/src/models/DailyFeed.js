@@ -69,9 +69,18 @@ const dailyFeedSchema = new mongoose.Schema({
     sunrise: String,
     sunset: String,
     moonPhase: String,
+    moonIllumination: Number,
+    moonAge: Number,
+    nextNewMoon: Date,
+    nextFullMoon: Date,
     milkyWayVisibility: String,
     auroraProbability: String,
-    skyInsights: String
+    skyInsights: String,
+    dayLength: Number,
+    isPolarDay: Boolean,
+    isPolarNight: Boolean,
+    sunDeclination: Number,
+    sunRightAscension: Number
   },
   personalizedRecommendations: [String],
   // Metadata
@@ -88,7 +97,7 @@ const dailyFeedSchema = new mongoose.Schema({
       tomorrow.setHours(0, 0, 0, 0);
       return tomorrow;
     },
-    index: { expireAfterSeconds: 0 } // TTL index
+    index: { expireAfterSeconds: 0 } // TTL index - documents expire at expiresAt time
   }
 }, {
   timestamps: true

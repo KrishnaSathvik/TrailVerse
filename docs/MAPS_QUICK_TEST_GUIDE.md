@@ -17,7 +17,7 @@ Open browser console and run:
 console.log('VITE_GMAPS_WEB_KEY:', import.meta.env.VITE_GMAPS_WEB_KEY);
 ```
 
-Expected output: `AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI`
+Expected output: `AIzaSy_your_google_maps_api_key_here`
 
 If `undefined`, restart the dev server again.
 

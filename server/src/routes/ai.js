@@ -291,7 +291,7 @@ router.post('/chat-anonymous', async (req, res) => {
       });
     }
 
-    // Check if user can send more messages after adding the current message
+    // Check if user can send more messages BEFORE processing the AI request
     if (!session.canSendMessage()) {
       // User has exceeded message limit, return conversion message
       const lastUserMessageContent = lastUserMessage?.content || '';
@@ -302,11 +302,19 @@ router.post('/chat-anonymous', async (req, res) => {
 
 Thanks for your follow-up question about "${lastUserMessageContent}". I'd love to help you plan more amazing adventures, but as an unauthenticated user, you can only ask 3 questions.
 
-To continue chatting and get unlimited AI planning help, please create an account or login! With an account, you can:
+You have two options to continue:
+
+🚀 **Create an Account (Recommended)**
 • Ask unlimited questions
 • Save your trip plans
 • Access your conversation history
 • Get personalized recommendations
+
+⏰ **Wait 48 Hours (Free)**
+• Get 3 fresh questions automatically
+• No account required
+• Completely free
+• Session resets automatically
 
 Ready to continue planning? 🚀`,
         timestamp: new Date(),
@@ -322,7 +330,8 @@ Ready to continue planning? 🚀`,
           model: 'conversion',
           isConversionMessage: true,
           anonymousId: session.anonymousId,
-          messageCount: userMessageCount
+          messageCount: userMessageCount,
+          canSendMore: false
         }
       });
     }
@@ -528,6 +537,40 @@ Ready to continue planning? 🚀`,
       error: 'Failed to get AI response',
       details: error.message,
       errorType: error.type || 'unknown'
+    });
+  }
+});
+
+// Get anonymous session status
+router.get('/session-status/:anonymousId', async (req, res) => {
+  try {
+    const session = await AnonymousSession.findOne({ 
+      anonymousId: req.params.anonymousId 
+    });
+    
+    if (!session) {
+      return res.status(404).json({ 
+        error: 'Session not found',
+        canSendMore: false,
+        messageCount: 0
+      });
+    }
+    
+    const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
+    
+    res.json({
+      canSendMore: session.canSendMessage(),
+      messageCount: userMessageCount,
+      isConverted: session.isConverted,
+      lastActivity: session.lastActivity,
+      parkName: session.parkName
+    });
+  } catch (error) {
+    console.error('Error checking session status:', error);
+    res.status(500).json({ 
+      error: 'Failed to check session status',
+      canSendMore: false,
+      messageCount: 0
     });
   }
 });

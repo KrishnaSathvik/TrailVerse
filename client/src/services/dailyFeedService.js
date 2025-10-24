@@ -8,7 +8,9 @@ class DailyFeedService {
     
     const response = await api.get('/feed/daily', {
       skipCache: false, // Use smart caching
-      params: {} // No refresh parameter
+      params: {
+        forceRefresh: forceRefresh.toString()
+      }
     });
     
     console.log('🌐 Service: API response received', response.data?.cached ? '(cached from DB)' : '(fresh from DB)');

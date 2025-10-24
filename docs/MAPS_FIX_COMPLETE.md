@@ -21,7 +21,7 @@ This environment variable tells the Google Maps JavaScript API which key to use 
 
 ### Added to `client/.env`:
 ```env
-VITE_GMAPS_WEB_KEY=AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI
+VITE_GMAPS_WEB_KEY=AIzaSy_your_google_maps_api_key_here
 ```
 
 ### Added to `client/env.example`:

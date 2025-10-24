@@ -99,10 +99,13 @@ class EnhancedParkService {
       const weatherData = {
         current: {
           temperature: Math.round(current.main.temp),
+          temp: Math.round(current.main.temp), // For UI compatibility
           condition: current.weather[0].description,
           humidity: current.main.humidity,
           windSpeed: Math.round(current.wind.speed),
-          feelsLike: Math.round(current.main.feels_like)
+          feelsLike: Math.round(current.main.feels_like),
+          uvIndex: current.uvi || 0, // UV Index from OpenWeather API
+          visibility: current.visibility ? Math.round(current.visibility / 1609.34) : 10 // Convert meters to miles
         },
         seasonal: seasonalData,
         lastUpdated: new Date().toISOString()
@@ -191,7 +194,8 @@ class EnhancedParkService {
         humidity: 60,
         windSpeed: 5,
         feelsLike: adjustedTemp,
-        uvi: 4
+        uvIndex: 4, // UV Index fallback
+        visibility: 10
       },
       seasonal: {
         summer: { high: baseTemp + 15, low: baseTemp - 5, avg: baseTemp + 5 },

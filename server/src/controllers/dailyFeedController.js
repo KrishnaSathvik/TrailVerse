@@ -1,6 +1,10 @@
 const npsService = require('../services/npsService');
 const openaiService = require('../services/openaiService');
 const enhancedParkService = require('../services/enhancedParkService');
+const astronomicalService = require('../services/astronomicalService');
+const reliableAstronomicalService = require('../services/reliableAstronomicalService');
+const elevationService = require('../services/elevationService');
+const parkSizeService = require('../services/parkSizeService');
 const User = require('../models/User');
 const DailyFeed = require('../models/DailyFeed');
 
@@ -50,9 +54,9 @@ exports.getDailyFeed = async (req, res, next) => {
 
     const today = new Date().toDateString();
     const todayISO = new Date().toISOString().split('T')[0]; // Format: 2025-10-22
-    const forceRefresh = false; // Use smart caching - only generate fresh data for new dates
+    const forceRefresh = req.query.forceRefresh === 'true' || req.query.refresh === 'true'; // Get from query params
     console.log(`📅 Checking database for daily feed on ${today} (ISO: ${todayISO})`);
-    console.log(`🔄 Smart caching: Using database cache for same day`);
+    console.log(`🔄 Smart caching: ${forceRefresh ? 'Force refresh requested' : 'Using database cache for same day'}`);
     
     // Check if we have existing daily feed in database (unless force refresh is requested)
     let existingFeed = null;
@@ -584,6 +588,8 @@ async function getPersonalizedParkOfDay(user) {
       image: randomPark.images?.[0]?.url || '/background1.png',
       latitude: randomPark.latitude,
       longitude: randomPark.longitude,
+      elevation: await getRealParkElevation(randomPark),
+      acres: getRealParkSize(randomPark),
       weather: weather ? {
         temp: Math.round(weather.temperature),
         condition: weather.condition,
@@ -591,7 +597,7 @@ async function getPersonalizedParkOfDay(user) {
       } : null,
       mustDo: mustDo.status === 'fulfilled' ? mustDo.value : ['Visit the park', 'Explore nature', 'Take photos'],
       crowdLevel: crowdLevel.status === 'fulfilled' ? crowdLevel.value : 'Moderate',
-      bestTime: getBestTimeOfDay()
+      bestTime: getBestTimeOfDay(weather, randomPark)
     };
   } catch (error) {
     console.error('Error getting personalized park:', error);
@@ -630,17 +636,106 @@ async function getAstroData(location, parkName) {
     throw new Error('Park name is required for AI astro data generation');
   }
 
-  console.log(`🌙 Controller: Calculating astro data for location:`, location);
+  console.log(`🌙 Controller: Getting reliable astro data for location:`, location);
   
-  // Calculate realistic sunrise/sunset times based on season and location
+  const now = new Date();
+  const lat = parseFloat(location.latitude) || 40.7128;
+  const lng = parseFloat(location.longitude) || -74.0060;
+  const elevation = parseFloat(location.elevation) || 0;
+  
+  console.log(`🌙 Controller: Using reliable API for lat=${lat}, lng=${lng}, elevation=${elevation}m`);
+  
+  try {
+    // Use reliable astronomical API
+    console.log(`🌙 Controller: Calling reliableAstronomicalService.getAstronomicalData with:`, { lat, lng, now, elevation });
+    const astroData = await reliableAstronomicalService.getAstronomicalData(lat, lng, now, elevation);
+    console.log(`🌙 Controller: reliableAstronomicalService returned:`, Object.keys(astroData));
+    
+    console.log(`🌙 Controller: Precise astro data calculated:`, {
+      sunrise: astroData.sunrise,
+      sunset: astroData.sunset,
+      moonPhase: astroData.moonPhase,
+      moonIllumination: astroData.moonIllumination,
+      moonAge: astroData.moonAge,
+      nextNewMoon: astroData.nextNewMoon,
+      nextFullMoon: astroData.nextFullMoon,
+      dayLength: astroData.dayLength,
+      isPolarDay: astroData.isPolarDay,
+      isPolarNight: astroData.isPolarNight,
+      sunDeclination: astroData.sunDeclination,
+      sunRightAscension: astroData.sunRightAscension,
+      milkyWayVisibility: astroData.milkyWayVisibility,
+      auroraProbability: astroData.auroraProbability
+    });
+    
+    // Generate AI-powered sky insights with precise data
+    let skyInsights = null;
+    try {
+      const prompt = `Generate engaging sky and stargazing insights for ${parkName} at coordinates ${lat}, ${lng} in ${getMonthName(now.getMonth())}.
+      
+      Current Astronomical Data:
+      - Sunrise: ${astroData.sunrise}
+      - Sunset: ${astroData.sunset}
+      - Moon Phase: ${astroData.moonPhase} (${astroData.moonIllumination}% illuminated)
+      - Milky Way Visibility: ${astroData.milkyWayVisibility}
+      - Aurora Probability: ${astroData.auroraProbability}
+      - Day Length: ${astroData.dayLength ? astroData.dayLength.toFixed(1) + ' hours' : 'N/A'}
+      
+      Include:
+      - Best stargazing times and conditions
+      - What celestial objects are visible
+      - Seasonal astronomy highlights
+      - Photography tips for the current conditions
+      - Moon phase specific recommendations
+      
+      Keep it under 150 words and make it specific to this location, season, and current astronomical conditions.`;
+
+      const response = await openaiService.chat([
+        { role: 'user', content: prompt }
+      ]);
+      
+      skyInsights = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
+      console.log(`🌙 AI Generated precise sky insights for ${parkName}:`, skyInsights);
+    } catch (error) {
+      console.error('Error generating sky insights in getAstroData:', error);
+      skyInsights = `Sunrise: ${astroData.sunrise}, Sunset: ${astroData.sunset}. Moon: ${astroData.moonPhase} (${astroData.moonIllumination}% illuminated). Milky Way visibility: ${astroData.milkyWayVisibility}. Check local conditions for stargazing opportunities.`;
+    }
+    
+    return {
+      sunrise: astroData.sunrise,
+      sunset: astroData.sunset,
+      moonPhase: astroData.moonPhase,
+      moonIllumination: astroData.moonIllumination,
+      moonAge: astroData.moonAge,
+      nextNewMoon: astroData.nextNewMoon,
+      nextFullMoon: astroData.nextFullMoon,
+      milkyWayVisibility: astroData.milkyWayVisibility,
+      auroraProbability: astroData.auroraProbability,
+      skyInsights,
+      dayLength: astroData.dayLength,
+      isPolarDay: astroData.isPolarDay,
+      isPolarNight: astroData.isPolarNight
+    };
+    
+  } catch (error) {
+    console.error('Error in precise astronomical calculations:', error);
+    
+    // Fallback to simplified calculations if precise ones fail
+    console.log(`🌙 Controller: Falling back to simplified calculations`);
+    return getAstroDataFallback(location, parkName);
+  }
+}
+
+// Fallback function for simplified astronomical calculations
+async function getAstroDataFallback(location, parkName) {
+  console.log(`🌙 Controller: Using fallback astro calculations for location:`, location);
+  
   const now = new Date();
   const month = now.getMonth();
   const lat = parseFloat(location.latitude) || 40.7128;
   const lng = parseFloat(location.longitude) || -74.0060;
   
-  console.log(`🌙 Controller: Using coordinates lat=${lat}, lng=${lng} for astro calculation`);
-  
-  // Calculate more accurate sunrise/sunset times based on latitude and season
+  // Calculate realistic sunrise/sunset times based on season and location
   let sunriseHour, sunsetHour;
   
   // Base times adjusted for latitude
@@ -693,7 +788,7 @@ async function getAstroData(location, parkName) {
     skyInsights = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
     console.log(`🌙 AI Generated sky insights for ${parkName}:`, skyInsights);
   } catch (error) {
-    console.error('Error generating sky insights in getAstroData:', error);
+    console.error('Error generating sky insights in getAstroDataFallback:', error);
     skyInsights = `Sunrise: ${sunrise.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}, Sunset: ${sunset.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}. Check local conditions for stargazing opportunities.`;
   }
   
@@ -770,7 +865,8 @@ async function getWeatherData(location) {
         condition: weatherData.current.condition,
         humidity: weatherData.current.humidity,
         windSpeed: weatherData.current.windSpeed,
-        visibility: 10 // OpenWeather doesn't always provide visibility
+        uvIndex: weatherData.current.uvIndex || 0,
+        visibility: weatherData.current.visibility || 10
       },
       recommendation: getWeatherRecommendation(weatherData.current.condition, weatherData.current.temperature || weatherData.current.temp)
     };
@@ -785,6 +881,7 @@ async function getWeatherData(location) {
         condition: 'Partly Cloudy',
         humidity: 55,
         windSpeed: 6,
+        uvIndex: 4,
         visibility: 10
       },
       recommendation: 'Great day for outdoor activities!'
@@ -847,18 +944,119 @@ async function getCrowdLevel(parkCode) {
   }
 }
 
-function getBestTimeOfDay() {
+function getBestTimeOfDay(weather, park) {
   const hour = new Date().getHours();
+  const temp = weather?.temperature || 70;
+  const condition = weather?.condition || 'clear';
+  const season = getCurrentSeason();
+  const parkName = park?.name?.toLowerCase() || '';
   
-  // Recommend based on current time and typical outdoor activity patterns
+  console.log(`🕐 Determining best time for ${parkName} - Weather: ${temp}°F ${condition}, Season: ${season}, Hour: ${hour}`);
+  
+  // Weather-based recommendations (highest priority)
+  if (temp < 32) {
+    return 'Afternoon'; // Freezing - warmest part of day
+  } else if (temp < 45) {
+    return 'Afternoon'; // Cold - afternoon warmth
+  } else if (temp > 95) {
+    return 'Morning'; // Extreme heat - coolest part
+  } else if (temp > 85) {
+    return hour < 9 ? 'Morning' : 'Evening'; // Hot - avoid midday
+  } else if (condition.includes('rain') || condition.includes('storm') || condition.includes('snow')) {
+    return 'Morning'; // Stormy weather - morning usually clearer
+  } else if (condition.includes('fog') || condition.includes('mist')) {
+    return 'Afternoon'; // Foggy - afternoon usually clearer
+  }
+  
+  // Seasonal considerations
+  if (season === 'Winter') {
+    return 'Afternoon'; // Winter - warmest part of day
+  } else if (season === 'Summer') {
+    return hour < 10 ? 'Morning' : 'Evening'; // Summer - avoid midday heat
+  }
+  
+  // Park-specific activity recommendations
+  // Wildlife viewing parks - early morning is best for animal activity
+  if (parkName.includes('yellowstone') || parkName.includes('grand teton') || 
+      parkName.includes('great smoky') || parkName.includes('shenandoah') ||
+      parkName.includes('everglades') || parkName.includes('denali')) {
+    return 'Morning';
+  }
+  
+  // Desert parks - avoid midday heat, prefer early morning or late afternoon
+  if (parkName.includes('death valley') || parkName.includes('joshua tree') || 
+      parkName.includes('saguaro') || parkName.includes('arches') ||
+      parkName.includes('canyonlands') || parkName.includes('zion')) {
+    return hour < 10 ? 'Morning' : 'Evening';
+  }
+  
+  // Mountain parks - afternoon for better weather and visibility
+  if (parkName.includes('rocky mountain') || parkName.includes('glacier') || 
+      parkName.includes('grand canyon') || parkName.includes('yosemite') ||
+      parkName.includes('olympic') || parkName.includes('crater lake')) {
+    return 'Afternoon';
+  }
+  
+  // Coastal parks - morning for better weather, afternoon for activities
+  if (parkName.includes('acadia') || parkName.includes('olympic') || 
+      parkName.includes('channel islands') || parkName.includes('biscayne')) {
+    return condition.includes('clear') ? 'Morning' : 'Afternoon';
+  }
+  
+  // Photography-focused parks - golden hour considerations
+  if (parkName.includes('arches') || parkName.includes('bryce canyon') ||
+      parkName.includes('badlands') || parkName.includes('white sands')) {
+    return hour < 10 ? 'Morning' : 'Evening'; // Golden hour photography
+  }
+  
+  // Default time-based logic
   if (hour >= 5 && hour < 10) {
-    return 'Morning'; // Early morning is great for wildlife and photography
+    return 'Morning';
   } else if (hour >= 10 && hour < 16) {
-    return 'Afternoon'; // Good for hiking and general activities
+    return 'Afternoon';
   } else if (hour >= 16 && hour < 20) {
-    return 'Evening'; // Perfect for sunset viewing and golden hour photography
+    return 'Evening';
   } else {
-    return 'Morning'; // Default to morning for planning ahead
+    return 'Morning';
+  }
+}
+
+function getCurrentSeason() {
+  const month = new Date().getMonth() + 1; // 1-12
+  if (month >= 12 || month <= 2) return 'Winter';
+  if (month >= 3 && month <= 5) return 'Spring';
+  if (month >= 6 && month <= 8) return 'Summer';
+  return 'Fall';
+}
+
+async function getRealParkElevation(park) {
+  try {
+    const lat = parseFloat(park.latitude);
+    const lng = parseFloat(park.longitude);
+    
+    if (isNaN(lat) || isNaN(lng)) {
+      console.warn('Invalid coordinates for elevation lookup');
+      return '1,500ft';
+    }
+    
+    const elevation = await elevationService.getElevation(lat, lng);
+    console.log(`🏔️ Real elevation for ${park.name}: ${elevation}`);
+    return elevation;
+  } catch (error) {
+    console.error('Error getting real elevation:', error.message);
+    return '1,500ft';
+  }
+}
+
+function getRealParkSize(park) {
+  try {
+    const size = parkSizeService.getParkSize(park.name, park.parkCode);
+    const formattedSize = parkSizeService.formatSize(size);
+    console.log(`📏 Real park size for ${park.name}: ${formattedSize}`);
+    return formattedSize;
+  } catch (error) {
+    console.error('Error getting real park size:', error.message);
+    return '500k acres';
   }
 }
 
@@ -869,7 +1067,7 @@ async function getPersonalizedRecommendations(user, park, weatherData, astroData
     const month = new Date().getMonth();
     const season = getSeason(month);
     
-    const prompt = `Generate 3 personalized, actionable recommendations for visiting ${park.name} today.
+    const prompt = `Generate 3 personalized, actionable ACTIVITY recommendations for visiting ${park.name} today.
     
     Context:
     - Weather: ${weather?.condition || 'Unknown'}, ${weather?.temperature || 'Unknown'}°F
@@ -877,16 +1075,20 @@ async function getPersonalizedRecommendations(user, park, weatherData, astroData
     - Moon Phase: ${astro?.moonPhase || 'Unknown'}
     - Sunrise: ${astro?.sunrise || 'Unknown'}, Sunset: ${astro?.sunset || 'Unknown'}
     - Park Type: National Park
-    - User Location: Not used
     
-    Generate recommendations that are:
-    - Specific to this park and current conditions
-    - Practical and actionable
-    - Include timing suggestions (morning, afternoon, evening)
-    - Consider weather and seasonal factors
-    - Include photography or wildlife viewing tips
-    - Under 60 words each
+    FOCUS ON ACTIVITIES ONLY:
+    - Specific park activities and experiences
+    - Timing suggestions (morning, afternoon, evening)
+    - Photography opportunities and techniques
+    - Wildlife viewing and nature experiences
+    - Hiking, scenic drives, or other park activities
     
+    DO NOT INCLUDE:
+    - Weather analysis (that's for weather insights)
+    - Stargazing info (that's for sky insights)
+    - General safety tips (that's for weather insights)
+    
+    Each recommendation should be under 60 words and activity-focused.
     Format as a JSON array of strings.`;
 
     const response = await openaiService.chat([
@@ -926,7 +1128,7 @@ async function getWeatherInsights(weatherData, parkName) {
 
     console.log(`🌤️ Generating weather insights for ${parkName} with weather:`, weather);
 
-    const prompt = `Generate engaging weather insights for ${parkName} based on current conditions.
+    const prompt = `Generate WEATHER-FOCUSED insights for ${parkName} based on current conditions.
     
     Current Weather:
     - Temperature: ${weather.temperature}°F
@@ -935,14 +1137,18 @@ async function getWeatherInsights(weatherData, parkName) {
     - Wind Speed: ${weather.windSpeed} mph
     - Visibility: ${weather.visibility} miles
     
-    Provide:
-    - What this weather means for park visitors
-    - Best activities for these conditions
-    - Safety considerations
-    - Photography opportunities
-    - What to wear/bring
+    FOCUS ONLY ON:
+    - Weather impact on park experience
+    - Weather-specific safety considerations
+    - What to wear/bring for this weather
+    - How weather affects visibility and comfort
     
-    Keep it under 150 words and make it specific to this park and weather.`;
+    DO NOT INCLUDE:
+    - General activities (that's for recommendations)
+    - Photography tips (that's for recommendations)
+    - Stargazing info (that's for sky insights)
+    
+    Keep under 120 words and be weather-specific only.`;
 
     const response = await openaiService.chat([
       { role: 'user', content: prompt }
@@ -963,7 +1169,7 @@ async function getSkyInsights(astroData, parkName) {
       throw new Error('No astro data available');
     }
 
-    const prompt = `Generate engaging sky and astronomy insights for ${parkName} based on current conditions.
+    const prompt = `Generate STARGAZING-FOCUSED insights for ${parkName} based on current sky conditions.
     
     Current Sky Data:
     - Sunrise: ${astroData.sunrise}
@@ -972,14 +1178,19 @@ async function getSkyInsights(astroData, parkName) {
     - Milky Way Visibility: ${astroData.milkyWayVisibility}
     - Aurora Probability: ${astroData.auroraProbability}
     
-    Provide:
+    FOCUS ONLY ON:
     - Best times for stargazing today
     - What celestial objects are visible
-    - Photography tips for the current conditions
-    - Special astronomical events or highlights
-    - Equipment recommendations
+    - Stargazing conditions and visibility
+    - Astronomical events or highlights
+    - Stargazing equipment recommendations
     
-    Keep it under 150 words and make it specific to this park and current sky conditions.`;
+    DO NOT INCLUDE:
+    - General activities (that's for recommendations)
+    - Photography tips (that's for recommendations)
+    - Weather info (that's for weather insights)
+    
+    Keep under 120 words and be stargazing-specific only.`;
 
     const response = await openaiService.chat([
       { role: 'user', content: prompt }

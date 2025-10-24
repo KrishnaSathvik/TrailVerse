@@ -5,7 +5,7 @@ const path = require('path');
 const reactEmailRenderer = require('./reactEmailRenderer');
 
 // Initialize Resend with API key
-const apiKey = process.env.RESEND_API_KEY || 're_55uKwRN8_Nz9u7nJ4drCscszKbQuKhUf5';
+const apiKey = process.env.RESEND_API_KEY;
 console.log('🔑 Resend API Key:', apiKey ? 'Found' : 'Missing');
 const resend = new Resend(apiKey);
 

@@ -68,7 +68,7 @@ VITE_GMAPS_WEB_KEY=<YOUR_KEY>
 #### 1. **CRITICAL: Add Google Maps Web Key**
 Add to `client/.env`:
 ```env
-VITE_GMAPS_WEB_KEY=AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI
+VITE_GMAPS_WEB_KEY=AIzaSy_your_google_maps_api_key_here
 ```
 
 **Security Note:** You should create a SEPARATE web key with HTTP referrer restrictions:
@@ -176,7 +176,7 @@ Only ONE file needs to be modified:
 ### `client/.env`
 ```env
 # Add this line:
-VITE_GMAPS_WEB_KEY=AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI
+VITE_GMAPS_WEB_KEY=AIzaSy_your_google_maps_api_key_here
 ```
 
 **Important:** For production, create a separate key with referrer restrictions!

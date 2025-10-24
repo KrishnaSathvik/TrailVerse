@@ -20,7 +20,7 @@ router.use(protect);
 // @route   GET /api/feed/daily
 // @desc    Get personalized daily feed (with smart caching)
 // @access  Private
-router.get('/daily', cacheMiddleware(300), getDailyFeed); // 5 minutes cache
+router.get('/daily', getDailyFeed); // No cache - database handles caching
 
 // @route   GET /api/feed/park-of-day
 // @desc    Get park of the day

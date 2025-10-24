@@ -63,6 +63,7 @@ const TripPlannerChat = ({
   const [messageCount, setMessageCount] = useState(0);
   const [canSendMore, setCanSendMore] = useState(true);
   const [isSessionRestored, setIsSessionRestored] = useState(false);
+  const [timeUntilReset, setTimeUntilReset] = useState(null);
 
   const messagesEndRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
@@ -623,6 +624,48 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
     setIsSessionRestored(false);
   }, []);
 
+  // Calculate time until reset
+  const calculateTimeUntilReset = useCallback(() => {
+    try {
+      const savedSession = localStorage.getItem('anonymousSession');
+      if (savedSession) {
+        const sessionData = JSON.parse(savedSession);
+        const sessionAge = Date.now() - sessionData.timestamp;
+        const maxAge = 48 * 60 * 60 * 1000; // 48 hours
+        const timeRemaining = maxAge - sessionAge;
+        
+        if (timeRemaining > 0) {
+          const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+          const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+          return `${hours}h ${minutes}m`;
+        }
+      }
+    } catch (error) {
+      console.error('Error calculating time until reset:', error);
+    }
+    return null;
+  }, []);
+
+  // Clean up expired sessions
+  const cleanupExpiredSessions = useCallback(() => {
+    try {
+      const savedSession = localStorage.getItem('anonymousSession');
+      if (savedSession) {
+        const sessionData = JSON.parse(savedSession);
+        const sessionAge = Date.now() - sessionData.timestamp;
+        const maxAge = 48 * 60 * 60 * 1000; // 48 hours
+        
+        if (sessionAge >= maxAge) {
+          localStorage.removeItem('anonymousSession');
+          console.log('🔄 Cleaned up expired anonymous session');
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up expired sessions:', error);
+      localStorage.removeItem('anonymousSession');
+    }
+  }, []);
+
   // Save anonymous session data to localStorage
   const saveAnonymousSession = useCallback((sessionData) => {
     if (isAnonymous && sessionData.anonymousId) {
@@ -638,23 +681,54 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
     }
   }, [isAnonymous, parkName, formData]);
 
+  // Validate session with backend
+  const validateSessionWithBackend = useCallback(async (anonymousId) => {
+    if (!anonymousId) return false;
+    
+    try {
+      const response = await api.get(`/ai/session-status/${anonymousId}`);
+      const { canSendMore, messageCount, isConverted } = response.data;
+      
+      setCanSendMore(canSendMore);
+      setMessageCount(messageCount);
+      
+      // Update localStorage with backend data
+      const savedSession = localStorage.getItem('anonymousSession');
+      if (savedSession) {
+        const sessionData = JSON.parse(savedSession);
+        sessionData.canSendMore = canSendMore;
+        sessionData.messageCount = messageCount;
+        localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
+      }
+      
+      console.log('🔄 Session validated with backend:', { canSendMore, messageCount, isConverted });
+      return true;
+    } catch (error) {
+      console.error('Error validating session with backend:', error);
+      return false;
+    }
+  }, []);
+
   // Restore anonymous session from localStorage
-  const restoreAnonymousSession = useCallback(() => {
+  const restoreAnonymousSession = useCallback(async () => {
     if (isAnonymous && !isAuthenticated) {
       try {
         const savedSession = localStorage.getItem('anonymousSession');
         if (savedSession) {
           const sessionData = JSON.parse(savedSession);
           
-          // Check if session is not too old (24 hours)
+          // Check if session is not too old (48 hours to match backend)
           const sessionAge = Date.now() - sessionData.timestamp;
-          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          const maxAge = 48 * 60 * 60 * 1000; // 48 hours to match backend
           
           if (sessionAge < maxAge) {
             setAnonymousId(sessionData.anonymousId);
             setMessageCount(sessionData.messageCount);
             setCanSendMore(sessionData.canSendMore);
             setIsSessionRestored(true);
+            
+            // Validate with backend to ensure accuracy
+            await validateSessionWithBackend(sessionData.anonymousId);
             
             console.log('🔄 Restored anonymous session:', sessionData);
             return true;
@@ -670,14 +744,40 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
       }
     }
     return false;
-  }, [isAnonymous, isAuthenticated]);
+  }, [isAnonymous, isAuthenticated, validateSessionWithBackend]);
 
-  // Restore anonymous session on mount
+  // Clean up expired sessions and restore anonymous session on mount
   useEffect(() => {
+    cleanupExpiredSessions();
+    
     if (isAnonymous && !isAuthenticated) {
       restoreAnonymousSession();
     }
-  }, [isAnonymous, isAuthenticated, restoreAnonymousSession]);
+  }, [isAnonymous, isAuthenticated, restoreAnonymousSession, cleanupExpiredSessions]);
+
+  // Periodic cleanup of expired sessions (every 5 minutes)
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      cleanupExpiredSessions();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(cleanupInterval);
+  }, [cleanupExpiredSessions]);
+
+  // Update countdown timer every minute
+  useEffect(() => {
+    if (isAnonymous && !canSendMore) {
+      const updateTimer = () => {
+        const timeRemaining = calculateTimeUntilReset();
+        setTimeUntilReset(timeRemaining);
+      };
+      
+      updateTimer(); // Initial update
+      const timerInterval = setInterval(updateTimer, 60 * 1000); // Every minute
+      
+      return () => clearInterval(timerInterval);
+    }
+  }, [isAnonymous, canSendMore, calculateTimeUntilReset]);
 
   // Clear anonymous session when user becomes authenticated
   useEffect(() => {
@@ -771,6 +871,21 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
     if (providers.length === 0) {
       showToast('No AI providers available. Please configure API keys.', 'error');
       return;
+    }
+
+    // For anonymous users, validate session before sending
+    if (isAnonymous && anonymousId) {
+      try {
+        await validateSessionWithBackend(anonymousId);
+        if (!canSendMore) {
+          showToast('You have reached your 3 message limit. Please create an account to continue.', 'error');
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating session before sending message:', error);
+        showToast('Unable to validate session. Please try again.', 'error');
+        return;
+      }
     }
 
     // Abort any existing request
@@ -1651,7 +1766,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                 Ready to Continue Planning?
               </h2>
               <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>
-                You've already used your 3 free questions! Create an account to get unlimited AI planning help, save your trips, and access your conversation history.
+                You've already used your 3 free questions! You can either create an account for unlimited access, or come back in 48 hours for 3 fresh questions.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
@@ -1667,15 +1782,35 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                   Login
                 </button>
               </div>
-              <p className="text-sm mt-4" style={{ color: 'var(--text-tertiary)' }}>
-                With an account, you can:
-              </p>
-              <ul className="text-sm mt-2 space-y-1" style={{ color: 'var(--text-secondary)' }}>
-                <li>• Ask unlimited questions</li>
-                <li>• Save your trip plans</li>
-                <li>• Access your conversation history</li>
-                <li>• Get personalized recommendations</li>
-              </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    🚀 Create Account (Recommended)
+                  </p>
+                  <ul className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                    <li>• Ask unlimited questions</li>
+                    <li>• Save your trip plans</li>
+                    <li>• Access your conversation history</li>
+                    <li>• Get personalized recommendations</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    ⏰ Wait 48 Hours (Free)
+                  </p>
+                  {timeUntilReset && (
+                    <p className="text-xs mb-2 font-medium" style={{ color: 'var(--accent-green)' }}>
+                      ⏳ Reset in: {timeUntilReset}
+                    </p>
+                  )}
+                  <ul className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                    <li>• Get 3 fresh questions</li>
+                    <li>• No account required</li>
+                    <li>• Completely free</li>
+                    <li>• Session resets automatically</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1947,8 +2082,8 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
               </h3>
               <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
                 {isSessionRestored 
-                  ? `You've already used your 3 free questions! Create an account to get unlimited AI planning help, save your trips, and access your conversation history.`
-                  : `You've used your 3 free questions! Create an account to get unlimited AI planning help, save your trips, and access your conversation history.`
+                  ? `You've already used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.`
+                  : `You've used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.`
                 }
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">

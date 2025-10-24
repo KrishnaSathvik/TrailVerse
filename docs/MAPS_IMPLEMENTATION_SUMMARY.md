@@ -27,7 +27,7 @@ But the **client-side Google Maps JavaScript API key** was never added to `.env`
 
 ### Added to `client/.env`:
 ```env
-VITE_GMAPS_WEB_KEY=AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI
+VITE_GMAPS_WEB_KEY=AIzaSy_your_google_maps_api_key_here
 ```
 
 ### Added to `client/env.example`:
@@ -161,7 +161,7 @@ app.use('/api/gmaps', require('./routes/gmaps'));
 
 #### 1. Server Key (`GMAPS_SERVER_KEY`)
 - **Location:** `server/.env`
-- **Current Value:** `AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI`
+- **Current Value:** `AIzaSy_your_google_maps_api_key_here`
 - **Restrictions:** IP-restricted (your server IP only)
 - **Used for:**
   - Place Details API
@@ -172,7 +172,7 @@ app.use('/api/gmaps', require('./routes/gmaps'));
 
 #### 2. Web Key (`VITE_GMAPS_WEB_KEY`)
 - **Location:** `client/.env`
-- **Current Value:** `AIzaSyB6JUj4GueBnqnfP6RjL-gYP7UYWIQ3-gI` ⚠️
+- **Current Value:** `AIzaSy_your_google_maps_api_key_here` ⚠️
 - **Restrictions:** Should be HTTP-referrer restricted
 - **Used for:**
   - Google Maps JavaScript API

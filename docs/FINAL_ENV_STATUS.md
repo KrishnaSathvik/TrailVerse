@@ -46,7 +46,7 @@ You need to add these to your **Render backend service**:
 ### **Missing Resend Variables:**
 ```bash
 # Add these to Render dashboard
-RESEND_API_KEY=re_55uKwRN8_Nz9u7nJ4drCscszKbQuKhUf5
+RESEND_API_KEY=re_your_resend_api_key_here
 EMAIL_FROM_ADDRESS=noreply@nationalparksexplorerusa.com
 
 # Update these in Render
@@ -82,7 +82,7 @@ SUPPORT_EMAIL=support@nationalparksexplorerusa.com
 ### **1. Add Resend Variables to Render (CRITICAL):**
 ```bash
 # Go to Render dashboard and add:
-RESEND_API_KEY=re_55uKwRN8_Nz9u7nJ4drCscszKbQuKhUf5
+RESEND_API_KEY=re_your_resend_api_key_here
 EMAIL_FROM_ADDRESS=noreply@nationalparksexplorerusa.com
 ```
 
@@ -114,7 +114,7 @@ Move backend variables from Vercel to Render for better security:
 
 1. **Go to Render dashboard**
 2. **Add environment variables:**
-   - `RESEND_API_KEY=re_55uKwRN8_Nz9u7nJ4drCscszKbQuKhUf5`
+   - `RESEND_API_KEY=re_your_resend_api_key_here`
    - `EMAIL_FROM_ADDRESS=noreply@nationalparksexplorerusa.com`
 3. **Restart service**
 4. **Deploy and test!**

@@ -355,9 +355,9 @@ const PlanAIPage = () => {
         if (savedSession) {
           const sessionData = JSON.parse(savedSession);
           
-          // Check if session is not too old (24 hours)
+          // Check if session is not too old (48 hours to match backend)
           const sessionAge = Date.now() - sessionData.timestamp;
-          const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+          const maxAge = 48 * 60 * 60 * 1000; // 48 hours to match backend
           
           if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
             showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
