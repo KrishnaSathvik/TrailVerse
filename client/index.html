@@ -80,8 +80,9 @@
     <!-- Google Analytics -->
     <script>
       // Only load Google Analytics if tracking ID is provided
-      const GA_TRACKING_ID = import.meta.env.VITE_GA_TRACKING_ID;
-      if (GA_TRACKING_ID) {
+      // This will be replaced by Vite during build
+      const GA_TRACKING_ID = '__VITE_GA_TRACKING_ID__';
+      if (GA_TRACKING_ID && GA_TRACKING_ID !== '__VITE_GA_TRACKING_ID__') {
         const script = document.createElement('script');
         script.async = true;
         script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`;

@@ -293,7 +293,8 @@ router.get('/nearby', async (req, res) => {
             formatted_address: result.formatted_address,
             photos: result.photos?.map(photo => ({
               photo_reference: photo.photo_reference,
-              url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${KEY}`
+              // Use proxy endpoint instead of direct Google API URL
+              url: `/api/gmaps/photo?photo_reference=${photo.photo_reference}&maxwidth=400`
             })) || [],
             opening_hours: result.opening_hours ? {
               weekday_text: result.opening_hours.weekday_text,
@@ -583,8 +584,8 @@ router.get('/placedetails', async (req, res) => {
             photo_reference: photo.photo_reference,
             width: photo.width,
             height: photo.height,
-            // Construct the photo URL
-            url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${KEY}`
+            // Use proxy endpoint instead of direct Google API URL
+            url: `/api/gmaps/photo?photo_reference=${photo.photo_reference}&maxwidth=400`
           };
         }) || []
       }
