@@ -5,7 +5,7 @@ const eventService = {
   getEvents: async (params = {}) => {
     const result = await enhancedApi.get('/events', params, { 
       cacheType: 'events',
-      ttl: 15 * 60 * 1000 // 15 minutes
+      ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
     });
     return result.data;
   },

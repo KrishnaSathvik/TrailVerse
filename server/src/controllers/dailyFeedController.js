@@ -256,8 +256,16 @@ exports.getDailyFeed = async (req, res, next) => {
     const recentParksTrimmed = recentParks.slice(0, 7);
 
     const dailyFeed = {
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toISOString(), // Add timestamp to ensure uniqueness
+      date: now.toISOString().split('T')[0],
+      timestamp: now.toISOString(), // Add timestamp to ensure uniqueness
+      generatedAt: now.toLocaleString('en-US', { 
+        timeZone: 'America/New_York',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }), // Formatted timestamp for display
       parkOfDay: selectedPark,
       // Recent parks memory (7-day tracking)
       recentParks: recentParksTrimmed,
@@ -1555,6 +1563,61 @@ function getTimezoneAbbreviation(longitude) {
   }
 }
 
+// Helper function to get correct local times using astronomical service
+async function getCorrectLocalTimes(latitude, longitude, dateStr) {
+  try {
+    const ReliableAstronomicalService = require('./src/services/reliableAstronomicalService');
+    const date = new Date(dateStr);
+    
+    const result = await ReliableAstronomicalService.getAstronomicalData(latitude, longitude, date);
+    
+    return {
+      sunrise: result.sunrise,
+      sunset: result.sunset
+    };
+  } catch (error) {
+    console.error('Error getting correct local times:', error);
+    return {
+      sunrise: '7:00 AM',
+      sunset: '6:00 PM'
+    };
+  }
+}
+
+// Helper function to convert UTC time to local time
+function convertUTCToLocalTime(utcTimeString, longitude) {
+  try {
+    const utcDate = new Date(utcTimeString);
+    
+    // Determine timezone offset based on longitude
+    let timezoneOffset;
+    if (longitude >= -66) {
+      timezoneOffset = -5; // EST (UTC-5)
+    } else if (longitude >= -87) {
+      timezoneOffset = -6; // CST (UTC-6)
+    } else if (longitude >= -102) {
+      timezoneOffset = -7; // MST (UTC-7)
+    } else if (longitude >= -125) {
+      timezoneOffset = -8; // PST (UTC-8)
+    } else {
+      timezoneOffset = -9; // AKST (UTC-9)
+    }
+    
+    // Convert to local time (subtract offset for UTC to local conversion)
+    const localDate = new Date(utcDate.getTime() + (timezoneOffset * 60 * 60 * 1000));
+    
+    // Format as time string
+    return localDate.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+  } catch (error) {
+    console.error('Error converting UTC to local time:', error);
+    return utcTimeString; // Return original if conversion fails
+  }
+}
+
 // Raw API data functions for reference/debugging
 async function getRawAstroData(location) {
   try {
@@ -1592,6 +1655,12 @@ async function getRawAstroData(location) {
           nauticalTwilightEnd: response.data.results.nautical_twilight_end,
           astronomicalTwilightBegin: response.data.results.astronomical_twilight_begin,
           astronomicalTwilightEnd: response.data.results.astronomical_twilight_end,
+          timezone: getTimezoneAbbreviation(location.longitude)
+        },
+        // Add correct local times from astronomical service for frontend
+        localTimes: {
+          sunrise: await getCorrectLocalTimes(location.latitude, location.longitude, dateStr).then(result => result.sunrise),
+          sunset: await getCorrectLocalTimes(location.latitude, location.longitude, dateStr).then(result => result.sunset),
           timezone: getTimezoneAbbreviation(location.longitude)
         }
       };

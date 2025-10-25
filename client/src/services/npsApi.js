@@ -50,7 +50,7 @@ class NPSApi {
       async () => {
         const result = await enhancedApi.get(`/parks/${parkCode}`, {}, { 
           cacheType: 'parks',
-          ttl: 12 * 60 * 60 * 1000 // 12 hours
+          ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
         });
         return result.data.data;
       }
@@ -66,7 +66,7 @@ class NPSApi {
       async () => {
         const result = await enhancedApi.get(`/parks/${parkCode}/details`, {}, { 
           cacheType: 'parkDetails',
-          ttl: 12 * 60 * 60 * 1000 // 12 hours
+          ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
         });
         return result.data.data;
       }

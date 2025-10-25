@@ -4,7 +4,7 @@ class BlogService {
   async getAllPosts(params = {}) {
     const result = await enhancedApi.get('/blogs', params, { 
       cacheType: 'blogPosts',
-      ttl: 30 * 60 * 1000 // 30 minutes
+      ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
     });
     return result.data;
   }
@@ -13,7 +13,7 @@ class BlogService {
     const params = { limit, page: 1, featured: true };
     const result = await enhancedApi.get('/blogs', params, { 
       cacheType: 'blogPosts',
-      ttl: 30 * 60 * 1000 // 30 minutes
+      ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
     });
     return result.data;
   }
@@ -22,7 +22,7 @@ class BlogService {
     const params = { limit, page: 1, sortBy: 'views' };
     const result = await enhancedApi.get('/blogs', params, { 
       cacheType: 'blogPosts',
-      ttl: 30 * 60 * 1000 // 30 minutes
+      ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
     });
     return result.data;
   }
@@ -30,7 +30,7 @@ class BlogService {
   async getPostBySlug(slug) {
     const result = await enhancedApi.get(`/blogs/${slug}`, {}, { 
       cacheType: 'blogPosts',
-      ttl: 30 * 60 * 1000 // 30 minutes
+      ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
     });
     return result.data.data;
   }
@@ -130,7 +130,7 @@ class BlogService {
 
       const result = await enhancedApi.get('/blogs', params, { 
         cacheType: 'blogPosts',
-        ttl: 30 * 60 * 1000 // 30 minutes
+        ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
       });
 
       // Filter out current post and limit to desired count

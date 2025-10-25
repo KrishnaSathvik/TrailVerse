@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   Sun, Moon, Star, MapPin, Calendar, Users, 
   Heart, ExternalLink, Loader2, Compass, Mountain, Sparkles, Clock, Eye,
-  Thermometer, Wind, Droplets, Eye as EyeIcon, Zap, Check
+  Thermometer, Wind, Droplets, Eye as EyeIcon, Zap, Check, CloudSnow
 } from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
@@ -76,11 +76,19 @@ const Bullet = ({ icon: Icon = Sparkles, children }) => (
 );
 
 const SunRow = ({ sun, fallbacks, timezone }) => {
-  // Convert UTC times to local time format
-  const formatTime = (utcTime) => {
-    if (!utcTime || utcTime === '—') return '—';
+  // Convert UTC times to local time format (only if it's a UTC timestamp string)
+  const formatTime = (timeValue) => {
+    if (!timeValue || timeValue === '—') return '—';
+    
+    // If it's already a formatted time string (e.g., "7:00 AM"), return it as-is
+    if (typeof timeValue === 'string' && (timeValue.includes('AM') || timeValue.includes('PM'))) {
+      return timeValue;
+    }
+    
+    // Otherwise, try to parse it as a UTC timestamp
     try {
-      const date = new Date(utcTime);
+      const date = new Date(timeValue);
+      if (isNaN(date.getTime())) return '—';
       return date.toLocaleTimeString('en-US', { 
         hour: 'numeric', 
         minute: '2-digit', 
@@ -106,10 +114,41 @@ const SunRow = ({ sun, fallbacks, timezone }) => {
 
 const DarknessHint = ({ sunset }) => {
   if (!sunset || sunset === '—') return null;
+  
+  // Calculate best darkness time (90 minutes after sunset)
+  const calculateDarknessTime = (sunsetTimeStr) => {
+    try {
+      // Parse the sunset time string (e.g., "6:00 PM")
+      const [time, ampm] = sunsetTimeStr.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      
+      // Convert to 24-hour format
+      let hour24 = hours;
+      if (ampm === 'PM' && hours !== 12) hour24 += 12;
+      if (ampm === 'AM' && hours === 12) hour24 = 0;
+      
+      // Add 90 minutes
+      const date = new Date();
+      date.setHours(hour24, minutes + 90, 0);
+      
+      // Format back to 12-hour format
+      const resultHour = date.getHours();
+      const resultMin = date.getMinutes();
+      const resultAmpm = resultHour >= 12 ? 'PM' : 'AM';
+      const resultHour12 = resultHour % 12 || 12;
+      
+      return `${resultHour12}:${resultMin.toString().padStart(2, '0')} ${resultAmpm}`;
+    } catch (e) {
+      return '~90 min after ' + sunsetTimeStr;
+    }
+  };
+  
+  const darknessTime = calculateDarknessTime(sunset);
+  
   return (
     <div className="mt-2">
       <Chip icon={Star} muted>
-        Best darkness: ~90 min after {sunset}
+        Best darkness: {darknessTime}
       </Chip>
     </div>
   );
@@ -137,11 +176,11 @@ const DailyFeedPage = () => {
   const park = dailyFeed?.parkOfDay;
   const weather = dailyFeed?.rawWeatherData?.processedData?.current || dailyFeed?.rawWeatherData?.rawResponse?.current;
   
-  // Extract sun data from rawAstroData
+  // Extract sun data from rawAstroData (use localTimes if available, fallback to processedData)
   const sun = {
-    sunriseLocal: dailyFeed?.rawAstroData?.processedData?.sunrise || dailyFeed?.rawAstroData?.rawResponse?.results?.sunrise,
-    sunsetLocal: dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset,
-    tz: dailyFeed?.rawAstroData?.timezone || 'Local Time'
+    sunriseLocal: dailyFeed?.rawAstroData?.localTimes?.sunrise || dailyFeed?.rawAstroData?.processedData?.sunrise || dailyFeed?.rawAstroData?.rawResponse?.results?.sunrise,
+    sunsetLocal: dailyFeed?.rawAstroData?.localTimes?.sunset || dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset,
+    tz: dailyFeed?.rawAstroData?.localTimes?.timezone || dailyFeed?.rawAstroData?.timezone || 'Local Time'
   };
 
   const quickStats = dailyFeed?.quickStatsInsights || [];
@@ -171,10 +210,21 @@ const DailyFeedPage = () => {
   // derive compact stats chips
   const statChips = useMemo(() => {
     const chips = [];
+    
+    // Weather condition first (most important)
+    if (weather?.condition) {
+      const conditionIcon = weather.condition.toLowerCase().includes('snow') ? CloudSnow : 
+                           weather.condition.toLowerCase().includes('rain') ? Wind : 
+                           Sun;
+      chips.push({ Icon: conditionIcon, label: weather.condition });
+    }
+    
+    // Temperature with dual display
     if (weather?.temperature != null) {
       const celsius = Math.round((weather.temperature - 32) * 5/9);
       chips.push({ Icon: Thermometer, label: `${Math.round(weather.temperature)}°F / ${celsius}°C` });
     }
+    
     if (weather?.windSpeed != null) chips.push({ Icon: Wind, label: `${Math.round(weather.windSpeed)} mph wind` });
     if (weather?.humidity != null) chips.push({ Icon: Droplets, label: `${Math.round(weather.humidity)}% humidity` });
     if (weather?.visibility != null) chips.push({ Icon: EyeIcon, label: `${Math.round(weather.visibility)} mi vis.` });
@@ -182,7 +232,7 @@ const DailyFeedPage = () => {
       const mp = dailyFeed?.rawAstroData?.moonPhase;
       chips.push({ Icon: Moon, label: String(mp) });
     }
-    return chips.slice(0, 4);
+    return chips.slice(0, 5);
   }, [weather, dailyFeed]);
 
   if (isLoading) {
@@ -423,10 +473,7 @@ const DailyFeedPage = () => {
               Plan with AI
             </Button>
           </div>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Chip icon={Calendar} muted>Updated {new Date(dataUpdatedAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Chip>
-            {isStale && <Chip icon={Zap} muted>Stale — refresh for latest</Chip>}
-          </div>
+
         </Card>
 
         {!hasAnyAI && (
