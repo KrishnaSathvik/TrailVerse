@@ -96,7 +96,7 @@ exports.getDailyFeed = async (req, res, next) => {
     }
     
     if (existingFeed) {
-      console.log(`📦 Returning daily feed from database for user ${userId} on ${today}`);
+      console.log(`📦 Returning daily feed from database for user ${userId} in cycle ${cycleNumber}`);
       console.log(`📊 Cached 100% AI-powered feed data structure:`, {
         hasParkOfDay: !!existingFeed.parkOfDay,
         parkName: existingFeed.parkOfDay?.name,
