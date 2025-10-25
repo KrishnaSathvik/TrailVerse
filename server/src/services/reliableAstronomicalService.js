@@ -100,7 +100,8 @@ class ReliableAstronomicalService {
           isPolarDay: results.polar_day === '1',
           isPolarNight: results.polar_night === '1',
           declination: 0, // Not provided by API
-          rightAscension: 0 // Not provided by API
+          rightAscension: 0, // Not provided by API
+          timezone: this.getTimezoneAbbreviation(longitude)
         };
         
       } else {

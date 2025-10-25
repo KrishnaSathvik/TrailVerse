@@ -8,7 +8,7 @@ const dailyFeedSchema = new mongoose.Schema({
     index: true
   },
   date: {
-    type: String, // Format: "Wed Oct 22 2025"
+    type: String, // Format: "YYYY-MM-DD" (e.g., "2025-10-25")
     required: true,
     index: true
   },
@@ -102,6 +102,26 @@ const dailyFeedSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     required: false
   },
+  // Recent parks tracking (7-day memory)
+  recentParks: [{
+    parkCode: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    date: {
+      type: String, // Format: "YYYY-MM-DD"
+      required: true
+    },
+    selectedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
   // Metadata
   generatedAt: {
     type: Date,

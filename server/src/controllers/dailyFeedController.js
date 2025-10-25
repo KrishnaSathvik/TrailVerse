@@ -64,31 +64,29 @@ exports.getDailyFeed = async (req, res, next) => {
     const userLocation = { latitude: 40.7128, longitude: -74.0060 }; // Default to NYC
 
     const now = new Date();
-    const hoursSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60)); // Hours since epoch
-    const cycleNumber = Math.floor(hoursSinceEpoch / 24); // 24-hour cycle number
-    const cycleKey = `cycle-${cycleNumber}`; // cache key for 24-hour cycles
+    const todayDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
     const forceRefresh = req.query.forceRefresh === 'true' || req.query.refresh === 'true'; // Get from query params
-    console.log(`📅 Checking database for daily feed cycle ${cycleNumber} (24-hour cycle)`);
-    console.log(`🔄 Smart caching: ${forceRefresh ? 'Force refresh requested' : 'Using database cache for same 24-hour cycle'}`);
+    console.log(`📅 Checking database for daily feed date ${todayDate} (calendar date)`);
+    console.log(`🔄 Smart caching: ${forceRefresh ? 'Force refresh requested' : 'Using database cache for same calendar date'}`);
     
     // Check if we have existing shared daily feed in database (unless force refresh is requested)
     let existingFeed = null;
     if (!forceRefresh) {
       // First check for shared feed (cost-effective approach)
-      existingFeed = await DailyFeed.findOne({ date: cycleKey, isShared: true });
+      existingFeed = await DailyFeed.findOne({ date: todayDate, isShared: true });
       if (existingFeed) {
-        console.log(`📦 Found shared daily feed for cycle ${cycleNumber}`);
+        console.log(`📦 Found shared daily feed for date ${todayDate}`);
       } else {
         // Fallback to user-specific feed for backward compatibility
-        existingFeed = await DailyFeed.findOne({ userId, date: cycleKey });
+        existingFeed = await DailyFeed.findOne({ userId, date: todayDate });
         if (existingFeed) {
-          console.log(`📦 Found user-specific daily feed for user ${userId} in cycle ${cycleNumber}`);
+          console.log(`📦 Found user-specific daily feed for user ${userId} on date ${todayDate}`);
         }
       }
     } else {
-      console.log(`🔄 Force refresh: Deleting existing shared daily feed for cycle ${cycleNumber}`);
+      console.log(`🔄 Force refresh: Deleting existing shared daily feed for date ${todayDate}`);
       // Delete existing shared feed to force regeneration
-      const deleteResult = await DailyFeed.deleteOne({ date: cycleKey, isShared: true });
+      const deleteResult = await DailyFeed.deleteOne({ date: todayDate, isShared: true });
       console.log(`🔄 Force refresh: Delete result:`, {
         deletedCount: deleteResult.deletedCount,
         acknowledged: deleteResult.acknowledged
@@ -96,7 +94,7 @@ exports.getDailyFeed = async (req, res, next) => {
     }
     
     if (existingFeed) {
-      console.log(`📦 Returning daily feed from database for user ${userId} in cycle ${cycleNumber}`);
+      console.log(`📦 Returning daily feed from database for user ${userId} on date ${todayDate}`);
       console.log(`📊 Cached 100% AI-powered feed data structure:`, {
         hasParkOfDay: !!existingFeed.parkOfDay,
         parkName: existingFeed.parkOfDay?.name,
@@ -128,11 +126,11 @@ exports.getDailyFeed = async (req, res, next) => {
       });
     }
     
-    console.log(`🔄 No existing daily feed found, generating new shared feed for all users in cycle ${cycleNumber}`);
+    console.log(`🔄 No existing daily feed found, generating new shared feed for all users on date ${todayDate}`);
 
     // Get random park for shared daily feed (cost-effective approach)
     const [parkOfDay] = await Promise.allSettled([
-      getRandomParkOfDay()
+      getRandomParkOfDay(todayDate)
     ]);
 
     // Get park-specific weather and astro data
@@ -221,10 +219,48 @@ exports.getDailyFeed = async (req, res, next) => {
       getStargazingGuide(astroData.value, selectedPark.name, weatherData.value)
     ]);
 
+    // Get recent parks for memory tracking
+    const targetDate = new Date(todayDate);
+    const sevenDaysAgo = new Date(targetDate);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    
+    // Get recent parks from the last 7 days
+    const recentFeeds = await DailyFeed.find({
+      isShared: true,
+      date: { $gte: sevenDaysAgoStr, $lte: todayDate }
+    }).sort({ createdAt: -1 }).limit(7); // Limit to last 7 days
+    
+    // Build recent parks array
+    const recentParks = [];
+    recentFeeds.forEach(feed => {
+      if (feed.parkOfDay?.parkCode) {
+        recentParks.push({
+          parkCode: feed.parkOfDay.parkCode,
+          name: feed.parkOfDay.name,
+          date: feed.date,
+          selectedAt: feed.createdAt || new Date()
+        });
+      }
+    });
+    
+    // Add current park to recent parks
+    recentParks.unshift({
+      parkCode: selectedPark.parkCode,
+      name: selectedPark.name,
+      date: todayDate,
+      selectedAt: new Date()
+    });
+    
+    // Keep only last 7 parks
+    const recentParksTrimmed = recentParks.slice(0, 7);
+
     const dailyFeed = {
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString(), // Add timestamp to ensure uniqueness
       parkOfDay: selectedPark,
+      // Recent parks memory (7-day tracking)
+      recentParks: recentParksTrimmed,
       // 100% AI-Powered Content
       natureFact,
       weatherInsights,
@@ -248,7 +284,14 @@ exports.getDailyFeed = async (req, res, next) => {
       skyDataInsights: dailyFeed.skyDataInsights?.length || 0,
       parkInfoInsights: dailyFeed.parkInfoInsights?.length || 0,
       personalizedRecommendations: dailyFeed.personalizedRecommendations?.length || 0,
-      stargazingGuide: dailyFeed.stargazingGuide?.substring(0, 50) + '...'
+      stargazingGuide: dailyFeed.stargazingGuide?.substring(0, 50) + '...',
+      recentParksCount: dailyFeed.recentParks?.length || 0
+    });
+    
+    console.log(`🧠 Recent Parks Memory (7-day tracking):`, {
+      currentPark: dailyFeed.parkOfDay?.name,
+      recentParks: dailyFeed.recentParks?.map(p => p.name) || [],
+      dates: dailyFeed.recentParks?.map(p => p.date) || []
     });
     
     console.log(`🤖 AI-Powered Content Summary:`, {
@@ -282,12 +325,12 @@ exports.getDailyFeed = async (req, res, next) => {
     });
     
     // Save the shared daily feed data to database
-    console.log(`💾 Saving shared daily feed data to database for all users in cycle ${cycleNumber}`);
+    console.log(`💾 Saving shared daily feed data to database for all users on date ${todayDate}`);
     try {
       // Remove date from dailyFeed to avoid conflict with unique index
       const { date, ...dailyFeedWithoutDate } = dailyFeed;
       await DailyFeed.updateOne(
-        { date: cycleKey, isShared: true },
+        { date: todayDate, isShared: true },
         { 
           $set: { 
             ...dailyFeedWithoutDate, 
@@ -295,7 +338,7 @@ exports.getDailyFeed = async (req, res, next) => {
           }, 
           $setOnInsert: { 
             userId: null, // No specific user for shared feeds
-            date: cycleKey, 
+            date: todayDate, 
             isShared: true,
             createdAt: new Date() 
           } 
@@ -524,9 +567,9 @@ function getWeatherIcon(condition) {
   return '01d'; // Default to clear
 }
 
-async function getRandomParkOfDay() {
+async function getRandomParkOfDay(dateStr) {
   try {
-    console.log('🎲 Getting random park for shared daily feed...');
+    console.log(`🎲 Getting random park for shared daily feed on date ${dateStr}...`);
     
     // Get all parks with timeout
     const allParks = await Promise.race([
@@ -552,10 +595,49 @@ async function getRandomParkOfDay() {
       throw new Error('No National Parks found');
     }
 
-    // Use 24-hour cycle seed for consistent park selection
-    const now = new Date();
-    const hoursSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60)); // Hours since epoch
-    const dateSeed = Math.floor(hoursSinceEpoch / 24); // 24-hour cycles since epoch
+    // Get recent parks from the last 7 days to avoid repetition
+    const targetDate = new Date(dateStr);
+    const sevenDaysAgo = new Date(targetDate);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    
+    console.log(`🕒 Checking for recent parks from ${sevenDaysAgoStr} to ${dateStr}`);
+    
+    // Get all shared feeds from the last 7 days
+    const recentFeeds = await DailyFeed.find({
+      isShared: true,
+      date: { $gte: sevenDaysAgoStr, $lte: dateStr }
+    }).sort({ createdAt: -1 });
+    
+    // Extract recent park codes
+    const recentParkCodes = new Set();
+    recentFeeds.forEach(feed => {
+      if (feed.parkOfDay?.parkCode) {
+        recentParkCodes.add(feed.parkOfDay.parkCode);
+      }
+      // Also check recentParks array
+      if (feed.recentParks && Array.isArray(feed.recentParks)) {
+        feed.recentParks.forEach(park => {
+          recentParkCodes.add(park.parkCode);
+        });
+      }
+    });
+    
+    console.log(`🚫 Found ${recentParkCodes.size} recent parks to exclude:`, Array.from(recentParkCodes));
+    
+    // Filter out recent parks
+    const availableParks = nationalParks.filter(park => !recentParkCodes.has(park.parkCode));
+    
+    console.log(`✅ Available parks after filtering: ${availableParks.length} out of ${nationalParks.length}`);
+    
+    // If we've used all parks in the last 7 days, reset and use all parks
+    if (availableParks.length === 0) {
+      console.log('🔄 All parks used in last 7 days, resetting memory and using all parks');
+      availableParks.push(...nationalParks);
+    }
+    
+    // Use date-based seed for consistent park selection
+    const dateSeed = dateStr.replace(/-/g, ''); // Convert YYYY-MM-DD to YYYYMMDD
     
     // Mulberry32 PRNG for consistent daily selection
     function seededRandom(seed) {
@@ -565,8 +647,8 @@ async function getRandomParkOfDay() {
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     }
 
-    const randomIndex = Math.floor(seededRandom(dateSeed) * nationalParks.length);
-    const selectedPark = nationalParks[randomIndex];
+    const randomIndex = Math.floor(seededRandom(dateSeed) * availableParks.length);
+    const selectedPark = availableParks[randomIndex];
 
     console.log(`🎯 Selected Random Park for Shared Daily Feed:`, {
       parkCode: selectedPark.parkCode,
@@ -575,8 +657,12 @@ async function getRandomParkOfDay() {
       hasImages: !!selectedPark.images && selectedPark.images.length > 0,
       imageUrl: selectedPark.images?.[0]?.url,
       description: selectedPark.description?.substring(0, 100) + '...',
-      randomSeed: dateSeed,
-      totalParks: nationalParks.length
+      dateSeed: dateSeed,
+      targetDate: dateStr,
+      totalParks: nationalParks.length,
+      availableParks: availableParks.length,
+      excludedParks: recentParkCodes.size,
+      isFromFiltered: availableParks.length < nationalParks.length
     });
 
     return {
@@ -1454,6 +1540,21 @@ function getMonthName(month) {
   return months[month];
 }
 
+// Helper function to get timezone abbreviation
+function getTimezoneAbbreviation(longitude) {
+  if (longitude >= -66) {
+    return 'EST'; // Eastern
+  } else if (longitude >= -87) {
+    return 'CST'; // Central
+  } else if (longitude >= -102) {
+    return 'MST'; // Mountain
+  } else if (longitude >= -125) {
+    return 'PST'; // Pacific
+  } else {
+    return 'AKST'; // Alaska
+  }
+}
+
 // Raw API data functions for reference/debugging
 async function getRawAstroData(location) {
   try {
@@ -1490,7 +1591,8 @@ async function getRawAstroData(location) {
           nauticalTwilightBegin: response.data.results.nautical_twilight_begin,
           nauticalTwilightEnd: response.data.results.nautical_twilight_end,
           astronomicalTwilightBegin: response.data.results.astronomical_twilight_begin,
-          astronomicalTwilightEnd: response.data.results.astronomical_twilight_end
+          astronomicalTwilightEnd: response.data.results.astronomical_twilight_end,
+          timezone: getTimezoneAbbreviation(location.longitude)
         }
       };
     } else {
@@ -1637,7 +1739,8 @@ async function getAISkyDataInsights(park, astroData, weatherData) {
     4. **Photography Opportunities**: Best times and techniques for astrophotography today
     
     Each insight should start with a bold label followed by a colon, then 2-3 sentences of specific advice.
-    Format as a JSON array of strings with bold labels like "**Stargazing Conditions:**" or "**Moon Impact:**".`;
+    
+    IMPORTANT: Return ONLY a valid JSON array of strings. Each string should contain the full insight with bold markdown formatting. Do not include any other text or formatting outside the JSON array.`;
 
     const response = await openaiService.chat([
       { role: 'user', content: prompt }

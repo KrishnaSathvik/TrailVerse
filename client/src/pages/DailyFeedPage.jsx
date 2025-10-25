@@ -76,9 +76,25 @@ const Bullet = ({ icon: Icon = Sparkles, children }) => (
 );
 
 const SunRow = ({ sun, fallbacks, timezone }) => {
-  const sunrise = sun?.sunriseLocal || fallbacks?.sunrise || '—';
-  const sunset  = sun?.sunsetLocal  || fallbacks?.sunset  || '—';
-  const tz      = sun?.tz || timezone || 'Local Time';
+  // Convert UTC times to local time format
+  const formatTime = (utcTime) => {
+    if (!utcTime || utcTime === '—') return '—';
+    try {
+      const date = new Date(utcTime);
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      });
+    } catch (e) {
+      return '—';
+    }
+  };
+  
+  const sunrise = formatTime(sun?.sunriseLocal || fallbacks?.sunrise);
+  const sunset = formatTime(sun?.sunsetLocal || fallbacks?.sunset);
+  const tz = sun?.tz || timezone || 'Local Time';
+  
   return (
     <div className="flex flex-wrap gap-2">
       <Chip icon={Sun} title="Sunrise">{sunrise}</Chip>
@@ -119,13 +135,28 @@ const DailyFeedPage = () => {
   });
 
   const park = dailyFeed?.parkOfDay;
-  const sun = dailyFeed?.sun; // { sunriseLocal, sunsetLocal, tz, label }
-  const weather = dailyFeed?.rawWeatherData?.current || dailyFeed?.weatherData?.current;
+  const weather = dailyFeed?.rawWeatherData?.processedData?.current || dailyFeed?.rawWeatherData?.rawResponse?.current;
+  
+  // Extract sun data from rawAstroData
+  const sun = {
+    sunriseLocal: dailyFeed?.rawAstroData?.processedData?.sunrise || dailyFeed?.rawAstroData?.rawResponse?.results?.sunrise,
+    sunsetLocal: dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset,
+    tz: dailyFeed?.rawAstroData?.timezone || 'Local Time'
+  };
 
   const quickStats = dailyFeed?.quickStatsInsights || [];
   const skyInsights = dailyFeed?.skyDataInsights || [];
   const parkInfo = dailyFeed?.parkInfoInsights || [];
   const recs = dailyFeed?.personalizedRecommendations || [];
+  
+  // Clean up malformed sky insights
+  const cleanSkyInsights = skyInsights.filter(insight => 
+    insight && 
+    typeof insight === 'string' && 
+    !insight.startsWith('[') && 
+    !insight.startsWith('"') && 
+    insight.length > 10
+  );
   const natureFact = dailyFeed?.natureFact;
   const weatherInsights = dailyFeed?.weatherInsights;
 
@@ -266,8 +297,15 @@ const DailyFeedPage = () => {
               </div>
 
               <div className="mb-4">
-                <SunRow sun={sun} fallbacks={{ sunrise: dailyFeed?.rawAstroData?.sunrise, sunset: dailyFeed?.rawAstroData?.sunset }} timezone={dailyFeed?.rawAstroData?.timezone} />
-                <DarknessHint sunset={sun?.sunsetLocal || dailyFeed?.rawAstroData?.sunset} />
+                <SunRow 
+                  sun={sun} 
+                  fallbacks={{ 
+                    sunrise: dailyFeed?.rawAstroData?.processedData?.sunrise || dailyFeed?.rawAstroData?.rawResponse?.results?.sunrise, 
+                    sunset: dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset 
+                  }} 
+                  timezone={dailyFeed?.rawAstroData?.timezone} 
+                />
+                <DarknessHint sunset={sun?.sunsetLocal || dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset} />
               </div>
 
               {!!statChips.length && (
@@ -321,9 +359,9 @@ const DailyFeedPage = () => {
 
           <Card className="p-6">
             <SectionHeader icon={Star} title="Sky Analysis" subtitle="Tonight's visibility & highlights" accent="var(--accent-blue)" />
-            {skyInsights.length ? (
+            {cleanSkyInsights.length ? (
               <div className="space-y-3">
-                {skyInsights.map((line, i) => <Bullet key={i} icon={Star}>{line.replace(/^\d+\.\s*/, '')}</Bullet>)}
+                {cleanSkyInsights.map((line, i) => <Bullet key={i} icon={Star}>{line.replace(/^\d+\.\s*/, '')}</Bullet>)}
               </div>
             ) : (
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Sky insights are not available.</p>
