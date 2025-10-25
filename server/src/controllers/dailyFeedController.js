@@ -273,9 +273,11 @@ exports.getDailyFeed = async (req, res, next) => {
     // Save the daily feed data to database
     console.log(`💾 Saving daily feed data to database for user ${userId} on ${todayISO}`);
     try {
+      // Remove date from dailyFeed to avoid conflict with unique index
+      const { date, ...dailyFeedWithoutDate } = dailyFeed;
       await DailyFeed.updateOne(
         { userId, date: todayISO },
-        { $set: { ...dailyFeed, updatedAt: new Date() }, $setOnInsert: { userId, date: todayISO, createdAt: new Date() } },
+        { $set: { ...dailyFeedWithoutDate, updatedAt: new Date() }, $setOnInsert: { userId, date: todayISO, createdAt: new Date() } },
         { upsert: true }
       );
       console.log(`✅ Daily feed saved to database successfully`);
