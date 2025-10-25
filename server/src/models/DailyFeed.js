@@ -83,6 +83,20 @@ const dailyFeedSchema = new mongoose.Schema({
     sunRightAscension: Number
   },
   personalizedRecommendations: [String],
+  // NEW AI-Powered Fields
+  quickStatsInsights: [String],
+  skyDataInsights: [String],
+  parkInfoInsights: [String],
+  stargazingGuide: String,
+  // Raw API data (for reference)
+  rawWeatherData: {
+    type: mongoose.Schema.Types.Mixed,
+    required: false
+  },
+  rawAstroData: {
+    type: mongoose.Schema.Types.Mixed,
+    required: false
+  },
   // Metadata
   generatedAt: {
     type: Date,
@@ -132,15 +146,19 @@ dailyFeedSchema.statics.findOrCreateDailyFeed = async function(userId, date) {
 // Static method to save daily feed
 dailyFeedSchema.statics.saveDailyFeed = async function(userId, date, feedData) {
   try {
-    console.log(`💾 Saving daily feed data:`, {
+    console.log(`💾 Saving 100% AI-powered daily feed data:`, {
       userId,
       date,
       hasParkOfDay: !!feedData.parkOfDay,
-      hasWeatherData: !!feedData.weatherData,
-      hasAstroData: !!feedData.astroData,
-      hasWeatherInsights: !!feedData.weatherInsights,
       hasNatureFact: !!feedData.natureFact,
-      hasPersonalizedRecommendations: !!feedData.personalizedRecommendations
+      hasWeatherInsights: !!feedData.weatherInsights,
+      hasQuickStatsInsights: !!feedData.quickStatsInsights,
+      hasSkyDataInsights: !!feedData.skyDataInsights,
+      hasParkInfoInsights: !!feedData.parkInfoInsights,
+      hasPersonalizedRecommendations: !!feedData.personalizedRecommendations,
+      hasStargazingGuide: !!feedData.stargazingGuide,
+      hasRawWeatherData: !!feedData.rawWeatherData,
+      hasRawAstroData: !!feedData.rawAstroData
     });
     
     console.log(`💾 Feed data structure:`, {
@@ -157,13 +175,17 @@ dailyFeedSchema.statics.saveDailyFeed = async function(userId, date, feedData) {
     
     const savedFeed = await dailyFeed.save();
     console.log(`💾 Saved daily feed to DB for user ${userId} on ${date}`);
-    console.log(`💾 Saved feed structure:`, {
+    console.log(`💾 Saved 100% AI-powered feed structure:`, {
       hasParkOfDay: !!savedFeed.parkOfDay,
-      hasWeatherData: !!savedFeed.weatherData,
-      hasAstroData: !!savedFeed.astroData,
-      hasWeatherInsights: !!savedFeed.weatherInsights,
       hasNatureFact: !!savedFeed.natureFact,
-      hasPersonalizedRecommendations: !!savedFeed.personalizedRecommendations
+      hasWeatherInsights: !!savedFeed.weatherInsights,
+      hasQuickStatsInsights: !!savedFeed.quickStatsInsights,
+      hasSkyDataInsights: !!savedFeed.skyDataInsights,
+      hasParkInfoInsights: !!savedFeed.parkInfoInsights,
+      hasPersonalizedRecommendations: !!savedFeed.personalizedRecommendations,
+      hasStargazingGuide: !!savedFeed.stargazingGuide,
+      hasRawWeatherData: !!savedFeed.rawWeatherData,
+      hasRawAstroData: !!savedFeed.rawAstroData
     });
     return savedFeed;
   } catch (error) {

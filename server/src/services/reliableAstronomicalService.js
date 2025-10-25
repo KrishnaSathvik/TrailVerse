@@ -18,7 +18,7 @@ class ReliableAstronomicalService {
    * @param {number} elevation - Elevation in meters
    * @returns {Object} Astronomical data
    */
-  async getAstronomicalData(latitude, longitude, date, elevation = 0) {
+  async getAstronomicalData(latitude, longitude, date = new Date(), elevation = 0) {
     try {
       console.log(`🌙 ReliableAstro: Getting data for lat=${latitude}, lng=${longitude}, date=${date.toISOString().split('T')[0]}`);
       
@@ -45,7 +45,8 @@ class ReliableAstronomicalService {
         isPolarDay: sunData.isPolarDay,
         isPolarNight: sunData.isPolarNight,
         sunDeclination: sunData.declination,
-        sunRightAscension: sunData.rightAscension
+        sunRightAscension: sunData.rightAscension,
+        timezone: this.getTimezoneAbbreviation(longitude)
       };
       
     } catch (error) {
@@ -83,9 +84,9 @@ class ReliableAstronomicalService {
         const sunriseUTC = new Date(results.sunrise);
         const sunsetUTC = new Date(results.sunset);
         
-        // Convert to local time (simplified - just use the API times)
-        const sunrise = this.formatTime(sunriseUTC);
-        const sunset = this.formatTime(sunsetUTC);
+        // Convert to park's local timezone (not server timezone)
+        const sunrise = this.formatTimeInTimezone(sunriseUTC, latitude, longitude);
+        const sunset = this.formatTimeInTimezone(sunsetUTC, latitude, longitude);
         
         // Calculate day length
         const dayLength = (sunsetUTC - sunriseUTC) / (1000 * 60 * 60); // hours
@@ -245,6 +246,65 @@ class ReliableAstronomicalService {
       minute: '2-digit',
       hour12: true
     });
+  }
+
+  /**
+   * Format time in the correct timezone for the location
+   * @param {Date} date - Date object (UTC)
+   * @param {number} latitude - Latitude
+   * @param {number} longitude - Longitude
+   * @returns {string} Formatted time in local timezone
+   */
+  formatTimeInTimezone(date, latitude, longitude) {
+    // Determine US timezone based on longitude
+    const timezone = this.getUSTimezone(longitude);
+    
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: timezone
+    });
+  }
+
+  /**
+   * Get US timezone based on longitude
+   * @param {number} longitude - Longitude in degrees
+   * @returns {string} US timezone identifier
+   */
+  getUSTimezone(longitude) {
+    // US timezone boundaries (approximate)
+    if (longitude >= -67) {
+      return 'America/New_York'; // Eastern
+    } else if (longitude >= -87) {
+      return 'America/Chicago'; // Central
+    } else if (longitude >= -102) {
+      return 'America/Denver'; // Mountain
+    } else if (longitude >= -125) {
+      return 'America/Los_Angeles'; // Pacific
+    } else {
+      return 'America/Anchorage'; // Alaska
+    }
+  }
+
+  /**
+   * Get timezone abbreviation based on longitude
+   * @param {number} longitude - Longitude in degrees
+   * @returns {string} Timezone abbreviation
+   */
+  getTimezoneAbbreviation(longitude) {
+    // US timezone boundaries (approximate)
+    if (longitude >= -67) {
+      return 'EST'; // Eastern
+    } else if (longitude >= -87) {
+      return 'CST'; // Central
+    } else if (longitude >= -102) {
+      return 'MST'; // Mountain
+    } else if (longitude >= -125) {
+      return 'PST'; // Pacific
+    } else {
+      return 'AKST'; // Alaska
+    }
   }
 
   /**

@@ -382,14 +382,28 @@ router.get('/nearby', async (req, res) => {
  *     parameters:
  *       - in: query
  *         name: ref
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
+ *         description: Photo reference (alternative to photo_reference)
+ *       - in: query
+ *         name: photo_reference
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Photo reference (alternative to ref)
  *       - in: query
  *         name: w
  *         schema:
  *           type: number
  *           default: 800
+ *         description: Width in pixels (alternative to maxwidth)
+ *       - in: query
+ *         name: maxwidth
+ *         schema:
+ *           type: number
+ *           default: 800
+ *         description: Maximum width in pixels (alternative to w)
  *     responses:
  *       200:
  *         description: Photo retrieved successfully
@@ -400,13 +414,17 @@ router.get('/nearby', async (req, res) => {
  */
 router.get('/photo', async (req, res) => {
   try {
-    const { ref, w = 800 } = req.query;
+    const { ref, photo_reference, w = 800, maxwidth } = req.query;
     
-    if (!ref) {
+    // Support both 'ref' and 'photo_reference' parameters for backward compatibility
+    const photoRef = ref || photo_reference;
+    const width = w || maxwidth || 800;
+    
+    if (!photoRef) {
       return res.status(400).send('Missing photo reference');
     }
 
-    const k = `photo:${ref}:${w}`;
+    const k = `photo:${photoRef}:${width}`;
     const hit = cache.get(k);
     
     if (hit) {
@@ -414,7 +432,7 @@ router.get('/photo', async (req, res) => {
       return res.type('image/jpeg').send(hit);
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/photo?photoreference=${encodeURIComponent(ref)}&maxwidth=${w}&key=${KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/place/photo?photoreference=${encodeURIComponent(photoRef)}&maxwidth=${width}&key=${KEY}`;
     const response = await fetch(url, { redirect: 'follow' });
     const buffer = Buffer.from(await response.arrayBuffer());
 
