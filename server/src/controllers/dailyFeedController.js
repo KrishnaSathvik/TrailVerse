@@ -64,20 +64,31 @@ exports.getDailyFeed = async (req, res, next) => {
     const userLocation = { latitude: 40.7128, longitude: -74.0060 }; // Default to NYC
 
     const now = new Date();
-    const todayISO = now.toISOString().slice(0, 10); // cache key
-    const today = todayISO; // use ISO everywhere in keys/logs // Format: 2025-10-22
+    const hoursSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60)); // Hours since epoch
+    const cycleNumber = Math.floor(hoursSinceEpoch / 24); // 24-hour cycle number
+    const cycleKey = `cycle-${cycleNumber}`; // cache key for 24-hour cycles
     const forceRefresh = req.query.forceRefresh === 'true' || req.query.refresh === 'true'; // Get from query params
-    console.log(`📅 Checking database for daily feed on ${today} (ISO: ${todayISO})`);
-    console.log(`🔄 Smart caching: ${forceRefresh ? 'Force refresh requested' : 'Using database cache for same day'}`);
+    console.log(`📅 Checking database for daily feed cycle ${cycleNumber} (24-hour cycle)`);
+    console.log(`🔄 Smart caching: ${forceRefresh ? 'Force refresh requested' : 'Using database cache for same 24-hour cycle'}`);
     
-    // Check if we have existing daily feed in database (unless force refresh is requested)
+    // Check if we have existing shared daily feed in database (unless force refresh is requested)
     let existingFeed = null;
     if (!forceRefresh) {
-      existingFeed = await DailyFeed.findOne({ userId, date: todayISO });
+      // First check for shared feed (cost-effective approach)
+      existingFeed = await DailyFeed.findOne({ date: cycleKey, isShared: true });
+      if (existingFeed) {
+        console.log(`📦 Found shared daily feed for cycle ${cycleNumber}`);
+      } else {
+        // Fallback to user-specific feed for backward compatibility
+        existingFeed = await DailyFeed.findOne({ userId, date: cycleKey });
+        if (existingFeed) {
+          console.log(`📦 Found user-specific daily feed for user ${userId} in cycle ${cycleNumber}`);
+        }
+      }
     } else {
-      console.log(`🔄 Force refresh: Deleting existing daily feed for user ${userId} on ${todayISO}`);
-      // Delete existing feed to force regeneration
-      const deleteResult = await DailyFeed.deleteOne({ userId, date: todayISO });
+      console.log(`🔄 Force refresh: Deleting existing shared daily feed for cycle ${cycleNumber}`);
+      // Delete existing shared feed to force regeneration
+      const deleteResult = await DailyFeed.deleteOne({ date: cycleKey, isShared: true });
       console.log(`🔄 Force refresh: Delete result:`, {
         deletedCount: deleteResult.deletedCount,
         acknowledged: deleteResult.acknowledged
@@ -117,11 +128,11 @@ exports.getDailyFeed = async (req, res, next) => {
       });
     }
     
-    console.log(`🔄 No existing daily feed found, generating new one for user ${userId} on ${today}`);
+    console.log(`🔄 No existing daily feed found, generating new shared feed for all users in cycle ${cycleNumber}`);
 
-    // Get personalized daily feed data with better error handling
+    // Get random park for shared daily feed (cost-effective approach)
     const [parkOfDay] = await Promise.allSettled([
-      getPersonalizedParkOfDay(user)
+      getRandomParkOfDay()
     ]);
 
     // Get park-specific weather and astro data
@@ -270,19 +281,30 @@ exports.getDailyFeed = async (req, res, next) => {
       natureFact: dailyFeed.natureFact
     });
     
-    // Save the daily feed data to database
-    console.log(`💾 Saving daily feed data to database for user ${userId} on ${todayISO}`);
+    // Save the shared daily feed data to database
+    console.log(`💾 Saving shared daily feed data to database for all users in cycle ${cycleNumber}`);
     try {
       // Remove date from dailyFeed to avoid conflict with unique index
       const { date, ...dailyFeedWithoutDate } = dailyFeed;
       await DailyFeed.updateOne(
-        { userId, date: todayISO },
-        { $set: { ...dailyFeedWithoutDate, updatedAt: new Date() }, $setOnInsert: { userId, date: todayISO, createdAt: new Date() } },
+        { date: cycleKey, isShared: true },
+        { 
+          $set: { 
+            ...dailyFeedWithoutDate, 
+            updatedAt: new Date() 
+          }, 
+          $setOnInsert: { 
+            userId: null, // No specific user for shared feeds
+            date: cycleKey, 
+            isShared: true,
+            createdAt: new Date() 
+          } 
+        },
         { upsert: true }
       );
-      console.log(`✅ Daily feed saved to database successfully`);
+      console.log(`✅ Shared daily feed saved to database successfully`);
     } catch (saveError) {
-      console.error('❌ Error saving daily feed to database:', saveError);
+      console.error('❌ Error saving shared daily feed to database:', saveError);
       // Continue with response even if save fails
     }
     
@@ -500,6 +522,86 @@ function getWeatherIcon(condition) {
   if (cond.includes('snow')) return '13d';
   if (cond.includes('mist') || cond.includes('fog')) return '50d';
   return '01d'; // Default to clear
+}
+
+async function getRandomParkOfDay() {
+  try {
+    console.log('🎲 Getting random park for shared daily feed...');
+    
+    // Get all parks with timeout
+    const allParks = await Promise.race([
+      npsService.getAllParks(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('NPS API timeout')), 10000))
+    ]);
+
+    if (!allParks || allParks.length === 0) {
+      throw new Error('No parks available from NPS API');
+    }
+
+    // Filter for National Parks only
+    const nationalParks = allParks.filter(park => 
+      park.designation === 'National Park' || 
+      park.designation === 'National Park & Preserve' ||
+      park.designation === 'National Parks'
+    );
+
+    console.log(`📊 Fetched ${allParks.length} total parks from NPS API`);
+    console.log(`🏞️ Found ${nationalParks.length} National Parks (including variations) out of ${allParks.length} total parks`);
+
+    if (nationalParks.length === 0) {
+      throw new Error('No National Parks found');
+    }
+
+    // Use 24-hour cycle seed for consistent park selection
+    const now = new Date();
+    const hoursSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60)); // Hours since epoch
+    const dateSeed = Math.floor(hoursSinceEpoch / 24); // 24-hour cycles since epoch
+    
+    // Mulberry32 PRNG for consistent daily selection
+    function seededRandom(seed) {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+
+    const randomIndex = Math.floor(seededRandom(dateSeed) * nationalParks.length);
+    const selectedPark = nationalParks[randomIndex];
+
+    console.log(`🎯 Selected Random Park for Shared Daily Feed:`, {
+      parkCode: selectedPark.parkCode,
+      name: selectedPark.fullName,
+      designation: selectedPark.designation,
+      hasImages: !!selectedPark.images && selectedPark.images.length > 0,
+      imageUrl: selectedPark.images?.[0]?.url,
+      description: selectedPark.description?.substring(0, 100) + '...',
+      randomSeed: dateSeed,
+      totalParks: nationalParks.length
+    });
+
+    return {
+      parkCode: selectedPark.parkCode,
+      name: selectedPark.fullName,
+      designation: selectedPark.designation,
+      description: selectedPark.description || 'A beautiful national park waiting to be explored.',
+      image: selectedPark.images?.[0]?.url || '/background1.png',
+      latitude: selectedPark.latitude,
+      longitude: selectedPark.longitude
+    };
+
+  } catch (error) {
+    console.error('❌ Error getting random park:', error.message);
+    // Return fallback park
+    return {
+      parkCode: 'yose',
+      name: 'Yosemite National Park',
+      designation: 'National Park',
+      description: 'Yosemite National Park is known for its granite cliffs, waterfalls, clear streams, and giant sequoia groves.',
+      image: '/background1.png',
+      latitude: '37.8651',
+      longitude: '-119.5383'
+    };
+  }
 }
 
 async function getPersonalizedParkOfDay(user) {

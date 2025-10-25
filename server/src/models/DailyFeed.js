@@ -12,6 +12,11 @@ const dailyFeedSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  isShared: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   parkOfDay: {
     parkCode: {
       type: String,
@@ -105,11 +110,10 @@ const dailyFeedSchema = new mongoose.Schema({
   expiresAt: {
     type: Date,
     default: function() {
-      // Expire at midnight next day
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      return tomorrow;
+      // Expire after 24 hours from creation
+      const expiration = new Date();
+      expiration.setTime(expiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours from now
+      return expiration;
     },
     index: { expireAfterSeconds: 0 } // TTL index - documents expire at expiresAt time
   }
@@ -119,6 +123,8 @@ const dailyFeedSchema = new mongoose.Schema({
 
 // Compound index for efficient queries
 dailyFeedSchema.index({ userId: 1, date: 1 }, { unique: true });
+// Unique index for shared daily feeds (one per day)
+dailyFeedSchema.index({ date: 1, isShared: 1 }, { unique: true, partialFilterExpression: { isShared: true } });
 
 // Static method to find or create daily feed
 dailyFeedSchema.statics.findOrCreateDailyFeed = async function(userId, date) {
