@@ -9,7 +9,7 @@ import {
   Sparkles, Compass, MapPin, Calendar, Heart, BookOpen, Route,
   Star, Shield, Users, MessageCircle, MessageSquare, ArchiveRestore,
   CheckCircle, Bot, Mountain, Globe, Zap, Cloud, Sun, Moon, 
-  Sunrise, Sunset, Thermometer, Eye, Cookie
+  Sunrise, Sunset, Thermometer, Eye, Cookie, ExternalLink
 } from '@components/icons';
 
 const FeaturesPage = () => {
@@ -251,11 +251,11 @@ const FeaturesPage = () => {
               <span className="text-sm font-medium">New Feature</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Your Daily Nature Companion
+              Your Daily Nature Feed
             </h2>
             <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
               Start each day with a personalized National Park recommendation, complete with weather insights, 
-              astronomy data, and AI-powered recommendations tailored just for you.
+              astronomy data, and actionable recommendations tailored just for you.
             </p>
           </div>
 
@@ -269,10 +269,10 @@ const FeaturesPage = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    AI-Powered Park Selection
+                    Personalized Park Selection
                   </h3>
                   <p style={{ color: 'var(--text-secondary)' }}>
-                    Our AI analyzes your location, preferences, and current conditions to recommend the perfect park for today.
+                    Smart selection based on real-time conditions, weather patterns, and optimal viewing opportunities to recommend the perfect park for today.
                   </p>
                 </div>
               </div>
@@ -308,56 +308,141 @@ const FeaturesPage = () => {
                   </p>
                 </div>
               </div>
+
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent-green)/10' }}
+                >
+                  <Star className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Rich Weather Analysis
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    Detailed weather insights including temperature, humidity, wind speed, visibility, and actionable recommendations for today's conditions.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent-green)/10' }}
+                >
+                  <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Park Insights & Recommendations
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    Quick stats, park highlights, sky analysis, and personalized recommendations to help you make the most of your visit.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
+                  style={{ backgroundColor: 'var(--accent-green)/10' }}
+                >
+                  <BookOpen className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Daily Nature Facts
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)' }}>
+                    Learn something new every day with fascinating park-specific nature facts and insights about wildlife, geology, and ecosystems.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="relative">
-              <div className="rounded-2xl p-6 backdrop-blur"
+            <div className="relative lg:sticky lg:top-8">
+              <div className="rounded-2xl p-6 sm:p-8 shadow-lg backdrop-blur"
                 style={{
-                  backgroundColor: 'var(--bg-primary)',
+                  backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)'
                 }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <div className="text-sm font-medium ml-2" style={{ color: 'var(--text-secondary)' }}>
-                    Today in Nature
+                {/* Hero Badge */}
+                <div className="flex items-center justify-between mb-6">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                    style={{ 
+                      backgroundColor: 'var(--accent-green)/10',
+                      color: 'var(--accent-green)'
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    PERSONALIZED
+                  </span>
+                </div>
+
+                {/* Park Header */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                    <Mountain className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
+                        Olympic National Park
+                      </h3>
+                      <ExternalLink className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      Washington • National Park
+                    </p>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                      <Mountain className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Olympic National Park
-                      </h4>
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        Washington • National Park
+
+                {/* Stats Grid */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                  >
+                    <Thermometer className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>40°F / 4°C</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                  >
+                    <Sunrise className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>6:42 AM</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                  >
+                    <Sunset className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>7:15 PM</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                  >
+                    <Moon className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                    <span style={{ color: 'var(--text-primary)' }}>Waxing Crescent</span>
+                  </div>
+                </div>
+
+                {/* Quick Preview */}
+                <div className="pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <div className="mt-1">
+                        <Sun className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                      </div>
+                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        Perfect conditions for coastal exploration with mild temperatures and clear skies expected throughout the day.
                       </p>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Sunrise className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>6:42 AM</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Sunset className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>7:15 PM</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Thermometer className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>40°F</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Moon className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>Waxing Crescent</span>
+                    <div className="flex items-start gap-2">
+                      <div className="mt-1">
+                        <Star className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                      </div>
+                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        Waxing crescent moon provides excellent stargazing opportunities after sunset.
+                      </p>
                     </div>
                   </div>
                 </div>

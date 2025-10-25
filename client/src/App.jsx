@@ -14,6 +14,7 @@ import ScrollToTop from './components/common/ScrollToTop';
 import CookieConsent from './components/common/CookieConsent';
 import PrivateRoute from './routes/PrivateRoute';
 import AdminRoute from './routes/AdminRoute';
+import HomeRedirect from './routes/HomeRedirect';
 import { initGA, trackPageView } from './utils/analytics';
 import { setQueryClient } from './utils/cacheUtils';
 import localStorageMonitor from './utils/localStorageMonitor';
@@ -139,7 +140,7 @@ function App() {
                 <SpeedInsights />
                 <Suspense fallback={<LoadingScreen />}>
                   <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<HomeRedirect />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

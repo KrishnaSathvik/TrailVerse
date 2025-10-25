@@ -290,7 +290,7 @@ const DailyFeedPage = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO
-        title={`Daily Feed — ${park?.name || 'Park'}`}
+        title={`Home — ${park?.name || 'Park'}`}
         description="Personalized AI park insights, weather, astronomy, and recommendations"
         keywords="national parks, AI, weather, astronomy, stargazing"
       />
