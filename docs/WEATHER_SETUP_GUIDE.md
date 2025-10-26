@@ -26,7 +26,7 @@ The weather functionality is now fully implemented and ready to use real OpenWea
 Your `.env.development` file should now look like this:
 ```bash
 REACT_APP_API_URL=http://localhost:5001/api
-REACT_APP_NPS_API_KEY=52epwe1dn0aHbpEtaS4NdFUtDbakkKGTBBASVNmi
+REACT_APP_NPS_API_KEY=your-nps-api-key-here
 REACT_APP_GA_TRACKING_ID=G-XXXXXXXXXX
 REACT_APP_NAME=TrailVerse
 REACT_APP_URL=http://localhost:3000
