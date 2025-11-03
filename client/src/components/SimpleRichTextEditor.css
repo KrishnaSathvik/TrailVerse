@@ -2,8 +2,15 @@
 .simple-rich-text-editor {
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   background-color: var(--surface);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 700px;
+  height: auto;
+  width: 100%;
+  max-height: none;
 }
 
 /* Toolbar */
@@ -16,8 +23,46 @@
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
   pointer-events: auto;
-  position: relative;
   z-index: 10;
+}
+
+/* Sticky toolbar - stays visible within editor container when scrolling */
+.simple-rich-text-editor .sticky-toolbar {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--surface-hover);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+  margin-top: 0;
+  width: 100%;
+  flex-shrink: 0;
+  align-self: flex-start;
+  border-radius: 12px 12px 0 0;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Active sticky state - when toolbar is fixed at top */
+.simple-rich-text-editor .sticky-toolbar.toolbar-sticky-active {
+  position: fixed !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  background-color: var(--surface-hover) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border-bottom: 1px solid var(--border) !important;
+  /* Width, left, and maxWidth are set by JavaScript */
+  border-radius: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .toolbar-group {
@@ -66,16 +111,21 @@
 
 /* Editor Content */
 .editor-content {
-  min-height: 400px;
-  padding: 16px;
+  min-height: 600px;
+  height: auto;
+  max-height: none;
+  padding: 24px;
   background-color: var(--surface);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.8;
   outline: none;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
+  flex: 1;
+  border-radius: 0 0 12px 12px;
 }
 
 .editor-content:empty:before {
@@ -179,6 +229,129 @@
 
 .editor-content::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
+}
+
+/* Drag & Drop Overlay */
+.editor-content.dragging {
+  position: relative;
+}
+
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 2px dashed var(--accent-green);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.drag-overlay-content {
+  text-align: center;
+  color: var(--accent-green);
+}
+
+.drag-overlay-content p {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+/* Upload Overlay */
+.editor-content.uploading {
+  position: relative;
+}
+
+.upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.upload-overlay-content {
+  text-align: center;
+  color: white;
+}
+
+.upload-overlay-content .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-overlay-content p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.toolbar-btn.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Format Select Dropdown */
+.toolbar-select {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 100px;
+  height: 32px;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1000;
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+  appearance: menulist;
+}
+
+.toolbar-select:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--accent-green);
+}
+
+.toolbar-select:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  outline: none;
+}
+
+.toolbar-select:active {
+  border-color: var(--accent-green);
+}
+
+.toolbar-select option {
+  background-color: var(--surface);
+  color: var(--text-primary);
+  padding: 8px;
 }
 
 /* Responsive */

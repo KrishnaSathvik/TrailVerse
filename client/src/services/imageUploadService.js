@@ -18,9 +18,8 @@ class ImageUploadService {
     if (options.isPublic !== undefined) formData.append('isPublic', options.isPublic);
 
     const response = await enhancedApi.post('/images/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
+      // Don't set Content-Type header - let browser set it with boundary for multipart/form-data
+      headers: {},
       invalidateCache: ['userImages']
     });
 

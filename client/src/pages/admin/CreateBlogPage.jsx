@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import blogService from '../../services/blogService';
 import SimpleRichTextEditor from '../../components/SimpleRichTextEditor';
+import TableOfContents from '../../components/blog/TableOfContents';
 import {
   ArrowLeft, Save, Eye, Image, Calendar, Tag,
   Upload, X, Plus, AlignLeft, Type, FileText
@@ -177,9 +178,9 @@ const CreateBlogPage = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', overflow: 'visible' }}>
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 sm:py-20">
+      <section className="relative py-16 sm:py-20">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
         </div>
@@ -283,11 +284,11 @@ const CreateBlogPage = () => {
       </section>
 
       {/* Main Content */}
-      <section className="pb-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="pb-24" style={{ overflow: 'visible' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ overflow: 'visible' }}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6" style={{ overflow: 'visible' }}>
             {/* Title */}
             <div className="rounded-2xl p-6 backdrop-blur"
               style={{
@@ -380,12 +381,31 @@ const CreateBlogPage = () => {
               </p>
             </div>
 
+            {/* Table of Contents Preview */}
+            {formData.content && (
+              <div className="rounded-2xl p-6 backdrop-blur"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <TableOfContents 
+                  content={formData.content}
+                  onContentUpdate={(updatedContent) => {
+                    setFormData(prev => ({ ...prev, content: updatedContent }));
+                  }}
+                />
+              </div>
+            )}
+
             {/* Content */}
             <div className="rounded-2xl p-6 backdrop-blur"
               style={{
                 backgroundColor: 'var(--surface)',
                 borderWidth: '1px',
-                borderColor: 'var(--border)'
+                borderColor: 'var(--border)',
+                overflow: 'visible'
               }}
             >
               <div className="flex items-center gap-2 mb-4"
@@ -398,8 +418,10 @@ const CreateBlogPage = () => {
               </div>
               <SimpleRichTextEditor
                 value={formData.content}
-                onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                placeholder="Write your blog post content here... Use the toolbar above to format your text with bold, italic, lists, links, and more!"
+                onChange={(content) => {
+                  setFormData(prev => ({ ...prev, content }));
+                }}
+                placeholder="Write your blog post content here... Use the toolbar above to format your text with bold, italic, lists, links, and more! Use the dropdown to select headings."
               />
               <p className="mt-2 text-xs"
                 style={{ color: 'var(--text-tertiary)' }}

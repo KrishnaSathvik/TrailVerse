@@ -113,10 +113,10 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
 
       // Try models in order of preference
       const modelsToTry = [
-        'claude-sonnet-4-5-20250929',  // Claude Sonnet 4.5 (latest)
-        'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable)
+        'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
         'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
-        'claude-3-opus-20240229'       // Claude 3 Opus (most capable)
+        'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
+        'claude-3-sonnet-20240229'     // Claude 3 Sonnet (fallback)
       ];
 
       let lastError = null;
@@ -150,15 +150,34 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
 
         } catch (error) {
           lastError = error;
-          console.log(`[Chat] Model ${model} failed: ${error.message}`);
+          console.error(`[Chat] Model ${model} failed:`, {
+            message: error.message,
+            status: error.status,
+            type: error.type,
+            code: error.code
+          });
           
-          // Check if it's a model not found error
-          if (error.message && error.message.includes('model')) {
+          // Check if it's a model not found error or authentication error
+          const isModelError = error.message && (
+            error.message.includes('model') || 
+            error.message.includes('not found') ||
+            error.message.includes('not_found')
+          );
+          
+          const isAuthError = error.status === 401 || error.status === 403;
+          
+          if (isModelError) {
             console.log(`[Chat] Model ${model} not available, trying next...`);
             continue; // Try next model
           }
           
-          // For other errors, throw immediately
+          // For auth errors on first model, try next model (might be API key issue with specific model)
+          if (isAuthError && modelsToTry.indexOf(model) === 0) {
+            console.log(`[Chat] Authentication error with ${model}, trying next model...`);
+            continue;
+          }
+          
+          // For other errors, throw immediately (network errors, rate limits, etc.)
           throw error;
         }
       }
@@ -205,10 +224,20 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
     res.json({ data: response });
 
   } catch (error) {
-    console.error('AI API Error:', error);
+    // Log detailed error information
+    console.error('AI API Error:', {
+      message: error.message,
+      status: error.status,
+      statusCode: error.statusCode,
+      type: error.type,
+      code: error.code,
+      response: error.response?.data,
+      provider: req.body.provider || 'unknown',
+      userId: req.user?.id || 'anonymous'
+    });
     
     // Check if it's a model-related error
-    if (error.message && (error.message.includes('model') || error.message.includes('not found'))) {
+    if (error.message && (error.message.includes('model') || error.message.includes('not found') || error.message.includes('not_found'))) {
       return res.status(400).json({ 
         error: 'Invalid or unavailable model',
         details: error.message,
@@ -217,15 +246,16 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
     }
     
     // Check if it's an authentication error
-    if (error.status === 401 || error.message.includes('authentication')) {
+    if (error.status === 401 || error.statusCode === 401 || error.message.includes('authentication') || error.message.includes('Invalid API key')) {
       return res.status(401).json({ 
         error: 'API key authentication failed',
-        details: 'Please check your API key configuration'
+        details: error.message || 'Please check your API key configuration',
+        suggestion: 'Verify your API keys are correctly set in environment variables'
       });
     }
     
     // Check if it's a rate limit error
-    if (error.status === 429 || error.message.includes('rate limit')) {
+    if (error.status === 429 || error.statusCode === 429 || error.message.includes('rate limit')) {
       return res.status(429).json({ 
         error: 'Rate limit exceeded',
         details: error.message,
@@ -235,8 +265,9 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
     
     res.status(500).json({ 
       error: 'Failed to get AI response',
-      details: error.message,
-      errorType: error.type || 'unknown'
+      details: error.message || 'Unknown error occurred',
+      errorType: error.type || 'unknown',
+      suggestion: 'Please try again in a moment or switch providers'
     });
   }
 });
@@ -392,10 +423,10 @@ Ready to continue planning? 🚀`,
 
       // Try models in order of preference
       const modelsToTry = [
-        'claude-sonnet-4-5-20250929',  // Claude Sonnet 4.5 (latest)
-        'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable)
+        'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
         'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
-        'claude-3-opus-20240229'       // Claude 3 Opus (most capable)
+        'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
+        'claude-3-sonnet-20240229'     // Claude 3 Sonnet (fallback)
       ];
 
       let lastError = null;
@@ -429,15 +460,34 @@ Ready to continue planning? 🚀`,
 
         } catch (error) {
           lastError = error;
-          console.log(`[Chat] Model ${model} failed for anonymous user: ${error.message}`);
+          console.error(`[Chat] Model ${model} failed for anonymous user:`, {
+            message: error.message,
+            status: error.status,
+            type: error.type,
+            code: error.code
+          });
           
-          // Check if it's a model not found error
-          if (error.message && error.message.includes('model')) {
+          // Check if it's a model not found error or authentication error
+          const isModelError = error.message && (
+            error.message.includes('model') || 
+            error.message.includes('not found') ||
+            error.message.includes('not_found')
+          );
+          
+          const isAuthError = error.status === 401 || error.status === 403;
+          
+          if (isModelError) {
             console.log(`[Chat] Model ${model} not available for anonymous user, trying next...`);
             continue; // Try next model
           }
           
-          // For other errors, throw immediately
+          // For auth errors on first model, try next model (might be API key issue with specific model)
+          if (isAuthError && modelsToTry.indexOf(model) === 0) {
+            console.log(`[Chat] Authentication error with ${model} for anonymous user, trying next model...`);
+            continue;
+          }
+          
+          // For other errors, throw immediately (network errors, rate limits, etc.)
           throw error;
         }
       }
@@ -505,10 +555,20 @@ Ready to continue planning? 🚀`,
     });
 
   } catch (error) {
-    console.error('Anonymous AI API Error:', error);
+    // Log detailed error information
+    console.error('Anonymous AI API Error:', {
+      message: error.message,
+      status: error.status,
+      statusCode: error.statusCode,
+      type: error.type,
+      code: error.code,
+      response: error.response?.data,
+      provider: req.body.provider || 'unknown',
+      anonymousId: anonymousId || 'unknown'
+    });
     
     // Check if it's a model-related error
-    if (error.message && (error.message.includes('model') || error.message.includes('not found'))) {
+    if (error.message && (error.message.includes('model') || error.message.includes('not found') || error.message.includes('not_found'))) {
       return res.status(400).json({ 
         error: 'Invalid or unavailable model',
         details: error.message,
@@ -517,15 +577,16 @@ Ready to continue planning? 🚀`,
     }
     
     // Check if it's an authentication error
-    if (error.status === 401 || error.message.includes('authentication')) {
+    if (error.status === 401 || error.statusCode === 401 || error.message.includes('authentication') || error.message.includes('Invalid API key')) {
       return res.status(401).json({ 
         error: 'API key authentication failed',
-        details: 'Please check your API key configuration'
+        details: error.message || 'Please check your API key configuration',
+        suggestion: 'Verify your API keys are correctly set in environment variables'
       });
     }
     
     // Check if it's a rate limit error
-    if (error.status === 429 || error.message.includes('rate limit')) {
+    if (error.status === 429 || error.statusCode === 429 || error.message.includes('rate limit')) {
       return res.status(429).json({ 
         error: 'Rate limit exceeded',
         details: error.message,
@@ -535,8 +596,9 @@ Ready to continue planning? 🚀`,
     
     res.status(500).json({ 
       error: 'Failed to get AI response',
-      details: error.message,
-      errorType: error.type || 'unknown'
+      details: error.message || 'Unknown error occurred',
+      errorType: error.type || 'unknown',
+      suggestion: 'Please try again in a moment or switch providers'
     });
   }
 });
@@ -650,8 +712,7 @@ router.get('/test-models', protect, async (req, res) => {
   }
 
   const modelsToTest = [
-    'claude-sonnet-4-5-20250929',  // Claude Sonnet 4.5 (latest)
-    'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable)
+    'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
     'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
     'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
     'claude-3-sonnet-20240229',    // Claude 3 Sonnet

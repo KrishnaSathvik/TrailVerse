@@ -1059,7 +1059,18 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
       setThinkingStartTime(null);
 
     } catch (error) {
-      console.error('Error:', error);
+      // Log detailed error information for debugging
+      console.error('AI Chat Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        code: error.code,
+        name: error.name,
+        provider: selectedProvider,
+        isAnonymous
+      });
+      
       if (error.name === 'AbortError') {
         // Request was cancelled, don't show error
         return;
@@ -1069,16 +1080,44 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
       const failedResponseTime = Date.now() - thinkingStartTime;
       logAIChat(messageText.trim(), failedResponseTime, false);
       
+      // Extract error details from response
+      const errorDetails = error.response?.data;
+      const errorStatus = error.response?.status;
+      
       // Check if it's a token limit error
       let errorMessage = 'Failed to get AI response';
       let assistantMessage = '⚠️ I couldn\'t reach the AI provider. Please try again or switch providers.';
       
-      if (error.response?.status === 429 && error.response?.data?.error === 'Daily token limit exceeded') {
-        errorMessage = 'Daily usage limit reached. Please try again tomorrow.';
-        assistantMessage = `🚫 **Daily Limit Reached**\n\nYou've reached your daily usage limit. Please try again tomorrow.`;
-      } else if (error.response?.status === 429) {
-        errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
-        assistantMessage = '⏳ **Rate Limited**\n\nYou\'re making requests too quickly. Please wait a moment and try again.';
+      if (errorStatus === 429) {
+        if (errorDetails?.error === 'Daily token limit exceeded') {
+          errorMessage = 'Daily usage limit reached. Please try again tomorrow.';
+          assistantMessage = `🚫 **Daily Limit Reached**\n\nYou've reached your daily usage limit. Please try again tomorrow.`;
+        } else {
+          errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+          assistantMessage = '⏳ **Rate Limited**\n\nYou\'re making requests too quickly. Please wait a moment and try again.';
+        }
+      } else if (errorStatus === 400) {
+        // API configuration error
+        const details = errorDetails?.details || errorDetails?.error || error.message;
+        errorMessage = 'AI provider configuration error';
+        assistantMessage = `⚠️ **Configuration Error**\n\n${details}\n\nPlease check your API configuration or try switching providers.`;
+      } else if (errorStatus === 401 || errorStatus === 403) {
+        // Authentication error
+        errorMessage = 'AI provider authentication failed';
+        assistantMessage = `🔐 **Authentication Error**\n\nUnable to authenticate with the AI provider. Please check API key configuration.`;
+      } else if (errorStatus === 500 || errorStatus === 503) {
+        // Server/provider error
+        const details = errorDetails?.error || errorDetails?.details || 'The AI provider is temporarily unavailable';
+        errorMessage = 'AI provider error';
+        assistantMessage = `⚠️ **Provider Error**\n\n${details}\n\nPlease try again in a moment or switch providers.`;
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        // Timeout error
+        errorMessage = 'Request timed out';
+        assistantMessage = '⏱️ **Request Timeout**\n\nThe AI provider took too long to respond. Please try again.';
+      } else if (!error.response) {
+        // Network error
+        errorMessage = 'Network error';
+        assistantMessage = '🌐 **Network Error**\n\nUnable to reach the AI provider. Please check your connection and try again.';
       }
       
       showToast(errorMessage, 'error');

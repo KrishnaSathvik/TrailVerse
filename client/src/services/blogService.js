@@ -166,6 +166,22 @@ class BlogService {
       return [];
     }
   }
+
+  async getScheduledPosts() {
+    const result = await enhancedApi.get('/blogs/scheduled', {}, { 
+      cacheType: 'blogPosts',
+      ttl: 5 * 60 * 1000 // 5 minutes - scheduled posts change frequently
+    });
+    return result.data;
+  }
+
+  async getAllPostsIncludingScheduled() {
+    const result = await enhancedApi.get('/blogs', { status: 'scheduled', limit: 100 }, { 
+      cacheType: 'blogPosts',
+      ttl: 5 * 60 * 1000 // 5 minutes
+    });
+    return result.data;
+  }
 }
 
 export default new BlogService();

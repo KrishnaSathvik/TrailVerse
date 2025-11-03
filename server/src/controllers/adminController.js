@@ -92,19 +92,22 @@ exports.getRecentActivity = async (req, res, next) => {
         id: `user-${user._id}`,
         type: 'user',
         action: 'New user registration',
-        user: user.name || 'Anonymous',
-        time: formatTimeAgo(user.createdAt)
+        user: user.name || user.email || 'Anonymous',
+        time: formatTimeAgo(user.createdAt),
+        createdAt: user.createdAt
       });
     });
 
     // Add blog posts
     recentPosts.forEach(post => {
+      const statusText = post.status === 'published' ? 'published' : post.status === 'draft' ? 'draft' : post.status;
       activities.push({
         id: `post-${post._id}`,
         type: 'blog',
-        action: `New blog post ${post.status}`,
+        action: `Blog post ${statusText}: ${post.title || 'Untitled'}`,
         user: post.author?.name || 'Admin',
-        time: formatTimeAgo(post.createdAt)
+        time: formatTimeAgo(post.createdAt),
+        createdAt: post.createdAt
       });
     });
 
@@ -115,13 +118,18 @@ exports.getRecentActivity = async (req, res, next) => {
         type: 'trip',
         action: 'Trip plan created',
         user: trip.userId?.name || 'Anonymous',
-        time: formatTimeAgo(trip.createdAt)
+        time: formatTimeAgo(trip.createdAt),
+        createdAt: trip.createdAt
       });
     });
 
-    // Sort by creation time (newest first) and limit to 10
-    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
-    const recentActivity = activities.slice(0, 10);
+    // Sort by creation time (newest first) using actual date objects
+    activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const recentActivity = activities.slice(0, 10).map(activity => {
+      // Remove createdAt before sending to client (only used for sorting)
+      const { createdAt, ...activityWithoutDate } = activity;
+      return activityWithoutDate;
+    });
 
     res.status(200).json({
       success: true,
@@ -475,11 +483,25 @@ exports.exportSettings = async (req, res, next) => {
 
 // Helper function to format time ago
 function formatTimeAgo(date) {
+  if (!date) return 'Unknown time';
+  
   const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
+  const dateObj = new Date(date);
+  
+  // Check if date is valid
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date';
+  }
+  
+  const diffInSeconds = Math.floor((now - dateObj) / 1000);
+
+  // Handle negative differences (future dates)
+  if (diffInSeconds < 0) {
+    return 'Just now';
+  }
 
   if (diffInSeconds < 60) {
-    return `${diffInSeconds} seconds ago`;
+    return diffInSeconds === 0 ? 'Just now' : `${diffInSeconds} second${diffInSeconds > 1 ? 's' : ''} ago`;
   } else if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60);
     return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
@@ -488,7 +510,18 @@ function formatTimeAgo(date) {
     return `${hours} hour${hours > 1 ? 's' : ''} ago`;
   } else {
     const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (days < 7) {
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else if (days < 30) {
+      const weeks = Math.floor(days / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    } else if (days < 365) {
+      const months = Math.floor(days / 30);
+      return `${months} month${months > 1 ? 's' : ''} ago`;
+    } else {
+      const years = Math.floor(days / 365);
+      return `${years} year${years > 1 ? 's' : ''} ago`;
+    }
   }
 }
 

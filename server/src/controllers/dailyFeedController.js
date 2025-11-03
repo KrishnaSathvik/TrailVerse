@@ -255,6 +255,36 @@ exports.getDailyFeed = async (req, res, next) => {
     // Keep only last 7 parks
     const recentParksTrimmed = recentParks.slice(0, 7);
 
+    // Ensure rawAstroData has the correct local times from astroData.value (used by AI)
+    // This fixes the mismatch where AI uses correct local times but frontend shows UTC times
+    if (astroData.value) {
+      // Create rawAstroData if it doesn't exist
+      if (!rawAstroData) {
+        rawAstroData = {
+          source: 'astroData-value',
+          timestamp: new Date().toISOString(),
+          localTimes: {}
+        };
+      }
+      
+      // Ensure localTimes object exists
+      if (!rawAstroData.localTimes) {
+        rawAstroData.localTimes = {};
+      }
+      
+      // Use the same local times that were used for AI generation
+      // This ensures frontend displays the same times that AI mentions
+      rawAstroData.localTimes.sunrise = astroData.value.sunrise || rawAstroData.localTimes.sunrise;
+      rawAstroData.localTimes.sunset = astroData.value.sunset || rawAstroData.localTimes.sunset;
+      rawAstroData.localTimes.timezone = astroData.value.timezone || rawAstroData.localTimes.timezone || rawAstroData.processedData?.timezone;
+      
+      console.log(`✅ Fixed rawAstroData local times to match AI:`, {
+        sunrise: rawAstroData.localTimes.sunrise,
+        sunset: rawAstroData.localTimes.sunset,
+        timezone: rawAstroData.localTimes.timezone
+      });
+    }
+
     const dailyFeed = {
       date: now.toISOString().split('T')[0],
       timestamp: now.toISOString(), // Add timestamp to ensure uniqueness

@@ -63,9 +63,29 @@ exports.uploadMiddleware = upload.array('images', 5);
 // @access  Private
 exports.uploadImages = async (req, res, next) => {
   try {
+    // Check if user is authenticated
+    if (!req.user) {
+      console.error('❌ No user found in request - authentication failed');
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    // Get user ID - handle both id and _id
+    const userId = req.user._id || req.user.id;
+    
+    if (!userId) {
+      console.error('❌ User ID not found:', { user: req.user });
+      return res.status(401).json({
+        success: false,
+        error: 'User ID not found'
+      });
+    }
+
     console.log('📤 Image upload request received:', {
       filesCount: req.files?.length || 0,
-      userId: req.user?.id,
+      userId: userId,
       category: req.body.category,
       isPublic: req.body.isPublic
     });
@@ -91,15 +111,33 @@ exports.uploadImages = async (req, res, next) => {
           path: file.path
         });
 
+        // Check if file exists
+        try {
+          await fs.access(file.path);
+        } catch (accessError) {
+          throw new Error(`File not found: ${file.path}`);
+        }
+
         // Get image metadata
-        const metadata = await sharp(file.path).metadata();
+        let metadata;
+        try {
+          metadata = await sharp(file.path).metadata();
+        } catch (sharpError) {
+          console.error('❌ Sharp error processing image:', sharpError);
+          throw new Error(`Failed to process image: ${sharpError.message}`);
+        }
         
         // Generate thumbnail
         const thumbnailPath = file.path.replace(path.extname(file.path), '_thumb' + path.extname(file.path));
-        await sharp(file.path)
-          .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 80 })
-          .toFile(thumbnailPath);
+        try {
+          await sharp(file.path)
+            .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 80 })
+            .toFile(thumbnailPath);
+        } catch (thumbnailError) {
+          console.error('❌ Error generating thumbnail:', thumbnailError);
+          // Continue without thumbnail if it fails
+        }
 
         // Generate URLs
         const baseUrl = `${req.protocol}://${req.get('host')}/uploads`;
@@ -107,7 +145,7 @@ exports.uploadImages = async (req, res, next) => {
         const thumbnailRelativePath = path.relative(path.join(__dirname, '../../uploads'), thumbnailPath);
 
         const imageUpload = await ImageUpload.create({
-          userId: req.user.id,
+          userId: userId, // Already validated above
           originalName: file.originalname,
           filename: file.filename,
           mimeType: file.mimetype,

@@ -9,13 +9,14 @@ import {
   Users, FileText, MapPin, Calendar,
   MessageSquare, Settings, Plus, Eye,
   Edit, Trash2, Activity, Clock, LogOut, Zap,
-  Sparkles
+  Sparkles, AlertCircle
 } from '@components/icons';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [posts, setPosts] = useState([]);
+  const [scheduledPosts, setScheduledPosts] = useState([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalPosts: 0,
@@ -47,12 +48,22 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     let allPosts = []; // Declare allPosts at function scope
     try {
-      // Fetch all posts (including drafts)
+      // Fetch all posts (including drafts and scheduled)
       const publishedData = await blogService.getAllPosts({ status: 'published', limit: 100 });
       const draftData = await blogService.getAllPosts({ status: 'draft', limit: 100 });
+      const scheduledData = await blogService.getAllPosts({ status: 'scheduled', limit: 100 });
       
       allPosts = [...publishedData.data, ...draftData.data];
       setPosts(allPosts);
+      
+      // Store scheduled posts separately, sorted by scheduled date
+      const scheduled = scheduledData.data || [];
+      scheduled.sort((a, b) => {
+        const dateA = a.scheduledAt ? new Date(a.scheduledAt) : new Date(0);
+        const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(0);
+        return dateA - dateB; // Sort ascending (earliest first)
+      });
+      setScheduledPosts(scheduled);
 
       // Fetch testimonials statistics
       const testimonialsStats = await testimonialService.getTestimonialsStats();
@@ -146,6 +157,34 @@ const AdminDashboard = () => {
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const formatDateTime = (date) => {
+    return new Date(date).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const getScheduledStatus = (scheduledAt) => {
+    if (!scheduledAt) return { status: 'unknown', label: 'Unknown', color: 'gray' };
+    
+    const now = new Date();
+    const scheduled = new Date(scheduledAt);
+    const diff = scheduled - now;
+    const hoursDiff = diff / (1000 * 60 * 60);
+    
+    if (diff < 0) {
+      return { status: 'overdue', label: 'Overdue', color: 'red' };
+    } else if (hoursDiff <= 24) {
+      return { status: 'dueSoon', label: 'Due Soon', color: 'orange' };
+    } else {
+      return { status: 'scheduled', label: 'Scheduled', color: 'blue' };
+    }
   };
 
 
@@ -326,19 +365,22 @@ const AdminDashboard = () => {
                       {activity.type === 'comment' && <MessageSquare className="h-5 w-5 text-orange-400" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold mb-1"
+                      <p className="font-semibold mb-1 break-words line-clamp-2"
                         style={{ color: 'var(--text-primary)' }}
+                        title={activity.action}
                       >
-                        {activity.action}
+                        {activity.action || 'Unknown action'}
                       </p>
-                      <div className="flex items-center gap-2 text-sm"
+                      <div className="flex items-center gap-2 text-sm flex-wrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
-                        <span>{activity.user}</span>
+                        <span className="truncate max-w-[200px]" title={activity.user || 'Unknown user'}>
+                          {activity.user || 'Unknown user'}
+                        </span>
                         <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {activity.time}
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          {activity.time || 'Unknown time'}
                         </span>
                       </div>
                     </div>
@@ -552,6 +594,8 @@ const AdminDashboard = () => {
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             post.status === 'published'
                               ? 'bg-green-500/20 text-green-400'
+                              : post.status === 'scheduled'
+                              ? 'bg-blue-500/20 text-blue-400'
                               : 'bg-yellow-500/20 text-yellow-400'
                           }`}>
                             {post.status}
@@ -590,6 +634,127 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Scheduled Posts Section */}
+        {scheduledPosts.length > 0 && (
+          <div className="mt-8">
+            <div className="rounded-2xl p-6 backdrop-blur"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Scheduled Blog Posts
+                  </h3>
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400">
+                    {scheduledPosts.length}
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b"
+                      style={{ borderColor: 'var(--border)' }}
+                    >
+                      <th className="text-left py-3 px-4 text-sm font-semibold"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Title
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Scheduled Date
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scheduledPosts.map(post => {
+                      const scheduledStatus = getScheduledStatus(post.scheduledAt);
+                      return (
+                        <tr key={post._id} className="border-b hover:bg-white/5 transition"
+                          style={{ borderColor: 'var(--border)' }}
+                        >
+                          <td className="py-4 px-4">
+                            <p className="font-semibold"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              {post.title}
+                            </p>
+                            <p className="text-sm"
+                              style={{ color: 'var(--text-tertiary)' }}
+                            >
+                              Created: {formatDate(post.createdAt)}
+                            </p>
+                          </td>
+                          <td className="py-4 px-4 text-sm"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              {post.scheduledAt ? formatDateTime(post.scheduledAt) : 'Not set'}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              scheduledStatus.status === 'overdue'
+                                ? 'bg-red-500/20 text-red-400'
+                                : scheduledStatus.status === 'dueSoon'
+                                ? 'bg-orange-500/20 text-orange-400'
+                                : 'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {scheduledStatus.status === 'overdue' && (
+                                <AlertCircle className="inline h-3 w-3 mr-1" />
+                              )}
+                              {scheduledStatus.label}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <Link
+                                to={`/admin/blog/edit/${post._id}`}
+                                className="p-2 rounded-xl hover:bg-white/5 transition"
+                                style={{ color: 'var(--text-secondary)' }}
+                                title="Edit scheduled post"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Link>
+                              <button
+                                onClick={() => handleDelete(post._id)}
+                                className="p-2 rounded-xl hover:bg-red-500/10 transition text-red-400"
+                                title="Delete scheduled post"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Testimonials Management Section */}
         <div id="testimonials-management" className="mt-12">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from '../components/common/Header';
@@ -7,11 +7,257 @@ import CommentSection from '../components/blog/CommentSection';
 import LikeFavorite from '../components/blog/LikeFavorite';
 import ShareButtons from '../components/common/ShareButtons';
 import RelatedPosts from '../components/blog/RelatedPosts';
+import TableOfContents from '../components/blog/TableOfContents';
 import { useAuth } from '../context/AuthContext';
 import blogService from '../services/blogService';
 import { logBlogView } from '../utils/analytics';
 import { Calendar, Clock, Eye, ArrowLeft } from '@components/icons';
 import '../styles/blog-prose.css';
+
+// Component to render TOC after content is rendered (but display it before content)
+const TableOfContentsWrapper = ({ content, postId }) => {
+  const [headings, setHeadings] = useState([]);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // First, try to detect headings from HTML string (for faster display)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    const tempHeadings = [];
+    const standardHeadings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    
+    standardHeadings.forEach((heading, index) => {
+      const text = heading.textContent || heading.innerText;
+      if (!text || !text.trim()) return;
+      
+      const level = parseInt(heading.tagName.charAt(1));
+      const sanitizedText = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const id = `heading-${index}-${sanitizedText}`;
+      
+      tempHeadings.push({
+        id: id,
+        text: text.trim(),
+        level: level
+      });
+    });
+    
+    // Also look for all-caps headings in HTML string (for existing posts)
+    // Only if we have NO standard headings
+    if (standardHeadings.length === 0) {
+      const allElements = tempDiv.querySelectorAll('p, div');
+      const seenTexts = new Set(tempHeadings.map(h => h.text));
+      let headingIndex = tempHeadings.length;
+      
+      allElements.forEach((element) => {
+        // Skip if it's inside a list or table
+        let parent = element.parentElement;
+        while (parent && parent !== tempDiv) {
+          if (parent.tagName === 'LI' || parent.tagName === 'TD' || parent.tagName === 'TH' || parent.tagName === 'UL' || parent.tagName === 'OL') {
+            return;
+          }
+          parent = parent.parentElement;
+        }
+        
+        const text = (element.textContent || element.innerText).trim();
+        if (!text || text.length < 5) return;
+        if (seenTexts.has(text)) return;
+        
+        // STRICT: Only all-caps headings
+        const isAllCaps = text === text.toUpperCase() && text.length > 5;
+        const words = text.split(/\s+/);
+        const isShortHeading = words.length <= 12 && text.length < 150;
+        
+        // Must NOT contain sentence-ending punctuation
+        const hasEndingPunctuation = text.includes('.') || text.includes('!') || text.includes('?');
+        
+        // Remove emojis for cleaner detection
+        const textWithoutEmojis = text.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+        const textOnly = textWithoutEmojis.replace(/[^\w\s]/g, '');
+        
+        // Skip if it contains common sentence words (likely not a heading)
+        const hasSentenceWords = text.toLowerCase().includes(' the ') || 
+                                 text.toLowerCase().includes(' a ') || 
+                                 text.toLowerCase().includes(' an ') ||
+                                 text.toLowerCase().includes(' is ') ||
+                                 text.toLowerCase().includes(' are ');
+        
+        // Check if it looks like a heading: all caps, short, no punctuation, not a sentence
+        if (isAllCaps && isShortHeading && !hasEndingPunctuation && !hasSentenceWords && 
+            textOnly.length >= 5 && words.length >= 2) {
+          const sanitizedText = textWithoutEmojis.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const id = `heading-${headingIndex}-${sanitizedText}`;
+          
+          tempHeadings.push({
+            id: id,
+            text: textWithoutEmojis,
+            level: 2
+          });
+          headingIndex++;
+          seenTexts.add(text);
+        }
+      });
+    }
+    
+    // If we found headings in HTML, use them immediately
+    if (tempHeadings.length > 0) {
+      setHeadings(tempHeadings);
+      setIsReady(true);
+    }
+
+    // Then wait for DOM to be ready and refine detection
+    const timer = setTimeout(() => {
+      const blogProse = document.querySelector('.blog-prose');
+      if (!blogProse) {
+        // If still no headings from HTML parsing, keep the ones we found
+        if (tempHeadings.length > 0) {
+          setHeadings(tempHeadings);
+          setIsReady(true);
+        }
+        return;
+      }
+
+      const detectedHeadings = [];
+
+      // Find standard headings in rendered DOM
+      const standardHeadings = blogProse.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      standardHeadings.forEach((heading, index) => {
+        if (!heading.id) {
+          const text = heading.textContent || heading.innerText;
+          const sanitizedText = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const id = `heading-${index}-${sanitizedText}`;
+          heading.id = id;
+        }
+        
+        const text = heading.textContent || heading.innerText;
+        const level = parseInt(heading.tagName.charAt(1));
+        detectedHeadings.push({
+          id: heading.id,
+          text: text.trim(),
+          level: level
+        });
+      });
+
+      // If no standard headings, look for all-caps section titles ONLY
+      // DO NOT detect bold text in body - only actual section headings
+      if (standardHeadings.length === 0) {
+        const allElements = blogProse.querySelectorAll('p, div');
+        let headingIndex = 0;
+        const seenTexts = new Set();
+        
+        allElements.forEach((element) => {
+          // Skip if it's inside a list, table, or other nested structure
+          let parent = element.parentElement;
+          while (parent && parent !== blogProse) {
+            if (parent.tagName === 'LI' || parent.tagName === 'TD' || parent.tagName === 'TH' || 
+                parent.tagName === 'UL' || parent.tagName === 'OL' || parent.tagName === 'TABLE') {
+              return;
+            }
+            parent = parent.parentElement;
+          }
+          
+          if (element.id || !element.textContent) return;
+          
+          const text = element.textContent.trim();
+          if (text.length < 5) return;
+          
+          // Skip if we've already seen this text
+          if (seenTexts.has(text)) return;
+          
+          // STRICT: ONLY detect all-caps standalone section titles
+          // Must be: all caps + short + no punctuation + standalone paragraph/div
+          const isAllCaps = text === text.toUpperCase() && text.length > 5;
+          const words = text.split(/\s+/);
+          const isShortHeading = words.length <= 12 && text.length < 150;
+          
+          // Must NOT contain periods, exclamation marks, or question marks (not a sentence)
+          const hasEndingPunctuation = text.includes('.') || text.includes('!') || text.includes('?');
+          
+          // Must be a standalone paragraph or div (not inline)
+          const isStandalone = element.tagName === 'P' || element.tagName === 'DIV';
+          
+          // Check if it's followed by content (list, another paragraph, etc.) - indicates section heading
+          const nextSibling = element.nextElementSibling;
+          const hasListAfter = nextSibling && (nextSibling.tagName === 'UL' || nextSibling.tagName === 'OL');
+          const hasContentAfter = nextSibling && (nextSibling.tagName === 'P' || nextSibling.tagName === 'DIV');
+          
+          // Check if previous sibling suggests this is a section break
+          const prevSibling = element.previousElementSibling;
+          const isAfterParagraph = prevSibling && (prevSibling.tagName === 'P' || prevSibling.tagName === 'DIV');
+          
+          // Remove emojis for cleaner detection
+          const textWithoutEmojis = text.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+          const textOnly = textWithoutEmojis.replace(/[^\w\s]/g, '');
+          
+          // Skip if it contains common sentence words (likely not a heading)
+          const hasSentenceWords = text.toLowerCase().includes(' the ') || 
+                                   text.toLowerCase().includes(' a ') || 
+                                   text.toLowerCase().includes(' an ') ||
+                                   text.toLowerCase().includes(' is ') ||
+                                   text.toLowerCase().includes(' are ') ||
+                                   text.toLowerCase().includes(' was ') ||
+                                   text.toLowerCase().includes(' were ') ||
+                                   text.toLowerCase().includes(' this ') ||
+                                   text.toLowerCase().includes(' that ');
+          
+          // STRICT detection: Only all-caps standalone section titles
+          // Must be: all caps + short + no punctuation + standalone + followed by content + not a sentence
+          const looksLikeHeading = (
+            isAllCaps && 
+            isShortHeading && 
+            !hasEndingPunctuation &&
+            isStandalone &&
+            !hasSentenceWords &&
+            textOnly.length >= 5 && // At least 5 letters
+            words.length >= 2 && // At least 2 words
+            (hasListAfter || hasContentAfter || isAfterParagraph) // Has content before/after
+          );
+          
+          if (looksLikeHeading) {
+            // Skip if it's just numbers, symbols, or emojis
+            if (/^[\d\s\-•]+$/.test(textWithoutEmojis)) return;
+            
+            const sanitizedText = textWithoutEmojis.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const id = `heading-${headingIndex}-${sanitizedText}`;
+            element.id = id;
+            
+            seenTexts.add(text);
+            
+            detectedHeadings.push({
+              id: id,
+              text: textWithoutEmojis || text,
+              level: 2 // All-caps headings are typically H2
+            });
+            headingIndex++;
+          }
+        });
+      }
+
+      // Update with detected headings (prefer DOM detected ones)
+      if (detectedHeadings.length > 0) {
+        setHeadings(detectedHeadings);
+      } else if (tempHeadings.length > 0) {
+        // Fallback to HTML parsed headings
+        setHeadings(tempHeadings);
+      }
+      
+      setIsReady(true);
+      console.log('✅ TableOfContentsWrapper: Detected headings', detectedHeadings.length || tempHeadings.length);
+    }, 300); // Shorter delay since we already have HTML parsed headings
+
+    return () => clearTimeout(timer);
+  }, [content]);
+
+  // Show TOC immediately if we have headings from HTML parsing, otherwise wait
+  if (!isReady && headings.length === 0) return null;
+  if (headings.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <TableOfContents headings={headings} />
+    </div>
+  );
+};
 
 const BlogPostPage = ({ isPublic = false }) => {
   const { slug } = useParams();
@@ -19,6 +265,11 @@ const BlogPostPage = ({ isPublic = false }) => {
   const { isAuthenticated } = useAuth();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const articleRef = useRef(null);
+  const contentRef = useRef(null);
   
   // Determine if this is a public access (not authenticated)
   const isPublicAccess = isPublic || !isAuthenticated;
@@ -42,6 +293,29 @@ const BlogPostPage = ({ isPublic = false }) => {
 
     fetchPost();
   }, [slug]);
+
+  // Reading progress bar
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!contentRef.current || !articleRef.current) return;
+
+      const articleTop = articleRef.current.offsetTop;
+      const articleHeight = articleRef.current.offsetHeight;
+      const windowHeight = window.innerHeight;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+      // Calculate reading progress
+      const scrollableHeight = articleHeight - windowHeight + articleTop;
+      const scrolled = Math.max(0, scrollTop - articleTop);
+      const progress = Math.min(100, (scrolled / scrollableHeight) * 100);
+      setReadingProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial calculation
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [post]);
 
   if (loading) {
     return (
@@ -145,7 +419,19 @@ const BlogPostPage = ({ isPublic = false }) => {
 
       <Header />
 
-      <article className="max-w-4xl mx-auto px-4 py-8">
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 z-50" style={{ backgroundColor: 'transparent' }}>
+        <div
+          className="h-full transition-all duration-150 ease-out"
+          style={{
+            width: `${readingProgress}%`,
+            backgroundColor: 'var(--accent-green)',
+            boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)'
+          }}
+        />
+      </div>
+
+      <article ref={articleRef} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {/* Back Button - Only show for authenticated users */}
         {!isPublicAccess && (
           <Link
@@ -174,46 +460,93 @@ const BlogPostPage = ({ isPublic = false }) => {
         </div>
 
         {/* Title */}
-        <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight" style={{ color: 'var(--text-primary)' }}>
           {post.title}
         </h1>
 
+        {/* Excerpt/Lead Paragraph */}
+        {post.excerpt && (
+          <div className="mb-8">
+            <p className="text-lg sm:text-xl md:text-2xl leading-relaxed font-medium" style={{ color: 'var(--text-secondary)' }}>
+              {post.excerpt}
+            </p>
+          </div>
+        )}
+
         {/* Meta Info */}
-        <div className="flex flex-wrap items-center justify-between text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="font-medium">By {post.author}</span>
-            <div className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm mb-8 pb-6" style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {post.author}</span>
+            <div className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />
               <span>{formatDate(post.publishedAt)}</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
               <span>{post.readTime} min read</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Eye className="h-4 w-4" />
-              <span>{post.views} views</span>
+              <span>{post.views?.toLocaleString() || 0} views</span>
             </div>
           </div>
-          <ShareButtons 
-            url={window.location.href}
-            title={post.title}
-            description={post.excerpt}
-          />
+          <div className="flex-shrink-0">
+            <ShareButtons 
+              url={window.location.href}
+              title={post.title}
+              description={post.excerpt}
+            />
+          </div>
         </div>
 
         {/* Featured Image */}
         {post.featuredImage && (
-          <img
-            src={post.featuredImage}
-            alt={post.title}
-            className="w-full h-96 object-cover rounded-xl mb-8"
-          />
+          <div className="mb-10 relative">
+            {!imageLoaded && !imageError && (
+              <div 
+                className="w-full aspect-video rounded-xl animate-pulse flex items-center justify-center"
+                style={{ backgroundColor: 'var(--surface)' }}
+              >
+                <div style={{ color: 'var(--text-tertiary)' }}>Loading image...</div>
+              </div>
+            )}
+            {imageError ? (
+              <div 
+                className="w-full aspect-video rounded-xl flex items-center justify-center border-2 border-dashed"
+                style={{ 
+                  backgroundColor: 'var(--surface)',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <span style={{ color: 'var(--text-tertiary)' }} className="text-sm">Image not available</span>
+              </div>
+            ) : (
+              <img
+                src={post.featuredImage}
+                alt={post.title}
+                className={`w-full aspect-video object-cover rounded-xl shadow-lg transition-opacity duration-300 ${
+                  imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                loading="lazy"
+                onLoad={() => setImageLoaded(true)}
+                onError={() => {
+                  setImageError(true);
+                  setImageLoaded(false);
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Table of Contents - Render BEFORE content so it appears at the beginning */}
+        {post.content && (
+          <TableOfContentsWrapper content={post.content} postId={post._id} />
         )}
 
         {/* Content */}
         <div 
-          className="blog-prose max-w-none"
+          ref={contentRef}
+          className="blog-prose max-w-none mb-12"
           style={{ color: 'var(--text-primary)' }}
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
@@ -223,14 +556,14 @@ const BlogPostPage = ({ isPublic = false }) => {
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
-          <div className="mt-8 pt-8 pb-8" style={{ borderTop: '1px solid var(--border)' }}>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Tags:</h3>
+          <div className="mt-12 pt-8 pb-8" style={{ borderTop: '1px solid var(--border)' }}>
+            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Tags</h3>
             <div className="flex flex-wrap gap-2">
               {post.tags.map((tag, index) => (
                 <button
                   key={index}
                   onClick={() => handleTagClick(tag)}
-                  className="px-3 py-1 rounded-full text-sm transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:scale-105"
                   style={{ 
                     backgroundColor: 'var(--surface)',
                     color: 'var(--text-secondary)',
@@ -239,10 +572,12 @@ const BlogPostPage = ({ isPublic = false }) => {
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = 'var(--surface-hover)';
                     e.target.style.color = 'var(--text-primary)';
+                    e.target.style.borderColor = 'var(--accent-green)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.backgroundColor = 'var(--surface)';
                     e.target.style.color = 'var(--text-secondary)';
+                    e.target.style.borderColor = 'var(--border)';
                   }}
                 >
                   #{tag}

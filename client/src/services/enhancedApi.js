@@ -40,6 +40,12 @@ class EnhancedApiService {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
+        // Don't set Content-Type for FormData - let browser set it with boundary
+        if (config.data instanceof FormData) {
+          // Remove Content-Type header if it's FormData - browser will set it with boundary
+          delete config.headers['Content-Type'];
+        }
+
         // Add cache metadata
         config.metadata = {
           startTime: Date.now(),
@@ -48,7 +54,7 @@ class EnhancedApiService {
         };
 
         // Debug logging for large requests
-        if (config.data && JSON.stringify(config.data).length > 1000000) {
+        if (config.data && !(config.data instanceof FormData) && JSON.stringify(config.data).length > 1000000) {
           console.log(`🚀 EnhancedApi Request Interceptor: Large request to ${config.url}:`, {
             method: config.method,
             headers: config.headers,
