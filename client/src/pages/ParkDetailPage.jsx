@@ -375,6 +375,7 @@ const ParkDetailPage = ({ isPublic = false }) => {
                         url={window.location.href}
                         title={park.fullName}
                         description={park.description}
+                        image={park.images?.[0]?.url}
                       />
                     </div>
                   </div>

@@ -170,6 +170,7 @@ export { default as Maximize } from 'lucide-react/dist/esm/icons/maximize';
 export { default as Minimize } from 'lucide-react/dist/esm/icons/minimize';
 export { default as ZoomIn } from 'lucide-react/dist/esm/icons/zoom-in';
 export { default as ZoomOut } from 'lucide-react/dist/esm/icons/zoom-out';
+export { default as Printer } from 'lucide-react/dist/esm/icons/printer';
 
 // Content & Text
 export { default as BookOpen } from 'lucide-react/dist/esm/icons/book-open';

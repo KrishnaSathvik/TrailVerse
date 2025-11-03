@@ -194,6 +194,7 @@ const ActivityDetailPage = ({ isPublic = false }) => {
                       url={window.location.href}
                       title={activity.title}
                       description={activity.shortDescription || activity.description}
+                      image={activity.images?.[0]?.url}
                     />
                   </div>
                 </div>

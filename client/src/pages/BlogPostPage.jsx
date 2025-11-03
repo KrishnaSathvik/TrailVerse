@@ -495,6 +495,7 @@ const BlogPostPage = ({ isPublic = false }) => {
               url={window.location.href}
               title={post.title}
               description={post.excerpt}
+              image={post.featuredImage}
             />
           </div>
         </div>

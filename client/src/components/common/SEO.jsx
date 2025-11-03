@@ -17,6 +17,40 @@ const SEO = ({
 }) => {
   const siteTitle = 'TrailVerse';
   const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
+  
+  // Convert relative image URL to absolute URL for social sharing
+  const getAbsoluteImageUrl = (imgUrl) => {
+    if (!imgUrl || imgUrl.trim() === '') return image; // Return default if empty
+    
+    // If already absolute URL, return as is
+    if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+      return imgUrl;
+    }
+    
+    // If data URL, return as is (but social media can't use data URLs)
+    if (imgUrl.startsWith('data:')) {
+      return image; // Fallback to default image
+    }
+    
+    // If relative URL, make it absolute
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.nationalparksexplorerusa.com';
+    
+    // Handle protocol-relative URLs (//example.com/image.jpg)
+    if (imgUrl.startsWith('//')) {
+      return `https:${imgUrl}`;
+    }
+    
+    // Handle relative URLs
+    if (imgUrl.startsWith('/')) {
+      return `${baseUrl}${imgUrl}`;
+    }
+    
+    // Handle relative paths without leading slash
+    return `${baseUrl}/${imgUrl}`;
+  };
+  
+  // Ensure image URL is absolute for social media
+  const absoluteImageUrl = getAbsoluteImageUrl(image);
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -53,7 +87,10 @@ const SEO = ({
       <meta property="og:url" content={url} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={absoluteImageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:site_name" content="TrailVerse" />
       <meta property="og:locale" content="en_US" />
 
@@ -62,7 +99,7 @@ const SEO = ({
       <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content={absoluteImageUrl} />
       <meta name="twitter:creator" content="@TrailVerse" />
       <meta name="twitter:site" content="@TrailVerse" />
 
