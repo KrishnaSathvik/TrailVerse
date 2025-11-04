@@ -7,10 +7,14 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
   const { showToast } = useToast();
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   
-  // Generate share URL - all main routes are now public
+  // Generate share URL - always use current page URL at share time
   const generatePublicUrl = () => {
-    if (url) return url;
+    // Always use current page URL at the time of sharing to ensure correct URL
+    if (typeof window !== 'undefined' && window.location.href) {
     return window.location.href;
+    }
+    // Fallback to prop if window is not available (SSR case)
+    return url || '';
   };
   
   // Convert relative image URL to absolute URL
@@ -44,23 +48,58 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
     return `${baseUrl}/${imgUrl}`;
   };
   
+  // Generate share URL dynamically - compute at share time to ensure current page URL
   const shareUrl = generatePublicUrl();
   const shareImageUrl = image ? getAbsoluteImageUrl(image) : null;
 
+  // Shorten URL for display (remove protocol, www, etc.)
+  const shortenUrl = (url) => {
+    if (!url) return '';
+    try {
+      const urlObj = new URL(url);
+      // Remove 'www.' prefix if present
+      let hostname = urlObj.hostname.replace(/^www\./, '');
+      // Return hostname + pathname
+      return hostname + urlObj.pathname;
+    } catch (e) {
+      // If URL parsing fails, try to extract manually
+      const match = url.match(/https?:\/\/(?:www\.)?([^\/]+)(.*)/);
+      if (match) {
+        return match[1] + match[2];
+      }
+      return url;
+    }
+  };
+
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    showToast('Link copied to clipboard!', 'success');
+    // Always get current URL at copy time
+    const currentUrl = generatePublicUrl();
+    const currentTitle = title || '';
+    const shortenedUrl = shortenUrl(currentUrl);
+    // Format: "Title - shortened-url"
+    const shareText = currentTitle ? `${currentTitle}\n${shortenedUrl}` : shortenedUrl;
+    navigator.clipboard.writeText(shareText);
+    showToast('Title and link copied to clipboard!', 'success');
   };
 
   // Native Web Share API - Share to other apps with image
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
+        // Always get current URL at share time to ensure correct URL
+        const currentUrl = generatePublicUrl();
+        const currentTitle = title || 'Check this out!';
+        const shortenedUrl = shortenUrl(currentUrl);
+        // Only include shortened link in text (title is already in title field to avoid duplication)
+        const shareText = shortenedUrl;
+        
         // Check if Web Share API supports files (for images)
+        // Note: title field is for the title, text is for additional info (shortened link)
+        // This prevents showing title twice
         const shareData = {
-          title: title || 'Check this out!',
-          text: description || '',
-          url: shareUrl,
+          title: currentTitle,
+          text: shareText,
+          // Removed url field to prevent showing both shortened and full URL
         };
 
         // If image is available, try to fetch and share it
@@ -629,14 +668,33 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
       </style>
     `;
 
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank');
+    // Create a hidden iframe for printing instead of opening a new window/tab
+    // This avoids opening a new window and works better on mobile
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = 'none';
+    printFrame.style.opacity = '0';
+    printFrame.style.pointerEvents = 'none';
+    document.body.appendChild(printFrame);
+
+    const printWindow = printFrame.contentWindow || printFrame.contentDocument;
     if (!printWindow) {
-      showToast('Please allow pop-ups to use the print feature.', 'error');
+      showToast('Print feature not supported in this browser.', 'error');
+      document.body.removeChild(printFrame);
       return;
     }
 
-    printWindow.document.write(`
+    // Add an ID to the iframe for easier cleanup (before writing to iframe)
+    const printFrameId = 'print-frame-' + Date.now();
+    printFrame.id = printFrameId;
+    
+    const printDoc = printWindow.document || printWindow;
+    printDoc.open();
+    printDoc.write(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -685,104 +743,255 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
               const images = document.querySelectorAll('img');
               let loadedImages = 0;
               const totalImages = images.length;
+              let hasPrinted = false;
+              let printTriggered = false;
+              let iframeRemoved = false;
               
+              // Function to remove iframe from parent
+              function removeIframe() {
+                if (iframeRemoved) return;
+                iframeRemoved = true;
+                try {
+                  if (window.parent && window.parent.document) {
+                    // Try to find the iframe by ID or by style
+                    const iframeId = '${printFrameId}';
+                    const iframe = (iframeId && window.parent.document.getElementById(iframeId)) ||
+                                   window.parent.document.querySelector('iframe[style*="opacity: 0"]') ||
+                                   window.parent.document.querySelector('iframe[style*="height: 0"]');
+                    if (iframe && iframe.parentNode) {
+                      iframe.parentNode.removeChild(iframe);
+                    }
+                  }
+                } catch (e) {
+                  // Cross-origin or other error, ignore
+                }
+              }
+              
+              // Don't trigger print from inside iframe - let parent handle it
+              // This prevents duplicate print dialogs
+              // The print is triggered from the parent window's triggerPrintOnce function
+              // We only wait for images to load here, then the parent will trigger print
+              
+              // Wait for images to load, then notify parent (optional - parent handles timing)
               if (totalImages === 0) {
-                // No images, print immediately
-                setTimeout(function() {
-                  window.print();
-                }, 250);
+                // No images, content is ready
                 return;
               }
               
-              // Track image loading
+              // Track image loading (parent will handle print timing)
               images.forEach(function(img) {
                 if (img.complete && img.naturalHeight !== 0) {
                   // Image already loaded
                   loadedImages++;
-                  checkAllLoaded();
                 } else {
                   // Wait for image to load
                   img.onload = function() {
                     loadedImages++;
-                    checkAllLoaded();
                   };
                   img.onerror = function() {
                     // Image failed to load, hide it and continue
                     this.style.display = 'none';
                     loadedImages++;
-                    checkAllLoaded();
                   };
                 }
               });
-              
-              // Also start printing after a timeout in case some images don't load
-              setTimeout(function() {
-                if (loadedImages < totalImages) {
-                  console.log('Some images did not load, printing anyway...');
-                  window.print();
-                }
-              }, 5000); // 5 second timeout
-              
-              function checkAllLoaded() {
-                if (loadedImages >= totalImages) {
-                  // All images loaded, wait a bit then print
-                  setTimeout(function() {
-                    window.print();
-                  }, 500);
-                }
-              }
             };
           </script>
         </body>
       </html>
     `);
-    printWindow.document.close();
+    printDoc.close();
     
-    showToast('Print dialog opened. Choose "Save as PDF" in the print dialog to save as PDF.', 'success');
+    showToast('Print dialog opening...', 'success');
+    
+    // Track if print has been triggered to prevent multiple triggers
+    let printTriggered = false;
+    let iframeRemoved = false;
+    
+    // Function to remove iframe after printing/canceling
+    const removePrintFrame = function() {
+      if (iframeRemoved) return;
+      iframeRemoved = true;
+      try {
+        if (printFrame && printFrame.parentNode) {
+          printFrame.parentNode.removeChild(printFrame);
+        }
+      } catch (e) {
+        // Iframe already removed or error
+      }
+    };
+    
+    // Function to trigger print only once
+    const triggerPrintOnce = function() {
+      if (printTriggered) return;
+      printTriggered = true;
+      
+      const iframeWindow = printFrame.contentWindow || printFrame.contentDocument.defaultView;
+      if (!iframeWindow) {
+        removePrintFrame();
+        return;
+      }
+      
+      try {
+        iframeWindow.focus();
+        // Small delay to ensure content is fully loaded
+        setTimeout(function() {
+          try {
+            iframeWindow.print();
+            
+            // Set up immediate cleanup detection
+            let cleanupDone = false;
+            const doCleanup = function() {
+              if (cleanupDone) return;
+              cleanupDone = true;
+              removePrintFrame();
+            };
+            
+            // Strategy 1: afterprint event (primary)
+            iframeWindow.addEventListener('afterprint', function() {
+              doCleanup();
+            }, { once: true });
+            
+            // Strategy 2: Immediate polling check (detects when dialog closes quickly)
+            // Check every 100ms if window is still focused after print
+            let checkCount = 0;
+            const checkInterval = setInterval(function() {
+              checkCount++;
+              // After 10 checks (1 second), if window is still focused, dialog likely closed
+              if (checkCount >= 10) {
+                clearInterval(checkInterval);
+                if (!cleanupDone) {
+                  doCleanup();
+                }
+              }
+            }, 100);
+            
+            // Strategy 3: Focus/blur detection (works when user cancels/prints)
+            let focusLost = false;
+            const handleBlur = function() {
+              focusLost = true;
+            };
+            const handleFocus = function() {
+              if (focusLost) {
+                clearInterval(checkInterval);
+                setTimeout(function() {
+                  if (!cleanupDone) {
+                    doCleanup();
+                  }
+                  window.removeEventListener('blur', handleBlur);
+                  window.removeEventListener('focus', handleFocus);
+                }, 50);
+              }
+            };
+            
+            window.addEventListener('blur', handleBlur, { once: true });
+            window.addEventListener('focus', handleFocus, { once: true });
+            
+            // Strategy 4: Fallback timeout (faster cleanup - 1 second)
+            setTimeout(function() {
+              clearInterval(checkInterval);
+              if (!cleanupDone) {
+                doCleanup();
+              }
+            }, 1000);
+          } catch (e) {
+            console.error('Error triggering print:', e);
+            removePrintFrame();
+          }
+        }, 250);
+      } catch (e) {
+        console.error('Error accessing iframe:', e);
+        removePrintFrame();
+      }
+    };
+    
+    // Wait for iframe to load, then trigger print
+    printFrame.onload = function() {
+      triggerPrintOnce();
+    };
+    
+    // Fallback: trigger print after a delay if onload doesn't fire
+    // But only if print hasn't been triggered yet
+    setTimeout(function() {
+      if (!printTriggered) {
+        const iframeWindow = printFrame.contentWindow || printFrame.contentDocument.defaultView;
+        if (iframeWindow && iframeWindow.document && iframeWindow.document.body) {
+          triggerPrintOnce();
+        } else {
+          // Iframe not ready, remove it
+          removePrintFrame();
+        }
+      }
+    }, 1500);
   };
 
-  // Social media share links
+  // Get share URL for a platform dynamically at call time
+  const getShareUrl = (platform) => {
+    const currentUrl = generatePublicUrl();
+    const currentTitle = title || '';
+    const shortenedUrl = shortenUrl(currentUrl);
+    
+    switch (platform) {
+      case 'Facebook':
+        return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
+      case 'Twitter':
+        // Twitter: Title + shortened link
+        const twitterText = `${currentTitle} ${shortenedUrl}`;
+        return `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(twitterText)}`;
+      case 'Instagram':
+        return `https://www.instagram.com/`;
+      case 'LinkedIn':
+        return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+      case 'WhatsApp':
+        // WhatsApp: Title + shortened link
+        const whatsappText = `${currentTitle} ${shortenedUrl}`;
+        return `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+      case 'Reddit':
+        return `https://reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(currentTitle)}`;
+      case 'Email':
+        // Email: Title as subject, Title + shortened link in body
+        const emailBody = `${currentTitle}\n${shortenedUrl}`;
+        return `mailto:?subject=${encodeURIComponent(currentTitle)}&body=${encodeURIComponent(emailBody)}`;
+      default:
+        return currentUrl;
+    }
+  };
+
+  // Share links configuration
   const shareLinks = [
     {
       name: 'Facebook',
       icon: Facebook,
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
       color: 'hover:bg-blue-600'
     },
     {
       name: 'Twitter',
       icon: Twitter,
-      url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title || '')}`,
       color: 'hover:bg-sky-500'
     },
     {
       name: 'Instagram',
       icon: Instagram,
-      url: `https://www.instagram.com/`,
       color: 'hover:bg-pink-600'
     },
     {
       name: 'LinkedIn',
       icon: Share2, // Using Share2 as LinkedIn icon alternative
-      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
       color: 'hover:bg-blue-700'
     },
     {
       name: 'WhatsApp',
       icon: Share2, // Using Share2 as WhatsApp icon alternative
-      url: `https://wa.me/?text=${encodeURIComponent(title || '')}%20${encodeURIComponent(shareUrl)}`,
       color: 'hover:bg-green-600'
     },
     {
       name: 'Reddit',
       icon: Share2, // Using Share2 as Reddit icon alternative
-      url: `https://reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(title || '')}`,
       color: 'hover:bg-orange-600'
     },
     {
       name: 'Email',
       icon: Mail,
-      url: `mailto:?subject=${encodeURIComponent(title || '')}&body=${encodeURIComponent((description || '') + '\n\n' + shareUrl)}`,
       color: 'hover:bg-gray-600'
     }
   ];
@@ -798,9 +1007,11 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
         return (
           <Button
             key={link.name}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={() => {
+              // Compute share URL dynamically at click time to ensure current page URL
+              const shareUrl = getShareUrl(link.name);
+              window.open(shareUrl, '_blank', 'noopener,noreferrer');
+            }}
             variant="secondary"
             size="sm"
             icon={Icon}
@@ -815,7 +1026,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
           />
         );
       })}
-
+      
       {/* Single External Share Button - Native Share or Dropdown */}
       <div className="relative">
         <Button
@@ -864,15 +1075,17 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
               return (
                 <Button
                   key={link.name}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => {
+                    // Compute share URL dynamically at click time to ensure current page URL
+                    const shareUrl = getShareUrl(link.name);
+                    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                    setShowMoreOptions(false);
+                  }}
                   variant="ghost"
                   size="sm"
                   icon={Icon}
                   title={`Share on ${link.name}`}
                   className="w-full justify-start mb-1"
-                  onClick={() => setShowMoreOptions(false)}
                 >
                   {link.name}
                 </Button>
