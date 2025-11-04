@@ -110,6 +110,76 @@
   <body>
     <noscript>You need to enable JavaScript to run TrailVerse.</noscript>
     <div id="root"></div>
+    <!-- Update meta tags immediately for blog posts before React loads -->
+    <script>
+      // For blog posts, try to fetch and update meta tags immediately
+      // This helps platforms that partially execute JavaScript see correct meta tags
+      (function() {
+        const path = window.location.pathname;
+        if (path.startsWith('/blog/') && path !== '/blog') {
+          // Extract slug from path
+          const slug = path.split('/blog/')[1];
+          if (slug) {
+            // Try to fetch blog post data and update meta tags immediately
+            // This runs before React loads, helping crawlers see correct tags
+            fetch('/api/blogs/' + slug)
+              .then(response => response.json())
+              .then(response => {
+                // API returns { success: true, data: post }
+                const data = response.data;
+                if (data && data.title) {
+                  const updateMetaTag = (property, content) => {
+                    if (!content) return;
+                    let meta = document.querySelector('meta[property="' + property + '"]');
+                    if (!meta) {
+                      meta = document.createElement('meta');
+                      meta.setAttribute('property', property);
+                      document.head.appendChild(meta);
+                    }
+                    meta.setAttribute('content', content);
+                  };
+                  
+                  const updateTwitterTag = (name, content) => {
+                    if (!content) return;
+                    let meta = document.querySelector('meta[name="' + name + '"]');
+                    if (!meta) {
+                      meta = document.createElement('meta');
+                      meta.setAttribute('name', name);
+                      document.head.appendChild(meta);
+                    }
+                    meta.setAttribute('content', content);
+                  };
+                  
+                  const blogUrl = 'https://www.nationalparksexplorerusa.com/blog/' + slug;
+                  const blogTitle = data.title + ' | TrailVerse';
+                  const blogImage = data.featuredImage ? 
+                    (data.featuredImage.startsWith('http') ? data.featuredImage : 
+                     'https://www.nationalparksexplorerusa.com' + (data.featuredImage.startsWith('/') ? data.featuredImage : '/' + data.featuredImage)) :
+                    'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+                  
+                  // Update Open Graph tags
+                  updateMetaTag('og:type', 'article');
+                  updateMetaTag('og:url', blogUrl);
+                  updateMetaTag('og:title', blogTitle);
+                  updateMetaTag('og:description', data.excerpt || '');
+                  updateMetaTag('og:image', blogImage);
+                  
+                  // Update Twitter tags
+                  updateTwitterTag('twitter:card', 'summary_large_image');
+                  updateTwitterTag('twitter:url', blogUrl);
+                  updateTwitterTag('twitter:title', blogTitle);
+                  updateTwitterTag('twitter:description', data.excerpt || '');
+                  updateTwitterTag('twitter:image', blogImage);
+                }
+              })
+              .catch(err => {
+                // If fetch fails, React will update tags when it loads
+                console.log('Could not fetch blog post for meta tags:', err);
+              });
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

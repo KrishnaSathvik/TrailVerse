@@ -4,6 +4,7 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Button from '../components/common/Button';
+import PWAInstallPrompt from '../components/common/PWAInstallPrompt';
 import TestimonialsSection from '../components/testimonials/TestimonialsSection';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -558,6 +559,7 @@ const LandingPage = () => {
         </div>
       </section>
       <Footer />
+      <PWAInstallPrompt />
     </div>
   );
 };

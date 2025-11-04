@@ -376,6 +376,7 @@ const ParkDetailPage = ({ isPublic = false }) => {
                         title={park.fullName}
                         description={park.description}
                         image={park.images?.[0]?.url}
+                        showPrint={false}
                       />
                     </div>
                   </div>

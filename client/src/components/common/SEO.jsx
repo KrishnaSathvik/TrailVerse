@@ -19,34 +19,39 @@ const SEO = ({
   const fullTitle = title.includes(siteTitle) ? title : `${title} | ${siteTitle}`;
   
   // Convert relative image URL to absolute URL for social sharing
+  // Always use production URL for images to ensure they're accessible to crawlers
   const getAbsoluteImageUrl = (imgUrl) => {
-    if (!imgUrl || imgUrl.trim() === '') return image; // Return default if empty
+    if (!imgUrl || imgUrl.trim() === '') {
+      // Return default production image if no image provided
+      return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+    }
     
     // If already absolute URL, return as is
     if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
       return imgUrl;
     }
     
-    // If data URL, return as is (but social media can't use data URLs)
+    // If data URL, can't use for social media - return default
     if (imgUrl.startsWith('data:')) {
-      return image; // Fallback to default image
+      return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
     }
     
-    // If relative URL, make it absolute
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.nationalparksexplorerusa.com';
+    // Always use production base URL for images (not localhost)
+    // This ensures crawlers can access the images when fetching Open Graph tags
+    const productionBaseUrl = 'https://www.nationalparksexplorerusa.com';
     
     // Handle protocol-relative URLs (//example.com/image.jpg)
     if (imgUrl.startsWith('//')) {
       return `https:${imgUrl}`;
     }
     
-    // Handle relative URLs
+    // Handle relative URLs - always convert to production URL
     if (imgUrl.startsWith('/')) {
-      return `${baseUrl}${imgUrl}`;
+      return `${productionBaseUrl}${imgUrl}`;
     }
     
     // Handle relative paths without leading slash
-    return `${baseUrl}/${imgUrl}`;
+    return `${productionBaseUrl}/${imgUrl}`;
   };
   
   // Ensure image URL is absolute for social media
@@ -82,26 +87,26 @@ const SEO = ({
       {/* Robots */}
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
-      <meta property="og:url" content={url} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={absoluteImageUrl} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:type" content="image/jpeg" />
-      <meta property="og:site_name" content="TrailVerse" />
-      <meta property="og:locale" content="en_US" />
+      {/* Open Graph / Facebook - Use data-* attributes to ensure React Helmet overrides */}
+      <meta property="og:type" content={type} data-rh="true" />
+      <meta property="og:url" content={url} data-rh="true" />
+      <meta property="og:title" content={fullTitle} data-rh="true" />
+      <meta property="og:description" content={description} data-rh="true" />
+      <meta property="og:image" content={absoluteImageUrl} data-rh="true" />
+      <meta property="og:image:width" content="1200" data-rh="true" />
+      <meta property="og:image:height" content="630" data-rh="true" />
+      <meta property="og:image:type" content="image/jpeg" data-rh="true" />
+      <meta property="og:site_name" content="TrailVerse" data-rh="true" />
+      <meta property="og:locale" content="en_US" data-rh="true" />
 
       {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={url} />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={absoluteImageUrl} />
-      <meta name="twitter:creator" content="@TrailVerse" />
-      <meta name="twitter:site" content="@TrailVerse" />
+      <meta name="twitter:card" content="summary_large_image" data-rh="true" />
+      <meta name="twitter:url" content={url} data-rh="true" />
+      <meta name="twitter:title" content={fullTitle} data-rh="true" />
+      <meta name="twitter:description" content={description} data-rh="true" />
+      <meta name="twitter:image" content={absoluteImageUrl} data-rh="true" />
+      <meta name="twitter:creator" content="@TrailVerse" data-rh="true" />
+      <meta name="twitter:site" content="@TrailVerse" data-rh="true" />
 
       {/* Article specific tags */}
       {type === 'article' && published && (

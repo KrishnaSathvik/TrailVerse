@@ -280,8 +280,70 @@ const BlogPostPage = ({ isPublic = false }) => {
         const data = await blogService.getPostBySlug(slug);
         setPost(data);
         
-        // Track blog view
+        // Update meta tags immediately after fetching post data
+        // This helps platforms that check meta tags early see correct values
         if (data) {
+          // Update Open Graph tags immediately via DOM manipulation
+          // This runs before React Helmet updates them, helping crawlers see correct tags
+          const updateMetaTag = (property, content) => {
+            if (!content) return;
+            let meta = document.querySelector(`meta[property="${property}"]`);
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('property', property);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+          };
+          
+          const updateTwitterTag = (name, content) => {
+            if (!content) return;
+            let meta = document.querySelector(`meta[name="${name}"]`);
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('name', name);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+          };
+          
+          // Get absolute image URL
+          const getAbsoluteImageUrl = (imgUrl) => {
+            if (!imgUrl || imgUrl.trim() === '') {
+              return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+            }
+            if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+              return imgUrl;
+            }
+            if (imgUrl.startsWith('data:')) {
+              return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+            }
+            const productionBaseUrl = 'https://www.nationalparksexplorerusa.com';
+            if (imgUrl.startsWith('/')) {
+              return `${productionBaseUrl}${imgUrl}`;
+            }
+            return `${productionBaseUrl}/${imgUrl}`;
+          };
+          
+          const blogUrl = `https://www.nationalparksexplorerusa.com/blog/${data.slug}`;
+          const blogTitle = `${data.title} | TrailVerse`;
+          const blogImage = getAbsoluteImageUrl(data.featuredImage);
+          
+          // Update Open Graph tags immediately
+          updateMetaTag('og:type', 'article');
+          updateMetaTag('og:url', blogUrl);
+          updateMetaTag('og:title', blogTitle);
+          updateMetaTag('og:description', data.excerpt || '');
+          updateMetaTag('og:image', blogImage);
+          
+          // Update Twitter tags
+          updateTwitterTag('twitter:card', 'summary_large_image');
+          updateTwitterTag('twitter:url', blogUrl);
+          updateTwitterTag('twitter:title', blogTitle);
+          updateTwitterTag('twitter:description', data.excerpt || '');
+          updateTwitterTag('twitter:image', blogImage);
+          
+          // Track blog view
           logBlogView(data.title, data._id, data.category || 'general');
         }
       } catch (error) {
@@ -492,7 +554,7 @@ const BlogPostPage = ({ isPublic = false }) => {
           </div>
           <div className="flex-shrink-0">
             <ShareButtons 
-              url={window.location.href}
+              url={`https://www.nationalparksexplorerusa.com/blog/${post.slug}`}
               title={post.title}
               description={post.excerpt}
               image={post.featuredImage}

@@ -3,16 +3,47 @@ import { Facebook, Twitter, Instagram, Link2, Mail, Share2, Printer } from '@com
 import { useToast } from '../../context/ToastContext';
 import Button from './Button';
 
-const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
+const ShareButtons = ({ url, title, description, image, type = 'default', showPrint = null }) => {
   const { showToast } = useToast();
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   
-  // Generate share URL - always use current page URL at share time
+  // Determine if print should be shown
+  // If showPrint prop is explicitly set, use it
+  // Otherwise, only show print on blog post pages
+  const shouldShowPrint = showPrint !== null 
+    ? showPrint 
+    : (typeof window !== 'undefined' && window.location.pathname.includes('/blog/') && window.location.pathname !== '/blog');
+  
+  // Generate share URL - use production URL for rich previews, current URL as fallback
   const generatePublicUrl = () => {
-    // Always use current page URL at the time of sharing to ensure correct URL
-    if (typeof window !== 'undefined' && window.location.href) {
-    return window.location.href;
+    // If URL prop is provided and it's a production URL, use it
+    // This ensures platforms can fetch Open Graph meta tags for rich previews
+    if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
+      // If it's already a production URL, use it
+      if (url.includes('nationalparksexplorerusa.com')) {
+        return url;
+      }
     }
+    
+    // If we're on a production domain, use current URL
+    if (typeof window !== 'undefined' && window.location.href) {
+      const currentUrl = window.location.href;
+      // If current URL is production, use it
+      if (currentUrl.includes('nationalparksexplorerusa.com')) {
+        return currentUrl;
+      }
+      // If on localhost/development, construct production URL from pathname
+      if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+        const pathname = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+        // Construct production URL from current path
+        const productionUrl = `https://www.nationalparksexplorerusa.com${pathname}${search}${hash}`;
+        return productionUrl;
+      }
+      return currentUrl;
+    }
+    
     // Fallback to prop if window is not available (SSR case)
     return url || '';
   };
@@ -74,12 +105,9 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
   const handleCopyLink = () => {
     // Always get current URL at copy time
     const currentUrl = generatePublicUrl();
-    const currentTitle = title || '';
-    const shortenedUrl = shortenUrl(currentUrl);
-    // Format: "Title - shortened-url"
-    const shareText = currentTitle ? `${currentTitle}\n${shortenedUrl}` : shortenedUrl;
-    navigator.clipboard.writeText(shareText);
-    showToast('Title and link copied to clipboard!', 'success');
+    // Only copy the link, not title
+    navigator.clipboard.writeText(currentUrl);
+    showToast('Link copied to clipboard!', 'success');
   };
 
   // Native Web Share API - Share to other apps with image
@@ -89,38 +117,25 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
         // Always get current URL at share time to ensure correct URL
         const currentUrl = generatePublicUrl();
         const currentTitle = title || 'Check this out!';
-        const shortenedUrl = shortenUrl(currentUrl);
-        // Only include shortened link in text (title is already in title field to avoid duplication)
-        const shareText = shortenedUrl;
         
-        // Check if Web Share API supports files (for images)
-        // Note: title field is for the title, text is for additional info (shortened link)
-        // This prevents showing title twice
+        // For rich previews like TravelswithKrishna, we need to share the URL
+        // Platforms (WhatsApp, Facebook, etc.) will fetch Open Graph meta tags from the URL
+        // to generate rich previews with image, title, and description
+        // Some platforms auto-detect URLs from text field, causing duplication
+        // Solution: Only provide URL field (which generates rich preview) - no text field
+        // This ensures the URL appears once and rich preview is generated
         const shareData = {
           title: currentTitle,
-          text: shareText,
-          // Removed url field to prevent showing both shortened and full URL
+          url: currentUrl, // URL is key - platforms fetch this to get Open Graph tags for rich preview
+          // Note: We intentionally omit 'text' field to avoid URL duplication
+          // Platforms will show the title and generate rich preview from the URL
         };
 
-        // If image is available, try to fetch and share it
-        if (shareImageUrl && navigator.canShare) {
-          try {
-            // Fetch the image as a blob
-            const response = await fetch(shareImageUrl);
-            if (response.ok) {
-              const blob = await response.blob();
-              const file = new File([blob], 'share-image.jpg', { type: blob.type });
-              
-              // Check if we can share files
-              if (navigator.canShare({ files: [file] })) {
-                shareData.files = [file];
-              }
-            }
-          } catch (error) {
-            // If image fetch fails, continue without image
-            console.log('Could not fetch image for sharing:', error);
-          }
-        }
+        // Note: We don't include files here because:
+        // 1. When sharing a URL, platforms fetch Open Graph meta tags from the page
+        // 2. This generates rich previews with proper image, title, and description
+        // 3. Including files might cause platforms to show the file instead of the rich preview
+        // The SEO component already sets up proper og:image, og:title, og:description tags
 
         await navigator.share(shareData);
         showToast('Shared successfully!', 'success');
@@ -668,17 +683,18 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
       </style>
     `;
 
-    // Create a hidden iframe for printing instead of opening a new window/tab
-    // This avoids opening a new window and works better on mobile
+    // Create an iframe for printing - make it briefly visible to avoid browser blocking
+    // Browsers block automatic printing from hidden iframes, so we make it visible briefly
     const printFrame = document.createElement('iframe');
     printFrame.style.position = 'fixed';
     printFrame.style.right = '0';
     printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
+    printFrame.style.width = '1px';
+    printFrame.style.height = '1px';
     printFrame.style.border = 'none';
-    printFrame.style.opacity = '0';
+    printFrame.style.opacity = '0.01'; // Very slightly visible to avoid blocking
     printFrame.style.pointerEvents = 'none';
+    printFrame.style.zIndex = '-9999'; // Behind everything
     document.body.appendChild(printFrame);
 
     const printWindow = printFrame.contentWindow || printFrame.contentDocument;
@@ -935,9 +951,9 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
       case 'Facebook':
         return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
       case 'Twitter':
-        // Twitter: Title + shortened link
-        const twitterText = `${currentTitle} ${shortenedUrl}`;
-        return `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(twitterText)}`;
+        // Twitter: Only title in text (URL is provided separately, Twitter will auto-append it)
+        // This prevents showing the link twice
+        return `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(currentTitle)}`;
       case 'Instagram':
         return `https://www.instagram.com/`;
       case 'LinkedIn':
@@ -1000,7 +1016,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
   const supportsNativeShare = typeof navigator !== 'undefined' && navigator.share;
 
   return (
-    <div className="flex items-center gap-1 sm:gap-2 flex-wrap relative">
+    <div className="flex items-center gap-1 sm:gap-2 flex-wrap sm:flex-nowrap relative">
       {/* Primary social links - always visible */}
       {shareLinks.slice(0, 3).map((link) => {
         const Icon = link.icon;
@@ -1016,7 +1032,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
             size="sm"
             icon={Icon}
             title={`Share on ${link.name}`}
-            className="backdrop-blur"
+            className="backdrop-blur flex-shrink-0"
             style={{ 
               padding: '0.5rem',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -1028,7 +1044,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
       })}
       
       {/* Single External Share Button - Native Share or Dropdown */}
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         <Button
           onClick={async () => {
             // Try native share first if supported
@@ -1050,7 +1066,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
           size="sm"
           icon={Share2}
           title={supportsNativeShare ? "Share to other apps" : "More sharing options"}
-          className="backdrop-blur"
+          className="backdrop-blur flex-shrink-0"
           style={{ 
             padding: '0.5rem',
             backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -1111,7 +1127,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
         size="sm"
         icon={Link2}
         title="Copy link"
-        className="backdrop-blur"
+        className="backdrop-blur flex-shrink-0"
         style={{ 
           padding: '0.5rem',
           backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -1120,21 +1136,23 @@ const ShareButtons = ({ url, title, description, image, type = 'default' }) => {
         }}
       />
 
-      {/* Print / Save as PDF */}
-      <Button
-        onClick={handlePrint}
-        variant="secondary"
-        size="sm"
-        icon={Printer}
-        title="Print or Save as PDF"
-        className="backdrop-blur"
-        style={{ 
-          padding: '0.5rem',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: '1px',
-          borderColor: 'rgba(255, 255, 255, 0.3)'
-        }}
-      />
+      {/* Print / Save as PDF - Only show on blog posts */}
+      {shouldShowPrint && (
+        <Button
+          onClick={handlePrint}
+          variant="secondary"
+          size="sm"
+          icon={Printer}
+          title="Print or Save as PDF"
+          className="backdrop-blur flex-shrink-0"
+          style={{ 
+            padding: '0.5rem',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: '1px',
+            borderColor: 'rgba(255, 255, 255, 0.3)'
+          }}
+        />
+      )}
     </div>
   );
 };
