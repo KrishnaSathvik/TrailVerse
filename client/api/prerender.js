@@ -6,7 +6,12 @@
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
   // Get pathname from request - in Vercel, req.url includes query string
-  const pathname = req.url ? new URL(req.url, `https://${req.headers.host}`).pathname : (req.query.path || '/');
+  let pathname = req.url ? new URL(req.url, `https://${req.headers.host}`).pathname : (req.query.path || '/');
+  
+  // Remove trailing slash for consistency
+  if (pathname !== '/' && pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
 
   // Check if it's a crawler
   const crawlerPatterns = [
@@ -28,13 +33,14 @@ export default async function handler(req, res) {
     userAgent.toLowerCase().includes(pattern.toLowerCase())
   );
 
-  // If not a crawler, bypass this function
-  // Return early so Vercel can continue with normal routing
-  // Note: This means the rewrite should only apply to crawlers
-  // For non-crawlers, we'll return a 404 so Vercel falls back to index.html
+  // If not a crawler, we need to serve the React app
+  // For non-crawlers, we'll use Vercel's rewrite mechanism
   if (!isCrawler) {
-    // Return 404 so Vercel falls back to the next rewrite (index.html)
-    return res.status(404).end();
+    // Use Vercel's x-middleware-rewrite header to serve index.html
+    // This tells Vercel to rewrite the request to index.html
+    res.setHeader('x-middleware-rewrite', '/index.html');
+    // Return 200 - Vercel will handle the rewrite
+    return res.status(200).end();
   }
 
   // Default meta tags
