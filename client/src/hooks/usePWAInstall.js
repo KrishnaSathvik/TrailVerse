@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 
 /**
  * Custom hook for PWA installation functionality
@@ -32,37 +32,52 @@ export const usePWAInstall = () => {
   const [isIOS, setIsIOS] = useState(iOS);
   const [isStandalone, setIsStandalone] = useState(standalone);
   const [isMobile, setIsMobile] = useState(mobile);
+  // For iOS, always allow install if mobile and not standalone
+  // For Android, set to true if mobile and not standalone (will be refined by beforeinstallprompt)
   const [canInstall, setCanInstall] = useState(!standalone && mobile);
 
-  useEffect(() => {
+  // Use useLayoutEffect to update state synchronously before paint
+  // This ensures the button shows immediately without waiting for useEffect
+  useLayoutEffect(() => {
     // Function to check if app is installed (standalone mode)
     const checkStandalone = () => {
       const standalone = window.matchMedia('(display-mode: standalone)').matches ||
                          window.navigator.standalone ||
                          document.referrer.includes('android-app://');
-      setIsStandalone(standalone);
       return standalone;
     };
 
-    // Re-check values (they're already set in initial state, but update if changed)
+    // Re-check values immediately on mount
     const standalone = checkStandalone();
     const mobile = checkMobileSync();
     const iOS = checkIOSSync();
     
-    // Update state (in case values changed)
+    // Update state synchronously (before paint)
     setIsStandalone(standalone);
     setIsMobile(mobile);
     setIsIOS(iOS);
 
-    // If on mobile and not installed, ensure button is visible
+    // If on mobile and not installed, ensure button is visible immediately
+    // For iOS, always show if mobile and not standalone
+    // For Android, show if mobile and not standalone (canInstall will be refined by beforeinstallprompt)
     if (!standalone && mobile) {
       setCanInstall(true);
     } else {
       setCanInstall(false);
     }
+  }, []);
+
+  useEffect(() => {
+    // Function to check if app is installed (standalone mode)
+    const checkStandalone = () => {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone ||
+             document.referrer.includes('android-app://');
+    };
 
     // Only listen for beforeinstallprompt if not already installed and on mobile
-    if (!standalone && mobile && !iOS) {
+    // Use state values from the hook
+    if (!isStandalone && isMobile && !isIOS) {
       const handleBeforeInstallPrompt = (e) => {
         e.preventDefault();
         setDeferredPrompt(e);
@@ -83,7 +98,7 @@ export const usePWAInstall = () => {
         clearInterval(checkInterval);
       };
     }
-  }, []);
+  }, [isStandalone, isMobile, isIOS]);
 
   const install = async () => {
     if (deferredPrompt) {
@@ -115,10 +130,11 @@ export const usePWAInstall = () => {
     }
   };
 
-  // Show button if:
+  // Calculate if button should show:
   // 1. Not already installed (not in standalone mode)
   // 2. On mobile device
-  // 3. Either can install (Android) or is iOS (can always add to home screen)
+  // 3. For iOS: always show if mobile and not standalone
+  // 4. For Android: show if mobile, not standalone, and canInstall is true
   const shouldShowButton = !isStandalone && isMobile && (canInstall || isIOS);
 
   // Debug logging (only in development)
@@ -134,6 +150,7 @@ export const usePWAInstall = () => {
   }
 
   return {
+    // Return shouldShowButton as canInstall so component can use it directly
     canInstall: shouldShowButton,
     isIOS,
     isStandalone,

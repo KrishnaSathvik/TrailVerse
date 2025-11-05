@@ -1,6 +1,10 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://trailverse.onrender.com/api/$1" },
+    { 
+      "source": "/(blog|parks)/:path*", 
+      "destination": "/api/prerender"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

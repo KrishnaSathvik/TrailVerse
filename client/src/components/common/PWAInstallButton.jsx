@@ -12,23 +12,9 @@ const PWAInstallButton = () => {
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
 
-  // Debug logging
-  if (typeof window !== 'undefined') {
-    console.log('PWAInstallButton render:', { canInstall, isIOS, isStandalone, isMobile });
-  }
-
-  // Only show if:
-  // 1. Not already installed (not in standalone mode)
-  // 2. On mobile device  
-  // 3. Can install (returned from hook which already checks all conditions)
-  // Double-check: canInstall from hook already includes all these checks
-  const shouldShow = !isStandalone && isMobile && canInstall;
-  
-  if (typeof window !== 'undefined') {
-    console.log('PWAInstallButton shouldShow:', shouldShow, { isStandalone, isMobile, canInstall });
-  }
-  
-  if (!shouldShow) {
+  // The hook already calculates shouldShowButton and returns it as canInstall
+  // So we can use canInstall directly - it's already checking all conditions
+  if (!canInstall) {
     return null;
   }
 

@@ -209,6 +209,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // SEO Routes
 app.use('/', require('./routes/sitemap'));
 
+// Meta tags API route (for client-side fetching)
+app.use('/api/meta-tags', require('./routes/metaTags'));
+
+// Prerender route for social media crawlers (must be before static file serving)
+// Note: This only works if server serves the React app. If using Vercel/Netlify, use their prerender features instead
+app.use('/', require('./routes/prerender'));
+
 // Health check routes
 app.use('/health', require('./routes/health'));
 
