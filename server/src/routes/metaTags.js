@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const BlogPost = require('../models/BlogPost');
-const Park = require('../models/Park');
+const npsService = require('../services/npsService');
 
 /**
  * @desc    Get meta tags for a specific URL
@@ -109,7 +109,7 @@ const getMetaTags = async (req, res, next) => {
       const parkCode = pathname.split('/parks/')[1];
       if (parkCode) {
         try {
-          const park = await Park.findOne({ parkCode }).lean();
+          const park = await npsService.getParkByCode(parkCode);
           if (park) {
             const imageUrl = park.images && park.images.length > 0
               ? (park.images[0].startsWith('http')

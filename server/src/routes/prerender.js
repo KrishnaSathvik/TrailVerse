@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { isCrawler } = require('../middleware/crawlerDetection');
 const BlogPost = require('../models/BlogPost');
-const Park = require('../models/Park');
+const npsService = require('../services/npsService');
 
 /**
  * Generate pre-rendered HTML with dynamic meta tags for crawlers
@@ -65,7 +65,7 @@ const generatePrerenderedHTML = async (req, res, next) => {
       const parkCode = pathname.split('/parks/')[1];
       if (parkCode) {
         try {
-          const park = await Park.findOne({ parkCode }).lean();
+          const park = await npsService.getParkByCode(parkCode);
           if (park) {
             const imageUrl = park.images && park.images.length > 0
               ? (park.images[0].startsWith('http')
