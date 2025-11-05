@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import blogService from '../../services/blogService';
+import imageUploadService from '../../services/imageUploadService';
 import SimpleRichTextEditor from '../../components/SimpleRichTextEditor';
 import TableOfContents from '../../components/blog/TableOfContents';
 import {
@@ -31,6 +32,7 @@ const CreateBlogPage = () => {
   const [newTag, setNewTag] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const categories = [
     'Hiking',
@@ -81,15 +83,55 @@ const CreateBlogPage = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.', 'error');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      showToast('File size too large. Maximum size is 10MB.', 'error');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      // Create preview first (for immediate UI feedback)
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
-        setFormData(prev => ({ ...prev, featuredImage: reader.result }));
       };
       reader.readAsDataURL(file);
+
+      // Upload image to server
+      const uploadedImage = await imageUploadService.uploadSingleImage(file, {
+        category: 'blog',
+        isPublic: true
+      });
+
+      // Store the URL from the server (not the base64 data URL)
+      const imageUrl = uploadedImage.url;
+      setFormData(prev => ({ ...prev, featuredImage: imageUrl }));
+      
+      // Update preview with the uploaded image URL
+      setImagePreview(imageUrl);
+      
+      showToast('Image uploaded successfully!', 'success');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showToast(error.message || 'Failed to upload image. Please try again.', 'error');
+      setImagePreview(null);
+      setFormData(prev => ({ ...prev, featuredImage: '' }));
+    } finally {
+      setUploadingImage(false);
     }
   };
 

@@ -11,15 +11,25 @@ const isCrawler = (req) => {
     'LinkedInBot', // LinkedIn
     'WhatsApp', // WhatsApp
     'Slackbot', // Slack
+    'Slackbot-LinkExpanding', // Slack
     'SkypeUriPreview', // Skype
     'Applebot', // Apple
-    'Googlebot', // Google (sometimes for rich results)
-    'bingbot', // Bing
-    'YandexBot', // Yandex
     'Pinterest', // Pinterest
+    'Pinterestbot', // Pinterest bot
+    'Pinterest/0.1', // Pinterest
+    'Snapchat', // Snapchat
+    'SnapchatBot', // Snapchat bot
+    'Snapchat/1.0', // Snapchat
     'Discordbot', // Discord
     'TelegramBot', // Telegram
     'Viber', // Viber
+    'Googlebot', // Google (sometimes for rich results)
+    'bingbot', // Bing
+    'YandexBot', // Yandex
+    'Redditbot', // Reddit
+    'Tumblr', // Tumblr
+    'Line', // Line messenger
+    'WeChat', // WeChat
     'Screaming Frog SEO Spider', // SEO tools
     'SemrushBot', // SEO tools
     'AhrefsBot', // SEO tools

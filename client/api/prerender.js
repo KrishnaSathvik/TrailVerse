@@ -15,28 +15,36 @@ export default async function handler(req, res) {
 
   // Check if it's a crawler - expanded list
   const crawlerPatterns = [
-    'facebookexternalhit',
-    'Facebot',
-    'Twitterbot',
-    'LinkedInBot',
-    'WhatsApp',
-    'Slackbot',
-    'SkypeUriPreview',
-    'Applebot',
-    'Pinterest',
-    'Discordbot',
-    'TelegramBot',
-    'Viber',
+    'facebookexternalhit', // Facebook
+    'Facebot', // Facebook
+    'Twitterbot', // Twitter
     'LinkedInBot', // LinkedIn
+    'WhatsApp', // WhatsApp
+    'Slackbot', // Slack
     'Slackbot-LinkExpanding', // Slack
     'SkypeUriPreview', // Skype
     'Applebot', // Apple
+    'Pinterest', // Pinterest
+    'Pinterestbot', // Pinterest bot
+    'Pinterest/0.1', // Pinterest
+    'Snapchat', // Snapchat
+    'SnapchatBot', // Snapchat bot
+    'Snapchat/1.0', // Snapchat
+    'Discordbot', // Discord
+    'TelegramBot', // Telegram
+    'Viber', // Viber
     'Googlebot', // Google (sometimes)
     'bingbot', // Bing
     'YandexBot', // Yandex
     'SemrushBot', // SEO tools
     'AhrefsBot', // SEO tools
-    'Screaming Frog SEO Spider' // SEO tools
+    'Screaming Frog SEO Spider', // SEO tools
+    'Redditbot', // Reddit
+    'Tumblr', // Tumblr
+    'Line', // Line messenger
+    'WeChat', // WeChat
+    'QQ', // QQ
+    'Baiduspider' // Baidu
   ];
 
   const isCrawler = crawlerPatterns.some(pattern => 
@@ -87,7 +95,36 @@ export default async function handler(req, res) {
               let imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg'; // Default
               
               if (post.featuredImage) {
-                if (post.featuredImage.startsWith('http://') || post.featuredImage.startsWith('https://')) {
+                // Check if it's a data URL (base64) - social media crawlers can't use these
+                if (post.featuredImage.startsWith('data:image/')) {
+                  console.log('Featured image is a data URL (base64) - cannot use for social media');
+                  // Try to extract image from content HTML as fallback
+                  if (post.content) {
+                    const imgMatch = post.content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+                    if (imgMatch && imgMatch[1]) {
+                      const contentImgUrl = imgMatch[1];
+                      if (!contentImgUrl.startsWith('data:image/')) {
+                        // Found a non-data URL image in content
+                        if (contentImgUrl.startsWith('http://') || contentImgUrl.startsWith('https://')) {
+                          imageUrl = contentImgUrl;
+                        } else if (contentImgUrl.startsWith('/api/images/file/')) {
+                          imageUrl = `https://trailverse.onrender.com${contentImgUrl}`;
+                        } else if (contentImgUrl.startsWith('/')) {
+                          imageUrl = `https://www.nationalparksexplorerusa.com${contentImgUrl}`;
+                        } else {
+                          imageUrl = `https://www.nationalparksexplorerusa.com/${contentImgUrl}`;
+                        }
+                        console.log(`Using image from content: ${imageUrl}`);
+                      } else {
+                        console.log('Content image is also a data URL - using default');
+                      }
+                    } else {
+                      console.log('No valid image found in content - using default');
+                    }
+                  } else {
+                    console.log('No content available - using default image');
+                  }
+                } else if (post.featuredImage.startsWith('http://') || post.featuredImage.startsWith('https://')) {
                   // Already a full URL
                   imageUrl = post.featuredImage;
                 } else if (post.featuredImage.startsWith('/api/images/file/')) {
@@ -102,7 +139,8 @@ export default async function handler(req, res) {
                 }
               }
               
-              console.log(`Featured image URL: ${imageUrl}`);
+              console.log(`Final featured image URL: ${imageUrl}`);
+              console.log(`Original featuredImage format: ${post.featuredImage ? (post.featuredImage.substring(0, 50) + '...') : 'null'}`);
               
               metaTags = {
                 title: `${post.title} | TrailVerse`,
@@ -218,6 +256,13 @@ export default async function handler(req, res) {
     <meta name="twitter:description" content="${metaTags.description}" />
     <meta name="twitter:image" content="${metaTags.image}" />
     <meta name="twitter:site" content="@TrailVerse" />
+    
+    <!-- Snapchat-specific tags -->
+    <meta property="snapchat:sticker" content="${metaTags.image}" />
+    
+    <!-- Pinterest-specific tags -->
+    <meta property="pinterest:media" content="${metaTags.image}" />
+    <meta property="pinterest:description" content="${metaTags.description}" />
     
     ${metaTags.type === 'article' ? `
     <!-- Article specific tags -->
