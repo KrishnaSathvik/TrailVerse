@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     pathname = pathname.slice(0, -1);
   }
 
-  // Check if it's a crawler
+  // Check if it's a crawler - expanded list
   const crawlerPatterns = [
     'facebookexternalhit',
     'Facebot',
@@ -26,21 +26,34 @@ export default async function handler(req, res) {
     'Pinterest',
     'Discordbot',
     'TelegramBot',
-    'Viber'
+    'Viber',
+    'LinkedInBot', // LinkedIn
+    'Slackbot-LinkExpanding', // Slack
+    'SkypeUriPreview', // Skype
+    'Applebot', // Apple
+    'Googlebot', // Google (sometimes)
+    'bingbot', // Bing
+    'YandexBot', // Yandex
+    'SemrushBot', // SEO tools
+    'AhrefsBot', // SEO tools
+    'Screaming Frog SEO Spider' // SEO tools
   ];
 
   const isCrawler = crawlerPatterns.some(pattern => 
     userAgent.toLowerCase().includes(pattern.toLowerCase())
   );
 
-  // If not a crawler, we need to serve the React app
-  // For non-crawlers, we'll use Vercel's rewrite mechanism
+  // Log for debugging (remove in production if needed)
+  console.log('Prerender function called:', {
+    pathname,
+    userAgent: userAgent.substring(0, 100), // Log first 100 chars
+    isCrawler
+  });
+
+  // If not a crawler, redirect to index.html so React Router can handle it
   if (!isCrawler) {
-    // Use Vercel's x-middleware-rewrite header to serve index.html
-    // This tells Vercel to rewrite the request to index.html
-    res.setHeader('x-middleware-rewrite', '/index.html');
-    // Return 200 - Vercel will handle the rewrite
-    return res.status(200).end();
+    // Redirect to index.html - React Router will handle the routing
+    return res.redirect(307, `/index.html`);
   }
 
   // Default meta tags
@@ -58,24 +71,42 @@ export default async function handler(req, res) {
   try {
     // Handle blog post routes
     if (pathname.startsWith('/blog/') && pathname !== '/blog') {
-      const slug = pathname.split('/blog/')[1];
+      const slug = pathname.split('/blog/')[1]?.split('?')[0]?.split('#')[0]; // Remove query params and hash
       if (slug) {
+        console.log(`Fetching blog post for slug: ${slug}`);
         try {
           const response = await fetch(`${apiBaseUrl}/api/blogs/${slug}`);
+          console.log(`API response status: ${response.status}`);
           if (response.ok) {
             const result = await response.json();
             const post = result.data;
+            console.log(`Blog post found: ${post?.title || 'No title'}`);
             
             if (post) {
-              const imageUrl = post.featuredImage 
-                ? (post.featuredImage.startsWith('http') 
-                    ? post.featuredImage 
-                    : `https://www.nationalparksexplorerusa.com${post.featuredImage.startsWith('/') ? post.featuredImage : '/' + post.featuredImage}`)
-                : 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+              // Handle featured image URL construction
+              let imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg'; // Default
+              
+              if (post.featuredImage) {
+                if (post.featuredImage.startsWith('http://') || post.featuredImage.startsWith('https://')) {
+                  // Already a full URL
+                  imageUrl = post.featuredImage;
+                } else if (post.featuredImage.startsWith('/api/images/file/')) {
+                  // API image path - convert to full URL
+                  imageUrl = `https://trailverse.onrender.com${post.featuredImage}`;
+                } else if (post.featuredImage.startsWith('/')) {
+                  // Relative path starting with /
+                  imageUrl = `https://www.nationalparksexplorerusa.com${post.featuredImage}`;
+                } else {
+                  // Relative path without /
+                  imageUrl = `https://www.nationalparksexplorerusa.com/${post.featuredImage}`;
+                }
+              }
+              
+              console.log(`Featured image URL: ${imageUrl}`);
               
               metaTags = {
                 title: `${post.title} | TrailVerse`,
-                description: post.excerpt || post.content?.substring(0, 200) || metaTags.description,
+                description: post.excerpt || (post.content ? post.content.substring(0, 200).replace(/<[^>]*>/g, '') : '') || metaTags.description,
                 image: imageUrl,
                 url: `https://www.nationalparksexplorerusa.com/blog/${post.slug}`,
                 type: 'article',
@@ -83,30 +114,58 @@ export default async function handler(req, res) {
                 modified: post.updatedAt,
                 author: post.author?.name || 'TrailVerse Team'
               };
+              console.log(`Meta tags set for blog post: ${metaTags.title}`);
             }
+          } else {
+            console.error(`Failed to fetch blog post: ${response.status} ${response.statusText}`);
           }
         } catch (error) {
-          console.error('Error fetching blog post:', error);
+          console.error('Error fetching blog post:', error.message);
         }
       }
     }
 
     // Handle park detail routes
     if (pathname.startsWith('/parks/') && pathname !== '/parks') {
-      const parkCode = pathname.split('/parks/')[1];
+      const parkCode = pathname.split('/parks/')[1]?.split('?')[0]?.split('#')[0]; // Remove query params and hash
       if (parkCode) {
+        console.log(`Fetching park for code: ${parkCode}`);
         try {
           const response = await fetch(`${apiBaseUrl}/api/parks/${parkCode}`);
+          console.log(`API response status: ${response.status}`);
           if (response.ok) {
             const result = await response.json();
             const park = result.data;
+            console.log(`Park found: ${park?.name || 'No name'}`);
             
             if (park) {
-              const imageUrl = park.images && park.images.length > 0
-                ? (park.images[0].startsWith('http')
-                    ? park.images[0]
-                    : `https://www.nationalparksexplorerusa.com${park.images[0].startsWith('/') ? park.images[0] : '/' + park.images[0]}`)
-                : 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+              // Handle park image URL construction
+              // Park images from NPS API can be objects with .url property or strings
+              let imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg'; // Default
+              
+              if (park.images && park.images.length > 0) {
+                // Get first image - could be object with .url or string
+                const firstImage = park.images[0];
+                const imageString = typeof firstImage === 'string' ? firstImage : (firstImage.url || firstImage.src || '');
+                
+                if (imageString) {
+                  if (imageString.startsWith('http://') || imageString.startsWith('https://')) {
+                    // Already a full URL (from NPS API)
+                    imageUrl = imageString;
+                  } else if (imageString.startsWith('/api/images/file/')) {
+                    // API image path - convert to full URL
+                    imageUrl = `https://trailverse.onrender.com${imageString}`;
+                  } else if (imageString.startsWith('/')) {
+                    // Relative path starting with /
+                    imageUrl = `https://www.nationalparksexplorerusa.com${imageString}`;
+                  } else {
+                    // Relative path without /
+                    imageUrl = `https://www.nationalparksexplorerusa.com/${imageString}`;
+                  }
+                }
+              }
+              
+              console.log(`Park image URL: ${imageUrl}`);
               
               metaTags = {
                 title: `${park.name} | TrailVerse`,
@@ -115,10 +174,13 @@ export default async function handler(req, res) {
                 url: `https://www.nationalparksexplorerusa.com/parks/${park.parkCode}`,
                 type: 'website'
               };
+              console.log(`Meta tags set for park: ${metaTags.title}`);
             }
+          } else {
+            console.error(`Failed to fetch park: ${response.status} ${response.statusText}`);
           }
         } catch (error) {
-          console.error('Error fetching park:', error);
+          console.error('Error fetching park:', error.message);
         }
       }
     }
@@ -187,8 +249,17 @@ export default async function handler(req, res) {
   </body>
 </html>`;
 
-  res.setHeader('Content-Type', 'text/html');
+  // Log final meta tags for debugging
+  console.log('Final meta tags:', {
+    title: metaTags.title,
+    description: metaTags.description.substring(0, 100),
+    image: metaTags.image,
+    url: metaTags.url
+  });
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+  res.setHeader('X-Robots-Tag', 'noindex'); // Don't index prerendered pages
   return res.status(200).send(html);
 }
 

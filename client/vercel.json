@@ -3,25 +3,11 @@
     { "source": "/api/(.*)", "destination": "https://trailverse.onrender.com/api/$1" },
     { 
       "source": "/blog/:slug",
-      "destination": "/api/prerender",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Pinterest|Discordbot|TelegramBot|Viber)"
-        }
-      ]
+      "destination": "/api/prerender"
     },
     { 
       "source": "/parks/:parkCode",
-      "destination": "/api/prerender",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Pinterest|Discordbot|TelegramBot|Viber)"
-        }
-      ]
+      "destination": "/api/prerender"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
