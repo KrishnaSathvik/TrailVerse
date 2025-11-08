@@ -19,8 +19,17 @@ const { app, server, wsService } = require('./src/app');
 // Database connection
 const connectDB = require('./src/config/database');
 
+// Scheduler service for scheduled blog posts
+const { startScheduler } = require('./src/services/schedulerService');
+
 // Connect to database
-connectDB();
+connectDB().then(() => {
+  // Start the scheduler after database connection is established
+  startScheduler();
+}).catch((err) => {
+  console.error('❌ Failed to connect to database:', err);
+  process.exit(1);
+});
 
 const PORT = process.env.PORT || 5001;
 

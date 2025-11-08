@@ -132,12 +132,12 @@ const startScheduler = () => {
   // Run immediately
   publishScheduledPosts();
   
-  // Then run every 5 minutes
+  // Then run every 1 minute to catch posts more quickly
   setInterval(() => {
     publishScheduledPosts();
-  }, 5 * 60 * 1000); // 5 minutes
+  }, 1 * 60 * 1000); // 1 minute
   
-  console.log('✅ Blog post scheduler started (checking every 5 minutes)');
+  console.log('✅ Blog post scheduler started (checking every 1 minute)');
 };
 
 module.exports = {

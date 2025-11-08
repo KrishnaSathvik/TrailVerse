@@ -35,6 +35,8 @@ const AdminDashboard = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage] = useState(5);
 
   useEffect(() => {
     fetchData();
@@ -45,15 +47,37 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Reset to page 1 when posts change (e.g., after deletion)
+  useEffect(() => {
+    const totalPages = Math.ceil(posts.length / postsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [posts.length, postsPerPage, currentPage]);
+
   const fetchData = async () => {
     let allPosts = []; // Declare allPosts at function scope
     try {
-      // Fetch all posts (including drafts and scheduled)
-      const publishedData = await blogService.getAllPosts({ status: 'published', limit: 100 });
-      const draftData = await blogService.getAllPosts({ status: 'draft', limit: 100 });
-      const scheduledData = await blogService.getAllPosts({ status: 'scheduled', limit: 100 });
+      // Fetch all posts (including drafts, scheduled, and archived) - increase limit to get all posts
+      const publishedData = await blogService.getAllPosts({ status: 'published', limit: 1000 });
+      const draftData = await blogService.getAllPosts({ status: 'draft', limit: 1000 });
+      const scheduledData = await blogService.getAllPosts({ status: 'scheduled', limit: 1000 });
+      const archivedData = await blogService.getAllPosts({ status: 'archived', limit: 1000 });
       
-      allPosts = [...publishedData.data, ...draftData.data];
+      // Combine all posts (excluding scheduled, which are shown separately)
+      allPosts = [
+        ...(publishedData.data || []),
+        ...(draftData.data || []),
+        ...(archivedData.data || [])
+      ];
+      
+      // Sort by most recent first (publishedAt or createdAt)
+      allPosts.sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt) : new Date(a.createdAt);
+        const dateB = b.publishedAt ? new Date(b.publishedAt) : new Date(b.createdAt);
+        return dateB - dateA; // Most recent first
+      });
+      
       setPosts(allPosts);
       
       // Store scheduled posts separately, sorted by scheduled date
@@ -130,11 +154,51 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
         await blogService.deletePost(id);
+        // Reset to page 1 if current page becomes empty after deletion
+        const totalPages = Math.ceil((posts.length - 1) / postsPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+          setCurrentPage(1);
+        }
         fetchData();
       } catch (error) {
         console.error('Error deleting post:', error);
         alert('Failed to delete post');
       }
+    }
+  };
+
+  const handlePublishScheduled = async () => {
+    try {
+      const response = await api.post('/blogs/publish-scheduled');
+      if (response.data.success) {
+        showToast(`Published ${response.data.data.length} scheduled post(s)`, 'success');
+        fetchData();
+      } else {
+        showToast('Failed to publish scheduled posts', 'error');
+      }
+    } catch (error) {
+      console.error('Error publishing scheduled posts:', error);
+      showToast('Failed to publish scheduled posts', 'error');
+    }
+  };
+
+  const handlePublishNow = async (postId) => {
+    try {
+      const post = scheduledPosts.find(p => p._id === postId);
+      if (!post) return;
+      
+      // Update post to published status
+      await blogService.updatePost(postId, {
+        status: 'published',
+        publishedAt: new Date(),
+        scheduledAt: null
+      });
+      
+      showToast('Post published successfully!', 'success');
+      fetchData();
+    } catch (error) {
+      console.error('Error publishing post:', error);
+      showToast('Failed to publish post', 'error');
     }
   };
 
@@ -569,68 +633,153 @@ const AdminDashboard = () => {
                       </td>
                     </tr>
                   ) : (
-                    posts.slice(0, 5).map(post => (
-                      <tr key={post._id} className="border-b hover:bg-white/5 transition"
-                        style={{ borderColor: 'var(--border)' }}
-                      >
-                        <td className="py-4 px-4">
-                          <p className="font-semibold"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            {post.title}
-                          </p>
-                          <p className="text-sm"
-                            style={{ color: 'var(--text-tertiary)' }}
-                          >
-                            {post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
-                          </p>
-                        </td>
-                        <td className="py-4 px-4 text-sm"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          {post.author || 'Admin'}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            post.status === 'published'
-                              ? 'bg-green-500/20 text-green-400'
-                              : post.status === 'scheduled'
-                              ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-yellow-500/20 text-yellow-400'
-                          }`}>
-                            {post.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            {post.views || 0}
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              to={`/admin/blog/edit/${post._id}`}
-                              className="p-2 rounded-xl hover:bg-white/5 transition"
-                              style={{ color: 'var(--text-secondary)' }}
+                    (() => {
+                      // Calculate pagination
+                      const indexOfLastPost = currentPage * postsPerPage;
+                      const indexOfFirstPost = indexOfLastPost - postsPerPage;
+                      const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
+                      const totalPages = Math.ceil(posts.length / postsPerPage);
+                      
+                      return (
+                        <>
+                          {currentPosts.map(post => (
+                            <tr key={post._id} className="border-b hover:bg-white/5 transition"
+                              style={{ borderColor: 'var(--border)' }}
                             >
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(post._id)}
-                              className="p-2 rounded-xl hover:bg-red-500/10 transition text-red-400"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              <td className="py-4 px-4">
+                                <p className="font-semibold"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {post.title}
+                                </p>
+                                <p className="text-sm"
+                                  style={{ color: 'var(--text-tertiary)' }}
+                                >
+                                  {post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
+                                </p>
+                              </td>
+                              <td className="py-4 px-4 text-sm"
+                                style={{ color: 'var(--text-secondary)' }}
+                              >
+                                {post.author || 'Admin'}
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                  post.status === 'published'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : post.status === 'scheduled'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : 'bg-yellow-500/20 text-yellow-400'
+                                }`}>
+                                  {post.status}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-sm"
+                                style={{ color: 'var(--text-secondary)' }}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <Eye className="h-4 w-4" />
+                                  {post.views || 0}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Link
+                                    to={`/admin/blog/edit/${post._id}`}
+                                    className="p-2 rounded-xl hover:bg-white/5 transition"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Link>
+                                  <button
+                                    onClick={() => handleDelete(post._id)}
+                                    className="p-2 rounded-xl hover:bg-red-500/10 transition text-red-400"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </>
+                      );
+                    })()
                   )}
                 </tbody>
               </table>
+              
+              {/* Pagination Controls */}
+              {posts.length > postsPerPage && (
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="text-sm"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Showing {((currentPage - 1) * postsPerPage) + 1} to {Math.min(currentPage * postsPerPage, posts.length)} of {posts.length} posts
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        backgroundColor: currentPage === 1 ? 'var(--surface-hover)' : 'var(--surface)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)',
+                        color: currentPage === 1 ? 'var(--text-tertiary)' : 'var(--text-primary)'
+                      }}
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.ceil(posts.length / postsPerPage) }, (_, i) => i + 1)
+                        .filter(page => {
+                          // Show first page, last page, current page, and pages around current
+                          if (page === 1 || page === Math.ceil(posts.length / postsPerPage)) return true;
+                          if (Math.abs(page - currentPage) <= 1) return true;
+                          return false;
+                        })
+                        .map((page, index, array) => {
+                          // Add ellipsis if there's a gap
+                          const showEllipsisBefore = index > 0 && page - array[index - 1] > 1;
+                          return (
+                            <React.Fragment key={page}>
+                              {showEllipsisBefore && (
+                                <span className="px-2" style={{ color: 'var(--text-tertiary)' }}>...</span>
+                              )}
+                              <button
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
+                                  currentPage === page ? 'text-white' : ''
+                                }`}
+                                style={{
+                                  backgroundColor: currentPage === page ? 'var(--forest-500)' : 'var(--surface)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)',
+                                  color: currentPage === page ? 'white' : 'var(--text-primary)'
+                                }}
+                              >
+                                {page}
+                              </button>
+                            </React.Fragment>
+                          );
+                        })}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(Math.ceil(posts.length / postsPerPage), prev + 1))}
+                      disabled={currentPage === Math.ceil(posts.length / postsPerPage)}
+                      className="px-4 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        backgroundColor: currentPage === Math.ceil(posts.length / postsPerPage) ? 'var(--surface-hover)' : 'var(--surface)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)',
+                        color: currentPage === Math.ceil(posts.length / postsPerPage) ? 'var(--text-tertiary)' : 'var(--text-primary)'
+                      }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -655,6 +804,21 @@ const AdminDashboard = () => {
                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400">
                     {scheduledPosts.length}
                   </span>
+                  {scheduledPosts.some(post => {
+                    const scheduledDate = post.scheduledAt ? new Date(post.scheduledAt) : null;
+                    return scheduledDate && scheduledDate <= new Date();
+                  }) && (
+                    <button
+                      onClick={handlePublishScheduled}
+                      className="px-4 py-2 rounded-xl text-sm font-medium transition"
+                      style={{
+                        backgroundColor: 'var(--forest-500)',
+                        color: 'white'
+                      }}
+                    >
+                      Publish All Overdue
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -729,6 +893,19 @@ const AdminDashboard = () => {
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center justify-end gap-2">
+                              {scheduledStatus.status === 'overdue' && (
+                                <button
+                                  onClick={() => handlePublishNow(post._id)}
+                                  className="px-3 py-1 rounded-xl text-xs font-medium transition"
+                                  style={{
+                                    backgroundColor: 'var(--forest-500)',
+                                    color: 'white'
+                                  }}
+                                  title="Publish now"
+                                >
+                                  Publish Now
+                                </button>
+                              )}
                               <Link
                                 to={`/admin/blog/edit/${post._id}`}
                                 className="p-2 rounded-xl hover:bg-white/5 transition"
