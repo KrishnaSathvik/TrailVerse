@@ -11,9 +11,26 @@ const normalizeImageUrl = (url) => {
     return null; // Data URLs can't be used for images
   }
 
-  // Convert HTTP to HTTPS
+  // Convert /uploads/... paths to /api/images/file/... paths FIRST
+  if (url.includes('/uploads/')) {
+    // Extract the path after /uploads/
+    const uploadsIndex = url.indexOf('/uploads/');
+    const pathAfterUploads = url.substring(uploadsIndex + '/uploads/'.length);
+    
+    // Convert to API endpoint format
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Full URL - extract domain and convert path
+      const domain = url.substring(0, uploadsIndex);
+      url = `${domain}/api/images/file/${pathAfterUploads}`;
+    } else {
+      // Relative path
+      url = `/api/images/file/${pathAfterUploads}`;
+    }
+  }
+
+  // Convert HTTP to HTTPS (after path conversion)
   if (url.startsWith('http://')) {
-    return url.replace('http://', 'https://');
+    url = url.replace('http://', 'https://');
   }
 
   // If already HTTPS or relative, return as is
