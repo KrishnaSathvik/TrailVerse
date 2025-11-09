@@ -3,6 +3,13 @@
  * Detects social media crawlers and serves pre-rendered HTML with correct meta tags
  */
 
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
   // Get pathname from request - in Vercel, req.url includes query string
@@ -61,19 +68,61 @@ export default async function handler(req, res) {
   // If the pathname is exactly /blog (not /blog/:slug), always serve index.html
   // This prevents the prerender function from interfering with the blog listing page
   if (pathname === '/blog') {
-    res.setHeader('x-middleware-rewrite', '/index.html');
-    return res.status(200).end();
+    try {
+      // Read and return the actual index.html file
+      // The api folder is at client/api/, so index.html is at ../index.html
+      const indexPath = join(__dirname, '..', 'index.html');
+      const indexHtml = readFileSync(indexPath, 'utf-8');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(indexHtml);
+    } catch (error) {
+      console.error('Error reading index.html:', error);
+      // Fallback to simple HTML
+      const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrailVerse - Blog</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(html);
+    }
   }
 
-  // If not a crawler, we need to let Vercel's catch-all rewrite handle it
-  // The issue is that this rewrite matches first, so we need to return a response
-  // that tells Vercel to continue with the next rewrite (catch-all to index.html)
+  // If not a crawler, return the actual index.html file
+  // This allows React Router to handle the routing client-side
   if (!isCrawler) {
-    // For non-crawlers, we want to serve index.html so React Router can handle routing
-    // We'll use a rewrite header to tell Vercel to serve index.html
-    res.setHeader('x-middleware-rewrite', '/index.html');
-    // Return empty response - Vercel will serve index.html
-    return res.status(200).end();
+    try {
+      // Read and return the actual index.html file
+      // The api folder is at client/api/, so index.html is at ../index.html
+      const indexPath = join(__dirname, '..', 'index.html');
+      const indexHtml = readFileSync(indexPath, 'utf-8');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(indexHtml);
+    } catch (error) {
+      console.error('Error reading index.html:', error);
+      // Fallback to simple HTML
+      const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TrailVerse</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(html);
+    }
   }
 
   // Default meta tags
