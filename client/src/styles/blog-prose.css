@@ -257,6 +257,8 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  display: table;
+  min-width: 100%;
 }
 
 .blog-prose th {
@@ -266,6 +268,7 @@
   font-weight: 700;
   color: var(--text-primary);
   border-bottom: 2px solid var(--border);
+  white-space: nowrap;
 }
 
 .blog-prose td {
@@ -380,6 +383,43 @@
 
   .blog-prose p:first-of-type {
     font-size: 1.125rem;
+  }
+
+  /* Responsive tables - make horizontally scrollable on mobile */
+  .blog-prose table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    margin: 2rem -1rem;
+    padding: 0 1rem;
+  }
+
+  .blog-prose table thead,
+  .blog-prose table tbody {
+    display: table;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .blog-prose table tr {
+    display: table-row;
+  }
+
+  .blog-prose table th,
+  .blog-prose table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+    white-space: normal;
+    word-wrap: break-word;
+    min-width: 100px;
+  }
+
+  .blog-prose table th {
+    font-size: 0.8125rem;
+    padding: 0.75rem 0.5rem;
+    white-space: nowrap;
   }
 }
 
