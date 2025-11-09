@@ -11,26 +11,16 @@ const normalizeImageUrl = (url) => {
     return null; // Data URLs can't be used for images
   }
 
-  // Convert /uploads/... paths to /api/images/file/... paths FIRST
-  if (url.includes('/uploads/')) {
-    // Extract the path after /uploads/
-    const uploadsIndex = url.indexOf('/uploads/');
-    const pathAfterUploads = url.substring(uploadsIndex + '/uploads/'.length);
-    
-    // Convert to API endpoint format
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      // Full URL - extract domain and convert path
-      const domain = url.substring(0, uploadsIndex);
-      url = `${domain}/api/images/file/${pathAfterUploads}`;
-    } else {
-      // Relative path
-      url = `/api/images/file/${pathAfterUploads}`;
-    }
-  }
-
-  // Convert HTTP to HTTPS (after path conversion)
+  // Convert HTTP to HTTPS
   if (url.startsWith('http://')) {
     url = url.replace('http://', 'https://');
+  }
+
+  // If it's a full URL to trailverse.onrender.com/uploads/, convert to relative path
+  // This allows Vercel rewrite to proxy it to the server
+  if (url.includes('trailverse.onrender.com/uploads/')) {
+    const uploadsIndex = url.indexOf('/uploads/');
+    url = url.substring(uploadsIndex); // Extract /uploads/... part
   }
 
   // If already HTTPS or relative, return as is
@@ -78,9 +68,11 @@ const OptimizedImage = ({
       height={height}
       className={className}
       loading="lazy"
-      onError={() => setError(true)}
+      onError={(e) => {
+        console.error('Image failed to load:', imageSrc, e);
+        setError(true);
+      }}
       style={{ objectFit }}
-      crossOrigin="anonymous"
     />
   );
 };

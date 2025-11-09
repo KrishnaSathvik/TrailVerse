@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://trailverse.onrender.com/api/$1" },
+    { "source": "/uploads/(.*)", "destination": "https://trailverse.onrender.com/uploads/$1" },
     { 
       "source": "/blog/:slug",
       "destination": "/api/prerender"
