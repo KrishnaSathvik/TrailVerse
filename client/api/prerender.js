@@ -23,14 +23,31 @@ const normalizeImageUrl = (url) => {
     url = url.replace(/^http:\/\//i, 'https://');
   }
   
-  // If already HTTPS, return as is
+  // If already HTTPS, check if it's a trailverse.onrender.com URL
+  // Convert to production domain for better accessibility
+  if (url.startsWith('https://trailverse.onrender.com')) {
+    // Convert Render.com URLs to production domain
+    url = url.replace('https://trailverse.onrender.com', 'https://www.nationalparksexplorerusa.com');
+  }
+  
+  // If already HTTPS with production domain, return as is
+  if (url.startsWith('https://www.nationalparksexplorerusa.com')) {
+    return url;
+  }
+  
+  // If it's already a full HTTPS URL (from NPS API, etc.), return as is
   if (url.startsWith('https://')) {
     return url;
   }
   
-  // Handle API image paths
+  // Handle API image paths - use production domain (Vercel proxy will handle it)
   if (url.startsWith('/api/images/file/')) {
-    return `https://trailverse.onrender.com${url}`;
+    return `https://www.nationalparksexplorerusa.com${url}`;
+  }
+  
+  // Handle /uploads/ paths - use production domain
+  if (url.startsWith('/uploads/')) {
+    return `https://www.nationalparksexplorerusa.com${url}`;
   }
   
   // Handle relative paths
@@ -261,6 +278,25 @@ export default async function handler(req, res) {
     console.error('Error in prerender function:', error);
   }
 
+  // Helper function to escape HTML entities (for text content only, not URLs)
+  const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  // Escape meta tag text values to prevent HTML injection
+  // URLs should NOT be escaped - browsers handle URL encoding automatically
+  const safeTitle = escapeHtml(metaTags.title);
+  const safeDescription = escapeHtml(metaTags.description);
+  // Don't escape image URL or page URL - they need to remain valid URLs
+  const safeImage = metaTags.image || 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+  const safeUrl = metaTags.url || 'https://www.nationalparksexplorerusa.com';
+
   // Generate HTML with meta tags
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -270,17 +306,17 @@ export default async function handler(req, res) {
     <base href="/" />
     
     <!-- Primary Meta Tags -->
-    <title>${metaTags.title}</title>
-    <meta name="title" content="${metaTags.title}" />
-    <meta name="description" content="${metaTags.description}" />
+    <title>${safeTitle}</title>
+    <meta name="title" content="${safeTitle}" />
+    <meta name="description" content="${safeDescription}" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="${metaTags.type}" />
-    <meta property="og:url" content="${metaTags.url}" />
-    <meta property="og:title" content="${metaTags.title}" />
-    <meta property="og:description" content="${metaTags.description}" />
-    <meta property="og:image" content="${metaTags.image}" />
-    <meta property="og:image:secure_url" content="${metaTags.image}" />
+    <meta property="og:url" content="${safeUrl}" />
+    <meta property="og:title" content="${safeTitle}" />
+    <meta property="og:description" content="${safeDescription}" />
+    <meta property="og:image" content="${safeImage}" />
+    <meta property="og:image:secure_url" content="${safeImage}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/jpeg" />
@@ -288,11 +324,11 @@ export default async function handler(req, res) {
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="${metaTags.url}" />
-    <meta name="twitter:title" content="${metaTags.title}" />
-    <meta name="twitter:description" content="${metaTags.description}" />
-    <meta name="twitter:image" content="${metaTags.image}" />
-    <meta name="twitter:image:src" content="${metaTags.image}" />
+    <meta name="twitter:url" content="${safeUrl}" />
+    <meta name="twitter:title" content="${safeTitle}" />
+    <meta name="twitter:description" content="${safeDescription}" />
+    <meta name="twitter:image" content="${safeImage}" />
+    <meta name="twitter:image:src" content="${safeImage}" />
     <meta name="twitter:site" content="@TrailVerse" />
     
     <!-- Mobile-specific tags -->
@@ -301,39 +337,39 @@ export default async function handler(req, res) {
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     
     <!-- Snapchat-specific tags -->
-    <meta property="snapchat:sticker" content="${metaTags.image}" />
+    <meta property="snapchat:sticker" content="${safeImage}" />
     
     <!-- Pinterest-specific tags -->
-    <meta property="pinterest:media" content="${metaTags.image}" />
-    <meta property="pinterest:description" content="${metaTags.description}" />
+    <meta property="pinterest:media" content="${safeImage}" />
+    <meta property="pinterest:description" content="${safeDescription}" />
     
     <!-- WhatsApp-specific tags (uses Open Graph, but ensure HTTPS) -->
-    <meta property="og:image:url" content="${metaTags.image}" />
+    <meta property="og:image:url" content="${safeImage}" />
     
     ${metaTags.type === 'article' ? `
     <!-- Article specific tags -->
     <meta property="article:published_time" content="${metaTags.published || ''}" />
-    ${metaTags.modified ? `<meta property="article:modified_time" content="${metaTags.modified}" />` : ''}
-    <meta property="article:author" content="${metaTags.author || 'TrailVerse Team'}" />
+    ${metaTags.modified ? `<meta property="article:modified_time" content="${escapeHtml(metaTags.modified)}" />` : ''}
+    <meta property="article:author" content="${escapeHtml(metaTags.author || 'TrailVerse Team')}" />
     <meta property="article:section" content="Travel" />
     ` : ''}
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="${metaTags.url}" />
+    <link rel="canonical" href="${safeUrl}" />
     
     <!-- Redirect to actual page for JavaScript-enabled browsers -->
     <script>
       // Only redirect if not a crawler (crawlers won't execute this)
       if (typeof window !== 'undefined') {
-        window.location.href = '${metaTags.url}';
+        window.location.href = ${JSON.stringify(metaTags.url)};
       }
     </script>
   </head>
   <body>
     <noscript>
-      <h1>${metaTags.title}</h1>
-      <p>${metaTags.description}</p>
-      <p><a href="${metaTags.url}">Visit TrailVerse</a></p>
+      <h1>${safeTitle}</h1>
+      <p>${safeDescription}</p>
+      <p><a href="${safeUrl}">Visit TrailVerse</a></p>
     </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
