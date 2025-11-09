@@ -16,11 +16,31 @@ const normalizeImageUrl = (url) => {
     url = url.replace('http://', 'https://');
   }
 
-  // If it's a full URL to trailverse.onrender.com/uploads/, convert to relative path
-  // This allows Vercel rewrite to proxy it to the server
-  if (url.includes('trailverse.onrender.com/uploads/')) {
+  const isDevelopment = import.meta.env.DEV;
+  let apiBaseUrl = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:5001' : 'https://trailverse.onrender.com');
+  
+  // Normalize apiBaseUrl - remove trailing /api if present
+  if (apiBaseUrl.endsWith('/api')) {
+    apiBaseUrl = apiBaseUrl.slice(0, -4);
+  }
+  
+  // If it's a trailverse.onrender.com/uploads/ URL, try to use the API endpoint first
+  if (url.includes('trailverse.onrender.com/uploads/') || url.includes('/uploads/')) {
+    // Extract the path after /uploads/ (e.g., "general/1762611045214-709377760.jpg")
     const uploadsIndex = url.indexOf('/uploads/');
-    url = url.substring(uploadsIndex); // Extract /uploads/... part
+    if (uploadsIndex !== -1) {
+      const filePath = url.substring(uploadsIndex + '/uploads/'.length);
+      // Try API endpoint first (better error handling)
+      const apiUrl = `${apiBaseUrl}/api/images/file/${filePath}`;
+      
+      if (isDevelopment) {
+        // In development, return the API URL
+        return apiUrl;
+      } else {
+        // In production, use relative path for Vercel proxy
+        return `/api/images/file/${filePath}`;
+      }
+    }
   }
 
   // If already HTTPS or relative, return as is
@@ -42,12 +62,64 @@ const OptimizedImage = ({
 }) => {
   const [error, setError] = useState(false);
   const [imageSrc, setImageSrc] = useState(() => normalizeImageUrl(src));
+  const [fallbackSrc, setFallbackSrc] = useState(null);
 
   // Update image source if src prop changes
   useEffect(() => {
     const normalized = normalizeImageUrl(src);
     setImageSrc(normalized);
     setError(false); // Reset error when src changes
+    setFallbackSrc(null); // Reset fallback
+    
+    // If we converted to API endpoint, set fallback to direct URL
+    if (src && (src.includes('trailverse.onrender.com/uploads/') || src.includes('/uploads/'))) {
+      const uploadsIndex = src.indexOf('/uploads/');
+      if (uploadsIndex !== -1) {
+        const filePath = src.substring(uploadsIndex); // This is /uploads/...
+        const isDevelopment = import.meta.env.DEV;
+        let apiBaseUrl = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:5001' : 'https://trailverse.onrender.com');
+        
+        // Normalize apiBaseUrl - remove trailing /api if present
+        if (apiBaseUrl.endsWith('/api')) {
+          apiBaseUrl = apiBaseUrl.slice(0, -4);
+        }
+        
+        // Fallback should be direct /uploads/ path (not /api/uploads/)
+        const directUrl = isDevelopment ? `${apiBaseUrl}${filePath}` : filePath;
+        setFallbackSrc(directUrl);
+      }
+    }
+  }, [src]);
+
+  const DEFAULT_IMAGE = '/og-image-trailverse.jpg';
+  const [attemptCount, setAttemptCount] = useState(0);
+
+  const handleImageError = (e) => {
+    console.error('Image failed to load:', imageSrc, e);
+    
+    // First attempt: try fallback URL if we have one and are using API endpoint
+    if (attemptCount === 0 && fallbackSrc && imageSrc && imageSrc.includes('/api/images/file/')) {
+      console.log('Trying fallback URL:', fallbackSrc);
+      setImageSrc(fallbackSrc);
+      setAttemptCount(1);
+      setError(false);
+    } 
+    // Second attempt: try default image
+    else if (attemptCount <= 1 && imageSrc !== DEFAULT_IMAGE) {
+      console.log('Trying default image:', DEFAULT_IMAGE);
+      setImageSrc(DEFAULT_IMAGE);
+      setAttemptCount(2);
+      setError(false);
+    } 
+    // All attempts failed, show placeholder
+    else {
+      setError(true);
+    }
+  };
+
+  // Reset attempt count when src changes
+  useEffect(() => {
+    setAttemptCount(0);
   }, [src]);
 
   if (error || !imageSrc) {
@@ -68,10 +140,7 @@ const OptimizedImage = ({
       height={height}
       className={className}
       loading="lazy"
-      onError={(e) => {
-        console.error('Image failed to load:', imageSrc, e);
-        setError(true);
-      }}
+      onError={handleImageError}
       style={{ objectFit }}
     />
   );
