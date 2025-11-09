@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from '../components/common/Header';
 import SEO from '../components/common/SEO';
+import OptimizedImage from '../components/common/OptimizedImage';
 import CommentSection from '../components/blog/CommentSection';
 import LikeFavorite from '../components/blog/LikeFavorite';
 import ShareButtons from '../components/common/ShareButtons';
@@ -266,8 +267,6 @@ const BlogPostPage = ({ isPublic = false }) => {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [readingProgress, setReadingProgress] = useState(0);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const articleRef = useRef(null);
   const contentRef = useRef(null);
   
@@ -565,39 +564,11 @@ const BlogPostPage = ({ isPublic = false }) => {
         {/* Featured Image */}
         {post.featuredImage && (
           <div className="mb-10 relative">
-            {!imageLoaded && !imageError && (
-              <div 
-                className="w-full aspect-video rounded-xl animate-pulse flex items-center justify-center"
-                style={{ backgroundColor: 'var(--surface)' }}
-              >
-                <div style={{ color: 'var(--text-tertiary)' }}>Loading image...</div>
-              </div>
-            )}
-            {imageError ? (
-              <div 
-                className="w-full aspect-video rounded-xl flex items-center justify-center border-2 border-dashed"
-                style={{ 
-                  backgroundColor: 'var(--surface)',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <span style={{ color: 'var(--text-tertiary)' }} className="text-sm">Image not available</span>
-              </div>
-            ) : (
-              <img
-                src={post.featuredImage}
-                alt={post.title}
-                className={`w-full aspect-video object-cover rounded-xl shadow-lg transition-opacity duration-300 ${
-                  imageLoaded ? 'opacity-100' : 'opacity-0'
-                }`}
-                loading="lazy"
-                onLoad={() => setImageLoaded(true)}
-                onError={() => {
-                  setImageError(true);
-                  setImageLoaded(false);
-                }}
-              />
-            )}
+            <OptimizedImage
+              src={post.featuredImage}
+              alt={post.title}
+              className="w-full aspect-video object-cover rounded-xl shadow-lg"
+            />
           </div>
         )}
 
