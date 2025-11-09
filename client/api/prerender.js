@@ -3,12 +3,8 @@
  * Detects social media crawlers and serves pre-rendered HTML with correct meta tags
  */
 
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Note: In Vercel serverless functions, we can't reliably read index.html
+// So we'll use a fallback HTML that loads the React app
 
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
@@ -68,61 +64,49 @@ export default async function handler(req, res) {
   // If the pathname is exactly /blog (not /blog/:slug), always serve index.html
   // This prevents the prerender function from interfering with the blog listing page
   if (pathname === '/blog') {
-    try {
-      // Read and return the actual index.html file
-      // The api folder is at client/api/, so index.html is at ../index.html
-      const indexPath = join(__dirname, '..', 'index.html');
-      const indexHtml = readFileSync(indexPath, 'utf-8');
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(indexHtml);
-    } catch (error) {
-      console.error('Error reading index.html:', error);
-      // Fallback to simple HTML
-      const html = `<!DOCTYPE html>
+    // Return HTML that loads the React app
+    // In Vercel serverless functions, we can't reliably read index.html
+    // So we'll use a fallback HTML that loads the React app
+    const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
     <title>TrailVerse - Blog</title>
+    <link rel="icon" href="/favicon.ico" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>`;
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(html);
-    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(html);
   }
 
-  // If not a crawler, return the actual index.html file
+  // If not a crawler, return HTML that loads the React app
   // This allows React Router to handle the routing client-side
   if (!isCrawler) {
-    try {
-      // Read and return the actual index.html file
-      // The api folder is at client/api/, so index.html is at ../index.html
-      const indexPath = join(__dirname, '..', 'index.html');
-      const indexHtml = readFileSync(indexPath, 'utf-8');
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(indexHtml);
-    } catch (error) {
-      console.error('Error reading index.html:', error);
-      // Fallback to simple HTML
-      const html = `<!DOCTYPE html>
+    // Return HTML that loads the React app
+    // In Vercel serverless functions, we can't reliably read index.html
+    // So we'll use a fallback HTML that loads the React app
+    const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
     <title>TrailVerse</title>
+    <link rel="icon" href="/favicon.ico" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>`;
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      return res.status(200).send(html);
-    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(html);
   }
 
   // Default meta tags
