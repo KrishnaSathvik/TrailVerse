@@ -6,55 +6,6 @@
 // Note: In Vercel serverless functions, we can't reliably read index.html
 // So we'll use a fallback HTML that loads the React app
 
-// Helper function to normalize image URLs for mobile apps
-// Ensures all URLs are HTTPS and publicly accessible
-const normalizeImageUrl = (url) => {
-  if (!url || url.trim() === '') {
-    return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
-  }
-  
-  // Skip data URLs - mobile apps can't use these
-  if (url.startsWith('data:image/')) {
-    return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
-  }
-  
-  // Convert HTTP to HTTPS (required for mobile apps)
-  if (url.startsWith('http://')) {
-    url = url.replace(/^http:\/\//i, 'https://');
-  }
-  
-  // If already HTTPS, return as is (including Render.com URLs)
-  // Render.com URLs are fine - they're publicly accessible
-  if (url.startsWith('https://')) {
-    return url;
-  }
-  
-  // Handle API image paths - these need to point to Render.com server
-  // since that's where the images are actually stored
-  if (url.startsWith('/api/images/file/')) {
-    return `https://trailverse.onrender.com${url}`;
-  }
-  
-  // Handle /uploads/ paths - these also need to point to Render.com
-  if (url.startsWith('/uploads/')) {
-    return `https://trailverse.onrender.com${url}`;
-  }
-  
-  // Handle relative paths that might be public assets
-  if (url.startsWith('/')) {
-    // Check if it's a public asset (like og-image-trailverse.jpg)
-    if (url.startsWith('/og-image-') || url.startsWith('/logo') || url.startsWith('/favicon')) {
-      return `https://www.nationalparksexplorerusa.com${url}`;
-    }
-    // Otherwise, assume it's a server asset and use Render.com
-    return `https://trailverse.onrender.com${url}`;
-  }
-  
-  // Handle relative paths without leading slash
-  // Assume it's a server asset
-  return `https://trailverse.onrender.com/${url}`;
-};
-
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
   // Get pathname from request - in Vercel, req.url includes query string
@@ -65,14 +16,13 @@ export default async function handler(req, res) {
     pathname = pathname.slice(0, -1);
   }
 
-  // Check if it's a crawler - expanded list (including mobile apps)
+  // Check if it's a crawler - expanded list
   const crawlerPatterns = [
     'facebookexternalhit', // Facebook
     'Facebot', // Facebook
     'Twitterbot', // Twitter
     'LinkedInBot', // LinkedIn
-    'WhatsApp', // WhatsApp (mobile)
-    'WhatsApp/2', // WhatsApp mobile
+    'WhatsApp', // WhatsApp
     'Slackbot', // Slack
     'Slackbot-LinkExpanding', // Slack
     'SkypeUriPreview', // Skype
@@ -80,12 +30,12 @@ export default async function handler(req, res) {
     'Pinterest', // Pinterest
     'Pinterestbot', // Pinterest bot
     'Pinterest/0.1', // Pinterest
-    'Snapchat', // Snapchat (mobile)
+    'Snapchat', // Snapchat
     'SnapchatBot', // Snapchat bot
-    'Snapchat/1.0', // Snapchat mobile
+    'Snapchat/1.0', // Snapchat
     'Discordbot', // Discord
     'TelegramBot', // Telegram
-    'Viber', // Viber (mobile)
+    'Viber', // Viber
     'Googlebot', // Google (sometimes)
     'bingbot', // Bing
     'YandexBot', // Yandex
@@ -94,24 +44,10 @@ export default async function handler(req, res) {
     'Screaming Frog SEO Spider', // SEO tools
     'Redditbot', // Reddit
     'Tumblr', // Tumblr
-    'Line', // Line messenger (mobile)
-    'WeChat', // WeChat (mobile)
-    'QQ', // QQ (mobile)
-    'Baiduspider', // Baidu
-    'Instagram', // Instagram (mobile)
-    'LinkedInApp', // LinkedIn mobile app
-    'FBAN', // Facebook mobile app
-    'FBAV', // Facebook mobile app
-    'FB_IAB', // Facebook mobile app
-    'FB4A', // Facebook mobile app
-    'FBAN/FBIOS', // Facebook iOS app
-    'FBAN/FB4A', // Facebook Android app
-    'Twitter', // Twitter mobile app
-    'TwitterAndroid', // Twitter Android app
-    'TwitteriOS', // Twitter iOS app
-    'LinkedInApp', // LinkedIn mobile app
-    'LinkedInIOS', // LinkedIn iOS app
-    'LinkedInAndroid' // LinkedIn Android app
+    'Line', // Line messenger
+    'WeChat', // WeChat
+    'QQ', // QQ
+    'Baiduspider' // Baidu
   ];
 
   const isCrawler = crawlerPatterns.some(pattern => 
@@ -167,7 +103,7 @@ export default async function handler(req, res) {
             console.log(`Blog post found: ${post?.title || 'No title'}`);
             
             if (post) {
-              // Handle featured image URL construction - use helper function for mobile compatibility
+              // Handle featured image URL construction
               let imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg'; // Default
               
               if (post.featuredImage) {
@@ -180,8 +116,23 @@ export default async function handler(req, res) {
                     if (imgMatch && imgMatch[1]) {
                       const contentImgUrl = imgMatch[1];
                       if (!contentImgUrl.startsWith('data:image/')) {
-                        // Found a non-data URL image in content - normalize for mobile apps
-                        imageUrl = normalizeImageUrl(contentImgUrl);
+                        // Found a non-data URL image in content
+                        if (contentImgUrl.startsWith('http://')) {
+                          // Convert HTTP to HTTPS
+                          imageUrl = contentImgUrl.replace(/^http:\/\//i, 'https://');
+                        } else if (contentImgUrl.startsWith('https://')) {
+                          imageUrl = contentImgUrl;
+                        } else if (contentImgUrl.startsWith('/api/images/file/')) {
+                          imageUrl = `https://trailverse.onrender.com${contentImgUrl}`;
+                        } else if (contentImgUrl.startsWith('/uploads/')) {
+                          // Handle /uploads/ paths - convert to API endpoint
+                          const filePath = contentImgUrl.replace('/uploads/', '');
+                          imageUrl = `https://trailverse.onrender.com/api/images/file/${filePath}`;
+                        } else if (contentImgUrl.startsWith('/')) {
+                          imageUrl = `https://www.nationalparksexplorerusa.com${contentImgUrl}`;
+                        } else {
+                          imageUrl = `https://www.nationalparksexplorerusa.com/${contentImgUrl}`;
+                        }
                         console.log(`Using image from content: ${imageUrl}`);
                       } else {
                         console.log('Content image is also a data URL - using default');
@@ -193,19 +144,38 @@ export default async function handler(req, res) {
                     console.log('No content available - using default image');
                   }
                 } else {
-                  // Normalize image URL for mobile apps (ensures HTTPS)
-                  imageUrl = normalizeImageUrl(post.featuredImage);
+                  // Not a data URL - process the featured image
+                  if (post.featuredImage.startsWith('http://')) {
+                    // Convert HTTP to HTTPS (required for social media)
+                    imageUrl = post.featuredImage.replace(/^http:\/\//i, 'https://');
+                  } else if (post.featuredImage.startsWith('https://')) {
+                    // Already HTTPS
+                    imageUrl = post.featuredImage;
+                  } else if (post.featuredImage.startsWith('/api/images/file/')) {
+                    // API image path - convert to full URL
+                    imageUrl = `https://trailverse.onrender.com${post.featuredImage}`;
+                  } else if (post.featuredImage.startsWith('/uploads/')) {
+                    // Handle /uploads/ paths - convert to API endpoint
+                    const filePath = post.featuredImage.replace('/uploads/', '');
+                    imageUrl = `https://trailverse.onrender.com/api/images/file/${filePath}`;
+                  } else if (post.featuredImage.startsWith('/')) {
+                    // Relative path starting with /
+                    imageUrl = `https://www.nationalparksexplorerusa.com${post.featuredImage}`;
+                  } else {
+                    // Relative path without /
+                    imageUrl = `https://www.nationalparksexplorerusa.com/${post.featuredImage}`;
+                  }
                 }
               }
-              
-              console.log(`Final featured image URL: ${imageUrl}`);
-              console.log(`Original featuredImage format: ${post.featuredImage ? (post.featuredImage.substring(0, 50) + '...') : 'null'}`);
               
               // Ensure image URL is valid and accessible
               if (!imageUrl || !imageUrl.startsWith('http')) {
                 console.warn(`Invalid image URL, using default: ${imageUrl}`);
                 imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
               }
+              
+              console.log(`Final featured image URL: ${imageUrl}`);
+              console.log(`Original featuredImage format: ${post.featuredImage ? (post.featuredImage.substring(0, 50) + '...') : 'null'}`);
               
               metaTags = {
                 title: `${post.title} | TrailVerse`,
@@ -243,7 +213,7 @@ export default async function handler(req, res) {
             console.log(`Park found: ${park?.name || 'No name'}`);
             
             if (park) {
-              // Handle park image URL construction - use helper function for mobile compatibility
+              // Handle park image URL construction
               // Park images from NPS API can be objects with .url property or strings
               let imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg'; // Default
               
@@ -253,8 +223,19 @@ export default async function handler(req, res) {
                 const imageString = typeof firstImage === 'string' ? firstImage : (firstImage.url || firstImage.src || '');
                 
                 if (imageString) {
-                  // Normalize image URL for mobile apps (ensures HTTPS)
-                  imageUrl = normalizeImageUrl(imageString);
+                  if (imageString.startsWith('http://') || imageString.startsWith('https://')) {
+                    // Already a full URL (from NPS API)
+                    imageUrl = imageString;
+                  } else if (imageString.startsWith('/api/images/file/')) {
+                    // API image path - convert to full URL
+                    imageUrl = `https://trailverse.onrender.com${imageString}`;
+                  } else if (imageString.startsWith('/')) {
+                    // Relative path starting with /
+                    imageUrl = `https://www.nationalparksexplorerusa.com${imageString}`;
+                  } else {
+                    // Relative path without /
+                    imageUrl = `https://www.nationalparksexplorerusa.com/${imageString}`;
+                  }
                 }
               }
               
@@ -281,24 +262,11 @@ export default async function handler(req, res) {
     console.error('Error in prerender function:', error);
   }
 
-  // Helper function to escape HTML entities (for text content only, not URLs)
-  const escapeHtml = (str) => {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  };
-
-  // Escape meta tag text values to prevent HTML injection
-  // URLs should NOT be escaped - browsers handle URL encoding automatically
-  const safeTitle = escapeHtml(metaTags.title);
-  const safeDescription = escapeHtml(metaTags.description);
-  // Don't escape image URL or page URL - they need to remain valid URLs
-  const safeImage = metaTags.image || 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
-  const safeUrl = metaTags.url || 'https://www.nationalparksexplorerusa.com';
+  // Ensure image URL is always set and valid
+  if (!metaTags.image || !metaTags.image.startsWith('http')) {
+    console.warn(`Invalid or missing image URL in metaTags, using default: ${metaTags.image}`);
+    metaTags.image = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+  }
 
   // Generate HTML with meta tags
   const html = `<!DOCTYPE html>
@@ -309,17 +277,17 @@ export default async function handler(req, res) {
     <base href="/" />
     
     <!-- Primary Meta Tags -->
-    <title>${safeTitle}</title>
-    <meta name="title" content="${safeTitle}" />
-    <meta name="description" content="${safeDescription}" />
+    <title>${metaTags.title}</title>
+    <meta name="title" content="${metaTags.title}" />
+    <meta name="description" content="${metaTags.description}" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="${metaTags.type}" />
-    <meta property="og:url" content="${safeUrl}" />
-    <meta property="og:title" content="${safeTitle}" />
-    <meta property="og:description" content="${safeDescription}" />
-    <meta property="og:image" content="${safeImage}" />
-    <meta property="og:image:secure_url" content="${safeImage}" />
+    <meta property="og:url" content="${metaTags.url}" />
+    <meta property="og:title" content="${metaTags.title}" />
+    <meta property="og:description" content="${metaTags.description}" />
+    <meta property="og:image" content="${metaTags.image}" />
+    <meta property="og:image:secure_url" content="${metaTags.image}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/jpeg" />
@@ -327,52 +295,44 @@ export default async function handler(req, res) {
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="${safeUrl}" />
-    <meta name="twitter:title" content="${safeTitle}" />
-    <meta name="twitter:description" content="${safeDescription}" />
-    <meta name="twitter:image" content="${safeImage}" />
-    <meta name="twitter:image:src" content="${safeImage}" />
+    <meta name="twitter:url" content="${metaTags.url}" />
+    <meta name="twitter:title" content="${metaTags.title}" />
+    <meta name="twitter:description" content="${metaTags.description}" />
+    <meta name="twitter:image" content="${metaTags.image}" />
+    <meta name="twitter:image:src" content="${metaTags.image}" />
     <meta name="twitter:site" content="@TrailVerse" />
     
-    <!-- Mobile-specific tags -->
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
     <!-- Snapchat-specific tags -->
-    <meta property="snapchat:sticker" content="${safeImage}" />
+    <meta property="snapchat:sticker" content="${metaTags.image}" />
     
     <!-- Pinterest-specific tags -->
-    <meta property="pinterest:media" content="${safeImage}" />
-    <meta property="pinterest:description" content="${safeDescription}" />
-    
-    <!-- WhatsApp-specific tags (uses Open Graph, but ensure HTTPS) -->
-    <meta property="og:image:url" content="${safeImage}" />
+    <meta property="pinterest:media" content="${metaTags.image}" />
+    <meta property="pinterest:description" content="${metaTags.description}" />
     
     ${metaTags.type === 'article' ? `
     <!-- Article specific tags -->
     <meta property="article:published_time" content="${metaTags.published || ''}" />
-    ${metaTags.modified ? `<meta property="article:modified_time" content="${escapeHtml(metaTags.modified)}" />` : ''}
-    <meta property="article:author" content="${escapeHtml(metaTags.author || 'TrailVerse Team')}" />
+    ${metaTags.modified ? `<meta property="article:modified_time" content="${metaTags.modified}" />` : ''}
+    <meta property="article:author" content="${metaTags.author || 'TrailVerse Team'}" />
     <meta property="article:section" content="Travel" />
     ` : ''}
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="${safeUrl}" />
+    <link rel="canonical" href="${metaTags.url}" />
     
     <!-- Redirect to actual page for JavaScript-enabled browsers -->
     <script>
       // Only redirect if not a crawler (crawlers won't execute this)
       if (typeof window !== 'undefined') {
-        window.location.href = ${JSON.stringify(metaTags.url)};
+        window.location.href = '${metaTags.url}';
       }
     </script>
   </head>
   <body>
     <noscript>
-      <h1>${safeTitle}</h1>
-      <p>${safeDescription}</p>
-      <p><a href="${safeUrl}">Visit TrailVerse</a></p>
+      <h1>${metaTags.title}</h1>
+      <p>${metaTags.description}</p>
+      <p><a href="${metaTags.url}">Visit TrailVerse</a></p>
     </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

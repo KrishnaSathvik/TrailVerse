@@ -4,11 +4,25 @@
     { "source": "/uploads/(.*)", "destination": "https://trailverse.onrender.com/uploads/$1" },
     { 
       "source": "/blog/:slug",
-      "destination": "/api/prerender"
+      "destination": "/api/prerender",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Applebot|Pinterest|Snapchat|Discordbot|TelegramBot|Viber|Googlebot|bingbot|YandexBot|SemrushBot|AhrefsBot|Redditbot|Tumblr|Line|WeChat|QQ|Baiduspider).*"
+        }
+      ]
     },
     { 
       "source": "/parks/:parkCode",
-      "destination": "/api/prerender"
+      "destination": "/api/prerender",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Applebot|Pinterest|Snapchat|Discordbot|TelegramBot|Viber|Googlebot|bingbot|YandexBot|SemrushBot|AhrefsBot|Redditbot|Tumblr|Line|WeChat|QQ|Baiduspider).*"
+        }
+      ]
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
