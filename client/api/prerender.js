@@ -23,40 +23,36 @@ const normalizeImageUrl = (url) => {
     url = url.replace(/^http:\/\//i, 'https://');
   }
   
-  // If already HTTPS, check if it's a trailverse.onrender.com URL
-  // Convert to production domain for better accessibility
-  if (url.startsWith('https://trailverse.onrender.com')) {
-    // Convert Render.com URLs to production domain
-    url = url.replace('https://trailverse.onrender.com', 'https://www.nationalparksexplorerusa.com');
-  }
-  
-  // If already HTTPS with production domain, return as is
-  if (url.startsWith('https://www.nationalparksexplorerusa.com')) {
-    return url;
-  }
-  
-  // If it's already a full HTTPS URL (from NPS API, etc.), return as is
+  // If already HTTPS, return as is (including Render.com URLs)
+  // Render.com URLs are fine - they're publicly accessible
   if (url.startsWith('https://')) {
     return url;
   }
   
-  // Handle API image paths - use production domain (Vercel proxy will handle it)
+  // Handle API image paths - these need to point to Render.com server
+  // since that's where the images are actually stored
   if (url.startsWith('/api/images/file/')) {
-    return `https://www.nationalparksexplorerusa.com${url}`;
+    return `https://trailverse.onrender.com${url}`;
   }
   
-  // Handle /uploads/ paths - use production domain
+  // Handle /uploads/ paths - these also need to point to Render.com
   if (url.startsWith('/uploads/')) {
-    return `https://www.nationalparksexplorerusa.com${url}`;
+    return `https://trailverse.onrender.com${url}`;
   }
   
-  // Handle relative paths
+  // Handle relative paths that might be public assets
   if (url.startsWith('/')) {
-    return `https://www.nationalparksexplorerusa.com${url}`;
+    // Check if it's a public asset (like og-image-trailverse.jpg)
+    if (url.startsWith('/og-image-') || url.startsWith('/logo') || url.startsWith('/favicon')) {
+      return `https://www.nationalparksexplorerusa.com${url}`;
+    }
+    // Otherwise, assume it's a server asset and use Render.com
+    return `https://trailverse.onrender.com${url}`;
   }
   
   // Handle relative paths without leading slash
-  return `https://www.nationalparksexplorerusa.com/${url}`;
+  // Assume it's a server asset
+  return `https://trailverse.onrender.com/${url}`;
 };
 
 export default async function handler(req, res) {
@@ -205,6 +201,12 @@ export default async function handler(req, res) {
               console.log(`Final featured image URL: ${imageUrl}`);
               console.log(`Original featuredImage format: ${post.featuredImage ? (post.featuredImage.substring(0, 50) + '...') : 'null'}`);
               
+              // Ensure image URL is valid and accessible
+              if (!imageUrl || !imageUrl.startsWith('http')) {
+                console.warn(`Invalid image URL, using default: ${imageUrl}`);
+                imageUrl = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+              }
+              
               metaTags = {
                 title: `${post.title} | TrailVerse`,
                 description: post.excerpt || (post.content ? post.content.substring(0, 200).replace(/<[^>]*>/g, '') : '') || metaTags.description,
@@ -216,6 +218,7 @@ export default async function handler(req, res) {
                 author: post.author?.name || 'TrailVerse Team'
               };
               console.log(`Meta tags set for blog post: ${metaTags.title}`);
+              console.log(`Meta tags image URL: ${metaTags.image}`);
             }
           } else {
             console.error(`Failed to fetch blog post: ${response.status} ${response.statusText}`);
