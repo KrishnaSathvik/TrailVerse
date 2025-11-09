@@ -58,10 +58,22 @@ export default async function handler(req, res) {
     isCrawler
   });
 
-  // If not a crawler, redirect to index.html so React Router can handle it
+  // If the pathname is exactly /blog (not /blog/:slug), always serve index.html
+  // This prevents the prerender function from interfering with the blog listing page
+  if (pathname === '/blog') {
+    res.setHeader('x-middleware-rewrite', '/index.html');
+    return res.status(200).end();
+  }
+
+  // If not a crawler, we need to let Vercel's catch-all rewrite handle it
+  // The issue is that this rewrite matches first, so we need to return a response
+  // that tells Vercel to continue with the next rewrite (catch-all to index.html)
   if (!isCrawler) {
-    // Redirect to index.html - React Router will handle the routing
-    return res.redirect(307, `/index.html`);
+    // For non-crawlers, we want to serve index.html so React Router can handle routing
+    // We'll use a rewrite header to tell Vercel to serve index.html
+    res.setHeader('x-middleware-rewrite', '/index.html');
+    // Return empty response - Vercel will serve index.html
+    return res.status(200).end();
   }
 
   // Default meta tags

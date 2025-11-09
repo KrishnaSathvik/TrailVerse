@@ -142,6 +142,8 @@ const OptimizedImage = ({
       loading="lazy"
       onError={handleImageError}
       style={{ objectFit }}
+      decoding="async"
+      fetchpriority="auto"
     />
   );
 };
