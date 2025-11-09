@@ -64,49 +64,16 @@ export default async function handler(req, res) {
   // If the pathname is exactly /blog (not /blog/:slug), always serve index.html
   // This prevents the prerender function from interfering with the blog listing page
   if (pathname === '/blog') {
-    // Return HTML that loads the React app
-    // In Vercel serverless functions, we can't reliably read index.html
-    // So we'll use a fallback HTML that loads the React app
-    const html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
-    <title>TrailVerse - Blog</title>
-    <link rel="icon" href="/favicon.ico" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.status(200).send(html);
+    // Return 404 so Vercel's catch-all rewrite will serve index.html
+    return res.status(404).json({ error: 'Not found' });
   }
 
-  // If not a crawler, return HTML that loads the React app
-  // This allows React Router to handle the routing client-side
+  // If not a crawler, return 404 so Vercel's catch-all rewrite will serve index.html
+  // With the updated vercel.json, non-crawlers won't even reach this function
+  // But we keep this check as a safety measure
   if (!isCrawler) {
-    // Return HTML that loads the React app
-    // In Vercel serverless functions, we can't reliably read index.html
-    // So we'll use a fallback HTML that loads the React app
-    const html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
-    <title>TrailVerse</title>
-    <link rel="icon" href="/favicon.ico" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.status(200).send(html);
+    // Return 404 - Vercel's catch-all rewrite will serve index.html
+    return res.status(404).json({ error: 'Not found' });
   }
 
   // Default meta tags
