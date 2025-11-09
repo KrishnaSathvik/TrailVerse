@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta Tags Tester - Blog Post Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .results {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      display: none;
+    }
+    .results.show {
+      display: block;
+    }
+    .preview-card {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      max-width: 600px;
+    }
+    .preview-image {
+      width: 100%;
+      height: 315px;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .preview-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .preview-image .placeholder {
+      color: #999;
+      font-size: 14px;
+    }
+    .preview-content {
+      padding: 16px;
+    }
+    .preview-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .preview-url {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .preview-description {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+    .meta-tags {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .meta-tags h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .meta-tag {
+      margin-bottom: 12px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    .meta-tag strong {
+      color: #667eea;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .error {
+      background: #fee;
+      border: 2px solid #fcc;
+      color: #c33;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 Meta Tags Tester</h1>
+      <p>Test how your blog posts will appear when shared on social media</p>
+    </div>
+    <div class="content">
+      <div class="form-group">
+        <label for="blogSlug">Blog Post Slug:</label>
+        <input 
+          type="text" 
+          id="blogSlug" 
+          placeholder="e.g., best-national-parks-thanksgiving"
+          value=""
+        />
+      </div>
+      <button onclick="testMetaTags()">Test Meta Tags</button>
+      
+      <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Fetching blog post data...</p>
+      </div>
+      
+      <div id="error" class="error" style="display: none;"></div>
+      
+      <div id="results" class="results">
+        <h2 style="margin-bottom: 20px; color: #333;">Preview</h2>
+        
+        <div class="preview-card">
+          <div class="preview-image" id="previewImage">
+            <div class="placeholder">Loading image...</div>
+          </div>
+          <div class="preview-content">
+            <div class="preview-title" id="previewTitle"></div>
+            <div class="preview-url" id="previewUrl"></div>
+            <div class="preview-description" id="previewDescription"></div>
+          </div>
+        </div>
+        
+        <div class="meta-tags">
+          <h3>Meta Tags (Open Graph & Twitter Card)</h3>
+          <div id="metaTagsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:5001'; // Update if your API runs on different port
+    
+    async function testMetaTags() {
+      const slug = document.getElementById('blogSlug').value.trim();
+      if (!slug) {
+        alert('Please enter a blog post slug');
+        return;
+      }
+      
+      // Show loading
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('results').classList.remove('show');
+      
+      try {
+        // Fetch blog post data
+        const response = await fetch(`${API_BASE_URL}/api/blogs/${slug}`);
+        if (!response.ok) {
+          throw new Error(`Blog post not found: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        const post = result.data;
+        
+        if (!post) {
+          throw new Error('No blog post data returned');
+        }
+        
+        // Simulate what the prerender function would generate
+        const metaTags = generateMetaTags(post);
+        
+        // Display results
+        displayResults(post, metaTags);
+        
+      } catch (error) {
+        document.getElementById('error').textContent = `Error: ${error.message}`;
+        document.getElementById('error').style.display = 'block';
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+    
+    function generateMetaTags(post) {
+      // Normalize image URL (same logic as prerender.js)
+      let imageUrl = normalizeImageUrl(post.featuredImage);
+      
+      // If featured image is data URL, try to extract from content
+      if (post.featuredImage && post.featuredImage.startsWith('data:image/')) {
+        if (post.content) {
+          const imgMatch = post.content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+          if (imgMatch && imgMatch[1] && !imgMatch[1].startsWith('data:image/')) {
+            imageUrl = normalizeImageUrl(imgMatch[1]);
+          }
+        }
+      }
+      
+      // Fallback to default
+      if (!imageUrl || !imageUrl.startsWith('http')) {
+        imageUrl = 'http://localhost:3001/og-image-trailverse.jpg';
+      }
+      
+      const blogUrl = `http://localhost:3001/blog/${post.slug}`;
+      const blogTitle = `${post.title} | TrailVerse`;
+      const description = post.excerpt || (post.content ? post.content.replace(/<[^>]*>/g, '').substring(0, 200) : '');
+      
+      return {
+        title: blogTitle,
+        description: description,
+        image: imageUrl,
+        url: blogUrl,
+        type: 'article',
+        published: post.publishedAt ? new Date(post.publishedAt).toISOString() : '',
+        modified: post.updatedAt ? new Date(post.updatedAt).toISOString() : '',
+        author: typeof post.author === 'string' ? post.author : (post.author?.name || 'TrailVerse Team')
+      };
+    }
+    
+    function normalizeImageUrl(imageUrl) {
+      if (!imageUrl || imageUrl.trim() === '') {
+        return null;
+      }
+      
+      // Skip data URLs
+      if (imageUrl.startsWith('data:image/')) {
+        return null;
+      }
+      
+      // If it's a full URL with /uploads/, convert to API endpoint
+      if (imageUrl.includes('/uploads/')) {
+        const filePath = imageUrl.split('/uploads/')[1];
+        if (filePath) {
+          return `http://localhost:5001/api/images/file/${filePath}`;
+        }
+      }
+      
+      // Already a full URL (and not /uploads/)
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl;
+      }
+      
+      // Handle API image paths
+      if (imageUrl.startsWith('/api/images/file/')) {
+        return `http://localhost:5001${imageUrl}`;
+      }
+      
+      // Handle /uploads/ paths (relative)
+      if (imageUrl.startsWith('/uploads/')) {
+        const filePath = imageUrl.replace('/uploads/', '');
+        return `http://localhost:5001/api/images/file/${filePath}`;
+      }
+      
+      // Handle relative paths
+      if (imageUrl.startsWith('/')) {
+        return `http://localhost:3001${imageUrl}`;
+      }
+      
+      return `http://localhost:3001/${imageUrl}`;
+    }
+    
+    function displayResults(post, metaTags) {
+      // Update preview
+      document.getElementById('previewTitle').textContent = metaTags.title;
+      document.getElementById('previewUrl').textContent = metaTags.url;
+      document.getElementById('previewDescription').textContent = metaTags.description;
+      
+      // Update image
+      const previewImageDiv = document.getElementById('previewImage');
+      previewImageDiv.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = metaTags.image;
+      img.alt = metaTags.title;
+      img.onerror = function() {
+        previewImageDiv.innerHTML = '<div class="placeholder">❌ Image failed to load<br>' + metaTags.image + '</div>';
+      };
+      previewImageDiv.appendChild(img);
+      
+      // Display meta tags
+      const metaTagsList = document.getElementById('metaTagsList');
+      metaTagsList.innerHTML = '';
+      
+      const tags = [
+        { name: 'og:type', content: metaTags.type },
+        { name: 'og:url', content: metaTags.url },
+        { name: 'og:title', content: metaTags.title },
+        { name: 'og:description', content: metaTags.description },
+        { name: 'og:image', content: metaTags.image },
+        { name: 'og:image:secure_url', content: metaTags.image },
+        { name: 'og:image:width', content: '1200' },
+        { name: 'og:image:height', content: '630' },
+        { name: 'og:image:type', content: 'image/jpeg' },
+        { name: 'og:site_name', content: 'TrailVerse' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:url', content: metaTags.url },
+        { name: 'twitter:title', content: metaTags.title },
+        { name: 'twitter:description', content: metaTags.description },
+        { name: 'twitter:image', content: metaTags.image },
+        { name: 'article:published_time', content: metaTags.published },
+        { name: 'article:modified_time', content: metaTags.modified },
+        { name: 'article:author', content: metaTags.author },
+      ];
+      
+      tags.forEach(tag => {
+        if (tag.content) {
+          const div = document.createElement('div');
+          div.className = 'meta-tag';
+          div.innerHTML = `<strong>${tag.name}</strong>${tag.content}`;
+          metaTagsList.appendChild(div);
+        }
+      });
+      
+      // Show results
+      document.getElementById('results').classList.add('show');
+    }
+    
+    // Allow Enter key to submit
+    document.getElementById('blogSlug').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        testMetaTags();
+      }
+    });
+  </script>
+</body>
+</html>
+
