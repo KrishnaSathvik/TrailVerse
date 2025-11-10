@@ -147,9 +147,8 @@ export default async function handler(req, res) {
     'Pinterest', // Pinterest
     'Pinterestbot', // Pinterest bot
     'Pinterest/0.1', // Pinterest
-    'Snapchat', // Snapchat
-    'SnapchatBot', // Snapchat bot
-    'Snapchat/1.0', // Snapchat
+    'SnapchatBot', // Snapchat bot (specific crawler)
+    'Snapchat/1.0', // Snapchat crawler version
     'Discordbot', // Discord
     'TelegramBot', // Telegram
     'Viber', // Viber
@@ -167,9 +166,18 @@ export default async function handler(req, res) {
     'Baiduspider' // Baidu
   ];
 
+  // Check if it's a crawler - but exclude real browsers
+  // Snapchat's in-app browser might have "Snapchat" in user-agent, but it's not a crawler
   const isCrawler = crawlerPatterns.some(pattern => 
     userAgent.toLowerCase().includes(pattern.toLowerCase())
-  );
+  ) && !userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version)/i);
+  
+  // Additional check: if user-agent contains browser indicators, it's not a crawler
+  const isRealBrowser = userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version|Mozilla)/i) && 
+                        !userAgent.match(/(bot|crawler|spider|scraper)/i);
+  
+  // If it's a real browser, don't treat it as a crawler
+  const finalIsCrawler = isCrawler && !isRealBrowser;
 
   // Log for debugging (remove in production if needed)
   const isDev = req?.headers?.host?.toLowerCase().includes('localhost') || 
@@ -177,7 +185,8 @@ export default async function handler(req, res) {
   console.log('Prerender function called:', {
     pathname,
     userAgent: userAgent.substring(0, 100), // Log first 100 chars
-    isCrawler,
+    isCrawler: finalIsCrawler,
+    isRealBrowser,
     host: req?.headers?.host,
     isDev: isDev,
     vercelEnv: process.env.VERCEL_ENV,
@@ -194,7 +203,7 @@ export default async function handler(req, res) {
   // If not a crawler, return 404 so Vercel's catch-all rewrite will serve index.html
   // With the updated vercel.json, non-crawlers won't even reach this function
   // But we keep this check as a safety measure
-  if (!isCrawler) {
+  if (!finalIsCrawler) {
     // Return 404 - Vercel's catch-all rewrite will serve index.html
     return res.status(404).json({ error: 'Not found' });
   }
@@ -515,8 +524,12 @@ export default async function handler(req, res) {
       // If this is a regular user (not a crawler), redirect to the React app
       // This ensures they get the full React app experience
       if (typeof window !== 'undefined') {
-        const isCrawler = /(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Applebot|Pinterest|Snapchat|Discordbot|TelegramBot|Viber|Googlebot|bingbot|YandexBot|SemrushBot|AhrefsBot|Redditbot|Tumblr|Line|WeChat|QQ|Baiduspider)/i.test(navigator.userAgent);
-        if (!isCrawler) {
+        // Check if it's a real browser (not a crawler)
+        const userAgent = navigator.userAgent;
+        const isRealBrowser = /(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version|Mozilla)/i.test(userAgent) && 
+                              !/(bot|crawler|spider|scraper|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Applebot|Pinterestbot|SnapchatBot|Discordbot|TelegramBot|Viber|Googlebot|bingbot|YandexBot|SemrushBot|AhrefsBot|Redditbot|Tumblr|Line|WeChat|QQ|Baiduspider)/i.test(userAgent);
+        
+        if (isRealBrowser) {
           // Regular user - redirect immediately to the actual URL
           // This will trigger the catch-all rewrite to serve index.html (React app)
           window.location.replace(window.location.pathname + window.location.search);
