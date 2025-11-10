@@ -20,14 +20,27 @@ function escapeHtml(text) {
 // Helper function to normalize image URLs to absolute HTTPS URLs
 function normalizeImageUrl(imageUrl, apiBaseUrl = 'https://trailverse.onrender.com', defaultImage = 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg', req = null) {
   // Detect if we're in development/local environment
-  // Check request hostname if available, or use environment variables
+  // Priority: 1) Request host, 2) Vercel environment, 3) Node environment
   let isDev = false;
   if (req && req.headers && req.headers.host) {
-    isDev = req.headers.host.includes('localhost') || req.headers.host.includes('127.0.0.1');
+    const host = req.headers.host.toLowerCase();
+    isDev = host.includes('localhost') || 
+            host.includes('127.0.0.1') || 
+            host.includes('192.168.') ||
+            host.includes('.local');
   } else {
-    isDev = process.env.NODE_ENV === 'development' || 
-            process.env.VERCEL_ENV === 'development' ||
-            process.env.VERCEL_ENV === undefined; // Assume dev if no Vercel env
+    // Check Vercel environment variables (more reliable than NODE_ENV in Vercel)
+    const vercelEnv = process.env.VERCEL_ENV;
+    if (vercelEnv === 'production') {
+      isDev = false;
+    } else if (vercelEnv === 'development' || vercelEnv === 'preview') {
+      // Preview deployments should use production URLs for images
+      isDev = false;
+    } else {
+      // No Vercel env or local development
+      isDev = process.env.NODE_ENV === 'development' || 
+              process.env.NODE_ENV === undefined;
+    }
   }
   
   // Use localhost URLs in development
@@ -45,6 +58,24 @@ function normalizeImageUrl(imageUrl, apiBaseUrl = 'https://trailverse.onrender.c
     return actualDefaultImage;
   }
   
+  // If image URL contains localhost and we're in production, extract the path and rebuild
+  if (!isDev && imageUrl.includes('localhost')) {
+    // Extract the path from localhost URL
+    const localhostMatch = imageUrl.match(/localhost[:\d]*\/(.+)/);
+    if (localhostMatch && localhostMatch[1]) {
+      const path = localhostMatch[1];
+      // If it's an /uploads/ path, convert to API endpoint
+      if (path.startsWith('uploads/')) {
+        const filePath = path.replace('uploads/', '');
+        return `${actualApiUrl}/api/images/file/${filePath}`;
+      }
+      // If it's an API path, use it directly
+      if (path.startsWith('api/images/file/')) {
+        return `${actualApiUrl}/${path}`;
+      }
+    }
+  }
+  
   // If it's a full URL with /uploads/, convert to API endpoint
   if (imageUrl.includes('/uploads/')) {
     const filePath = imageUrl.split('/uploads/')[1];
@@ -60,7 +91,16 @@ function normalizeImageUrl(imageUrl, apiBaseUrl = 'https://trailverse.onrender.c
   
   // Already a full HTTP URL (keep as-is in dev, convert to HTTPS in prod)
   if (imageUrl.startsWith('http://')) {
-    return isDev ? imageUrl : imageUrl.replace(/^http:\/\//i, 'https://');
+    if (isDev) {
+      return imageUrl;
+    }
+    // In production, convert HTTP to HTTPS and replace localhost with production API
+    let httpsUrl = imageUrl.replace(/^http:\/\//i, 'https://');
+    if (httpsUrl.includes('localhost')) {
+      // Replace localhost with production API URL
+      httpsUrl = httpsUrl.replace(/https?:\/\/[^\/]+/, actualApiUrl);
+    }
+    return httpsUrl;
   }
   
   // Handle API image paths
@@ -132,10 +172,16 @@ export default async function handler(req, res) {
   );
 
   // Log for debugging (remove in production if needed)
+  const isDev = req?.headers?.host?.toLowerCase().includes('localhost') || 
+                req?.headers?.host?.toLowerCase().includes('127.0.0.1');
   console.log('Prerender function called:', {
     pathname,
     userAgent: userAgent.substring(0, 100), // Log first 100 chars
-    isCrawler
+    isCrawler,
+    host: req?.headers?.host,
+    isDev: isDev,
+    vercelEnv: process.env.VERCEL_ENV,
+    nodeEnv: process.env.NODE_ENV
   });
 
   // If the pathname is exactly /blog (not /blog/:slug), always serve index.html
@@ -185,14 +231,15 @@ export default async function handler(req, res) {
               
               // First, try to use featured image if it's a valid URL (not data URL)
               if (post.featuredImage && !post.featuredImage.startsWith('data:image/')) {
+                console.log(`Original featured image URL: ${post.featuredImage}`);
                 imageUrl = normalizeImageUrl(post.featuredImage, apiBaseUrl, undefined, req);
-                console.log(`Using featured image: ${imageUrl}`);
+                console.log(`Normalized featured image URL: ${imageUrl}`);
               }
               
               // If featured image is a data URL or not available, try to extract from content
               if (!imageUrl || post.featuredImage?.startsWith('data:image/')) {
                 console.log('Featured image is a data URL or missing - trying to extract from content');
-                if (post.content) {
+                  if (post.content) {
                   // Try multiple patterns to find images in content
                   const imgPatterns = [
                     /<img[^>]+src=["']([^"']+)["'][^>]*>/gi,  // Standard img tag
@@ -358,7 +405,7 @@ export default async function handler(req, res) {
   const escapedAuthor = escapeHtml(metaTags.author || 'TrailVerse Team');
   const escapedPublished = escapeHtml(metaTags.published || '');
   const escapedModified = escapeHtml(metaTags.modified || '');
-  
+
   // Generate HTML with meta tags
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -414,22 +461,78 @@ export default async function handler(req, res) {
     <!-- Canonical URL -->
     <link rel="canonical" href="${escapedUrl}" />
     
-    <!-- Redirect to actual page for JavaScript-enabled browsers -->
-    <script>
-      // Only redirect if not a crawler (crawlers won't execute this)
-      if (typeof window !== 'undefined') {
-        window.location.href = ${JSON.stringify(metaTags.url)};
+    <!-- For regular users: redirect to React app (crawlers won't execute this) -->
+    <!-- This will redirect to the same pathname, triggering the catch-all rewrite to serve index.html -->
+    <meta http-equiv="refresh" content="0;url=${pathname}" id="redirect-meta" />
+    
+    <!-- For crawlers: show content immediately -->
+    <!-- For regular users: load the React app -->
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        background: #fff;
       }
-    </script>
+      .preview-content {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .preview-content h1 {
+        font-size: 2em;
+        margin-bottom: 0.5em;
+      }
+      .preview-content p {
+        line-height: 1.6;
+        color: #666;
+      }
+      .preview-content img {
+        max-width: 100%;
+        height: auto;
+        margin: 20px 0;
+      }
+      .preview-content a {
+        color: #0070f3;
+        text-decoration: none;
+      }
+      .preview-content a:hover {
+        text-decoration: underline;
+      }
+    </style>
   </head>
   <body>
-    <noscript>
+    <!-- Content for crawlers and no-JS users -->
+    <div class="preview-content">
       <h1>${escapedTitle}</h1>
       <p>${escapedDescription}</p>
-      <p><a href="${escapedUrl}">Visit TrailVerse</a></p>
+      <img src="${escapedImage}" alt="${escapedTitle}" />
+      <p><a href="${escapedUrl}">Read full article →</a></p>
+    </div>
+    
+    <!-- For JavaScript-enabled browsers: redirect to React app -->
+    <!-- Crawlers will see the static content above and won't execute this -->
+    <script>
+      // If this is a regular user (not a crawler), redirect to the React app
+      // This ensures they get the full React app experience
+      if (typeof window !== 'undefined') {
+        const isCrawler = /(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Applebot|Pinterest|Snapchat|Discordbot|TelegramBot|Viber|Googlebot|bingbot|YandexBot|SemrushBot|AhrefsBot|Redditbot|Tumblr|Line|WeChat|QQ|Baiduspider)/i.test(navigator.userAgent);
+        if (!isCrawler) {
+          // Regular user - redirect immediately to the actual URL
+          // This will trigger the catch-all rewrite to serve index.html (React app)
+          window.location.replace(window.location.pathname + window.location.search);
+        } else {
+          // Crawler - remove the redirect meta tag so it doesn't redirect
+          const redirectMeta = document.getElementById('redirect-meta');
+          if (redirectMeta) {
+            redirectMeta.remove();
+          }
+        }
+      }
+    </script>
+    <noscript>
+      <!-- For no-JS users: show a link to the actual page -->
+      <p><a href="${escapedUrl}">Continue to article →</a></p>
     </noscript>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>`;
 

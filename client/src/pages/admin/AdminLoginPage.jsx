@@ -178,6 +178,7 @@ const AdminLoginPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter admin password"
+                  autoComplete="current-password"
                   className="w-full pl-12 pr-12 py-4 rounded-xl outline-none transition text-lg"
                   style={{
                     backgroundColor: 'var(--surface-hover)',

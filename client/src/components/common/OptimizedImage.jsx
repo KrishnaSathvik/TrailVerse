@@ -11,11 +11,6 @@ const normalizeImageUrl = (url) => {
     return null; // Data URLs can't be used for images
   }
 
-  // Convert HTTP to HTTPS
-  if (url.startsWith('http://')) {
-    url = url.replace('http://', 'https://');
-  }
-
   const isDevelopment = import.meta.env.DEV;
   let apiBaseUrl = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:5001' : 'https://trailverse.onrender.com');
   
@@ -24,7 +19,18 @@ const normalizeImageUrl = (url) => {
     apiBaseUrl = apiBaseUrl.slice(0, -4);
   }
   
-  // If it's a trailverse.onrender.com/uploads/ URL, try to use the API endpoint first
+  // Handle localhost URLs in production - convert to production API URL
+  if (!isDevelopment && url.includes('localhost:5001')) {
+    // Replace localhost with production API URL
+    url = url.replace(/http:\/\/localhost:5001/g, 'https://trailverse.onrender.com');
+  }
+  
+  // Convert HTTP to HTTPS (for production)
+  if (!isDevelopment && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+  
+  // If it's a trailverse.onrender.com/uploads/ URL or /uploads/ path, use API endpoint
   if (url.includes('trailverse.onrender.com/uploads/') || url.includes('/uploads/')) {
     // Extract the path after /uploads/ (e.g., "general/1762611045214-709377760.jpg")
     const uploadsIndex = url.indexOf('/uploads/');
@@ -72,11 +78,18 @@ const OptimizedImage = ({
     setFallbackSrc(null); // Reset fallback
     
     // If we converted to API endpoint, set fallback to direct URL
-    if (src && (src.includes('trailverse.onrender.com/uploads/') || src.includes('/uploads/'))) {
-      const uploadsIndex = src.indexOf('/uploads/');
+    if (src && (src.includes('trailverse.onrender.com/uploads/') || src.includes('/uploads/') || src.includes('localhost:5001/uploads/'))) {
+      // Handle localhost URLs in production
+      let processedSrc = src;
+      const isDevelopment = import.meta.env.DEV;
+      
+      if (!isDevelopment && src.includes('localhost:5001')) {
+        processedSrc = src.replace(/http:\/\/localhost:5001/g, 'https://trailverse.onrender.com');
+      }
+      
+      const uploadsIndex = processedSrc.indexOf('/uploads/');
       if (uploadsIndex !== -1) {
-        const filePath = src.substring(uploadsIndex); // This is /uploads/...
-        const isDevelopment = import.meta.env.DEV;
+        const filePath = processedSrc.substring(uploadsIndex); // This is /uploads/...
         let apiBaseUrl = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:5001' : 'https://trailverse.onrender.com');
         
         // Normalize apiBaseUrl - remove trailing /api if present

@@ -118,6 +118,7 @@ const CreateBlogPage = () => {
       });
 
       // Store the URL from the server (not the base64 data URL)
+      // Server now returns relative paths (/uploads/...) which will be normalized by OptimizedImage
       const imageUrl = uploadedImage.url;
       setFormData(prev => ({ ...prev, featuredImage: imageUrl }));
       

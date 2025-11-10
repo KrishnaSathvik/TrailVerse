@@ -168,7 +168,7 @@ const blogBodyParser = express.json({ limit: '10mb' });
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', cacheMiddleware(600), getAllPosts); // Cache for 10 minutes
+router.get('/', cacheMiddleware(300), getAllPosts); // Cache for 5 minutes - reduced for faster updates
 
 /**
  * @swagger

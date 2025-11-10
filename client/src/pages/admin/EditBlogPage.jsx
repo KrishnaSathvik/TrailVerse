@@ -57,12 +57,26 @@ const EditBlogPage = () => {
       const post = await blogService.getPostById(id);
       
       if (post) {
+        // Normalize image URL to use HTTPS in production
+        let normalizedImageUrl = post.featuredImage || '';
+        if (normalizedImageUrl && !import.meta.env.DEV) {
+          // In production, ensure HTTPS and convert localhost URLs to production API
+          if (normalizedImageUrl.includes('localhost:5001')) {
+            // Replace localhost with production API URL
+            normalizedImageUrl = normalizedImageUrl.replace('http://localhost:5001', 'https://trailverse.onrender.com');
+          }
+          // Convert HTTP to HTTPS
+          if (normalizedImageUrl.startsWith('http://')) {
+            normalizedImageUrl = normalizedImageUrl.replace('http://', 'https://');
+          }
+        }
+        
         setFormData({
           title: post.title,
           slug: post.slug || '',
           excerpt: post.excerpt,
           content: post.content,
-          featuredImage: post.featuredImage || '',
+          featuredImage: normalizedImageUrl,
           author: post.author,
           category: post.category || 'Park Guides',
           tags: post.tags || [],
@@ -72,7 +86,7 @@ const EditBlogPage = () => {
           scheduledAt: post.scheduledAt ? new Date(post.scheduledAt).toISOString().slice(0, 16) : '',
           isScheduled: post.status === 'scheduled'
         });
-        setImagePreview(post.featuredImage);
+        setImagePreview(normalizedImageUrl);
       } else {
         showToast('Post not found', 'error');
         navigate('/admin');
@@ -147,6 +161,7 @@ const EditBlogPage = () => {
       });
 
       // Store the URL from the server (not the base64 data URL)
+      // Server now returns relative paths (/uploads/...) which will be normalized by OptimizedImage
       const imageUrl = uploadedImage.url;
       setFormData(prev => ({ ...prev, featuredImage: imageUrl }));
       

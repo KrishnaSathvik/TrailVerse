@@ -139,10 +139,15 @@ exports.uploadImages = async (req, res, next) => {
           // Continue without thumbnail if it fails
         }
 
-        // Generate URLs
-        const baseUrl = `${req.protocol}://${req.get('host')}/uploads`;
-        const relativePath = path.relative(path.join(__dirname, '../../uploads'), file.path);
-        const thumbnailRelativePath = path.relative(path.join(__dirname, '../../uploads'), thumbnailPath);
+        // Generate URLs - store as relative paths for easier normalization
+        // The client will normalize these to the correct format based on environment
+        const relativePath = path.relative(path.join(__dirname, '../../uploads'), file.path).replace(/\\/g, '/');
+        const thumbnailRelativePath = path.relative(path.join(__dirname, '../../uploads'), thumbnailPath).replace(/\\/g, '/');
+        
+        // Store as relative path - client will normalize to full URL or API endpoint as needed
+        // Format: /uploads/category/filename.jpg
+        const imageUrl = `/uploads/${relativePath}`;
+        const thumbnailUrl = `/uploads/${thumbnailRelativePath}`;
 
         const imageUpload = await ImageUpload.create({
           userId: userId, // Already validated above
@@ -150,8 +155,8 @@ exports.uploadImages = async (req, res, next) => {
           filename: file.filename,
           mimeType: file.mimetype,
           size: file.size,
-          url: `${baseUrl}/${relativePath.replace(/\\/g, '/')}`,
-          thumbnailUrl: `${baseUrl}/${thumbnailRelativePath.replace(/\\/g, '/')}`,
+          url: imageUrl,
+          thumbnailUrl: thumbnailUrl,
           category,
           relatedId: relatedId || null,
           relatedType: relatedType || (category === 'profile' ? 'user' : null),
