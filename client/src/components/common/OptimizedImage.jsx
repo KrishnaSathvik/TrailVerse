@@ -19,6 +19,12 @@ const normalizeImageUrl = (url) => {
     apiBaseUrl = apiBaseUrl.slice(0, -4);
   }
   
+  // If already a full HTTPS URL from external domain (like nps.gov), return as is
+  // This handles park images from NPS API
+  if (url.startsWith('https://') && !url.includes('trailverse.onrender.com') && !url.includes('localhost')) {
+    return url;
+  }
+  
   // Handle localhost URLs in production - convert to production API URL
   if (!isDevelopment && url.includes('localhost:5001')) {
     // Replace localhost with production API URL
@@ -30,8 +36,11 @@ const normalizeImageUrl = (url) => {
     url = url.replace('http://', 'https://');
   }
   
-  // If it's a trailverse.onrender.com/uploads/ URL or /uploads/ path, use API endpoint
-  if (url.includes('trailverse.onrender.com/uploads/') || url.includes('/uploads/')) {
+  // If it's a trailverse.onrender.com/uploads/ URL or relative /uploads/ path, use API endpoint
+  // Only convert if it's from our domain or a relative path (not external domains)
+  if (url.startsWith('/uploads/') || 
+      url.includes('trailverse.onrender.com/uploads/') || 
+      (url.includes('localhost:5001/uploads/') && isDevelopment)) {
     // Extract the path after /uploads/ (e.g., "general/1762611045214-709377760.jpg")
     const uploadsIndex = url.indexOf('/uploads/');
     if (uploadsIndex !== -1) {
