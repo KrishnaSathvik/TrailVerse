@@ -169,20 +169,24 @@ export default async function handler(req, res) {
 
   // Check if it's a crawler - but exclude real browsers
   // Snapchat's in-app browser might have "Snapchat" in user-agent, but it's not a crawler
-  // However, Snapchat's in-app browser needs prerendered HTML for link previews
+  // We need to distinguish between Snapchat's crawler (for link previews) and in-app browser (for actual users)
   const userAgentLower = userAgent.toLowerCase();
   
-  // Special handling for Snapchat - treat both crawler and in-app browser as crawler
-  // This ensures Snapchat gets prerendered HTML with meta tags for link previews
-  const isSnapchat = userAgentLower.includes('snapchat');
+  // Check if it's Snapchat's crawler (SnapchatBot) vs in-app browser
+  // Snapchat's in-app browser needs prerendered HTML for link previews (it doesn't wait for JavaScript)
+  // But we'll add a redirect so users can actually view the blog
+  const isSnapchatBot = userAgentLower.includes('snapchatbot') || 
+                        (userAgentLower.includes('snapchat') && userAgentLower.includes('bot'));
+  const isSnapchatBrowser = userAgentLower.includes('snapchat') && !isSnapchatBot;
   
   // Check if it's a crawler
   const isCrawler = crawlerPatterns.some(pattern => {
     const patternLower = pattern.toLowerCase();
     
     // Special handling for Snapchat - match both bot and in-app browser
-    if (patternLower === 'snapchat' && isSnapchat) {
-      return true; // Match any Snapchat user-agent
+    // In-app browser needs prerendered HTML for link previews
+    if (patternLower === 'snapchat') {
+      return isSnapchatBot || isSnapchatBrowser; // Match both bot and in-app browser
     }
     
     return userAgentLower.includes(patternLower);
@@ -190,13 +194,14 @@ export default async function handler(req, res) {
   
   // Additional check: if user-agent contains browser indicators, it's not a crawler
   // But allow Snapchat (both bot and in-app browser) to get prerendered HTML
-  const isRealBrowser = !isSnapchat && 
+  const isRealBrowser = !isSnapchatBot && !isSnapchatBrowser && 
                         userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version|Mozilla)/i) && 
                         !userAgent.match(/(bot|crawler|spider|scraper)/i);
   
   // If it's Snapchat (bot or in-app browser), treat as crawler to get prerendered HTML
+  // SnapchatBot needs it for link previews, in-app browser needs it too (doesn't wait for JS)
   // If it's a real browser (not Snapchat), don't treat it as a crawler
-  const finalIsCrawler = (isSnapchat || isCrawler) && !isRealBrowser;
+  const finalIsCrawler = ((isSnapchatBot || isSnapchatBrowser) || isCrawler) && !isRealBrowser;
 
   // Log for debugging (remove in production if needed)
   const isDev = req?.headers?.host?.toLowerCase().includes('localhost') || 
@@ -533,9 +538,32 @@ export default async function handler(req, res) {
       <p><a href="${escapedUrl}">Read full article →</a></p>
     </div>
     
-    <!-- Note: This prerender function is only called for crawlers (via vercel.json rewrite rules) -->
-    <!-- Regular users will get index.html (React app) directly, so no redirect is needed -->
-    <!-- Crawlers don't execute JavaScript, so they'll see the static content with meta tags above -->
+    <!-- For Snapchat's in-app browser: redirect to React app so users can actually view the blog -->
+    <!-- SnapchatBot (crawler) won't execute JavaScript, so it will see the static content with meta tags above -->
+    <!-- We use both meta refresh and JavaScript redirect for maximum compatibility -->
+    <meta http-equiv="refresh" content="0;url=${escapedUrl}" id="snapchat-redirect" />
+    <script>
+      // If this is Snapchat's in-app browser (not the crawler), redirect to React app
+      // This ensures users can actually view the blog in Snapchat's in-app browser
+      if (typeof window !== 'undefined') {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isSnapchatBrowser = userAgent.includes('snapchat') && !userAgent.includes('snapchatbot') && !userAgent.includes('bot');
+        
+        if (isSnapchatBrowser) {
+          // Snapchat's in-app browser - redirect to React app immediately
+          // This will trigger the catch-all rewrite to serve index.html (React app)
+          window.location.replace(window.location.pathname + window.location.search);
+        } else {
+          // Not Snapchat's in-app browser - remove the meta refresh tag
+          // This prevents other crawlers from being redirected
+          const redirectMeta = document.getElementById('snapchat-redirect');
+          if (redirectMeta) {
+            redirectMeta.remove();
+          }
+        }
+        // SnapchatBot (crawler) won't execute JavaScript, so it will see the static content with meta tags
+      }
+    </script>
   </body>
 </html>`;
 
