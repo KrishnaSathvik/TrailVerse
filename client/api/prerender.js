@@ -470,12 +470,8 @@ export default async function handler(req, res) {
     <!-- Canonical URL -->
     <link rel="canonical" href="${escapedUrl}" />
     
-    <!-- For regular users: redirect to React app (crawlers won't execute this) -->
-    <!-- This will redirect to the same pathname, triggering the catch-all rewrite to serve index.html -->
-    <meta http-equiv="refresh" content="0;url=${pathname}" id="redirect-meta" />
-    
-    <!-- For crawlers: show content immediately -->
-    <!-- For regular users: load the React app -->
+    <!-- For crawlers: show content immediately (they won't execute JavaScript) -->
+    <!-- For regular users: JavaScript will redirect to React app -->
     <style>
       body {
         margin: 0;
@@ -533,13 +529,8 @@ export default async function handler(req, res) {
           // Regular user - redirect immediately to the actual URL
           // This will trigger the catch-all rewrite to serve index.html (React app)
           window.location.replace(window.location.pathname + window.location.search);
-        } else {
-          // Crawler - remove the redirect meta tag so it doesn't redirect
-          const redirectMeta = document.getElementById('redirect-meta');
-          if (redirectMeta) {
-            redirectMeta.remove();
-          }
         }
+        // Crawlers won't execute JavaScript, so they'll see the static content with meta tags
       }
     </script>
     <noscript>
