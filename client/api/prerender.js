@@ -514,29 +514,9 @@ export default async function handler(req, res) {
       <p><a href="${escapedUrl}">Read full article →</a></p>
     </div>
     
-    <!-- For JavaScript-enabled browsers: redirect to React app -->
-    <!-- Crawlers will see the static content above and won't execute this -->
-    <script>
-      // If this is a regular user (not a crawler), redirect to the React app
-      // This ensures they get the full React app experience
-      if (typeof window !== 'undefined') {
-        // Check if it's a real browser (not a crawler)
-        const userAgent = navigator.userAgent;
-        const isRealBrowser = /(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version|Mozilla)/i.test(userAgent) && 
-                              !/(bot|crawler|spider|scraper|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|SkypeUriPreview|Applebot|Pinterestbot|SnapchatBot|Discordbot|TelegramBot|Viber|Googlebot|bingbot|YandexBot|SemrushBot|AhrefsBot|Redditbot|Tumblr|Line|WeChat|QQ|Baiduspider)/i.test(userAgent);
-        
-        if (isRealBrowser) {
-          // Regular user - redirect immediately to the actual URL
-          // This will trigger the catch-all rewrite to serve index.html (React app)
-          window.location.replace(window.location.pathname + window.location.search);
-        }
-        // Crawlers won't execute JavaScript, so they'll see the static content with meta tags
-      }
-    </script>
-    <noscript>
-      <!-- For no-JS users: show a link to the actual page -->
-      <p><a href="${escapedUrl}">Continue to article →</a></p>
-    </noscript>
+    <!-- Note: This prerender function is only called for crawlers (via vercel.json rewrite rules) -->
+    <!-- Regular users will get index.html (React app) directly, so no redirect is needed -->
+    <!-- Crawlers don't execute JavaScript, so they'll see the static content with meta tags above -->
   </body>
 </html>`;
 
