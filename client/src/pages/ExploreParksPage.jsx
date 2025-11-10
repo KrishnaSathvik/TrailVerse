@@ -853,13 +853,14 @@ const ExploreParksPage = () => {
                       ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
                       : 'space-y-4'
                   }>
-                  {currentParks.map((park) => (
+                  {currentParks.map((park, index) => (
                     <ParkCard 
                       key={park.parkCode} 
                       park={park} 
                       viewMode={viewMode} 
                       rating={parkRatings?.[park.parkCode]}
                       location={location}
+                      index={index}
                     />
                   ))}
                   </div>
@@ -1100,7 +1101,7 @@ const ExploreParksPage = () => {
 };
 
 // Park Card Component
-const ParkCard = ({ park, viewMode, rating, location }) => {
+const ParkCard = ({ park, viewMode, rating, location, index = 0 }) => {
   if (viewMode === 'list') {
     return (
       <Link

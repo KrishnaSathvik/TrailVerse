@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 // Normalize image URL - convert HTTP to HTTPS and handle relative paths
 const normalizeImageUrl = (url) => {
@@ -9,6 +9,26 @@ const normalizeImageUrl = (url) => {
   // Skip data URLs
   if (url.startsWith('data:image/')) {
     return null; // Data URLs can't be used for images
+  }
+
+  // Detect invalid URLs - just filenames without protocols or proper paths
+  // Valid URLs should start with http://, https://, or /, or contain /uploads/
+  // If it's just a filename like "image.jpg" without any path indicators, it's likely invalid
+  const trimmedUrl = url.trim();
+  
+  // Check for just a filename without proper path (e.g., "image.jpg")
+  // Note: Timestamp-based filenames like "1762743485952-599403375.jpg" are valid uploads
+  if (!trimmedUrl.startsWith('http://') && 
+      !trimmedUrl.startsWith('https://') && 
+      !trimmedUrl.startsWith('/') && 
+      !trimmedUrl.includes('/') && 
+      trimmedUrl.includes('.')) {
+    // This looks like just a filename (e.g., "image.jpg") without a proper path
+    // Likely invalid - return null to use default image
+    if (import.meta.env.DEV) {
+      console.warn('Invalid image URL detected (just filename without path):', url);
+    }
+    return null;
   }
 
   const isDevelopment = import.meta.env.DEV;
@@ -75,20 +95,15 @@ const OptimizedImage = ({
   height,
   objectFit = 'cover'
 }) => {
-  const [error, setError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(() => normalizeImageUrl(src));
-  const [fallbackSrc, setFallbackSrc] = useState(null);
+  // Memoize normalized URL to avoid recalculating on every render
+  const normalizedSrc = useMemo(() => normalizeImageUrl(src), [src]);
+  
+  // Memoize fallback URL calculation
+  const fallbackSrc = useMemo(() => {
+    if (!src) return null;
 
-  // Update image source if src prop changes
-  useEffect(() => {
-    const normalized = normalizeImageUrl(src);
-    setImageSrc(normalized);
-    setError(false); // Reset error when src changes
-    setFallbackSrc(null); // Reset fallback
-    
-    // If we converted to API endpoint, set fallback to direct URL
-    if (src && (src.includes('trailverse.onrender.com/uploads/') || src.includes('/uploads/') || src.includes('localhost:5001/uploads/'))) {
-      // Handle localhost URLs in production
+    // Only set fallback for /uploads/ paths
+    if (src.includes('trailverse.onrender.com/uploads/') || src.includes('/uploads/') || src.includes('localhost:5001/uploads/')) {
       let processedSrc = src;
       const isDevelopment = import.meta.env.DEV;
       
@@ -107,42 +122,48 @@ const OptimizedImage = ({
         }
         
         // Fallback should be direct /uploads/ path (not /api/uploads/)
-        const directUrl = isDevelopment ? `${apiBaseUrl}${filePath}` : filePath;
-        setFallbackSrc(directUrl);
+        return isDevelopment ? `${apiBaseUrl}${filePath}` : filePath;
       }
     }
+    return null;
   }, [src]);
 
-  const DEFAULT_IMAGE = '/og-image-trailverse.jpg';
+  const [error, setError] = useState(false);
+  const [imageSrc, setImageSrc] = useState(normalizedSrc);
   const [attemptCount, setAttemptCount] = useState(0);
+  const DEFAULT_IMAGE = '/og-image-trailverse.jpg';
+
+  // Update image source if normalized src changes (only when it actually changes)
+  useEffect(() => {
+    if (normalizedSrc && normalizedSrc !== imageSrc) {
+      setImageSrc(normalizedSrc);
+      setError(false);
+      setAttemptCount(0);
+    }
+  }, [normalizedSrc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageError = (e) => {
-    console.error('Image failed to load:', imageSrc, e);
-    
     // First attempt: try fallback URL if we have one and are using API endpoint
     if (attemptCount === 0 && fallbackSrc && imageSrc && imageSrc.includes('/api/images/file/')) {
-      console.log('Trying fallback URL:', fallbackSrc);
       setImageSrc(fallbackSrc);
       setAttemptCount(1);
       setError(false);
+      return; // Exit early to wait for fallback result
     } 
-    // Second attempt: try default image
-    else if (attemptCount <= 1 && imageSrc !== DEFAULT_IMAGE) {
-      console.log('Trying default image:', DEFAULT_IMAGE);
+    // Second attempt: try default image (skip fallback if we don't have one or it already failed)
+    if (attemptCount <= 1 && imageSrc !== DEFAULT_IMAGE) {
       setImageSrc(DEFAULT_IMAGE);
       setAttemptCount(2);
       setError(false);
+      return; // Exit early to wait for default image result
     } 
     // All attempts failed, show placeholder
-    else {
-      setError(true);
+    // Only log in development when we've exhausted all options
+    if (import.meta.env.DEV && attemptCount >= 2) {
+      console.warn('Image failed to load after all attempts:', imageSrc);
     }
+    setError(true);
   };
-
-  // Reset attempt count when src changes
-  useEffect(() => {
-    setAttemptCount(0);
-  }, [src]);
 
   if (error || !imageSrc) {
     return (
@@ -161,11 +182,9 @@ const OptimizedImage = ({
       width={width}
       height={height}
       className={className}
-      loading="lazy"
       onError={handleImageError}
       style={{ objectFit }}
       decoding="async"
-      fetchpriority="auto"
     />
   );
 };
