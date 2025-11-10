@@ -149,6 +149,7 @@ export default async function handler(req, res) {
     'Pinterest/0.1', // Pinterest
     'SnapchatBot', // Snapchat bot (specific crawler)
     'Snapchat/1.0', // Snapchat crawler version
+    'Snapchat', // Snapchat (general pattern - but we'll filter out in-app browsers)
     'Discordbot', // Discord
     'TelegramBot', // Telegram
     'Viber', // Viber
@@ -168,16 +169,34 @@ export default async function handler(req, res) {
 
   // Check if it's a crawler - but exclude real browsers
   // Snapchat's in-app browser might have "Snapchat" in user-agent, but it's not a crawler
-  const isCrawler = crawlerPatterns.some(pattern => 
-    userAgent.toLowerCase().includes(pattern.toLowerCase())
-  ) && !userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version)/i);
+  // However, Snapchat's in-app browser needs prerendered HTML for link previews
+  const userAgentLower = userAgent.toLowerCase();
+  
+  // Special handling for Snapchat - treat both crawler and in-app browser as crawler
+  // This ensures Snapchat gets prerendered HTML with meta tags for link previews
+  const isSnapchat = userAgentLower.includes('snapchat');
+  
+  // Check if it's a crawler
+  const isCrawler = crawlerPatterns.some(pattern => {
+    const patternLower = pattern.toLowerCase();
+    
+    // Special handling for Snapchat - match both bot and in-app browser
+    if (patternLower === 'snapchat' && isSnapchat) {
+      return true; // Match any Snapchat user-agent
+    }
+    
+    return userAgentLower.includes(patternLower);
+  }) && !userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version)/i);
   
   // Additional check: if user-agent contains browser indicators, it's not a crawler
-  const isRealBrowser = userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version|Mozilla)/i) && 
+  // But allow Snapchat (both bot and in-app browser) to get prerendered HTML
+  const isRealBrowser = !isSnapchat && 
+                        userAgent.match(/(Mobile|Safari|Chrome|Firefox|Edge|Opera|Version|Mozilla)/i) && 
                         !userAgent.match(/(bot|crawler|spider|scraper)/i);
   
-  // If it's a real browser, don't treat it as a crawler
-  const finalIsCrawler = isCrawler && !isRealBrowser;
+  // If it's Snapchat (bot or in-app browser), treat as crawler to get prerendered HTML
+  // If it's a real browser (not Snapchat), don't treat it as a crawler
+  const finalIsCrawler = (isSnapchat || isCrawler) && !isRealBrowser;
 
   // Log for debugging (remove in production if needed)
   const isDev = req?.headers?.host?.toLowerCase().includes('localhost') || 
