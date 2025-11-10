@@ -241,6 +241,9 @@ export default async function handler(req, res) {
     type: 'website'
   };
 
+  // Store post data for rendering full content (for Snapchat's in-app browser)
+  let postData = null;
+
   // Fetch data from API based on URL
   const apiBaseUrl = process.env.API_URL || 'https://trailverse.onrender.com';
 
@@ -352,6 +355,17 @@ export default async function handler(req, res) {
                 modified: modifiedTime,
                 author: author
               };
+              
+              // Store post data for rendering full content
+              postData = {
+                title: post.title,
+                content: post.content,
+                excerpt: post.excerpt || description,
+                author: author,
+                publishedAt: post.publishedAt,
+                featuredImage: imageUrl
+              };
+              
               console.log(`Meta tags set for blog post: ${metaTags.title}`);
               console.log(`Meta tags image URL: ${metaTags.image}`);
             }
@@ -438,6 +452,11 @@ export default async function handler(req, res) {
   const escapedAuthor = escapeHtml(metaTags.author || 'TrailVerse Team');
   const escapedPublished = escapeHtml(metaTags.published || '');
   const escapedModified = escapeHtml(metaTags.modified || '');
+  
+  // For Snapchat's in-app browser, we'll render the full blog content
+  // For crawlers, we'll just show a preview
+  // isSnapchatBrowser is already defined earlier in the function
+  const shouldRenderFullContent = isSnapchatBrowser && postData && postData.content;
 
   // Generate HTML with meta tags
   const html = `<!DOCTYPE html>
@@ -475,9 +494,6 @@ export default async function handler(req, res) {
     <meta name="twitter:image" content="${escapedImage}" />
     <meta name="twitter:image:src" content="${escapedImage}" />
     <meta name="twitter:site" content="@TrailVerse" />
-    
-    <!-- Snapchat-specific tags -->
-    <meta property="snapchat:sticker" content="${escapedImage}" />
     
     <!-- Pinterest-specific tags -->
     <meta property="pinterest:media" content="${escapedImage}" />
@@ -527,43 +543,87 @@ export default async function handler(req, res) {
       .preview-content a:hover {
         text-decoration: underline;
       }
+      .blog-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .blog-content h1 {
+        font-size: 2.5em;
+        margin-bottom: 0.5em;
+        line-height: 1.2;
+      }
+      .blog-content .meta-info {
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 2em;
+        padding-bottom: 1em;
+        border-bottom: 1px solid #eee;
+      }
+      .blog-content .featured-image {
+        width: 100%;
+        height: auto;
+        margin: 2em 0;
+        border-radius: 8px;
+      }
+      .blog-content .content-body {
+        line-height: 1.8;
+        font-size: 1.1em;
+      }
+      .blog-content .content-body img {
+        max-width: 100%;
+        height: auto;
+        margin: 1.5em 0;
+        border-radius: 8px;
+      }
+      .blog-content .content-body p {
+        margin-bottom: 1.5em;
+      }
+      .blog-content .content-body h2 {
+        font-size: 1.8em;
+        margin-top: 2em;
+        margin-bottom: 1em;
+      }
+      .blog-content .content-body h3 {
+        font-size: 1.5em;
+        margin-top: 1.5em;
+        margin-bottom: 0.8em;
+      }
     </style>
   </head>
   <body>
-    <!-- Content for crawlers and no-JS users -->
+    ${shouldRenderFullContent ? `
+    <!-- Full blog content for Snapchat's in-app browser -->
+    <div class="blog-content">
+      <h1>${escapeHtml(postData.title)}</h1>
+      <div class="meta-info">
+        <p>By ${escapeHtml(postData.author)} • ${postData.publishedAt ? new Date(postData.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</p>
+      </div>
+      ${postData.featuredImage ? `<img src="${escapeHtml(postData.featuredImage)}" alt="${escapeHtml(postData.title)}" class="featured-image" />` : ''}
+      <div class="content-body">
+        ${postData.content}
+      </div>
+      <p style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #eee; text-align: center;">
+        <a href="${escapedUrl}" style="color: #0070f3; text-decoration: none; font-weight: bold;">View full article with interactive features →</a>
+      </p>
+    </div>
+    <script>
+      // Try to load the React app in the background for better experience
+      // If JavaScript is available and the React app loads, it will take over
+      if (typeof window !== 'undefined' && window.location) {
+        // Don't auto-redirect - let users read the content first
+        // They can click the link above to get the full React app experience
+      }
+    </script>
+    ` : `
+    <!-- Content for crawlers (preview only) -->
     <div class="preview-content">
       <h1>${escapedTitle}</h1>
       <p>${escapedDescription}</p>
       <img src="${escapedImage}" alt="${escapedTitle}" />
       <p><a href="${escapedUrl}">Read full article →</a></p>
     </div>
-    
-    <!-- For Snapchat's in-app browser: redirect to React app so users can actually view the blog -->
-    <!-- SnapchatBot (crawler) won't execute JavaScript, so it will see the static content with meta tags above -->
-    <!-- We use both meta refresh and JavaScript redirect for maximum compatibility -->
-    <meta http-equiv="refresh" content="0;url=${escapedUrl}" id="snapchat-redirect" />
-    <script>
-      // If this is Snapchat's in-app browser (not the crawler), redirect to React app
-      // This ensures users can actually view the blog in Snapchat's in-app browser
-      if (typeof window !== 'undefined') {
-        const userAgent = navigator.userAgent.toLowerCase();
-        const isSnapchatBrowser = userAgent.includes('snapchat') && !userAgent.includes('snapchatbot') && !userAgent.includes('bot');
-        
-        if (isSnapchatBrowser) {
-          // Snapchat's in-app browser - redirect to React app immediately
-          // This will trigger the catch-all rewrite to serve index.html (React app)
-          window.location.replace(window.location.pathname + window.location.search);
-        } else {
-          // Not Snapchat's in-app browser - remove the meta refresh tag
-          // This prevents other crawlers from being redirected
-          const redirectMeta = document.getElementById('snapchat-redirect');
-          if (redirectMeta) {
-            redirectMeta.remove();
-          }
-        }
-        // SnapchatBot (crawler) won't execute JavaScript, so it will see the static content with meta tags
-      }
-    </script>
+    `}
   </body>
 </html>`;
 

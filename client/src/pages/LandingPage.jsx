@@ -123,7 +123,7 @@ const LandingPage = () => {
         <div 
           className="absolute inset-0 w-full bg-cover bg-no-repeat bg-center sm:bg-center md:bg-center lg:bg-top"
           style={{
-            backgroundImage: 'url(/background18.png)',
+            backgroundImage: 'url(/background23.png)',
             filter: 'brightness(0.7)',
             backgroundSize: 'cover',
             backgroundAttachment: 'scroll',
