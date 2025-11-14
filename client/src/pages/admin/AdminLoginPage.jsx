@@ -149,6 +149,7 @@ const AdminLoginPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter admin email"
+                  autoComplete="username"
                   className="w-full pl-12 pr-4 py-4 rounded-xl outline-none transition text-lg"
                   style={{
                     backgroundColor: 'var(--surface-hover)',

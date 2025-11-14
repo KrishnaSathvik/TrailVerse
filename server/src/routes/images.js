@@ -15,7 +15,11 @@ const { protect } = require('../middleware/auth');
 // Multer error handler middleware
 const handleMulterError = (err, req, res, next) => {
   if (err.name === 'MulterError') {
-    console.error('❌ Multer error:', err.message);
+    console.error('❌ Multer error:', {
+      message: err.message,
+      code: err.code,
+      field: err.field
+    });
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
@@ -43,6 +47,16 @@ const handleMulterError = (err, req, res, next) => {
   next(err);
 };
 
+// Wrapper to catch multer errors
+const uploadWithErrorHandling = (req, res, next) => {
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      return handleMulterError(err, req, res, next);
+    }
+    next();
+  });
+};
+
 // Public file serving route (no auth required) - MUST be before protect middleware
 // Use wildcard to capture full path including subdirectories (e.g., profile/image.jpg)
 router.get('/file/*', serveImage);
@@ -51,7 +65,7 @@ router.get('/file/*', serveImage);
 router.use(protect);
 
 // Image upload routes with error handling
-router.post('/upload', uploadMiddleware, handleMulterError, uploadImages);
+router.post('/upload', uploadWithErrorHandling, uploadImages);
 router.get('/', getUserImages);
 router.get('/stats', getImageStats);
 router.get('/:id', getImage);

@@ -416,30 +416,91 @@ const BlogPostPage = ({ isPublic = false }) => {
     navigate(`/blog?tag=${encodeURIComponent(tag)}`);
   };
 
+  // Helper to get absolute image URL
+  const getAbsoluteImageUrl = (imgUrl) => {
+    if (!imgUrl || imgUrl.trim() === '') {
+      return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+    }
+    if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+      return imgUrl;
+    }
+    if (imgUrl.startsWith('data:')) {
+      return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
+    }
+    const baseUrl = 'https://www.nationalparksexplorerusa.com';
+    if (imgUrl.startsWith('/')) {
+      return `${baseUrl}${imgUrl}`;
+    }
+    return `${baseUrl}/${imgUrl}`;
+  };
+
+  // Calculate word count from content
+  const wordCount = post.content ? post.content.split(/\s+/).filter(word => word.length > 0).length : 0;
+
   const blogStructuredData = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
-    image: post.featuredImage,
+    image: post.featuredImage ? [
+      {
+        '@type': 'ImageObject',
+        url: getAbsoluteImageUrl(post.featuredImage),
+        width: 1200,
+        height: 630
+      }
+    ] : 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
     author: {
       '@type': 'Person',
-      name: post.author
+      name: post.author || 'TrailVerse Team'
     },
     publisher: {
       '@type': 'Organization',
       name: 'TrailVerse',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.nationalparksexplorerusa.com/logo.png'
+        url: 'https://www.nationalparksexplorerusa.com/logo.png',
+        width: 512,
+        height: 512
       }
     },
     datePublished: post.publishedAt,
-    dateModified: post.updatedAt,
+    dateModified: post.updatedAt || post.publishedAt,
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `https://www.nationalparksexplorerusa.com/blog/${post.slug}`
-    }
+    },
+    articleSection: post.category || 'Travel',
+    keywords: post.tags && post.tags.length > 0 ? post.tags.join(', ') : undefined,
+    wordCount: wordCount,
+    inLanguage: 'en-US',
+    url: `https://www.nationalparksexplorerusa.com/blog/${post.slug}`
+  };
+
+  // Breadcrumb structured data
+  const breadcrumbStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://www.nationalparksexplorerusa.com'
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Blog',
+        item: 'https://www.nationalparksexplorerusa.com/blog'
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: `https://www.nationalparksexplorerusa.com/blog/${post.slug}`
+      }
+    ]
   };
 
   return (
@@ -470,12 +531,18 @@ const BlogPostPage = ({ isPublic = false }) => {
         author={post.author}
         published={post.publishedAt}
         modified={post.updatedAt}
+        additionalStructuredData={[blogStructuredData, breadcrumbStructuredData]}
       />
 
       <Helmet>
-        <script type="application/ld+json">
-          {JSON.stringify(blogStructuredData)}
-        </script>
+        {/* Article tag meta tags for each tag */}
+        {post.tags && post.tags.length > 0 && post.tags.map((tag, index) => (
+          <meta key={index} property="article:tag" content={tag} />
+        ))}
+        {/* Dynamic article section based on category */}
+        {post.category && (
+          <meta property="article:section" content={post.category} />
+        )}
       </Helmet>
 
       <Header />

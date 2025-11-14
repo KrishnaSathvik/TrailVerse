@@ -98,15 +98,28 @@ router.get('/sitemap.xml', async (req, res) => {
       
       blogPosts.forEach(post => {
         const lastmod = post.updatedAt.toISOString().split('T')[0];
+        
+        // Ensure featured image URL is absolute
+        let imageUrl = '';
+        if (post.featuredImage) {
+          if (post.featuredImage.startsWith('http://') || post.featuredImage.startsWith('https://')) {
+            imageUrl = post.featuredImage;
+          } else if (post.featuredImage.startsWith('/')) {
+            imageUrl = `${baseUrl}${post.featuredImage}`;
+          } else {
+            imageUrl = `${baseUrl}/${post.featuredImage}`;
+          }
+        }
+        
         sitemap += `
   <url>
     <loc>${baseUrl}/blog/${post.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    ${post.featuredImage ? `
+    ${imageUrl ? `
     <image:image>
-      <image:loc>${post.featuredImage}</image:loc>
+      <image:loc>${imageUrl}</image:loc>
       <image:caption>${post.title}</image:caption>
     </image:image>` : ''}
   </url>`;

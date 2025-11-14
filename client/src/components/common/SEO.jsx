@@ -114,7 +114,7 @@ const SEO = ({
           <meta property="article:published_time" content={published} />
           {modified && <meta property="article:modified_time" content={modified} />}
           <meta property="article:author" content={author} />
-          <meta property="article:section" content="Travel" />
+          {/* article:section will be set dynamically by pages that use this component */}
         </>
       )}
 

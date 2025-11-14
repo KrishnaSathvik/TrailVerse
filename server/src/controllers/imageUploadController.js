@@ -118,36 +118,63 @@ exports.uploadImages = async (req, res, next) => {
           throw new Error(`File not found: ${file.path}`);
         }
 
-        // Get image metadata
-        let metadata;
-        try {
-          metadata = await sharp(file.path).metadata();
-        } catch (sharpError) {
-          console.error('❌ Sharp error processing image:', sharpError);
-          throw new Error(`Failed to process image: ${sharpError.message}`);
-        }
+        // Check if file is SVG (sharp doesn't handle SVG well)
+        const isSvg = file.mimetype === 'image/svg+xml' || path.extname(file.path).toLowerCase() === '.svg';
         
-        // Generate thumbnail
-        const thumbnailPath = file.path.replace(path.extname(file.path), '_thumb' + path.extname(file.path));
-        try {
-          await sharp(file.path)
-            .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 80 })
-            .toFile(thumbnailPath);
-        } catch (thumbnailError) {
-          console.error('❌ Error generating thumbnail:', thumbnailError);
-          // Continue without thumbnail if it fails
+        // Get image metadata (skip for SVG)
+        let metadata;
+        let thumbnailPath = null;
+        let thumbnailRelativePath = null;
+        
+        if (!isSvg) {
+          try {
+            metadata = await sharp(file.path).metadata();
+          } catch (sharpError) {
+            console.error('❌ Sharp error processing image:', sharpError);
+            throw new Error(`Failed to process image: ${sharpError.message}`);
+          }
+          
+          // Generate thumbnail (always save as JPEG for consistency)
+          thumbnailPath = file.path.replace(path.extname(file.path), '_thumb.jpg');
+          try {
+            await sharp(file.path)
+              .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 80 })
+              .toFile(thumbnailPath);
+            
+            thumbnailRelativePath = path.relative(path.join(__dirname, '../../uploads'), thumbnailPath).replace(/\\/g, '/');
+            console.log('✅ Thumbnail generated:', thumbnailRelativePath);
+          } catch (thumbnailError) {
+            console.error('❌ Error generating thumbnail:', thumbnailError);
+            // Clean up failed thumbnail file if it was partially created
+            try {
+              await fs.unlink(thumbnailPath).catch(() => {});
+            } catch (cleanupError) {
+              // Ignore cleanup errors
+            }
+            thumbnailPath = null;
+            thumbnailRelativePath = null;
+          }
+        } else {
+          // For SVG files, get basic metadata without sharp
+          metadata = {
+            width: null,
+            height: null,
+            format: 'svg',
+            space: 'srgb',
+            exif: null
+          };
+          console.log('ℹ️  SVG file detected, skipping thumbnail generation');
         }
 
         // Generate URLs - store as relative paths for easier normalization
         // The client will normalize these to the correct format based on environment
         const relativePath = path.relative(path.join(__dirname, '../../uploads'), file.path).replace(/\\/g, '/');
-        const thumbnailRelativePath = path.relative(path.join(__dirname, '../../uploads'), thumbnailPath).replace(/\\/g, '/');
         
         // Store as relative path - client will normalize to full URL or API endpoint as needed
         // Format: /uploads/category/filename.jpg
         const imageUrl = `/uploads/${relativePath}`;
-        const thumbnailUrl = `/uploads/${thumbnailRelativePath}`;
+        const thumbnailUrl = thumbnailRelativePath ? `/uploads/${thumbnailRelativePath}` : null;
 
         const imageUpload = await ImageUpload.create({
           userId: userId, // Already validated above
@@ -214,9 +241,22 @@ exports.uploadImages = async (req, res, next) => {
   } catch (error) {
     console.error('❌ Image upload controller error:', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      userId: req.user?.id || req.user?._id || 'unknown',
+      filesCount: req.files?.length || 0
     });
-    next(error);
+    
+    // Return a proper error response
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload images',
+      ...(process.env.NODE_ENV === 'development' && { 
+        details: error.stack,
+        errorName: error.name 
+      })
+    });
   }
 };
 
