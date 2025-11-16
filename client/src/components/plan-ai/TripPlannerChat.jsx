@@ -944,7 +944,8 @@ I'm here to make your ${parkName} adventure absolutely incredible! 🏔️✨`,
             lat: formData.coordinates?.lat,
             lon: formData.coordinates?.lon,
             formData: formData
-          }
+          },
+          anonymousId: anonymousId  // Send existing anonymousId if available
         });
         
         // Update anonymous session info

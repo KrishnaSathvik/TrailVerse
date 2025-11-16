@@ -116,7 +116,7 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
         'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
         'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
         'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
-        'claude-3-sonnet-20240229'     // Claude 3 Sonnet (fallback)
+        'claude-3-haiku-20240307'      // Claude 3 Haiku (fastest, reliable fallback)
       ];
 
       let lastError = null;
@@ -153,21 +153,33 @@ router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res)
           console.error(`[Chat] Model ${model} failed:`, {
             message: error.message,
             status: error.status,
+            statusCode: error.statusCode,
             type: error.type,
+            errorType: error.error?.type,
             code: error.code
           });
           
-          // Check if it's a model not found error or authentication error
-          const isModelError = error.message && (
+          // Check if it's a model not found error (404) or not_found_error type
+          // Check multiple possible error locations (Anthropic SDK may structure errors differently)
+          const errorBody = error.error || error.response?.data || error.body || {};
+          const is404Error = error.status === 404 || error.statusCode === 404 || 
+                           error.response?.status === 404;
+          const isNotFoundError = error.error?.type === 'not_found_error' || 
+                                 error.type === 'not_found_error' ||
+                                 errorBody.type === 'not_found_error' ||
+                                 errorBody.error?.type === 'not_found_error';
+          const isModelError = (error.message && (
             error.message.includes('model') || 
             error.message.includes('not found') ||
             error.message.includes('not_found')
-          );
+          )) || (errorBody.error?.message && errorBody.error.message.includes('model'));
           
-          const isAuthError = error.status === 401 || error.status === 403;
+          const isAuthError = error.status === 401 || error.statusCode === 401 || 
+                             error.status === 403 || error.statusCode === 403;
           
-          if (isModelError) {
-            console.log(`[Chat] Model ${model} not available, trying next...`);
+          // If it's a 404 or not_found_error, try next model
+          if (is404Error || isNotFoundError || isModelError) {
+            console.log(`[Chat] Model ${model} not available (404/not_found), trying next...`);
             continue; // Try next model
           }
           
@@ -279,11 +291,9 @@ router.post('/chat-anonymous', async (req, res) => {
       provider: req.body.provider, 
       messageCount: req.body.messages?.length,
       hasMetadata: !!req.body.metadata,
-      metadata: req.body.metadata
+      metadata: req.body.metadata,
+      hasClientAnonymousId: !!req.body.anonymousId
     });
-
-    // Generate anonymous ID from request
-    const { anonymousId, ipAddress, userAgent, browserFingerprint } = generateAnonymousIdFromRequest(req);
 
     const { 
       messages = [], 
@@ -293,8 +303,32 @@ router.post('/chat-anonymous', async (req, res) => {
       top_p = 0.9,
       maxTokens = 2000,
       systemPrompt,
-      metadata = {} // { parkCode, parkName, lat, lon }
+      metadata = {}, // { parkCode, parkName, lat, lon }
+      anonymousId: clientAnonymousId // Use client-provided anonymousId if available
     } = req.body;
+
+    // Use client-provided anonymousId if available, otherwise generate new one
+    // This ensures session persistence across requests
+    let anonymousId;
+    let ipAddress, userAgent, browserFingerprint;
+    
+    if (clientAnonymousId) {
+      // Client provided an anonymousId - use it and get IP/UA for session data
+      anonymousId = clientAnonymousId;
+      const requestData = generateAnonymousIdFromRequest(req);
+      ipAddress = requestData.ipAddress;
+      userAgent = requestData.userAgent;
+      browserFingerprint = requestData.browserFingerprint;
+      console.log('[AI] Using client-provided anonymousId:', anonymousId);
+    } else {
+      // No client anonymousId - generate new one (first request)
+      const requestData = generateAnonymousIdFromRequest(req);
+      anonymousId = requestData.anonymousId;
+      ipAddress = requestData.ipAddress;
+      userAgent = requestData.userAgent;
+      browserFingerprint = requestData.browserFingerprint;
+      console.log('[AI] Generated new anonymousId:', anonymousId);
+    }
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -315,11 +349,14 @@ router.post('/chat-anonymous', async (req, res) => {
     // Add user message to session first
     const lastUserMessage = messages[messages.length - 1];
     if (lastUserMessage && lastUserMessage.role === 'user') {
-      await session.addMessage({
+      // Save the session after adding message to ensure message count is updated
+      session = await session.addMessage({
         role: 'user',
         content: lastUserMessage.content,
         timestamp: new Date()
       });
+      // Reload session from database to get updated message count
+      session = await AnonymousSession.findOne({ anonymousId });
     }
 
     // Check if user can send more messages BEFORE processing the AI request
@@ -426,7 +463,7 @@ Ready to continue planning? 🚀`,
         'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
         'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
         'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
-        'claude-3-sonnet-20240229'     // Claude 3 Sonnet (fallback)
+        'claude-3-haiku-20240307'      // Claude 3 Haiku (fastest, reliable fallback)
       ];
 
       let lastError = null;
@@ -463,21 +500,33 @@ Ready to continue planning? 🚀`,
           console.error(`[Chat] Model ${model} failed for anonymous user:`, {
             message: error.message,
             status: error.status,
+            statusCode: error.statusCode,
             type: error.type,
+            errorType: error.error?.type,
             code: error.code
           });
           
-          // Check if it's a model not found error or authentication error
-          const isModelError = error.message && (
+          // Check if it's a model not found error (404) or not_found_error type
+          // Check multiple possible error locations (Anthropic SDK may structure errors differently)
+          const errorBody = error.error || error.response?.data || error.body || {};
+          const is404Error = error.status === 404 || error.statusCode === 404 || 
+                           error.response?.status === 404;
+          const isNotFoundError = error.error?.type === 'not_found_error' || 
+                                 error.type === 'not_found_error' ||
+                                 errorBody.type === 'not_found_error' ||
+                                 errorBody.error?.type === 'not_found_error';
+          const isModelError = (error.message && (
             error.message.includes('model') || 
             error.message.includes('not found') ||
             error.message.includes('not_found')
-          );
+          )) || (errorBody.error?.message && errorBody.error.message.includes('model'));
           
-          const isAuthError = error.status === 401 || error.status === 403;
+          const isAuthError = error.status === 401 || error.statusCode === 401 || 
+                             error.status === 403 || error.statusCode === 403;
           
-          if (isModelError) {
-            console.log(`[Chat] Model ${model} not available for anonymous user, trying next...`);
+          // If it's a 404 or not_found_error, try next model
+          if (is404Error || isNotFoundError || isModelError) {
+            console.log(`[Chat] Model ${model} not available (404/not_found) for anonymous user, trying next...`);
             continue; // Try next model
           }
           

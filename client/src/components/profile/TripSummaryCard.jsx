@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Calendar, 
@@ -14,7 +14,7 @@ import {
   CheckCircle
 } from '@components/icons';
 
-const TripSummaryCard = ({ trip, onArchive, onDelete, onRestore, isDeleting = false, isRestoring = false }) => {
+const TripSummaryCard = memo(({ trip, onArchive, onDelete, onRestore, isDeleting = false, isRestoring = false }) => {
   const tripId = trip._id || trip.id;
   
   const formatDate = (dateString) => {
@@ -287,6 +287,6 @@ const TripSummaryCard = ({ trip, onArchive, onDelete, onRestore, isDeleting = fa
       )}
     </div>
   );
-};
+});
 
 export default TripSummaryCard;

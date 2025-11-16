@@ -503,10 +503,21 @@ exports.serveImage = async (req, res, next) => {
     try {
       await fs.access(imagePath);
     } catch (error) {
-      console.error(`❌ Image file not found: ${imagePath}`);
-      return res.status(404).json({
+      // Only log missing images in development to reduce production noise
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`⚠️ Image file not found:`, {
+          requestedPath: filePath,
+          fullPath: imagePath
+        });
+      }
+      
+      // Return 404 with proper content type
+      res.status(404);
+      res.setHeader('Content-Type', 'application/json');
+      return res.json({
         success: false,
-        error: 'Image file not found'
+        error: 'Image file not found',
+        path: filePath
       });
     }
 

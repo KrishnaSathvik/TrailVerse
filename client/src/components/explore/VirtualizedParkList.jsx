@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FixedSizeGrid as Grid } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import ParkCard from './ParkCard';
@@ -8,7 +8,7 @@ const VirtualizedParkList = ({ parks, onSave, savedParks = [] }) => {
   const ROW_HEIGHT = 450;
   const GAP = 24;
 
-  const Cell = ({ columnIndex, rowIndex, style, data }) => {
+  const Cell = memo(({ columnIndex, rowIndex, style, data }) => {
     const { parks, columnCount } = data;
     const index = rowIndex * columnCount + columnIndex;
     
@@ -28,7 +28,7 @@ const VirtualizedParkList = ({ parks, onSave, savedParks = [] }) => {
         <ParkCard park={park} onSave={onSave} isSaved={isSaved} />
       </div>
     );
-  };
+  });
 
   if (!parks || parks.length === 0) {
     return (

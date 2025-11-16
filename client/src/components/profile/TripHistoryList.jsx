@@ -33,7 +33,7 @@ const TripHistoryList = ({ userId }) => {
     }
   }, [userId, loadTrips]);
 
-  const handleDelete = async (tripId) => {
+  const handleDelete = useCallback(async (tripId) => {
     if (window.confirm('Delete this trip conversation? This cannot be undone.')) {
       try {
         await tripService.deleteTrip(tripId);
@@ -44,9 +44,9 @@ const TripHistoryList = ({ userId }) => {
         showToast('Failed to delete trip', 'error');
       }
     }
-  };
+  }, [loadTrips, showToast]);
 
-  const handleArchive = async (tripId) => {
+  const handleArchive = useCallback(async (tripId) => {
     try {
       await tripService.archiveTrip(tripId);
       await loadTrips();
@@ -55,7 +55,7 @@ const TripHistoryList = ({ userId }) => {
       console.error('Error archiving trip:', error);
       showToast('Failed to archive trip', 'error');
     }
-  };
+  }, [loadTrips, showToast]);
 
   if (trips.length === 0) {
     return (

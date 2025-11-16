@@ -52,7 +52,8 @@ class AIService {
     max_tokens = 2000,
     stream = false,
     signal,                 // AbortController.signal (optional)
-    metadata                // optional: { parkCode, parkName, lat, lon, formData }
+    metadata,               // optional: { parkCode, parkName, lat, lon, formData }
+    anonymousId             // optional: existing anonymousId from localStorage
   }) {
     const body = {
       messages,
@@ -62,7 +63,8 @@ class AIService {
       top_p,
       max_tokens,
       stream,
-      metadata
+      metadata,
+      anonymousId           // Send anonymousId if available
     };
 
     const response = await enhancedApi.post(

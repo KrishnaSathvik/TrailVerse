@@ -143,6 +143,9 @@ const OptimizedImage = ({
   }, [normalizedSrc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageError = (e) => {
+    // Suppress default browser error logging for missing images
+    e.preventDefault();
+    
     // First attempt: try fallback URL if we have one and are using API endpoint
     if (attemptCount === 0 && fallbackSrc && imageSrc && imageSrc.includes('/api/images/file/')) {
       setImageSrc(fallbackSrc);

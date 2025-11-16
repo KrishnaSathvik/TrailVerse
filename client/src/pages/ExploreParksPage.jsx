@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
@@ -1100,8 +1100,8 @@ const ExploreParksPage = () => {
   );
 };
 
-// Park Card Component
-const ParkCard = ({ park, viewMode, rating, location, index = 0 }) => {
+// Park Card Component - Memoized to prevent unnecessary re-renders
+const ParkCard = memo(({ park, viewMode, rating, location, index = 0 }) => {
   if (viewMode === 'list') {
     return (
       <Link
@@ -1243,6 +1243,6 @@ const ParkCard = ({ park, viewMode, rating, location, index = 0 }) => {
       </div>
     </Link>
   );
-};
+});
 
 export default ExploreParksPage;

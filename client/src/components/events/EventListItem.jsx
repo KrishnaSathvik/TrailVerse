@@ -1,17 +1,17 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { MapPin, Users, Clock, ArrowRight, Heart, HeartOff } from '@components/icons';
 
-const EventListItem = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
-  const category = categories.find(c => c.id === event.category);
-  const eventDate = new Date(event.date);
+const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
+  const category = useMemo(() => categories.find(c => c.id === event.category), [categories, event.category]);
+  const eventDate = useMemo(() => new Date(event.date), [event.date]);
 
-  const handleSaveToggle = () => {
+  const handleSaveToggle = useCallback(() => {
     if (isSaved) {
       onUnsaveEvent?.(event.id);
     } else {
       onSaveEvent?.(event);
     }
-  };
+  }, [isSaved, event, onSaveEvent, onUnsaveEvent]);
 
   return (
     <div className="rounded-xl p-5 backdrop-blur hover:-translate-y-0.5 transition-all duration-300"
@@ -103,6 +103,6 @@ const EventListItem = ({ event, categories, onSaveEvent, onUnsaveEvent, isSaved 
       </div>
     </div>
   );
-};
+});
 
 export default EventListItem;

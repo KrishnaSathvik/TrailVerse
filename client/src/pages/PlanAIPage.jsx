@@ -17,6 +17,7 @@ import { useToast } from '../context/ToastContext';
 import { useTrips } from '../hooks/useTrips';
 import tripService from '../services/tripService';
 import { tripHistoryService } from '../services/tripHistoryService';
+import api from '../services/api';
 
 const PlanAIPage = () => {
   const navigate = useNavigate();
@@ -347,7 +348,7 @@ const PlanAIPage = () => {
     return true;
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     // Check if anonymous user has already used 3 messages
     if (isPublicAccess) {
       try {
@@ -359,9 +360,35 @@ const PlanAIPage = () => {
           const sessionAge = Date.now() - sessionData.timestamp;
           const maxAge = 48 * 60 * 60 * 1000; // 48 hours to match backend
           
+          // First check localStorage (fast check)
           if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
-            showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
-            return;
+            // Validate with backend to ensure accuracy
+            if (sessionData.anonymousId) {
+              try {
+                const response = await api.get(`/ai/session-status/${sessionData.anonymousId}`, {}, { skipCache: true });
+                const { canSendMore, messageCount } = response.data;
+                
+                // Update localStorage with backend data
+                sessionData.canSendMore = canSendMore;
+                sessionData.messageCount = messageCount;
+                localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
+                
+                // If backend confirms limit reached, show error
+                if (!canSendMore && messageCount >= 3) {
+                  showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+                  return;
+                }
+              } catch (backendError) {
+                console.error('Error validating session with backend:', backendError);
+                // If backend check fails, use localStorage check as fallback
+                showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+                return;
+              }
+            } else {
+              // No anonymousId but localStorage says limit reached - show error
+              showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+              return;
+            }
           }
         }
       } catch (error) {
