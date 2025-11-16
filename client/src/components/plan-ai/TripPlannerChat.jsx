@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  MapPin, Calendar, Users, AlertCircle, X, Clock
+  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -18,6 +18,7 @@ import ChatInput from '../ai-chat/ChatInput';
 import MessageBubble from '../ai-chat/MessageBubble';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import TypingIndicator from '../ai-chat/TypingIndicator';
+import Button from '../common/Button';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 
 
@@ -1798,56 +1799,164 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         </button>
 
         {/* Warning Message */}
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-8 border border-blue-200 dark:border-blue-800">
-              <div className="text-6xl mb-6">🚀</div>
-              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                Ready to Continue Planning?
-              </h2>
-              <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>
-                You've already used your 3 free questions! You can either create an account for unlimited access, or come back in 48 hours for 3 fresh questions.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+          <div className="max-w-3xl w-full mx-auto">
+            <div 
+              className="rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+                boxShadow: 'var(--shadow-xl)'
+              }}
+            >
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+                  style={{
+                    backgroundColor: 'var(--accent-green)/10',
+                    color: 'var(--accent-green)'
+                  }}
+                >
+                  <Sparkles className="h-8 w-8" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+                  Ready to Continue Planning?
+                </h2>
+                <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                  You've already used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8">
+                <Button
                   onClick={handleSignupFromChat}
-                  className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-lg"
+                  variant="primary"
+                  size="lg"
+                  icon={Sparkles}
+                  className="flex-1 sm:flex-none"
                 >
                   Create Account
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleLoginFromChat}
-                  className="px-8 py-4 bg-white hover:bg-gray-50 text-blue-600 font-semibold rounded-xl border border-blue-200 transition-colors text-lg"
+                  variant="outline"
+                  size="lg"
+                  icon={LogIn}
+                  className="flex-1 sm:flex-none"
                 >
                   Login
-                </button>
+                </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    🚀 Create Account (Recommended)
-                  </p>
-                  <ul className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
-                    <li>• Ask unlimited questions</li>
-                    <li>• Save your trip plans</li>
-                    <li>• Access your conversation history</li>
-                    <li>• Get personalized recommendations</li>
+
+              {/* Feature Comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                {/* Create Account Card */}
+                <div 
+                  className="rounded-xl p-5 sm:p-6"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: 'var(--accent-green)/10',
+                        color: 'var(--accent-green)'
+                      }}
+                    >
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Create Account
+                      </h3>
+                      <p className="text-xs font-medium" style={{ color: 'var(--accent-green)' }}>
+                        Recommended
+                      </p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {[
+                      'Ask unlimited questions',
+                      'Save your trip plans',
+                      'Access conversation history',
+                      'Get personalized recommendations'
+                    ].map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2.5">
+                        <CheckCircle 
+                          className="h-4 w-4 flex-shrink-0 mt-0.5" 
+                          style={{ color: 'var(--accent-green)' }}
+                        />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    ⏰ Wait 48 Hours (Free)
-                  </p>
+
+                {/* Wait 48 Hours Card */}
+                <div 
+                  className="rounded-xl p-5 sm:p-6"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: 'var(--text-tertiary)/10',
+                        color: 'var(--text-tertiary)'
+                      }}
+                    >
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Wait 48 Hours
+                      </h3>
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Free Option
+                      </p>
+                    </div>
+                  </div>
                   {timeUntilReset && (
-                    <p className="text-xs mb-2 font-medium" style={{ color: 'var(--accent-green)' }}>
-                      ⏳ Reset in: {timeUntilReset}
-                    </p>
+                    <div 
+                      className="mb-4 px-3 py-2 rounded-lg text-center"
+                      style={{
+                        backgroundColor: 'var(--accent-green)/10',
+                        borderWidth: '1px',
+                        borderColor: 'var(--accent-green)/20'
+                      }}
+                    >
+                      <p className="text-sm font-semibold" style={{ color: 'var(--accent-green)' }}>
+                        Reset in: {timeUntilReset}
+                      </p>
+                    </div>
                   )}
-                  <ul className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
-                    <li>• Get 3 fresh questions</li>
-                    <li>• No account required</li>
-                    <li>• Completely free</li>
-                    <li>• Session resets automatically</li>
+                  <ul className="space-y-2.5">
+                    {[
+                      'Get 3 fresh questions',
+                      'No account required',
+                      'Completely free',
+                      'Session resets automatically'
+                    ].map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2.5">
+                        <CheckCircle 
+                          className="h-4 w-4 flex-shrink-0 mt-0.5" 
+                          style={{ color: 'var(--text-tertiary)' }}
+                        />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -2114,31 +2223,52 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
       {/* Conversion Message for Anonymous Users */}
       {isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
         <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-4">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+          <div 
+            className="rounded-2xl p-5 sm:p-6 backdrop-blur"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              boxShadow: 'var(--shadow)'
+            }}
+          >
             <div className="text-center">
-              <div className="text-4xl mb-4">🚀</div>
-              <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3"
+                style={{
+                  backgroundColor: 'var(--accent-green)/10',
+                  color: 'var(--accent-green)'
+                }}
+              >
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 Ready to Continue Planning?
               </h3>
-              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
                 {isSessionRestored 
                   ? `You've already used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.`
                   : `You've used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.`
                 }
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
+                <Button
                   onClick={handleSignupFromChat}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
+                  variant="primary"
+                  size="md"
+                  icon={Sparkles}
+                  className="flex-1 sm:flex-none"
                 >
                   Create Account
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleLoginFromChat}
-                  className="px-6 py-3 bg-white hover:bg-gray-50 text-blue-600 font-semibold rounded-xl border border-blue-200 transition-colors"
+                  variant="outline"
+                  size="md"
+                  icon={LogIn}
+                  className="flex-1 sm:flex-none"
                 >
                   Login
-                </button>
+                </Button>
               </div>
             </div>
           </div>

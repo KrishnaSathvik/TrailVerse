@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { 
   Sparkles, MapPin, Calendar, Users, Tent, 
   Utensils, ArrowRight, ArrowLeft, Loader2, ChevronDown,
-  MessageCircle, Plus
+  MessageCircle, Plus, Clock, CheckCircle, LogIn, X
 } from '@components/icons';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
@@ -45,6 +45,8 @@ const PlanAIPage = () => {
   const [deletingTripId, setDeletingTripId] = useState(null);
   const [restoringTripId, setRestoringTripId] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
+  const [showLimitDialog, setShowLimitDialog] = useState(false);
+  const [timeUntilReset, setTimeUntilReset] = useState(null);
 
   // Load trip data - always from database (no more localStorage trips)
   const loadTripFromBackend = useCallback(async (tripId) => {
@@ -158,6 +160,94 @@ const PlanAIPage = () => {
       loadTripFromBackend(tripId);
     }
   }, [searchParams, allParks, tripId, showToast, navigate, loadTripFromBackend]);
+
+  // Check if anonymous user has reached message limit (early check)
+  useEffect(() => {
+    if (!isPublicAccess || tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat')) {
+      return;
+    }
+
+    const checkAnonymousLimit = async () => {
+      try {
+        const savedSession = localStorage.getItem('anonymousSession');
+        if (savedSession) {
+          const sessionData = JSON.parse(savedSession);
+          const sessionAge = Date.now() - sessionData.timestamp;
+          const maxAge = 48 * 60 * 60 * 1000; // 48 hours
+
+          if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
+            // Validate with backend
+            if (sessionData.anonymousId) {
+              try {
+                const response = await api.get(`/ai/session-status/${sessionData.anonymousId}`, {}, { skipCache: true });
+                const { canSendMore, messageCount } = response.data;
+                
+                sessionData.canSendMore = canSendMore;
+                sessionData.messageCount = messageCount;
+                localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
+                
+                if (!canSendMore && messageCount >= 3) {
+                  setShowLimitDialog(true);
+                  // Calculate time until reset
+                  const timeRemaining = maxAge - sessionAge;
+                  if (timeRemaining > 0) {
+                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                    setTimeUntilReset(`${hours}h ${minutes}m`);
+                  }
+                }
+              } catch (error) {
+                console.error('Error validating session:', error);
+                // Fallback to localStorage check
+                setShowLimitDialog(true);
+                const timeRemaining = maxAge - sessionAge;
+                if (timeRemaining > 0) {
+                  const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                  const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                  setTimeUntilReset(`${hours}h ${minutes}m`);
+                }
+              }
+            } else {
+              setShowLimitDialog(true);
+              const timeRemaining = maxAge - sessionAge;
+              if (timeRemaining > 0) {
+                const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                setTimeUntilReset(`${hours}h ${minutes}m`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking anonymous limit:', error);
+      }
+    };
+
+    checkAnonymousLimit();
+
+    // Update timer every minute
+    const timerInterval = setInterval(() => {
+      const savedSession = localStorage.getItem('anonymousSession');
+      if (savedSession && showLimitDialog) {
+        const sessionData = JSON.parse(savedSession);
+        const sessionAge = Date.now() - sessionData.timestamp;
+        const maxAge = 48 * 60 * 60 * 1000;
+        const timeRemaining = maxAge - sessionAge;
+        
+        if (timeRemaining > 0) {
+          const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+          const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+          setTimeUntilReset(`${hours}h ${minutes}m`);
+        } else {
+          // Time expired, hide dialog
+          setShowLimitDialog(false);
+          setTimeUntilReset(null);
+        }
+      }
+    }, 60 * 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [isPublicAccess, tripId, searchParams, showLimitDialog]);
 
   // Load trip history and check if user is returning
   useEffect(() => {
@@ -601,13 +691,14 @@ const PlanAIPage = () => {
 
       <Header />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden py-16 sm:py-20">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
-        </div>
+      {/* Hero - Hide when limit reached */}
+      {!showLimitDialog && (
+        <section className="relative overflow-hidden py-16 sm:py-20">
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
+          </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
           <div className="mt-6">
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
@@ -639,8 +730,159 @@ const PlanAIPage = () => {
           </div>
         </div>
       </section>
+      )}
 
-      {/* Form */}
+      {/* Limit Reached Message - Show instead of form */}
+      {showLimitDialog ? (
+        <section className="py-16 sm:py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div 
+              className="rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+                boxShadow: 'var(--shadow-xl)'
+              }}
+            >
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+                  style={{
+                    backgroundColor: 'var(--accent-green)/10',
+                    color: 'var(--accent-green)'
+                  }}
+                >
+                  <Clock className="h-8 w-8" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+                  You've Used Your 3 Free Questions
+                </h2>
+                <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                  You've reached your limit of 3 free questions. Create an account for unlimited access, or wait until your session resets.
+                </p>
+              </div>
+
+              {/* Countdown Timer */}
+              {timeUntilReset && (
+                <div 
+                  className="mb-8 px-4 py-4 rounded-xl text-center"
+                  style={{
+                    backgroundColor: 'var(--accent-green)/10',
+                    borderWidth: '1px',
+                    borderColor: 'var(--accent-green)/20'
+                  }}
+                >
+                  <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    Session resets in:
+                  </p>
+                  <p className="text-3xl font-bold" style={{ color: 'var(--accent-green)' }}>
+                    {timeUntilReset}
+                  </p>
+                </div>
+              )}
+
+              {/* Feature Comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                {/* Create Account Card */}
+                <div 
+                  className="rounded-xl p-5 sm:p-6"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: 'var(--accent-green)/10',
+                        color: 'var(--accent-green)'
+                      }}
+                    >
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Create Account
+                      </h3>
+                      <p className="text-xs font-medium" style={{ color: 'var(--accent-green)' }}>
+                        Recommended
+                      </p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {[
+                      'Ask unlimited questions',
+                      'Save your trip plans',
+                      'Access conversation history',
+                      'Get personalized recommendations'
+                    ].map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2.5">
+                        <CheckCircle 
+                          className="h-4 w-4 flex-shrink-0 mt-0.5" 
+                          style={{ color: 'var(--accent-green)' }}
+                        />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Wait Option Card */}
+                <div 
+                  className="rounded-xl p-5 sm:p-6"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{
+                        backgroundColor: 'var(--text-tertiary)/10',
+                        color: 'var(--text-tertiary)'
+                      }}
+                    >
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Wait for Reset
+                      </h3>
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Free Option
+                      </p>
+                    </div>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {[
+                      'Get 3 fresh questions',
+                      'No account required',
+                      'Completely free',
+                      'Session resets automatically'
+                    ].map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2.5">
+                        <CheckCircle 
+                          className="h-4 w-4 flex-shrink-0 mt-0.5" 
+                          style={{ color: 'var(--text-tertiary)' }}
+                        />
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+      /* Form - Show when limit not reached */
       <section className="pb-16 sm:pb-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Progress Bar */}
@@ -986,9 +1228,10 @@ const PlanAIPage = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Divider and Quick Actions - Only show if user has at least one conversation */}
-      {user && tripHistory.length > 0 && (
+      {!showLimitDialog && user && tripHistory.length > 0 && (
         <>
           {/* Divider */}
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
