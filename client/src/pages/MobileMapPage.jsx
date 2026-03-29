@@ -17,9 +17,7 @@ const MobileMapPage = () => {
   const allParks = allParksData?.data;
   const { data: parkRatings } = useParkRatings();
   const { isDark } = useTheme();
-  
-  // Determine if this is a public access (not authenticated)
-  const isPublicAccess = !isAuthenticated;
+
   
   // Debug parks loading (remove in production)
   console.log('Parks loading state:', { parksLoading, allParks: allParks?.length });
@@ -182,32 +180,9 @@ const MobileMapPage = () => {
       return aName.localeCompare(bName);
     });
 
-    // For public users, prioritize national parks and limit results
-    let limitedResults = sortedMatches;
-    if (isPublicAccess) {
-      // Prioritize national parks first, then other parks
-      const nationalParks = sortedMatches.filter(park => 
-        park.designation === 'National Park'
-      );
-      const otherParks = sortedMatches.filter(park => 
-        park.designation !== 'National Park'
-      );
-      
-      // Show up to 5 national parks and 3 other parks for search
-      limitedResults = [
-        ...nationalParks.slice(0, 5),
-        ...otherParks.slice(0, 3)
-      ];
-      
-      // If no results found, show first 5 matches
-      if (limitedResults.length === 0) {
-        limitedResults = sortedMatches.slice(0, 5);
-      }
-    }
-    
-    setSearchSuggestions(limitedResults.slice(0, 8)); // Limit to 8 suggestions
-    setSearchResults(limitedResults);
-  }, [allParks, isPublicAccess]);
+    setSearchSuggestions(sortedMatches.slice(0, 8)); // Limit to 8 suggestions
+    setSearchResults(sortedMatches);
+  }, [allParks]);
 
   // Handle search input
   const handleSearchInput = useCallback((e) => {
@@ -447,27 +422,7 @@ const MobileMapPage = () => {
       !isNaN(parseFloat(park.longitude))
     );
 
-    // For public users, limit to 20 parks (10 national parks + 10 other parks)
-    if (isPublicAccess) {
-      console.log(`Total parks with coordinates: ${parksWithCoordinates.length}`);
-      
-      const nationalParks = parksWithCoordinates.filter(park => 
-        park.designation === 'National Park'
-      );
-      
-      const otherParks = parksWithCoordinates.filter(park => 
-        park.designation !== 'National Park'
-      );
-      
-      console.log(`Available: ${nationalParks.length} national parks, ${otherParks.length} other parks`);
-      
-      // Take up to 10 of each type
-      const selectedNationalParks = nationalParks.slice(0, 10);
-      const selectedOtherParks = otherParks.slice(0, 10);
-      
-      parksWithCoordinates = [...selectedNationalParks, ...selectedOtherParks];
-      console.log(`Public access: Showing ${selectedNationalParks.length} national parks and ${selectedOtherParks.length} other parks (total: ${parksWithCoordinates.length})`);
-    }
+
 
     console.log('Parks with valid coordinates:', parksWithCoordinates.length);
 
@@ -541,21 +496,7 @@ const MobileMapPage = () => {
         type="website"
       />
 
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You're viewing a preview with 20 parks (10 National Parks + 10 other sites).
-            <button
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}to see all parks and access full features.
-          </p>
-        </div>
-      )}
+
 
       {/* Header */}
       <Header />
@@ -775,10 +716,7 @@ const MobileMapPage = () => {
             isDark ? 'bg-gray-800' : 'bg-white'
           }`}>
             <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {isPublicAccess 
-                ? `20 Parks (Preview)`
-                : `${allParks.filter(p => p.latitude && p.longitude).length} Parks`
-              }
+              {`${allParks.filter(p => p.latitude && p.longitude).length} Parks`}
             </p>
           </div>
         )}

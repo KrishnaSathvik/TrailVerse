@@ -160,9 +160,29 @@ const DailyFeedPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Authenticated users get full personalized feed; anonymous users get park-of-day + nature-fact
+  const fetchFeed = async () => {
+    if (user?._id) {
+      return dailyFeedService.getDailyFeed(user._id, false);
+    }
+    // Anonymous: combine park-of-day and nature-fact into a feed-shaped response
+    const [parkData, natureFact] = await Promise.all([
+      dailyFeedService.getParkOfDay().catch(() => null),
+      dailyFeedService.getNatureFact().catch(() => null),
+    ]);
+    return {
+      parkOfDay: parkData,
+      natureFact: natureFact,
+      quickStatsInsights: [],
+      skyDataInsights: [],
+      parkInfoInsights: [],
+      personalizedRecommendations: [],
+    };
+  };
+
   const { data: dailyFeed, isLoading, error, isStale, dataUpdatedAt } = useQuery({
-    queryKey: ['dailyFeed', new Date().toISOString().split('T')[0], user?._id],
-    queryFn: () => dailyFeedService.getDailyFeed(user._id, false),
+    queryKey: ['dailyFeed', new Date().toISOString().split('T')[0], user?._id || 'anonymous'],
+    queryFn: fetchFeed,
     staleTime: 24 * 60 * 60 * 1000,
     cacheTime: 24 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -170,7 +190,7 @@ const DailyFeedPage = () => {
     refetchOnReconnect: false,
     retry: 2,
     retryDelay: 1000,
-    enabled: !!user?._id,
+    enabled: true,
   });
 
   const park = dailyFeed?.parkOfDay;

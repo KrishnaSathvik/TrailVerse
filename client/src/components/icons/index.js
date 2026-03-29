@@ -59,6 +59,7 @@ export { default as Sunrise } from 'lucide-react/dist/esm/icons/sunrise';
 export { default as Sunset } from 'lucide-react/dist/esm/icons/sunset';
 export { default as Compass } from 'lucide-react/dist/esm/icons/compass';
 export { default as Dog } from 'lucide-react/dist/esm/icons/dog';
+export { default as Landmark } from 'lucide-react/dist/esm/icons/landmark';
 
 // Accessibility
 export { default as Accessibility } from 'lucide-react/dist/esm/icons/accessibility';
@@ -168,9 +169,13 @@ export { default as PauseCircle } from 'lucide-react/dist/esm/icons/pause-circle
 export { default as RefreshCw } from 'lucide-react/dist/esm/icons/refresh-cw';
 export { default as Maximize } from 'lucide-react/dist/esm/icons/maximize';
 export { default as Minimize } from 'lucide-react/dist/esm/icons/minimize';
+export { default as Maximize2 } from 'lucide-react/dist/esm/icons/maximize-2';
+export { default as Minimize2 } from 'lucide-react/dist/esm/icons/minimize-2';
 export { default as ZoomIn } from 'lucide-react/dist/esm/icons/zoom-in';
 export { default as ZoomOut } from 'lucide-react/dist/esm/icons/zoom-out';
 export { default as Printer } from 'lucide-react/dist/esm/icons/printer';
+export { default as Code } from 'lucide-react/dist/esm/icons/code';
+export { default as Code2 } from 'lucide-react/dist/esm/icons/code-2';
 
 // Content & Text
 export { default as BookOpen } from 'lucide-react/dist/esm/icons/book-open';

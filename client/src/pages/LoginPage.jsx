@@ -111,7 +111,7 @@ const LoginPage = () => {
             Welcome back!
           </h1>
           <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Continue exploring America&apos;s 470+ National Parks & Sites with AI-powered guidance and personalized recommendations.
+            Sign in to save your favorite parks, track visited sites, plan trips with AI, and pick up right where you left off.
           </p>
         </div>
       </div>

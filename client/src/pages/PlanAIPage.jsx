@@ -673,21 +673,8 @@ const PlanAIPage = () => {
         type="website"
       />
       
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You can chat 3 messages with our AI trip planner.
-            <button
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}for unlimited AI planning, save trips, and access all features.
-          </p>
-        </div>
-      )}
+
+
 
       <Header />
 

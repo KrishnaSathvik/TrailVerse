@@ -26,16 +26,8 @@ const MapPage = () => {
   const { data: allParksData } = useAllParks();
   const allParks = allParksData?.data;
   
-  // Determine if this is a public access (not authenticated)
-  const isPublicAccess = !isAuthenticated;
   
-  // Pre-selected popular national parks for public users (using park codes)
-  const publicParks = [
-    { name: 'Yellowstone National Park', location: 'Wyoming, Montana, Idaho', parkCode: 'yell' },
-    { name: 'Grand Canyon National Park', location: 'Arizona', parkCode: 'grca' },
-    { name: 'Yosemite National Park', location: 'California', parkCode: 'yose' },
-    { name: 'Great Smoky Mountains National Park', location: 'Tennessee, North Carolina', parkCode: 'grsm' }
-  ];
+
   
   // Get park data from navigation state or local state
   const [parkData, setParkData] = useState(location.state?.park);
@@ -565,85 +557,7 @@ const MapPage = () => {
       service.textSearch(request, (results, status) => {
         setIsSearching(false);
         if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          // For public users, check if they selected one of the pre-selected parks
-          if (isPublicAccess) {
-            const selectedPublicPark = publicParks.find(park => 
-              park.name.toLowerCase().includes(query.toLowerCase())
-            );
-            
-            if (selectedPublicPark && allParks) {
-              // Find the actual park data from the API
-              const actualPark = allParks.find(park => park.parkCode === selectedPublicPark.parkCode);
-              
-              if (actualPark && actualPark.latitude && actualPark.longitude) {
-                const lat = parseFloat(actualPark.latitude);
-                const lng = parseFloat(actualPark.longitude);
-                
-                console.log('Found park data for search:', actualPark.name, 'at:', lat, lng);
-                console.log('Raw coordinates:', actualPark.latitude, actualPark.longitude);
-                console.log('Parsed coordinates:', lat, lng);
-                console.log('Is valid lat:', !isNaN(lat) && isFinite(lat));
-                console.log('Is valid lng:', !isNaN(lng) && isFinite(lng));
-                
-                // Validate coordinates before using them
-                if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && 
-                    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                
-                // Set the park data directly like authenticated users
-                setParkData(actualPark);
-                setSidebarContent('park');
-                setShowSidebar(true);
-                
-                // Fetch Google Places data for real ratings, hours, phone, etc.
-                fetchGooglePlaceData(actualPark.fullName, lat, lng);
-                
-                // Center map on the selected park
-                if (mapInstanceRef.current) {
-                  mapInstanceRef.current.setCenter({
-                    lat: lat,
-                    lng: lng
-                  });
-                  mapInstanceRef.current.setZoom(12);
-                }
-                
-                // Clear existing markers and add marker for selected park
-                markersRef.current.forEach(marker => marker.setMap(null));
-                markersRef.current = [];
-                
-                const marker = new window.google.maps.Marker({
-                  position: { lat: lat, lng: lng },
-                  map: mapInstanceRef.current,
-                  title: actualPark.fullName || actualPark.name,
-                  icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
-                        <circle cx="12" cy="9" r="3" fill="white"/>
-                      </svg>
-                    `),
-                    scaledSize: new window.google.maps.Size(24, 24)
-                  }
-                });
-                markersRef.current.push(marker);
-                
-                return;
-                } else {
-                  console.error('Invalid coordinates for park:', actualPark.name, 'lat:', lat, 'lng:', lng);
-                  showToast('Invalid park coordinates', 'error');
-                }
-              } else {
-                console.error('Could not find park data for:', selectedPublicPark.parkCode);
-                showToast('Park data not available', 'error');
-              }
-            } else {
-              // If not a pre-selected park, show no results
-              setSearchResults([]);
-              setSidebarContent('search');
-              setShowSidebar(true);
-              return;
-            }
-          } else {
-            // For authenticated users, show all results
+          // Show all results
             setSearchResults(results.slice(0, 20));
             setSidebarContent('search');
             setShowSidebar(true);
@@ -709,7 +623,6 @@ const MapPage = () => {
                 markersRef.current.push(marker);
               }
             });
-          }
         } else {
           setSearchResults([]);
         }
@@ -726,69 +639,7 @@ const MapPage = () => {
 
     setIsSearching(true);
     try {
-      // For public users, check if they selected one of the pre-selected parks
-      if (isPublicAccess) {
-        const selectedPublicPark = publicParks.find(park => 
-          park.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        
-        if (selectedPublicPark && allParks) {
-          // Find the actual park data from the API
-          const actualPark = allParks.find(park => park.parkCode === selectedPublicPark.parkCode);
-          
-          if (actualPark && actualPark.latitude && actualPark.longitude) {
-            const lat = parseFloat(actualPark.latitude);
-            const lng = parseFloat(actualPark.longitude);
-            
-            console.log('Found park data for map search:', actualPark.name, 'at:', lat, lng);
-            
-            if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && 
-                lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-              
-              // Set the park data directly
-              setParkData(actualPark);
-              setSidebarContent('park');
-              setShowSidebar(true);
-              
-              // Center map on the park
-              const parkLocation = new window.google.maps.LatLng(lat, lng);
-              mapInstanceRef.current.setCenter(parkLocation);
-              mapInstanceRef.current.setZoom(12);
-              
-              // Clear existing markers
-              markersRef.current.forEach(marker => marker.setMap(null));
-              markersRef.current = [];
-              
-              // Add marker for the selected park
-              const marker = new window.google.maps.Marker({
-                position: parkLocation,
-                map: mapInstanceRef.current,
-                title: actualPark.fullName,
-                icon: {
-                  url: '/park-marker.svg',
-                  scaledSize: new window.google.maps.Size(24, 24)
-                }
-              });
-              markersRef.current.push(marker);
-              
-              setIsSearching(false);
-              return;
-            } else {
-              console.error('Invalid coordinates for park:', actualPark.name, 'lat:', lat, 'lng:', lng);
-              showToast('Invalid park coordinates', 'error');
-            }
-          } else {
-            console.error('Could not find park data for:', selectedPublicPark.parkCode);
-            showToast('Park data not available', 'error');
-          }
-        } else {
-          // If not a pre-selected park, show no results
-          showToast('Please search for one of the available parks: Yellowstone, Grand Canyon, Yosemite, or Great Smoky Mountains', 'info');
-          setIsSearching(false);
-          return;
-        }
-      } else {
-        // For authenticated users, use Google Places API for search
+      // Use Google Places API for search
         const service = new window.google.maps.places.PlacesService(mapInstanceRef.current);
         
         const request = {
@@ -910,7 +761,6 @@ const MapPage = () => {
           console.log('No results found for:', searchQuery);
         }
       });
-      }
     } catch (error) {
       console.error('Map search error:', error);
       setIsSearching(false);
@@ -960,30 +810,7 @@ const MapPage = () => {
       return;
     }
 
-    // For public users, show pre-selected parks instead of Google Places suggestions
-    if (isPublicAccess) {
-      const filteredParks = publicParks.filter(park => 
-        park.name.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      if (filteredParks.length > 0) {
-        setSearchSuggestions(filteredParks.map(park => ({
-          description: park.name,
-          place_id: `public_${park.name.replace(/\s+/g, '_').toLowerCase()}`,
-          structured_formatting: {
-            main_text: park.name,
-            secondary_text: park.location
-          }
-        })));
-        setShowSuggestions(true);
-      } else {
-        setSearchSuggestions([]);
-        setShowSuggestions(false);
-      }
-      return;
-    }
-
-    // For authenticated users, use Google Places API
+    // Use Google Places API for autocomplete
     try {
       const service = new window.google.maps.places.AutocompleteService();
       const request = {
@@ -1005,7 +832,7 @@ const MapPage = () => {
       setSearchSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [isPublicAccess, publicParks]);
+  }, []);
 
   // Load nearby places by category
   const loadNearbyPlaces = useCallback(async (category, inRouteMode = false) => {
@@ -1017,7 +844,7 @@ const MapPage = () => {
 
     setLoadingCategory(category);
     console.log('Loading nearby places for category:', category);
-    console.log('Is public access:', isPublicAccess);
+
     console.log('Current search results:', searchResults);
     
     try {
@@ -1155,7 +982,7 @@ const MapPage = () => {
     } finally {
       setLoadingCategory(null);
     }
-  }, [categories, isPublicAccess, searchResults]);
+  }, [categories, searchResults]);
 
   // Route planning functions
   const addWaypoint = useCallback((place) => {
@@ -1305,7 +1132,7 @@ const MapPage = () => {
     console.log('Current active category:', activeCategory);
     console.log('Current nearby places:', nearbyPlaces);
     console.log('Is in route mode?', activeCategory === 'routes', 'isRouteMode state:', isRouteMode);
-    console.log('Is public access:', isPublicAccess);
+
     console.log('Current search results:', searchResults);
     
     if (categoryId === 'routes') {
@@ -1459,21 +1286,7 @@ const MapPage = () => {
         type="website"
       />
       
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You're using our interactive map. Search for Yellowstone, Grand Canyon, Yosemite, or Great Smoky Mountains to explore!
-            <button
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}to search all parks and save favorites.
-          </p>
-        </div>
-      )}
+
 
       <Header />
 
@@ -2235,86 +2048,8 @@ const MapPage = () => {
                           setSearchQuery(suggestion.description);
                           setShowSuggestions(false);
                           
-                          // For public users with mock place_ids, handle directly
-                          if (isPublicAccess && suggestion.place_id?.startsWith('public_')) {
-                            const parkName = suggestion.description;
-                            const selectedPublicPark = publicParks.find(park => park.name === parkName);
-                            
-                            if (selectedPublicPark && allParks) {
-                              // Find the actual park data from the API
-                              const actualPark = allParks.find(park => park.parkCode === selectedPublicPark.parkCode);
-                              
-                              if (actualPark && actualPark.latitude && actualPark.longitude) {
-                                const lat = parseFloat(actualPark.latitude);
-                                const lng = parseFloat(actualPark.longitude);
-                                
-                                console.log('Found park data:', actualPark.name, 'at:', lat, lng);
-                                console.log('Raw coordinates:', actualPark.latitude, actualPark.longitude);
-                                console.log('Parsed coordinates:', lat, lng);
-                                console.log('Is valid lat:', !isNaN(lat) && isFinite(lat));
-                                console.log('Is valid lng:', !isNaN(lng) && isFinite(lng));
-                                
-                                // Validate coordinates before using them
-                                if (!isNaN(lat) && !isNaN(lng) && isFinite(lat) && isFinite(lng) && 
-                                    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                                  
-                                  // Set the park data directly like authenticated users
-                                console.log('Setting park data for public user:', actualPark);
-                                console.log('Park data fields:', {
-                                  fullName: actualPark.fullName,
-                                  name: actualPark.name,
-                                  states: actualPark.states,
-                                  description: actualPark.description,
-                                  images: actualPark.images
-                                });
-                                setParkData(actualPark);
-                                setSidebarContent('park');
-                                setShowSidebar(true);
-                                
-                                // Fetch Google Places data for real ratings, hours, phone, etc.
-                                fetchGooglePlaceData(actualPark.fullName, lat, lng);
-                                
-                                // Center map on the selected park
-                                if (mapInstanceRef.current) {
-                                  mapInstanceRef.current.setCenter({
-                                    lat: lat,
-                                    lng: lng
-                                  });
-                                  mapInstanceRef.current.setZoom(12);
-                                }
-                                
-                                // Clear existing markers and add marker for selected park
-                                markersRef.current.forEach(marker => marker.setMap(null));
-                                markersRef.current = [];
-                                
-                                const marker = new window.google.maps.Marker({
-                                  position: { lat: lat, lng: lng },
-                                  map: mapInstanceRef.current,
-                                  title: actualPark.fullName || actualPark.name,
-                                  icon: {
-                                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
-                                        <circle cx="12" cy="9" r="3" fill="white"/>
-                                      </svg>
-                                    `),
-                                    scaledSize: new window.google.maps.Size(24, 24)
-                                  }
-                                });
-                                markersRef.current.push(marker);
-                                } else {
-                                  console.error('Invalid coordinates for park:', actualPark.name, 'lat:', lat, 'lng:', lng);
-                                  showToast('Invalid park coordinates', 'error');
-                                }
-                              } else {
-                                console.error('Could not find park data for:', selectedPublicPark.parkCode);
-                                showToast('Park data not available', 'error');
-                              }
-                            }
-                            return;
-                          }
                           
-                          // For authenticated users, use Google Places API
+                          // Use Google Places API to get details
                           if (suggestion.place_id) {
                             const service = new window.google.maps.places.PlacesService(mapInstanceRef.current);
                             const request = {

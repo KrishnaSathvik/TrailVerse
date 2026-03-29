@@ -25,7 +25,12 @@ class NPSApi {
         
         const result = await enhancedApi.get('/parks', params, { 
           cacheType: 'parks',
-          ttl: 24 * 60 * 60 * 1000 // 24 hours
+          ttl: 24 * 60 * 60 * 1000, // 24 hours
+          // Skip enhancedApi's own caching for the all-parks request —
+          // useParks.js already manages localStorage persistence via 
+          // trailverse_all_parks, and globalCacheManager handles memory caching.
+          // Without this, the same ~5MB payload gets stored 3x in localStorage.
+          skipCache: fetchAll
         });
         
         // Return the full response with pagination metadata

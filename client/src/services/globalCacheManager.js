@@ -21,7 +21,7 @@ class GlobalCacheManager {
       // NPS API - Static data with longer cache
       parks: { 
         ttl: 24 * 60 * 60 * 1000, // 24 hours
-        storage: 'localStorage',
+        storage: 'memory', // useParks.js manages its own localStorage ('trailverse_all_parks')
         backgroundRefresh: true,
         prefetch: true
       },

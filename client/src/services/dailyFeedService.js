@@ -27,8 +27,11 @@ class DailyFeedService {
     return response.data?.data;
   }
 
-  async getNatureFact() {
-    const response = await api.get('/feed/nature-fact');
+  async getNatureFact(parkCode, name) {
+    const params = {};
+    if (parkCode) params.parkCode = parkCode;
+    if (name) params.name = name;
+    const response = await api.get('/feed/nature-fact', { params });
     return response.data?.data?.fact;
   }
 

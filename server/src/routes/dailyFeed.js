@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const { cacheMiddleware } = require('../middleware/cache');
 const {
   getDailyFeed,
@@ -11,42 +11,35 @@ const {
   debugDailyFeed
 } = require('../controllers/dailyFeedController');
 
-// All routes are protected (require authentication)
-router.use(protect);
-
 // @route   GET /api/feed/daily
 // @desc    Get personalized daily feed
-// @access  Private
-// @route   GET /api/feed/daily
-// @desc    Get personalized daily feed (with smart caching)
-// @access  Private
-router.get('/daily', getDailyFeed); // No cache - database handles caching
+// @access  Private (requires auth for personalization)
+router.get('/daily', protect, getDailyFeed);
 
 // @route   GET /api/feed/park-of-day
-// @desc    Get park of the day
-// @access  Private
-router.get('/park-of-day', cacheMiddleware(1440), getParkOfDay); // 24 hours cache
+// @desc    Get park of the day (generic for anonymous, personalized for authenticated)
+// @access  Public (optionalAuth)
+router.get('/park-of-day', optionalAuth, cacheMiddleware(1440), getParkOfDay);
 
 // @route   GET /api/feed/nature-fact
 // @desc    Get daily nature fact
-// @access  Private
-router.get('/nature-fact', cacheMiddleware(3600), getNatureFact); // 1 hour cache
-
+// @access  Public (optionalAuth)
+router.get('/nature-fact', optionalAuth, cacheMiddleware(3600), getNatureFact);
 
 // @route   GET /api/feed/test-auth
 // @desc    Test authentication
 // @access  Private
-router.get('/test-auth', testAuth);
-
+router.get('/test-auth', protect, testAuth);
 
 // @route   GET /api/feed/test-ai
 // @desc    Test AI insights generation
 // @access  Private
-router.get('/test-ai', testAIInsights);
+router.get('/test-ai', protect, testAIInsights);
 
 // @route   GET /api/feed/debug
 // @desc    Debug daily feed data
 // @access  Private
-router.get('/debug', debugDailyFeed);
+router.get('/debug', protect, debugDailyFeed);
 
 module.exports = router;
+

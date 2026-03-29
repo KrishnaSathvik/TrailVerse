@@ -23,17 +23,16 @@ import ReviewSection from '../components/park-details/ReviewSection';
 import ShareButtons from '../components/common/ShareButtons';
 import Button from '../components/common/Button';
 
-const ParkDetailPage = ({ isPublic = false }) => {
+const ParkDetailPage = () => {
   const { parkCode } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
   const { isParkVisited, markAsVisited, removeVisited, markingAsVisited, removingVisited } = useVisitedParks();
   
-  // Determine if this is a public access (not authenticated)
-  const isPublicAccess = isPublic || !isAuthenticated;
+
   const { data, isLoading, error } = useParkDetails(parkCode);
   const { recordParkView: _recordParkView } = useParkPrefetch(parkCode);
   const [activeTab, setActiveTab] = useState('overview');
@@ -65,15 +64,8 @@ const ParkDetailPage = ({ isPublic = false }) => {
 
   const handleSavePark = async () => {
     if (!isAuthenticated) {
-      if (isPublic) {
-        showToast('Please login to save parks', 'warning');
-        navigate('/login');
-        return;
-      } else {
-        showToast('Please login to save parks', 'warning');
-        navigate('/login');
-        return;
-      }
+      showLoginPrompt('Log in to save parks to your favorites');
+      return;
     }
 
     try {
@@ -111,8 +103,7 @@ const ParkDetailPage = ({ isPublic = false }) => {
 
   const handleMarkVisited = async () => {
     if (!isAuthenticated) {
-      showToast('Please login to mark parks as visited', 'warning');
-      navigate('/login');
+      showLoginPrompt('Log in to track parks you have visited');
       return;
     }
 
@@ -225,21 +216,7 @@ const ParkDetailPage = ({ isPublic = false }) => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You're viewing a park. 
-            <button 
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}to save parks and access all features.
-          </p>
-        </div>
-      )}
+
       <SEO
         title={`${park.fullName} - Complete Guide & Travel Information`}
         description={`Explore ${park.fullName} in ${park.states}. ${park.description.substring(0, 150)}... Find activities, camping, weather, events, and plan your visit.`}
@@ -328,48 +305,43 @@ const ParkDetailPage = ({ isPublic = false }) => {
                   {/* Action Buttons - Visited button on first row */}
                   <div className="space-y-3">
                     {/* First row - Visited button */}
-                    {isAuthenticated && (
-                      <div className="w-full">
-                        <Button
-                          onClick={handleMarkVisited}
-                          disabled={markingAsVisited || removingVisited}
-                          variant={isVisited ? 'success' : 'secondary'}
-                          size="sm"
-                          icon={isVisited ? MapPinCheck : MapPin}
-                          className="backdrop-blur w-full sm:w-auto"
-                          style={{
-                            backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: '1px',
-                            borderColor: isVisited ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.3)',
-                            opacity: (markingAsVisited || removingVisited) ? 0.6 : 1
-                          }}
-                          title={isVisited ? "Remove from visited" : "Mark as visited"}
-                        >
-                          <span className="hidden sm:inline truncate">{isVisited ? 'Visited' : 'Mark as Visited'}</span>
-                          <span className="sm:hidden truncate">{isVisited ? 'Visited' : 'Mark Visited'}</span>
-                        </Button>
-                      </div>
-                    )}
+                    <div className="w-full">
+                      <Button
+                        onClick={handleMarkVisited}
+                        disabled={markingAsVisited || removingVisited}
+                        variant={isVisited ? 'success' : 'secondary'}
+                        size="sm"
+                        icon={isVisited ? MapPinCheck : MapPin}
+                        className="backdrop-blur w-full sm:w-auto"
+                        style={{
+                          backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                          borderWidth: '1px',
+                          borderColor: isVisited ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.3)',
+                          opacity: (markingAsVisited || removingVisited) ? 0.6 : 1
+                        }}
+                        title={isVisited ? "Remove from visited" : "Mark as visited"}
+                      >
+                        <span className="hidden sm:inline truncate">{isVisited ? 'Visited' : 'Mark as Visited'}</span>
+                        <span className="sm:hidden truncate">{isVisited ? 'Visited' : 'Mark Visited'}</span>
+                      </Button>
+                    </div>
 
                     {/* Second row - Favorite and Share buttons */}
                     <div className="flex items-center gap-2 sm:gap-3">
-                      {/* Only show favorite button for authenticated users */}
-                      {isAuthenticated && (
-                        <Button
-                          onClick={handleSavePark}
-                          disabled={savingPark}
-                          variant={isSaved ? 'danger' : 'secondary'}
-                          size="sm"
-                          icon={Heart}
-                          className="p-3 backdrop-blur flex-shrink-0"
-                          style={{
-                            backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
-                            borderWidth: '1px',
-                            borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
-                          }}
-                          title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
-                        />
-                      )}
+                      <Button
+                        onClick={handleSavePark}
+                        disabled={savingPark}
+                        variant={isSaved ? 'danger' : 'secondary'}
+                        size="sm"
+                        icon={Heart}
+                        className="p-3 backdrop-blur flex-shrink-0"
+                        style={{
+                          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
+                          borderWidth: '1px',
+                          borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
+                        }}
+                        title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+                      />
 
                       <ShareButtons 
                         url={window.location.href}
@@ -988,8 +960,8 @@ const ParkDetailPage = ({ isPublic = false }) => {
 
             {/* Sidebar */}
             <aside className="lg:w-96 flex-shrink-0 space-y-4 sm:space-y-6">
-              {/* Weather Widget - Only show for authenticated users */}
-              {!isPublicAccess && park.latitude && park.longitude && (
+              {/* Weather Widget */}
+              {park.latitude && park.longitude && (
                 <WeatherWidget
                   latitude={park.latitude}
                   longitude={park.longitude}
@@ -1033,8 +1005,8 @@ const ParkDetailPage = ({ isPublic = false }) => {
               </div>
 
 
-              {/* Plan Trip CTA - Only show for authenticated users */}
-              {!isPublicAccess && (
+              {/* Plan Trip CTA */}
+              {(
                 <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"
                   style={{
                     backgroundColor: 'var(--surface)',

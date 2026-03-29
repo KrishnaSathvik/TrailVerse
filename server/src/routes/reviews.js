@@ -13,7 +13,7 @@ const {
   moderateReview,
   getAllParkRatings
 } = require('../controllers/reviewController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const { body } = require('express-validator');
 
 // Validation middleware
@@ -51,11 +51,11 @@ router.get('/ratings', getAllParkRatings);
 router.get('/top-parks', getTopRatedParks);
 router.get('/:parkCode/stats', getParkReviewStats);
 router.get('/:parkCode', getParkReviews);
+router.post('/:parkCode', optionalAuth, reviewValidation, createParkReview);
 
 // Protected routes
 router.use(protect); // All routes below require authentication
 
-router.post('/:parkCode', reviewValidation, createParkReview);
 router.get('/user/my-reviews', getUserReviews);
 router.put('/:reviewId', updateParkReview);
 router.delete('/:reviewId', deleteParkReview);

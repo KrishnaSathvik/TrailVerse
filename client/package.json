@@ -17,6 +17,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.21",
     "axios": "^1.12.2",
+    "idb-keyval": "^6.2.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.544.0",
     "pdfjs-dist": "^5.4.394",

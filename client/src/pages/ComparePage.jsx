@@ -25,11 +25,9 @@ const ComparePage = () => {
     summary: true
   });
 
-  // Determine if this is a public access (not authenticated)
-  const isPublicAccess = !isAuthenticated;
-  
-  // Limit parks: 2 for public users, 4 for authenticated users
-  const maxParks = isPublicAccess ? 2 : 4;
+
+  // Allow up to 4 parks for comparison
+  const maxParks = 4;
 
   // Generate unique colors for each park in the comparison
   const getParkColors = (parkCodes) => {
@@ -274,21 +272,7 @@ const ComparePage = () => {
         type="website"
       />
       
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You're comparing parks. You can compare up to 2 parks. 
-            <button 
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}to compare up to 4 parks and save your comparisons.
-          </p>
-        </div>
-      )}
+
 
       <Header />
 

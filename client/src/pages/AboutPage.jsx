@@ -216,7 +216,7 @@ const AboutPage = () => {
                 </p>
                 
                 <p>
-                  I created this app for everyone to use and plan National Parks trips with ease. With AI-powered planning 
+                  I created this app for everyone to use and plan National Parks trips with ease. With smart planning 
                   that gives you personalized plans based on your choices, you can see all live NPS events on the events 
                   page to easily save them. You can even save parks and plan according to your interests - one easy, simple 
                   app that helps you do all things. With my curated blogs, you can get all tips and guides for all travel-related 
@@ -484,7 +484,7 @@ const AboutPage = () => {
                   <div className="space-y-4 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     <p>
                       After visiting 16+ National Parks and contributing thousands of reviews on Google Maps, 
-                      I realized there was a gap in the market for comprehensive, AI-powered trip planning 
+                      I realized there was a gap in the market for comprehensive, modern trip planning 
                       specifically designed for America's incredible park system.
                     </p>
                     <p>
@@ -536,7 +536,7 @@ const AboutPage = () => {
                         >
                           <MapPin className="h-5 w-5 text-white" />
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>AI-Powered</div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Smart</div>
                         <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Trip Planning</div>
                          </div>
                        </div>

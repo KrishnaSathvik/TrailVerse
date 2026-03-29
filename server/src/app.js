@@ -140,14 +140,40 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limiting - Different limits for different operations
+// Rate limiting - Tiered model for public/authenticated access
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 minutes
+const jwt = require('jsonwebtoken');
 
-// General API rate limiting (more generous for read operations)
-const generalLimiter = rateLimit({
+// Helper to extract user ID from JWT token (without requiring auth)
+const extractUserId = (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      return decoded.id || null;
+    }
+  } catch {
+    // Token invalid or expired — treat as anonymous
+  }
+  return null;
+};
+
+// Tiered API rate limiting: 200 req/15min for authenticated, 60 req/15min for anonymous
+const tieredLimiter = rateLimit({
   windowMs,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000, // 1000 requests per 15 minutes
-  message: 'Too many requests from this IP, please try again later.',
+  max: (req) => {
+    const userId = extractUserId(req);
+    return userId 
+      ? (parseInt(process.env.RATE_LIMIT_AUTH_USER_MAX) || 200)   // Authenticated users
+      : (parseInt(process.env.RATE_LIMIT_ANON_MAX) || 60);       // Anonymous users
+  },
+  keyGenerator: (req) => {
+    // Use user ID for authenticated users (so limit is per-user, not per-IP)
+    const userId = extractUserId(req);
+    return userId || req.ip;
+  },
+  message: 'Too many requests, please try again later. Sign in for higher rate limits.',
   standardHeaders: true,
   legacyHeaders: false,
   // Skip rate limiting for localhost in development
@@ -170,8 +196,8 @@ const authLimiter = rateLimit({
   }
 });
 
-// Apply general rate limiting to all API routes
-app.use('/api/', generalLimiter);
+// Apply tiered rate limiting to all API routes
+app.use('/api/', tieredLimiter);
 
 // Routes
 app.use('/api/auth', authLimiter, require('./routes/auth'));

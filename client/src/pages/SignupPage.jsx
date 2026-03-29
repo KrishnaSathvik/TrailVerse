@@ -190,7 +190,7 @@ const SignupPage = () => {
             Join the adventure!
           </h1>
           <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Start exploring America&apos;s 470+ National Parks & Sites with AI-powered trip planning and personalized recommendations.
+            Create a free account to save favorites, track your visited parks, plan trips with AI, and get personalized recommendations.
           </p>
         </div>
       </div>
@@ -210,47 +210,6 @@ const SignupPage = () => {
             </span>
           </Link>
 
-          {/* Explore Public Page Section */}
-          <div className="mb-8">
-            <div 
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1 backdrop-blur mb-4"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                borderColor: 'var(--border)',
-                borderWidth: '1px'
-              }}
-            >
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Try First
-              </span>
-            </div>
-            <h2 className="text-3xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
-              Explore Parks
-            </h2>
-            <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
-              Browse our collection of national parks and discover amazing destinations before creating your account
-            </p>
-            <Button
-              onClick={() => navigate('/explore')}
-              variant="secondary"
-              size="lg"
-              className="w-full"
-            >
-              Explore Parks Now
-            </Button>
-          </div>
-
-          {/* Divider Line */}
-          <div className="flex items-center mb-8">
-            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }}></div>
-            <div className="px-4 py-2 rounded-full" style={{ backgroundColor: 'var(--surface)' }}>
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Or Create Account
-              </span>
-            </div>
-            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }}></div>
-          </div>
-
           {/* Header */}
           <div className="mb-8">
             <div 
@@ -262,14 +221,14 @@ const SignupPage = () => {
               }}
             >
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Join Our Community
+                Free Account
               </span>
             </div>
             <h1 className="text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
               Create Account
             </h1>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Start your journey through America&apos;s national parks
+              Unlock favorites, AI trip planning, and personalized recommendations
             </p>
           </div>
 

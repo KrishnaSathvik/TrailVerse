@@ -128,9 +128,9 @@ function App() {
       <ThemeProvider>
         <HelmetProvider>
           <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <ToastProvider>
-                  <BrowserRouter>
+            <ToastProvider>
+              <BrowserRouter>
+                <AuthProvider>
                 <ScrollToTop />
                 <AnalyticsTracker />
                 <IdleRefreshTracker />
@@ -245,10 +245,10 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>
-                </BrowserRouter>
+                </AuthProvider>
                 
-                </ToastProvider>
-              </AuthProvider>
+              </BrowserRouter>
+            </ToastProvider>
           </QueryClientProvider>
         </HelmetProvider>
       </ThemeProvider>

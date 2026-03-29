@@ -409,13 +409,17 @@ exports.getDailyFeed = async (req, res, next) => {
 
 // @desc    Get park of the day
 // @route   GET /api/feed/park-of-day
-// @access  Private
+// @access  Public (optionalAuth)
 exports.getParkOfDay = async (req, res, next) => {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId);
-    
-    const parkOfDay = await getPersonalizedParkOfDay(user);
+    let parkOfDay;
+    if (req.user && req.user._id) {
+      const user = await User.findById(req.user._id);
+      parkOfDay = await getPersonalizedParkOfDay(user);
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      parkOfDay = await getRandomParkOfDay(today);
+    }
     
     res.status(200).json({
       success: true,

@@ -93,7 +93,8 @@ const OptimizedImage = ({
   className = '', 
   width, 
   height,
-  objectFit = 'cover'
+  objectFit = 'cover',
+  loading = 'lazy'
 }) => {
   // Memoize normalized URL to avoid recalculating on every render
   const normalizedSrc = useMemo(() => normalizeImageUrl(src), [src]);
@@ -188,6 +189,7 @@ const OptimizedImage = ({
       onError={handleImageError}
       style={{ objectFit }}
       decoding="async"
+      loading={loading}
     />
   );
 };

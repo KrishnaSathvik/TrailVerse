@@ -144,7 +144,7 @@ const NotFoundPage = () => {
             <p className="text-base sm:text-lg mb-8 max-w-2xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Check out our most popular destinations or use our AI-powered trip planner to discover your next adventure.
+              Check out our most popular destinations or use our smart trip planner to discover your next adventure.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

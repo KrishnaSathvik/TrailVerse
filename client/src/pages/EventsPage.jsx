@@ -25,8 +25,7 @@ const EventsPage = () => {
   const allParks = allParksData?.data;
   const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
   
-  // Determine if this is a public access (not authenticated)
-  const isPublicAccess = !isAuthenticated;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -213,16 +212,7 @@ const EventsPage = () => {
   // Filter and sort events by date
   const filteredEvents = useMemo(() => {
     const filtered = events.filter(event => {
-      // For public users, only show events up to current date
-      if (isPublicAccess) {
-        const eventDate = new Date(event.date);
-        const currentDate = new Date();
-        currentDate.setHours(23, 59, 59, 999); // End of today
-        if (eventDate > currentDate) {
-          return false;
-        }
-      }
-      
+
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         if (!event.title.toLowerCase().includes(search) &&
@@ -415,21 +405,7 @@ const EventsPage = () => {
         type="website"
       />
       
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You're viewing events up to today's date.
-            <button
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}to see future events, save favorites, and access all features.
-          </p>
-        </div>
-      )}
+
 
       <Header />
 
@@ -471,8 +447,7 @@ const EventsPage = () => {
 
           </div>
 
-          {/* Search Bar - Hidden for public users */}
-          {!isPublicAccess && (
+          {/* Search Bar */}
             <div className="mt-8 max-w-3xl">
               <div className="relative">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
@@ -502,10 +477,8 @@ const EventsPage = () => {
                 )}
               </div>
             </div>
-          )}
 
-          {/* Quick Stats - Hidden for public users */}
-          {!isPublicAccess && (
+          {/* Quick Stats */}
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { label: 'Total Events', value: events.length, icon: CalendarDays },
@@ -539,7 +512,6 @@ const EventsPage = () => {
                 );
               })}
             </div>
-          )}
         </div>
       </section>
 
@@ -549,8 +521,7 @@ const EventsPage = () => {
           {/* Toolbar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              {/* Mobile Filter Button - Hidden for public users */}
-              {!isPublicAccess && (
+              {/* Mobile Filter Button */}
                 <Button
                   onClick={() => setShowFilters(true)}
                   variant="secondary"
@@ -565,10 +536,8 @@ const EventsPage = () => {
                     </span>
                   )}
                 </Button>
-              )}
 
-              {/* Date Range Filter - Hidden for public users */}
-              {!isPublicAccess && (
+              {/* Date Range Filter */}
                 <select
                   value={filters.dateRange}
                   onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
@@ -589,10 +558,9 @@ const EventsPage = () => {
                   <option value="next-month">Next Month</option>
                   <option value="all">All Dates</option>
                 </select>
-              )}
 
-              {/* Clear Button - Desktop only - Hidden for public users */}
-              {!isPublicAccess && activeFiltersCount > 0 && (
+              {/* Clear Button - Desktop only */}
+              {activeFiltersCount > 0 && (
                 <Button
                   onClick={clearAllFilters}
                   variant="ghost"
@@ -635,9 +603,8 @@ const EventsPage = () => {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters - Desktop - Hidden for public users */}
-            {!isPublicAccess && (
-              <aside className="hidden sm:block lg:w-80 flex-shrink-0">
+            {/* Sidebar Filters - Desktop */}
+            <aside className="hidden sm:block lg:w-80 flex-shrink-0">
               <div className="sticky top-24 rounded-2xl p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
@@ -736,7 +703,6 @@ const EventsPage = () => {
                 </div>
               </div>
             </aside>
-            )}
 
             {/* Main Content Area */}
             <div className="flex-1 min-w-0">
@@ -917,8 +883,8 @@ const EventsPage = () => {
         </div>
       </section>
 
-      {/* Mobile Filters Modal - Hidden for public users */}
-      {!isPublicAccess && showFilters && (
+      {/* Mobile Filters Modal */}
+      {showFilters && (
         <div className="fixed inset-0 z-50 sm:hidden">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setShowFilters(false)}

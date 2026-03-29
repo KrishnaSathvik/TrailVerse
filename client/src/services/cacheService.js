@@ -13,11 +13,11 @@ class CacheService {
     
     // Cache configuration for different data types
     this.cacheConfig = {
-      // Static data - cache for longer but use memory to avoid localStorage quota issues
-      parks: { ttl: 24 * 60 * 60 * 1000, storage: 'memory' }, // 24 hours
-      parkDetails: { ttl: 12 * 60 * 60 * 1000, storage: 'memory' }, // 12 hours
-      weather: { ttl: 60 * 60 * 1000, storage: 'memory' }, // 60 minutes (matches globalCacheManager)
-      forecast: { ttl: 120 * 60 * 1000, storage: 'memory' }, // 120 minutes (matches globalCacheManager)
+      // Static data - cache in localStorage to survive page refreshes
+      parks: { ttl: 24 * 60 * 60 * 1000, storage: 'memory' }, // 24 hours - useParks.js manages localStorage separately
+      parkDetails: { ttl: 12 * 60 * 60 * 1000, storage: 'localStorage' }, // 12 hours
+      weather: { ttl: 60 * 60 * 1000, storage: 'localStorage' }, // 60 minutes (matches globalCacheManager)
+      forecast: { ttl: 120 * 60 * 1000, storage: 'localStorage' }, // 120 minutes (matches globalCacheManager)
       
       // User-specific data - shorter cache
       userProfile: { ttl: 15 * 60 * 1000, storage: 'memory' }, // 15 minutes

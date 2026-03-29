@@ -21,7 +21,7 @@ const TermsPage = () => {
           </p>
           <p className="mb-4">
             TrailVerse helps users explore, plan, and discover America&apos;s 470+ National Parks through 
-            AI-powered trip planning, real-time weather, interactive maps, and community-driven content.
+            Smart trip planning, real-time weather, interactive maps, and community-driven content.
           </p>
         </>
       )

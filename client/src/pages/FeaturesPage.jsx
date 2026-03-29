@@ -18,7 +18,7 @@ const FeaturesPage = () => {
 
   const features = [
     {
-      category: "AI-Powered Trip Planning",
+      category: "Smart Trip Planning",
       icon: Sparkles,
       description: "Revolutionary AI assistance for your National Park adventures",
       items: [
@@ -194,7 +194,7 @@ const FeaturesPage = () => {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <SEO 
         title="Features - TrailVerse | Comprehensive National Park Planning Tools"
-        description="Discover all the powerful features that make TrailVerse the ultimate National Park planning platform. AI-powered trip planning, daily nature feeds, interactive maps, community reviews, and more."
+        description="Discover all the powerful features that make TrailVerse the ultimate National Park exploration platform. Interactive maps, community reviews, real-time weather, daily nature feeds, smart trip planning, and more."
         keywords="National Parks features, AI trip planning, daily nature feed, park discovery tools, community reviews, travel planning features"
       />
 
@@ -232,7 +232,7 @@ const FeaturesPage = () => {
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            From AI-powered trip planning and daily nature feeds to community reviews, TrailVerse provides all the tools you need to discover, plan, and enjoy America's National Parks.
+            From interactive maps and community reviews to smart trip planning and daily nature feeds, TrailVerse provides all the tools you need to discover, plan, and enjoy America's National Parks.
           </p>
         </div>
       </section>

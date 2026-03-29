@@ -46,7 +46,7 @@ const PrivacyPage = () => {
 
           <h3 className="text-lg font-semibold mb-3 mt-4">Technical & Analytics Data</h3>
           <p className="mb-4">
-            Automatically collected: browser type, device info, IP address, cookies/local storage, Service Worker cached data, 
+            Automatically collected: browser type, device info, IP address, cookies, local storage (including IndexedDB), Service Worker cached data, 
             WebSocket connections for real-time sync, performance metrics (Core Web Vitals), and Google Analytics data (anonymized).
           </p>
 
@@ -66,7 +66,7 @@ const PrivacyPage = () => {
         <>
           <p className="mb-4">We use collected information to:</p>
           <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li>Provide AI-powered trip planning with personalized recommendations</li>
+            <li>Provide smart trip planning with personalized recommendations</li>
             <li>Save and sync favorites, reviews, and trip history across all your devices</li>
             <li>Display real-time weather, park alerts, and NPS events</li>
             <li>Enable interactive maps, nearby places search, and route planning</li>
@@ -119,12 +119,12 @@ const PrivacyPage = () => {
     },
     {
       id: "cookies",
-      title: "Cookies & Local Storage",
+      title: "Cookies, Local Storage & IndexedDB",
       icon: Eye,
       content: (
         <>
           <p className="mb-4">
-            TrailVerse uses browser local storage (not traditional cookies) to enhance your experience:
+            TrailVerse uses browser local storage technologies like LocalStorage and IndexedDB (not traditional cookies) to enhance your experience:
           </p>
           <ul className="list-disc pl-6 mb-4 space-y-2">
             <li><strong>Essential:</strong> Authentication tokens, session management</li>
@@ -133,7 +133,7 @@ const PrivacyPage = () => {
             <li><strong>PWA/Offline:</strong> Service Worker cached content for offline access</li>
           </ul>
           <p className="mb-4">
-            Our LocalStorage Monitor automatically manages storage to prevent quota issues. 
+            Our storage systems automatically manage LocalStorage and IndexedDB to prevent browser quota issues. 
             You can clear all data through your browser settings or by logging out.
           </p>
         </>

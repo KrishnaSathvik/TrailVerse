@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const ParkReview = require('../models/ParkReview');
 const { validationResult } = require('express-validator');
 
@@ -133,33 +134,40 @@ exports.createParkReview = async (req, res, next) => {
     }
 
     const { parkCode } = req.params;
-    const userId = req.user.id;
+    
+    // Check if authenticated
+    const isGuest = !req.user;
+    const userId = isGuest ? new mongoose.Types.ObjectId() : req.user.id;
 
-    // Check if user already reviewed this park
-    const existingReview = await ParkReview.findOne({ parkCode, userId });
-    if (existingReview) {
-      return res.status(400).json({
-        success: false,
-        error: 'You have already reviewed this park'
-      });
+    // Only enforce one-review-per-park for authenticated users
+    if (!isGuest) {
+      const existingReview = await ParkReview.findOne({ parkCode, userId });
+      if (existingReview) {
+        return res.status(400).json({
+          success: false,
+          error: 'You have already reviewed this park'
+        });
+      }
     }
 
     // Create review
     const reviewData = {
       ...req.body,
       parkCode,
-      userId,
-      userName: req.user.name || req.user.firstName + ' ' + req.user.lastName
+      ...( !isGuest ? { userId } : {} ), // Only set userId if not guest, to bypass sparse index or keep null/missing
+      userName: isGuest ? (req.body.userName || 'Guest Explorer') : (req.user.name || req.user.firstName + ' ' + req.user.lastName)
     };
 
     const review = await ParkReview.create(reviewData);
 
-    // Populate user data for response
-    await review.populate('userId', 'name avatar');
+    // Populate user data for response if authenticated
+    if (!isGuest) {
+      await review.populate('userId', 'name avatar');
+    }
 
     // Notify via WebSocket
     const wsService = req.app.get('wsService');
-    if (wsService) {
+    if (wsService && !isGuest) {
       wsService.notifyReviewAdded(userId, review);
     }
 

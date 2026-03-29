@@ -12,7 +12,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 
 const ReviewSection = ({ parkCode, parkName }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { subscribe, unsubscribe, subscribeToReviews } = useWebSocket();
@@ -25,7 +25,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
     rating: 5,
     title: '',
     comment: '',
-    visitYear: new Date().getFullYear()
+    visitYear: new Date().getFullYear(),
+    userName: ''
   });
   const [hoveredRating, setHoveredRating] = useState(0);
   
@@ -198,10 +199,6 @@ const ReviewSection = ({ parkCode, parkName }) => {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      showToast('Please login to submit a review', 'warning');
-      return;
-    }
 
     try {
       setUploadingImages(true);
@@ -213,7 +210,7 @@ const ReviewSection = ({ parkCode, parkName }) => {
       
       showToast('Review submitted successfully!', 'success');
       setShowReviewForm(false);
-      setNewReview({ rating: 5, title: '', comment: '', visitYear: new Date().getFullYear() });
+      setNewReview({ rating: 5, title: '', comment: '', visitYear: new Date().getFullYear(), userName: '' });
       setSelectedImages([]);
       setImagePreviews([]);
       setImageErrors([]);
@@ -235,7 +232,7 @@ const ReviewSection = ({ parkCode, parkName }) => {
 
   const handleMarkHelpful = async (reviewId) => {
     if (!isAuthenticated) {
-      showToast('Please login to mark reviews as helpful', 'warning');
+      showLoginPrompt('Log in to rate reviews as helpful');
       return;
     }
 
@@ -425,18 +422,15 @@ const ReviewSection = ({ parkCode, parkName }) => {
         </p>
       </div>
 
-      {/* Add Review Button */}
-      {isAuthenticated && (
-        <div className="text-center">
-          <button
-            onClick={() => setShowReviewForm(!showReviewForm)}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-forest-500 hover:bg-forest-600 text-white font-semibold transition"
-          >
-            <Plus className="h-4 w-4" />
-            {showReviewForm ? 'Cancel' : 'Write a Review'}
-          </button>
-        </div>
-      )}
+      <div className="text-center">
+        <button
+          onClick={() => setShowReviewForm(!showReviewForm)}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-forest-500 hover:bg-forest-600 text-white font-semibold transition"
+        >
+          <Plus className="h-4 w-4" />
+          {showReviewForm ? 'Cancel' : 'Write a Review'}
+        </button>
+      </div>
 
       {/* Review Form */}
       {showReviewForm && (
@@ -483,6 +477,28 @@ const ReviewSection = ({ parkCode, parkName }) => {
               </p>
             </div>
             
+            {!isAuthenticated && (
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newReview.userName || ''}
+                  onChange={(e) => setNewReview({...newReview, userName: e.target.value})}
+                  className="w-full px-4 py-2 rounded-lg"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)'
+                  }}
+                  placeholder="Guest Explorer"
+                  maxLength="50"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                 Title
@@ -554,15 +570,16 @@ const ReviewSection = ({ parkCode, parkName }) => {
               </select>
             </div>
 
-            {/* Image Upload Section */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Photos ({selectedImages.length}/{maxImages})
-              </label>
-              
-              {/* Upload Button */}
-              <div 
-                className="border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+            {/* Image Upload Section - Authenticated Only */}
+            {isAuthenticated && (
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Photos ({selectedImages.length}/{maxImages})
+                </label>
+                
+                {/* Upload Button */}
+                <div 
+                  className="border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
                 style={{ borderColor: 'var(--border)' }}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -622,7 +639,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   ))}
                 </div>
               )}
-            </div>
+             </div>
+            )}
 
             <div className="flex gap-3">
               <button

@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
 import { invalidateCache } from '../utils/cacheUtils';
+import LoginModal from '../components/auth/LoginModal';
 
 const AuthContext = createContext();
 
@@ -17,7 +18,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userDataLoaded, setUserDataLoaded] = useState(false);
+  const [authModal, setAuthModal] = useState({ isOpen: false, message: '' });
+
+  const showLoginPrompt = (message = 'Please sign in to continue') => {
+    setAuthModal({ isOpen: true, message });
+  };
   
+  const closeLoginPrompt = () => {
+    setAuthModal({ isOpen: false, message: '' });
+  };
 
 
   useEffect(() => {
@@ -336,12 +345,19 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     setUserAfterVerification,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    showLoginPrompt,
+    closeLoginPrompt
   };
 
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
+      <LoginModal 
+        isOpen={authModal.isOpen} 
+        onClose={closeLoginPrompt} 
+        message={authModal.message} 
+      />
     </AuthContext.Provider>
   );
 };

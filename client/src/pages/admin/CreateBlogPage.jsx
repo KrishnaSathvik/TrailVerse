@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import blogService from '../../services/blogService';
 import imageUploadService from '../../services/imageUploadService';
-import SimpleRichTextEditor from '../../components/SimpleRichTextEditor';
+import ModernRichTextEditor from '../../components/ModernRichTextEditor';
 import TableOfContents from '../../components/blog/TableOfContents';
 import {
-  ArrowLeft, Save, Eye, Image, Calendar, Tag,
-  Upload, X, Plus, AlignLeft, Type, FileText
+  ArrowLeft, Save, Send, Eye, Image as ImageIcon, Calendar, Tag,
+  Upload, X, Plus, AlertCircle, Check, Clock
 } from '@components/icons';
+import './ModernBlogEditor.css';
 
 const CreateBlogPage = () => {
   const { showToast } = useToast();
@@ -24,7 +25,6 @@ const CreateBlogPage = () => {
     featuredImage: '',
     featured: false,
     status: 'draft',
-    publishDate: new Date().toISOString().split('T')[0],
     scheduledAt: '',
     isScheduled: false
   });
@@ -33,27 +33,60 @@ const CreateBlogPage = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const categories = [
-    'Hiking',
-    'Photography',
-    'Wildlife',
-    'Travel Tips',
-    'Park Guides',
-    'Camping',
-    'History',
-    'Conservation',
-    'Fall Travel Blog',
-    'Travel Blogs'
+    'Hiking', 'Photography', 'Wildlife', 'Travel Tips', 'Park Guides',
+    'Camping', 'History', 'Conservation', 'Fall Travel Blog', 'Travel Blogs'
   ];
 
-  // No need for auth check since AdminRoute handles it
+  // Auto-save draft functionality
+  useEffect(() => {
+    if (!formData.title && !formData.content) return;
+
+    const autoSaveTimer = setTimeout(() => {
+      handleAutoSave();
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [formData]);
+
+  // Update word count
+  useEffect(() => {
+    if (formData.content) {
+      const text = formData.content.replace(/<[^>]*>/g, '');
+      const words = text.split(/\s+/).filter(Boolean).length;
+      setWordCount(words);
+    } else {
+      setWordCount(0);
+    }
+  }, [formData.content]);
+
+  const handleAutoSave = async () => {
+    if (!formData.title || !formData.content) return;
+    
+    setAutoSaving(true);
+    try {
+      // Save to localStorage as backup
+      localStorage.setItem('blog_draft', JSON.stringify(formData));
+      setLastSaved(new Date());
+      setTimeout(() => setAutoSaving(false), 1000);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      setAutoSaving(false);
+    }
+  };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: newValue
     }));
 
     // Auto-generate slug from title
@@ -63,6 +96,27 @@ const CreateBlogPage = () => {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
       setFormData(prev => ({ ...prev, slug }));
+    }
+
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleContentChange = (content) => {
+    setFormData(prev => ({ ...prev, content }));
+    
+    if (validationErrors.content) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.content;
+        return newErrors;
+      });
     }
   };
 
@@ -87,48 +141,37 @@ const CreateBlogPage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      showToast('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.', 'error');
-      return;
-    }
-
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      showToast('File size too large. Maximum size is 10MB.', 'error');
+    try {
+      imageUploadService.validateImageFile(file);
+    } catch (error) {
+      showToast(error.message, 'error');
       return;
     }
 
     setUploadingImage(true);
 
     try {
-      // Create preview first (for immediate UI feedback)
+      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
 
-      // Upload image to server
+      // Upload image
       const uploadedImage = await imageUploadService.uploadSingleImage(file, {
         category: 'blog',
         isPublic: true
       });
 
-      // Store the URL from the server (not the base64 data URL)
-      // Server now returns relative paths (/uploads/...) which will be normalized by OptimizedImage
       const imageUrl = uploadedImage.url;
       setFormData(prev => ({ ...prev, featuredImage: imageUrl }));
-      
-      // Update preview with the uploaded image URL
       setImagePreview(imageUrl);
       
-      showToast('Image uploaded successfully!', 'success');
+      showToast('Featured image uploaded successfully!', 'success');
     } catch (error) {
       console.error('Error uploading image:', error);
-      showToast(error.message || 'Failed to upload image. Please try again.', 'error');
+      showToast(error.message || 'Failed to upload image', 'error');
       setImagePreview(null);
       setFormData(prev => ({ ...prev, featuredImage: '' }));
     } finally {
@@ -136,31 +179,56 @@ const CreateBlogPage = () => {
     }
   };
 
-  const handleSubmit = async (status) => {
+  const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, featuredImage: '' }));
+    setImagePreview(null);
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
     if (!formData.title.trim()) {
-      showToast('Please enter a title', 'error');
-      return;
+      errors.title = 'Title is required';
     }
 
     if (!formData.excerpt.trim()) {
-      showToast('Please enter an excerpt', 'error');
-      return;
-    }
-
-    if (formData.excerpt.length > 300) {
-      showToast('Excerpt cannot be more than 300 characters', 'error');
-      return;
+      errors.excerpt = 'Excerpt is required';
+    } else if (formData.excerpt.length > 300) {
+      errors.excerpt = 'Excerpt cannot exceed 300 characters';
     }
 
     if (!formData.content.trim()) {
-      showToast('Please enter content', 'error');
+      errors.content = 'Content is required';
+    }
+
+    if (!formData.category) {
+      errors.category = 'Please select a category';
+    }
+
+    if (formData.isScheduled && !formData.scheduledAt) {
+      errors.scheduledAt = 'Please select a scheduled date and time';
+    }
+
+    if (formData.isScheduled && formData.scheduledAt) {
+      const scheduledDate = new Date(formData.scheduledAt);
+      if (scheduledDate <= new Date()) {
+        errors.scheduledAt = 'Scheduled time must be in the future';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (status) => {
+    if (!validateForm()) {
+      showToast('Please fix the errors before submitting', 'error');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Handle scheduling logic
       let finalStatus = status;
       let scheduledAt = null;
 
@@ -171,19 +239,14 @@ const CreateBlogPage = () => {
         if (scheduledDate > now) {
           finalStatus = 'scheduled';
           scheduledAt = formData.scheduledAt;
-        } else {
-          showToast('Scheduled time must be in the future', 'error');
-          setLoading(false);
-          return;
         }
       }
 
-      // Save blog post - only send required fields to backend
       const postData = {
         title: formData.title.trim(),
         excerpt: formData.excerpt.trim(),
         content: formData.content.trim(),
-        category: formData.category ? formData.category.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Park Guides',
+        category: formData.category,
         tags: formData.tags,
         featuredImage: formData.featuredImage || null,
         featured: formData.featured,
@@ -192,13 +255,10 @@ const CreateBlogPage = () => {
         scheduledAt
       };
 
-      console.log('📝 Frontend: Creating blog post with data:', postData);
-      
-      // Log request size
-      const requestSize = JSON.stringify(postData).length;
-      console.log(`📊 Frontend request size: ${requestSize} bytes (${(requestSize / 1024).toFixed(2)} KB)`);
-      
       await blogService.createPost(postData);
+      
+      // Clear draft from localStorage
+      localStorage.removeItem('blog_draft');
       
       let successMessage;
       if (finalStatus === 'scheduled') {
@@ -210,556 +270,332 @@ const CreateBlogPage = () => {
       }
       
       showToast(successMessage, 'success');
-
       navigate('/admin');
     } catch (error) {
       console.error('Error creating post:', error);
-      showToast('Failed to create post', 'error');
+      showToast(error.message || 'Failed to create post', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('blog_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        const shouldLoad = window.confirm('Found a saved draft. Would you like to restore it?');
+        if (shouldLoad) {
+          setFormData(draft);
+          if (draft.featuredImage) {
+            setImagePreview(draft.featuredImage);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading draft:', error);
+      }
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', overflow: 'visible' }}>
-      {/* Hero Section */}
-      <section className="relative py-16 sm:py-20">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6 backdrop-blur"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)'
-            }}
+    <div className="modern-blog-editor">
+      {/* Header */}
+      <header className="editor-header">
+        <div className="editor-header-content">
+          <button
+            onClick={() => navigate('/admin')}
+            className="btn-back"
+            title="Back to Dashboard"
           >
-            <FileText className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-            <span className="text-xs font-medium uppercase tracking-wider"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Create New Post
-            </span>
-          </div>
+            <ArrowLeft size={20} />
+            <span>Back</span>
+          </button>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Create New Post
-              </h1>
-              <p className="text-lg sm:text-xl max-w-3xl"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Share your TrailVerse stories, park guides, and travel insights with the community. 
-                Create engaging content that inspires adventure.
-              </p>
-            </div>
+          <div className="header-actions">
+            {autoSaving && (
+              <div className="auto-save-indicator">
+                <Clock size={16} />
+                <span>Saving...</span>
+              </div>
+            )}
             
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => navigate('/admin')}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md whitespace-nowrap"
-                style={{
-                  backgroundColor: 'white',
-                  borderWidth: '1px',
-                  borderColor: '#e5e7eb',
-                  color: '#374151',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                }}
-              >
-                <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Back to Dashboard</span>
-                <span className="sm:hidden">Back</span>
-              </button>
-              <button
-                onClick={() => handleSubmit('draft')}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50 whitespace-nowrap"
-                style={{
-                  backgroundColor: 'white',
-                  borderWidth: '1px',
-                  borderColor: '#e5e7eb',
-                  color: '#374151',
-                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                }}
-              >
-                <Save className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Save Draft</span>
-                <span className="sm:hidden">Draft</span>
-              </button>
-              {formData.isScheduled ? (
-                <button
-                  onClick={() => handleSubmit('scheduled')}
-                  disabled={loading || !formData.scheduledAt}
-                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50 whitespace-nowrap"
-                  style={{
-                    backgroundColor: '#f59e0b',
-                    color: 'white',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                  }}
-                >
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                  Schedule
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleSubmit('published')}
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md disabled:opacity-50 whitespace-nowrap"
-                  style={{
-                    backgroundColor: '#10b981',
-                    color: 'white',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                  }}
-                >
-                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                  Publish
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <section className="pb-24" style={{ overflow: 'visible' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ overflow: 'visible' }}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6" style={{ overflow: 'visible' }}>
-            {/* Title */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Type className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Post Title
-                </label>
-              </div>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Enter your blog post title..."
-                className="w-full px-4 py-3 rounded-xl text-2xl font-bold outline-none transition"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-              
-              {/* Slug */}
-              <div className="mt-4">
-                <label className="text-xs font-medium mb-2 block"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  URL Slug: /{formData.slug || 'post-slug'}
-                </label>
-                <input
-                  type="text"
-                  name="slug"
-                  value={formData.slug}
-                  onChange={handleChange}
-                  placeholder="post-slug"
-                  className="w-full px-4 py-2 rounded-lg text-sm outline-none transition"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Excerpt */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <AlignLeft className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Excerpt
-                </label>
-              </div>
-              <textarea
-                name="excerpt"
-                value={formData.excerpt}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Brief summary of your post (appears in previews)..."
-                className="w-full px-4 py-3 rounded-xl outline-none resize-none transition"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-              <p className="mt-2 text-xs"
-                style={{ color: formData.excerpt.length > 300 ? 'var(--error)' : 'var(--text-tertiary)' }}
-              >
-                {formData.excerpt.length} / 300 characters
-              </p>
-            </div>
-
-            {/* Table of Contents Preview */}
-            {formData.content && (
-              <div className="rounded-2xl p-6 backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <TableOfContents 
-                  content={formData.content}
-                  onContentUpdate={(updatedContent) => {
-                    setFormData(prev => ({ ...prev, content: updatedContent }));
-                  }}
-                />
+            {lastSaved && !autoSaving && (
+              <div className="last-saved">
+                <Check size={16} />
+                <span>Saved {lastSaved.toLocaleTimeString()}</span>
               </div>
             )}
 
-            {/* Content */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                overflow: 'visible'
-              }}
+            <button
+              onClick={() => handleSubmit('draft')}
+              className="btn-secondary"
+              disabled={loading}
             >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <AlignLeft className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Content
-                </label>
-              </div>
-              <SimpleRichTextEditor
-                value={formData.content}
-                onChange={(content) => {
-                  setFormData(prev => ({ ...prev, content }));
-                }}
-                placeholder="Write your blog post content here... Use the toolbar above to format your text with bold, italic, lists, links, and more! Use the dropdown to select headings."
-              />
-              <p className="mt-2 text-xs"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                {formData.content ? formData.content.replace(/[#*`_~[\]()]/g, '').split(' ').filter(w => w.trim()).length : 0} words
-              </p>
-            </div>
-          </div>
+              <Save size={18} />
+              <span>Save Draft</span>
+            </button>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Featured Image */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+            <button
+              onClick={() => handleSubmit('published')}
+              className="btn-primary"
+              disabled={loading}
             >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Image className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Featured Image
-                </label>
-              </div>
-
-              {imagePreview ? (
-                <div className="relative group">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-xl"
-                  />
-                  <button
-                    onClick={() => {
-                      setImagePreview(null);
-                      setFormData(prev => ({ ...prev, featuredImage: '' }));
-                    }}
-                    className="absolute top-2 right-2 p-2 rounded-xl font-semibold opacity-0 group-hover:opacity-100 transition"
-                    style={{
-                      backgroundColor: '#ef4444',
-                      color: 'white'
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
+              {loading ? (
+                <>
+                  <div className="spinner-small"></div>
+                  <span>Publishing...</span>
+                </>
               ) : (
-                <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-xl cursor-pointer hover:bg-white/5 transition"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  <Upload className="h-8 w-8 mb-2" style={{ color: 'var(--text-tertiary)' }} />
-                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Click to upload image
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
+                <>
+                  <Send size={18} />
+                  <span>Publish</span>
+                </>
               )}
-            </div>
-
-            {/* Category */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Tag className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Category
-                </label>
-              </div>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl outline-none transition"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                <option value="">Select a category</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tags */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Tag className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Tags
-                </label>
-              </div>
-
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                  placeholder="Add tag..."
-                  className="flex-1 px-4 py-2 rounded-xl text-sm outline-none transition"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-                <button
-                  onClick={handleAddTag}
-                  className="px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:shadow-md"
-                  style={{
-                    backgroundColor: '#10b981',
-                    color: 'white',
-                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)'
-                    }}
-                  >
-                    {tag}
-                    <button
-                      onClick={() => handleRemoveTag(tag)}
-                      className="hover:text-red-400 transition"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Publishing Options */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Calendar className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Publishing Options
-                </label>
-              </div>
-              
-              {/* Schedule Toggle */}
-              <div className="flex items-center gap-3 mb-4">
-                <input
-                  type="checkbox"
-                  id="isScheduled"
-                  checked={formData.isScheduled}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isScheduled: e.target.checked }))}
-                  className="w-4 h-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="isScheduled" className="text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  Schedule for later publication
-                </label>
-              </div>
-
-              {formData.isScheduled ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-2"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      Scheduled Date & Time
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="scheduledAt"
-                      value={formData.scheduledAt}
-                      onChange={handleChange}
-                      min={new Date().toISOString().slice(0, 16)}
-                      className="w-full px-4 py-3 rounded-xl outline-none transition"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    The post will be automatically published at the scheduled time.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium mb-2"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    Publish Date (for immediate publishing)
-                  </label>
-                  <input
-                    type="date"
-                    name="publishDate"
-                    value={formData.publishDate}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl outline-none transition"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Featured Post */}
-            <div className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <Tag className="h-5 w-5" />
-                <label className="text-sm font-semibold uppercase tracking-wider">
-                  Featured Post
-                </label>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  name="featured"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData(prev => ({ ...prev, featured: e.target.checked }))}
-                  className="w-4 h-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="featured" className="text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  Mark this post as featured (will appear in Featured Stories section)
-                </label>
-              </div>
-            </div>
-          </div>
+            </button>
           </div>
         </div>
-      </section>
+      </header>
+
+      {/* Main Content */}
+      <div className="editor-layout">
+        {/* Main Editor Column */}
+        <div className="editor-main">
+          {/* Title Input */}
+          <div className="title-section">
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Enter your post title..."
+              className={`title-input ${validationErrors.title ? 'error' : ''}`}
+              autoFocus
+            />
+            {validationErrors.title && (
+              <div className="validation-error">
+                <AlertCircle size={16} />
+                <span>{validationErrors.title}</span>
+              </div>
+            )}
+            
+            {formData.title && (
+              <div className="slug-preview">
+                <span className="slug-label">URL:</span>
+                <span className="slug-value">{formData.slug || 'auto-generated'}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Excerpt */}
+          <div className="excerpt-section">
+            <label className="section-label">
+              <span>Excerpt</span>
+              <span className="char-count">
+                {formData.excerpt.length}/300
+              </span>
+            </label>
+            <textarea
+              name="excerpt"
+              value={formData.excerpt}
+              onChange={handleChange}
+              placeholder="Write a brief summary of your post (max 300 characters)..."
+              className={`excerpt-input ${validationErrors.excerpt ? 'error' : ''}`}
+              maxLength={300}
+              rows={3}
+            />
+            {validationErrors.excerpt && (
+              <div className="validation-error">
+                <AlertCircle size={16} />
+                <span>{validationErrors.excerpt}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Content Editor */}
+          <div className="content-section">
+            <label className="section-label">
+              <span>Content</span>
+              <span className="word-count">{wordCount} words</span>
+            </label>
+            <ModernRichTextEditor
+              value={formData.content}
+              onChange={handleContentChange}
+              placeholder="Start writing your amazing content..."
+            />
+            {validationErrors.content && (
+              <div className="validation-error">
+                <AlertCircle size={16} />
+                <span>{validationErrors.content}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Table of Contents Preview */}
+          {formData.content && (
+            <div className="toc-preview">
+              <TableOfContents content={formData.content} />
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <aside className="editor-sidebar">
+          {/* Featured Image */}
+          <div className="sidebar-card">
+            <h3 className="card-title">
+              <ImageIcon size={18} />
+              <span>Featured Image</span>
+            </h3>
+            
+            {imagePreview ? (
+              <div className="image-preview">
+                <img src={imagePreview} alt="Featured" />
+                <button
+                  onClick={handleRemoveImage}
+                  className="btn-remove-image"
+                  title="Remove image"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <label className="image-upload-area">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                />
+                {uploadingImage ? (
+                  <div className="uploading-state">
+                    <div className="spinner"></div>
+                    <span>Uploading...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload size={32} />
+                    <span className="upload-text">Click to upload</span>
+                    <span className="upload-hint">PNG, JPG, GIF up to 10MB</span>
+                  </>
+                )}
+              </label>
+            )}
+          </div>
+
+          {/* Category */}
+          <div className="sidebar-card">
+            <h3 className="card-title">
+              <Tag size={18} />
+              <span>Category</span>
+            </h3>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className={`category-select ${validationErrors.category ? 'error' : ''}`}
+            >
+              <option value="">Select category</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            {validationErrors.category && (
+              <div className="validation-error">
+                <AlertCircle size={14} />
+                <span>{validationErrors.category}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Tags */}
+          <div className="sidebar-card">
+            <h3 className="card-title">
+              <Tag size={18} />
+              <span>Tags</span>
+            </h3>
+            
+            <div className="tag-input-group">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                placeholder="Add tag..."
+                className="tag-input"
+              />
+              <button
+                onClick={handleAddTag}
+                className="btn-add-tag"
+                title="Add tag"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+
+            <div className="tags-list">
+              {formData.tags.map(tag => (
+                <span key={tag} className="tag-item">
+                  {tag}
+                  <button
+                    onClick={() => handleRemoveTag(tag)}
+                    className="btn-remove-tag"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Publishing Options */}
+          <div className="sidebar-card">
+            <h3 className="card-title">
+              <Calendar size={18} />
+              <span>Publishing</span>
+            </h3>
+
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="featured"
+                checked={formData.featured}
+                onChange={handleChange}
+              />
+              <span>Featured Post</span>
+            </label>
+
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="isScheduled"
+                checked={formData.isScheduled}
+                onChange={handleChange}
+              />
+              <span>Schedule for later</span>
+            </label>
+
+            {formData.isScheduled && (
+              <div className="schedule-input">
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  value={formData.scheduledAt}
+                  onChange={handleChange}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className={validationErrors.scheduledAt ? 'error' : ''}
+                />
+                {validationErrors.scheduledAt && (
+                  <div className="validation-error">
+                    <AlertCircle size={14} />
+                    <span>{validationErrors.scheduledAt}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };

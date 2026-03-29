@@ -17,7 +17,7 @@ const FAQPage = () => {
       questions: [
         {
           question: "What is TrailVerse?",
-          answer: "TrailVerse is your comprehensive guide to exploring America's 470+ National Parks, Monuments, Historic Sites, and other protected areas. We combine AI-powered trip planning, real-time weather data, interactive maps, and community insights to help you discover and plan the perfect park adventure."
+          answer: "TrailVerse is your comprehensive guide to exploring America's 470+ National Parks, Monuments, Historic Sites, and other protected areas. We combine real-time weather data, interactive maps, community reviews, and smart trip planning to help you discover and plan the perfect park adventure."
         },
         {
           question: "How do I get started?",
@@ -25,7 +25,7 @@ const FAQPage = () => {
         },
         {
           question: "What makes TrailVerse different?",
-          answer: "TrailVerse uniquely combines AI-powered trip planning (Claude + ChatGPT), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks with personalized recommendations."
+          answer: "TrailVerse uniquely combines smart trip planning (Claude + ChatGPT), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks with personalized recommendations."
         }
       ]
     },

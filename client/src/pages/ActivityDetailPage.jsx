@@ -16,15 +16,14 @@ import ShareButtons from '../components/common/ShareButtons';
 import { useAuth } from '../context/AuthContext';
 import { processHtmlContent } from '../utils/htmlUtils';
 
-const ActivityDetailPage = ({ isPublic = false }) => {
+const ActivityDetailPage = () => {
   const { parkCode, activityId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
-  // Determine if this is a public access (not authenticated)
-  const isPublicAccess = isPublic || !isAuthenticated;
+
 
   // Check where user came from
   const fromTrailsPage = location.state?.from === 'trails';
@@ -89,21 +88,7 @@ const ActivityDetailPage = ({ isPublic = false }) => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* Public Access Banner */}
-      {isPublicAccess && (
-        <div className="bg-blue-600 text-white py-2 px-4 text-center">
-          <p className="text-sm">
-            You're viewing an activity. 
-            <button 
-              onClick={() => navigate('/login')}
-              className="underline hover:no-underline ml-1 font-semibold"
-            >
-              Login
-            </button>
-            {' '}to save activities and access all features.
-          </p>
-        </div>
-      )}
+
       
       <SEO
         title={`${activity.title} - Activity Details`}
