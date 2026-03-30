@@ -75,6 +75,9 @@ export const savedEventsService = {
   clearAllSavedEvents: () => {
     try {
       localStorage.removeItem(SAVED_EVENTS_KEY);
+      window.dispatchEvent(new CustomEvent('savedEventsChanged', {
+        detail: { action: 'clear', count: 0 }
+      }));
       return true;
     } catch (error) {
       console.error('Error clearing saved events:', error);

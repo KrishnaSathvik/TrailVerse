@@ -3,14 +3,14 @@
 ## ✅ **COMPLETED TASKS**
 
 ### 1. **Configuration Updates**
-- [x] Enhanced `vercel.json` with security headers
+- [x] Enhanced Next.js deployment configuration with security headers
 - [x] Added environment variable validation
 - [x] Created production environment templates
 - [x] Cleaned up production dependencies
 - [x] Tested local build process
 
 ### 2. **Build Verification**
-- [x] Client build: ✅ **SUCCESS** (with minor warnings)
+- [x] Frontend build: ✅ **SUCCESS** (with minor warnings)
 - [x] Server startup: ✅ **SUCCESS** (health check passing)
 - [x] Dependencies: ✅ **INSTALLED**
 
@@ -46,8 +46,19 @@ SUPPORT_EMAIL=trailverseteam@gmail.com
 WEBSITE_URL=https://www.nationalparksexplorerusa.com
 CLIENT_URL=https://www.nationalparksexplorerusa.com
 
-# Optional
-OPENWEATHER_API_KEY=your-openweather-api-key
+# Next.js public client variables
+NEXT_PUBLIC_API_URL=/api
+NEXT_PUBLIC_APP_URL=https://www.nationalparksexplorerusa.com
+NEXT_PUBLIC_APP_ENV=production
+NEXT_PUBLIC_APP_NAME=TrailVerse
+NEXT_PUBLIC_NPS_API_KEY=your-nps-api-key
+NEXT_PUBLIC_OPENWEATHER_API_KEY=your-openweather-api-key
+NEXT_PUBLIC_GMAPS_WEB_KEY=your-google-maps-browser-key
+NEXT_PUBLIC_GA_TRACKING_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_ADMIN_EMAIL=trailverseteam@gmail.com
+NEXT_PUBLIC_WS_URL=https://trailverse.onrender.com
+
+# Optional backend tuning
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=1000
 RATE_LIMIT_AUTH_MAX=50
@@ -62,10 +73,10 @@ RATE_LIMIT_AUTH_MAX=50
 2. Connect GitHub repository
 3. Import project
 4. Configure build settings:
-   - **Framework Preset**: Other
-   - **Build Command**: `cd client && npm run build`
-   - **Output Directory**: `client/build`
-   - **Install Command**: `npm run install:all`
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `next-frontend`
+   - **Build Command**: `npm run build`
+   - **Install Command**: `npm install`
 
 ### **2. Environment Variables**
 1. Go to Project Settings → Environment Variables
@@ -123,7 +134,7 @@ RATE_LIMIT_AUTH_MAX=50
 3. Test database connectivity
 4. Check API rate limits
 
-### **If Client Issues:**
+### **If Frontend Issues:**
 1. Clear browser cache
 2. Check console for errors
 3. Verify API endpoints are accessible

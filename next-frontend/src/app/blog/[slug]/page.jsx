@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
@@ -10,382 +10,154 @@ import LikeFavorite from '@/components/blog/LikeFavorite';
 import ShareButtons from '@/components/common/ShareButtons';
 import RelatedPosts from '@/components/blog/RelatedPosts';
 import TableOfContents from '@/components/blog/TableOfContents';
-import { useAuth } from '@/context/AuthContext';
 import blogService from '@/services/blogService';
 import { logBlogView } from '@/utils/analytics';
-import { Calendar, Clock, Eye, ArrowLeft } from '@components/icons';
+import { injectHeadingIdsIntoHtml, parseBlogHeadingsFromHtml } from '@/utils/blogHeadings';
+import { Calendar, Clock, Eye, ArrowLeft, BookOpen } from '@components/icons';
 import '@/styles/blog-prose.css';
 
-// Component to render TOC after content is rendered (but display it before content)
-const TableOfContentsWrapper = ({ content, postId }) => {
-  const [headings, setHeadings] = useState([]);
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    // First, try to detect headings from HTML string (for faster display)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-
-    const tempHeadings = [];
-    const standardHeadings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
-
-    standardHeadings.forEach((heading, index) => {
-      const text = heading.textContent || heading.innerText;
-      if (!text || !text.trim()) return;
-
-      const level = parseInt(heading.tagName.charAt(1));
-      const sanitizedText = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const id = `heading-${index}-${sanitizedText}`;
-
-      tempHeadings.push({
-        id: id,
-        text: text.trim(),
-        level: level
-      });
-    });
-
-    // Also look for all-caps headings in HTML string (for existing posts)
-    // Only if we have NO standard headings
-    if (standardHeadings.length === 0) {
-      const allElements = tempDiv.querySelectorAll('p, div');
-      const seenTexts = new Set(tempHeadings.map(h => h.text));
-      let headingIndex = tempHeadings.length;
-
-      allElements.forEach((element) => {
-        // Skip if it's inside a list or table
-        let parent = element.parentElement;
-        while (parent && parent !== tempDiv) {
-          if (parent.tagName === 'LI' || parent.tagName === 'TD' || parent.tagName === 'TH' || parent.tagName === 'UL' || parent.tagName === 'OL') {
-            return;
-          }
-          parent = parent.parentElement;
-        }
-
-        const text = (element.textContent || element.innerText).trim();
-        if (!text || text.length < 5) return;
-        if (seenTexts.has(text)) return;
-
-        // STRICT: Only all-caps headings
-        const isAllCaps = text === text.toUpperCase() && text.length > 5;
-        const words = text.split(/\s+/);
-        const isShortHeading = words.length <= 12 && text.length < 150;
-
-        // Must NOT contain sentence-ending punctuation
-        const hasEndingPunctuation = text.includes('.') || text.includes('!') || text.includes('?');
-
-        // Remove emojis for cleaner detection
-        const textWithoutEmojis = text.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-        const textOnly = textWithoutEmojis.replace(/[^\w\s]/g, '');
-
-        // Skip if it contains common sentence words (likely not a heading)
-        const hasSentenceWords = text.toLowerCase().includes(' the ') ||
-                                 text.toLowerCase().includes(' a ') ||
-                                 text.toLowerCase().includes(' an ') ||
-                                 text.toLowerCase().includes(' is ') ||
-                                 text.toLowerCase().includes(' are ');
-
-        // Check if it looks like a heading: all caps, short, no punctuation, not a sentence
-        if (isAllCaps && isShortHeading && !hasEndingPunctuation && !hasSentenceWords &&
-            textOnly.length >= 5 && words.length >= 2) {
-          const sanitizedText = textWithoutEmojis.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          const id = `heading-${headingIndex}-${sanitizedText}`;
-
-          tempHeadings.push({
-            id: id,
-            text: textWithoutEmojis,
-            level: 2
-          });
-          headingIndex++;
-          seenTexts.add(text);
-        }
-      });
-    }
-
-    // If we found headings in HTML, use them immediately
-    if (tempHeadings.length > 0) {
-      setHeadings(tempHeadings);
-      setIsReady(true);
-    }
-
-    // Then wait for DOM to be ready and refine detection
-    const timer = setTimeout(() => {
-      const blogProse = document.querySelector('.blog-prose');
-      if (!blogProse) {
-        // If still no headings from HTML parsing, keep the ones we found
-        if (tempHeadings.length > 0) {
-          setHeadings(tempHeadings);
-          setIsReady(true);
-        }
-        return;
-      }
-
-      const detectedHeadings = [];
-
-      // Find standard headings in rendered DOM
-      const renderedStandardHeadings = blogProse.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      renderedStandardHeadings.forEach((heading, index) => {
-        if (!heading.id) {
-          const text = heading.textContent || heading.innerText;
-          const sanitizedText = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          const id = `heading-${index}-${sanitizedText}`;
-          heading.id = id;
-        }
-
-        const text = heading.textContent || heading.innerText;
-        const level = parseInt(heading.tagName.charAt(1));
-        detectedHeadings.push({
-          id: heading.id,
-          text: text.trim(),
-          level: level
-        });
-      });
-
-      // If no standard headings, look for all-caps section titles ONLY
-      // DO NOT detect bold text in body - only actual section headings
-      if (renderedStandardHeadings.length === 0) {
-        const allElements = blogProse.querySelectorAll('p, div');
-        let headingIndex = 0;
-        const seenTexts = new Set();
-
-        allElements.forEach((element) => {
-          // Skip if it's inside a list, table, or other nested structure
-          let parent = element.parentElement;
-          while (parent && parent !== blogProse) {
-            if (parent.tagName === 'LI' || parent.tagName === 'TD' || parent.tagName === 'TH' ||
-                parent.tagName === 'UL' || parent.tagName === 'OL' || parent.tagName === 'TABLE') {
-              return;
-            }
-            parent = parent.parentElement;
-          }
-
-          if (element.id || !element.textContent) return;
-
-          const text = element.textContent.trim();
-          if (text.length < 5) return;
-
-          // Skip if we've already seen this text
-          if (seenTexts.has(text)) return;
-
-          // STRICT: ONLY detect all-caps standalone section titles
-          // Must be: all caps + short + no punctuation + standalone paragraph/div
-          const isAllCaps = text === text.toUpperCase() && text.length > 5;
-          const words = text.split(/\s+/);
-          const isShortHeading = words.length <= 12 && text.length < 150;
-
-          // Must NOT contain periods, exclamation marks, or question marks (not a sentence)
-          const hasEndingPunctuation = text.includes('.') || text.includes('!') || text.includes('?');
-
-          // Must be a standalone paragraph or div (not inline)
-          const isStandalone = element.tagName === 'P' || element.tagName === 'DIV';
-
-          // Check if it's followed by content (list, another paragraph, etc.) - indicates section heading
-          const nextSibling = element.nextElementSibling;
-          const hasListAfter = nextSibling && (nextSibling.tagName === 'UL' || nextSibling.tagName === 'OL');
-          const hasContentAfter = nextSibling && (nextSibling.tagName === 'P' || nextSibling.tagName === 'DIV');
-
-          // Check if previous sibling suggests this is a section break
-          const prevSibling = element.previousElementSibling;
-          const isAfterParagraph = prevSibling && (prevSibling.tagName === 'P' || prevSibling.tagName === 'DIV');
-
-          // Remove emojis for cleaner detection
-          const textWithoutEmojis = text.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-          const textOnly = textWithoutEmojis.replace(/[^\w\s]/g, '');
-
-          // Skip if it contains common sentence words (likely not a heading)
-          const hasSentenceWords = text.toLowerCase().includes(' the ') ||
-                                   text.toLowerCase().includes(' a ') ||
-                                   text.toLowerCase().includes(' an ') ||
-                                   text.toLowerCase().includes(' is ') ||
-                                   text.toLowerCase().includes(' are ') ||
-                                   text.toLowerCase().includes(' was ') ||
-                                   text.toLowerCase().includes(' were ') ||
-                                   text.toLowerCase().includes(' this ') ||
-                                   text.toLowerCase().includes(' that ');
-
-          // STRICT detection: Only all-caps standalone section titles
-          // Must be: all caps + short + no punctuation + standalone + followed by content + not a sentence
-          const looksLikeHeading = (
-            isAllCaps &&
-            isShortHeading &&
-            !hasEndingPunctuation &&
-            isStandalone &&
-            !hasSentenceWords &&
-            textOnly.length >= 5 && // At least 5 letters
-            words.length >= 2 && // At least 2 words
-            (hasListAfter || hasContentAfter || isAfterParagraph) // Has content before/after
-          );
-
-          if (looksLikeHeading) {
-            // Skip if it's just numbers, symbols, or emojis
-            if (/^[\d\s\-•]+$/.test(textWithoutEmojis)) return;
-
-            const sanitizedText = textWithoutEmojis.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            const id = `heading-${headingIndex}-${sanitizedText}`;
-            element.id = id;
-
-            seenTexts.add(text);
-
-            detectedHeadings.push({
-              id: id,
-              text: textWithoutEmojis || text,
-              level: 2 // All-caps headings are typically H2
-            });
-            headingIndex++;
-          }
-        });
-      }
-
-      // Update with detected headings (prefer DOM detected ones)
-      if (detectedHeadings.length > 0) {
-        setHeadings(detectedHeadings);
-      } else if (tempHeadings.length > 0) {
-        // Fallback to HTML parsed headings
-        setHeadings(tempHeadings);
-      }
-
-      setIsReady(true);
-    }, 300); // Shorter delay since we already have HTML parsed headings
-
-    return () => clearTimeout(timer);
-  }, [content]);
-
-  // Show TOC immediately if we have headings from HTML parsing, otherwise wait
-  if (!isReady && headings.length === 0) return null;
-  if (headings.length === 0) return null;
-
-  return (
-    <div className="mb-8">
-      <TableOfContents headings={headings} />
+const BlogPostSkeleton = () => (
+  <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <Header />
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div className="h-5 w-28 rounded-full animate-pulse mb-8" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-8 w-24 rounded-full animate-pulse mb-6" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-14 max-w-4xl rounded-3xl animate-pulse mb-4" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-8 max-w-3xl rounded-3xl animate-pulse mb-10" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-[28rem] rounded-[2rem] animate-pulse mb-12" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-8">
+        <div className="hidden xl:block h-64 rounded-3xl animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+        <div className="space-y-4">
+          {Array.from({ length: 7 }).map((_, index) => (
+            <div key={index} className="h-6 rounded-2xl animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          ))}
+        </div>
+      </div>
     </div>
-  );
-};
+  </div>
+);
+
+const BlogPostNotFound = () => (
+  <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <Header />
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-20 text-center">
+      <div
+        className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
+        style={{ backgroundColor: 'var(--surface)' }}
+      >
+        <BookOpen className="h-9 w-9" style={{ color: 'var(--text-secondary)' }} />
+      </div>
+      <h1 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        This story isn&apos;t available
+      </h1>
+      <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
+        The post may have moved, been unpublished, or the link is incomplete.
+      </p>
+      <Link
+        href="/blog"
+        className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold transition"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-primary)'
+        }}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Blog
+      </Link>
+    </div>
+  </div>
+);
 
 const BlogPostPage = () => {
   const params = useParams();
-  const slug = params.slug;
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const articleRef = useRef(null);
+  const contentRef = useRef(null);
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [readingProgress, setReadingProgress] = useState(0);
-  const articleRef = useRef(null);
-  const contentRef = useRef(null);
 
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const data = await blogService.getPostBySlug(slug);
+        const data = await blogService.getPostBySlug(params.slug);
         setPost(data);
 
         if (data) {
-          // Track blog view
           logBlogView(data.title, data._id, data.category || 'general');
         }
-      } catch (error) {
-        // Error fetching post - will show not found state
       } finally {
         setLoading(false);
       }
     };
 
     fetchPost();
-  }, [slug]);
+  }, [params.slug]);
 
-  // Reading progress bar
+  const headings = useMemo(() => parseBlogHeadingsFromHtml(post?.content || ''), [post?.content]);
+  const contentWithHeadingIds = useMemo(
+    () => injectHeadingIdsIntoHtml(post?.content || '', headings),
+    [headings, post?.content]
+  );
+
   useEffect(() => {
     const handleScroll = () => {
-      if (!contentRef.current || !articleRef.current) return;
+      if (!articleRef.current) {
+        return;
+      }
 
-      const articleTop = articleRef.current.offsetTop;
-      const articleHeight = articleRef.current.offsetHeight;
-      const windowHeight = window.innerHeight;
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-      // Calculate reading progress
-      const scrollableHeight = articleHeight - windowHeight + articleTop;
-      const scrolled = Math.max(0, scrollTop - articleTop);
-      const progress = Math.min(100, (scrolled / scrollableHeight) * 100);
-      setReadingProgress(progress);
+      const rect = articleRef.current.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const consumed = Math.min(Math.max(-rect.top, 0), Math.max(total, 0));
+      const nextProgress = total > 0 ? (consumed / total) * 100 : 0;
+      setReadingProgress(nextProgress);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial calculation
-
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [post]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <Header />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-green)' }}></div>
-        </div>
-      </div>
-    );
-  }
+  const formatDate = (date) => new Date(date).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
 
-  if (!post) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <Header />
-        <div className="text-center py-12">
-          <p style={{ color: 'var(--text-secondary)' }}>Blog post not found</p>
-          <Link href="/blog" className="mt-4 inline-block transition" style={{ color: 'var(--accent-green)' }} onMouseEnter={(e) => e.target.style.opacity = '0.8'} onMouseLeave={(e) => e.target.style.opacity = '1'}>
-            &larr; Back to Blog
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const handleTagClick = (tag) => {
-    // Navigate to blog page with tag filter
-    router.push(`/blog?tag=${encodeURIComponent(tag)}`);
-  };
-
-  // Helper to get absolute image URL
   const getAbsoluteImageUrl = (imgUrl) => {
-    if (!imgUrl || imgUrl.trim() === '') {
+    if (!imgUrl || imgUrl.trim() === '' || imgUrl.startsWith('data:')) {
       return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
     }
     if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
       return imgUrl;
     }
-    if (imgUrl.startsWith('data:')) {
-      return 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg';
-    }
     const baseUrl = 'https://www.nationalparksexplorerusa.com';
-    if (imgUrl.startsWith('/')) {
-      return `${baseUrl}${imgUrl}`;
-    }
-    return `${baseUrl}/${imgUrl}`;
+    return imgUrl.startsWith('/') ? `${baseUrl}${imgUrl}` : `${baseUrl}/${imgUrl}`;
   };
 
-  // Calculate word count from content
-  const wordCount = post.content ? post.content.split(/\s+/).filter(word => word.length > 0).length : 0;
+  if (loading) {
+    return <BlogPostSkeleton />;
+  }
+
+  if (!post) {
+    return <BlogPostNotFound />;
+  }
+
+  const wordCount = post.content ? post.content.split(/\s+/).filter(Boolean).length : 0;
 
   const blogStructuredData = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
-    image: post.featuredImage ? [
-      {
-        '@type': 'ImageObject',
-        url: getAbsoluteImageUrl(post.featuredImage),
-        width: 1200,
-        height: 630
-      }
-    ] : 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
+    image: post.featuredImage ? [{
+      '@type': 'ImageObject',
+      url: getAbsoluteImageUrl(post.featuredImage),
+      width: 1200,
+      height: 630
+    }] : 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
     author: {
       '@type': 'Person',
       name: post.author || 'TrailVerse Team'
@@ -407,198 +179,178 @@ const BlogPostPage = () => {
       '@id': `https://www.nationalparksexplorerusa.com/blog/${post.slug}`
     },
     articleSection: post.category || 'Travel',
-    keywords: post.tags && post.tags.length > 0 ? post.tags.join(', ') : undefined,
-    wordCount: wordCount,
+    keywords: post.tags?.length ? post.tags.join(', ') : undefined,
+    wordCount,
     inLanguage: 'en-US',
     url: `https://www.nationalparksexplorerusa.com/blog/${post.slug}`
   };
 
-  // Breadcrumb structured data
   const breadcrumbStructuredData = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: 'https://www.nationalparksexplorerusa.com'
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'Blog',
-        item: 'https://www.nationalparksexplorerusa.com/blog'
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: post.title,
-        item: `https://www.nationalparksexplorerusa.com/blog/${post.slug}`
-      }
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.nationalparksexplorerusa.com' },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://www.nationalparksexplorerusa.com/blog' },
+      { '@type': 'ListItem', position: 3, name: post.title, item: `https://www.nationalparksexplorerusa.com/blog/${post.slug}` }
     ]
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-
-      {/* JSON-LD Structured Data */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogStructuredData) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbStructuredData) }} />
 
       <Header />
 
-      {/* Reading Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-50" style={{ backgroundColor: 'transparent' }}>
+      <div className="fixed top-0 left-0 right-0 h-0.5 z-50 bg-transparent">
         <div
           className="h-full transition-all duration-150 ease-out"
           style={{
             width: `${readingProgress}%`,
-            backgroundColor: 'var(--accent-green)',
-            boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)'
+            backgroundColor: 'rgba(34, 197, 94, 0.85)'
           }}
         />
       </div>
 
-      <article ref={articleRef} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        {/* Back Button */}
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-2 mb-6 transition"
-          style={{ color: 'var(--text-secondary)' }}
-          onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
-          onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Blog
-        </Link>
+      <article ref={articleRef} className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 lg:py-12">
+        <div className="mb-10 lg:mb-14 max-w-[88rem]">
+          <Link href="/blog" className="inline-flex items-center gap-2 mb-6" style={{ color: 'var(--text-secondary)' }}>
+            <ArrowLeft className="h-4 w-4" />
+            Back to Blog
+          </Link>
 
-        {/* Category Badge */}
-        <div className="mb-4">
-          <span
-            className="inline-block px-4 py-1 rounded-full text-sm font-semibold"
-            style={{
-              backgroundColor: 'var(--accent-green)',
-              color: 'white'
-            }}
-          >
-            {post.category}
-          </span>
-        </div>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <span className="inline-block px-4 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
+              {post.category}
+            </span>
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              {wordCount.toLocaleString()} words
+            </span>
+          </div>
 
-        {/* Title */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight" style={{ color: 'var(--text-primary)' }}>
-          {post.title}
-        </h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-[5rem] font-bold mb-6 leading-[0.98] tracking-tight max-w-6xl" style={{ color: 'var(--text-primary)' }}>
+            {post.title}
+          </h1>
 
-        {/* Excerpt/Lead Paragraph */}
-        {post.excerpt && (
-          <div className="mb-8">
-            <p className="text-lg sm:text-xl md:text-2xl leading-relaxed font-medium" style={{ color: 'var(--text-secondary)' }}>
+          {post.excerpt && (
+            <p className="text-lg sm:text-xl md:text-[1.55rem] leading-relaxed font-medium mb-8 max-w-5xl" style={{ color: 'var(--text-secondary)' }}>
               {post.excerpt}
             </p>
-          </div>
-        )}
+          )}
 
-        {/* Meta Info */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm mb-8 pb-6" style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {post.author}</span>
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
-              <span>{formatDate(post.publishedAt)}</span>
+          <div
+            className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 text-sm pb-6"
+            style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+          >
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {post.author}</span>
+              <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /><span>{formatDate(post.publishedAt)}</span></div>
+              <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /><span>{post.readTime} min read</span></div>
+              <div className="flex items-center gap-1.5"><Eye className="h-4 w-4" /><span>{post.views?.toLocaleString() || 0} views</span></div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
-              <span>{post.readTime} min read</span>
+            <div className="flex-shrink-0">
+              <ShareButtons
+                url={`https://www.nationalparksexplorerusa.com/blog/${post.slug}`}
+                title={post.title}
+                description={post.excerpt}
+                image={post.featuredImage}
+              />
             </div>
-            <div className="flex items-center gap-1.5">
-              <Eye className="h-4 w-4" />
-              <span>{post.views?.toLocaleString() || 0} views</span>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <ShareButtons
-              url={`https://www.nationalparksexplorerusa.com/blog/${post.slug}`}
-              title={post.title}
-              description={post.excerpt}
-              image={post.featuredImage}
-            />
           </div>
         </div>
 
-        {/* Featured Image */}
         {post.featuredImage && (
-          <div className="mb-10 relative">
-            <OptimizedImage
-              src={post.featuredImage}
-              alt={post.title}
-              className="w-full aspect-video object-cover rounded-xl shadow-lg"
-            />
+          <div className="mb-10 lg:mb-14 max-w-[88rem]">
+            <OptimizedImage src={post.featuredImage} alt={post.title} className="w-full aspect-[16/8.5] object-cover rounded-[2rem] shadow-lg" />
           </div>
         )}
 
-        {/* Table of Contents - Render BEFORE content so it appears at the beginning */}
-        {post.content && (
-          <TableOfContentsWrapper content={post.content} postId={post._id} />
-        )}
+        <div className="grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)] gap-8 xl:gap-10 2xl:gap-12 items-start">
+          <aside className="xl:order-1 xl:pr-2 2xl:pr-4">
+            {headings.length > 0 && (
+              <TableOfContents headings={headings} sticky containerRef={contentRef} />
+            )}
+          </aside>
 
-        {/* Content */}
-        <div
-          ref={contentRef}
-          className="blog-prose max-w-none mb-12"
-          style={{ color: 'var(--text-primary)' }}
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
-
-        {/* Like and Favorite Buttons */}
-        <LikeFavorite post={post} onUpdate={setPost} isPublic={false} />
-
-        {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
-          <div className="mt-12 pt-8 pb-8" style={{ borderTop: '1px solid var(--border)' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {post.tags.map((tag, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleTagClick(tag)}
-                  className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:scale-105"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'var(--surface-hover)';
-                    e.target.style.color = 'var(--text-primary)';
-                    e.target.style.borderColor = 'var(--accent-green)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'var(--surface)';
-                    e.target.style.color = 'var(--text-secondary)';
-                    e.target.style.borderColor = 'var(--border)';
-                  }}
-                >
-                  #{tag}
-                </button>
-              ))}
+          <div className="xl:order-2 min-w-0 max-w-[72rem]">
+            <div
+              className="rounded-[2rem] px-5 py-8 sm:px-8 lg:px-10 xl:px-12 2xl:px-14 xl:py-10 mb-12"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <div
+                ref={contentRef}
+                className="blog-prose mb-0"
+                style={{ color: 'var(--text-primary)', maxWidth: 'none' }}
+                dangerouslySetInnerHTML={{ __html: contentWithHeadingIds }}
+              />
             </div>
+
+            <div
+              className="rounded-[1.75rem] p-6 sm:p-8 mb-10"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                      Continue The Trail
+                    </h2>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      Save the post, react to it, or jump into related topics.
+                    </p>
+                  </div>
+                  <LikeFavorite post={post} onUpdate={setPost} />
+                </div>
+
+                {post.tags?.length > 0 && (
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                    <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Tags</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {post.tags.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => router.push(`/blog?tag=${encodeURIComponent(tag)}`)}
+                          className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:scale-105"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            color: 'var(--text-secondary)',
+                            border: '1px solid var(--border)'
+                          }}
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-12">
+              <CommentSection postId={post._id} />
+            </div>
+
+            <RelatedPosts currentPostId={post._id} category={post.category} tags={post.tags || []} />
           </div>
-        )}
-
-        {/* Comments Section */}
-        <div className="mt-12">
-          <CommentSection blogId={post._id} isPublic={false} />
         </div>
-
-        {/* Related Posts */}
-        <RelatedPosts
-          currentPostId={post._id}
-          category={post.category}
-          tags={post.tags || []}
-          isPublic={false}
-        />
       </article>
     </div>
   );

@@ -44,13 +44,13 @@ const DailyFeedLoader = ({ isGenerating = false } = {}) => {
 
   const getPhaseIcon = () => {
     const icons = [
-      <Mountain className="w-8 h-8 text-white" />,
-      <Sun className="w-8 h-8 text-white" />,
-      <Star className="w-8 h-8 text-white" />,
-      <Sparkles className="w-8 h-8 text-white" />,
-      <Compass className="w-8 h-8 text-white" />
+      <Mountain key="mountain" className="w-8 h-8 text-white" />,
+      <Sun key="sun" className="w-8 h-8 text-white" />,
+      <Star key="star" className="w-8 h-8 text-white" />,
+      <Sparkles key="sparkles" className="w-8 h-8 text-white" />,
+      <Compass key="compass" className="w-8 h-8 text-white" />
     ];
-    return icons[loadingPhase] || <Sparkles className="w-8 h-8 text-white" />;
+    return icons[loadingPhase] || <Sparkles key="fallback-sparkles" className="w-8 h-8 text-white" />;
   };
 
   const getPhaseColor = () => {

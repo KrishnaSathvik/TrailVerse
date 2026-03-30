@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { generateAvatarCollection, clearAvatarCache } from '../../utils/avatarGenerator';
 import AvatarUpload from './AvatarUpload';
 import Button from '../common/Button';
-import { Save, X, RefreshCw } from '@components/icons';
+import { Save, X, RefreshCw, Sparkles, Upload } from '@components/icons';
 
 /**
  * Unified Avatar Selector - Combines generated avatars with image upload
@@ -55,28 +55,30 @@ const UnifiedAvatarSelector = ({
     <div className={`unified-avatar-selector ${className}`}>
       {/* Tab Navigation */}
       {(showGenerated && showUpload) && (
-        <div className="flex mb-6 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex mb-6 border-b overflow-x-auto" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => setActiveTab('generated')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
+            className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
               activeTab === 'generated'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent opacity-60 hover:opacity-100'
             }`}
             style={activeTab !== 'generated' ? { color: 'var(--text-secondary)' } : {}}
           >
-            🎨 Generate Avatar
+            <Sparkles className="w-4 h-4" />
+            Generate Avatar
           </button>
           <button
             onClick={() => setActiveTab('upload')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
+            className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all ${
               activeTab === 'upload'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent opacity-60 hover:opacity-100'
             }`}
             style={activeTab !== 'upload' ? { color: 'var(--text-secondary)' } : {}}
           >
-            📸 Upload Image
+            <Upload className="w-4 h-4" />
+            Upload Image
           </button>
         </div>
       )}

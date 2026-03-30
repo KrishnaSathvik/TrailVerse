@@ -1,269 +1,200 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { List } from '@components/icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import { List, ChevronDown } from '@components/icons';
+import { applyHeadingIdsToElement, parseBlogHeadingsFromHtml } from '@/utils/blogHeadings';
 import './TableOfContents.css';
 
-const TableOfContents = ({ content, onContentUpdate, className = '', headings: providedHeadings }) => {
-  const [processedContent, setProcessedContent] = useState(content);
+const findHeadingElement = (id, container) => {
+  if (!id) {
+    return null;
+  }
 
+  if (container?.querySelector) {
+    try {
+      const escapedId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(id) : id;
+      const scopedMatch = container.querySelector(`#${escapedId}`);
+      if (scopedMatch) {
+        return scopedMatch;
+      }
+    } catch {
+      // Fall back to document lookup when selector escaping is unavailable.
+    }
+  }
+
+  return document.getElementById(id);
+};
+
+const scrollToHeading = (id, containerRef, setActiveId) => {
+  const element = findHeadingElement(id, containerRef?.current);
+  if (!element) {
+    return false;
+  }
+
+  setActiveId(id);
+
+  if (window.location.hash !== `#${id}`) {
+    window.history.pushState(null, '', `#${id}`);
+  }
+
+  element.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+
+  element.style.backgroundColor = 'rgba(16, 185, 129, 0.16)';
+  element.style.transition = 'background-color 0.3s ease';
+  window.setTimeout(() => {
+    element.style.backgroundColor = '';
+  }, 1000);
+
+  return true;
+};
+
+const TableOfContents = ({
+  content,
+  className = '',
+  headings: providedHeadings,
+  sticky = false,
+  containerRef = null
+}) => {
+  const [activeId, setActiveId] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    return window.innerWidth >= 1024;
+  });
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    return window.innerWidth >= 1024;
+  });
   const headings = useMemo(() => {
-    // If headings are provided directly, use them (for blog post pages)
-    if (providedHeadings && providedHeadings.length > 0) {
+    if (providedHeadings?.length) {
       return providedHeadings;
     }
-    
-    // Otherwise, parse from content
-    if (!content) return [];
-
-    // Create a temporary div to parse HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-
-    const tocItems = [];
-    let headingIndex = 0;
-
-    // Find all standard headings (h1, h2, h3, h4, h5, h6)
-    const standardHeadings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    
-    // Process standard headings first
-    standardHeadings.forEach((heading) => {
-      const text = heading.textContent || heading.innerText;
-      if (!text || !text.trim()) return;
-      
-      const level = parseInt(heading.tagName.charAt(1));
-      const sanitizedText = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const id = `heading-${headingIndex}-${sanitizedText}`;
-      
-      tocItems.push({
-        id: id,
-        text: text.trim(),
-        level: level,
-        originalHeading: heading,
-        isStandard: true
-      });
-      headingIndex++;
-    });
-
-    // If we have standard headings, use those and return early
-    if (standardHeadings.length > 0) {
-      return tocItems;
-    }
-
-    // For existing posts without proper headings, try to detect them
-    // Look for patterns that indicate section headings:
-    
-    // 1. All-caps text that's short (likely a heading)
-    const allElements = tempDiv.querySelectorAll('p, div, span, strong, b, h1, h2, h3, h4, h5, h6');
-    const seenTexts = new Set();
-    
-    allElements.forEach((element) => {
-      const text = element.textContent || element.innerText;
-      if (!text || !text.trim()) return;
-      
-      const trimmedText = text.trim();
-      
-      // Skip if already processed
-      if (seenTexts.has(trimmedText)) return;
-      seenTexts.add(trimmedText);
-      
-      // Skip if too long (probably not a heading)
-      if (trimmedText.length > 100) return;
-      
-      // Skip if it's just a single word and not all caps
-      const words = trimmedText.split(/\s+/);
-      if (words.length === 1 && trimmedText !== trimmedText.toUpperCase()) return;
-      
-      // Check for heading patterns:
-      const isAllCaps = trimmedText === trimmedText.toUpperCase() && trimmedText.length > 5;
-      const isBold = element.tagName === 'STRONG' || element.tagName === 'B';
-      const isShortHeading = words.length <= 10 && trimmedText.length < 150;
-      
-      // Also check if it's followed by a list or other content (sign of a section heading)
-      const nextSibling = element.nextElementSibling;
-      const hasListAfter = nextSibling && (nextSibling.tagName === 'UL' || nextSibling.tagName === 'OL');
-      
-      // Pattern: All caps OR (bold + short) OR (short + followed by list)
-      if ((isAllCaps && isShortHeading) || (isBold && isShortHeading) || (isShortHeading && hasListAfter)) {
-        // Skip if it's just a number or symbol
-        if (/^[\d\s\-•]+$/.test(trimmedText)) return;
-        
-        // Determine level - all caps is usually H2, bold is H3
-        let level = isAllCaps ? 2 : 3;
-        
-        const sanitizedText = trimmedText.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const id = `heading-${headingIndex}-${sanitizedText}`;
-        
-        tocItems.push({
-          id: id,
-          text: trimmedText,
-          level: level,
-          originalHeading: element,
-          isStandard: false
-        });
-        headingIndex++;
-      }
-    });
-
-    // Also try to find headings by looking for text patterns
-    // Look for lines that are all caps and separated by other content
-    if (tocItems.length === 0) {
-      const textContent = tempDiv.textContent || '';
-      const lines = textContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      
-      lines.forEach((line, index) => {
-        // Skip if it's too long
-        if (line.length > 100) return;
-        
-        // Check if it's all caps and looks like a heading
-        const isAllCaps = line === line.toUpperCase() && line.length > 5;
-        const words = line.split(/\s+/);
-        const isShortHeading = words.length <= 10;
-        
-        if (isAllCaps && isShortHeading && !seenTexts.has(line)) {
-          // Skip if it's just numbers or symbols
-          if (/^[\d\s\-•]+$/.test(line)) return;
-          
-          const sanitizedText = line.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          const id = `heading-${headingIndex}-${sanitizedText}`;
-          
-          // Try to find the element in the DOM
-          let foundElement = null;
-          allElements.forEach(el => {
-            if ((el.textContent || el.innerText).trim() === line) {
-              foundElement = el;
-            }
-          });
-          
-          tocItems.push({
-            id: id,
-            text: line,
-            level: 2,
-            originalHeading: foundElement || tempDiv,
-            isStandard: false
-          });
-          headingIndex++;
-          seenTexts.add(line);
-        }
-      });
-    }
-
-    return tocItems;
+    return parseBlogHeadingsFromHtml(content);
   }, [content, providedHeadings]);
 
-  // Process content to add IDs to headings (both standard and detected ones)
   useEffect(() => {
-    if (!content || headings.length === 0) {
-      setProcessedContent(content);
+    if (typeof window === 'undefined') {
       return;
     }
 
-    // Create a temporary div to modify the content
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-
-    // Add IDs to all detected headings (both standard and non-standard)
-    headings.forEach((headingItem) => {
-      const headingElement = headingItem.originalHeading;
-      if (headingElement && !headingElement.id) {
-        headingElement.id = headingItem.id;
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 1024;
+      setIsDesktop(desktop);
+      if (desktop) {
+        setIsOpen(true);
       }
-    });
+    };
 
-    const updatedContent = tempDiv.innerHTML;
-    setProcessedContent(updatedContent);
+    handleResize();
+    window.addEventListener('resize', handleResize, { passive: true });
 
-    // Notify parent component if content was modified
-    if (onContentUpdate && updatedContent !== content) {
-      onContentUpdate(updatedContent);
-    }
-  }, [content, headings, onContentUpdate]);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const scrollToHeading = (id) => {
-    // Try to find in blog prose content first (for blog post pages)
-    const blogProse = document.querySelector('.blog-prose');
-    if (blogProse) {
-      const heading = blogProse.querySelector(`#${id}`);
-      if (heading) {
-        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Highlight the heading briefly
-        heading.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-        heading.style.transition = 'background-color 0.3s ease';
-        setTimeout(() => {
-          heading.style.backgroundColor = '';
-        }, 1000);
-        return;
-      }
-    }
-
-    // Try to find element in the editor (for admin pages)
-    const editorElement = document.querySelector('.editor-content');
-    if (editorElement) {
-      const heading = editorElement.querySelector(`#${id}`);
-      if (heading) {
-        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Highlight the heading briefly
-        heading.style.backgroundColor = 'var(--accent-green)';
-        heading.style.transition = 'background-color 0.3s ease';
-        setTimeout(() => {
-          heading.style.backgroundColor = '';
-        }, 1000);
-        return;
-      }
-    }
-
-    // Fallback to document element
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Highlight briefly
-      element.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-      element.style.transition = 'background-color 0.3s ease';
-      setTimeout(() => {
-        element.style.backgroundColor = '';
-      }, 1000);
-    } else {
-      console.warn('⚠️ TableOfContents: Heading not found:', id);
-    }
-  };
-
-  // Debug logging (remove in production if needed)
   useEffect(() => {
-    if (content && headings.length === 0) {
-      console.log('🔍 TableOfContents: No headings found in content', {
-        contentLength: content.length,
-        contentPreview: content.substring(0, 200)
-      });
-    } else if (headings.length > 0) {
-      console.log('✅ TableOfContents: Found headings', {
-        count: headings.length,
-        headings: headings.map(h => ({ text: h.text, level: h.level }))
-      });
+    if (headings.length === 0) {
+      return;
     }
-  }, [content, headings]);
+
+    const container =
+      containerRef?.current ||
+      document.querySelector('.blog-prose') ||
+      document.querySelector('.tiptap') ||
+      document.querySelector('.editor-content');
+
+    applyHeadingIdsToElement(container, headings);
+  }, [containerRef, headings]);
+
+  useEffect(() => {
+    if (headings.length === 0) {
+      return;
+    }
+
+    const container = containerRef?.current;
+    const elements = headings
+      .map((heading) => findHeadingElement(heading.id, container))
+      .filter(Boolean);
+
+    if (elements.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
+
+        if (visibleEntries[0]?.target?.id) {
+          setActiveId(visibleEntries[0].target.id);
+        }
+      },
+      {
+        rootMargin: '-15% 0px -65% 0px',
+        threshold: [0.1, 0.35, 0.6]
+      }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [containerRef, headings]);
 
   if (headings.length === 0) {
     return null;
   }
 
   return (
-    <div className={`table-of-contents ${className}`}>
-      <div className="toc-header">
-        <List size={18} />
-        <h3 className="toc-title">Table of Contents</h3>
-      </div>
-      <nav className="toc-nav">
+    <div className={`table-of-contents ${sticky ? 'table-of-contents-sticky' : ''} ${className}`}>
+      {isDesktop ? (
+        <div className="toc-header toc-header-desktop">
+          <span className="toc-header-main">
+            <List size={18} />
+            <h3 className="toc-title">Table of Contents</h3>
+          </span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="toc-header toc-mobile-toggle"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((previous) => !previous)}
+        >
+          <span className="toc-header-main">
+            <List size={18} />
+            <h3 className="toc-title">Table of Contents</h3>
+          </span>
+          <span className="toc-header-button">
+            <ChevronDown size={18} className={`toc-chevron ${isOpen ? 'open' : ''}`} />
+          </span>
+        </button>
+      )}
+      <nav className={`toc-nav ${(isDesktop || isOpen) ? 'open' : 'collapsed'}`}>
         <ul className="toc-list">
           {headings.map((heading, index) => (
-            <li
-              key={`${heading.id}-${index}`}
-              className={`toc-item toc-level-${heading.level}`}
-            >
-              <button
-                onClick={() => scrollToHeading(heading.id)}
-                className="toc-link"
-                style={{ color: 'var(--text-secondary)' }}
+            <li key={`${heading.id}-${index}`} className={`toc-item toc-level-${heading.level}`}>
+              <a
+                href={`#${heading.id}`}
+                className={`toc-link ${activeId === heading.id ? 'active' : ''}`}
+                aria-current={activeId === heading.id ? 'location' : undefined}
+                onClick={(event) => {
+                  const didScroll = scrollToHeading(heading.id, containerRef, setActiveId);
+                  if (didScroll) {
+                    event.preventDefault();
+                  }
+                  if (!isDesktop) {
+                    setIsOpen(false);
+                  }
+                }}
               >
                 {heading.text}
-              </button>
+              </a>
             </li>
           ))}
         </ul>
@@ -273,4 +204,3 @@ const TableOfContents = ({ content, onContentUpdate, className = '', headings: p
 };
 
 export default TableOfContents;
-

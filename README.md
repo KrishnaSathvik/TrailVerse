@@ -4,8 +4,8 @@
 
 **Live Site:** [www.nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)
 
-[![Built with React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite)](https://vitejs.dev/)
+[![Built with React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://reactjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-8.1-47A248?logo=mongodb)](https://www.mongodb.com/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-4.1-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
@@ -224,8 +224,8 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
 
 2. **Install dependencies:**
    ```bash
-   # Install client dependencies
-   cd client
+   # Install frontend dependencies
+   cd next-frontend
    npm install
 
    # Install server dependencies
@@ -265,29 +265,29 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
    GMAPS_SERVER_KEY=your_server_api_key_ip_restricted
    
    # Client URL
-   CLIENT_URL=http://localhost:3001
+   CLIENT_URL=http://localhost:3000
    ```
 
-   **Frontend (`client/.env`):**
+   **Frontend (`next-frontend/.env.local`):**
    ```bash
    # API Configuration
-   VITE_API_URL=http://localhost:5001/api
-   
+   NEXT_PUBLIC_API_URL=http://localhost:5001/api
+
    # External APIs
-   REACT_APP_NPS_API_KEY=your_nps_api_key_here
-   
+   NEXT_PUBLIC_NPS_API_KEY=your_nps_api_key_here
+
    # Google Maps API
-   VITE_GMAPS_WEB_KEY=your_web_api_key_referrer_restricted
-   
+   NEXT_PUBLIC_GMAPS_WEB_KEY=your_web_api_key_referrer_restricted
+
    # Analytics
-   REACT_APP_GA_TRACKING_ID=G-XXXXXXXXXX
-   
+   NEXT_PUBLIC_GA_TRACKING_ID=G-XXXXXXXXXX
+
    # Application
-   REACT_APP_NAME=TrailVerse
-   REACT_APP_URL=http://localhost:3001
-   
+   NEXT_PUBLIC_APP_NAME=TrailVerse
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+
    # Environment
-   VITE_APP_ENV=development
+   NEXT_PUBLIC_APP_ENV=development
    ```
 
 4. **Start development servers:**
@@ -301,13 +301,13 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
    
    **Terminal 2 - Frontend:**
    ```bash
-   cd client
+   cd next-frontend
    npm run dev
    ```
-   Frontend will start at: **http://localhost:3001**
+   Frontend will start at: **http://localhost:3000**
 
 5. **Access the application:**
-   - **Frontend**: http://localhost:3001
+   - **Frontend**: http://localhost:3000
    - **Backend API**: http://localhost:5001/api
    - **API Health Check**: http://localhost:5001/health
 
@@ -317,7 +317,7 @@ TrailVerse is the **ultimate AI-powered platform** for exploring and planning tr
 
 ```
 TrailVerse/
-├── client/                       # React frontend (Vite)
+├── next-frontend/                # Next.js frontend
 │   ├── src/
 │   │   ├── components/           # Reusable UI components
 │   │   │   ├── ai-chat/         # AI chat interface
@@ -495,9 +495,7 @@ TrailVerse/
 │   │   └── 12 background images
 │   ├── tests/                   # Test files
 │   │   └── e2e/                 # E2E tests (Playwright)
-│   ├── vite.config.ts           # Vite configuration
-│   ├── tailwind.config.js       # Tailwind configuration
-│   ├── vitest.config.js         # Vitest configuration
+│   ├── vitest.config.mjs        # Vitest configuration
 │   ├── playwright.config.js     # Playwright configuration
 │   └── package.json
 │
@@ -639,17 +637,14 @@ TrailVerse/
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18.3** - Latest React with concurrent features and hooks
-- **Vite 5.4** - Lightning-fast build tool and dev server
+- **Next.js 16** - App Router frontend with SSR, routing, and bundling
+- **React 19** - UI library for interactive components
 - **Tailwind CSS 4.1** - Utility-first CSS framework with custom design system
-- **React Router 7.9** - Client-side routing with navigation guards
-- **TanStack Query 5.90** - Server state management, caching, and synchronization
-- **React Helmet Async 2.0** - Document head management for SEO
+- **TanStack Query 5.95** - Server state management, caching, and synchronization
 - **Socket.io Client 4.8** - Real-time WebSocket communication for live sync
-- **Lucide React 0.544** - Beautiful, consistent icon library (193 icons)
-- **Axios 1.12** - Promise-based HTTP client with interceptors
-- **React GA4 2.1** - Google Analytics 4 integration
-- **Web Vitals 2.1** - Core Web Vitals tracking
+- **Phosphor Icons 2.1** - Icon library used by the Next frontend
+- **Axios 1.14** - Promise-based HTTP client with interceptors
+- **React GA4 3.0** - Google Analytics 4 integration
 - **React Markdown 10.1** - Markdown rendering for blog content
 
 ### Backend
@@ -683,9 +678,9 @@ TrailVerse/
 - **Google Directions API** - Route building and navigation
 
 ### Development & Testing
-- **Vitest 2.1** - Fast unit testing framework with UI
+- **Vitest 3.2** - Fast unit testing framework for the Next frontend
 - **Testing Library 16.3** - Component testing utilities
-- **Playwright 1.49** - End-to-end testing automation
+- **Playwright 1.58** - End-to-end testing automation
 - **Jest 29.7** - Server-side testing framework
 - **ESLint** - Code linting and style enforcement
 - **MSW 2.6** - API mocking for tests
@@ -896,18 +891,15 @@ GET    /api/stats                    # Platform statistics
 
 ### Running Tests
 
-**Client Tests:**
+**Frontend Tests:**
 ```bash
-cd client
+cd next-frontend
 
 # Run all tests
 npm run test
 
-# Run with UI
-npm run test:ui
-
-# Run with coverage
-npm run test:coverage
+# Run in watch mode
+npm run test:watch
 
 # Run E2E tests
 npm run test:e2e
@@ -985,10 +977,10 @@ CLIENT_URL=https://www.nationalparksexplorerusa.com
 
 **Frontend:**
 ```bash
-VITE_API_URL=https://trailverse.onrender.com/api
-REACT_APP_GA_TRACKING_ID=G-XXXXXXXXXX
-VITE_GMAPS_WEB_KEY=your_production_web_key
-VITE_APP_ENV=production
+NEXT_PUBLIC_API_URL=https://trailverse.onrender.com/api
+NEXT_PUBLIC_GA_TRACKING_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_GMAPS_WEB_KEY=your_production_web_key
+NEXT_PUBLIC_APP_ENV=production
 ```
 
 ### Deployment Checklist
@@ -1013,25 +1005,26 @@ VITE_APP_ENV=production
 
 ### Root Scripts
 ```bash
-npm run start             # Start client in development
-npm run build             # Build client for production
+npm run dev               # Start frontend and backend together
+npm run dev:frontend      # Start Next.js frontend
+npm run dev:backend       # Start backend
+npm run start             # Start Next.js production server
+npm run build             # Build frontend for production
 npm run build:ci          # Build with CI environment
-npm test                  # Run client tests
-npm run test:ui           # Run Vitest UI
+npm test                  # Run frontend unit tests
 npm run e2e               # Run E2E tests
 npm run e2e:headed        # Run E2E tests headed
-npm run format            # Format code
 npm run lint              # Lint code
 ```
 
-### Client Scripts
+### Frontend Scripts
 ```bash
-npm run dev               # Start development server (Vite)
+npm run dev               # Start development server (Next.js)
 npm run build             # Build for production
-npm run preview           # Preview production build
-npm run test              # Run Vitest tests
+npm run start             # Start production build
+npm run test              # Run Vitest tests with coverage
+npm run test:watch        # Run Vitest in watch mode
 npm run test:e2e          # Run Playwright E2E tests
-npm run test:coverage     # Generate test coverage
 ```
 
 ### Server Scripts
@@ -1224,7 +1217,7 @@ This project is proprietary software. Unauthorized copying, modification, distri
 - **OpenAI** - For GPT-4 API access and excellent documentation
 - **Anthropic** - For Claude API access and streaming support
 - **React Team** - For the amazing React library and ecosystem
-- **Vite Team** - For the lightning-fast build tool
+- **Next.js Team** - For the App Router framework
 - **TanStack** - For the excellent Query library
 - **Tailwind CSS** - For the utility-first CSS framework
 - **Open Source Community** - For all the incredible tools and libraries

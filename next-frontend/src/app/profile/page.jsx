@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   User, Settings, Heart, Calendar, MapPin,
   Mail, Globe, Edit2, Save, X, Trash2,
@@ -35,13 +35,25 @@ import { getBestAvatar, generateRandomAvatar } from '@utils/avatarGenerator';
 
 const ProfilePage = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, userDataLoaded, updateUser } = useAuth();
   const { showToast } = useToast();
   const { subscribe, unsubscribe, subscribeToProfile } = useWebSocket();
   const { favorites, removeFavorite, loading: favoritesLoading } = useFavorites();
   const { visitedParks, removeVisited, loading: visitedParksLoading } = useVisitedParks();
-  const { savedEvents } = useSavedEvents();
-  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useUserReviews();
+  const {
+    savedEvents,
+    loading: savedEventsLoading,
+    unsaveEvent,
+    clearAllSavedEvents
+  } = useSavedEvents();
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+    error: reviewsError,
+    refetch: refetchReviews
+  } = useUserReviews();
 
   // Debug reviews data
 
@@ -95,7 +107,6 @@ const ProfilePage = () => {
       unsubscribe('profileUpdated', handleProfileUpdated);
     };
   }, [user, subscribe, unsubscribe, subscribeToProfile, updateUser, showToast]);
-  const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
   const [originalAvatar, setOriginalAvatar] = useState(null);
@@ -150,6 +161,20 @@ const ProfilePage = () => {
   const [renderKey, setRenderKey] = useState(0);
   const [favoriteBlogsCount, setFavoriteBlogsCount] = useState(0);
 
+  const tabs = useMemo(() => [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'favorites', label: 'All Favorites', icon: Heart },
+    { id: 'adventures', label: 'Visited Parks', icon: Compass },
+    { id: 'reviews', label: 'My Reviews', icon: Star },
+    { id: 'testimonials', label: 'Testimonials', icon: Star },
+    { id: 'settings', label: 'Settings', icon: Settings }
+  ], []);
+  const validTabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
+  const activeTab = useMemo(() => {
+    const requestedTab = searchParams.get('tab');
+    return validTabIds.includes(requestedTab) ? requestedTab : 'profile';
+  }, [searchParams, validTabIds]);
+
   // Debug favoriteBlogsCount changes
   useEffect(() => {
     console.log('[ProfilePage] 🔍 favoriteBlogsCount changed to:', favoriteBlogsCount);
@@ -162,20 +187,6 @@ const ProfilePage = () => {
   };
 
   // Debug logging for favorites (can be removed after testing)
-  useEffect(() => {
-    if (activeTab === 'favorites') {
-      // Note: Stats are auto-updated by the useEffect at line 165
-      // No need to call loadUserStats here as it causes unnecessary API calls
-    }
-  }, [favorites, favoritesLoading, activeTab, user, savedEvents]);
-
-  // Debug logging for when SavedParks should render
-  useEffect(() => {
-    if (activeTab === 'favorites' && !favoritesLoading) {
-      // SavedParks component should render now
-    }
-  }, [activeTab, favoritesLoading, favorites]);
-
   // Force re-render when favorites change
   useEffect(() => {
     if (favorites.length > 0) {
@@ -262,17 +273,7 @@ const ProfilePage = () => {
     console.log('[ProfilePage] 🔄 TotalDays calculated:', totalDays);
 
     return stats;
-  }, [favorites.length, favoriteBlogsCount, savedEvents.length, visitedParks.length, reviewsData, user, calculateTotalDays]);
-
-  // Memoized tabs array - Prevents recreation on every render (Performance optimization)
-  const tabs = useMemo(() => [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'favorites', label: 'All Favorites', icon: Heart },
-    { id: 'adventures', label: 'Visited Parks', icon: Compass },
-    { id: 'reviews', label: 'My Reviews', icon: Star },
-    { id: 'testimonials', label: 'Testimonials', icon: Star },
-    { id: 'settings', label: 'Settings', icon: Settings }
-  ], []); // No dependencies - static array
+  }, [favorites, favoriteBlogsCount, savedEvents, visitedParks.length, reviewsData, user, userDataLoaded, calculateTotalDays]);
 
   // Memoized stats array - Only recalculates when userStats or reviewsLoading changes
   const stats = useMemo(() => {
@@ -298,39 +299,25 @@ const ProfilePage = () => {
     return statsArray;
   }, [userStats, reviewsLoading, user?.createdAt]);
 
+  const panelStyle = useMemo(() => ({
+    backgroundColor: 'var(--surface)',
+    borderWidth: '1px',
+    borderColor: 'var(--border)',
+    backgroundImage: 'linear-gradient(155deg, color-mix(in srgb, var(--surface) 90%, white 10%) 0%, var(--surface) 48%, color-mix(in srgb, var(--surface-hover) 86%, var(--accent-green-light) 14%) 100%)',
+    boxShadow: 'var(--shadow-lg)'
+  }), []);
+
+  const sectionBadgeStyle = useMemo(() => ({
+    backgroundColor: 'color-mix(in srgb, var(--surface-hover) 72%, white 28%)',
+    color: 'var(--text-secondary)',
+    border: '1px solid color-mix(in srgb, var(--border) 86%, white 14%)'
+  }), []);
+
   // Debug stats array
 
 
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    // Load user profile data
-    // Note: Stats are calculated automatically by the useEffect at line 167
-    // which combines favorites, blogs, and events from local data
-    loadProfileData();
-  }, [isAuthenticated]); // Removed router from dependencies to prevent unnecessary re-renders
-
-  // Load email preferences when user is available (with debounce)
-  useEffect(() => {
-    if (user?.email) {
-      // Clear any previous error state when user changes
-      setEmailError('');
-
-      // Debounce: Don't load email preferences more than once every 2 seconds
-      const now = Date.now();
-      if (now - lastEmailLoadTime < 2000) {
-        return;
-      }
-      setLastEmailLoadTime(now);
-      loadEmailPreferences();
-    }
-  }, [user?.email]);
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     // Debounce: Don't make API calls more than once every 5 seconds
     const now = Date.now();
     if (now - lastLoadTime < 5000) {
@@ -391,7 +378,16 @@ const ProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [lastLoadTime, profileData.avatar, showToast, user, userStats]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    loadProfileData();
+  }, [isAuthenticated, loadProfileData, router]);
 
   const loadUserStats = async () => {
     // Debounce: Don't make API calls more than once every 5 seconds
@@ -447,7 +443,7 @@ const ProfilePage = () => {
   };
 
   // Email preferences API functions with retry logic
-  const loadEmailPreferences = async (retryCount = 0, maxRetries = 3) => {
+  const loadEmailPreferences = useCallback(async (retryCount = 0, maxRetries = 3) => {
     if (!user?.email) return;
 
     try {
@@ -515,7 +511,21 @@ const ProfilePage = () => {
         setEmailError('Failed to load email preferences');
       }
     }
-  };
+  }, [user?.email]);
+
+  // Load email preferences when user is available (with debounce)
+  useEffect(() => {
+    if (user?.email) {
+      setEmailError('');
+
+      const now = Date.now();
+      if (now - lastEmailLoadTime < 2000) {
+        return;
+      }
+      setLastEmailLoadTime(now);
+      loadEmailPreferences();
+    }
+  }, [user?.email, lastEmailLoadTime, loadEmailPreferences]);
 
   const saveEmailPreferences = async (newValue, retryCount = 0, maxRetries = 3) => {
     if (!user?.email) return;
@@ -835,6 +845,35 @@ const ProfilePage = () => {
     // Reset form data here if needed
   }, []);
 
+  const handleTabChange = useCallback((tabId) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('tab', tabId);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    setIsEditing(false);
+    clearErrorStates();
+  }, [pathname, router, searchParams]);
+
+  const handleTabKeyDown = useCallback((event) => {
+    const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
+    if (currentIndex === -1) return;
+
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (currentIndex + 1) % tabs.length;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    handleTabChange(tabs[nextIndex].id);
+  }, [activeTab, handleTabChange, tabs]);
+
   // Avatar change handlers (memoized)
   const handleChangeAvatarStart = useCallback(() => {
     setOriginalAvatar(profileData.avatar);
@@ -916,12 +955,19 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: 'var(--bg-primary)',
+        backgroundImage: 'radial-gradient(circle at top left, color-mix(in srgb, var(--accent-green-light) 18%, transparent 82%) 0%, transparent 30%), radial-gradient(circle at top right, color-mix(in srgb, var(--accent-blue) 10%, transparent 90%) 0%, transparent 24%)'
+      }}
+    >
       <Header />
 
       {/* Main Content */}
       <section className="py-8">
-        <div className="w-full max-w-6xl mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="w-full max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+
           {/* Profile Hero Section - Extracted Component */}
           <ProfileHero
             profileData={profileData}
@@ -937,88 +983,95 @@ const ProfilePage = () => {
           {/* Stats Section - Extracted Component */}
           <ProfileStats stats={stats} />
 
-          {/* Tab Navigation - 2-row grid on mobile, single row on desktop */}
+          {/* Tab Navigation */}
           <div className="mb-8">
-            {/* Mobile: 2-row grid layout */}
-            <div className="block sm:hidden">
-              <div className="grid grid-cols-3 gap-2">
+            <div
+              className="rounded-[1.75rem] p-2 sm:p-3"
+              role="tablist"
+              aria-label="Profile sections"
+              onKeyDown={handleTabKeyDown}
+              style={{
+                background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, white 10%) 0%, color-mix(in srgb, var(--surface-hover) 82%, white 18%) 100%)',
+                border: '1px solid color-mix(in srgb, var(--border) 82%, white 18%)',
+                boxShadow: 'var(--shadow-lg)'
+              }}
+            >
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
                 {tabs.map((tab) => (
-                  <Button
+                  <button
                     key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setIsEditing(false);
-                      clearErrorStates();
+                    type="button"
+                    onClick={() => handleTabChange(tab.id)}
+                    className="group min-h-11 whitespace-nowrap rounded-full border px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 sm:w-auto w-full justify-center flex items-center"
+                    style={activeTab === tab.id ? {
+                      backgroundImage: 'linear-gradient(135deg, color-mix(in srgb, var(--surface-hover) 58%, white 42%) 0%, color-mix(in srgb, var(--accent-green-light) 20%, white 80%) 100%)',
+                      borderColor: 'color-mix(in srgb, var(--accent-green) 35%, var(--border) 65%)',
+                      boxShadow: '0 10px 24px color-mix(in srgb, var(--accent-green-light) 20%, transparent 80%), inset 0 1px 0 rgba(255,255,255,0.55)',
+                      transform: 'translateY(-1px)',
+                      color: 'var(--text-primary)'
+                    } : {
+                      backgroundColor: 'color-mix(in srgb, var(--surface) 55%, transparent 45%)',
+                      borderColor: 'color-mix(in srgb, var(--border) 88%, white 12%)',
+                      color: 'var(--text-secondary)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)'
                     }}
-                    variant={activeTab === tab.id ? 'secondary' : 'ghost'}
-                    size="sm"
-                    icon={tab.icon}
-                    className="text-xs whitespace-nowrap justify-start h-12"
+                    id={`profile-tab-${tab.id}`}
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`profile-panel-${tab.id}`}
+                    tabIndex={activeTab === tab.id ? 0 : -1}
                   >
-                    <span>{tab.label}</span>
-                  </Button>
+                    <span className="flex items-center justify-center sm:justify-start gap-2.5">
+                      <span
+                        className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200"
+                        style={activeTab === tab.id ? {
+                          background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-green-light) 76%, white 24%) 0%, color-mix(in srgb, var(--accent-blue) 10%, white 90%) 100%)',
+                          color: 'var(--accent-green)',
+                          boxShadow: '0 8px 16px color-mix(in srgb, var(--accent-green-light) 28%, transparent 72%)'
+                        } : {
+                          backgroundColor: 'color-mix(in srgb, var(--surface-hover) 74%, white 26%)',
+                          color: 'var(--text-tertiary)'
+                        }}
+                      >
+                        {activeTab === tab.id && (
+                          <span
+                            className="absolute inset-0 rounded-full"
+                            style={{
+                              background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-green-light) 48%, transparent 52%) 0%, transparent 70%)'
+                            }}
+                          />
+                        )}
+                        <tab.icon className="relative h-4 w-4" />
+                      </span>
+                      <span className="text-sm font-semibold">{tab.label}</span>
+                      {activeTab === tab.id && (
+                        <span
+                          className="ml-1 inline-block h-2 w-2 rounded-full"
+                          style={{ backgroundColor: 'var(--accent-green)' }}
+                        />
+                      )}
+                    </span>
+                  </button>
                 ))}
               </div>
-            </div>
-
-            {/* Desktop: Horizontal tabs */}
-            <div className="hidden sm:flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-              {tabs.map((tab) => (
-                <Button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setIsEditing(false);
-                    clearErrorStates();
-                  }}
-                  variant={activeTab === tab.id ? 'secondary' : 'ghost'}
-                  size="md"
-                  icon={tab.icon}
-                  className="whitespace-nowrap flex-shrink-0"
-                >
-                  {tab.label}
-                </Button>
-              ))}
             </div>
           </div>
 
           {/* Main Content Area */}
           <div className="min-w-0">
-              {/* Default message when no tab is selected */}
-              {!activeTab && (
-                <div className="rounded-2xl p-4 sm:p-6 lg:p-8 backdrop-blur text-center"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <div className="text-6xl mb-4">👋</div>
-                  <h3 className="text-2xl font-bold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    Welcome to Your Profile
-                  </h3>
-                  <p className="text-lg"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Select a tab above to view and manage your information
-                  </p>
-                </div>
-              )}
-
               {/* Enhanced Profile Tab */}
               {activeTab === 'profile' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-                  }}
+                  id="profile-panel-profile"
+                  role="tabpanel"
+                  aria-labelledby="profile-tab-profile"
+                  style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div className="flex-1">
+                      <div className="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={sectionBadgeStyle}>
+                        Account details
+                      </div>
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
@@ -1267,15 +1320,16 @@ const ProfilePage = () => {
               {/* Unified Favorites Tab */}
               {activeTab === 'favorites' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-                  }}
+                  id="profile-panel-favorites"
+                  role="tabpanel"
+                  aria-labelledby="profile-tab-favorites"
+                  style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex-1">
+                      <div className="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={sectionBadgeStyle}>
+                        Saved collection
+                      </div>
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
@@ -1292,7 +1346,7 @@ const ProfilePage = () => {
                   {/* Favorites Sections */}
                   <div className="space-y-8">
                     {/* Favorite Parks Section */}
-                    <div>
+                    <div className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--surface-hover) 58%, white 42%)', border: '1px solid color-mix(in srgb, var(--border) 90%, white 10%)' }}>
                       <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-green)', opacity: 0.1 }}>
                           <MapPin className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
@@ -1327,7 +1381,7 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Favorite Blogs Section */}
-                    <div>
+                    <div className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--surface-hover) 58%, white 42%)', border: '1px solid color-mix(in srgb, var(--border) 90%, white 10%)' }}>
                       <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-blue)', opacity: 0.1 }}>
                           <BookOpen className="h-6 w-6" style={{ color: 'var(--accent-blue)' }} />
@@ -1345,7 +1399,7 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Saved Events Section */}
-                    <div>
+                    <div className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--surface-hover) 58%, white 42%)', border: '1px solid color-mix(in srgb, var(--border) 90%, white 10%)' }}>
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.1 }}>
@@ -1361,7 +1415,12 @@ const ProfilePage = () => {
                           </div>
                         </div>
                       </div>
-                      <SavedEvents />
+                      <SavedEvents
+                        savedEvents={savedEvents}
+                        loading={savedEventsLoading}
+                        onRemove={unsaveEvent}
+                        onClearAll={clearAllSavedEvents}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1370,15 +1429,16 @@ const ProfilePage = () => {
               {/* Adventures Tab - Visited Parks */}
               {activeTab === 'adventures' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-                  }}
+                  id="profile-panel-adventures"
+                  role="tabpanel"
+                  aria-labelledby="profile-tab-adventures"
+                  style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex-1">
+                      <div className="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={sectionBadgeStyle}>
+                        Park memories
+                      </div>
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
@@ -1421,15 +1481,16 @@ const ProfilePage = () => {
               {/* Reviews Tab */}
               {activeTab === 'reviews' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-                  }}
+                  id="profile-panel-reviews"
+                  role="tabpanel"
+                  aria-labelledby="profile-tab-reviews"
+                  style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex-1">
+                      <div className="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={sectionBadgeStyle}>
+                        Community voice
+                      </div>
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
@@ -1445,7 +1506,12 @@ const ProfilePage = () => {
 
                   {/* Reviews Content */}
                   <div>
-                    <UserReviews />
+                    <UserReviews
+                      reviews={Array.isArray(reviewsData?.data) ? reviewsData.data : []}
+                      isLoading={reviewsLoading}
+                      error={reviewsError}
+                      onRefresh={refetchReviews}
+                    />
                   </div>
                 </div>
               )}
@@ -1453,15 +1519,16 @@ const ProfilePage = () => {
               {/* Testimonials Tab */}
               {activeTab === 'testimonials' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-                  }}
+                  id="profile-panel-testimonials"
+                  role="tabpanel"
+                  aria-labelledby="profile-tab-testimonials"
+                  style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex-1">
+                      <div className="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={sectionBadgeStyle}>
+                        Share the story
+                      </div>
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
@@ -1495,15 +1562,16 @@ const ProfilePage = () => {
               {/* Settings Tab */}
               {activeTab === 'settings' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    backgroundImage: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-hover) 100%)'
-                  }}
+                  id="profile-panel-settings"
+                  role="tabpanel"
+                  aria-labelledby="profile-tab-settings"
+                  style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex-1">
+                      <div className="mb-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]" style={sectionBadgeStyle}>
+                        Preferences
+                      </div>
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >

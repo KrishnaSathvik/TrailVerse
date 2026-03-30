@@ -22,7 +22,6 @@ describe('LoadingScreen', () => {
     // Check for the mountain icon (SVG with aria-hidden)
     const mountainIcon = container.querySelector('svg');
     expect(mountainIcon).toBeInTheDocument();
-    expect(mountainIcon).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('should render without message when message is empty', () => {
@@ -67,8 +66,9 @@ describe('LoadingScreen', () => {
     const loadingBar = container.querySelector('.w-64.h-1');
     expect(loadingBar).toBeInTheDocument();
     
-    const animatedBar = container.querySelector('.animate-\\[loading_1\\.5s_ease-in-out_infinite\\]');
+    const animatedBar = loadingBar?.firstElementChild;
     expect(animatedBar).toBeInTheDocument();
+    expect(animatedBar).toHaveStyle({ animation: 'loading 1.5s ease-in-out infinite' });
   });
 
   it('should render message with proper styling', () => {

@@ -4,17 +4,18 @@
   "description": "TrailVerse - Your Universe of National Parks Exploration",
   "private": true,
   "engines": { "node": "20.x" },
-    "scripts": {
-      "start": "cd client && npm start",
-      "build": "cd client && npm run build",
-      "build:ci": "cd client && CI='' npm run build",
-      "test": "cd client && npm test",
-      "test:ui": "cd client && npm run test:vitest:ui",
-      "e2e": "cd client && npm run test:e2e",
-      "e2e:headed": "cd client && npm run test:e2e:headed",
-      "format": "cd client && npm run format",
-      "lint": "cd client && npm run lint"
-    },
+  "scripts": {
+    "dev": "concurrently -n frontend,backend -c blue,green \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd next-frontend && npm run dev",
+    "dev:backend": "cd server && npm run dev",
+    "start": "cd next-frontend && npm run start",
+    "build": "cd next-frontend && npm run build",
+    "build:ci": "cd next-frontend && CI='' npm run build",
+    "test": "cd next-frontend && npm run test",
+    "e2e": "cd next-frontend && npm run test:e2e",
+    "e2e:headed": "cd next-frontend && npm run test:e2e:headed",
+    "lint": "cd next-frontend && npm run lint"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "glob": "^11.0.3"

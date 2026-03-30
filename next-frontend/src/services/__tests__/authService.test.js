@@ -29,9 +29,21 @@ const localStorageMock = {
 };
 global.localStorage = localStorageMock;
 
+const sessionStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
+};
+global.sessionStorage = sessionStorageMock;
+global.document = { cookie: '' };
+
 describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    document.cookie = '';
+    localStorageMock.getItem.mockReturnValue(null);
+    sessionStorageMock.getItem.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -60,16 +72,15 @@ describe('AuthService', () => {
       // Replace the api instance
       authService.api = mockApi;
 
-      const result = await authService.signup('Test User', 'test@example.com', 'password123');
+      const result = await authService.signup('Test', 'User', 'test@example.com', 'password123');
 
       expect(mockApi.post).toHaveBeenCalledWith('/auth/signup', {
-        name: 'Test User',
+        firstName: 'Test',
+        lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
-      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockResponse.data.data));
       expect(result).toEqual(mockResponse.data);
     });
 
@@ -81,7 +92,7 @@ describe('AuthService', () => {
       
       authService.api = mockApi;
 
-      await expect(authService.signup('Test User', 'test@example.com', 'password123'))
+      await expect(authService.signup('Test', 'User', 'test@example.com', 'password123'))
         .rejects.toThrow('Signup failed');
     });
   });
@@ -114,8 +125,8 @@ describe('AuthService', () => {
         rememberMe: false
       });
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
-      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockResponse.data.data));
+      expect(sessionStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
+      expect(sessionStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockResponse.data.data));
       expect(result).toEqual(mockResponse.data);
     });
 
@@ -160,6 +171,7 @@ describe('AuthService', () => {
 
       expect(localStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
       expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockResponse.data.data));
+      expect(sessionStorage.setItem).not.toHaveBeenCalledWith('token', 'mock-token');
       expect(result).toEqual(mockResponse.data);
     });
   });
@@ -196,6 +208,8 @@ describe('AuthService', () => {
 
       expect(localStorage.removeItem).toHaveBeenCalledWith('token');
       expect(localStorage.removeItem).toHaveBeenCalledWith('user');
+      expect(sessionStorage.removeItem).toHaveBeenCalledWith('token');
+      expect(sessionStorage.removeItem).toHaveBeenCalledWith('user');
     });
   });
 
@@ -203,6 +217,7 @@ describe('AuthService', () => {
     it('should return parsed user from localStorage', () => {
       const mockUser = { id: '123', name: 'Test User' };
       localStorageMock.getItem.mockReturnValue(JSON.stringify(mockUser));
+      sessionStorageMock.getItem.mockReturnValue(null);
 
       const result = authService.getCurrentUser();
 
@@ -212,21 +227,44 @@ describe('AuthService', () => {
 
     it('should return null if no user in localStorage', () => {
       localStorageMock.getItem.mockReturnValue(null);
+      sessionStorageMock.getItem.mockReturnValue(null);
 
       const result = authService.getCurrentUser();
 
       expect(result).toBeNull();
+    });
+
+    it('should fall back to sessionStorage user', () => {
+      const mockUser = { id: '123', name: 'Session User' };
+      localStorageMock.getItem.mockReturnValue(null);
+      sessionStorageMock.getItem.mockReturnValue(JSON.stringify(mockUser));
+
+      const result = authService.getCurrentUser();
+
+      expect(sessionStorage.getItem).toHaveBeenCalledWith('user');
+      expect(result).toEqual(mockUser);
     });
   });
 
   describe('getToken', () => {
     it('should return token from localStorage', () => {
       localStorageMock.getItem.mockReturnValue('mock-token');
+      sessionStorageMock.getItem.mockReturnValue(null);
 
       const result = authService.getToken();
 
       expect(localStorage.getItem).toHaveBeenCalledWith('token');
       expect(result).toBe('mock-token');
+    });
+
+    it('should fall back to sessionStorage token', () => {
+      localStorageMock.getItem.mockReturnValue(null);
+      sessionStorageMock.getItem.mockReturnValue('session-token');
+
+      const result = authService.getToken();
+
+      expect(sessionStorage.getItem).toHaveBeenCalledWith('token');
+      expect(result).toBe('session-token');
     });
   });
 
@@ -241,6 +279,7 @@ describe('AuthService', () => {
 
     it('should return false if no token', () => {
       localStorageMock.getItem.mockReturnValue(null);
+      sessionStorageMock.getItem.mockReturnValue(null);
 
       const result = authService.isAuthenticated();
 

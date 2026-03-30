@@ -1,17 +1,19 @@
 import ReactGA from 'react-ga4';
 
-const TRACKING_ID = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+const getTrackingId = () => process.env.NEXT_PUBLIC_GA_TRACKING_ID;
 
 export const initGA = () => {
-  if (TRACKING_ID) {
-    ReactGA.initialize(TRACKING_ID, {
+  const trackingId = getTrackingId();
+
+  if (trackingId) {
+    ReactGA.initialize(trackingId, {
       gaOptions: {
         siteSpeedSampleRate: 100
       }
     });
     console.log('✅ Google Analytics initialized');
   } else {
-    console.warn('⚠️ Google Analytics tracking ID not found. Set VITE_GA_TRACKING_ID in your environment variables.');
+    console.warn('Google Analytics tracking ID not found. Set NEXT_PUBLIC_GA_TRACKING_ID in your environment variables.');
   }
 };
 

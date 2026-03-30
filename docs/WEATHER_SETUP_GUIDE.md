@@ -23,14 +23,14 @@ The weather functionality is now fully implemented and ready to use real OpenWea
 #### For Development:
 **IMPORTANT**: You need to replace `your_openweather_api_key_here` with your actual API key.
 
-Your `.env.development` file should now look like this:
+Your `next-frontend/.env.local` file should now look like this:
 ```bash
-REACT_APP_API_URL=http://localhost:5001/api
-REACT_APP_NPS_API_KEY=your-nps-api-key-here
-REACT_APP_GA_TRACKING_ID=G-XXXXXXXXXX
-REACT_APP_NAME=TrailVerse
-REACT_APP_URL=http://localhost:3000
-REACT_APP_OPENWEATHER_API_KEY=your_actual_api_key_here
+NEXT_PUBLIC_API_URL=http://localhost:5001/api
+NEXT_PUBLIC_NPS_API_KEY=your-nps-api-key-here
+NEXT_PUBLIC_GA_TRACKING_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_APP_NAME=TrailVerse
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_OPENWEATHER_API_KEY=your_actual_api_key_here
 ```
 
 **Replace `your_actual_api_key_here` with your real OpenWeatherAPI key!**
@@ -38,7 +38,7 @@ REACT_APP_OPENWEATHER_API_KEY=your_actual_api_key_here
 #### For Production:
 Add the environment variable to your deployment platform (Vercel, Netlify, etc.):
 ```
-REACT_APP_OPENWEATHER_API_KEY=your_actual_api_key_here
+NEXT_PUBLIC_OPENWEATHER_API_KEY=your_actual_api_key_here
 ```
 
 ### 3. Test the Integration
@@ -103,10 +103,10 @@ api.openweathermap.org/data/2.5/weather:1 Failed to load resource: the server re
 
 1. **Check if API key is set**:
    ```bash
-   # In your client directory, run:
-   cat .env.development | grep OPENWEATHER
+   # In the frontend directory, run:
+   cat next-frontend/.env.local | grep OPENWEATHER
    ```
-   Should show: `REACT_APP_OPENWEATHER_API_KEY=your_actual_key`
+   Should show: `NEXT_PUBLIC_OPENWEATHER_API_KEY=your_actual_key`
 
 2. **Verify API key format**:
    - Your API key should be a 32-character string
@@ -115,19 +115,18 @@ api.openweathermap.org/data/2.5/weather:1 Failed to load resource: the server re
 
 3. **Restart development server**:
    ```bash
-   # Stop your React app (Ctrl+C)
+   # Stop your Next.js app (Ctrl+C)
    # Then restart:
-   npm start
-   # or
-   yarn start
+   cd next-frontend
+   npm run dev
    ```
 
 4. **Check browser console**:
    - Look for: `✅ OpenWeatherAPI key loaded successfully`
-   - If you see: `⚠️ REACT_APP_OPENWEATHER_API_KEY is not set!` - the key isn't loaded
+   - If you see: `⚠️ NEXT_PUBLIC_OPENWEATHER_API_KEY is not set!` - the key isn't loaded
 
 ### Weather Widget Shows Sample Data:
-1. Check if `REACT_APP_OPENWEATHER_API_KEY` is set
+1. Check if `NEXT_PUBLIC_OPENWEATHER_API_KEY` is set
 2. Verify API key is valid
 3. Check browser console for errors
 4. Ensure park has valid coordinates
@@ -143,7 +142,7 @@ api.openweathermap.org/data/2.5/weather:1 Failed to load resource: the server re
 2. **Navigate to a park detail page**
 3. **Look for these messages**:
    - `✅ OpenWeatherAPI key loaded successfully` = Good!
-   - `⚠️ REACT_APP_OPENWEATHER_API_KEY is not set!` = Key missing
+   - `⚠️ NEXT_PUBLIC_OPENWEATHER_API_KEY is not set!` = Key missing
    - `🚨 401 Unauthorized - Check your OpenWeatherAPI key!` = Invalid key
 
 4. **If you see 401 errors**, check:

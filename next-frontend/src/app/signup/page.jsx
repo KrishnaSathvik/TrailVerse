@@ -9,6 +9,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
+import AuthShell from '@/components/auth/AuthShell';
 
 const SignupPage = () => {
   const router = useRouter();
@@ -170,65 +171,18 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* Left Side - Logo & Branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 mb-12 group">
-          <img 
-            src="/logo.png" 
-            alt="TrailVerse Logo" 
-            className="h-16 w-16 rounded-xl object-contain transition-transform group-hover:scale-105"
-          />
-          <span className="text-3xl font-bold tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-            TrailVerse
-          </span>
-        </Link>
-
-        {/* Welcome Message */}
-        <div className="text-center max-w-md">
-          <h1 className="text-5xl lg:text-6xl font-light tracking-tighter leading-none mb-6" style={{ color: 'var(--text-primary)' }}>
-            Join the adventure!
-          </h1>
-          <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Create a free account to save favorites, track your visited parks, plan trips with AI, and get personalized recommendations.
-          </p>
-        </div>
-      </div>
-
-      {/* Right Side - Signup Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <Link href="/" className="lg:hidden inline-flex items-center gap-3 mb-8 group">
-            <img 
-              src="/logo.png" 
-              alt="TrailVerse Logo" 
-              className="h-12 w-12 rounded-xl object-contain"
-            />
-            <span className="text-2xl font-bold tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-              TrailVerse
-            </span>
-          </Link>
-
-          {/* Header */}
+    <AuthShell
+      desktopTitle="Join the adventure!"
+      desktopDescription="Create a free account to save favorites, track your visited parks, plan trips with AI, and get personalized recommendations."
+      mobileTitle="Create Account"
+      mobileDescription="Unlock favorites, AI trip planning, and personalized recommendations."
+      badge="Free Account"
+    >
           <div className="mb-8">
-            <div 
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1 backdrop-blur mb-4"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                borderColor: 'var(--border)',
-                borderWidth: '1px'
-              }}
-            >
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                Free Account
-              </span>
-            </div>
-            <h1 className="text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
+            <h1 className="hidden lg:block text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
               Create Account
             </h1>
-            <p style={{ color: 'var(--text-secondary)' }}>
+            <p className="hidden lg:block" style={{ color: 'var(--text-secondary)' }}>
               Unlock favorites, AI trip planning, and personalized recommendations
             </p>
           </div>
@@ -236,7 +190,7 @@ const SignupPage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
               <div>
                 <label className="block text-sm font-medium mb-2 uppercase tracking-wider"
@@ -575,9 +529,7 @@ const SignupPage = () => {
               Sign in
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 };
 

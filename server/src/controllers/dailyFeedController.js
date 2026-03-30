@@ -710,6 +710,7 @@ async function getRandomParkOfDay(dateStr) {
     return {
       parkCode: selectedPark.parkCode,
       name: selectedPark.fullName,
+      states: selectedPark.states || '',
       designation: selectedPark.designation,
       description: selectedPark.description || 'A beautiful national park waiting to be explored.',
       image: selectedPark.images?.[0]?.url || '/background1.png',
@@ -874,6 +875,7 @@ async function getPersonalizedParkOfDay(user) {
     return {
       parkCode: randomPark.parkCode,
       name: randomPark.fullName || randomPark.name,
+      states: randomPark.states || '',
       description: randomPark.description || 'Discover amazing natural wonders and breathtaking landscapes.',
       image: randomPark.images?.[0]?.url || '/background1.png',
       latitude: randomPark.latitude,
@@ -1565,6 +1567,7 @@ function getFallbackParkOfDay() {
   return {
     parkCode: 'yose',
     name: 'Yosemite National Park',
+    states: 'CA',
     description: 'Discover amazing natural wonders and breathtaking landscapes in one of America\'s most iconic national parks.',
     image: '/background1.png',
     latitude: 37.8651,
@@ -1931,5 +1934,4 @@ async function getAIParkInfoInsights(park, weatherData, astroData) {
     ];
   }
 }
-
 

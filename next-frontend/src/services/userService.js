@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getStoredToken } from './authService';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -16,7 +17,7 @@ const api = axios.create({
 // Add token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

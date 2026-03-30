@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import cacheService from './cacheService';
+import { getStoredToken } from './authService';
 
 const DEFAULT_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -41,7 +42,7 @@ class EnhancedApiService {
     this.api.interceptors.request.use(
       (config) => {
         // Add auth token
-        const token = localStorage.getItem('token');
+        const token = getStoredToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }

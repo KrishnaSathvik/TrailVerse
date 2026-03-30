@@ -31,8 +31,7 @@ global.console.log = mockConsoleLog;
 describe('Analytics', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset environment
-    delete import.meta.env.VITE_GA_TRACKING_ID;
+    vi.unstubAllEnvs();
   });
 
   afterEach(() => {
@@ -41,7 +40,7 @@ describe('Analytics', () => {
 
   describe('initGA', () => {
     it('should initialize GA when tracking ID is provided', () => {
-      vi.stubEnv('REACT_APP_GA_TRACKING_ID', 'G-TEST123');
+      vi.stubEnv('NEXT_PUBLIC_GA_TRACKING_ID', 'G-TEST123');
 
       initGA();
 
@@ -61,7 +60,7 @@ describe('Analytics', () => {
     });
 
     it('should not initialize GA when tracking ID is empty', () => {
-      vi.stubEnv('REACT_APP_GA_TRACKING_ID', '');
+      vi.stubEnv('NEXT_PUBLIC_GA_TRACKING_ID', '');
 
       initGA();
 
@@ -128,13 +127,13 @@ describe('Analytics', () => {
 
   describe('logParkView', () => {
     it('should log park view event', () => {
-      logParkView('Yosemite National Park');
+      logParkView('yose', 'Yosemite National Park');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'Park',
         action: 'View',
         label: 'Yosemite National Park'
-      });
+      }));
     });
   });
 
@@ -142,11 +141,11 @@ describe('Analytics', () => {
     it('should log search event', () => {
       logSearch('hiking trails');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'Search',
         action: 'Query',
         label: 'hiking trails'
-      });
+      }));
     });
   });
 
@@ -154,11 +153,11 @@ describe('Analytics', () => {
     it('should log share event', () => {
       logShare('facebook', 'park details');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'Share',
         action: 'facebook',
         label: 'park details'
-      });
+      }));
     });
   });
 
@@ -166,11 +165,11 @@ describe('Analytics', () => {
     it('should log AI chat event', () => {
       logAIChat('best hiking trails');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'AI',
         action: 'Chat',
         label: 'best hiking trails'
-      });
+      }));
     });
   });
 
@@ -178,11 +177,11 @@ describe('Analytics', () => {
     it('should log blog view event', () => {
       logBlogView('Top 10 National Parks');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'Blog',
         action: 'View',
         label: 'Top 10 National Parks'
-      });
+      }));
     });
   });
 
@@ -190,11 +189,11 @@ describe('Analytics', () => {
     it('should log event view', () => {
       logEventView('Ranger Talk');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'Event',
         action: 'View',
         label: 'Ranger Talk'
-      });
+      }));
     });
   });
 
@@ -202,11 +201,11 @@ describe('Analytics', () => {
     it('should log user action', () => {
       logUserAction('login', 'success');
 
-      expect(ReactGA.event).toHaveBeenCalledWith({
+      expect(ReactGA.event).toHaveBeenCalledWith(expect.objectContaining({
         category: 'User',
         action: 'login',
         label: 'success'
-      });
+      }));
     });
   });
 
@@ -221,7 +220,7 @@ describe('Analytics', () => {
     });
 
     it('should not initialize GA when tracking ID is empty', () => {
-      vi.stubEnv('REACT_APP_GA_TRACKING_ID', '');
+      vi.stubEnv('NEXT_PUBLIC_GA_TRACKING_ID', '');
       
       initGA();
 

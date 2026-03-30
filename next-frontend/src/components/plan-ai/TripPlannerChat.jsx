@@ -2002,7 +2002,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
             boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
           }}
         >
-          <div className="max-w-5xl mx-auto w-full px-4 sm:px-6">
+          <div className="max-w-[92rem] mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12">
             <div className="flex items-center justify-center py-3 sm:py-4">
               {/* Title */}
               <div className="text-center min-w-0">
@@ -2069,7 +2069,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
 
       {/* Chat Messages - Responsive width */}
       <div className="flex-1 overflow-y-auto chat-messages-container">
-          <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-6">
+          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-4 sm:py-6">
             <div className="space-y-2 sm:space-y-3">
               {messages.map((message) => (
                 <MessageBubble
@@ -2222,7 +2222,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
 
       {/* Conversion Message for Anonymous Users */}
       {isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
-        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-4">
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-4">
           <div 
             className="rounded-2xl p-5 sm:p-6 backdrop-blur"
             style={{
@@ -2283,7 +2283,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
             boxShadow: '0 -1px 3px 0 rgba(0, 0, 0, 0.1), 0 -1px 2px 0 rgba(0, 0, 0, 0.06)'
           }}
         >
-          <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-5">
+          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-4 sm:py-5">
             {/* Quick Prompts - Only show for new users (not returning users with newchat, personalized, or park-specific chats) */}
             {messages.length === 1 && !isGenerating && !isPersonalized && !isNewChat && !(typeof window !== 'undefined' && window.location.search.includes('park=')) && (
               <div className="mb-4">

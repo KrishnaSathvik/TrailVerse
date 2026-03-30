@@ -71,7 +71,7 @@ const TestimonialsPage = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="pt-20 pb-16">
+      <section className="pt-8 sm:pt-20 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>

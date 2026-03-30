@@ -5,9 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Sun, Moon, Star, MapPin, Calendar, Users,
-  Heart, ExternalLink, Loader2, Compass, Mountain, Sparkles, Clock, Eye,
-  Thermometer, Wind, Droplets, Eye as EyeIcon, Zap, Check, CloudSnow
+  Sun, Moon, Star, MapPin, Calendar,
+  ExternalLink, Loader2, Compass, Mountain, Sparkles, Clock,
+  Thermometer, Wind, Droplets, Eye as EyeIcon, Check, CloudSnow, ArrowRight
 } from '@components/icons';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
@@ -284,181 +284,317 @@ const DailyFeedPage = () => {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-            <Sparkles className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+      <section className="relative h-[60vh] md:h-[68vh] overflow-hidden">
+        <OptimizedImage
+          src={park?.image || '/background1.png'}
+          alt={park?.name || 'Park of the Day'}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/20 to-black/90" />
+
+        <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
+          <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+            <div
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md border"
+              style={{ backgroundColor: 'rgba(0,0,0,0.35)', borderColor: 'rgba(255,255,255,0.18)' }}
+            >
+              <Sparkles className="h-4 w-4 text-white" />
+              <span className="text-sm font-medium text-white/90">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+            </div>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Daily Nature Feed
-          </h1>
-          <p className="text-base sm:text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-            Clear, actionable tips for {park?.name}
-          </p>
         </div>
 
-        {/* Hero */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-10">
-          <div className="lg:col-span-3">
-            <div className="relative overflow-hidden rounded-3xl shadow-2xl">
-              <div className="relative h-80 sm:h-96 lg:h-[460px]">
-                <OptimizedImage
-                  src={park?.image || '/background1.png'}
-                  alt={park?.name || 'Park of the Day'}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-6 left-6">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.25)' }}>
-                    <Sparkles className="h-4 w-4 text-white" />
-                    <span className="text-xs font-bold text-white tracking-wide">PERSONALIZED</span>
+        <div className="absolute bottom-0 left-0 right-0 z-10 pb-8 sm:pb-10 lg:pb-12">
+          <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+            <div className="max-w-5xl xl:max-w-6xl">
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur mb-4"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                  borderWidth: '1px',
+                  borderColor: 'rgba(255, 255, 255, 0.22)',
+                }}
+              >
+                <Mountain className="h-4 w-4 text-white" />
+                <span className="text-xs font-semibold text-white uppercase tracking-wider">
+                  Personalized Daily Feed
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 mb-3">
+                {park?.states && (
+                  <div
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                      borderWidth: '1px',
+                      borderColor: 'rgba(255, 255, 255, 0.18)',
+                    }}
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-white" />
+                    <span className="text-xs font-semibold text-white uppercase tracking-wider">{park.states}</span>
                   </div>
+                )}
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    borderWidth: '1px',
+                    borderColor: 'rgba(255, 255, 255, 0.18)',
+                  }}
+                >
+                  <Compass className="h-3.5 w-3.5 text-white" />
+                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Today&apos;s Focus</span>
                 </div>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight leading-tight drop-shadow-lg mb-4">
+                Daily Nature Feed
+              </h1>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white/95 mb-3">
+                {park?.name}
+              </h2>
+              <p className="text-base sm:text-lg max-w-3xl text-white/78 mb-6">
+                A park-detail-style briefing for today: conditions, sky visibility, quick analysis, and recommendations you can actually use.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  onClick={() => router.push(`/parks/${park?.parkCode || 'unknown'}`)}
+                  variant="primary"
+                  size="lg"
+                  icon={ExternalLink}
+                  iconPosition="right"
+                >
+                  View Park Details
+                </Button>
+                <Button
+                  onClick={() => router.push(`/plan-ai?park=${encodeURIComponent(park?.parkCode || 'unknown')}&name=${encodeURIComponent(park?.name || 'Park')}`)}
+                  variant="secondary"
+                  size="lg"
+                  icon={Calendar}
+                  className="backdrop-blur"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: '1px',
+                    borderColor: 'rgba(255, 255, 255, 0.22)',
+                    color: 'white'
+                  }}
+                >
+                  Plan with AI
+                </Button>
+                <Button
+                  onClick={() => router.push('/explore')}
+                  variant="secondary"
+                  size="lg"
+                  icon={Compass}
+                  className="backdrop-blur"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    borderWidth: '1px',
+                    borderColor: 'rgba(255, 255, 255, 0.18)',
+                    color: 'white'
+                  }}
+                >
+                  Explore All Parks
+                </Button>
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="lg:col-span-2">
-            <Card className="p-6 h-full">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <Link href={`/parks/${park?.parkCode || 'unknown'}`} className="inline-flex items-start gap-2 group">
-                  <h2 className="text-2xl sm:text-3xl font-bold group-hover:opacity-90 transition-opacity leading-tight" style={{ color: 'var(--text-primary)' }}>
-                    {park?.name}
-                  </h2>
-                  <ExternalLink className="h-5 w-5 mt-1 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                </Link>
-                {park?.states && <Chip icon={MapPin}>{park.states}</Chip>}
+      <main className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-8 sm:py-10 lg:py-12">
+        {/* Quick Info Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <Card className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <Thermometer className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
               </div>
-
-              <div className="mb-4">
-                <SunRow
-                  sun={sun}
-                  fallbacks={{
-                    sunrise: dailyFeed?.rawAstroData?.processedData?.sunrise || dailyFeed?.rawAstroData?.rawResponse?.results?.sunrise,
-                    sunset: dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset
-                  }}
-                  timezone={dailyFeed?.rawAstroData?.timezone}
-                />
-                <DarknessHint sunset={sun?.sunsetLocal || dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset} />
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Current Weather</p>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{weather?.condition || 'Conditions unavailable'}</p>
               </div>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              {weather?.temperature != null ? `${Math.round(weather.temperature)}°F` : '—'}
+            </p>
+          </Card>
 
-              {!!statChips.length && (
-                <div className="flex flex-wrap gap-2">
-                  {statChips.map(({ Icon, label }, i) => (
-                    <Chip key={i} icon={Icon}>{label}</Chip>
+          <Card className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <Sun className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Sun Schedule</p>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Local timing</p>
+              </div>
+            </div>
+            <SunRow
+              sun={sun}
+              fallbacks={{
+                sunrise: dailyFeed?.rawAstroData?.processedData?.sunrise || dailyFeed?.rawAstroData?.rawResponse?.results?.sunrise,
+                sunset: dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset
+              }}
+              timezone={dailyFeed?.rawAstroData?.timezone}
+            />
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <Moon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Darkness Window</p>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Best sky timing</p>
+              </div>
+            </div>
+            <DarknessHint sunset={sun?.sunsetLocal || dailyFeed?.rawAstroData?.processedData?.sunset || dailyFeed?.rawAstroData?.rawResponse?.results?.sunset} />
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <MapPin className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Destination</p>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{park?.states || 'Location unavailable'}</p>
+              </div>
+            </div>
+            <Link href={`/parks/${park?.parkCode || 'unknown'}`} className="inline-flex items-center gap-2 group">
+              <p className="text-lg font-semibold group-hover:opacity-80 transition-opacity" style={{ color: 'var(--text-primary)' }}>
+                {park?.name}
+              </p>
+              <ExternalLink className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+            </Link>
+          </Card>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex-1 min-w-0">
+            <Card className="p-6 sm:p-8 mb-8">
+              <SectionHeader icon={Sparkles} title="Daily Nature Feed" subtitle="Your lead insight for the day" />
+              {natureFact ? (
+                <div className="rounded-2xl p-5 sm:p-6 border"
+                  style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}
+                >
+                  <p className="text-lg sm:text-xl leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                    {renderBoldText(natureFact)}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Nature feed unavailable for today.</p>
+              )}
+            </Card>
+
+            {/* Park Insights */}
+            <Card className="p-6 mb-8">
+              <SectionHeader icon={Sparkles} title="Park Insights" subtitle="What matters most today" />
+              {parkInfo.length ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {parkInfo.map((insight, idx) => (
+                    <div key={idx} className="p-4 rounded-xl border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
+                      <Bullet>{insight.replace(/^\d+\.\s*/, '')}</Bullet>
+                    </div>
                   ))}
                 </div>
+              ) : (
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  {park?.description || 'Discover amazing natural wonders…'}
+                </p>
+              )}
+            </Card>
+
+            {/* Two-column: Weather / Sky */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+              <Card className="p-6">
+                <SectionHeader icon={Sun} title="Weather Analysis" subtitle="Comfort, safety, and what to wear" accent="var(--accent-orange)" />
+                {weatherInsights ? (
+                  <div className="space-y-3">
+                    {weatherInsights.split('\n').filter(Boolean).map((line, i) => {
+                      const cleanLine = line.replace(/^[-•\d+\.]\s*/, '').trim();
+                      if (cleanLine) {
+                        return <Bullet key={i}>{cleanLine}</Bullet>;
+                      }
+                      return null;
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Weather insights are not available.</p>
+                )}
+              </Card>
+
+              <Card className="p-6">
+                <SectionHeader icon={Star} title="Sky Analysis" subtitle="Tonight's visibility & highlights" accent="var(--accent-blue)" />
+                {cleanSkyInsights.length ? (
+                  <div className="space-y-3">
+                    {cleanSkyInsights.map((line, i) => <Bullet key={i} icon={Star}>{line.replace(/^\d+\.\s*/, '')}</Bullet>)}
+                  </div>
+                ) : (
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Sky insights are not available.</p>
+                )}
+              </Card>
+            </div>
+
+            <Card className="p-6">
+              <SectionHeader icon={Compass} title="Personalized Recommendations" subtitle="Time-targeted activities and next steps" accent="var(--accent-blue)" />
+              {recs.length ? (
+                <div className="space-y-3">
+                  {recs.map((r, i) => <Bullet key={i} icon={Check}>{r.replace(/^\d+\.\s*/, '')}</Bullet>)}
+                </div>
+              ) : (
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Recommendations will appear here.</p>
               )}
             </Card>
           </div>
-        </div>
 
-        {/* Park Insights */}
-        <Card className="p-6 mb-10">
-          <SectionHeader icon={Sparkles} title="Park Insights" subtitle="What matters most today" />
-          {parkInfo.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {parkInfo.map((insight, idx) => (
-                <div key={idx} className="p-4 rounded-xl border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-                  <Bullet>{insight.replace(/^\d+\.\s*/, '')}</Bullet>
+          <aside className="lg:w-[360px] flex-shrink-0">
+            <div className="sticky top-24 space-y-6">
+              <Card className="p-6">
+                <SectionHeader icon={Mountain} title="At a Glance" subtitle="Fast, practical takeaways" />
+                {quickStats.length ? (
+                  <div className="space-y-3 mb-5">
+                    {quickStats.map((line, i) => <Bullet key={i}>{line.replace(/^\d+\.\s*/, '')}</Bullet>)}
+                  </div>
+                ) : (
+                  <p className="text-sm mb-5" style={{ color: 'var(--text-tertiary)' }}>Analysis will appear here.</p>
+                )}
+
+                {!!statChips.length && (
+                  <div className="flex flex-wrap gap-2">
+                    {statChips.map(({ Icon, label }, i) => (
+                      <Chip key={i} icon={Icon}>{label}</Chip>
+                    ))}
+                  </div>
+                )}
+              </Card>
+
+              <Card className="hidden lg:block p-6">
+                <SectionHeader icon={Calendar} title="Next Steps" subtitle="Keep moving from insight to action" accent="var(--accent-green)" />
+                <div className="space-y-3">
+                  <Button onClick={() => router.push(`/parks/${park?.parkCode || 'unknown'}`)} className="w-full justify-center px-6 py-3" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
+                    View Park Details
+                  </Button>
+                  <Button
+                    onClick={() => router.push(`/plan-ai?park=${encodeURIComponent(park?.parkCode || 'unknown')}&name=${encodeURIComponent(park?.name || 'Park')}`)}
+                    className="w-full justify-center px-6 py-3"
+                    style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                    icon={ArrowRight}
+                    iconPosition="right"
+                  >
+                    Plan with AI
+                  </Button>
                 </div>
-              ))}
+              </Card>
             </div>
-          ) : (
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {park?.description || 'Discover amazing natural wonders…'}
-            </p>
-          )}
-        </Card>
-
-        {/* Two-column: Weather / Sky */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-10">
-          <Card className="p-6">
-            <SectionHeader icon={Sun} title="Weather Analysis" subtitle="Comfort, safety, and what to wear" accent="var(--accent-orange)" />
-            {weatherInsights ? (
-              <div className="space-y-3">
-                {weatherInsights.split('\n').filter(Boolean).map((line, i) => {
-                  const cleanLine = line.replace(/^[-•\d+\.]\s*/, '').trim();
-                  if (cleanLine) {
-                    return <Bullet key={i}>{cleanLine}</Bullet>;
-                  }
-                  return null;
-                })}
-              </div>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Weather insights are not available.</p>
-            )}
-          </Card>
-
-          <Card className="p-6">
-            <SectionHeader icon={Star} title="Sky Analysis" subtitle="Tonight's visibility & highlights" accent="var(--accent-blue)" />
-            {cleanSkyInsights.length ? (
-              <div className="space-y-3">
-                {cleanSkyInsights.map((line, i) => <Bullet key={i} icon={Star}>{line.replace(/^\d+\.\s*/, '')}</Bullet>)}
-              </div>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Sky insights are not available.</p>
-            )}
-          </Card>
+          </aside>
         </div>
-
-        {/* Quick Stats + Recommendations */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-          <Card className="p-6">
-            <SectionHeader icon={Mountain} title="Park Analysis" subtitle="Fast, practical takeaways" />
-            {quickStats.length ? (
-              <div className="space-y-3">
-                {quickStats.map((line, i) => <Bullet key={i}>{line.replace(/^\d+\.\s*/, '')}</Bullet>)}
-              </div>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Analysis will appear here.</p>
-            )}
-          </Card>
-
-          <Card className="p-6">
-            <SectionHeader icon={Compass} title=" Personalized Recommendations" subtitle="Time-targeted activities" accent="var(--accent-blue)" />
-            {natureFact && (
-              <div className="mb-4 p-4 rounded-xl border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-                <div className="flex items-start gap-2 mb-1">
-                  <Sparkles className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Daily Nature Feed</h4>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}</p>
-              </div>
-            )}
-            {recs.length ? (
-              <div className="space-y-3">
-                {recs.map((r, i) => <Bullet key={i} icon={Check}>{r.replace(/^\d+\.\s*/, '')}</Bullet>)}
-              </div>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Recommendations will appear here.</p>
-            )}
-          </Card>
-        </div>
-
-        {/* CTA */}
-        <Card className="p-6 text-center">
-          <h3 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Ready to explore?</h3>
-          <p className="text-sm sm:text-base mb-5" style={{ color: 'var(--text-secondary)' }}>
-            Get deeper details about {park?.name} and plan your visit.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={() => router.push(`/parks/${park?.parkCode || 'unknown'}`)} className="px-6 py-3" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
-              View Park Details
-            </Button>
-            <Button
-              onClick={() => router.push(`/plan-ai?park=${encodeURIComponent(park?.parkCode || 'unknown')}&name=${encodeURIComponent(park?.name || 'Park')}`)}
-              className="px-6 py-3"
-              style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-              icon={Calendar}
-            >
-              Plan with AI
-            </Button>
-          </div>
-        </Card>
 
         {!hasAnyAI && (
           <p className="text-center text-xs mt-4" style={{ color: 'var(--text-tertiary)' }}>

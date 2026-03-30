@@ -15,8 +15,8 @@ import { useAllParks } from '@/hooks/useParks';
 import statsService from '@/services/statsService';
 import dailyFeedService from '@/services/dailyFeedService';
 import { handleApiError, fallbackData } from '@/utils/errorHandler';
-import { 
-  Compass, Mountain, Sparkles, Clock, Shield, 
+import {
+  Compass, Mountain, Sparkles, Clock, Shield,
   MapPin, Calendar, Heart, Camera, BookOpen, Route,
   Star, Eye, Search, ArrowRight, Map, Trees, Landmark, ChevronRight
 } from '@components/icons';
@@ -40,23 +40,23 @@ const LandingPage = () => {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
       const cacheKey = `trailverse_landing_feed_${today}`;
-      
+
       // Attempt to load from localStorage to achieve instant page refreshes
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) return JSON.parse(cached);
       } catch (e) { /* ignore parse errors */ }
-      
+
       // If no local cache, fetch from network securely
       const parkData = await dailyFeedService.getParkOfDay().catch(() => null);
       if (!parkData) return null;
-      
+
       const natureFact = await dailyFeedService.getNatureFact(parkData.parkCode, parkData.name).catch(() => null);
       const result = { parkOfDay: parkData, natureFact };
-      
+
       // Save it locally for the rest of the day
       try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch (e) { /* ignore storage quotas */ }
-      
+
       return result;
     },
     staleTime: 24 * 60 * 60 * 1000,
@@ -76,7 +76,7 @@ const LandingPage = () => {
       setStats(response.data.stats);
       setTestimonials(response.data.testimonials || []);
     } catch (error) {
-      handleApiError(error, () => {}, () => {
+      handleApiError(error, () => { }, () => {
         setStats(fallbackData.stats);
         setTestimonials([]);
       }, false);
@@ -161,13 +161,13 @@ const LandingPage = () => {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
 
       <Header />
-      
+
       {/* ═══════════════════════════════════════════════════════
           HERO — Search-First, Exploration-First 
           ═══════════════════════════════════════════════════════ */}
       <section className="relative w-full overflow-hidden" style={{ minHeight: 'calc(100dvh - 64px)' }}>
         {/* Background Image */}
-        <div 
+        <div
           className="absolute inset-0 w-full bg-cover bg-no-repeat"
           style={{
             backgroundImage: 'url(/background23.png)',
@@ -178,18 +178,18 @@ const LandingPage = () => {
             marginLeft: '-50vw',
           }}
         />
-        
+
         {/* Gradient overlays */}
-        <div 
+        <div
           className="absolute inset-0 w-full bg-black/50"
           style={{ width: '100vw', left: '50%', marginLeft: '-50vw' }}
         />
-        
+
         {/* Content */}
-        <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-32 lg:pt-40 pb-20 sm:pb-32 lg:pb-40">
-          <div className="w-full max-w-4xl mx-auto text-center">
+        <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-10 xl:px-12 pt-[2.75rem] sm:pt-32 lg:pt-40 pb-20 sm:pb-32 lg:pb-40">
+          <div className="w-full max-w-6xl mx-auto text-center">
             {/* Badge */}
-            <div 
+            <div
               className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 backdrop-blur-md mb-8 sm:mb-10 shadow-lg transition-transform hover:scale-105 bg-black/30 border border-white/10"
             >
               <Route className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
@@ -200,25 +200,25 @@ const LandingPage = () => {
 
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 text-white w-full text-center drop-shadow-xl"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '0.95' }}
+              style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '0.95' }}
             >
               Discover America's <br className="hidden sm:block" />
               <span style={{ color: 'var(--accent-green)', textShadow: '0 0 30px rgba(16, 185, 129, 0.3)' }}>National Parks.</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-base sm:text-lg md:text-xl font-medium leading-relaxed text-white/90 max-w-2xl mx-auto mb-2">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-white/90 max-w-3xl mx-auto mb-2">
               Explore 470+ National Parks with real-time weather, interactive maps,
               community reviews, and smart trip planning.
             </p>
-            <p className="text-base sm:text-lg font-medium text-white/70 max-w-2xl mx-auto mb-10 sm:mb-12">
+            <p className="text-base sm:text-lg lg:text-xl font-medium text-white/70 max-w-3xl mx-auto mb-10 sm:mb-12">
               Your next adventure starts here.
             </p>
 
             {/* ──── HERO SEARCH BAR ──── */}
-            <div ref={searchRef} className="relative w-full max-w-2xl mx-auto mb-10">
+            <div ref={searchRef} className="relative w-full max-w-3xl mx-auto mb-10">
               <form onSubmit={handleSearchSubmit} className="relative z-20">
-                <div 
+                <div
                   className="flex items-center rounded-[2rem] overflow-hidden backdrop-blur-md transition-all duration-300 group shadow-2xl"
                   style={{
                     backgroundColor: searchFocused ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
@@ -252,7 +252,7 @@ const LandingPage = () => {
 
               {/* Search Results Dropdown */}
               {searchFocused && searchQuery.trim() && searchResults.length > 0 && (
-                <div 
+                <div
                   className="absolute top-full left-0 right-0 mt-3 rounded-2xl overflow-hidden backdrop-blur-md z-50 animate-fade-in"
                   style={{
                     backgroundColor: 'var(--surface)',
@@ -345,12 +345,12 @@ const LandingPage = () => {
       {/* ═══════════════════════════════════════════════════════
           FEATURED PARKS — Immediate Visual Exploration
           ═══════════════════════════════════════════════════════ */}
-      <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="max-w-7xl mx-auto">
+      <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="max-w-[92rem] mx-auto">
           {/* Section Header */}
           <div className="flex items-end justify-between mb-10">
             <div>
-              <div 
+              <div
                 className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1"
                 style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
               >
@@ -381,15 +381,15 @@ const LandingPage = () => {
           </div>
 
           {/* Featured Parks Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {featuredParks.length > 0 ? (
-              featuredParks.map((park, index) => (
+              featuredParks.map((park) => (
                 <Link
                   key={park.parkCode}
                   href={`/parks/${park.parkCode}`}
                   className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                   style={{
-                    aspectRatio: index === 0 || index === 5 ? '16/10' : '16/12',
+                    aspectRatio: '16/11',
                     boxShadow: 'var(--shadow-lg)',
                   }}
                 >
@@ -399,10 +399,10 @@ const LandingPage = () => {
                     alt={park.fullName}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  
+
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  
+
                   {/* Content */}
                   <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
                     <div className="flex items-center gap-2 mb-2">
@@ -418,7 +418,7 @@ const LandingPage = () => {
                       {park.description?.substring(0, 100)}...
                     </p>
                   </div>
-                  
+
                   {/* Hover arrow */}
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                     <ArrowRight className="h-4 w-4 text-white" />
@@ -432,7 +432,7 @@ const LandingPage = () => {
                   key={i}
                   className="rounded-2xl animate-pulse"
                   style={{
-                    aspectRatio: i === 0 || i === 5 ? '16/10' : '16/12',
+                    aspectRatio: '16/11',
                     backgroundColor: 'var(--surface-hover)',
                   }}
                 />
@@ -461,58 +461,111 @@ const LandingPage = () => {
           DAILY FEED FEATURE — Public Inspiration
           ═══════════════════════════════════════════════════════ */}
       {dailyFeed?.parkOfDay && dailyFeed?.natureFact && (
-        <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:flex-row rounded-[2rem] overflow-hidden border shadow-2xl transition-transform hover:-translate-y-1 duration-500" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
-              
-              {/* Image Side */}
-              <div className="w-full lg:w-5/12 relative h-64 sm:h-80 lg:h-auto">
+        <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
+          <div className="max-w-[92rem] mx-auto">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <div
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1"
+                  style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                >
+                  <Sparkles className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
+                  <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                    Daily Inspiration
+                  </span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Park of the day
+                </h2>
+                <p className="text-base sm:text-lg mt-2 max-w-2xl"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  A daily spotlight designed to feel like the rest of your park discovery flow.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch">
+              <Link
+                href={`/parks/${dailyFeed.parkOfDay.parkCode}`}
+                className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  minHeight: '28rem',
+                  boxShadow: 'var(--shadow-lg)',
+                }}
+              >
                 <OptimizedImage
                   src={dailyFeed.parkOfDay.image || '/background1.png'}
                   alt={dailyFeed.parkOfDay.name}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                
-                <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-                    <Sparkles className="h-4 w-4 text-white" />
-                    <span className="text-xs font-bold text-white tracking-wide">PARK OF THE DAY</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Content Side */}
-              <div className="w-full lg:w-7/12 p-6 sm:p-10 lg:p-12 flex flex-col justify-center relative">
-                <div className="mb-4">
-                  <h3 className="text-2xl sm:text-3xl xl:text-4xl font-bold mb-2 leading-tight" style={{ color: 'var(--text-primary)' }}>{dailyFeed.parkOfDay.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{dailyFeed.parkOfDay.states}</span>
-                  </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
+
+                <div className="absolute top-5 left-5 sm:top-6 sm:left-6 flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/15 bg-black/35">
+                  <Sparkles className="h-4 w-4 text-white" />
+                  <span className="text-xs font-bold text-white tracking-wide">PARK OF THE DAY</span>
                 </div>
 
-                <div className="p-6 rounded-2xl mb-8 border relative mt-2 lg:mt-6" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border)' }}>
-                  <div className="absolute -top-4 -left-2 rounded-full p-2 border shadow-sm" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                    <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                <div className="absolute top-5 right-5 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                  <ArrowRight className="h-4 w-4 text-white" />
+                </div>
+
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="h-3.5 w-3.5 text-white/70" />
+                    <span className="text-xs font-medium text-white/70 uppercase tracking-wider">
+                      {dailyFeed.parkOfDay.states}
+                    </span>
                   </div>
-                  <p className="text-base sm:text-lg leading-relaxed italic mt-1" style={{ color: 'var(--text-primary)' }}>
-                    "{dailyFeed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}"
+                  <h3 className="text-2xl sm:text-3xl font-semibold text-white leading-tight mb-3">
+                    {dailyFeed.parkOfDay.name}
+                  </h3>
+                  <p className="text-sm sm:text-base text-white/75 max-w-2xl line-clamp-3">
+                    Explore today&apos;s featured park, then dive deeper into weather, alerts, reviews, and trip planning.
                   </p>
                 </div>
+              </Link>
 
-                <div className="flex justify-start">
-                  <Button 
+              <div
+                className="rounded-2xl p-6 sm:p-8 backdrop-blur transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  boxShadow: 'var(--shadow)',
+                }}
+              >
+                <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 mb-5 ring-1"
+                  style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}
+                >
+                  <Mountain className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                    Nature Fact
+                  </span>
+                </div>
+
+                <p className="text-lg sm:text-xl leading-relaxed mb-8"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  &ldquo;{dailyFeed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
+                </p>
+
+                <div className="space-y-3">
+                  <Button
                     onClick={() => router.push(`/parks/${dailyFeed.parkOfDay.parkCode}`)}
                     variant="primary"
                     size="lg"
                     icon={ArrowRight}
                     iconPosition="right"
+                    className="w-full sm:w-auto"
                   >
-                    Explore Today's Park
+                    Explore Today&apos;s Park
                   </Button>
                 </div>
               </div>
-
             </div>
           </div>
         </section>
@@ -522,7 +575,7 @@ const LandingPage = () => {
           FEATURE PILLS — Quick Value Props
           ═══════════════════════════════════════════════════════ */}
       <section id="features" className="relative z-10 py-16" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { icon: Sparkles, title: 'AI Trip Planning', description: 'Smart itineraries that match your style' },

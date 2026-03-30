@@ -141,9 +141,9 @@ const FAQPage = () => {
       
       <Header />
       
-      <main className="pt-16">
+      <main className="pt-3 sm:pt-16">
         {/* Hero Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
               style={{ color: 'var(--text-primary)' }}

@@ -143,6 +143,7 @@ const Header = () => {
 
           {/* Mobile menu button */}
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 transition"
             style={{
@@ -150,6 +151,9 @@ const Header = () => {
               borderColor: 'var(--border)',
               color: 'var(--text-primary)'
             }}
+            aria-label={mobileMenuOpen ? 'Close sidebar' : 'Open sidebar'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileMenuOpen ? (
               <X className="h-5 w-5" />
@@ -162,6 +166,7 @@ const Header = () => {
         {/* Mobile Nav Panel */}
         {mobileMenuOpen && (
           <div 
+            id="mobile-navigation"
             className="md:hidden border-t mt-2 pt-2 pb-3"
             style={{ borderColor: 'var(--border)' }}
           >

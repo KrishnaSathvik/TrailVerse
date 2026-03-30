@@ -221,6 +221,20 @@ button::selection, .btn::selection {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+html.mobile-nav-open .tsqd-open-btn-container,
+html.mobile-nav-open nextjs-portal,
+body.mobile-nav-open .tsqd-open-btn-container,
+body.mobile-nav-open nextjs-portal {
+  display: none !important;
+}
+
+html.mobile-nav-open,
+body.mobile-nav-open {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  touch-action: none;
+}
+
 .safe-area-pl {
   padding-left: env(safe-area-inset-left, 0px);
 }

@@ -93,7 +93,6 @@ app.use(helmet({
 // CORS
 const staticAllowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3001',
   'https://www.nationalparksexplorerusa.com',
   'https://nationalparksexplorerusa.com',
   process.env.CLIENT_URL

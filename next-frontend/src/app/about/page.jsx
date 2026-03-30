@@ -130,7 +130,7 @@ const AboutPage = () => {
       
       <main>
         {/* Hero Section */}
-        <section className="pt-8 pb-16 px-4 sm:px-6 lg:px-8">
+        <section className="pt-3 pb-16 px-4 sm:pt-8 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="rounded-3xl overflow-hidden backdrop-blur"
               style={{

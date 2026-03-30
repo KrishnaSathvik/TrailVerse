@@ -7,6 +7,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
+import ScrollToTop from './common/ScrollToTop';
 
 export default function Providers({ children }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -24,6 +25,7 @@ export default function Providers({ children }) {
         <ToastProvider>
           <AuthProvider>
             {children}
+            <ScrollToTop />
             <SpeedInsights />
             {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
           </AuthProvider>

@@ -295,10 +295,10 @@
       
       // Fallback to default
       if (!imageUrl || !imageUrl.startsWith('http')) {
-        imageUrl = 'http://localhost:3001/og-image-trailverse.jpg';
+        imageUrl = 'http://localhost:3000/og-image-trailverse.jpg';
       }
       
-      const blogUrl = `http://localhost:3001/blog/${post.slug}`;
+      const blogUrl = `http://localhost:3000/blog/${post.slug}`;
       const blogTitle = `${post.title} | TrailVerse`;
       const description = post.excerpt || (post.content ? post.content.replace(/<[^>]*>/g, '').substring(0, 200) : '');
       
@@ -350,10 +350,10 @@
       
       // Handle relative paths
       if (imageUrl.startsWith('/')) {
-        return `http://localhost:3001${imageUrl}`;
+        return `http://localhost:3000${imageUrl}`;
       }
       
-      return `http://localhost:3001/${imageUrl}`;
+      return `http://localhost:3000/${imageUrl}`;
     }
     
     function displayResults(post, metaTags) {
@@ -420,4 +420,3 @@
   </script>
 </body>
 </html>
-

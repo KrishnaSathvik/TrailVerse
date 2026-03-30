@@ -38,8 +38,8 @@ Your backend integration setup is **90% complete**! Here's what's ready:
    # Terminal 1 - Backend
    cd server && npm run dev
    
-   # Terminal 2 - Frontend  
-   cd client && npm start
+   # Terminal 2 - Frontend
+   cd next-frontend && npm run dev
    ```
 
 **🎉 You're live in 5 minutes!**
@@ -76,7 +76,7 @@ Your backend integration setup is **90% complete**! Here's what's ready:
 Once servers are running:
 
 ### 1. Health Check
-Visit: http://localhost:5000/api/health
+Visit: http://localhost:5001/api/health
 Should show: `{"status":"ok","database":"connected"}`
 
 ### 2. Test Authentication

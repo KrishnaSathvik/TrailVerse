@@ -6,13 +6,55 @@
   margin-bottom: 24px;
 }
 
+.table-of-contents-sticky {
+  position: sticky;
+  top: 104px;
+}
+
 .toc-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  width: 100%;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.toc-mobile-toggle {
+  cursor: pointer;
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  padding-left: 0;
+  padding-right: 0;
+  color: inherit;
+  text-align: left;
+  appearance: none;
+}
+
+.toc-header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.toc-header-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.toc-header-desktop {
+  align-items: center;
 }
 
 .toc-title {
@@ -23,6 +65,20 @@
 }
 
 .toc-nav {
+  margin: 0;
+  overflow: hidden;
+  max-height: 1200px;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.toc-nav.open {
+  opacity: 1;
+}
+
+.toc-nav.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
   margin: 0;
 }
 
@@ -50,12 +106,30 @@
   line-height: 1.5;
   color: var(--text-secondary);
   width: 100%;
+  text-decoration: none;
+  appearance: none;
 }
 
 .toc-link:hover {
   background-color: var(--surface-hover);
   color: var(--text-primary);
   transform: translateX(4px);
+}
+
+.toc-link.active {
+  background-color: color-mix(in srgb, var(--accent-green) 12%, transparent);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--accent-green);
+}
+
+.toc-chevron {
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.toc-chevron.open {
+  transform: rotate(180deg);
 }
 
 .toc-level-1 {
@@ -94,8 +168,17 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .table-of-contents-sticky {
+    position: static;
+    top: auto;
+  }
+
   .table-of-contents {
     padding: 16px;
+  }
+
+  .toc-mobile-toggle {
+    width: 100%;
   }
   
   .toc-title {
@@ -107,4 +190,3 @@
     padding: 6px 10px;
   }
 }
-

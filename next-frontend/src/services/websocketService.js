@@ -5,14 +5,18 @@
  */
 
 import io from 'socket.io-client';
+import { getStoredToken } from './authService';
 
 class WebSocketService {
   constructor() {
     this.socket = null;
     this.isConnected = false;
     this.isAuthenticated = false;
+    this.isConnecting = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
+    this.lastConnectAttemptAt = 0;
+    this.connectCooldownMs = 3000;
     this.eventListeners = new Map();
     this.pendingChannels = new Set(); // Track channels to subscribe to after auth
     this.subscribedChannels = new Set(); // Track channels we're actually subscribed to
@@ -36,8 +40,8 @@ class WebSocketService {
   setupPageEventListeners() {
     // Handle page visibility changes
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && !this.isConnected) {
-        const token = localStorage.getItem('token');
+      if (!document.hidden && this.canAttemptConnection()) {
+        const token = getStoredToken();
         if (token) {
           this.connect(token);
         }
@@ -46,8 +50,8 @@ class WebSocketService {
 
     // Handle online/offline status
     window.addEventListener('online', () => {
-      if (!this.isConnected) {
-        const token = localStorage.getItem('token');
+      if (this.canAttemptConnection()) {
+        const token = getStoredToken();
         if (token) {
           this.connect(token);
         }
@@ -61,10 +65,19 @@ class WebSocketService {
     });
   }
 
+  canAttemptConnection() {
+    return !this.isConnected && !this.isConnecting && !(this.socket && this.socket.active);
+  }
+
   // Connect to WebSocket server
   connect(token) {
     if (this.socket && this.socket.connected) {
       console.log('[WebSocket] Already connected, skipping connection attempt');
+      return;
+    }
+
+    if (this.isConnecting || (this.socket && this.socket.active)) {
+      console.log('[WebSocket] Connection already in progress, skipping connection attempt');
       return;
     }
 
@@ -73,9 +86,17 @@ class WebSocketService {
       return;
     }
 
+    const now = Date.now();
+    if (now - this.lastConnectAttemptAt < this.connectCooldownMs) {
+      console.log('[WebSocket] Connect attempt throttled');
+      return;
+    }
+    this.lastConnectAttemptAt = now;
+    this.isConnecting = true;
+
     try {
-      // Clean up existing connection if any
-      if (this.socket) {
+      // Clean up a stale, inactive connection if any
+      if (this.socket && !this.socket.active && !this.socket.connected) {
         console.log('[WebSocket] Cleaning up existing socket...');
         this.socket.removeAllListeners(); // Remove all listeners first
         this.socket.disconnect();
@@ -83,7 +104,7 @@ class WebSocketService {
       }
 
       // Determine WebSocket URL
-      // In production, VITE_WS_URL should point to the backend server (e.g., Render)
+      // In production, NEXT_PUBLIC_WS_URL should point to the backend server (e.g., Render)
       // because Vercel doesn't support WebSocket connections
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL ||
                    (process.env.NODE_ENV === 'production'
@@ -128,13 +149,14 @@ class WebSocketService {
 
     console.log('[WebSocket] Setting up event handlers...');
 
-    this.socket.on('connect', () => {
-      console.log('[WebSocket] ✅ Connected to server, socket.id:', this.socket.id);
-      this.isConnected = true;
-      this.reconnectAttempts = 0;
+      this.socket.on('connect', () => {
+        console.log('[WebSocket] ✅ Connected to server, socket.id:', this.socket.id);
+        this.isConnected = true;
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
       
       // Authenticate with token
-      const token = localStorage.getItem('token');
+      const token = getStoredToken();
       if (token && this.socket) {
         console.log('[WebSocket] 🔐 Sending authentication...');
         this.socket.emit('authenticate', { token });
@@ -149,6 +171,7 @@ class WebSocketService {
     this.socket.on('authenticated', (data) => {
       console.log('[WebSocket] Authenticated successfully', data);
       this.isAuthenticated = true;
+      this.isConnecting = false;
       
       // Notify listeners that authentication is complete
       this.emit('authenticated', data);
@@ -164,6 +187,7 @@ class WebSocketService {
     this.socket.on('auth_error', (data) => {
       console.error('[WebSocket] Authentication error:', data.message);
       this.isAuthenticated = false;
+      this.isConnecting = false;
       this.emit('auth_error', data);
     });
 
@@ -188,13 +212,20 @@ class WebSocketService {
       console.log('[WebSocket] Disconnected:', reason);
       this.isConnected = false;
       this.isAuthenticated = false;
+      this.isConnecting = false;
       // Clear subscribed channels so we resubscribe on reconnect
       this.subscribedChannels.clear();
       this.emit('disconnected', { reason });
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[WebSocket] Connection error:', error);
+      const message = error?.message || 'Unknown connection error';
+      if (message === 'timeout') {
+        console.warn('[WebSocket] Connection timed out');
+      } else {
+        console.error('[WebSocket] Connection error:', error);
+      }
+      this.isConnecting = false;
       this.reconnectAttempts++;
       this.isConnected = false;
       this.emit('error', error);
@@ -316,6 +347,7 @@ class WebSocketService {
     }
     this.isConnected = false;
     this.isAuthenticated = false;
+    this.isConnecting = false;
     // Clear subscribed channels so we resubscribe on reconnect
     this.subscribedChannels.clear();
     // Don't clear pendingChannels - we want to resubscribe on reconnect

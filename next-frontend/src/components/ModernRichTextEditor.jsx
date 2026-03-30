@@ -1,19 +1,24 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { 
-  Bold, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Quote, 
-  Link, 
-  Image,
+import React, { useEffect, useRef, useState } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import LinkExtension from '@tiptap/extension-link';
+import ImageExtension from '@tiptap/extension-image';
+import Placeholder from '@tiptap/extension-placeholder';
+import TextAlign from '@tiptap/extension-text-align';
+import {
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Link,
+  Upload,
+  Eye,
+  Code,
   Type,
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Upload,
-  Eye,
-  Code,
   X,
   Maximize2,
   Minimize2
@@ -22,207 +27,209 @@ import imageUploadService from '../services/imageUploadService';
 import { useToast } from '../context/ToastContext';
 import './ModernRichTextEditor.css';
 
-const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing your story..." }) => {
-  const editorRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const formatSelectRef = useRef(null);
-  const toolbarRef = useRef(null);
+const headingOptions = [
+  { value: 'normal', label: 'Paragraph' },
+  { value: 'h1', label: 'Heading 1' },
+  { value: 'h2', label: 'Heading 2' },
+  { value: 'h3', label: 'Heading 3' },
+  { value: 'h4', label: 'Heading 4' },
+  { value: 'quote', label: 'Quote' }
+];
+
+const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing your story...' }) => {
   const containerRef = useRef(null);
-  
-  const [isFocused, setIsFocused] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isToolbarSticky, setIsToolbarSticky] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [currentFormat, setCurrentFormat] = useState('normal');
-  const isInternalUpdateRef = useRef(false);
+  const toolbarRef = useRef(null);
+  const fileInputRef = useRef(null);
   const toolbarHeightRef = useRef(0);
   const toolbarWidthRef = useRef(0);
   const toolbarLeftRef = useRef(0);
-  
   const { showToast } = useToast();
 
-  // Get current block format
-  const getCurrentFormat = useCallback(() => {
-    if (!editorRef.current) return 'normal';
-    
-    try {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return 'normal';
-      
-      const range = selection.getRangeAt(0);
-      let element = range.startContainer;
-      
-      if (element.nodeType === Node.TEXT_NODE) {
-        element = element.parentElement;
-      }
-      
-      while (element && element !== editorRef.current) {
-        if (!element || !element.tagName) {
-          element = element?.parentElement;
-          continue;
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isToolbarSticky, setIsToolbarSticky] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentFormat, setCurrentFormat] = useState('normal');
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3, 4] }
+      }),
+      Underline,
+      LinkExtension.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: 'noopener noreferrer',
+          target: '_blank'
         }
-        
-        const tagName = element.tagName.toLowerCase();
-        
-        if (tagName.match(/^h[1-6]$/)) return tagName;
-        if (tagName === 'p') return 'normal';
-        if (tagName === 'blockquote') return 'quote';
-        
-        element = element.parentElement;
-      }
-    } catch (error) {
-      console.error('Error getting current format:', error);
+      }),
+      ImageExtension.configure({
+        HTMLAttributes: {
+          class: 'editor-inline-image'
+        }
+      }),
+      Placeholder.configure({
+        placeholder
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      })
+    ],
+    content: value || '',
+    onUpdate: ({ editor: currentEditor }) => {
+      onChange?.(currentEditor.getHTML());
     }
-    
-    return 'normal';
-  }, []);
+  });
 
-  // Update format display
-  const updateFormatDisplay = useCallback(() => {
-    if (!editorRef.current || !formatSelectRef.current) return;
-    
-    try {
-      const format = getCurrentFormat();
-      setCurrentFormat(format);
-      if (formatSelectRef.current.value !== format) {
-        formatSelectRef.current.value = format;
-      }
-    } catch (error) {
-      console.error('Error updating format display:', error);
-    }
-  }, [getCurrentFormat]);
-
-  // Initialize content
   useEffect(() => {
-    // Skip if this is an internal update (from handleInput)
-    if (isInternalUpdateRef.current) {
-      isInternalUpdateRef.current = false;
+    if (!editor) {
       return;
     }
-    
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
-      // Use setTimeout to avoid infinite loops
-      const timeoutId = setTimeout(() => {
-        if (formatSelectRef.current) {
-          updateFormatDisplay();
-        }
-      }, 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [value]); // Removed updateFormatDisplay from dependencies
 
-  // Handle input changes
-  const handleInput = () => {
-    if (editorRef.current && onChange) {
-      isInternalUpdateRef.current = true;
-      onChange(editorRef.current.innerHTML);
-      // Update format display after a short delay to avoid blocking
-      setTimeout(() => {
-        updateFormatDisplay();
-      }, 0);
+    const currentHtml = editor.getHTML();
+    if ((value || '') !== currentHtml) {
+      editor.commands.setContent(value || '', { emitUpdate: false });
     }
-  };
+  }, [editor, value]);
 
-  // Execute formatting commands
-  const execCommand = (command, value = null) => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-      document.execCommand(command, false, value);
-      handleInput();
+  useEffect(() => {
+    const updateToolbarDimensions = () => {
+      if (!toolbarRef.current || !containerRef.current) {
+        return;
+      }
+
+      toolbarHeightRef.current = toolbarRef.current.offsetHeight;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      toolbarWidthRef.current = containerRect.width;
+      toolbarLeftRef.current = containerRect.left;
+    };
+
+    updateToolbarDimensions();
+    window.addEventListener('resize', updateToolbarDimensions, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', updateToolbarDimensions);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!toolbarRef.current || !containerRef.current) {
+        return;
+      }
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const shouldBeSticky = containerRect.top < 0 && containerRect.bottom > toolbarHeightRef.current + 50;
+
+      if (shouldBeSticky && !isToolbarSticky) {
+        toolbarWidthRef.current = containerRef.current.getBoundingClientRect().width;
+        toolbarLeftRef.current = containerRef.current.getBoundingClientRect().left;
+      }
+
+      setIsToolbarSticky(shouldBeSticky);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [isToolbarSticky]);
+
+  useEffect(() => {
+    document.body.style.overflow = isFullscreen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
     }
-  };
 
-  // Insert link
-  const insertLink = () => {
-    const selection = window.getSelection();
-    const selectedText = selection.toString();
-    const url = prompt('Enter URL:', 'https://');
-    
-    if (url && url !== 'https://') {
-      if (selectedText) {
-        execCommand('createLink', url);
-      } else {
-        const linkText = prompt('Enter link text:', url);
-        if (linkText) {
-          const link = `<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-          execCommand('insertHTML', link);
+    const syncCurrentFormat = () => {
+      if (editor.isActive('blockquote')) {
+        setCurrentFormat('quote');
+        return;
+      }
+
+      for (const level of [1, 2, 3, 4]) {
+        if (editor.isActive('heading', { level })) {
+          setCurrentFormat(`h${level}`);
+          return;
         }
       }
+
+      setCurrentFormat('normal');
+    };
+
+    syncCurrentFormat();
+    editor.on('selectionUpdate', syncCurrentFormat);
+    editor.on('transaction', syncCurrentFormat);
+
+    return () => {
+      editor.off('selectionUpdate', syncCurrentFormat);
+      editor.off('transaction', syncCurrentFormat);
+    };
+  }, [editor]);
+
+  const handleFormatChange = (selectedValue) => {
+    if (!editor) {
+      return;
+    }
+
+    editor.chain().focus();
+
+    if (selectedValue === 'normal') {
+      editor.chain().focus().setParagraph().run();
+      return;
+    }
+
+    if (selectedValue === 'quote') {
+      editor.chain().focus().toggleBlockquote().run();
+      return;
+    }
+
+    if (selectedValue.startsWith('h')) {
+      editor.chain().focus().toggleHeading({ level: Number(selectedValue.slice(1)) }).run();
     }
   };
 
-  // Insert code block
-  const insertCodeBlock = () => {
-    const code = prompt('Enter code:');
-    if (code) {
-      const codeBlock = `<pre><code>${code}</code></pre>`;
-      execCommand('insertHTML', codeBlock);
+  const insertLink = () => {
+    if (!editor) {
+      return;
     }
+
+    const previousUrl = editor.getAttributes('link').href || 'https://';
+    const url = window.prompt('Enter URL', previousUrl);
+
+    if (url === null) {
+      return;
+    }
+
+    if (url.trim() === '') {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
   };
 
-  // Handle image upload button click
-  const handleImageButtonClick = (e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  const uploadAndInsertImages = async (files) => {
+    if (!editor || !files?.length) {
+      return;
     }
-    if (fileInputRef.current && !isUploading) {
-      fileInputRef.current.click();
-    }
-  };
 
-  // Handle file input change
-  const handleFileInputChange = (e) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileSelect(files);
-    }
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  // Handle drag and drop
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Only set to false if we're leaving the editor entirely
-    if (e.target === editorRef.current) {
-      setIsDragging(false);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const files = e.dataTransfer?.files;
-    if (files && files.length > 0) {
-      handleFileSelect(files);
-    }
-  }, []);
-
-  // Handle file selection and upload
-  const handleFileSelect = async (files) => {
-    if (!files || files.length === 0) return;
-
-    const fileArray = Array.from(files);
     const validFiles = [];
-
-    // Validate files
-    for (const file of fileArray) {
+    for (const file of Array.from(files)) {
       try {
         imageUploadService.validateImageFile(file);
         validFiles.push(file);
@@ -231,223 +238,64 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
       }
     }
 
-    if (validFiles.length === 0) return;
+    if (validFiles.length === 0) {
+      return;
+    }
 
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(10);
+
+    const progressInterval = window.setInterval(() => {
+      setUploadProgress((previous) => (previous >= 85 ? previous : previous + 15));
+    }, 180);
 
     try {
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
-
-      // Upload images
       const uploadResult = await imageUploadService.uploadImages(validFiles, {
         category: 'blog',
         isPublic: true
       });
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      // Handle response structure - could be { data: [...] } or { success: true, data: [...] }
-      const imageData = uploadResult.data || uploadResult;
-      const images = Array.isArray(imageData) ? imageData : (imageData.data || []);
-
-      if (images && images.length > 0) {
-        // Insert images into editor
-        if (editorRef.current) {
-          editorRef.current.focus();
-          
-          images.forEach((imageData) => {
-            const imageHTML = `
-              <figure class="blog-image" contenteditable="false">
-                <img src="${imageData.url}" 
-                     alt="${imageData.originalName || 'Uploaded image'}" 
-                     loading="lazy"
-                     style="max-width: 100%; height: auto; border-radius: 12px; display: block;" />
-                <figcaption contenteditable="true" placeholder="Add a caption (optional)..."></figcaption>
-              </figure>
-              <p><br></p>
-            `;
-            
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              range.deleteContents();
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = imageHTML;
-              const frag = document.createDocumentFragment();
-              let node;
-              while ((node = tempDiv.firstChild)) {
-                frag.appendChild(node);
-              }
-              range.insertNode(frag);
-            } else {
-              execCommand('insertHTML', imageHTML);
-            }
-          });
-          
-          handleInput();
-          showToast(`${images.length} image${images.length > 1 ? 's' : ''} uploaded successfully!`, 'success');
-        }
-      }
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      console.error('Error details:', {
-        response: error.response?.data,
-        status: error.response?.status,
-        message: error.message,
-        stack: error.stack
+      const images = uploadResult.data || [];
+      images.forEach((image) => {
+        editor.chain().focus().setImage({ src: image.url, alt: image.originalName || 'Uploaded image' }).run();
+        editor.chain().focus().createParagraphNear().run();
       });
-      
-      // Extract error message from various possible locations
-      let errorMessage = 'Failed to upload images';
-      
-      if (error.response) {
-        // Server responded with error status
-        const serverError = error.response.data;
-        errorMessage = serverError?.error || 
-                      serverError?.message || 
-                      `Server error: ${error.response.status}`;
-        
-        // Include development details if available
-        if (process.env.NODE_ENV === 'development' && serverError?.details) {
-          console.error('Server error details:', serverError.details);
-        }
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = 'Network error: Unable to connect to server';
-      } else {
-        // Something else happened
-        errorMessage = error.message || 'Failed to upload images';
-      }
-      
-      showToast(errorMessage, 'error');
+
+      setUploadProgress(100);
+      showToast(`${images.length} image${images.length > 1 ? 's' : ''} uploaded successfully`, 'success');
+    } catch (error) {
+      showToast(error.message || 'Failed to upload images', 'error');
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+      window.clearInterval(progressInterval);
+      window.setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 200);
     }
   };
 
-  // Store toolbar dimensions on mount and resize
-  useEffect(() => {
-    const updateToolbarDimensions = () => {
-      if (toolbarRef.current && containerRef.current) {
-        toolbarHeightRef.current = toolbarRef.current.offsetHeight;
-        const containerRect = containerRef.current.getBoundingClientRect();
-        toolbarWidthRef.current = containerRect.width;
-        toolbarLeftRef.current = containerRect.left;
-      }
-    };
-
-    updateToolbarDimensions();
-    window.addEventListener('resize', updateToolbarDimensions, { passive: true });
-    
-    return () => {
-      window.removeEventListener('resize', updateToolbarDimensions);
-    };
-  }, []);
-
-  // Sticky toolbar on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!toolbarRef.current || !containerRef.current) return;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      
-      // Only make sticky when container top is above viewport and container is still visible
-      const shouldBeSticky = containerRect.top < 0 && containerRect.bottom > toolbarHeightRef.current + 50;
-
-      if (shouldBeSticky !== isToolbarSticky) {
-        // Update dimensions when becoming sticky
-        if (shouldBeSticky && !isToolbarSticky) {
-          toolbarWidthRef.current = containerRect.width;
-          toolbarLeftRef.current = containerRect.left;
-        }
-        setIsToolbarSticky(shouldBeSticky);
-      }
-    };
-
-    let ticking = false;
-    const optimizedHandleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', optimizedHandleScroll, { passive: true });
-    window.addEventListener('resize', optimizedHandleScroll, { passive: true });
-    
-    // Initial check
-    handleScroll();
-
-    return () => {
-      window.removeEventListener('scroll', optimizedHandleScroll);
-      window.removeEventListener('resize', optimizedHandleScroll);
-    };
-  }, [isToolbarSticky]);
-
-  // Fullscreen toggle
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    if (!isFullscreen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+  const handleFileInputChange = (event) => {
+    uploadAndInsertImages(event.target.files);
+    event.target.value = '';
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
-
-  const ToolbarButton = ({ onClick, children, title, isActive = false, disabled = false, className = '' }) => (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!disabled && onClick) {
-          onClick(e);
-        }
-      }}
-      title={title}
-      className={`toolbar-btn ${isActive ? 'active' : ''} ${disabled ? 'disabled' : ''} ${className}`}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
+  const toolbarButtonClass = (isActive) => `toolbar-btn ${isActive ? 'active' : ''}`;
 
   return (
-    <div 
-      className={`modern-rich-text-editor ${isFullscreen ? 'fullscreen' : ''}`} 
-      ref={containerRef}
-    >
-      {/* Toolbar Placeholder - maintains space when toolbar is sticky */}
+    <div className={`modern-rich-text-editor ${isFullscreen ? 'fullscreen' : ''}`} ref={containerRef}>
       {isToolbarSticky && toolbarHeightRef.current > 0 && (
-        <div 
-          style={{ 
+        <div
+          style={{
             height: `${toolbarHeightRef.current}px`,
             visibility: 'hidden',
             pointerEvents: 'none',
             flexShrink: 0
-          }} 
+          }}
           aria-hidden="true"
         />
       )}
-      
-      {/* Toolbar */}
-      <div 
+
+      <div
         ref={toolbarRef}
         className={`editor-toolbar ${isToolbarSticky ? 'sticky' : ''}`}
         style={isToolbarSticky ? {
@@ -456,111 +304,80 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
         } : {}}
       >
         <div className="toolbar-section">
-          {/* Text Formatting */}
           <div className="toolbar-group">
-            <ToolbarButton onClick={() => execCommand('bold')} title="Bold (Ctrl+B)">
+            <button type="button" className={toolbarButtonClass(editor?.isActive('bold'))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold">
               <Bold size={18} />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => execCommand('italic')} title="Italic (Ctrl+I)">
+            </button>
+            <button type="button" className={toolbarButtonClass(editor?.isActive('italic'))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic">
               <Italic size={18} />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => execCommand('underline')} title="Underline (Ctrl+U)">
+            </button>
+            <button type="button" className={toolbarButtonClass(editor?.isActive('underline'))} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline">
               <Type size={18} />
-            </ToolbarButton>
+            </button>
           </div>
 
-          {/* Format Selector */}
           <div className="toolbar-group">
             <select
-              ref={formatSelectRef}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === 'normal') {
-                  execCommand('formatBlock', 'p');
-                } else if (value === 'quote') {
-                  execCommand('formatBlock', 'blockquote');
-                } else if (value.startsWith('h')) {
-                  execCommand('formatBlock', value);
-                }
-                setTimeout(updateFormatDisplay, 100);
-              }}
               className="format-selector"
               title="Text Format"
               value={currentFormat}
+              onChange={(event) => handleFormatChange(event.target.value)}
             >
-              <option value="normal">Paragraph</option>
-              <option value="h1">Heading 1</option>
-              <option value="h2">Heading 2</option>
-              <option value="h3">Heading 3</option>
-              <option value="h4">Heading 4</option>
-              <option value="quote">Quote</option>
+              {headingOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Lists */}
           <div className="toolbar-group">
-            <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Bullet List">
+            <button type="button" className={toolbarButtonClass(editor?.isActive('bulletList'))} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bullet List">
               <List size={18} />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Numbered List">
+            </button>
+            <button type="button" className={toolbarButtonClass(editor?.isActive('orderedList'))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered List">
               <ListOrdered size={18} />
-            </ToolbarButton>
+            </button>
           </div>
 
-          {/* Alignment */}
           <div className="toolbar-group">
-            <ToolbarButton onClick={() => execCommand('justifyLeft')} title="Align Left">
+            <button type="button" className={toolbarButtonClass(editor?.isActive({ textAlign: 'left' }))} onClick={() => editor?.chain().focus().setTextAlign('left').run()} title="Align Left">
               <AlignLeft size={18} />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => execCommand('justifyCenter')} title="Align Center">
+            </button>
+            <button type="button" className={toolbarButtonClass(editor?.isActive({ textAlign: 'center' }))} onClick={() => editor?.chain().focus().setTextAlign('center').run()} title="Align Center">
               <AlignCenter size={18} />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => execCommand('justifyRight')} title="Align Right">
+            </button>
+            <button type="button" className={toolbarButtonClass(editor?.isActive({ textAlign: 'right' }))} onClick={() => editor?.chain().focus().setTextAlign('right').run()} title="Align Right">
               <AlignRight size={18} />
-            </ToolbarButton>
+            </button>
           </div>
 
-          {/* Insert Elements */}
           <div className="toolbar-group">
-            <ToolbarButton onClick={insertLink} title="Insert Link">
+            <button type="button" className={toolbarButtonClass(editor?.isActive('link'))} onClick={insertLink} title="Insert Link">
               <Link size={18} />
-            </ToolbarButton>
-            <ToolbarButton 
-              onClick={handleImageButtonClick} 
-              title="Upload Image"
-              disabled={isUploading}
-              className="primary-btn"
-            >
+            </button>
+            <button type="button" className="toolbar-btn primary-btn" onClick={() => fileInputRef.current?.click()} title="Upload Image">
               <Upload size={18} />
               <span className="btn-label">Image</span>
-            </ToolbarButton>
-            <ToolbarButton onClick={insertCodeBlock} title="Insert Code">
+            </button>
+            <button type="button" className={toolbarButtonClass(editor?.isActive('codeBlock'))} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} title="Code Block">
               <Code size={18} />
-            </ToolbarButton>
+            </button>
           </div>
         </div>
 
-        {/* View Controls */}
         <div className="toolbar-section">
           <div className="toolbar-group">
-            <ToolbarButton 
-              onClick={() => setShowPreview(!showPreview)} 
-              title="Toggle Preview"
-              isActive={showPreview}
-            >
+            <button type="button" className={toolbarButtonClass(showPreview)} onClick={() => setShowPreview((previous) => !previous)} title="Toggle Preview">
               <Eye size={18} />
-            </ToolbarButton>
-            <ToolbarButton 
-              onClick={toggleFullscreen} 
-              title="Toggle Fullscreen"
-            >
+            </button>
+            <button type="button" className="toolbar-btn" onClick={() => setIsFullscreen((previous) => !previous)} title="Toggle Fullscreen">
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-            </ToolbarButton>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -570,30 +387,29 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
         style={{ display: 'none' }}
       />
 
-      {/* Editor / Preview */}
       <div className="editor-wrapper">
-        {/* Editor */}
-        <div 
-          className={`editor-pane ${showPreview ? 'split-view' : ''}`}
-          style={{ display: showPreview ? 'block' : 'block' }}
-        >
+        <div className={`editor-pane ${showPreview ? 'split-view' : ''}`}>
           <div
-            ref={editorRef}
-            className={`editor-content ${isFocused ? 'focused' : ''} ${isDragging ? 'dragging' : ''}`}
-            contentEditable
-            onInput={handleInput}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onKeyUp={updateFormatDisplay}
-            onClick={updateFormatDisplay}
-            data-placeholder={placeholder}
-            suppressContentEditableWarning={true}
-          />
-          
-          {/* Drag Overlay */}
+            className={`editor-content ${isDragging ? 'dragging' : ''}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault();
+              if (event.currentTarget === event.target) {
+                setIsDragging(false);
+              }
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragging(false);
+              uploadAndInsertImages(event.dataTransfer.files);
+            }}
+          >
+            <EditorContent editor={editor} />
+          </div>
+
           {isDragging && (
             <div className="drag-overlay">
               <div className="drag-overlay-content">
@@ -602,19 +418,15 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
               </div>
             </div>
           )}
-          
-          {/* Upload Overlay */}
+
           {isUploading && (
             <div className="upload-overlay">
               <div className="upload-overlay-content">
-                <div className="upload-spinner"></div>
+                <div className="upload-spinner" />
                 <p>Uploading images...</p>
                 {uploadProgress > 0 && (
                   <div className="upload-progress">
-                    <div 
-                      className="upload-progress-bar" 
-                      style={{ width: `${uploadProgress}%` }}
-                    />
+                    <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }} />
                   </div>
                 )}
               </div>
@@ -622,20 +434,15 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
           )}
         </div>
 
-        {/* Preview */}
         {showPreview && (
           <div className="preview-pane">
             <div className="preview-header">
               <h3>Preview</h3>
-              <button 
-                onClick={() => setShowPreview(false)}
-                className="close-preview"
-                title="Close Preview"
-              >
+              <button onClick={() => setShowPreview(false)} className="close-preview" title="Close Preview">
                 <X size={18} />
               </button>
             </div>
-            <div 
+            <div
               className="preview-content"
               dangerouslySetInnerHTML={{ __html: value || '<p class="empty-preview">Start writing to see preview...</p>' }}
             />
@@ -643,10 +450,9 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
         )}
       </div>
 
-      {/* Word Count */}
       <div className="editor-footer">
         <div className="word-count">
-          {value ? `${value.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length} words` : '0 words'}
+          {value ? `${value.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length} words` : '0 words'}
         </div>
       </div>
     </div>
@@ -654,4 +460,3 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = "Start writing yo
 };
 
 export default ModernRichTextEditor;
-

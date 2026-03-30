@@ -1,24 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, Calendar, Trash2, MessageSquare } from '@components/icons';
-import { useUserReviews } from '../../hooks/useUserReviews';
 import { useAllParks } from '../../hooks/useParks';
-import { useToast } from '../../context/ToastContext';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
-const UserReviews = () => {
-  const { data, isLoading, error, refetch } = useUserReviews();
+const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
   const { data: allParksData, isLoading: parksLoading } = useAllParks();
   const parksData = allParksData?.data;
-  const { showToast } = useToast();
-  
   const [deletingReview, setDeletingReview] = useState(null);
 
   // Log when reviews data changes
   useEffect(() => {
-    const reviews = data?.data || [];
     console.log('[UserReviews] 🔄 Reviews data updated, count:', reviews.length);
-  }, [data]);
+  }, [reviews]);
 
   // Create a mapping from parkCode to fullName
   const parkNameMap = useMemo(() => {
@@ -35,7 +29,7 @@ const UserReviews = () => {
   };
 
   const handleDeleteSuccess = () => {
-    refetch(); // Refresh the reviews list
+    onRefresh();
     setDeletingReview(null);
   };
 
@@ -84,8 +78,6 @@ const UserReviews = () => {
       </div>
     );
   }
-
-  const reviews = data?.data || [];
 
   if (reviews.length === 0) {
     return (

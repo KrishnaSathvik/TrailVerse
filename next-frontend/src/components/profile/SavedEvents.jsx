@@ -1,35 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Calendar, MapPin, Clock, ExternalLink, Heart, X, CalendarDays } from '@components/icons';
-import { useSavedEvents } from '../../hooks/useSavedEvents';
 import { useAllParks } from '../../hooks/useParks';
 
-const SavedEvents = () => {
-  const { savedEvents, loading, unsaveEvent, clearAllSavedEvents } = useSavedEvents();
+const SavedEvents = ({ savedEvents, loading, onRemove, onClearAll }) => {
   useAllParks(); // Prefetch all parks data for park name lookups
-  const [filteredEvents, setFilteredEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter events based on search term
-  useEffect(() => {
+  const filteredEvents = useMemo(() => {
     if (!searchTerm.trim()) {
-      setFilteredEvents(savedEvents);
-    } else {
-      const filtered = savedEvents.filter(event => 
+      return savedEvents;
+    }
+
+    return savedEvents.filter(event =>
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.parkName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredEvents(filtered);
-    }
   }, [savedEvents, searchTerm]);
 
   const handleRemoveEvent = (eventId) => {
-    unsaveEvent(eventId);
+    onRemove(eventId);
   };
 
   const handleClearAll = () => {
     if (window.confirm('Are you sure you want to remove all saved events?')) {
-      clearAllSavedEvents();
+      onClearAll();
     }
   };
 
@@ -76,7 +71,7 @@ const SavedEvents = () => {
     <div>
       {/* Search */}
       {savedEvents.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row">
           <div className="relative">
             <input
               type="text"
@@ -93,6 +88,19 @@ const SavedEvents = () => {
             />
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
           </div>
+          <button
+            onClick={handleClearAll}
+            className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              color: 'var(--text-primary)'
+            }}
+          >
+            <X className="h-4 w-4" />
+            Clear all
+          </button>
         </div>
       )}
 

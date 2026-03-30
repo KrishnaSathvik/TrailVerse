@@ -14,10 +14,40 @@ const api = axios.create({
   }
 });
 
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
+
+export const getStoredToken = () =>
+  localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+
+export const getStoredUser = () =>
+  localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
+
+const clearStoredAuth = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+};
+
+const persistAuth = (token, user, rememberMe) => {
+  clearStoredAuth();
+
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem(TOKEN_KEY, token);
+  storage.setItem(USER_KEY, JSON.stringify(user));
+
+  const cookieParts = [`trailverse_auth_token=${token}`, 'path=/', 'SameSite=Lax'];
+  if (rememberMe) {
+    cookieParts.push('max-age=2592000');
+  }
+  document.cookie = cookieParts.join('; ');
+};
+
 // Add token to requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,9 +69,13 @@ api.interceptors.response.use(
 );
 
 class AuthService {
+  constructor() {
+    this.api = api;
+  }
+
   async signup(firstName, lastName, email, password) {
     console.log('📝 AuthService: signup() called');
-    const response = await api.post('/auth/signup', {
+    const response = await this.api.post('/auth/signup', {
       firstName,
       lastName,
       email,
@@ -59,7 +93,7 @@ class AuthService {
 
   async login(email, password, rememberMe = false) {
     console.log('🔐 AuthService: login() called with email:', email);
-    const response = await api.post('/auth/login', {
+    const response = await this.api.post('/auth/login', {
       email,
       password,
       rememberMe
@@ -72,16 +106,13 @@ class AuthService {
       console.log('🔐 AuthService: Token to store:', response.data.token);
       console.log('🔐 AuthService: User data to store:', response.data.data);
       
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.data));
-      // Set dual-strategy cookie for Next.js Middleware
-      document.cookie = `trailverse_auth_token=${response.data.token}; path=/; max-age=604800; SameSite=Lax`;
+      persistAuth(response.data.token, response.data.data, rememberMe);
       
-      console.log('✅ AuthService: Token and user data stored in localStorage and cookies');
+      console.log(`✅ AuthService: Token and user data stored in ${rememberMe ? 'localStorage' : 'sessionStorage'} and cookies`);
       
       // Verify storage
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      const storedToken = getStoredToken();
+      const storedUser = getStoredUser();
       console.log('🔍 AuthService: Verification - stored token exists:', !!storedToken);
       console.log('🔍 AuthService: Verification - stored user exists:', !!storedUser);
       console.log('🔍 AuthService: Verification - stored user data:', storedUser);
@@ -93,7 +124,7 @@ class AuthService {
   }
 
   async getMe() {
-    const response = await api.get('/auth/me');
+    const response = await this.api.get('/auth/me');
     console.log('🔍 AuthService: getMe() response:', response);
     console.log('🔍 AuthService: getMe() response.data:', response.data);
     console.log('🔍 AuthService: getMe() response.data.data:', response.data.data);
@@ -103,11 +134,9 @@ class AuthService {
   }
 
   logout() {
-    console.log('🚪 AuthService: Removing token from localStorage and cookies');
-    localStorage.removeItem('token');
+    console.log('🚪 AuthService: Removing token from storage and cookies');
+    clearStoredAuth();
     document.cookie = "trailverse_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    console.log('🚪 AuthService: Removing user from localStorage');
-    localStorage.removeItem('user');
     // Clear admin authentication flags
     localStorage.removeItem('adminAuthenticated');
     localStorage.removeItem('adminEmail');
@@ -122,9 +151,9 @@ class AuthService {
   }
 
   getCurrentUser() {
-    const user = localStorage.getItem('user');
+    const user = getStoredUser();
     console.log('🔍 AuthService: getCurrentUser() called');
-    console.log('🔍 AuthService: Raw user data from localStorage:', user);
+    console.log('🔍 AuthService: Raw user data from storage:', user);
     console.log('🔍 AuthService: User data type:', typeof user);
     console.log('🔍 AuthService: User data length:', user ? user.length : 'null');
     
@@ -139,15 +168,16 @@ class AuthService {
     } catch (error) {
       console.error('❌ AuthService: Error parsing user data:', error);
       console.log('❌ AuthService: Corrupted user data:', user);
-      localStorage.removeItem('user');
+      localStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(USER_KEY);
       return null;
     }
   }
 
   getToken() {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     console.log('🔍 AuthService: getToken() called');
-    console.log('🔍 AuthService: Token from localStorage:', token ? `EXISTS (${token.substring(0, 20)}...)` : 'NOT_FOUND');
+    console.log('🔍 AuthService: Token from storage:', token ? `EXISTS (${token.substring(0, 20)}...)` : 'NOT_FOUND');
     return token;
   }
 
@@ -156,22 +186,22 @@ class AuthService {
   }
 
   async forgotPassword(email) {
-    const response = await api.post('/auth/forgot-password', { email });
+    const response = await this.api.post('/auth/forgot-password', { email });
     return response.data;
   }
 
   async resetPassword(token, password) {
-    const response = await api.put(`/auth/reset-password/${token}`, { password });
+    const response = await this.api.put(`/auth/reset-password/${token}`, { password });
     return response.data;
   }
 
   async verifyEmail(token) {
-    const response = await api.get(`/auth/verify-email/${token}`);
+    const response = await this.api.get(`/auth/verify-email/${token}`);
     return response.data;
   }
 
   async resendVerification(email) {
-    const response = await api.post('/auth/resend-verification', { email });
+    const response = await this.api.post('/auth/resend-verification', { email });
     return response.data;
   }
 }

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getStoredToken, getStoredUser } from '@/services/authService';
 
 const AdminRoute = ({ children }) => {
   const router = useRouter();
@@ -16,8 +17,8 @@ const AdminRoute = ({ children }) => {
         const adminEmail = localStorage.getItem('adminEmail');
 
         // Also check if user is logged in via JWT and has admin role
-        const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
+        const token = getStoredToken();
+        const user = getStoredUser();
 
         // Use environment variable for admin email (fallback to default for development)
         const expectedAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'trailverseteam@gmail.com';

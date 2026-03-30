@@ -14,21 +14,16 @@ Our testing strategy includes three main types of tests:
 
 ```
 npe-usa/
-├── client/
+├── next-frontend/
 │   ├── src/
-│   │   ├── __tests__/           # Unit tests
-│   │   │   ├── components/      # Component tests
-│   │   │   ├── services/        # Service tests
-│   │   │   ├── utils/           # Utility tests
-│   │   │   └── context/         # Context tests
-│   │   ├── tests/               # Test utilities and setup
-│   │   │   ├── setup.js         # Test setup
-│   │   │   ├── mocks/           # Mock handlers
-│   │   │   └── utils/           # Test utilities
-│   │   └── setupTests.js        # Jest setup
+│   │   ├── components/          # Component tests live alongside features
+│   │   ├── context/             # Context/provider tests
+│   │   ├── services/            # Service tests
+│   │   ├── utils/               # Utility tests
+│   │   └── setupTests.js        # Vitest + Testing Library setup
 │   ├── tests/
 │   │   └── e2e/                 # End-to-end tests
-│   ├── vitest.config.js         # Vitest configuration
+│   ├── vitest.config.mjs        # Vitest configuration
 │   └── playwright.config.js     # Playwright configuration
 ├── server/
 │   ├── tests/
@@ -42,27 +37,24 @@ npe-usa/
 
 ## 🚀 Running Tests
 
-### Client Tests (Frontend)
+### Frontend Tests
 
 ```bash
-# Run all client tests
-cd client
-npm run test:all
+# Run unit tests
+cd next-frontend
+npm run test
 
-# Run unit tests only
-npm run test:vitest
-
-# Run unit tests with UI
-npm run test:vitest:ui
-
-# Run unit tests with coverage
-npm run test:vitest:coverage
+# Run unit tests in watch mode
+npm run test:watch
 
 # Run E2E tests
 npm run test:e2e
 
 # Run E2E tests with UI
 npm run test:e2e:ui
+
+# Run lint checks
+npm run lint
 ```
 
 ### Server Tests (Backend)
@@ -97,7 +89,7 @@ npm run test:coverage
 
 ## 🔧 Test Configuration
 
-### Vitest Configuration (Client)
+### Vitest Configuration (Frontend)
 
 - **Environment**: jsdom for DOM testing
 - **Setup**: Custom setup file with mocks and utilities
@@ -126,7 +118,7 @@ npm run test:coverage
 
 ```javascript
 import { render, screen, fireEvent } from '@testing-library/react';
-import { renderWithAuth } from '../utils/testUtils';
+import { renderWithAuth } from '@/tests/utils/testUtils';
 import MyComponent from '../MyComponent';
 
 describe('MyComponent', () => {
@@ -341,12 +333,12 @@ npm test -- auth.test.js
 
 ### Coverage Reports
 
-- **Client**: `client/coverage/index.html`
+- **Frontend**: `next-frontend/coverage/index.html`
 - **Server**: `server/coverage/lcov-report/index.html`
 
 ### E2E Reports
 
-- **Playwright**: `client/playwright-report/index.html`
+- **Playwright**: `next-frontend/playwright-report/index.html`
 
 ## 🚀 CI/CD Integration
 

@@ -194,13 +194,13 @@ const ComparePage = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 sm:py-20">
+      <section className="relative overflow-hidden py-8 sm:py-20">
         <div className="absolute inset-0 opacity-30">
           <div className="absolute inset-0 bg-gradient-to-b from-orange-500/20 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mt-6">
+        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+          <div className="mt-3 sm:mt-6">
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
               style={{
                 backgroundColor: 'var(--surface)',
@@ -233,7 +233,7 @@ const ComparePage = () => {
 
       {/* Main Content */}
       <section className="pb-24">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           {/* Park Selector */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">

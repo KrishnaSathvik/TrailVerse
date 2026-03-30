@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import WeatherWidget from '../park-details/WeatherWidget';
 import weatherService from '../../services/weatherService';
+import React from 'react';
 
 // Mock the weather service
 vi.mock('../../services/weatherService', () => ({
@@ -25,28 +26,29 @@ vi.mock('@components/icons', () => ({
 
 describe('WeatherWidget', () => {
   const mockWeatherData = {
-    temperature: 25,
-    feelsLike: 27,
-    humidity: 60,
-    pressure: 1013,
+    main: {
+      temp: 77,
+      humidity: 60,
+    },
+    weather: [{ description: 'Clear sky', icon: '01d' }],
     visibility: 10000,
-    windSpeed: 5,
-    windDirection: 180,
-    description: 'Clear sky',
-    icon: '01d',
-    timestamp: Date.now(),
+    wind: { speed: 5 },
   };
 
-  const mockForecastData = [
-    {
-      date: '2024-01-02',
-      temperature: { min: 20, max: 28 },
-      description: 'Partly cloudy',
-      icon: '02d',
-      precipitation: 0,
-      humidity: 55,
-    },
-  ];
+  const mockForecastData = {
+    list: [
+      {
+        dt: 1704153600,
+        main: { temp: 82 },
+        weather: [{ icon: '01d' }],
+      },
+      {
+        dt: 1704164400,
+        main: { temp: 68 },
+        weather: [{ icon: '01d' }],
+      },
+    ],
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,9 +66,8 @@ describe('WeatherWidget', () => {
     render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
-      expect(screen.getByText('25°C')).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '77°F(25°C)')).toBeInTheDocument();
       expect(screen.getByText('Clear sky')).toBeInTheDocument();
-      expect(screen.getByText('Feels like 27°C')).toBeInTheDocument();
     });
   });
 
@@ -122,8 +123,9 @@ describe('WeatherWidget', () => {
     render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Wed')).toBeInTheDocument(); // Day of week
-      expect(screen.getByText('20° / 28°')).toBeInTheDocument(); // Temperature range
+      expect(screen.getByText('Mon')).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '82°F')).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '68°F')).toBeInTheDocument();
     });
   });
 });

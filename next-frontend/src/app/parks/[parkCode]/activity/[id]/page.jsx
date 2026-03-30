@@ -51,7 +51,7 @@ const ActivityDetailPage = () => {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
-        <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="max-w-7xl mx-auto px-4 py-8 sm:py-16">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               Activity Not Found

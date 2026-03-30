@@ -94,6 +94,7 @@ self.addEventListener('fetch', (event) => {
         url.pathname.includes('/components/') ||
         url.pathname.includes('/@') ||
         url.pathname.includes('/__vite') ||
+        url.pathname.includes('/_next/') ||
         url.pathname.includes('/node_modules/') ||
         url.pathname.match(/\.(jsx|ts|tsx)$/)) {
       return; // Let the request pass through to dev server
@@ -244,7 +245,7 @@ async function handleStaticRequest(request) {
   // Skip development source files (jsx, ts, tsx, etc.)
   if (url.pathname.match(/\.(jsx|ts|tsx|js)$/) && 
       (url.pathname.includes('/src/') || url.pathname.includes('/pages/') || url.pathname.includes('/components/'))) {
-    // Let Vite dev server handle these files
+    // Let the framework dev server handle these files
     return fetch(request).catch(error => {
       console.log('[SW] Dev server request failed, letting it pass through:', error);
       throw error;
@@ -252,7 +253,7 @@ async function handleStaticRequest(request) {
   }
   
   // Skip HMR and dev server requests
-  if (url.pathname.includes('/@') || url.pathname.includes('/__vite') || url.pathname.includes('/node_modules/')) {
+  if (url.pathname.includes('/@') || url.pathname.includes('/__vite') || url.pathname.includes('/_next/') || url.pathname.includes('/node_modules/')) {
     return fetch(request).catch(error => {
       console.log('[SW] HMR request failed, letting it pass through:', error);
       throw error;

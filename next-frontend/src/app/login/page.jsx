@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
+import AuthShell from '@/components/auth/AuthShell';
 import { Lock, Mail, Eye, EyeOff, CheckCircle, AlertCircle, Check } from '@components/icons';
 
 const LoginContent = () => {
@@ -92,47 +93,12 @@ const LoginContent = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* Left Side - Logo & Branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 mb-12 group">
-          <img 
-            src="/logo.png" 
-            alt="TrailVerse Logo" 
-            className="h-16 w-16 rounded-xl object-contain transition-transform group-hover:scale-105"
-          />
-          <span className="text-3xl font-bold tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-            TrailVerse
-          </span>
-        </Link>
-
-        {/* Welcome Message */}
-        <div className="text-center max-w-md">
-          <h1 className="text-5xl lg:text-6xl font-light tracking-tighter leading-none mb-6" style={{ color: 'var(--text-primary)' }}>
-            Welcome back!
-          </h1>
-          <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-            Sign in to save your favorite parks, track visited sites, plan trips with AI, and pick up right where you left off.
-          </p>
-        </div>
-      </div>
-
-      {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <Link href="/" className="lg:hidden flex items-center gap-2 mb-8">
-            <img 
-              src="/logo.png" 
-              alt="TrailVerse Logo" 
-              className="h-10 w-10 rounded-xl object-contain"
-            />
-            <span className="text-xl font-bold tracking-tighter" style={{ color: 'var(--text-primary)' }}>
-              TrailVerse
-            </span>
-          </Link>
-
+    <AuthShell
+      desktopTitle="Welcome back!"
+      desktopDescription="Sign in to save your favorite parks, track visited sites, plan trips with AI, and pick up right where you left off."
+      mobileTitle="Sign in to your account"
+      mobileDescription="Save favorite parks, continue AI trip plans, and pick up right where you left off."
+    >
           {/* Verification Success Banner */}
           {showVerificationBanner && (
             <div 
@@ -210,10 +176,10 @@ const LoginContent = () => {
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="hidden lg:block text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
               Sign in to your account
             </h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
+            <p className="lg:block" style={{ color: 'var(--text-secondary)' }}>
               Don&apos;t have an account?{' '}
               <Link href="/signup" className="font-medium hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
                 Create one
@@ -353,9 +319,7 @@ const LoginContent = () => {
               Privacy Policy
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 };
 

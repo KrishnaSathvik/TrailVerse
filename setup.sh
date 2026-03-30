@@ -70,15 +70,15 @@ else
     print_warning "Server .env file already exists"
 fi
 
-# Create client .env file
+# Create frontend .env file
 echo ""
-print_info "Setting up client environment variables..."
-if [ ! -f "client/.env" ]; then
-    cp client/env.example client/.env
-    print_status "Client .env file created"
-    print_warning "Please edit client/.env if you need to customize the API URL"
+print_info "Setting up frontend environment variables..."
+if [ ! -f "next-frontend/.env.local" ]; then
+    cp next-frontend/.env.example next-frontend/.env.local
+    print_status "Frontend .env.local file created"
+    print_warning "Please edit next-frontend/.env.local if you need to customize the API URL"
 else
-    print_warning "Client .env file already exists"
+    print_warning "Frontend .env.local already exists"
 fi
 
 # Install server dependencies
@@ -92,15 +92,15 @@ else
     print_warning "Server dependencies already installed"
 fi
 
-# Install client dependencies
+# Install frontend dependencies
 echo ""
-print_info "Installing client dependencies..."
-cd ../client
+print_info "Installing frontend dependencies..."
+cd ../next-frontend
 if [ ! -d "node_modules" ]; then
     npm install
-    print_status "Client dependencies installed"
+    print_status "Frontend dependencies installed"
 else
-    print_warning "Client dependencies already installed"
+    print_warning "Frontend dependencies already installed"
 fi
 
 cd ..
@@ -113,11 +113,11 @@ print_info "Next steps:"
 echo "1. Set up MongoDB (see MONGODB_SETUP_GUIDE.md)"
 echo "2. Configure environment variables:"
 echo "   - Edit server/.env with your MongoDB URI and API keys"
-echo "   - Edit client/.env if needed"
+echo "   - Edit next-frontend/.env.local if needed"
 echo "3. Run the seed script: cd server && npm run seed"
 echo "4. Start development servers:"
 echo "   - Backend: cd server && npm run dev"
-echo "   - Frontend: cd client && npm start"
+echo "   - Frontend: cd next-frontend && npm run dev"
 echo ""
 print_info "For detailed instructions, see:"
 echo "- MONGODB_SETUP_GUIDE.md"

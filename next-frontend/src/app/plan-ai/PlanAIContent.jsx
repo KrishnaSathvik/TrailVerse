@@ -670,14 +670,14 @@ const PlanAIContent = ({ tripId }) => {
 
       {/* Hero - Hide when limit reached */}
       {!showLimitDialog && (
-        <section className="relative overflow-hidden py-16 sm:py-20">
+        <section className="relative overflow-hidden py-8 sm:py-20">
           <div className="absolute inset-0 opacity-30">
             <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
           </div>
 
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 text-center">
 
-          <div className="mt-6">
+          <div className="mt-3 sm:mt-6">
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
               style={{
                 backgroundColor: 'var(--surface)',
@@ -698,7 +698,7 @@ const PlanAIContent = ({ tripId }) => {
             >
               Plan Your Perfect Trip
             </h1>
-            <p className="text-lg sm:text-xl max-w-2xl mx-auto"
+            <p className="text-lg sm:text-xl max-w-3xl mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
               Answer a few questions and let AI create a personalized itinerary
@@ -712,7 +712,7 @@ const PlanAIContent = ({ tripId }) => {
       {/* Limit Reached Message - Show instead of form */}
       {showLimitDialog ? (
         <section className="py-16 sm:py-20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
             <div
               className="rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur"
               style={{
@@ -861,7 +861,7 @@ const PlanAIContent = ({ tripId }) => {
       ) : (
       /* Form - Show when limit not reached */
       <section className="pb-16 sm:pb-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -1211,7 +1211,7 @@ const PlanAIContent = ({ tripId }) => {
       {!showLimitDialog && user && tripHistory.length > 0 && (
         <>
           {/* Divider */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+          <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 mb-16">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t" style={{ borderColor: 'var(--border)' }} />
@@ -1225,7 +1225,7 @@ const PlanAIContent = ({ tripId }) => {
           </div>
 
           {/* Quick Actions */}
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 sm:mb-20">
+          <section className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 mb-16 sm:mb-20">
             <div className="text-center mb-8 sm:mb-12">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
                 Start Planning Instantly
@@ -1324,7 +1324,7 @@ const PlanAIContent = ({ tripId }) => {
 
       {/* Trip History with Tabs */}
       {(tripHistory.length > 0 || archivedTrips.length > 0) && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 sm:mb-20">
+        <section className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 mb-16 sm:mb-20">
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
               Your Trip History
