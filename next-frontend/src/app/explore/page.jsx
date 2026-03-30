@@ -75,6 +75,7 @@ const ExploreContent = () => {
   const allParks = needsAllParks ? allParksData?.data : paginatedData?.data;
   const totalParks = needsAllParks ? allParksData?.total : paginatedData?.total;
   const totalPages = needsAllParks ? null : paginatedData?.pages;
+  const hasFullParksData = Array.isArray(allParksData?.data) && allParksData.data.length > 0;
 
   useEffect(() => {
     hasMounted.current = true;
@@ -297,6 +298,10 @@ const ExploreContent = () => {
     ).length;
   }, [allParksData]);
 
+  const displayedNationalParksCount = nationalParksCount || (filters.nationalParksOnly ? (paginatedData?.total || 0) : 0);
+  const displayedParksAndSitesCount = allParksData?.data?.length || totalParks || 0;
+  const statesLabelCount = hasFullParksData ? uniqueStates.length : null;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
@@ -332,7 +337,7 @@ const ExploreContent = () => {
             <p className="text-lg sm:text-xl max-w-3xl"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Discover {filters.nationalParksOnly ? `${nationalParksCount} national parks` : `${allParksData?.data?.length || 0} parks and sites`} across America.
+              Discover {filters.nationalParksOnly ? `${displayedNationalParksCount} national parks` : `${displayedParksAndSitesCount} parks and sites`} across America.
               Find your next adventure with real-time weather, reviews, and smart recommendations.
             </p>
           </div>
@@ -430,17 +435,20 @@ const ExploreContent = () => {
                     <span className="text-sm font-medium group-hover:text-forest-400 transition"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({nationalParksCount})
+                      {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({displayedNationalParksCount})
                     </span>
                   </label>
                 </div>
 
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    States ({uniqueStates.length})
+                    States {statesLabelCount === null ? '' : `(${statesLabelCount})`}
                   </h4>
                   <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                    {uniqueStates.map(state => (
+                    {!hasFullParksData && (
+                      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading states...</p>
+                    )}
+                    {hasFullParksData && uniqueStates.map(state => (
                       <label key={state} className="flex items-center gap-2 cursor-pointer group">
                         <input
                           type="checkbox"
@@ -629,13 +637,18 @@ const ExploreContent = () => {
                 <input type="checkbox" checked={filters.nationalParksOnly} onChange={(e) => setFilters({ ...filters, nationalParksOnly: e.target.checked })}
                   className="rounded border-2 w-5 h-5 text-forest-500 focus:ring-forest-500/50" style={{ borderColor: 'var(--border)' }} />
                 <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({nationalParksCount})
+                  {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({displayedNationalParksCount})
                 </span>
               </label>
               <div>
-                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>STATES ({uniqueStates.length})</h4>
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
+                  STATES {statesLabelCount === null ? '' : `(${statesLabelCount})`}
+                </h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {uniqueStates.map(state => (
+                  {!hasFullParksData && (
+                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading states...</p>
+                  )}
+                  {hasFullParksData && uniqueStates.map(state => (
                     <label key={state} className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={filters.states.includes(state)} onChange={() => toggleStateFilter(state)}
                         className="rounded border-2 w-4 h-4 text-forest-500 focus:ring-forest-500/50" style={{ borderColor: 'var(--border)' }} />
