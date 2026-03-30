@@ -2,7 +2,11 @@ import type { MetadataRoute } from 'next';
 import { getAllParkCodes } from '@/lib/parkApi';
 
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://trailverse.onrender.com/api'
+    : 'http://localhost:5001/api');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static routes

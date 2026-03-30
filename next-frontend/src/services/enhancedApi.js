@@ -6,9 +6,15 @@
 import axios from 'axios';
 import cacheService from './cacheService';
 
+const DEFAULT_API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://trailverse.onrender.com/api'
+    : 'http://localhost:5001/api');
+
 class EnhancedApiService {
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api');
+    this.baseURL = DEFAULT_API_BASE_URL;
     this.timeout = 60000;
     this.retryAttempts = 3;
     this.retryDelay = 1000;

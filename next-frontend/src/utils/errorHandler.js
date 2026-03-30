@@ -3,6 +3,12 @@
  * Provides consistent error handling across the application
  */
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://trailverse.onrender.com/api'
+    : 'http://localhost:5001/api');
+
 /**
  * Check if error is a network/connection error (server not running)
  * @param {Error} error - The error object
@@ -148,7 +154,7 @@ export const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => 
  * @param {string} baseURL - Base URL to check
  * @returns {Promise<boolean>} - True if server is available
  */
-export const checkServerHealth = async (baseURL = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api')) => {
+export const checkServerHealth = async (baseURL = API_URL) => {
   try {
     const response = await fetch(`${baseURL}/health`, {
       method: 'GET',

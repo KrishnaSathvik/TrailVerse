@@ -1,5 +1,11 @@
 import enhancedApi from './enhancedApi';
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://trailverse.onrender.com/api'
+    : 'http://localhost:5001/api');
+
 class ImageUploadService {
   // Upload images
   async uploadImages(files, options = {}) {
@@ -70,8 +76,7 @@ class ImageUploadService {
 
   // Get image URL
   getImageUrl(filename) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api');
-    return `${baseUrl}/images/file/${filename}`;
+    return `${API_URL}/images/file/${filename}`;
   }
 
   // Extract relative path from full URL (e.g., extract "profile/image.jpg" from "http://localhost:5001/uploads/profile/image.jpg")
@@ -93,14 +98,12 @@ class ImageUploadService {
 
   // Get thumbnail URL
   getThumbnailUrl(filenameOrUrl) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api');
-
     // Extract relative path if it's a full URL
     const relativePath = this.extractRelativePath(filenameOrUrl) || filenameOrUrl;
     
     // Replace extension with _thumb + extension
     const thumbnailPath = relativePath.replace(/(\.[^.]+)$/, '_thumb$1');
-    return `${baseUrl}/images/file/${thumbnailPath}`;
+    return `${API_URL}/images/file/${thumbnailPath}`;
   }
 
   // Helper method to validate image file

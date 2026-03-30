@@ -1,3 +1,9 @@
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://trailverse.onrender.com/api'
+    : 'http://localhost:5001/api');
+
 class AnalyticsService {
   constructor() {
     this.userId = null;
@@ -5,7 +11,7 @@ class AnalyticsService {
     this.queue = [];
     this.batchSize = 10;
     this.flushInterval = 30000; // 30 seconds
-    this.endpoint = `${process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api')}/analytics/track`;
+    this.endpoint = `${API_URL}/analytics/track`;
     this.sessionId = typeof window !== 'undefined' ? this.getOrCreateSessionId() : null;
 
     if (typeof window !== 'undefined') {
