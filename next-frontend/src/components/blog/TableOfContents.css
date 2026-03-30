@@ -1,0 +1,110 @@
+.table-of-contents {
+  padding: 20px;
+  border-radius: 12px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.toc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.toc-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.toc-nav {
+  margin: 0;
+}
+
+.toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.toc-item {
+  margin: 0;
+  padding: 0;
+}
+
+.toc-link {
+  display: block;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  width: 100%;
+}
+
+.toc-link:hover {
+  background-color: var(--surface-hover);
+  color: var(--text-primary);
+  transform: translateX(4px);
+}
+
+.toc-level-1 {
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.toc-level-1 .toc-link {
+  padding-left: 12px;
+}
+
+.toc-level-2 {
+  margin-top: 2px;
+}
+
+.toc-level-2 .toc-link {
+  padding-left: 24px;
+  font-weight: 500;
+}
+
+.toc-level-3 {
+  margin-top: 2px;
+}
+
+.toc-level-3 .toc-link {
+  padding-left: 36px;
+  font-size: 13px;
+}
+
+.toc-level-4 .toc-link,
+.toc-level-5 .toc-link,
+.toc-level-6 .toc-link {
+  padding-left: 48px;
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-of-contents {
+    padding: 16px;
+  }
+  
+  .toc-title {
+    font-size: 14px;
+  }
+  
+  .toc-link {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+
