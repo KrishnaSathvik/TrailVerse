@@ -91,26 +91,43 @@ app.use(helmet({
 }));
 
 // CORS
-const allowedOrigins = [
+const staticAllowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://www.nationalparksexplorerusa.com',
-  'https://nationalparksexplorerusa.com'
-];
+  'https://nationalparksexplorerusa.com',
+  process.env.CLIENT_URL
+].filter(Boolean);
 
-if (process.env.CLIENT_URL) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (staticAllowedOrigins.includes(origin)) return true;
+
+  try {
+    const { hostname, protocol } = new URL(origin);
+    const isSecure = protocol === 'https:';
+    const isVercelPreview =
+      hostname.endsWith('.vercel.app') &&
+      (
+        hostname.includes('trail-verse') ||
+        hostname.includes('shadowdevils-projects')
+      );
+
+    return isSecure && isVercelPreview;
+  } catch {
+    return false;
+  }
+};
 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true
@@ -258,14 +275,7 @@ const io = socketIo(server, {
       // Allow requests with no origin (like mobile apps or postman)
       if (!origin) return callback(null, true);
       
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'https://www.nationalparksexplorerusa.com',
-        'https://nationalparksexplorerusa.com',
-        process.env.CLIENT_URL
-      ].filter(Boolean);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         console.log('[WebSocket] Rejected connection from origin:', origin);
