@@ -14,15 +14,22 @@ export async function getAllParkCodes() {
 }
 
 export async function getParkDetails(parkCode) {
-  const res = await fetch(`${BASE_URL}/parks/${parkCode}/details`, {
-    next: { revalidate: 1800 },
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/parks/${parkCode}/details`, {
+      next: { revalidate: 1800 },
+    });
 
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error(`Failed to fetch park details: ${res.status}`);
+    if (!res.ok) {
+      if (res.status !== 404) {
+        console.error(`Failed to fetch park details for ${parkCode}: ${res.status}`);
+      }
+      return null;
+    }
+
+    const json = await res.json();
+    return json.data;
+  } catch (error) {
+    console.error(`Error fetching park details for ${parkCode}:`, error);
+    return null;
   }
-
-  const json = await res.json();
-  return json.data;
 }
