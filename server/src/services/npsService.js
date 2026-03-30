@@ -22,6 +22,13 @@ class NPSService {
       timestamp: null,
       ttl: 30 * 60 * 1000 // 30 minutes cache
     };
+
+    // Cache all parks aggressively since the upstream dataset is relatively static
+    this.parksCache = {
+      data: null,
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours
+    };
   }
 
   // Check if cache is valid
@@ -51,8 +58,37 @@ class NPSService {
     console.log('💾 Events cached for 30 minutes');
   }
 
+  isParksCacheValid() {
+    if (!this.parksCache.data || !this.parksCache.timestamp) {
+      return false;
+    }
+    return Date.now() - this.parksCache.timestamp < this.parksCache.ttl;
+  }
+
+  getCachedParks() {
+    if (this.isParksCacheValid()) {
+      console.log('📦 Returning cached parks');
+      return this.parksCache.data;
+    }
+    return null;
+  }
+
+  setParksCache(data) {
+    this.parksCache = {
+      data,
+      timestamp: Date.now(),
+      ttl: 24 * 60 * 60 * 1000
+    };
+    console.log(`💾 Cached ${data.length} parks for 24 hours`);
+  }
+
   // Get all parks with pagination to ensure we get all parks
   async getAllParks(limit = 600) {
+    const cachedParks = this.getCachedParks();
+    if (cachedParks) {
+      return cachedParks;
+    }
+
     try {
       let allParks = [];
       let start = 0;
@@ -146,9 +182,17 @@ class NPSService {
           console.log(`   ${park}`);
         });
       }
+
+      this.setParksCache(allParks);
       return allParks;
     } catch (error) {
       console.error('NPS API Error:', error.message);
+
+      if (this.parksCache.data) {
+        console.warn('⚠️ Returning stale cached parks after NPS failure');
+        return this.parksCache.data;
+      }
+
       throw new Error(`Failed to fetch parks: ${error.message}`);
     }
   }
