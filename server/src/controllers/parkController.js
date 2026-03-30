@@ -86,15 +86,28 @@ exports.getParkByCode = async (req, res, next) => {
 exports.getParkDetails = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
-    
-    // Fetch all data in parallel
-    const [park, activities, alerts, campgrounds, visitorCenters] = await Promise.all([
+
+    const results = await Promise.allSettled([
       npsService.getParkByCode(parkCode),
       npsService.getParkActivities(parkCode),
       npsService.getParkAlerts(parkCode),
       npsService.getParkCampgrounds(parkCode),
       npsService.getParkVisitorCenters(parkCode)
     ]);
+
+    const [parkResult, activitiesResult, alertsResult, campgroundsResult, visitorCentersResult] = results;
+    const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
+    const activities = activitiesResult.status === 'fulfilled' ? activitiesResult.value : [];
+    const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
+    const campgrounds = campgroundsResult.status === 'fulfilled' ? campgroundsResult.value : [];
+    const visitorCenters = visitorCentersResult.status === 'fulfilled' ? visitorCentersResult.value : [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters'];
+        console.error(`Failed to fetch ${sections[index]} for ${parkCode}:`, result.reason?.message || result.reason);
+      }
+    });
 
     if (!park) {
       return res.status(404).json({
