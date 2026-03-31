@@ -29,21 +29,14 @@ I built TrailVerse to solve that problem in a way that feels practical: discover
 
 ## Core Features
 
-- Explore 470+ U.S. national park units with search, filtering, park pages, and map-based browsing.
-- View park details across 12 dedicated tabs: Overview, Activities, Camping, Places, Tours, Parking, Facilities, Photos, Videos, Webcams, Alerts, and Reviews.
-- Browse full NPS photo galleries with lightbox viewer, swipe navigation, and image download.
-- Watch NPS park videos in-app with native video player, captions, and duration info.
-- View live webcam feeds and status for parks with active cameras.
-- Explore named places and points of interest within each park.
-- Browse curated self-guided tours with ordered stops and descriptions.
-- Check real-time parking lot availability, capacity, fees, and accessibility info.
-- Use AI trip planning to build itineraries and get personalized travel suggestions.
-- Compare parks side by side when deciding where to go.
-- Browse blog content, travel guides, and seasonal park articles.
-- Save favorite parks, events, and blogs inside a user account.
-- Track visited parks and trip history over time.
-- Read and submit reviews, comments, and community content.
-- Access park events, ranger programs, and related planning details.
+- Explore 470+ U.S. national park units with search, filtering, and map-based browsing.
+- Park detail pages with 12 tabs: activities, camping, places, tours, parking, photos, videos, webcams, alerts, facilities, and reviews.
+- Full NPS photo galleries with lightbox viewer, swipe navigation, and download.
+- In-app NPS video player with captions and duration info.
+- Live webcam feeds, self-guided tours with stops, and real-time parking lot data.
+- AI trip planning for itineraries and personalized travel suggestions.
+- Compare parks side by side. Save favorites, track visited parks, and plan trips.
+- Blog content, user reviews, events, ranger programs, and community features.
 
 ## NPS API Integration
 
@@ -71,39 +64,6 @@ TrailVerse integrates with 12 National Park Service API endpoints to provide com
 - **Parks list warm-up**: The full parks list (474 parks) is loaded from a MongoDB persistent snapshot on server startup — zero NPS API calls on deploy when the snapshot is fresh.
 - **Rate limit protection**: All NPS API calls handle 429 responses gracefully, falling back to cached data or returning empty arrays without crashing.
 
-## Product Areas
-
-### Park Discovery
-
-- Search and filter parks by different criteria.
-- Browse park pages with summaries, activities, alerts, and weather context.
-- Use map-based exploration and comparison flows.
-- Compare multiple parks before choosing a destination.
-
-### Park Detail Pages
-
-- 12 tabs covering every aspect of a park: overview, activities, camping, places, tours, parking, facilities, photos, videos, webcams, alerts, and reviews.
-- Photo gallery with full-screen lightbox, swipe navigation, keyboard controls, and download.
-- In-app video player with captions for NPS park videos.
-- Live webcam feeds with status indicators.
-- Tour itineraries with numbered stops.
-- Parking lot info with live occupancy and accessibility details.
-- Weather forecasts and current conditions.
-
-### Trip Planning
-
-- Generate trip ideas and itineraries with AI-assisted planning.
-- Revisit previous planning sessions and saved trip data.
-- Use saved parks and preferences to plan future travel.
-- Plan around live events, nearby context, and current conditions.
-
-### Content and Community
-
-- Blog platform with featured images, categories, and structured posts.
-- User reviews with photos and community engagement features.
-- Blog comments, testimonials, and saved content experiences across the app.
-- Favorites, visited tracking, and profile-based travel history.
-
 ## Built From Experience
 
 TrailVerse is shaped by actual park travel, review writing, and on-the-ground trip research. The product direction came from seeing how hard it still is to answer simple questions well:
@@ -130,6 +90,7 @@ Required environment variables for the backend (`server/.env`):
 - `NPS_API_KEY` — NPS API key (register at [developer.nps.gov](https://www.nps.gov/subjects/developer/get-started.htm))
 - `MONGODB_URI` — MongoDB connection string
 - `OPENWEATHER_API_KEY` — OpenWeather API key for weather data
+- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` — Required for AI trip planning features
 
 ### Run the app
 
