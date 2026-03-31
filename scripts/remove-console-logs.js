@@ -14,10 +14,10 @@ const replaceWithLogger = args.includes('--replace-with-logger');
 
 // Files to process
 const patterns = [
-  'client/src/**/*.js',
-  'client/src/**/*.jsx',
-  'client/src/**/*.ts',
-  'client/src/**/*.tsx'
+  'next-frontend/src/**/*.js',
+  'next-frontend/src/**/*.jsx',
+  'next-frontend/src/**/*.ts',
+  'next-frontend/src/**/*.tsx'
 ];
 
 // Console methods to handle

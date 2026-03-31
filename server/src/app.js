@@ -8,6 +8,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const http = require('http');
 const socketIo = require('socket.io');
+const { getUploadsDir } = require('./utils/uploads');
 
 const app = express();
 
@@ -148,8 +149,8 @@ app.use(compression({
   threshold: 1024, // Only compress responses > 1kb
 }));
 
-// Serve uploaded files
-app.use('/uploads', express.static('uploads'));
+// Serve uploaded files from a configurable root so production can use a persistent disk.
+app.use('/uploads', express.static(getUploadsDir()));
 
 // Logging
 if (process.env.NODE_ENV === 'development') {

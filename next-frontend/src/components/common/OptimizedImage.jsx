@@ -6,9 +6,9 @@ const normalizeImageUrl = (url) => {
     return null;
   }
 
-  // Skip data URLs
+  // Support local file previews used by admin forms before upload completes.
   if (url.startsWith('data:image/')) {
-    return null; // Data URLs can't be used for images
+    return url;
   }
 
   // Detect invalid URLs - just filenames without protocols or proper paths

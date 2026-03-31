@@ -10,18 +10,18 @@ class ImageUploadService {
   // Upload images
   async uploadImages(files, options = {}) {
     const formData = new FormData();
-    
-    // Add files to FormData
-    Array.from(files).forEach(file => {
-      formData.append('images', file);
-    });
-    
+
     // Add options
     if (options.category) formData.append('category', options.category);
     if (options.relatedId) formData.append('relatedId', options.relatedId);
     if (options.relatedType) formData.append('relatedType', options.relatedType);
     if (options.tags) formData.append('tags', options.tags);
     if (options.isPublic !== undefined) formData.append('isPublic', options.isPublic);
+
+    // Append metadata fields before files so multer can read them while choosing destination.
+    Array.from(files).forEach(file => {
+      formData.append('images', file);
+    });
 
     const response = await enhancedApi.post('/images/upload', formData, {
       // Don't set Content-Type header - let browser set it with boundary for multipart/form-data

@@ -43,7 +43,7 @@ const imageUploadSchema = new mongoose.Schema({
   relatedType: {
     type: String,
     enum: ['user', 'blog', 'review', 'event', 'testimonial', 'park'],
-    default: null
+    default: undefined
   },
   metadata: {
     width: Number,

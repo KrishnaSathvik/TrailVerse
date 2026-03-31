@@ -60,7 +60,7 @@ export const ToastProvider = ({ children }) => {
 
 const ToastContainer = ({ toasts, removeToast }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="pointer-events-none fixed top-4 right-4 z-[2000] space-y-2 max-w-[calc(100vw-2rem)] sm:max-w-none">
       {toasts.map(toast => (
         <Toast 
           key={toast.id} 
@@ -100,7 +100,7 @@ const Toast = ({ toast, onClose }) => {
 
   return (
     <div 
-      className="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg backdrop-blur-xl min-w-[300px] max-w-md animate-slide-in"
+      className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg backdrop-blur-xl min-w-[280px] max-w-md animate-slide-in"
       style={getToastStyles(toast.type)}
     >
       <div className="flex-1 text-sm font-medium">

@@ -963,6 +963,7 @@ NODE_ENV=production
 PORT=5001
 MONGODB_URI=your_production_mongodb_uri
 JWT_SECRET=your_production_jwt_secret
+UPLOADS_DIR=/var/data/trailverse-uploads
 NPS_API_KEY=your_nps_api_key
 OPENAI_API_KEY=your_openai_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
@@ -974,6 +975,8 @@ ADMIN_EMAIL=admin@nationalparksexplorerusa.com
 GMAPS_SERVER_KEY=your_production_server_key
 CLIENT_URL=https://www.nationalparksexplorerusa.com
 ```
+
+For production image uploads, `UPLOADS_DIR` should point to a persistent disk mount. If uploads stay on the app container filesystem, deploys or instance replacement can leave database URLs pointing at files that no longer exist.
 
 **Frontend:**
 ```bash

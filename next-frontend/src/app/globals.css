@@ -232,7 +232,6 @@ html.mobile-nav-open,
 body.mobile-nav-open {
   overflow: hidden !important;
   overscroll-behavior: none !important;
-  touch-action: none;
 }
 
 .safe-area-pl {

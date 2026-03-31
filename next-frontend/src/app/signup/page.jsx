@@ -176,14 +176,25 @@ const SignupPage = () => {
       desktopDescription="Create a free account to save favorites, track your visited parks, plan trips with AI, and get personalized recommendations."
       mobileTitle="Create Account"
       mobileDescription="Unlock favorites, AI trip planning, and personalized recommendations."
-      badge="Free Account"
     >
-          <div className="mb-8">
-            <h1 className="hidden lg:block text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
+          <div
+            className="hidden lg:block lg:mb-8 lg:rounded-none lg:border-0 lg:px-0 lg:py-0"
+            style={{
+              backgroundColor: 'var(--surface-hover)',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <h1 className="text-2xl font-semibold tracking-tight lg:text-4xl lg:mb-2" style={{ color: 'var(--text-primary)' }}>
               Create Account
             </h1>
-            <p className="hidden lg:block" style={{ color: 'var(--text-secondary)' }}>
-              Unlock favorites, AI trip planning, and personalized recommendations
+            <p className="mt-1 text-sm leading-relaxed lg:text-base" style={{ color: 'var(--text-secondary)' }}>
+              Unlock favorites, AI trip planning, personalized recommendations, and park tracking in one place.
+            </p>
+            <p className="mt-3 text-sm lg:mt-2" style={{ color: 'var(--text-secondary)' }}>
+              Already have an account?{' '}
+              <Link href="/login" className="font-semibold hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
+                Sign in
+              </Link>
             </p>
           </div>
 
@@ -193,7 +204,7 @@ const SignupPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
               <div>
-                <label className="block text-sm font-medium mb-2 uppercase tracking-wider"
+                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   First Name
@@ -239,7 +250,7 @@ const SignupPage = () => {
 
               {/* Last Name */}
               <div>
-                <label className="block text-sm font-medium mb-2 uppercase tracking-wider"
+                <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   Last Name
@@ -286,7 +297,7 @@ const SignupPage = () => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium mb-2 uppercase tracking-wider"
+              <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Email Address
@@ -332,7 +343,7 @@ const SignupPage = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium mb-2 uppercase tracking-wider"
+              <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Password
@@ -409,7 +420,7 @@ const SignupPage = () => {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium mb-2 uppercase tracking-wider"
+              <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Confirm Password
@@ -512,7 +523,7 @@ const SignupPage = () => {
               type="submit"
               disabled={isLoading}
               loading={isLoading}
-              variant="secondary"
+              variant="primary"
               size="lg"
               icon={ArrowRight}
               iconPosition="right"
@@ -523,7 +534,10 @@ const SignupPage = () => {
           </form>
 
           {/* Sign In Link */}
-          <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mt-6 text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            By creating an account, you agree to TrailVerse&apos;s Terms and Privacy Policy.
+          </p>
+          <p className="mt-3 text-center text-sm lg:hidden" style={{ color: 'var(--text-secondary)' }}>
             Already have an account?{' '}
             <Link href="/login" className="font-semibold hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
               Sign in

@@ -25,7 +25,7 @@ echo ""
 # Create backup
 echo "💾 Creating backup..."
 mkdir -p backups/$(date +%Y%m%d_%H%M%S)
-cp -r client backups/$(date +%Y%m%d_%H%M%S)/client_backup
+cp -r next-frontend backups/$(date +%Y%m%d_%H%M%S)/next_frontend_backup
 cp -r server backups/$(date +%Y%m%d_%H%M%S)/server_backup
 echo "✅ Backup created in backups/$(date +%Y%m%d_%H%M%S)/"
 echo ""
@@ -40,11 +40,11 @@ replace_in_files() {
     find $files -type f \( -name "*.jsx" -o -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.md" \) -exec sed -i '' "s|$pattern|$replacement|g" {} \;
 }
 
-# Replace in client files
-echo "🎯 Updating Client Files..."
-replace_in_files "$OLD_NAME" "$NEW_NAME" "client/"
-replace_in_files "$OLD_NAME_SHORT" "$NEW_NAME" "client/"
-replace_in_files "$OLD_CODE_NAME" "$NEW_NAME" "client/"
+# Replace in frontend files
+echo "🎯 Updating Frontend Files..."
+replace_in_files "$OLD_NAME" "$NEW_NAME" "next-frontend/"
+replace_in_files "$OLD_NAME_SHORT" "$NEW_NAME" "next-frontend/"
+replace_in_files "$OLD_CODE_NAME" "$NEW_NAME" "next-frontend/"
 
 # Replace in server files  
 echo "🎯 Updating Server Files..."
@@ -62,13 +62,13 @@ replace_in_files "$OLD_CODE_NAME" "$NEW_NAME" "."
 echo "🎯 Updating Specific Patterns..."
 
 # Update email addresses
-find client/ server/ -type f \( -name "*.jsx" -o -name "*.js" -o -name "*.html" -o -name "*.json" \) -exec sed -i '' "s|travelswithkrishna@gmail.com|$NEW_EMAIL|g" {} \;
+find next-frontend/ server/ -type f \( -name "*.jsx" -o -name "*.js" -o -name "*.html" -o -name "*.json" \) -exec sed -i '' "s|travelswithkrishna@gmail.com|$NEW_EMAIL|g" {} \;
 
 # Update taglines and descriptions
-find client/ -type f \( -name "*.jsx" -o -name "*.js" \) -exec sed -i '' "s|Your gateway to exploring America|$NEW_TAGLINE|g" {} \;
+find next-frontend/ -type f \( -name "*.jsx" -o -name "*.js" \) -exec sed -i '' "s|Your gateway to exploring America|$NEW_TAGLINE|g" {} \;
 
 # Update social media handles
-find client/ -type f \( -name "*.jsx" -o -name "*.js" -o -name "*.html" \) -exec sed -i '' "s|@npeusa|@TrailVerse|g" {} \;
+find next-frontend/ -type f \( -name "*.jsx" -o -name "*.js" -o -name "*.html" \) -exec sed -i '' "s|@npeusa|@TrailVerse|g" {} \;
 
 echo ""
 echo "✅ Rebranding Complete!"

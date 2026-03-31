@@ -4,13 +4,15 @@ const fs = require('fs').promises;
 const sharp = require('sharp');
 const ImageUpload = require('../models/ImageUpload');
 const { protect } = require('../middleware/auth');
+const { getUploadsDir } = require('../utils/uploads');
+
+const uploadsDir = getUploadsDir();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
     const category = req.body.category || 'general';
-    const categoryDir = path.join(uploadDir, category);
+    const categoryDir = path.join(uploadsDir, category);
     
     console.log('📁 Multer destination:', {
       category: category,
@@ -142,7 +144,7 @@ exports.uploadImages = async (req, res, next) => {
               .jpeg({ quality: 80 })
               .toFile(thumbnailPath);
             
-            thumbnailRelativePath = path.relative(path.join(__dirname, '../../uploads'), thumbnailPath).replace(/\\/g, '/');
+            thumbnailRelativePath = path.relative(uploadsDir, thumbnailPath).replace(/\\/g, '/');
             console.log('✅ Thumbnail generated:', thumbnailRelativePath);
           } catch (thumbnailError) {
             console.error('❌ Error generating thumbnail:', thumbnailError);
@@ -169,14 +171,14 @@ exports.uploadImages = async (req, res, next) => {
 
         // Generate URLs - store as relative paths for easier normalization
         // The client will normalize these to the correct format based on environment
-        const relativePath = path.relative(path.join(__dirname, '../../uploads'), file.path).replace(/\\/g, '/');
+        const relativePath = path.relative(uploadsDir, file.path).replace(/\\/g, '/');
         
         // Store as relative path - client will normalize to full URL or API endpoint as needed
         // Format: /uploads/category/filename.jpg
         const imageUrl = `/uploads/${relativePath}`;
         const thumbnailUrl = thumbnailRelativePath ? `/uploads/${thumbnailRelativePath}` : null;
 
-        const imageUpload = await ImageUpload.create({
+        const imageUploadData = {
           userId: userId, // Already validated above
           originalName: file.originalname,
           filename: file.filename,
@@ -185,8 +187,6 @@ exports.uploadImages = async (req, res, next) => {
           url: imageUrl,
           thumbnailUrl: thumbnailUrl,
           category,
-          relatedId: relatedId || null,
-          relatedType: relatedType || (category === 'profile' ? 'user' : null),
           metadata: {
             width: metadata.width,
             height: metadata.height,
@@ -198,7 +198,18 @@ exports.uploadImages = async (req, res, next) => {
           isPublic,
           processingStatus: 'completed',
           isProcessed: true
-        });
+        };
+
+        if (relatedId) {
+          imageUploadData.relatedId = relatedId;
+        }
+
+        const resolvedRelatedType = relatedType || (category === 'profile' ? 'user' : undefined);
+        if (resolvedRelatedType) {
+          imageUploadData.relatedType = resolvedRelatedType;
+        }
+
+        const imageUpload = await ImageUpload.create(imageUploadData);
 
         uploadedImages.push(imageUpload);
         console.log('✅ Image uploaded successfully:', {
@@ -402,7 +413,7 @@ exports.deleteImage = async (req, res, next) => {
 
     // Delete physical files
     try {
-      const imagePath = path.join(__dirname, '../../uploads', image.filename);
+      const imagePath = path.join(uploadsDir, image.filename);
       const thumbnailPath = imagePath.replace(path.extname(imagePath), '_thumb' + path.extname(imagePath));
       
       await Promise.all([
@@ -497,7 +508,7 @@ exports.serveImage = async (req, res, next) => {
       });
     }
 
-    const imagePath = path.join(__dirname, '../../uploads', filePath);
+    const imagePath = path.join(uploadsDir, filePath);
 
     // Check if file exists
     try {

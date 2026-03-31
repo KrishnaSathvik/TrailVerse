@@ -1,6 +1,6 @@
-const CACHE_NAME = 'trailverse-v4';
-const OFFLINE_CACHE = 'trailverse-offline-v4';
-const API_CACHE = 'trailverse-api-v4';
+const CACHE_NAME = 'trailverse-v5';
+const OFFLINE_CACHE = 'trailverse-offline-v5';
+const API_CACHE = 'trailverse-api-v5';
 
 // Files to cache for offline functionality
 const STATIC_CACHE_URLS = [
@@ -120,6 +120,7 @@ self.addEventListener('fetch', (event) => {
 // Handle API requests with offline support
 async function handleApiRequest(request) {
   const url = new URL(request.url);
+  const isParkDetailsRequest = /^\/api\/parks\/[^/]+\/details$/.test(url.pathname);
   
   // ALWAYS bypass cache for mutation requests (POST, PUT, DELETE, PATCH)
   if (request.method !== 'GET') {
@@ -168,6 +169,39 @@ async function handleApiRequest(request) {
           offline: true 
         }),
         { 
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+  }
+
+  if (isParkDetailsRequest) {
+    try {
+      const networkResponse = await fetch(request);
+
+      if (networkResponse.ok) {
+        const cache = await caches.open(API_CACHE);
+        cache.put(request, networkResponse.clone());
+      }
+
+      return networkResponse;
+    } catch (error) {
+      console.log('[SW] Network failed for park details, checking cache:', error);
+      const cache = await caches.open(API_CACHE);
+      const cachedResponse = await cache.match(request);
+
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Offline - no cached park details available',
+          offline: true
+        }),
+        {
           status: 503,
           headers: { 'Content-Type': 'application/json' }
         }

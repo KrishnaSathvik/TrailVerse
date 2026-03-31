@@ -70,6 +70,7 @@ const BlogPostForm = ({ mode, postId }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
@@ -269,6 +270,14 @@ const BlogPostForm = ({ mode, postId }) => {
         isPublic: true
       });
 
+      if (isEditMode && postId) {
+        setSavingImage(true);
+        await blogService.updatePost(postId, {
+          featuredImage: uploadedImage.url
+        });
+        setLastSaved(new Date());
+      }
+
       setFormData((previous) => ({
         ...previous,
         featuredImage: uploadedImage.url
@@ -279,6 +288,7 @@ const BlogPostForm = ({ mode, postId }) => {
       setImagePreview(formData.featuredImage || null);
       showToast(error.message || 'Failed to upload image', 'error');
     } finally {
+      setSavingImage(false);
       setUploadingImage(false);
       event.target.value = '';
     }
@@ -390,55 +400,88 @@ const BlogPostForm = ({ mode, postId }) => {
 
   return (
     <AdminRoute>
-      <div className="modern-blog-editor">
-        <header className="editor-header">
-          <div className="editor-header-content">
-            <button onClick={() => router.push('/admin')} className="btn-back" title="Back to Dashboard">
-              <ArrowLeft size={20} />
-              <span>Back</span>
-            </button>
-
-            <div className="header-actions">
-              {autoSaving && (
-                <div className="auto-save-indicator">
-                  <Clock size={16} />
-                  <span>Saving...</span>
+      <div className="modern-blog-editor admin-blog-page">
+        <section className="pt-8 pb-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div
+              className="rounded-2xl p-6 backdrop-blur"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                <div className="space-y-3">
+                  <button type="button" onClick={() => router.push('/admin')} className="btn-back" title="Back to Dashboard">
+                    <ArrowLeft size={20} />
+                    <span>Back to Dashboard</span>
+                  </button>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                      {isEditMode ? 'Edit Blog Post' : 'Create Blog Post'}
+                    </h1>
+                    <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                      {isEditMode
+                        ? 'Update content, featured media, and publishing details using the same admin workflow.'
+                        : 'Draft and publish new content using the existing admin layout and publishing controls.'}
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {lastSaved && !autoSaving && (
-                <div className="last-saved">
-                  <Check size={16} />
-                  <span>Saved {lastSaved.toLocaleTimeString()}</span>
+                <div className="header-actions">
+                  {autoSaving && (
+                    <div className="auto-save-indicator">
+                      <Clock size={16} />
+                      <span>Saving...</span>
+                    </div>
+                  )}
+
+                  {savingImage && (
+                    <div className="auto-save-indicator">
+                      <Clock size={16} />
+                      <span>Saving image...</span>
+                    </div>
+                  )}
+
+                  {lastSaved && !autoSaving && (
+                    <div className="last-saved">
+                      <Check size={16} />
+                      <span>Saved {lastSaved.toLocaleTimeString()}</span>
+                    </div>
+                  )}
+
+                  {isEditMode && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      className={`btn-danger ${deleteConfirm ? 'confirm' : ''}`}
+                      disabled={loading}
+                    >
+                      <Trash2 size={18} />
+                      <span>{deleteConfirm ? 'Confirm Delete?' : 'Delete'}</span>
+                    </button>
+                  )}
+
+                  <button type="button" onClick={() => handleSubmit('draft')} className="btn-secondary" disabled={loading || uploadingImage || savingImage}>
+                    <Save size={18} />
+                    <span>Save Draft</span>
+                  </button>
+
+                  <button type="button" onClick={() => handleSubmit('published')} className="btn-primary" disabled={loading || uploadingImage || savingImage}>
+                    {loading ? <div className="spinner-small" /> : <Send size={18} />}
+                    <span>{loading ? (isEditMode ? 'Updating...' : 'Publishing...') : (isEditMode ? 'Update & Publish' : 'Publish')}</span>
+                  </button>
                 </div>
-              )}
-
-              {isEditMode && (
-                <button
-                  onClick={handleDelete}
-                  className={`btn-danger ${deleteConfirm ? 'confirm' : ''}`}
-                  disabled={loading}
-                >
-                  <Trash2 size={18} />
-                  <span>{deleteConfirm ? 'Confirm Delete?' : 'Delete'}</span>
-                </button>
-              )}
-
-              <button onClick={() => handleSubmit('draft')} className="btn-secondary" disabled={loading}>
-                <Save size={18} />
-                <span>Save Draft</span>
-              </button>
-
-              <button onClick={() => handleSubmit('published')} className="btn-primary" disabled={loading}>
-                {loading ? <div className="spinner-small" /> : <Send size={18} />}
-                <span>{loading ? (isEditMode ? 'Updating...' : 'Publishing...') : (isEditMode ? 'Update & Publish' : 'Publish')}</span>
-              </button>
+              </div>
             </div>
           </div>
-        </header>
+        </section>
 
-        <div className="editor-layout">
-          <div className="editor-main">
+        <section className="pb-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="editor-layout">
+              <div className="editor-main">
             <div className="title-section">
               <input
                 type="text"
@@ -509,10 +552,10 @@ const BlogPostForm = ({ mode, postId }) => {
                 <TableOfContents content={formData.content} />
               </div>
             )}
-          </div>
+              </div>
 
-          <aside className="editor-sidebar">
-            <div className="sidebar-card">
+              <aside className="editor-sidebar">
+                <div className="sidebar-card">
               <h3 className="card-title">
                 <ImageIcon size={18} />
                 <span>Featured Image</span>
@@ -521,7 +564,7 @@ const BlogPostForm = ({ mode, postId }) => {
               {imagePreview ? (
                 <div className="image-preview">
                   <OptimizedImage src={imagePreview} alt="Featured" />
-                  <button onClick={() => {
+                  <button type="button" onClick={() => {
                     setFormData((previous) => ({ ...previous, featuredImage: '' }));
                     setImagePreview(null);
                   }} className="btn-remove-image" title="Remove image">
@@ -545,9 +588,9 @@ const BlogPostForm = ({ mode, postId }) => {
                   )}
                 </label>
               )}
-            </div>
+                </div>
 
-            <div className="sidebar-card">
+                <div className="sidebar-card">
               <h3 className="card-title">
                 <Tag size={18} />
                 <span>Category</span>
@@ -569,9 +612,9 @@ const BlogPostForm = ({ mode, postId }) => {
                   <span>{validationErrors.category}</span>
                 </div>
               )}
-            </div>
+                </div>
 
-            <div className="sidebar-card">
+                <div className="sidebar-card">
               <h3 className="card-title">
                 <Tag size={18} />
                 <span>Tags</span>
@@ -591,7 +634,7 @@ const BlogPostForm = ({ mode, postId }) => {
                   placeholder="Add tag..."
                   className="tag-input"
                 />
-                <button onClick={handleAddTag} className="btn-add-tag" title="Add tag">
+                <button type="button" onClick={handleAddTag} className="btn-add-tag" title="Add tag">
                   <Plus size={16} />
                 </button>
               </div>
@@ -600,15 +643,15 @@ const BlogPostForm = ({ mode, postId }) => {
                 {formData.tags.map((tag) => (
                   <span key={tag} className="tag-item">
                     {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="btn-remove-tag">
+                    <button type="button" onClick={() => handleRemoveTag(tag)} className="btn-remove-tag">
                       <X size={14} />
                     </button>
                   </span>
                 ))}
               </div>
-            </div>
+                </div>
 
-            <div className="sidebar-card">
+                <div className="sidebar-card">
               <h3 className="card-title">
                 <Calendar size={18} />
                 <span>Publishing</span>
@@ -642,9 +685,11 @@ const BlogPostForm = ({ mode, postId }) => {
                   )}
                 </div>
               )}
+                </div>
+              </aside>
             </div>
-          </aside>
-        </div>
+          </div>
+        </section>
       </div>
     </AdminRoute>
   );

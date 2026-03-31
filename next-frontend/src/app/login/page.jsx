@@ -175,11 +175,20 @@ const LoginContent = () => {
           )}
 
           {/* Header */}
-          <div className="mb-8">
-            <h2 className="hidden lg:block text-4xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
+          <div
+            className="hidden lg:block lg:mb-8 lg:rounded-none lg:border-0 lg:px-0 lg:py-0"
+            style={{
+              backgroundColor: 'var(--surface-hover)',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <h2 className="text-2xl font-semibold tracking-tight lg:text-4xl lg:mb-2" style={{ color: 'var(--text-primary)' }}>
               Sign in to your account
             </h2>
-            <p className="lg:block" style={{ color: 'var(--text-secondary)' }}>
+            <p className="mt-1 text-sm leading-relaxed lg:text-base" style={{ color: 'var(--text-secondary)' }}>
+              Continue planning trips, saving favorites, and tracking the parks you&apos;ve explored.
+            </p>
+            <p className="mt-3 text-sm lg:mt-2" style={{ color: 'var(--text-secondary)' }}>
               Don&apos;t have an account?{' '}
               <Link href="/signup" className="font-medium hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
                 Create one
@@ -300,7 +309,7 @@ const LoginContent = () => {
               type="submit"
               disabled={loading}
               loading={loading}
-              variant="secondary"
+              variant="primary"
               size="lg"
               className="w-full"
             >
@@ -317,6 +326,12 @@ const LoginContent = () => {
             </Link> and{' '}
             <Link href="/privacy" className="hover:opacity-80 transition" style={{ color: 'var(--text-secondary)' }}>
               Privacy Policy
+            </Link>
+          </p>
+          <p className="mt-3 text-center text-sm lg:hidden" style={{ color: 'var(--text-secondary)' }}>
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="font-semibold hover:opacity-80 transition" style={{ color: 'var(--accent-green)' }}>
+              Create one
             </Link>
           </p>
     </AuthShell>

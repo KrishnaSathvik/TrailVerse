@@ -3,16 +3,16 @@
    ==================================== */
 
 .modern-rich-text-editor {
-  --editor-bg: #ffffff;
-  --editor-surface: #f8fafc;
-  --editor-border: #e2e8f0;
-  --editor-text: #1e293b;
-  --editor-text-secondary: #64748b;
-  --editor-accent: #3b82f6;
-  --editor-accent-hover: #2563eb;
-  --editor-success: #10b981;
-  --editor-shadow: rgba(0, 0, 0, 0.1);
-  --editor-shadow-lg: rgba(0, 0, 0, 0.15);
+  --editor-bg: var(--bg-secondary, #131719);
+  --editor-surface: var(--surface, rgba(255, 255, 255, 0.05));
+  --editor-border: var(--border, rgba(255, 255, 255, 0.10));
+  --editor-text: var(--text-primary, #ffffff);
+  --editor-text-secondary: var(--text-secondary, rgba(255, 255, 255, 0.85));
+  --editor-accent: var(--accent-green, #22c55e);
+  --editor-accent-hover: var(--accent-green-dark, #16a34a);
+  --editor-success: var(--accent-green, #22c55e);
+  --editor-shadow: rgba(0, 0, 0, 0.35);
+  --editor-shadow-lg: rgba(0, 0, 0, 0.5);
   
   position: relative;
   width: 100%;
@@ -27,19 +27,6 @@
 
 .modern-rich-text-editor:hover {
   box-shadow: 0 10px 15px -3px var(--editor-shadow), 0 4px 6px -2px var(--editor-shadow);
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .modern-rich-text-editor {
-    --editor-bg: #1e293b;
-    --editor-surface: #0f172a;
-    --editor-border: #334155;
-    --editor-text: #f1f5f9;
-    --editor-text-secondary: #94a3b8;
-    --editor-shadow: rgba(0, 0, 0, 0.3);
-    --editor-shadow-lg: rgba(0, 0, 0, 0.4);
-  }
 }
 
 /* ====================================
@@ -65,7 +52,7 @@
   position: fixed;
   top: 0;
   /* left and width are set inline via style prop */
-  background: rgba(248, 250, 252, 0.95);
+  background: color-mix(in srgb, var(--editor-bg) 88%, black 12%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 12px var(--editor-shadow-lg);
@@ -85,12 +72,6 @@
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .editor-toolbar.sticky {
-    background: rgba(15, 23, 42, 0.95);
   }
 }
 
@@ -424,13 +405,13 @@
 
 .editor-content.dragging {
   border: 2px dashed var(--editor-accent);
-  background: rgba(59, 130, 246, 0.05);
+  background: color-mix(in srgb, var(--editor-accent) 12%, transparent 88%);
 }
 
 .drag-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(59, 130, 246, 0.1);
+  background: color-mix(in srgb, var(--editor-accent) 16%, transparent 84%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;

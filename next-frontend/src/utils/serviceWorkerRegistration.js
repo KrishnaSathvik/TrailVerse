@@ -3,11 +3,15 @@
  * Handles registration, updates, and communication with Service Worker
  */
 
+const SW_URL = '/sw.js';
+const SW_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
+
 class ServiceWorkerManager {
   constructor() {
     this.registration = null;
     this.isSupported = 'serviceWorker' in navigator;
     this.isOnline = navigator.onLine;
+    this.updateCheckInterval = null;
     
     this.setupEventListeners();
   }
@@ -20,8 +24,15 @@ class ServiceWorkerManager {
     }
 
     try {
-      this.registration = await navigator.serviceWorker.register('/sw.js');
+      this.registration = await navigator.serviceWorker.register(SW_URL, {
+        updateViaCache: 'none'
+      });
       console.log('[SW] Service Worker registered successfully:', this.registration);
+
+      if (this.registration.waiting) {
+        console.log('[SW] Waiting service worker found during registration');
+        this.updateServiceWorker();
+      }
 
       // Handle updates
       this.registration.addEventListener('updatefound', () => {
@@ -33,6 +44,9 @@ class ServiceWorkerManager {
         console.log('[SW] Service Worker controller changed');
         window.location.reload();
       });
+
+      this.startUpdateChecks();
+      this.checkForUpdates();
 
       return true;
     } catch (error) {
@@ -49,9 +63,8 @@ class ServiceWorkerManager {
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed') {
           if (navigator.serviceWorker.controller) {
-            // New content is available
-            console.log('[SW] New content available');
-            this.showUpdateNotification();
+            console.log('[SW] New content available, activating immediately');
+            this.updateServiceWorker();
           } else {
             // Content is cached for offline use
             console.log('[SW] Content cached for offline use');
@@ -61,10 +74,20 @@ class ServiceWorkerManager {
     }
   }
 
-  // Show update notification
-  showUpdateNotification() {
-    if (confirm('New version available! Reload to update?')) {
-      this.updateServiceWorker();
+  async checkForUpdates() {
+    if (!this.registration) {
+      return;
+    }
+
+    try {
+      await this.registration.update();
+
+      if (this.registration.waiting) {
+        console.log('[SW] Update check found waiting worker');
+        this.updateServiceWorker();
+      }
+    } catch (error) {
+      console.error('[SW] Failed to check for updates:', error);
     }
   }
 
@@ -75,6 +98,16 @@ class ServiceWorkerManager {
     }
   }
 
+  startUpdateChecks() {
+    if (this.updateCheckInterval) {
+      clearInterval(this.updateCheckInterval);
+    }
+
+    this.updateCheckInterval = window.setInterval(() => {
+      this.checkForUpdates();
+    }, SW_UPDATE_INTERVAL_MS);
+  }
+
   // Setup event listeners
   setupEventListeners() {
     // Online/offline status
@@ -82,12 +115,23 @@ class ServiceWorkerManager {
       this.isOnline = true;
       console.log('[SW] Back online');
       this.notifyClients('online');
+      this.checkForUpdates();
     });
 
     window.addEventListener('offline', () => {
       this.isOnline = false;
       console.log('[SW] Gone offline');
       this.notifyClients('offline');
+    });
+
+    window.addEventListener('focus', () => {
+      this.checkForUpdates();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.checkForUpdates();
+      }
     });
 
     // Background sync
