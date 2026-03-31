@@ -1161,32 +1161,24 @@ class NPSService {
     if (cached) return cached;
 
     try {
-      // Fetch galleries for this park — each gallery contains an images array
-      const response = await this.api.get('/multimedia/galleries', {
+      // Fetch individual gallery assets for this park
+      // Image URL is at fileInfo.url, not top-level url
+      const response = await this.api.get('/multimedia/galleries/assets', {
         params: { parkCode, limit: 50 }
       });
-      const galleries = response.data.data || [];
+      const assets = response.data.data || [];
 
-      // Flatten all images from all galleries into a single array
-      const allPhotos = [];
-      for (const gallery of galleries) {
-        if (gallery.images && gallery.images.length > 0) {
-          for (const img of gallery.images) {
-            allPhotos.push({
-              url: img.url,
-              altText: img.altText || img.title,
-              title: img.title,
-              caption: img.description,
-              credit: gallery.copyright,
-              galleryTitle: gallery.title
-            });
-          }
-        }
-      }
+      const photos = assets.map(asset => ({
+        url: asset.fileInfo?.url,
+        altText: asset.altText || asset.title,
+        title: asset.title,
+        caption: asset.description,
+        credit: asset.credit
+      })).filter(p => p.url);
 
-      console.log(`🖼️ Gallery photos for ${parkCode}: ${allPhotos.length} photos from ${galleries.length} galleries`);
-      this._setEndpointCache(cacheKey, allPhotos);
-      return allPhotos;
+      console.log(`🖼️ Gallery photos for ${parkCode}: ${photos.length} found`);
+      this._setEndpointCache(cacheKey, photos);
+      return photos;
     } catch (error) {
       if (error.response?.status === 429) {
         console.warn(`⚠️ NPS 429 on gallery for ${parkCode}`);
