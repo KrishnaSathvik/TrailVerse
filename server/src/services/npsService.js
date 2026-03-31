@@ -1161,13 +1161,32 @@ class NPSService {
     if (cached) return cached;
 
     try {
-      const response = await this.api.get('/multimedia/galleries/assets', {
+      // Fetch galleries for this park — each gallery contains an images array
+      const response = await this.api.get('/multimedia/galleries', {
         params: { parkCode, limit: 50 }
       });
-      const data = response.data.data || [];
-      console.log(`🖼️ Gallery photos for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
-      return data;
+      const galleries = response.data.data || [];
+
+      // Flatten all images from all galleries into a single array
+      const allPhotos = [];
+      for (const gallery of galleries) {
+        if (gallery.images && gallery.images.length > 0) {
+          for (const img of gallery.images) {
+            allPhotos.push({
+              url: img.url,
+              altText: img.altText || img.title,
+              title: img.title,
+              caption: img.description,
+              credit: gallery.copyright,
+              galleryTitle: gallery.title
+            });
+          }
+        }
+      }
+
+      console.log(`🖼️ Gallery photos for ${parkCode}: ${allPhotos.length} photos from ${galleries.length} galleries`);
+      this._setEndpointCache(cacheKey, allPhotos);
+      return allPhotos;
     } catch (error) {
       if (error.response?.status === 429) {
         console.warn(`⚠️ NPS 429 on gallery for ${parkCode}`);
