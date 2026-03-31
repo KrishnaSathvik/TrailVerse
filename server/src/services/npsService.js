@@ -991,10 +991,10 @@ class NPSService {
           const sample = events[0];
           console.log(`📅 Sample event date fields:`, JSON.stringify({
             datestart: sample.datestart,
+            dateend: sample.dateend,
             date: sample.date,
             dates: sample.dates,
             recurrencedates: sample.recurrencedates,
-            dateEnd: sample.dateend,
             title: sample.title,
             allDateKeys: Object.keys(sample).filter(k => /date/i.test(k))
           }));
@@ -1002,13 +1002,19 @@ class NPSService {
 
         totalFetched += events.length;
 
-        // Filter to future events only — check multiple possible date fields
+        // Filter to events that are still relevant (future or ongoing/recurring)
+        // Matches frontend logic: if dateend >= today, event is still active
         const validEvents = events.filter(event => {
-          // Try all possible NPS date fields
-          const rawDate = event.datestart || event.date || event.dates?.[0];
-          if (!rawDate) return false;
-          const eventDate = new Date(rawDate);
-          return !isNaN(eventDate.getTime()) && eventDate >= today;
+          const startDate = new Date(event.datestart || event.date || event.dates?.[0]);
+          const endDate = new Date(event.dateend);
+
+          // If end date is valid and in the future, event is still active (recurring)
+          if (!isNaN(endDate.getTime()) && endDate >= today) return true;
+
+          // Otherwise check if start date is in the future
+          if (!isNaN(startDate.getTime()) && startDate >= today) return true;
+
+          return false;
         });
 
         allEvents = allEvents.concat(validEvents);
@@ -1022,8 +1028,12 @@ class NPSService {
         await new Promise(resolve => setTimeout(resolve, 200));
       }
 
-      // Sort events by date
-      allEvents.sort((a, b) => new Date(a.datestart || a.date) - new Date(b.datestart || b.date));
+      // Sort events by start date
+      allEvents.sort((a, b) => {
+        const dateA = new Date(a.datestart || a.date || a.dates?.[0]);
+        const dateB = new Date(b.datestart || b.date || b.dates?.[0]);
+        return dateA - dateB;
+      });
 
       // Cache the results (even if empty — prevents re-fetching)
       this.setEventsCache(allEvents);
