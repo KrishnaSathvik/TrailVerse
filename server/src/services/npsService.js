@@ -1099,6 +1099,23 @@ class NPSService {
         params: { parkCode, limit: 50 }
       });
       const data = response.data.data;
+
+      // Diagnostic: log first webcam's fields to identify image/url structure
+      if (data?.[0]) {
+        const sample = data[0];
+        console.log(`📹 Webcam fields for ${parkCode}:`, JSON.stringify({
+          title: sample.title,
+          status: sample.status,
+          statusMessage: sample.statusMessage,
+          url: sample.url,
+          images: sample.images?.length || 0,
+          firstImage: sample.images?.[0],
+          isStreaming: sample.isStreaming,
+          streamUrl: sample.streamUrl,
+          allKeys: Object.keys(sample)
+        }));
+      }
+
       this._setEndpointCache(cacheKey, data);
       return data;
     } catch (error) {
