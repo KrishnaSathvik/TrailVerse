@@ -94,6 +94,42 @@ connectDB().then(() => {
     } catch (error) {
       console.warn(`⚠️ Visitor centers cache warm-up failed: ${error.message}`);
     }
+
+    // Wait another 5s before places
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    try {
+      const places = await npsService.getAllPlaces();
+      const parkCount = Object.keys(places).length;
+      const total = Object.values(places).reduce((sum, a) => sum + a.length, 0);
+      console.log(`📍 Warmed places cache with ${total} places across ${parkCount} parks`);
+    } catch (error) {
+      console.warn(`⚠️ Places cache warm-up failed: ${error.message}`);
+    }
+
+    // Wait another 5s before tours
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    try {
+      const tours = await npsService.getAllTours();
+      const parkCount = Object.keys(tours).length;
+      const total = Object.values(tours).reduce((sum, a) => sum + a.length, 0);
+      console.log(`🗺️ Warmed tours cache with ${total} tours across ${parkCount} parks`);
+    } catch (error) {
+      console.warn(`⚠️ Tours cache warm-up failed: ${error.message}`);
+    }
+
+    // Wait another 5s before webcams
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    try {
+      const webcams = await npsService.getAllWebcams();
+      const parkCount = Object.keys(webcams).length;
+      const total = Object.values(webcams).reduce((sum, a) => sum + a.length, 0);
+      console.log(`📹 Warmed webcams cache with ${total} webcams across ${parkCount} parks`);
+    } catch (error) {
+      console.warn(`⚠️ Webcams cache warm-up failed: ${error.message}`);
+    }
   });
 }).catch((err) => {
   console.error('❌ Failed to connect to database:', err);
