@@ -34,6 +34,7 @@ connectDB().then(() => {
   // when a user visits that park, then cached for 24h. This avoids burning
   // hundreds of API calls on every deploy.
   setImmediate(async () => {
+    console.log('🚀 Starting NPS parks warm-up...');
     try {
       const parks = await npsService.getAllParks();
       console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
