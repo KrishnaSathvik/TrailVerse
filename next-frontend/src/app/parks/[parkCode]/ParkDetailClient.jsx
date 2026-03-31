@@ -5,7 +5,7 @@ import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
-  Shield, ExternalLink, Route, Monitor, Play
+  Shield, ExternalLink, Route, Monitor, Play, Car
 } from '@components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -35,7 +35,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
 
-  const { park, campgrounds, activities, alerts, places, tours, webcams, videos, galleryPhotos } = initialData;
+  const { park, campgrounds, activities, alerts, places, tours, webcams, videos, galleryPhotos, parkingLots } = initialData;
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -134,6 +134,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
     { id: 'camping', label: 'Camping', icon: Tent },
     { id: 'places', label: 'Places', icon: MapPinCheck },
     { id: 'tours', label: 'Tours', icon: Route },
+    { id: 'parking', label: 'Parking', icon: Car },
     { id: 'facilities', label: 'Facilities', icon: Utensils },
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'videos', label: 'Videos', icon: Play },
@@ -938,6 +939,62 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       ) : (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No tours information available
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'parking' && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-6"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        Parking Lots
+                      </h2>
+                      {parkingLots && parkingLots.length > 0 ? (
+                        <div className="space-y-4">
+                          {parkingLots.map((lot, index) => (
+                            <div
+                              key={lot.id || index}
+                              className="p-6 rounded-xl"
+                              style={{
+                                backgroundColor: 'var(--surface-hover)',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border)'
+                              }}
+                            >
+                              <h3 className="text-lg font-semibold mb-2"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
+                                {lot.name}
+                              </h3>
+                              {lot.description && (
+                                <p className="text-sm mb-3"
+                                  style={{ color: 'var(--text-secondary)' }}
+                                >
+                                  {lot.description}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-3 mt-3">
+                                {lot.isAccessibleToDisabled && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/20 text-green-400">
+                                    Accessible
+                                  </span>
+                                )}
+                                {lot.managedByOrganization && (
+                                  <span className="text-xs"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                  >
+                                    Managed by: {lot.managedByOrganization}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No parking lot information available
                         </p>
                       )}
                     </div>

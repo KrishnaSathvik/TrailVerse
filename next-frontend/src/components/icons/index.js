@@ -122,6 +122,7 @@ export { ThermometerIcon as Thermometer } from '@phosphor-icons/react';
 export { ForkKnifeIcon as Utensils } from '@phosphor-icons/react';
 export { BedIcon as Bed } from '@phosphor-icons/react';
 export { GasPumpIcon as Fuel } from '@phosphor-icons/react';
+export { CarIcon as Car } from '@phosphor-icons/react';
 export { WifiHighIcon as Wifi } from '@phosphor-icons/react';
 export { WifiSlashIcon as WifiOff } from '@phosphor-icons/react';
 export { CurrencyDollarIcon as DollarSign } from '@phosphor-icons/react';

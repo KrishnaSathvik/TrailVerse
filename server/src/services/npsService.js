@@ -83,6 +83,13 @@ class NPSService {
       ttl: 24 * 60 * 60 * 1000 // 24 hours — webcam metadata doesn't change often
     };
 
+    // Bulk parking lots cache keyed by parkCode
+    this.parkingLotsCache = {
+      data: null,
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours — parking lots rarely change
+    };
+
     // Per-endpoint caches for individual park data
     this.endpointCache = new Map();
     this.endpointCacheTTLs = {
@@ -93,7 +100,8 @@ class NPSService {
       parksByState: 24 * 60 * 60 * 1000, // 24 hours
       places: 24 * 60 * 60 * 1000,     // 24 hours
       tours: 24 * 60 * 60 * 1000,      // 24 hours
-      webcams: 24 * 60 * 60 * 1000     // 24 hours
+      webcams: 24 * 60 * 60 * 1000,     // 24 hours
+      parkinglots: 24 * 60 * 60 * 1000  // 24 hours
     };
   }
 
@@ -1124,6 +1132,110 @@ class NPSService {
         return [];
       }
       console.error(`❌ NPS API Error (getParkWebcams for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
+  // --- Bulk parking lots ---
+
+  async getAllParkingLots() {
+    if (this._isCacheValid(this.parkingLotsCache) && this.parkingLotsCache.data) {
+      console.log('📦 Returning cached bulk parking lots');
+      return this.parkingLotsCache.data;
+    }
+
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-parkinglots', this.parkingLotsCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
+    console.log('🔄 Fetching all parking lots from NPS API (bulk)...');
+
+    let allParkingLots = [];
+    const pageSize = 50;
+    const maxPages = 40;
+    let start = 0;
+
+    try {
+      for (let page = 0; page < maxPages; page++) {
+        const response = await this.api.get('/parkinglots', {
+          params: { limit: pageSize, start }
+        });
+
+        const lots = response.data.data;
+        if (!lots || lots.length === 0) break;
+
+        allParkingLots = allParkingLots.concat(lots);
+        start += pageSize;
+
+        console.log(`🅿️ Fetched page at offset ${start}, ${allParkingLots.length} parking lots so far`);
+
+        if (lots.length < pageSize) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const byPark = {};
+      for (const lot of allParkingLots) {
+        const code = lot.relatedParks?.[0]?.parkCode || lot.parkCode;
+        if (!code) continue;
+        if (!byPark[code]) byPark[code] = [];
+        byPark[code].push(lot);
+      }
+
+      this.parkingLotsCache = { ...this.parkingLotsCache, data: byPark, timestamp: Date.now() };
+      console.log(`✅ Total parking lots fetched (bulk): ${allParkingLots.length} across ${Object.keys(byPark).length} parks`);
+      await this._saveSnapshot('bulk-parkinglots', byPark);
+      return byPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.parkingLotsCache.data) {
+          console.warn('⚠️ NPS 429 on bulk parking lots — returning stale cache');
+          return this.parkingLotsCache.data;
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk parkinglots — returning stale snapshot');
+          this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-parkinglots', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk parkinglots — returning DB snapshot');
+          this.parkingLotsCache = { ...this.parkingLotsCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk parking lots — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllParkingLots):', error.message);
+      return {};
+    }
+  }
+
+  async getParkParkingLots(parkCode) {
+    if (this._isCacheValid(this.parkingLotsCache) && this.parkingLotsCache.data) {
+      return this.parkingLotsCache.data[parkCode] || [];
+    }
+
+    const cacheKey = `parkinglots_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'parkinglots');
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/parkinglots', {
+        params: { parkCode, limit: 50 }
+      });
+      const data = response.data.data;
+      console.log(`✅ Parking lots for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on parking lots for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkParkingLots for ${parkCode}):`, error.message);
       return [];
     }
   }
