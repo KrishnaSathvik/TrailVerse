@@ -86,6 +86,7 @@ exports.getParkByCode = async (req, res, next) => {
 exports.getParkDetails = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
+    console.log(`🔍 Fetching park details for ${parkCode}...`);
 
     const results = await Promise.allSettled([
       npsService.getParkByCode(parkCode),
@@ -123,6 +124,8 @@ exports.getParkDetails = async (req, res, next) => {
         console.error(`Failed to fetch ${sections[index]} for ${parkCode}:`, result.reason?.message || result.reason);
       }
     });
+
+    console.log(`📊 Park details for ${parkCode}: activities=${activities.length} alerts=${alerts.length} campgrounds=${campgrounds.length} places=${places.length} tours=${tours.length} webcams=${webcams.length} videos=${videos.length} gallery=${galleryPhotos.length}`);
 
     if (!park) {
       return res.status(404).json({
