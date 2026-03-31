@@ -49,25 +49,25 @@ const AboutPage = () => {
     {
       icon: Instagram,
       label: "Instagram (Travel)",
-      url: "https://instagram.com/travels_with_krishna",
-      description: "@travels_with_krishna"
+      url: "https://www.instagram.com/travelswithkrishna/",
+      description: "@travelswithkrishna"
     },
     {
       icon: Facebook,
       label: "Facebook",
-      url: "https://www.facebook.com/share/zbaYQbZxP8SH1QaE/?mibextid=LQQJ4d",
+      url: "https://www.facebook.com/Gitam2015?mibextid=wwXIfr&rdid=hoZGy7n3XmTV6RMD&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1AGvmiNw7B%2F%3Fmibextid%3DwwXIfr#",
       description: "Travel Community"
     },
     {
       icon: Camera,
       label: "Pexels",
-      url: "https://www.pexels.com/@travelswithkrishna",
+      url: "https://www.pexels.com/@astrobykrishna/",
       description: "Free Photography"
     },
     {
       icon: Camera,
       label: "500px",
-      url: "https://500px.com/travelswithkrishna",
+      url: "https://500px.com/p/astrobykrishna?view=photos",
       description: "Photography Portfolio"
     },
     {
