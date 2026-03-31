@@ -702,14 +702,9 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
 
                   {activeTab === 'places' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                      <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)' }}
-                        >
-                          <MapPinCheck className="h-5 w-5" style={{ color: '#3b82f6' }} />
-                        </div>
                         Places to Visit
                       </h2>
                       {places && places.length > 0 ? (
@@ -738,68 +733,27 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                               >
                                 {place.title}
                               </h3>
-                              <p className="text-sm mb-3"
+                              <p className="text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
                                 {place.listingDescription || place.bodyText?.substring(0, 300)}
                               </p>
-                              <div className="flex items-center gap-4 flex-wrap">
-                                {place.latitude && place.longitude && (
-                                  <a
-                                    href={`https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
-                                    style={{ color: '#3b82f6' }}
-                                  >
-                                    <Navigation className="h-3.5 w-3.5" />
-                                    View on Map
-                                  </a>
-                                )}
-                                {place.url && (
-                                  <a
-                                    href={place.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
-                                    style={{ color: '#3b82f6' }}
-                                  >
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                    Learn More
-                                  </a>
-                                )}
-                              </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
-                            style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
-                          >
-                            <MapPinCheck className="h-8 w-8" style={{ color: '#3b82f6' }} />
-                          </div>
-                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                            No places listed
-                          </p>
-                          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                            Place information is not available for this park
-                          </p>
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No places information available
+                        </p>
                       )}
                     </div>
                   )}
 
                   {activeTab === 'tours' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                      <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
-                        >
-                          <Route className="h-5 w-5" style={{ color: '#10b981' }} />
-                        </div>
                         Tours
                       </h2>
                       {tours && tours.length > 0 ? (
@@ -814,27 +768,18 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              {tour.images?.[0]?.url && (
-                                <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                                  <OptimizedImage
-                                    src={tour.images[0].url}
-                                    alt={tour.images[0].altText || tour.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              )}
                               <h3 className="text-lg font-semibold mb-2"
                                 style={{ color: 'var(--text-primary)' }}
                               >
                                 {tour.title}
                               </h3>
-                              <p className="text-sm mb-3"
+                              <p className="text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
                                 {tour.description?.substring(0, 400)}
                               </p>
                               {tour.duration && (
-                                <div className="flex items-center gap-1.5 text-sm mb-3"
+                                <div className="flex items-center gap-1.5 text-sm mt-3"
                                   style={{ color: 'var(--text-tertiary)' }}
                                 >
                                   <Clock className="h-3.5 w-3.5" />
@@ -860,7 +805,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                         }}
                                       >
                                         <span className="flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold"
-                                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}
+                                          style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-primary)' }}
                                         >
                                           {stop.ordinal || stopIndex + 1}
                                         </span>
@@ -879,126 +824,64 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                   </div>
                                 </div>
                               )}
-                              {tour.url && (
-                                <a
-                                  href={tour.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-sm font-semibold mt-4 hover:underline"
-                                  style={{ color: '#10b981' }}
-                                >
-                                  View Full Tour
-                                  <ExternalLink className="h-3.5 w-3.5" />
-                                </a>
-                              )}
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
-                            style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
-                          >
-                            <Route className="h-8 w-8" style={{ color: '#10b981' }} />
-                          </div>
-                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                            No tours available
-                          </p>
-                          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                            Tour information is not available for this park
-                          </p>
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No tours information available
+                        </p>
                       )}
                     </div>
                   )}
 
                   {activeTab === 'webcams' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                      <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)' }}
-                        >
-                          <Monitor className="h-5 w-5" style={{ color: '#a855f7' }} />
-                        </div>
                         Webcams
                       </h2>
                       {webcams && webcams.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-4">
                           {webcams.map((cam, index) => (
                             <div
                               key={cam.id || index}
-                              className="rounded-xl overflow-hidden"
+                              className="p-6 rounded-xl"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              {cam.images?.[0]?.url && (
-                                <div className="aspect-video overflow-hidden">
-                                  <OptimizedImage
-                                    src={cam.images[0].url}
-                                    alt={cam.images[0].altText || cam.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
+                              <h3 className="text-lg font-semibold mb-2"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
+                                {cam.title}
+                              </h3>
+                              {cam.description && (
+                                <p className="text-sm"
+                                  style={{ color: 'var(--text-secondary)' }}
+                                >
+                                  {cam.description.substring(0, 200)}
+                                </p>
                               )}
-                              <div className="p-4">
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                  <h3 className="text-base font-semibold"
-                                    style={{ color: 'var(--text-primary)' }}
-                                  >
-                                    {cam.title}
-                                  </h3>
-                                  {cam.status && (
-                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                      cam.status.toLowerCase() === 'active'
-                                        ? 'bg-green-500/20 text-green-400'
-                                        : 'bg-red-500/20 text-red-400'
-                                    }`}>
-                                      {cam.status}
-                                    </span>
-                                  )}
-                                </div>
-                                {cam.description && (
-                                  <p className="text-sm mb-3"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                  >
-                                    {cam.description.substring(0, 200)}
-                                  </p>
-                                )}
-                                {cam.url && (
-                                  <a
-                                    href={cam.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
-                                    style={{ color: '#a855f7' }}
-                                  >
-                                    View Webcam
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                  </a>
-                                )}
-                              </div>
+                              {cam.status && (
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-2 ${
+                                  cam.status.toLowerCase() === 'active'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {cam.status}
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
-                            style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}
-                          >
-                            <Monitor className="h-8 w-8" style={{ color: '#a855f7' }} />
-                          </div>
-                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                            No webcams available
-                          </p>
-                          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                            This park does not have any webcams
-                          </p>
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No webcams information available
+                        </p>
                       )}
                     </div>
                   )}
