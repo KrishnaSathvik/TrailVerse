@@ -25,10 +25,10 @@ class GlobalCacheManager {
         backgroundRefresh: true,
         prefetch: true
       },
-      parkDetails: { 
-        ttl: 12 * 60 * 60 * 1000, // 12 hours
-        storage: 'localStorage',
-        backgroundRefresh: true,
+      parkDetails: {
+        ttl: 10 * 60 * 1000, // 10 minutes — park details include dynamic NPS data
+        storage: 'memory',
+        backgroundRefresh: false,
         prefetch: false
       },
       parkAlerts: { 

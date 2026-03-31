@@ -20,7 +20,7 @@ export async function getAllParkCodes() {
 export async function getParkDetails(parkCode) {
   try {
     const res = await fetch(`${BASE_URL}/parks/${parkCode}/details`, {
-      next: { revalidate: 1800 },
+      next: { revalidate: 300 }, // 5 minutes — park details include dynamic NPS data
     });
 
     if (!res.ok) {

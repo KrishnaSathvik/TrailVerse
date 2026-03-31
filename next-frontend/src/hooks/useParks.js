@@ -11,7 +11,7 @@ export const useParks = (page = 1, limit = 12, nationalParksOnly = true) => {
       // to achieve near-instant loads without redundant API calls.
       try {
         const idbCacheTime = await get('trailverse_all_parks_time');
-        if (idbCacheTime && (Date.now() - parseInt(idbCacheTime)) < 1000 * 60 * 60 * 24 * 7) {
+        if (idbCacheTime && (Date.now() - parseInt(idbCacheTime)) < 1000 * 60 * 60 * 24) {
           const allParks = await get('trailverse_all_parks');
           if (allParks?.data) {
             // Filter and paginate from the full dataset
@@ -36,7 +36,7 @@ export const useParks = (page = 1, limit = 12, nationalParksOnly = true) => {
       return npsApi.getAllParks(page, limit, false, nationalParksOnly);
     },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours - parks data rarely changes
-    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days - keep in cache for a week
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
     refetchOnMount: false, // Don't refetch when component mounts if data is fresh
     retry: 2, // Retry failed requests only 2 times
@@ -53,7 +53,7 @@ export const useAllParks = () => {
       try {
         // Try IndexedDB first for instant loads
         const idbCacheTime = await get('trailverse_all_parks_time');
-        if (idbCacheTime && (Date.now() - parseInt(idbCacheTime)) < 1000 * 60 * 60 * 24 * 7) {
+        if (idbCacheTime && (Date.now() - parseInt(idbCacheTime)) < 1000 * 60 * 60 * 24) {
           const cached = await get('trailverse_all_parks');
           if (cached) return cached;
         }
@@ -74,7 +74,7 @@ export const useAllParks = () => {
       }
     },
     staleTime: 1000 * 60 * 60 * 24, // 24 hours - parks data rarely changes
-    gcTime: 1000 * 60 * 60 * 24 * 7, // 7 days - keep in cache for a week
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 2,
@@ -99,10 +99,10 @@ export const useParkDetails = (parkCode) => {
     queryKey: ['parkDetails', parkCode],
     queryFn: () => npsApi.getParkDetails(parkCode),
     enabled: !!parkCode,
-    staleTime: 1000 * 60 * 60 * 6, // 6 hours - park details change less frequently
-    gcTime: 1000 * 60 * 60 * 24 * 2, // 2 days
+    staleTime: 1000 * 60 * 10, // 10 minutes — park details include dynamic NPS data
+    gcTime: 1000 * 60 * 60, // 1 hour
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // Refetch on mount to pick up new data
     retry: 2,
   });
 };

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getAllParkCodes, getParkDetails } from '@/lib/parkApi';
 import ParkDetailClient from './ParkDetailClient';
 
-export const revalidate = 1800;
+export const revalidate = 300; // 5 minutes — park data includes dynamic NPS content
 
 export async function generateStaticParams() {
   try {

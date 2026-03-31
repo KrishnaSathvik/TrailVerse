@@ -69,9 +69,9 @@ class NPSApi {
       `park-details-${parkCode}`,
       'parkDetails',
       async () => {
-        const result = await enhancedApi.get(`/parks/${parkCode}/details`, {}, { 
+        const result = await enhancedApi.get(`/parks/${parkCode}/details`, {}, {
           cacheType: 'parkDetails',
-          ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
+          ttl: 10 * 60 * 1000 // 10 minutes
         });
         return result.data.data;
       }

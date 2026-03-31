@@ -15,7 +15,7 @@ class CacheService {
     this.cacheConfig = {
       // Static data - cache in localStorage to survive page refreshes
       parks: { ttl: 24 * 60 * 60 * 1000, storage: 'memory' }, // 24 hours - useParks.js manages localStorage separately
-      parkDetails: { ttl: 12 * 60 * 60 * 1000, storage: 'localStorage' }, // 12 hours
+      parkDetails: { ttl: 10 * 60 * 1000, storage: 'memory' }, // 10 minutes — park details include dynamic NPS data
       weather: { ttl: 60 * 60 * 1000, storage: 'localStorage' }, // 60 minutes (matches globalCacheManager)
       forecast: { ttl: 120 * 60 * 1000, storage: 'localStorage' }, // 120 minutes (matches globalCacheManager)
       
