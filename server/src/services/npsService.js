@@ -1,5 +1,6 @@
 const axios = require('axios');
 const ParkSnapshot = require('../models/ParkSnapshot');
+const NpsSnapshot = require('../models/NpsSnapshot');
 
 const NPS_API_BASE = 'https://developer.nps.gov/api/v1';
 const API_KEY = process.env.NPS_API_KEY;
@@ -161,6 +162,42 @@ class NPSService {
 
   _setEndpointCache(key, data) {
     this.endpointCache.set(key, { data, timestamp: Date.now() });
+  }
+
+  // --- MongoDB snapshot helpers for all bulk data ---
+  // Persist bulk data so deploys don't need to re-fetch from NPS API
+
+  async _loadSnapshot(key, ttl) {
+    try {
+      const snapshot = await NpsSnapshot.findOne({ key }).lean();
+      if (!snapshot?.data) return null;
+
+      const age = Date.now() - new Date(snapshot.fetchedAt).getTime();
+      if (age > ttl) {
+        console.log(`🗄️ Snapshot "${key}" is stale (${Math.round(age / 60000)}min old), will refresh`);
+        return { data: snapshot.data, stale: true };
+      }
+
+      console.log(`🗄️ Loaded fresh snapshot "${key}" (${Math.round(age / 60000)}min old)`);
+      return { data: snapshot.data, stale: false };
+    } catch (error) {
+      console.warn(`⚠️ Failed to load snapshot "${key}":`, error.message);
+      return null;
+    }
+  }
+
+  async _saveSnapshot(key, data) {
+    try {
+      const itemCount = Array.isArray(data) ? data.length : Object.values(data).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+      await NpsSnapshot.updateOne(
+        { key },
+        { $set: { data, itemCount, fetchedAt: new Date() } },
+        { upsert: true }
+      );
+      console.log(`🗄️ Saved snapshot "${key}" (${itemCount} items)`);
+    } catch (error) {
+      console.warn(`⚠️ Failed to save snapshot "${key}":`, error.message);
+    }
   }
 
   isParksCacheValid() {
@@ -450,6 +487,13 @@ class NPSService {
       return this.alertsCache.data;
     }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-alerts', this.alertsCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
     console.log('🔄 Fetching all alerts from NPS API (bulk)...');
 
     let allAlerts = [];
@@ -492,12 +536,25 @@ class NPSService {
       };
 
       console.log(`✅ Total alerts fetched (bulk): ${allAlerts.length} across ${Object.keys(alertsByPark).length} parks`);
+      await this._saveSnapshot('bulk-alerts', alertsByPark);
       return alertsByPark;
     } catch (error) {
       if (error.response?.status === 429) {
         if (this.alertsCache.data) {
           console.warn('⚠️ NPS 429 on bulk alerts — returning stale cache');
           return this.alertsCache.data;
+        }
+        // Fall back to snapshot even if stale
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk alerts — returning stale snapshot');
+          this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-alerts', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk alerts — returning DB snapshot');
+          this.alertsCache = { ...this.alertsCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
         }
         console.warn('⚠️ NPS 429 on bulk alerts — no cache available, returning empty');
         return {};
@@ -544,6 +601,13 @@ class NPSService {
       return this.campgroundsCache.data;
     }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-campgrounds', this.campgroundsCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
     console.log('🔄 Fetching all campgrounds from NPS API (bulk)...');
 
     let allCampgrounds = [];
@@ -579,12 +643,24 @@ class NPSService {
 
       this.campgroundsCache = { ...this.campgroundsCache, data: byPark, timestamp: Date.now() };
       console.log(`✅ Total campgrounds fetched (bulk): ${allCampgrounds.length} across ${Object.keys(byPark).length} parks`);
+      await this._saveSnapshot('bulk-campgrounds', byPark);
       return byPark;
     } catch (error) {
       if (error.response?.status === 429) {
         if (this.campgroundsCache.data) {
           console.warn('⚠️ NPS 429 on bulk campgrounds — returning stale cache');
           return this.campgroundsCache.data;
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk campgrounds — returning stale snapshot');
+          this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-campgrounds', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk campgrounds — returning DB snapshot');
+          this.campgroundsCache = { ...this.campgroundsCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
         }
         console.warn('⚠️ NPS 429 on bulk campgrounds — no cache available, returning empty');
         return {};
@@ -629,6 +705,13 @@ class NPSService {
       return this.visitorCentersCache.data;
     }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-visitorcenters', this.visitorCentersCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
     console.log('🔄 Fetching all visitor centers from NPS API (bulk)...');
 
     let allVCs = [];
@@ -664,12 +747,24 @@ class NPSService {
 
       this.visitorCentersCache = { ...this.visitorCentersCache, data: byPark, timestamp: Date.now() };
       console.log(`✅ Total visitor centers fetched (bulk): ${allVCs.length} across ${Object.keys(byPark).length} parks`);
+      await this._saveSnapshot('bulk-visitorcenters', byPark);
       return byPark;
     } catch (error) {
       if (error.response?.status === 429) {
         if (this.visitorCentersCache.data) {
           console.warn('⚠️ NPS 429 on bulk visitor centers — returning stale cache');
           return this.visitorCentersCache.data;
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk visitorcenters — returning stale snapshot');
+          this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-visitorcenters', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk visitorcenters — returning DB snapshot');
+          this.visitorCentersCache = { ...this.visitorCentersCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
         }
         console.warn('⚠️ NPS 429 on bulk visitor centers — no cache available, returning empty');
         return {};
@@ -715,6 +810,13 @@ class NPSService {
       return this.placesCache.data;
     }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-places', this.placesCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
     console.log('🔄 Fetching all places from NPS API (bulk)...');
 
     let allPlaces = [];
@@ -750,12 +852,24 @@ class NPSService {
 
       this.placesCache = { ...this.placesCache, data: byPark, timestamp: Date.now() };
       console.log(`✅ Total places fetched (bulk): ${allPlaces.length} across ${Object.keys(byPark).length} parks`);
+      await this._saveSnapshot('bulk-places', byPark);
       return byPark;
     } catch (error) {
       if (error.response?.status === 429) {
         if (this.placesCache.data) {
           console.warn('⚠️ NPS 429 on bulk places — returning stale cache');
           return this.placesCache.data;
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk places — returning stale snapshot');
+          this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-places', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk places — returning DB snapshot');
+          this.placesCache = { ...this.placesCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
         }
         console.warn('⚠️ NPS 429 on bulk places — no cache available, returning empty');
         return {};
@@ -799,6 +913,13 @@ class NPSService {
       return this.toursCache.data;
     }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-tours', this.toursCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
     console.log('🔄 Fetching all tours from NPS API (bulk)...');
 
     let allTours = [];
@@ -834,12 +955,24 @@ class NPSService {
 
       this.toursCache = { ...this.toursCache, data: byPark, timestamp: Date.now() };
       console.log(`✅ Total tours fetched (bulk): ${allTours.length} across ${Object.keys(byPark).length} parks`);
+      await this._saveSnapshot('bulk-tours', byPark);
       return byPark;
     } catch (error) {
       if (error.response?.status === 429) {
         if (this.toursCache.data) {
           console.warn('⚠️ NPS 429 on bulk tours — returning stale cache');
           return this.toursCache.data;
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk tours — returning stale snapshot');
+          this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-tours', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk tours — returning DB snapshot');
+          this.toursCache = { ...this.toursCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
         }
         console.warn('⚠️ NPS 429 on bulk tours — no cache available, returning empty');
         return {};
@@ -883,6 +1016,13 @@ class NPSService {
       return this.webcamsCache.data;
     }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-webcams', this.webcamsCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
     console.log('🔄 Fetching all webcams from NPS API (bulk)...');
 
     let allWebcams = [];
@@ -918,12 +1058,24 @@ class NPSService {
 
       this.webcamsCache = { ...this.webcamsCache, data: byPark, timestamp: Date.now() };
       console.log(`✅ Total webcams fetched (bulk): ${allWebcams.length} across ${Object.keys(byPark).length} parks`);
+      await this._saveSnapshot('bulk-webcams', byPark);
       return byPark;
     } catch (error) {
       if (error.response?.status === 429) {
         if (this.webcamsCache.data) {
           console.warn('⚠️ NPS 429 on bulk webcams — returning stale cache');
           return this.webcamsCache.data;
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk webcams — returning stale snapshot');
+          this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
+          return snapshot.data;
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-webcams', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk webcams — returning DB snapshot');
+          this.webcamsCache = { ...this.webcamsCache, data: dbSnapshot.data, timestamp: Date.now() };
+          return dbSnapshot.data;
         }
         console.warn('⚠️ NPS 429 on bulk webcams — no cache available, returning empty');
         return {};
@@ -961,13 +1113,20 @@ class NPSService {
 
   // Get all events from NPS API with caching — uses bulk paginated fetch
   async getAllEvents(limit = 100) {
-    try {
-      // Check cache first
-      const cachedEvents = this.getCachedEvents();
-      if (cachedEvents) {
-        return cachedEvents.slice(0, limit);
-      }
+    // Check cache first
+    const cachedEvents = this.getCachedEvents();
+    if (cachedEvents) {
+      return cachedEvents.slice(0, limit);
+    }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-events', this.eventsCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.setEventsCache(snapshot.data);
+      return snapshot.data.slice(0, limit);
+    }
+
+    try {
       console.log('🔄 Cache miss - fetching fresh events from NPS API (bulk)...');
 
       let allEvents = [];
@@ -1039,12 +1198,28 @@ class NPSService {
       this.setEventsCache(allEvents);
 
       console.log(`✅ Events fetch complete: ${allEvents.length} future events out of ${totalFetched} total`);
+      await this._saveSnapshot('bulk-events', allEvents);
       return allEvents.slice(0, limit);
     } catch (error) {
       // On 429, return stale cache if available
-      if (error.response?.status === 429 && this.eventsCache.data) {
-        console.warn('⚠️ NPS 429 rate limit on events — returning stale cache');
-        return this.eventsCache.data.slice(0, limit);
+      if (error.response?.status === 429) {
+        if (this.eventsCache.data) {
+          console.warn('⚠️ NPS 429 rate limit on events — returning stale cache');
+          return this.eventsCache.data.slice(0, limit);
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk events — returning stale snapshot');
+          this.setEventsCache(snapshot.data);
+          return snapshot.data.slice(0, limit);
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-events', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk events — returning DB snapshot');
+          this.setEventsCache(dbSnapshot.data);
+          return dbSnapshot.data.slice(0, limit);
+        }
+        console.warn('⚠️ NPS 429 on bulk events — no cache available, returning empty');
+        return [];
       }
       console.error('NPS API Error (getAllEvents):', error.message);
       return [];
@@ -1077,12 +1252,19 @@ class NPSService {
 
   // Get all activities — uses bulk paginated fetch with caching
   async getAllActivities(limit = 500) {
-    try {
-      const cachedActivities = this.getCachedActivities();
-      if (cachedActivities) {
-        return cachedActivities.slice(0, limit);
-      }
+    const cachedActivities = this.getCachedActivities();
+    if (cachedActivities) {
+      return cachedActivities.slice(0, limit);
+    }
 
+    // Try MongoDB snapshot before hitting NPS API
+    const snapshot = await this._loadSnapshot('bulk-activities', this.activitiesCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.setActivitiesCache(snapshot.data);
+      return snapshot.data.slice(0, limit);
+    }
+
+    try {
       console.log('🔄 Fetching all activities from NPS API (bulk)...');
 
       let allActivities = [];
@@ -1113,6 +1295,7 @@ class NPSService {
       this.setActivitiesCache(allActivities);
 
       console.log(`✅ Total activities fetched (bulk): ${allActivities.length}`);
+      await this._saveSnapshot('bulk-activities', allActivities);
       return allActivities.slice(0, limit);
     } catch (error) {
       // On 429, return stale cache or empty array — don't crash the warm-up
@@ -1120,6 +1303,17 @@ class NPSService {
         if (this.activitiesCache.data) {
           console.warn('⚠️ NPS 429 rate limit on activities — returning stale cache');
           return this.activitiesCache.data.slice(0, limit);
+        }
+        if (snapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk activities — returning stale snapshot');
+          this.setActivitiesCache(snapshot.data);
+          return snapshot.data.slice(0, limit);
+        }
+        const dbSnapshot = await this._loadSnapshot('bulk-activities', Infinity);
+        if (dbSnapshot?.data) {
+          console.warn('⚠️ NPS 429 on bulk activities — returning DB snapshot');
+          this.setActivitiesCache(dbSnapshot.data);
+          return dbSnapshot.data.slice(0, limit);
         }
         console.warn('⚠️ NPS 429 rate limit on activities — no cache available, returning empty');
         return [];
