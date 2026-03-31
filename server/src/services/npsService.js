@@ -986,11 +986,28 @@ class NPSService {
         const events = response.data.data;
         if (!events || events.length === 0) break;
 
+        // Log first event's date fields on first page to diagnose format
+        if (page === 0 && events[0]) {
+          const sample = events[0];
+          console.log(`📅 Sample event date fields:`, JSON.stringify({
+            datestart: sample.datestart,
+            date: sample.date,
+            dates: sample.dates,
+            recurrencedates: sample.recurrencedates,
+            dateEnd: sample.dateend,
+            title: sample.title,
+            allDateKeys: Object.keys(sample).filter(k => /date/i.test(k))
+          }));
+        }
+
         totalFetched += events.length;
 
-        // Filter to future events only
+        // Filter to future events only — check multiple possible date fields
         const validEvents = events.filter(event => {
-          const eventDate = new Date(event.datestart || event.date);
+          // Try all possible NPS date fields
+          const rawDate = event.datestart || event.date || event.dates?.[0];
+          if (!rawDate) return false;
+          const eventDate = new Date(rawDate);
           return !isNaN(eventDate.getTime()) && eventDate >= today;
         });
 
