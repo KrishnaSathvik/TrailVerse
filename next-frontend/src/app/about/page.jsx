@@ -6,9 +6,9 @@ import Footer from '@/components/common/Footer';
 
 import Button from '@/components/common/Button';
 import { useTheme } from '@/context/ThemeContext';
-import { 
-  Compass, Mountain, Camera, MapPin, Award, 
-  Globe, Mail, Instagram, 
+import {
+  Compass, Mountain, Camera, MapPin, Award,
+  Globe, Mail, Instagram, Facebook, Play,
   Sparkles, Calendar
 } from '@components/icons';
 
@@ -27,30 +27,72 @@ const AboutPage = () => {
 
   // Real data based on your experience
   const stats = {
-    parksVisited: 16, // Your actual national parks count
-    mapContributions: 8212, // From your Google Maps reviews
-    photosShared: 6540, // From your Google Maps photos
-    yearsExperience: 5 // 2020-2025
+    parksVisited: 17, // Your actual national parks count
+    mapContributions: 8335, // Total Google Maps contributions
+    photosShared: 6589, // From your Google Maps photos
+    yearsExperience: 6 // 2020-2026
   };
 
   const socialLinks = [
     {
+      icon: Globe,
+      label: "Astro by Krishna",
+      url: "https://www.astrobykrishna.com",
+      description: "Astrophotography Portfolio"
+    },
+    {
       icon: Instagram,
-      label: "Instagram",
+      label: "Instagram (Astro)",
       url: "https://instagram.com/astrobykrishna",
       description: "@astrobykrishna"
     },
     {
+      icon: Instagram,
+      label: "Instagram (Travel)",
+      url: "https://instagram.com/travels_with_krishna",
+      description: "@travels_with_krishna"
+    },
+    {
+      icon: Facebook,
+      label: "Facebook",
+      url: "https://www.facebook.com/share/zbaYQbZxP8SH1QaE/?mibextid=LQQJ4d",
+      description: "Travel Community"
+    },
+    {
+      icon: Camera,
+      label: "Pexels",
+      url: "https://www.pexels.com/@travelswithkrishna",
+      description: "Free Photography"
+    },
+    {
+      icon: Camera,
+      label: "500px",
+      url: "https://500px.com/travelswithkrishna",
+      description: "Photography Portfolio"
+    },
+    {
       icon: Globe,
-      label: "Unsplash Portfolio",
+      label: "Unsplash",
       url: "https://unsplash.com/@astrobykrishna",
       description: "25+ Astrophotography shots"
     },
     {
+      icon: Play,
+      label: "TikTok",
+      url: "https://www.tiktok.com/@travelswithkrishna",
+      description: "@travelswithkrishna"
+    },
+    {
+      icon: MapPin,
+      label: "Pinterest",
+      url: "https://pin.it/2N6K1Iz",
+      description: "Travel Inspiration"
+    },
+    {
       icon: MapPin,
       label: "Google Maps Level 8",
-      url: "https://maps.app.goo.gl/MX71pvtv23ubGheW7?g_st=ic",
-      description: "Level 8 • 2.2M+ review views"
+      url: "https://www.google.com/maps/contrib/118219629305553937668",
+      description: "Level 8 • 67M+ views"
     },
     {
       icon: Mail,
@@ -69,12 +111,12 @@ const AboutPage = () => {
     {
       icon: MapPin,
       title: "Travel Expert",
-      description: "Google Maps Level 8 contributor with 372+ detailed park reviews"
+      description: "Google Maps Level 8 contributor with 379+ detailed park reviews"
     },
     {
       icon: Mountain,
       title: "National Parks",
-      description: "16+ National Parks explored across the United States"
+      description: "17+ National Parks explored across the United States"
     },
     {
       icon: Sparkles,
@@ -151,7 +193,7 @@ const AboutPage = () => {
                     <p className="text-lg leading-relaxed mb-6"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      A travel enthusiast who loves exploring new places and sharing my experiences with others. From beautiful destinations to insightful travel tips, my blog is the perfect place to find inspiration for your next adventure. 🏞️ <strong>16 National Parks Explored</strong> • 📸 <strong>Nikon Z6ii Astrophotographer</strong> • 🗺️ <strong>Google Level 8 Contributor</strong>
+                      A travel enthusiast who loves exploring new places and sharing my experiences with others. From beautiful destinations to insightful travel tips, my blog is the perfect place to find inspiration for your next adventure. 🏞️ <strong>17 National Parks Explored</strong> • 📸 <strong>Nikon Z6ii Astrophotographer</strong> • 🗺️ <strong>Google Level 8 Contributor</strong>
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4">
                       <Button
@@ -282,7 +324,7 @@ const AboutPage = () => {
                   Reviews Written
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  2.2M+ views
+                  67M+ views
                 </div>
               </div>
 
@@ -305,7 +347,7 @@ const AboutPage = () => {
                   Photos Shared
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  58M+ views
+                  64.5M+ views
                 </div>
               </div>
 
@@ -397,7 +439,7 @@ const AboutPage = () => {
                 </p>
               </div>
               
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                 {socialLinks.map((link, index) => {
                   const Icon = link.icon;
                   return (
@@ -479,7 +521,7 @@ const AboutPage = () => {
                 </h3>
                   <div className="space-y-4 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     <p>
-                      After visiting 16+ National Parks and contributing thousands of reviews on Google Maps, 
+                      After visiting 17+ National Parks and contributing thousands of reviews on Google Maps, 
                       I realized there was a gap in the market for comprehensive, modern trip planning 
                       specifically designed for America's incredible park system.
                     </p>
