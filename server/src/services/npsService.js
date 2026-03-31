@@ -10,7 +10,7 @@ class NPSService {
     if (!API_KEY || API_KEY === 'your_nps_api_key_here') {
       throw new Error('NPS API key is required. Please set NPS_API_KEY in your environment variables.');
     }
-    
+
     this.api = axios.create({
       baseURL: NPS_API_BASE,
       params: {
@@ -22,7 +22,7 @@ class NPSService {
     this.eventsCache = {
       data: null,
       timestamp: null,
-      ttl: 30 * 60 * 1000 // 30 minutes cache
+      ttl: 6 * 60 * 60 * 1000 // 6 hours — events don't change by the minute
     };
 
     // Cache all parks aggressively since the upstream dataset is relatively static
@@ -31,14 +31,35 @@ class NPSService {
       timestamp: null,
       ttl: 24 * 60 * 60 * 1000 // 24 hours
     };
+
+    // Cache for activities (bulk fetch, rarely changes)
+    this.activitiesCache = {
+      data: null,
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours
+    };
+
+    // Per-endpoint caches for individual park data
+    this.endpointCache = new Map();
+    this.endpointCacheTTLs = {
+      alerts: 30 * 60 * 1000,        // 30 min — time-sensitive
+      activities: 24 * 60 * 60 * 1000, // 24 hours
+      campgrounds: 24 * 60 * 60 * 1000, // 24 hours
+      visitorcenters: 24 * 60 * 60 * 1000, // 24 hours
+      parksByState: 24 * 60 * 60 * 1000  // 24 hours
+    };
+  }
+
+  // --- Generic named-cache helpers ---
+
+  _isCacheValid(cache) {
+    if (!cache.data || !cache.timestamp) return false;
+    return Date.now() - cache.timestamp < cache.ttl;
   }
 
   // Check if cache is valid
   isCacheValid() {
-    if (!this.eventsCache.data || !this.eventsCache.timestamp) {
-      return false;
-    }
-    return Date.now() - this.eventsCache.timestamp < this.eventsCache.ttl;
+    return this._isCacheValid(this.eventsCache);
   }
 
   // Get cached events if valid
@@ -53,11 +74,47 @@ class NPSService {
   // Set events cache
   setEventsCache(data) {
     this.eventsCache = {
-      data: data,
-      timestamp: Date.now(),
-      ttl: 30 * 60 * 1000
+      ...this.eventsCache,
+      data,
+      timestamp: Date.now()
     };
-    console.log('💾 Events cached for 30 minutes');
+    console.log(`💾 Events cached (${data.length} items) for ${this.eventsCache.ttl / 60000} minutes`);
+  }
+
+  // --- Activities cache ---
+
+  getCachedActivities() {
+    if (this._isCacheValid(this.activitiesCache)) {
+      console.log('📦 Returning cached activities');
+      return this.activitiesCache.data;
+    }
+    return null;
+  }
+
+  setActivitiesCache(data) {
+    this.activitiesCache = {
+      ...this.activitiesCache,
+      data,
+      timestamp: Date.now()
+    };
+    console.log(`💾 Activities cached (${data.length} items) for 24 hours`);
+  }
+
+  // --- Per-endpoint cache helpers ---
+
+  _getEndpointCache(key, type) {
+    const entry = this.endpointCache.get(key);
+    if (!entry) return null;
+    const ttl = this.endpointCacheTTLs[type] || 30 * 60 * 1000;
+    if (Date.now() - entry.timestamp > ttl) {
+      this.endpointCache.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  _setEndpointCache(key, data) {
+    this.endpointCache.set(key, { data, timestamp: Date.now() });
   }
 
   isParksCacheValid() {
@@ -151,11 +208,14 @@ class NPSService {
         if (parks.length < pageSize) {
           break;
         }
-        
+
         // Safety limit to prevent infinite loops (but allow for 474+ parks)
         if (allParks.length >= limit) {
           break;
         }
+
+        // Small delay between pages to avoid burst traffic
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       const nationalParksCount = allParks.filter(park => 
@@ -224,7 +284,11 @@ class NPSService {
       await this.savePersistentParksSnapshot(allParks);
       return allParks;
     } catch (error) {
-      console.error('NPS API Error:', error.message);
+      if (error.response?.status === 429) {
+        console.warn('⚠️ NPS 429 rate limit on parks endpoint');
+      } else {
+        console.error('NPS API Error:', error.message);
+      }
 
       if (this.parksCache.data) {
         console.warn('⚠️ Returning stale cached parks after NPS failure');
@@ -290,76 +354,122 @@ class NPSService {
     }
   }
 
-  // Get parks by state
+  // Get parks by state (cached)
   async getParksByState(stateCode) {
+    const cacheKey = `parksByState_${stateCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'parksByState');
+    if (cached) return cached;
+
     try {
       const response = await this.api.get('/parks', {
         params: { stateCode, limit: 100 }
       });
-      return response.data.data;
+      const data = response.data.data;
+      this._setEndpointCache(cacheKey, data);
+      return data;
     } catch (error) {
       console.error('NPS API Error:', error.message);
       throw new Error(`Failed to fetch parks for state ${stateCode}: ${error.message}`);
     }
   }
 
-  // Get park activities
+  // Get park activities (cached)
   async getParkActivities(parkCode) {
+    const cacheKey = `activities_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities');
+    if (cached) return cached;
+
     try {
       const response = await this.api.get('/thingstodo', {
         params: { parkCode, limit: 50 }
       });
-      console.log(`✅ Activities for ${parkCode}: ${response.data.data.length} found`);
-      return response.data.data;
+      const data = response.data.data;
+      console.log(`✅ Activities for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
     } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on activities for ${parkCode}`);
+        return [];
+      }
       console.error(`❌ NPS API Error (getParkActivities for ${parkCode}):`, error.message);
       throw new Error(`Failed to fetch activities for ${parkCode}: ${error.message}`);
     }
   }
 
-  // Get park alerts
+  // Get park alerts (cached, shorter TTL since alerts are time-sensitive)
   async getParkAlerts(parkCode) {
+    const cacheKey = `alerts_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'alerts');
+    if (cached) return cached;
+
     try {
       const response = await this.api.get('/alerts', {
         params: { parkCode }
       });
-      console.log(`✅ Alerts for ${parkCode}: ${response.data.data.length} found`);
-      return response.data.data;
+      const data = response.data.data;
+      console.log(`✅ Alerts for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
     } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on alerts for ${parkCode}`);
+        return [];
+      }
       console.error(`❌ NPS API Error (getParkAlerts for ${parkCode}):`, error.message);
       throw new Error(`Failed to fetch alerts for ${parkCode}: ${error.message}`);
     }
   }
 
-  // Get park campgrounds
+  // Get park campgrounds (cached)
   async getParkCampgrounds(parkCode) {
+    const cacheKey = `campgrounds_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'campgrounds');
+    if (cached) return cached;
+
     try {
       const response = await this.api.get('/campgrounds', {
         params: { parkCode, limit: 50 }
       });
-      console.log(`✅ Campgrounds for ${parkCode}: ${response.data.data.length} found`);
-      return response.data.data;
+      const data = response.data.data;
+      console.log(`✅ Campgrounds for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
     } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on campgrounds for ${parkCode}`);
+        return [];
+      }
       console.error(`❌ NPS API Error (getParkCampgrounds for ${parkCode}):`, error.message);
       throw new Error(`Failed to fetch campgrounds for ${parkCode}: ${error.message}`);
     }
   }
 
-  // Get park visitor centers
+  // Get park visitor centers (cached)
   async getParkVisitorCenters(parkCode) {
+    const cacheKey = `visitorcenters_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'visitorcenters');
+    if (cached) return cached;
+
     try {
       const response = await this.api.get('/visitorcenters', {
         params: { parkCode, limit: 50 }
       });
-      console.log(`✅ Visitor Centers for ${parkCode}: ${response.data.data.length} found`);
-      return response.data.data;
+      const data = response.data.data;
+      console.log(`✅ Visitor Centers for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
     } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on visitor centers for ${parkCode}`);
+        return [];
+      }
       console.error(`❌ NPS API Error (getParkVisitorCenters for ${parkCode}):`, error.message);
       throw new Error(`Failed to fetch visitor centers for ${parkCode}: ${error.message}`);
     }
   }
 
-  // Get all events from NPS API with caching and proper date filtering
+  // Get all events from NPS API with caching — uses bulk paginated fetch
   async getAllEvents(limit = 100) {
     try {
       // Check cache first
@@ -368,144 +478,126 @@ class NPSService {
         return cachedEvents.slice(0, limit);
       }
 
-      console.log('🔄 Cache miss - fetching fresh events from NPS API...');
-      
-      // First, get all parks to ensure we cover all possible events
-      const allParks = await this.getAllParks(500);
-      const parkCodes = allParks.map(park => park.parkCode).filter(code => code);
-      
-      console.log(`Fetching events from ${parkCodes.length} parks...`);
-      
+      console.log('🔄 Cache miss - fetching fresh events from NPS API (bulk)...');
+
       let allEvents = [];
-      const today = new Date('2025-10-02'); // October 2, 2025
-      
-      // Process parks in batches to avoid overwhelming the API
-      const batchSize = 10;
-      for (let i = 0; i < parkCodes.length; i += batchSize) {
-        const batch = parkCodes.slice(i, i + batchSize);
-        
-        // Process batch in parallel
-        const batchPromises = batch.map(async (parkCode) => {
-          try {
-            const response = await this.api.get('/events', {
-              params: { parkCode, limit: 20 }
-            });
-            
-            if (response.data.data && response.data.data.length > 0) {
-              // Filter events to only include future dates and add parkCode
-              const validEvents = response.data.data
-                .filter(event => {
-                  const eventDate = new Date(event.datestart || event.date);
-                  return eventDate >= today;
-                })
-                .map(event => ({
-                  ...event,
-                  parkCode: parkCode
-                }));
-              
-              return validEvents;
-            }
-            return [];
-          } catch (parkError) {
-            console.log(`No events found for park ${parkCode}`);
-            return [];
-          }
+      const today = new Date();
+      const pageSize = 50; // NPS events endpoint max per page
+      let start = 0;
+
+      // Paginated bulk fetch — no per-park iteration
+      while (true) {
+        const response = await this.api.get('/events', {
+          params: { limit: pageSize, start }
         });
-        
-        const batchResults = await Promise.all(batchPromises);
-        allEvents = allEvents.concat(batchResults.flat());
-        
-        // Log progress
-        console.log(`Processed ${Math.min(i + batchSize, parkCodes.length)}/${parkCodes.length} parks, found ${allEvents.length} events so far`);
-        
-        // If we have enough events, we can stop
-        if (allEvents.length >= limit) {
-          break;
-        }
+
+        const events = response.data.data;
+        if (!events || events.length === 0) break;
+
+        // Filter to future events only
+        const validEvents = events.filter(event => {
+          const eventDate = new Date(event.datestart || event.date);
+          return eventDate >= today;
+        });
+
+        allEvents = allEvents.concat(validEvents);
+        start += pageSize;
+
+        console.log(`📅 Fetched page at offset ${start}, ${allEvents.length} future events so far`);
+
+        if (events.length < pageSize) break; // last page
+
+        // Small delay between pages
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
-      // Sort events by date and limit results
+      // Sort events by date
       allEvents.sort((a, b) => new Date(a.datestart || a.date) - new Date(b.datestart || b.date));
-      
+
       // Cache the results
       this.setEventsCache(allEvents);
-      
-      console.log(`Total real events fetched from ${parkCodes.length} parks: ${allEvents.length}`);
+
+      console.log(`✅ Total events fetched (bulk): ${allEvents.length}`);
       return allEvents.slice(0, limit);
     } catch (error) {
+      // On 429, return stale cache if available
+      if (error.response?.status === 429 && this.eventsCache.data) {
+        console.warn('⚠️ NPS 429 rate limit on events — returning stale cache');
+        return this.eventsCache.data.slice(0, limit);
+      }
       console.error('NPS API Error (getAllEvents):', error.message);
       return [];
     }
   }
 
-  // Get events by park
+  // Get events by park (cached)
   async getEventsByPark(parkCode) {
+    const cacheKey = `events_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'alerts'); // reuse 30min TTL
+    if (cached) return cached;
+
     try {
       const response = await this.api.get('/events', {
         params: { parkCode, limit: 50 }
       });
-      console.log(`Events for ${parkCode}: ${response.data.data.length}`);
-      return response.data.data;
+      const data = response.data.data;
+      console.log(`Events for ${parkCode}: ${data.length}`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
     } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on events for ${parkCode}`);
+        return [];
+      }
       console.error('NPS API Error (getEventsByPark):', error.message);
       return [];
     }
   }
 
-  // Get all activities across all parks
+  // Get all activities — uses bulk paginated fetch with caching
   async getAllActivities(limit = 500) {
     try {
-      console.log('🔄 Fetching all activities across all parks...');
-      
-      // First, get all parks
-      const allParks = await this.getAllParks(600);
-      const parkCodes = allParks.map(park => park.parkCode).filter(code => code);
-      
-      console.log(`📊 Fetching activities from ${parkCodes.length} parks...`);
-      
-      let allActivities = [];
-      
-      // Process parks in batches to avoid overwhelming the API
-      const batchSize = 10;
-      for (let i = 0; i < parkCodes.length; i += batchSize) {
-        const batch = parkCodes.slice(i, i + batchSize);
-        
-        // Process batch in parallel
-        const batchPromises = batch.map(async (parkCode) => {
-          try {
-            const response = await this.api.get('/thingstodo', {
-              params: { parkCode, limit: 50 }
-            });
-            
-            if (response.data.data && response.data.data.length > 0) {
-              // Add parkCode to each activity for reference
-              return response.data.data.map(activity => ({
-                ...activity,
-                parkCode: parkCode
-              }));
-            }
-            return [];
-          } catch (parkError) {
-            console.log(`No activities found for park ${parkCode}`);
-            return [];
-          }
-        });
-        
-        const batchResults = await Promise.all(batchPromises);
-        allActivities = allActivities.concat(batchResults.flat());
-        
-        // Log progress
-        console.log(`📦 Processed ${Math.min(i + batchSize, parkCodes.length)}/${parkCodes.length} parks, found ${allActivities.length} activities so far`);
-        
-        // If we have enough activities, we can stop
-        if (allActivities.length >= limit) {
-          break;
-        }
+      const cachedActivities = this.getCachedActivities();
+      if (cachedActivities) {
+        return cachedActivities.slice(0, limit);
       }
-      
-      console.log(`✅ Total activities fetched: ${allActivities.length}`);
+
+      console.log('🔄 Fetching all activities from NPS API (bulk)...');
+
+      let allActivities = [];
+      const pageSize = 50;
+      let start = 0;
+
+      while (true) {
+        const response = await this.api.get('/thingstodo', {
+          params: { limit: pageSize, start }
+        });
+
+        const activities = response.data.data;
+        if (!activities || activities.length === 0) break;
+
+        allActivities = allActivities.concat(activities);
+        start += pageSize;
+
+        console.log(`🎯 Fetched page at offset ${start}, ${allActivities.length} activities so far`);
+
+        if (activities.length < pageSize) break; // last page
+        if (allActivities.length >= limit) break;
+
+        // Small delay between pages
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      this.setActivitiesCache(allActivities);
+
+      console.log(`✅ Total activities fetched (bulk): ${allActivities.length}`);
       return allActivities.slice(0, limit);
     } catch (error) {
+      // On 429, return stale cache if available
+      if (error.response?.status === 429 && this.activitiesCache.data) {
+        console.warn('⚠️ NPS 429 rate limit on activities — returning stale cache');
+        return this.activitiesCache.data.slice(0, limit);
+      }
       console.error('NPS API Error (getAllActivities):', error.message);
       throw new Error(`Failed to fetch all activities: ${error.message}`);
     }

@@ -28,14 +28,30 @@ connectDB().then(() => {
   // Start the scheduler after database connection is established
   startScheduler();
 
-  // Warm the parks cache/snapshot in the background so valid park pages do not
-  // depend on the first user request succeeding against the NPS API.
+  // Warm all NPS caches in the background so user/build requests don't
+  // depend on the first request succeeding against the NPS API.
   setImmediate(async () => {
     try {
       const parks = await npsService.getAllParks();
       console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
     } catch (error) {
       console.warn(`⚠️ Parks snapshot warm-up failed: ${error.message}`);
+    }
+
+    // Warm events cache (after parks so we don't burst the API)
+    try {
+      const events = await npsService.getAllEvents();
+      console.log(`📅 Warmed events cache with ${events.length} events`);
+    } catch (error) {
+      console.warn(`⚠️ Events cache warm-up failed: ${error.message}`);
+    }
+
+    // Warm activities cache
+    try {
+      const activities = await npsService.getAllActivities();
+      console.log(`🎯 Warmed activities cache with ${activities.length} activities`);
+    } catch (error) {
+      console.warn(`⚠️ Activities cache warm-up failed: ${error.message}`);
     }
   });
 }).catch((err) => {
