@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 
@@ -11,6 +12,13 @@ import {
   Globe, Mail, Instagram, Facebook, Play,
   Sparkles, Calendar
 } from '@components/icons';
+
+const STATS = {
+  parksVisited: 17, // Your actual national parks count
+  mapContributions: 379, // Google Maps reviews
+  photosShared: 6589, // From your Google Maps photos
+  yearsExperience: 6 // 2020-2026
+};
 
 const AboutPage = () => {
   const router = useRouter();
@@ -26,13 +34,6 @@ const AboutPage = () => {
   });
 
   // Real data based on your experience
-  const stats = {
-    parksVisited: 17, // Your actual national parks count
-    mapContributions: 379, // Google Maps reviews
-    photosShared: 6589, // From your Google Maps photos
-    yearsExperience: 6 // 2020-2026
-  };
-
   const socialLinks = [
     {
       icon: Globe,
@@ -42,15 +43,9 @@ const AboutPage = () => {
     },
     {
       icon: Instagram,
-      label: "Instagram (Astro)",
+      label: "Instagram",
       url: "https://instagram.com/astrobykrishna",
       description: "@astrobykrishna"
-    },
-    {
-      icon: Instagram,
-      label: "Instagram (Travel)",
-      url: "https://www.instagram.com/travelswithkrishna/",
-      description: "@travelswithkrishna"
     },
     {
       icon: Facebook,
@@ -143,9 +138,9 @@ const AboutPage = () => {
       const steps = 50;
       const stepDuration = duration / steps;
 
-      Object.keys(stats).forEach(key => {
+      Object.keys(STATS).forEach(key => {
         let currentValue = 0;
-        const targetValue = stats[key];
+        const targetValue = STATS[key];
         const increment = targetValue / steps;
 
         const interval = setInterval(() => {
@@ -205,7 +200,7 @@ const AboutPage = () => {
                         Explore Parks
                       </Button>
                       <Button
-                        href="https://instagram.com/astrobykrishna"
+                        href="https://www.instagram.com/travelswithkrishna/"
                         target="_blank"
                         rel="noopener noreferrer"
                         variant="secondary"
@@ -479,11 +474,13 @@ const AboutPage = () => {
             <div className="text-center mb-16">
               <div className="flex items-center justify-center gap-4 mb-8">
                 <div className="relative">
-                <img 
-                  src="/logo.png" 
-                  alt="TrailVerse Logo" 
-                    className="h-16 w-16 rounded-2xl object-contain"
-                  />
+                <Image
+                  src="/logo.png"
+                  alt="TrailVerse Logo"
+                  width={64}
+                  height={64}
+                  className="h-16 w-16 rounded-2xl object-contain"
+                />
                   <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: 'var(--accent-green)' }}
                   >
@@ -523,7 +520,7 @@ const AboutPage = () => {
                     <p>
                       After visiting 17+ National Parks and contributing thousands of reviews on Google Maps, 
                       I realized there was a gap in the market for comprehensive, modern trip planning 
-                      specifically designed for America's incredible park system.
+                      specifically designed for America’s incredible park system.
                     </p>
                     <p>
                       TrailVerse bridges that gap by combining real-world experience with modern technology, 
@@ -756,7 +753,7 @@ const AboutPage = () => {
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     Install TrailVerse to your home screen for seamless offline support and instant navigation. 
-                    Access your saved trips and park guides even when you don't have cell service in the wilderness.
+                    Access your saved trips and park guides even when you don’t have cell service in the wilderness.
                   </p>
                 </div>
                          </div>
