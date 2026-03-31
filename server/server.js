@@ -58,6 +58,18 @@ connectDB().then(() => {
     } catch (error) {
       console.warn(`⚠️ Activities cache warm-up failed: ${error.message}`);
     }
+
+    // Wait another 5s before alerts
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    try {
+      const alerts = await npsService.getAllAlerts();
+      const parkCount = Object.keys(alerts).length;
+      const totalAlerts = Object.values(alerts).reduce((sum, a) => sum + a.length, 0);
+      console.log(`🚨 Warmed alerts cache with ${totalAlerts} alerts across ${parkCount} parks`);
+    } catch (error) {
+      console.warn(`⚠️ Alerts cache warm-up failed: ${error.message}`);
+    }
   });
 }).catch((err) => {
   console.error('❌ Failed to connect to database:', err);

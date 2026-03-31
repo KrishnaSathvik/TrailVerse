@@ -39,6 +39,14 @@ class NPSService {
       ttl: 24 * 60 * 60 * 1000 // 24 hours
     };
 
+    // Bulk alerts cache keyed by parkCode (alerts are time-sensitive but
+    // bulk-fetching once avoids per-park API calls on detail pages)
+    this.alertsCache = {
+      data: null,       // Map<parkCode, alert[]>
+      timestamp: null,
+      ttl: 30 * 60 * 1000 // 30 minutes
+    };
+
     // Per-endpoint caches for individual park data
     this.endpointCache = new Map();
     this.endpointCacheTTLs = {
@@ -397,8 +405,77 @@ class NPSService {
     }
   }
 
-  // Get park alerts (cached, shorter TTL since alerts are time-sensitive)
+  // Bulk-fetch all alerts from NPS API and group by parkCode
+  async getAllAlerts() {
+    if (this._isCacheValid(this.alertsCache) && this.alertsCache.data) {
+      console.log('📦 Returning cached bulk alerts');
+      return this.alertsCache.data;
+    }
+
+    console.log('🔄 Fetching all alerts from NPS API (bulk)...');
+
+    let allAlerts = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/alerts', {
+          params: { limit: pageSize, start }
+        });
+
+        const alerts = response.data.data;
+        if (!alerts || alerts.length === 0) break;
+
+        allAlerts = allAlerts.concat(alerts);
+        start += pageSize;
+
+        console.log(`🚨 Fetched page at offset ${start}, ${allAlerts.length} alerts so far`);
+
+        if (alerts.length < pageSize) break;
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      // Group alerts by parkCode
+      const alertsByPark = {};
+      for (const alert of allAlerts) {
+        const code = alert.parkCode;
+        if (!code) continue;
+        if (!alertsByPark[code]) alertsByPark[code] = [];
+        alertsByPark[code].push(alert);
+      }
+
+      this.alertsCache = {
+        ...this.alertsCache,
+        data: alertsByPark,
+        timestamp: Date.now()
+      };
+
+      console.log(`✅ Total alerts fetched (bulk): ${allAlerts.length} across ${Object.keys(alertsByPark).length} parks`);
+      return alertsByPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.alertsCache.data) {
+          console.warn('⚠️ NPS 429 on bulk alerts — returning stale cache');
+          return this.alertsCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk alerts — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllAlerts):', error.message);
+      return {};
+    }
+  }
+
+  // Get park alerts — serves from bulk cache first, falls back to per-park call
   async getParkAlerts(parkCode) {
+    // Check bulk alerts cache first
+    if (this._isCacheValid(this.alertsCache) && this.alertsCache.data) {
+      return this.alertsCache.data[parkCode] || [];
+    }
+
+    // Check per-endpoint cache
     const cacheKey = `alerts_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'alerts');
     if (cached) return cached;
