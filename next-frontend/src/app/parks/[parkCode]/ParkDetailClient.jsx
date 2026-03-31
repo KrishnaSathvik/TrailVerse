@@ -19,6 +19,7 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import WeatherWidget from '@/components/park-details/WeatherWidget';
 import ReviewSection from '@/components/park-details/ReviewSection';
 import ShareButtons from '@/components/common/ShareButtons';
+import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
 
 const ParkDetailClient = ({ initialData, parkCode }) => {
@@ -31,6 +32,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeActivityTab, setActiveActivityTab] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
 
   const { park, campgrounds, activities, alerts, places, tours, webcams } = initialData;
@@ -681,7 +683,10 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           {park.images.map((image, index) => (
                             <button
                               key={index}
-                              onClick={() => setSelectedImageIndex(index)}
+                              onClick={() => {
+                                setSelectedImageIndex(index);
+                                setLightboxOpen(true);
+                              }}
                               className="aspect-video rounded-xl overflow-hidden group"
                             >
                               <OptimizedImage
@@ -1135,6 +1140,15 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
       </section>
 
       <Footer />
+
+      {/* Photo Lightbox */}
+      {lightboxOpen && park.images?.length > 0 && (
+        <PhotoLightbox
+          images={park.images}
+          initialIndex={selectedImageIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 };
