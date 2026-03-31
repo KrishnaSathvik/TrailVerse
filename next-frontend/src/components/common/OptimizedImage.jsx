@@ -68,13 +68,8 @@ const normalizeImageUrl = (url) => {
       // Try API endpoint first (better error handling)
       const apiUrl = `${apiBaseUrl}/api/images/file/${filePath}`;
       
-      if (isDevelopment) {
-        // In development, return the API URL
-        return apiUrl;
-      } else {
-        // In production, use relative path for Vercel proxy
-        return `/api/images/file/${filePath}`;
-      }
+      // In production, hit the backend directly. Vercel does not proxy these paths.
+      return apiUrl;
     }
   }
 
@@ -122,8 +117,8 @@ const OptimizedImage = ({
           apiBaseUrl = apiBaseUrl.slice(0, -4);
         }
         
-        // Fallback should be direct /uploads/ path (not /api/uploads/)
-        return isDevelopment ? `${apiBaseUrl}${filePath}` : filePath;
+        // Fallback should be the backend's direct /uploads/ path.
+        return `${apiBaseUrl}${filePath}`;
       }
     }
     return null;
