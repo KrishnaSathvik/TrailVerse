@@ -1,7 +1,9 @@
 const axios = require('axios');
+const ParkSnapshot = require('../models/ParkSnapshot');
 
 const NPS_API_BASE = 'https://developer.nps.gov/api/v1';
 const API_KEY = process.env.NPS_API_KEY;
+const PARKS_SNAPSHOT_KEY = 'all-parks';
 
 class NPSService {
   constructor() {
@@ -80,6 +82,41 @@ class NPSService {
       ttl: 24 * 60 * 60 * 1000
     };
     console.log(`💾 Cached ${data.length} parks for 24 hours`);
+  }
+
+  async getPersistentParksSnapshot() {
+    try {
+      const snapshot = await ParkSnapshot.findOne({ key: PARKS_SNAPSHOT_KEY }).lean();
+      if (!snapshot?.parks?.length) {
+        return null;
+      }
+
+      console.log(`🗄️ Returning persistent parks snapshot with ${snapshot.parks.length} parks`);
+      this.setParksCache(snapshot.parks);
+      return snapshot.parks;
+    } catch (error) {
+      console.warn('⚠️ Failed to load persistent parks snapshot:', error.message);
+      return null;
+    }
+  }
+
+  async savePersistentParksSnapshot(parks) {
+    try {
+      await ParkSnapshot.updateOne(
+        { key: PARKS_SNAPSHOT_KEY },
+        {
+          $set: {
+            parks,
+            parkCount: parks.length,
+            fetchedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+      console.log(`🗄️ Saved persistent parks snapshot with ${parks.length} parks`);
+    } catch (error) {
+      console.warn('⚠️ Failed to save persistent parks snapshot:', error.message);
+    }
   }
 
   // Get all parks with pagination to ensure we get all parks
@@ -184,6 +221,7 @@ class NPSService {
       }
 
       this.setParksCache(allParks);
+      await this.savePersistentParksSnapshot(allParks);
       return allParks;
     } catch (error) {
       console.error('NPS API Error:', error.message);
@@ -191,6 +229,12 @@ class NPSService {
       if (this.parksCache.data) {
         console.warn('⚠️ Returning stale cached parks after NPS failure');
         return this.parksCache.data;
+      }
+
+      const stalePersistentParks = await this.getPersistentParksSnapshot();
+      if (stalePersistentParks?.length) {
+        console.warn('⚠️ Returning persistent parks snapshot after NPS failure');
+        return stalePersistentParks;
       }
 
       throw new Error(`Failed to fetch parks: ${error.message}`);
@@ -233,6 +277,13 @@ class NPSService {
           console.warn(`⚠️ Returning stale cached park data for ${normalizedParkCode} after NPS failure`);
           return staleMatch;
         }
+      }
+
+      const persistentParks = await this.getPersistentParksSnapshot();
+      const persistentMatch = findParkByCode(persistentParks || []);
+      if (persistentMatch) {
+        console.warn(`⚠️ Returning persistent park snapshot for ${normalizedParkCode} after NPS failure`);
+        return persistentMatch;
       }
 
       throw new Error(`Failed to fetch park ${parkCode}: ${error.message}`);
