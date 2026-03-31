@@ -98,14 +98,15 @@ exports.getParkDetails = async (req, res, next) => {
       npsService.getParkTours(parkCode),
       npsService.getParkWebcams(parkCode),
       npsService.getParkVideos(parkCode),
-      npsService.getParkGalleryPhotos(parkCode)
+      npsService.getParkGalleryPhotos(parkCode),
+      npsService.getParkParkingLots(parkCode)
     ]);
 
     const [
       parkResult, activitiesResult, alertsResult,
       campgroundsResult, visitorCentersResult,
       placesResult, toursResult, webcamsResult,
-      videosResult, galleryResult
+      videosResult, galleryResult, parkingLotsResult
     ] = results;
     const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
     const activities = activitiesResult.status === 'fulfilled' ? activitiesResult.value : [];
@@ -117,15 +118,16 @@ exports.getParkDetails = async (req, res, next) => {
     const webcams = webcamsResult.status === 'fulfilled' ? webcamsResult.value : [];
     const videos = videosResult.status === 'fulfilled' ? videosResult.value : [];
     const galleryPhotos = galleryResult.status === 'fulfilled' ? galleryResult.value : [];
+    const parkingLots = parkingLotsResult.status === 'fulfilled' ? parkingLotsResult.value : [];
 
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
-        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters', 'places', 'tours', 'webcams', 'videos', 'galleryPhotos'];
+        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters', 'places', 'tours', 'webcams', 'videos', 'galleryPhotos', 'parkingLots'];
         console.error(`Failed to fetch ${sections[index]} for ${parkCode}:`, result.reason?.message || result.reason);
       }
     });
 
-    console.log(`📊 Park details for ${parkCode}: activities=${activities.length} alerts=${alerts.length} campgrounds=${campgrounds.length} places=${places.length} tours=${tours.length} webcams=${webcams.length} videos=${videos.length} gallery=${galleryPhotos.length}`);
+    console.log(`📊 Park details for ${parkCode}: activities=${activities.length} alerts=${alerts.length} campgrounds=${campgrounds.length} places=${places.length} tours=${tours.length} webcams=${webcams.length} videos=${videos.length} gallery=${galleryPhotos.length} parkingLots=${parkingLots.length}`);
 
     if (!park) {
       return res.status(404).json({
@@ -146,7 +148,8 @@ exports.getParkDetails = async (req, res, next) => {
         tours,
         webcams,
         videos,
-        galleryPhotos
+        galleryPhotos,
+        parkingLots
       }
     });
   } catch (error) {
