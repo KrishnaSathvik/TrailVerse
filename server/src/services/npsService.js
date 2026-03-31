@@ -454,10 +454,11 @@ class NPSService {
 
     let allAlerts = [];
     const pageSize = 50;
+    const maxPages = 40;
     let start = 0;
 
     try {
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/alerts', {
           params: { limit: pageSize, start }
         });
@@ -547,10 +548,11 @@ class NPSService {
 
     let allCampgrounds = [];
     const pageSize = 50;
+    const maxPages = 40;
     let start = 0;
 
     try {
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/campgrounds', {
           params: { limit: pageSize, start }
         });
@@ -631,10 +633,11 @@ class NPSService {
 
     let allVCs = [];
     const pageSize = 50;
+    const maxPages = 40;
     let start = 0;
 
     try {
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/visitorcenters', {
           params: { limit: pageSize, start }
         });
@@ -716,10 +719,11 @@ class NPSService {
 
     let allPlaces = [];
     const pageSize = 50;
+    const maxPages = 60; // places dataset is large
     let start = 0;
 
     try {
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/places', {
           params: { limit: pageSize, start }
         });
@@ -799,10 +803,11 @@ class NPSService {
 
     let allTours = [];
     const pageSize = 50;
+    const maxPages = 40;
     let start = 0;
 
     try {
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/tours', {
           params: { limit: pageSize, start }
         });
@@ -882,10 +887,11 @@ class NPSService {
 
     let allWebcams = [];
     const pageSize = 50;
+    const maxPages = 20;
     let start = 0;
 
     try {
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/webcams', {
           params: { limit: pageSize, start }
         });
@@ -965,12 +971,14 @@ class NPSService {
       console.log('🔄 Cache miss - fetching fresh events from NPS API (bulk)...');
 
       let allEvents = [];
+      let totalFetched = 0;
       const today = new Date();
-      const pageSize = 50; // NPS events endpoint max per page
+      const pageSize = 50;
+      const maxPages = 20; // Cap at 1000 events to avoid endless pagination
       let start = 0;
 
       // Paginated bulk fetch — no per-park iteration
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/events', {
           params: { limit: pageSize, start }
         });
@@ -978,16 +986,18 @@ class NPSService {
         const events = response.data.data;
         if (!events || events.length === 0) break;
 
+        totalFetched += events.length;
+
         // Filter to future events only
         const validEvents = events.filter(event => {
           const eventDate = new Date(event.datestart || event.date);
-          return eventDate >= today;
+          return !isNaN(eventDate.getTime()) && eventDate >= today;
         });
 
         allEvents = allEvents.concat(validEvents);
         start += pageSize;
 
-        console.log(`📅 Fetched page at offset ${start}, ${allEvents.length} future events so far`);
+        console.log(`📅 Fetched page ${page + 1}/${maxPages}, ${totalFetched} total events, ${allEvents.length} future`);
 
         if (events.length < pageSize) break; // last page
 
@@ -998,10 +1008,10 @@ class NPSService {
       // Sort events by date
       allEvents.sort((a, b) => new Date(a.datestart || a.date) - new Date(b.datestart || b.date));
 
-      // Cache the results
+      // Cache the results (even if empty — prevents re-fetching)
       this.setEventsCache(allEvents);
 
-      console.log(`✅ Total events fetched (bulk): ${allEvents.length}`);
+      console.log(`✅ Events fetch complete: ${allEvents.length} future events out of ${totalFetched} total`);
       return allEvents.slice(0, limit);
     } catch (error) {
       // On 429, return stale cache if available
@@ -1050,9 +1060,10 @@ class NPSService {
 
       let allActivities = [];
       const pageSize = 50;
+      const maxPages = 40;
       let start = 0;
 
-      while (true) {
+      for (let page = 0; page < maxPages; page++) {
         const response = await this.api.get('/thingstodo', {
           params: { limit: pageSize, start }
         });
