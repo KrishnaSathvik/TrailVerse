@@ -80,100 +80,54 @@ exports.getParkByCode = async (req, res, next) => {
   }
 };
 
-// @desc    Get park with full details
+// @desc    Get park with essential details (fast initial load — park info + alerts only)
 // @route   GET /api/parks/:parkCode/details
 // @access  Public
 exports.getParkDetails = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
-    console.log(`🔍 Fetching park details for ${parkCode}...`);
 
-    const results = await Promise.allSettled([
+    const [parkResult, alertsResult] = await Promise.allSettled([
       npsService.getParkByCode(parkCode),
-      npsService.getParkActivities(parkCode),
-      npsService.getParkAlerts(parkCode),
-      npsService.getParkCampgrounds(parkCode),
-      npsService.getParkVisitorCenters(parkCode),
-      npsService.getParkPlaces(parkCode),
-      npsService.getParkTours(parkCode),
-      npsService.getParkWebcams(parkCode),
-      npsService.getParkVideos(parkCode),
-      npsService.getParkGalleryPhotos(parkCode),
-      npsService.getParkParkingLots(parkCode)
+      npsService.getParkAlerts(parkCode)
     ]);
 
-    const [
-      parkResult, activitiesResult, alertsResult,
-      campgroundsResult, visitorCentersResult,
-      placesResult, toursResult, webcamsResult,
-      videosResult, galleryResult, parkingLotsResult
-    ] = results;
     const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
-    const activities = activitiesResult.status === 'fulfilled' ? activitiesResult.value : [];
     const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
-    const campgrounds = campgroundsResult.status === 'fulfilled' ? campgroundsResult.value : [];
-    const visitorCenters = visitorCentersResult.status === 'fulfilled' ? visitorCentersResult.value : [];
-    const places = placesResult.status === 'fulfilled' ? placesResult.value : [];
-    const tours = toursResult.status === 'fulfilled' ? toursResult.value : [];
-    const webcams = webcamsResult.status === 'fulfilled' ? webcamsResult.value : [];
-    const videos = videosResult.status === 'fulfilled' ? videosResult.value : [];
-    const galleryPhotos = galleryResult.status === 'fulfilled' ? galleryResult.value : [];
-    const parkingLots = parkingLotsResult.status === 'fulfilled' ? parkingLotsResult.value : [];
-
-    results.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters', 'places', 'tours', 'webcams', 'videos', 'galleryPhotos', 'parkingLots'];
-        console.error(`Failed to fetch ${sections[index]} for ${parkCode}:`, result.reason?.message || result.reason);
-      }
-    });
-
-    console.log(`📊 Park details for ${parkCode}: activities=${activities.length} alerts=${alerts.length} campgrounds=${campgrounds.length} places=${places.length} tours=${tours.length} webcams=${webcams.length} videos=${videos.length} gallery=${galleryPhotos.length} parkingLots=${parkingLots.length}`);
 
     if (!park) {
-      return res.status(404).json({
-        success: false,
-        error: 'Park not found'
-      });
+      return res.status(404).json({ success: false, error: 'Park not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        park,
-        activities,
-        alerts,
-        campgrounds,
-        visitorCenters,
-        places,
-        tours,
-        webcams,
-        videos,
-        galleryPhotos,
-        parkingLots
-      }
-    });
+    res.status(200).json({ success: true, data: { park, alerts } });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get park alerts
-// @route   GET /api/parks/:parkCode/alerts
-// @access  Public
-exports.getParkAlerts = async (req, res, next) => {
+// --- Individual tab endpoints (lazy-loaded by frontend on tab click) ---
+
+// Helper to create a simple per-park endpoint handler
+const makeTabHandler = (serviceFn, label) => async (req, res, next) => {
   try {
     const { parkCode } = req.params;
-    const alerts = await npsService.getParkAlerts(parkCode);
-    
-    res.status(200).json({
-      success: true,
-      count: alerts.length,
-      data: alerts
-    });
+    const data = await serviceFn(parkCode);
+    res.status(200).json({ success: true, count: data.length, data });
   } catch (error) {
     next(error);
   }
 };
+
+exports.getParkAlerts = makeTabHandler(npsService.getParkAlerts.bind(npsService), 'alerts');
+exports.getParkActivities = makeTabHandler(npsService.getParkActivities.bind(npsService), 'activities');
+exports.getParkCampgrounds = makeTabHandler(npsService.getParkCampgrounds.bind(npsService), 'campgrounds');
+exports.getParkVisitorCenters = makeTabHandler(npsService.getParkVisitorCenters.bind(npsService), 'visitorCenters');
+exports.getParkPlaces = makeTabHandler(npsService.getParkPlaces.bind(npsService), 'places');
+exports.getParkTours = makeTabHandler(npsService.getParkTours.bind(npsService), 'tours');
+exports.getParkWebcams = makeTabHandler(npsService.getParkWebcams.bind(npsService), 'webcams');
+exports.getParkVideos = makeTabHandler(npsService.getParkVideos.bind(npsService), 'videos');
+exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bind(npsService), 'galleryPhotos');
+exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
 
 // @desc    Search parks
 // @route   GET /api/parks/search

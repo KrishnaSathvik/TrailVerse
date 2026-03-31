@@ -5,13 +5,31 @@ const {
   getParkByCode,
   getParkDetails,
   searchParks,
-  getParkAlerts
+  getParkAlerts,
+  getParkActivities,
+  getParkCampgrounds,
+  getParkVisitorCenters,
+  getParkPlaces,
+  getParkTours,
+  getParkWebcams,
+  getParkVideos,
+  getParkGalleryPhotos,
+  getParkParkingLots
 } = require('../controllers/parkController');
 
 router.get('/', getAllParks);
 router.get('/search', searchParks);
 router.get('/:parkCode/details', getParkDetails);
 router.get('/:parkCode/alerts', getParkAlerts);
+router.get('/:parkCode/activities', getParkActivities);
+router.get('/:parkCode/campgrounds', getParkCampgrounds);
+router.get('/:parkCode/visitorcenters', getParkVisitorCenters);
+router.get('/:parkCode/places', getParkPlaces);
+router.get('/:parkCode/tours', getParkTours);
+router.get('/:parkCode/webcams', getParkWebcams);
+router.get('/:parkCode/videos', getParkVideos);
+router.get('/:parkCode/gallery', getParkGalleryPhotos);
+router.get('/:parkCode/parkinglots', getParkParkingLots);
 router.get('/:parkCode', getParkByCode);
 
 module.exports = router;
