@@ -737,57 +737,64 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         )}
                       </h2>
                       {videos && videos.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {videos.map((video, index) => {
                             const durationMin = video.durationMs ? Math.round(video.durationMs / 60000) : null;
+                            // Pick the best quality video URL from versions array
+                            const videoUrl = video.versions?.sort((a, b) => (b.heightPixels || 0) - (a.heightPixels || 0))?.[0]?.url;
+                            const captionUrl = video.captionFiles?.find(c => c.language === 'english')?.url;
+
                             return (
                               <div
                                 key={video.id || index}
-                                className="p-6 rounded-xl"
+                                className="rounded-xl overflow-hidden"
                                 style={{
                                   backgroundColor: 'var(--surface-hover)',
                                   borderWidth: '1px',
                                   borderColor: 'var(--border)'
                                 }}
                               >
-                                <h3 className="text-lg font-semibold mb-2"
-                                  style={{ color: 'var(--text-primary)' }}
-                                >
-                                  {video.title}
-                                </h3>
-                                {video.description && (
-                                  <p className="text-sm"
-                                    style={{ color: 'var(--text-secondary)' }}
+                                {videoUrl && (
+                                  <video
+                                    controls
+                                    preload="metadata"
+                                    className="w-full aspect-video bg-black"
+                                    poster={video.splashImage?.url || undefined}
                                   >
-                                    {video.description}
-                                  </p>
+                                    <source src={videoUrl} type="video/mp4" />
+                                    {captionUrl && (
+                                      <track kind="captions" src={captionUrl} srcLang="en" label="English" />
+                                    )}
+                                  </video>
                                 )}
-                                <div className="flex items-center gap-3 mt-3 flex-wrap">
-                                  {durationMin && (
-                                    <span className="flex items-center gap-1 text-sm"
-                                      style={{ color: 'var(--text-tertiary)' }}
+                                <div className="p-5">
+                                  <h3 className="text-lg font-semibold mb-2"
+                                    style={{ color: 'var(--text-primary)' }}
+                                  >
+                                    {video.title}
+                                  </h3>
+                                  {video.description && (
+                                    <p className="text-sm"
+                                      style={{ color: 'var(--text-secondary)' }}
                                     >
-                                      <Clock className="h-3.5 w-3.5" />
-                                      {durationMin} min
-                                    </span>
+                                      {video.description}
+                                    </p>
                                   )}
-                                  {video.credit && (
-                                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                                      Credit: {video.credit}
-                                    </span>
-                                  )}
-                                  {video.permalinkUrl && (
-                                    <a
-                                      href={video.permalinkUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
-                                      style={{ color: 'var(--text-accent, #3b82f6)' }}
-                                    >
-                                      <Play className="h-3.5 w-3.5" />
-                                      Watch Video
-                                    </a>
-                                  )}
+                                  <div className="flex items-center gap-3 mt-3 flex-wrap">
+                                    {durationMin > 0 && (
+                                      <span className="flex items-center gap-1 text-sm"
+                                        style={{ color: 'var(--text-tertiary)' }}
+                                      >
+                                        <Clock className="h-3.5 w-3.5" />
+                                        {durationMin} min
+                                      </span>
+                                    )}
+                                    {video.credit && (
+                                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                        Credit: {video.credit}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
