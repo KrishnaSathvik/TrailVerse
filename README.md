@@ -168,9 +168,3 @@ server/          Express API and backend services
 scripts/         Utility and maintenance scripts
 ```
 
-## Notes
-
-- The app now uses `next-frontend/` as the active frontend.
-- The legacy `client/` app has been removed.
-- Uploaded media in production should use persistent storage.
-- NPS API has a rate limit of 1,000 requests per hour. The per-park lazy loading architecture keeps API usage well within this limit.
