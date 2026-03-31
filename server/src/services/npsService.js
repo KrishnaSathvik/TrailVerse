@@ -593,10 +593,14 @@ class NPSService {
       console.log(`✅ Total activities fetched (bulk): ${allActivities.length}`);
       return allActivities.slice(0, limit);
     } catch (error) {
-      // On 429, return stale cache if available
-      if (error.response?.status === 429 && this.activitiesCache.data) {
-        console.warn('⚠️ NPS 429 rate limit on activities — returning stale cache');
-        return this.activitiesCache.data.slice(0, limit);
+      // On 429, return stale cache or empty array — don't crash the warm-up
+      if (error.response?.status === 429) {
+        if (this.activitiesCache.data) {
+          console.warn('⚠️ NPS 429 rate limit on activities — returning stale cache');
+          return this.activitiesCache.data.slice(0, limit);
+        }
+        console.warn('⚠️ NPS 429 rate limit on activities — no cache available, returning empty');
+        return [];
       }
       console.error('NPS API Error (getAllActivities):', error.message);
       throw new Error(`Failed to fetch all activities: ${error.message}`);

@@ -30,6 +30,7 @@ connectDB().then(() => {
 
   // Warm all NPS caches in the background so user/build requests don't
   // depend on the first request succeeding against the NPS API.
+  // Stagger calls with delays so we don't burst the rate limit window.
   setImmediate(async () => {
     try {
       const parks = await npsService.getAllParks();
@@ -38,7 +39,9 @@ connectDB().then(() => {
       console.warn(`⚠️ Parks snapshot warm-up failed: ${error.message}`);
     }
 
-    // Warm events cache (after parks so we don't burst the API)
+    // Wait 5s before hitting events to let the rate limit window breathe
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     try {
       const events = await npsService.getAllEvents();
       console.log(`📅 Warmed events cache with ${events.length} events`);
@@ -46,7 +49,9 @@ connectDB().then(() => {
       console.warn(`⚠️ Events cache warm-up failed: ${error.message}`);
     }
 
-    // Warm activities cache
+    // Wait another 5s before activities
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     try {
       const activities = await npsService.getAllActivities();
       console.log(`🎯 Warmed activities cache with ${activities.length} activities`);
