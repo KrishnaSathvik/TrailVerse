@@ -21,11 +21,23 @@ const connectDB = require('./src/config/database');
 
 // Scheduler service for scheduled blog posts
 const { startScheduler } = require('./src/services/schedulerService');
+const npsService = require('./src/services/npsService');
 
 // Connect to database
 connectDB().then(() => {
   // Start the scheduler after database connection is established
   startScheduler();
+
+  // Warm the parks cache/snapshot in the background so valid park pages do not
+  // depend on the first user request succeeding against the NPS API.
+  setImmediate(async () => {
+    try {
+      const parks = await npsService.getAllParks();
+      console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
+    } catch (error) {
+      console.warn(`⚠️ Parks snapshot warm-up failed: ${error.message}`);
+    }
+  });
 }).catch((err) => {
   console.error('❌ Failed to connect to database:', err);
   process.exit(1);
