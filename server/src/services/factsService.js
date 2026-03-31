@@ -2,8 +2,7 @@ const axios = require('axios');
 
 const OWM_KEY = process.env.OPENWEATHER_API_KEY; // server-side key ⚠️ not REACT_APP_*
 const OWM_BASE = 'https://api.openweathermap.org/data/2.5/forecast';
-const NPS_API_BASE = 'https://developer.nps.gov/api/v1';
-const NPS_KEY = process.env.NPS_API_KEY;
+// NPS data is now served through npsService (with bulk caches) — no direct API calls needed
 
 /**
  * Fetch weather facts for a specific location
@@ -76,32 +75,29 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
 
 /**
  * Fetch NPS facts for a specific park
+ * Uses npsService (with its caches) instead of direct API calls.
  * @param {Object} params - { parkCode }
  * @returns {Promise<string|null>} Formatted NPS facts or null
  */
 async function fetchNPSFacts({ parkCode }) {
-  if (!parkCode || !NPS_KEY) {
-    console.log('⚠️ NPS facts skipped: missing parkCode or API key');
+  if (!parkCode) {
+    console.log('⚠️ NPS facts skipped: missing parkCode');
     return null;
   }
 
   try {
-    const npsApi = axios.create({
-      baseURL: NPS_API_BASE,
-      params: { api_key: NPS_KEY },
-      timeout: 5000
-    });
+    const npsService = require('./npsService');
 
-    // Fetch park details and alerts in parallel
-    const [detailsRes, alertsRes] = await Promise.allSettled([
-      npsApi.get('/parks', { params: { parkCode } }),
-      npsApi.get('/alerts', { params: { parkCode } })
+    // Use npsService which serves from bulk caches — zero NPS API calls
+    const [details, alerts] = await Promise.allSettled([
+      npsService.getParkByCode(parkCode),
+      npsService.getParkAlerts(parkCode)
     ]);
 
-    const details = detailsRes.status === 'fulfilled' ? detailsRes.value.data.data[0] : null;
-    const alerts = alertsRes.status === 'fulfilled' ? alertsRes.value.data.data : [];
+    const park = details.status === 'fulfilled' ? details.value : null;
+    const parkAlerts = alerts.status === 'fulfilled' ? alerts.value : [];
 
-    if (!details) {
+    if (!park) {
       console.log(`⚠️ No park details found for ${parkCode}`);
       return null;
     }
@@ -109,8 +105,8 @@ async function fetchNPSFacts({ parkCode }) {
     const facts = [];
 
     // Add park highlights (activities, things to do)
-    if (details.activities && details.activities.length > 0) {
-      const topActivities = details.activities
+    if (park.activities && park.activities.length > 0) {
+      const topActivities = park.activities
         .slice(0, 5)
         .map(a => `- ${a.name}`)
         .join('\n');
@@ -118,7 +114,7 @@ async function fetchNPSFacts({ parkCode }) {
     }
 
     // Add active alerts
-    const activeAlerts = alerts
+    const activeAlerts = parkAlerts
       .filter(alert => alert.category && ['Information', 'Caution', 'Closure'].includes(alert.category))
       .slice(0, 3)
       .map(a => `- ${a.title}${a.category ? ` (${a.category})` : ''}`)

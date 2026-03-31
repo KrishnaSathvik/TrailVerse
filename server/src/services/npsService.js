@@ -39,6 +39,49 @@ class NPSService {
       ttl: 24 * 60 * 60 * 1000 // 24 hours
     };
 
+    // Bulk alerts cache keyed by parkCode (alerts are time-sensitive but
+    // bulk-fetching once avoids per-park API calls on detail pages)
+    this.alertsCache = {
+      data: null,       // { parkCode: alert[] }
+      timestamp: null,
+      ttl: 30 * 60 * 1000 // 30 minutes
+    };
+
+    // Bulk campgrounds cache keyed by parkCode
+    this.campgroundsCache = {
+      data: null,       // { parkCode: campground[] }
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours — rarely changes
+    };
+
+    // Bulk visitor centers cache keyed by parkCode
+    this.visitorCentersCache = {
+      data: null,       // { parkCode: visitorCenter[] }
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours
+    };
+
+    // Bulk places cache keyed by parkCode
+    this.placesCache = {
+      data: null,
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours — places rarely change
+    };
+
+    // Bulk tours cache keyed by parkCode
+    this.toursCache = {
+      data: null,
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours
+    };
+
+    // Bulk webcams cache keyed by parkCode
+    this.webcamsCache = {
+      data: null,
+      timestamp: null,
+      ttl: 24 * 60 * 60 * 1000 // 24 hours — webcam metadata doesn't change often
+    };
+
     // Per-endpoint caches for individual park data
     this.endpointCache = new Map();
     this.endpointCacheTTLs = {
@@ -46,7 +89,10 @@ class NPSService {
       activities: 24 * 60 * 60 * 1000, // 24 hours
       campgrounds: 24 * 60 * 60 * 1000, // 24 hours
       visitorcenters: 24 * 60 * 60 * 1000, // 24 hours
-      parksByState: 24 * 60 * 60 * 1000  // 24 hours
+      parksByState: 24 * 60 * 60 * 1000, // 24 hours
+      places: 24 * 60 * 60 * 1000,     // 24 hours
+      tours: 24 * 60 * 60 * 1000,      // 24 hours
+      webcams: 24 * 60 * 60 * 1000     // 24 hours
     };
   }
 
@@ -397,8 +443,77 @@ class NPSService {
     }
   }
 
-  // Get park alerts (cached, shorter TTL since alerts are time-sensitive)
+  // Bulk-fetch all alerts from NPS API and group by parkCode
+  async getAllAlerts() {
+    if (this._isCacheValid(this.alertsCache) && this.alertsCache.data) {
+      console.log('📦 Returning cached bulk alerts');
+      return this.alertsCache.data;
+    }
+
+    console.log('🔄 Fetching all alerts from NPS API (bulk)...');
+
+    let allAlerts = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/alerts', {
+          params: { limit: pageSize, start }
+        });
+
+        const alerts = response.data.data;
+        if (!alerts || alerts.length === 0) break;
+
+        allAlerts = allAlerts.concat(alerts);
+        start += pageSize;
+
+        console.log(`🚨 Fetched page at offset ${start}, ${allAlerts.length} alerts so far`);
+
+        if (alerts.length < pageSize) break;
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      // Group alerts by parkCode
+      const alertsByPark = {};
+      for (const alert of allAlerts) {
+        const code = alert.parkCode;
+        if (!code) continue;
+        if (!alertsByPark[code]) alertsByPark[code] = [];
+        alertsByPark[code].push(alert);
+      }
+
+      this.alertsCache = {
+        ...this.alertsCache,
+        data: alertsByPark,
+        timestamp: Date.now()
+      };
+
+      console.log(`✅ Total alerts fetched (bulk): ${allAlerts.length} across ${Object.keys(alertsByPark).length} parks`);
+      return alertsByPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.alertsCache.data) {
+          console.warn('⚠️ NPS 429 on bulk alerts — returning stale cache');
+          return this.alertsCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk alerts — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllAlerts):', error.message);
+      return {};
+    }
+  }
+
+  // Get park alerts — serves from bulk cache first, falls back to per-park call
   async getParkAlerts(parkCode) {
+    // Check bulk alerts cache first
+    if (this._isCacheValid(this.alertsCache) && this.alertsCache.data) {
+      return this.alertsCache.data[parkCode] || [];
+    }
+
+    // Check per-endpoint cache
     const cacheKey = `alerts_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'alerts');
     if (cached) return cached;
@@ -421,8 +536,68 @@ class NPSService {
     }
   }
 
-  // Get park campgrounds (cached)
+  // Bulk-fetch all campgrounds and group by parkCode
+  async getAllCampgrounds() {
+    if (this._isCacheValid(this.campgroundsCache) && this.campgroundsCache.data) {
+      console.log('📦 Returning cached bulk campgrounds');
+      return this.campgroundsCache.data;
+    }
+
+    console.log('🔄 Fetching all campgrounds from NPS API (bulk)...');
+
+    let allCampgrounds = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/campgrounds', {
+          params: { limit: pageSize, start }
+        });
+
+        const campgrounds = response.data.data;
+        if (!campgrounds || campgrounds.length === 0) break;
+
+        allCampgrounds = allCampgrounds.concat(campgrounds);
+        start += pageSize;
+
+        console.log(`⛺ Fetched page at offset ${start}, ${allCampgrounds.length} campgrounds so far`);
+
+        if (campgrounds.length < pageSize) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const byPark = {};
+      for (const cg of allCampgrounds) {
+        const code = cg.parkCode;
+        if (!code) continue;
+        if (!byPark[code]) byPark[code] = [];
+        byPark[code].push(cg);
+      }
+
+      this.campgroundsCache = { ...this.campgroundsCache, data: byPark, timestamp: Date.now() };
+      console.log(`✅ Total campgrounds fetched (bulk): ${allCampgrounds.length} across ${Object.keys(byPark).length} parks`);
+      return byPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.campgroundsCache.data) {
+          console.warn('⚠️ NPS 429 on bulk campgrounds — returning stale cache');
+          return this.campgroundsCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk campgrounds — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllCampgrounds):', error.message);
+      return {};
+    }
+  }
+
+  // Get park campgrounds — serves from bulk cache first
   async getParkCampgrounds(parkCode) {
+    if (this._isCacheValid(this.campgroundsCache) && this.campgroundsCache.data) {
+      return this.campgroundsCache.data[parkCode] || [];
+    }
+
     const cacheKey = `campgrounds_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'campgrounds');
     if (cached) return cached;
@@ -445,8 +620,68 @@ class NPSService {
     }
   }
 
-  // Get park visitor centers (cached)
+  // Bulk-fetch all visitor centers and group by parkCode
+  async getAllVisitorCenters() {
+    if (this._isCacheValid(this.visitorCentersCache) && this.visitorCentersCache.data) {
+      console.log('📦 Returning cached bulk visitor centers');
+      return this.visitorCentersCache.data;
+    }
+
+    console.log('🔄 Fetching all visitor centers from NPS API (bulk)...');
+
+    let allVCs = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/visitorcenters', {
+          params: { limit: pageSize, start }
+        });
+
+        const vcs = response.data.data;
+        if (!vcs || vcs.length === 0) break;
+
+        allVCs = allVCs.concat(vcs);
+        start += pageSize;
+
+        console.log(`🏛️ Fetched page at offset ${start}, ${allVCs.length} visitor centers so far`);
+
+        if (vcs.length < pageSize) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const byPark = {};
+      for (const vc of allVCs) {
+        const code = vc.parkCode;
+        if (!code) continue;
+        if (!byPark[code]) byPark[code] = [];
+        byPark[code].push(vc);
+      }
+
+      this.visitorCentersCache = { ...this.visitorCentersCache, data: byPark, timestamp: Date.now() };
+      console.log(`✅ Total visitor centers fetched (bulk): ${allVCs.length} across ${Object.keys(byPark).length} parks`);
+      return byPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.visitorCentersCache.data) {
+          console.warn('⚠️ NPS 429 on bulk visitor centers — returning stale cache');
+          return this.visitorCentersCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk visitor centers — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllVisitorCenters):', error.message);
+      return {};
+    }
+  }
+
+  // Get park visitor centers — serves from bulk cache first
   async getParkVisitorCenters(parkCode) {
+    if (this._isCacheValid(this.visitorCentersCache) && this.visitorCentersCache.data) {
+      return this.visitorCentersCache.data[parkCode] || [];
+    }
+
     const cacheKey = `visitorcenters_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'visitorcenters');
     if (cached) return cached;
@@ -466,6 +701,255 @@ class NPSService {
       }
       console.error(`❌ NPS API Error (getParkVisitorCenters for ${parkCode}):`, error.message);
       throw new Error(`Failed to fetch visitor centers for ${parkCode}: ${error.message}`);
+    }
+  }
+
+  // --- Bulk places ---
+
+  async getAllPlaces() {
+    if (this._isCacheValid(this.placesCache) && this.placesCache.data) {
+      console.log('📦 Returning cached bulk places');
+      return this.placesCache.data;
+    }
+
+    console.log('🔄 Fetching all places from NPS API (bulk)...');
+
+    let allPlaces = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/places', {
+          params: { limit: pageSize, start }
+        });
+
+        const places = response.data.data;
+        if (!places || places.length === 0) break;
+
+        allPlaces = allPlaces.concat(places);
+        start += pageSize;
+
+        console.log(`📍 Fetched page at offset ${start}, ${allPlaces.length} places so far`);
+
+        if (places.length < pageSize) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const byPark = {};
+      for (const place of allPlaces) {
+        const code = place.relatedParks?.[0]?.parkCode || place.parkCode;
+        if (!code) continue;
+        if (!byPark[code]) byPark[code] = [];
+        byPark[code].push(place);
+      }
+
+      this.placesCache = { ...this.placesCache, data: byPark, timestamp: Date.now() };
+      console.log(`✅ Total places fetched (bulk): ${allPlaces.length} across ${Object.keys(byPark).length} parks`);
+      return byPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.placesCache.data) {
+          console.warn('⚠️ NPS 429 on bulk places — returning stale cache');
+          return this.placesCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk places — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllPlaces):', error.message);
+      return {};
+    }
+  }
+
+  async getParkPlaces(parkCode) {
+    if (this._isCacheValid(this.placesCache) && this.placesCache.data) {
+      return this.placesCache.data[parkCode] || [];
+    }
+
+    const cacheKey = `places_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'places');
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/places', {
+        params: { parkCode, limit: 50 }
+      });
+      const data = response.data.data;
+      this._setEndpointCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on places for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkPlaces for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
+  // --- Bulk tours ---
+
+  async getAllTours() {
+    if (this._isCacheValid(this.toursCache) && this.toursCache.data) {
+      console.log('📦 Returning cached bulk tours');
+      return this.toursCache.data;
+    }
+
+    console.log('🔄 Fetching all tours from NPS API (bulk)...');
+
+    let allTours = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/tours', {
+          params: { limit: pageSize, start }
+        });
+
+        const tours = response.data.data;
+        if (!tours || tours.length === 0) break;
+
+        allTours = allTours.concat(tours);
+        start += pageSize;
+
+        console.log(`🗺️ Fetched page at offset ${start}, ${allTours.length} tours so far`);
+
+        if (tours.length < pageSize) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const byPark = {};
+      for (const tour of allTours) {
+        const code = tour.park?.parkCode || tour.parkCode;
+        if (!code) continue;
+        if (!byPark[code]) byPark[code] = [];
+        byPark[code].push(tour);
+      }
+
+      this.toursCache = { ...this.toursCache, data: byPark, timestamp: Date.now() };
+      console.log(`✅ Total tours fetched (bulk): ${allTours.length} across ${Object.keys(byPark).length} parks`);
+      return byPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.toursCache.data) {
+          console.warn('⚠️ NPS 429 on bulk tours — returning stale cache');
+          return this.toursCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk tours — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllTours):', error.message);
+      return {};
+    }
+  }
+
+  async getParkTours(parkCode) {
+    if (this._isCacheValid(this.toursCache) && this.toursCache.data) {
+      return this.toursCache.data[parkCode] || [];
+    }
+
+    const cacheKey = `tours_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'tours');
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/tours', {
+        params: { parkCode, limit: 50 }
+      });
+      const data = response.data.data;
+      this._setEndpointCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on tours for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkTours for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
+  // --- Bulk webcams ---
+
+  async getAllWebcams() {
+    if (this._isCacheValid(this.webcamsCache) && this.webcamsCache.data) {
+      console.log('📦 Returning cached bulk webcams');
+      return this.webcamsCache.data;
+    }
+
+    console.log('🔄 Fetching all webcams from NPS API (bulk)...');
+
+    let allWebcams = [];
+    const pageSize = 50;
+    let start = 0;
+
+    try {
+      while (true) {
+        const response = await this.api.get('/webcams', {
+          params: { limit: pageSize, start }
+        });
+
+        const webcams = response.data.data;
+        if (!webcams || webcams.length === 0) break;
+
+        allWebcams = allWebcams.concat(webcams);
+        start += pageSize;
+
+        console.log(`📹 Fetched page at offset ${start}, ${allWebcams.length} webcams so far`);
+
+        if (webcams.length < pageSize) break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const byPark = {};
+      for (const cam of allWebcams) {
+        const code = cam.relatedParks?.[0]?.parkCode || cam.parkCode;
+        if (!code) continue;
+        if (!byPark[code]) byPark[code] = [];
+        byPark[code].push(cam);
+      }
+
+      this.webcamsCache = { ...this.webcamsCache, data: byPark, timestamp: Date.now() };
+      console.log(`✅ Total webcams fetched (bulk): ${allWebcams.length} across ${Object.keys(byPark).length} parks`);
+      return byPark;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        if (this.webcamsCache.data) {
+          console.warn('⚠️ NPS 429 on bulk webcams — returning stale cache');
+          return this.webcamsCache.data;
+        }
+        console.warn('⚠️ NPS 429 on bulk webcams — no cache available, returning empty');
+        return {};
+      }
+      console.error('NPS API Error (getAllWebcams):', error.message);
+      return {};
+    }
+  }
+
+  async getParkWebcams(parkCode) {
+    if (this._isCacheValid(this.webcamsCache) && this.webcamsCache.data) {
+      return this.webcamsCache.data[parkCode] || [];
+    }
+
+    const cacheKey = `webcams_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'webcams');
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/webcams', {
+        params: { parkCode, limit: 50 }
+      });
+      const data = response.data.data;
+      this._setEndpointCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on webcams for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkWebcams for ${parkCode}):`, error.message);
+      return [];
     }
   }
 

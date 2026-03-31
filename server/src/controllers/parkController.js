@@ -92,19 +92,29 @@ exports.getParkDetails = async (req, res, next) => {
       npsService.getParkActivities(parkCode),
       npsService.getParkAlerts(parkCode),
       npsService.getParkCampgrounds(parkCode),
-      npsService.getParkVisitorCenters(parkCode)
+      npsService.getParkVisitorCenters(parkCode),
+      npsService.getParkPlaces(parkCode),
+      npsService.getParkTours(parkCode),
+      npsService.getParkWebcams(parkCode)
     ]);
 
-    const [parkResult, activitiesResult, alertsResult, campgroundsResult, visitorCentersResult] = results;
+    const [
+      parkResult, activitiesResult, alertsResult,
+      campgroundsResult, visitorCentersResult,
+      placesResult, toursResult, webcamsResult
+    ] = results;
     const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
     const activities = activitiesResult.status === 'fulfilled' ? activitiesResult.value : [];
     const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
     const campgrounds = campgroundsResult.status === 'fulfilled' ? campgroundsResult.value : [];
     const visitorCenters = visitorCentersResult.status === 'fulfilled' ? visitorCentersResult.value : [];
+    const places = placesResult.status === 'fulfilled' ? placesResult.value : [];
+    const tours = toursResult.status === 'fulfilled' ? toursResult.value : [];
+    const webcams = webcamsResult.status === 'fulfilled' ? webcamsResult.value : [];
 
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
-        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters'];
+        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters', 'places', 'tours', 'webcams'];
         console.error(`Failed to fetch ${sections[index]} for ${parkCode}:`, result.reason?.message || result.reason);
       }
     });
@@ -123,7 +133,10 @@ exports.getParkDetails = async (req, res, next) => {
         activities,
         alerts,
         campgrounds,
-        visitorCenters
+        visitorCenters,
+        places,
+        tours,
+        webcams
       }
     });
   } catch (error) {
