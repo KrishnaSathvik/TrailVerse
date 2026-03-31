@@ -35,7 +35,37 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
 
-  const { park, campgrounds, activities, alerts, places, tours, webcams, videos, galleryPhotos, parkingLots } = initialData;
+  const { park, alerts } = initialData;
+
+  // Lazy-loading hook for tab data
+  const useTabData = (tabParkCode, endpoint, enabled) => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+      if (!enabled || data !== null) return;
+      setLoading(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ||
+        (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+          ? 'http://localhost:5001/api'
+          : 'https://trailverse.onrender.com/api');
+      fetch(`${apiUrl}/parks/${tabParkCode}/${endpoint}`)
+        .then(res => res.json())
+        .then(json => { setData(json.data || []); setLoading(false); })
+        .catch(() => { setData([]); setLoading(false); });
+    }, [tabParkCode, endpoint, enabled, data]);
+
+    return { data, loading };
+  };
+
+  const { data: activities, loading: activitiesLoading } = useTabData(parkCode, 'activities', activeTab === 'activities');
+  const { data: campgrounds, loading: campgroundsLoading } = useTabData(parkCode, 'campgrounds', activeTab === 'camping');
+  const { data: places, loading: placesLoading } = useTabData(parkCode, 'places', activeTab === 'places');
+  const { data: tours, loading: toursLoading } = useTabData(parkCode, 'tours', activeTab === 'tours');
+  const { data: parkingLots, loading: parkingLoading } = useTabData(parkCode, 'parkinglots', activeTab === 'parking');
+  const { data: webcams, loading: webcamsLoading } = useTabData(parkCode, 'webcams', activeTab === 'webcams');
+  const { data: videos, loading: videosLoading } = useTabData(parkCode, 'videos', activeTab === 'videos');
+  const { data: galleryPhotos, loading: galleryLoading } = useTabData(parkCode, 'gallery', activeTab === 'photos');
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -488,7 +518,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Activities
                       </h2>
-                      {activities && activities.length > 0 ? (
+                      {activitiesLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!activitiesLoading && activities !== null && activities.length > 0 ? (
                         (() => {
                           const groupedActivities = activities.reduce((acc, activity) => {
                             const category = activity.activities?.[0]?.name || 'Other';
@@ -595,7 +631,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </div>
                           );
                         })()
-                      ) : (
+                      ) : !activitiesLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No activities listed
                         </p>
@@ -610,7 +646,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Camping
                       </h2>
-                      {campgrounds && campgrounds.length > 0 ? (
+                      {campgroundsLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!campgroundsLoading && campgrounds !== null && campgrounds.length > 0 ? (
                         <div className="space-y-4">
                           {campgrounds.map((campground, index) => (
                             <div
@@ -635,7 +677,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : !campgroundsLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No campgrounds information available
                         </p>
@@ -698,7 +740,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           </span>
                         )}
                       </h2>
-                      {allPhotos.length > 0 ? (
+                      {galleryLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!galleryLoading && allPhotos.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {allPhotos.map((image, index) => (
                             <button
@@ -717,7 +765,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </button>
                           ))}
                         </div>
-                      ) : (
+                      ) : !galleryLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No photos available
                         </p>
@@ -731,13 +779,19 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         style={{ color: 'var(--text-primary)' }}
                       >
                         Videos
-                        {videos && videos.length > 0 && (
+                        {!videosLoading && videos && videos.length > 0 && (
                           <span className="text-base font-normal ml-2" style={{ color: 'var(--text-tertiary)' }}>
                             ({videos.length})
                           </span>
                         )}
                       </h2>
-                      {videos && videos.length > 0 ? (
+                      {videosLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!videosLoading && videos !== null && videos.length > 0 ? (
                         <div className="space-y-6">
                           {videos.map((video, index) => {
                             const durationMin = video.durationMs ? Math.round(video.durationMs / 60000) : null;
@@ -801,7 +855,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             );
                           })}
                         </div>
-                      ) : (
+                      ) : !videosLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No videos available
                         </p>
@@ -816,7 +870,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Places to Visit
                       </h2>
-                      {places && places.length > 0 ? (
+                      {placesLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!placesLoading && places !== null && places.length > 0 ? (
                         <div className="space-y-4">
                           {places.map((place, index) => (
                             <div
@@ -850,7 +910,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : !placesLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No places information available
                         </p>
@@ -865,7 +925,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Tours
                       </h2>
-                      {tours && tours.length > 0 ? (
+                      {toursLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!toursLoading && tours !== null && tours.length > 0 ? (
                         <div className="space-y-4">
                           {tours.map((tour, index) => (
                             <div
@@ -936,7 +1002,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : !toursLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No tours information available
                         </p>
@@ -951,7 +1017,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Parking Lots
                       </h2>
-                      {parkingLots && parkingLots.length > 0 ? (
+                      {parkingLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!parkingLoading && parkingLots !== null && parkingLots.length > 0 ? (
                         <div className="space-y-4">
                           {parkingLots.map((lot, index) => (
                             <div
@@ -992,7 +1064,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : !parkingLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No parking lot information available
                         </p>
@@ -1007,7 +1079,13 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Webcams
                       </h2>
-                      {webcams && webcams.length > 0 ? (
+                      {webcamsLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!webcamsLoading && webcams !== null && webcams.length > 0 ? (
                         <div className="space-y-4">
                           {webcams.map((cam, index) => (
                             <div
@@ -1019,6 +1097,15 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                 borderColor: 'var(--border)'
                               }}
                             >
+                              {cam.images?.[0]?.url && (
+                                <div className="aspect-video rounded-lg overflow-hidden mb-4">
+                                  <OptimizedImage
+                                    src={cam.images[0].url}
+                                    alt={cam.images[0].altText || cam.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
                               <h3 className="text-lg font-semibold mb-2"
                                 style={{ color: 'var(--text-primary)' }}
                               >
@@ -1057,7 +1144,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : !webcamsLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No webcams information available
                         </p>
