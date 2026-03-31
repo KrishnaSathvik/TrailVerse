@@ -28,7 +28,7 @@ const AboutPage = () => {
   // Real data based on your experience
   const stats = {
     parksVisited: 17, // Your actual national parks count
-    mapContributions: 8335, // Total Google Maps contributions
+    mapContributions: 379, // Google Maps reviews
     photosShared: 6589, // From your Google Maps photos
     yearsExperience: 6 // 2020-2026
   };
