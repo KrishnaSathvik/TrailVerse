@@ -643,12 +643,13 @@ async function getRandomParkOfDay(dateStr) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
     
-    console.log(`🕒 Checking for recent parks from ${sevenDaysAgoStr} to ${dateStr}`);
+    console.log(`🕒 Checking for recent parks from ${sevenDaysAgoStr} up to ${dateStr} (excluding current day)`);
     
-    // Get all shared feeds from the last 7 days
+    // Exclude the current day so the selected park stays stable for the full date.
+    // Including today's shared feed changes the candidate pool after the first generation.
     const recentFeeds = await DailyFeed.find({
       isShared: true,
-      date: { $gte: sevenDaysAgoStr, $lte: dateStr }
+      date: { $gte: sevenDaysAgoStr, $lt: dateStr }
     }).sort({ createdAt: -1 });
     
     // Extract recent park codes
@@ -1934,4 +1935,3 @@ async function getAIParkInfoInsights(park, weatherData, astroData) {
     ];
   }
 }
-

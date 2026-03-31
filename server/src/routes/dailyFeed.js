@@ -19,7 +19,7 @@ router.get('/daily', protect, getDailyFeed);
 // @route   GET /api/feed/park-of-day
 // @desc    Get park of the day (generic for anonymous, personalized for authenticated)
 // @access  Public (optionalAuth)
-router.get('/park-of-day', optionalAuth, cacheMiddleware(1440), getParkOfDay);
+router.get('/park-of-day', optionalAuth, getParkOfDay);
 
 // @route   GET /api/feed/nature-fact
 // @desc    Get daily nature fact
@@ -42,4 +42,3 @@ router.get('/test-ai', protect, testAIInsights);
 router.get('/debug', protect, debugDailyFeed);
 
 module.exports = router;
-

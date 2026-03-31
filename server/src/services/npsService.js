@@ -199,13 +199,42 @@ class NPSService {
 
   // Get park by code
   async getParkByCode(parkCode) {
+    const normalizedParkCode = String(parkCode || '').toLowerCase();
+
+    const findParkByCode = (parks = []) =>
+      parks.find((park) => park?.parkCode?.toLowerCase() === normalizedParkCode) || null;
+
     try {
+      // Prefer the full parks dataset because it is already cached aggressively and
+      // avoids extra per-park NPS calls that can trigger 429s on detail pages.
+      const cachedParks = this.getCachedParks();
+      const cachedMatch = findParkByCode(cachedParks || []);
+      if (cachedMatch) {
+        return cachedMatch;
+      }
+
+      const allParks = await this.getAllParks();
+      const fullDatasetMatch = findParkByCode(allParks);
+      if (fullDatasetMatch) {
+        return fullDatasetMatch;
+      }
+
       const response = await this.api.get('/parks', {
-        params: { parkCode }
+        params: { parkCode: normalizedParkCode }
       });
-      return response.data.data[0];
+      return response.data.data[0] || null;
     } catch (error) {
       console.error('NPS API Error:', error.message);
+
+      // Final fallback to any stale full dataset we still have in memory.
+      if (this.parksCache.data) {
+        const staleMatch = findParkByCode(this.parksCache.data);
+        if (staleMatch) {
+          console.warn(`⚠️ Returning stale cached park data for ${normalizedParkCode} after NPS failure`);
+          return staleMatch;
+        }
+      }
+
       throw new Error(`Failed to fetch park ${parkCode}: ${error.message}`);
     }
   }
