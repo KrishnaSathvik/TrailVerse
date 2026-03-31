@@ -890,10 +890,11 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             >
                               {place.images?.[0]?.url && (
                                 <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                                  <OptimizedImage
+                                  <img
                                     src={place.images[0].url}
                                     alt={place.images[0].altText || place.title}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                   />
                                 </div>
                               )}
@@ -1099,10 +1100,11 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             >
                               {cam.images?.[0]?.url && (
                                 <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                                  <OptimizedImage
+                                  <img
                                     src={cam.images[0].url}
                                     alt={cam.images[0].altText || cam.title}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                   />
                                 </div>
                               )}
@@ -1115,7 +1117,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                 <p className="text-sm"
                                   style={{ color: 'var(--text-secondary)' }}
                                 >
-                                  {cam.description}
+                                  {cam.description.replace(/<[^>]*>/g, '')}
                                 </p>
                               )}
                               <div className="flex items-center gap-3 mt-3">
