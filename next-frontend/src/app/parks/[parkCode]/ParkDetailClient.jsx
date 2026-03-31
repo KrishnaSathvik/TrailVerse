@@ -810,14 +810,14 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                           {stop.ordinal || stopIndex + 1}
                                         </span>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                                            {stop.title}
-                                          </p>
-                                          {stop.significance && (
-                                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                              {stop.significance.substring(0, 150)}
+                                          {stop.title && (
+                                            <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                              {stop.title}
                                             </p>
                                           )}
+                                          <p className="text-sm" style={{ color: stop.title ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
+                                            {stop.significance?.substring(0, 200) || stop.description?.substring(0, 200) || stop.assetName || 'Stop details not available'}
+                                          </p>
                                         </div>
                                       </div>
                                     ))}
@@ -847,34 +847,45 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           {webcams.map((cam, index) => (
                             <div
                               key={cam.id || index}
-                              className="p-6 rounded-xl"
+                              className="rounded-xl overflow-hidden"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              <h3 className="text-lg font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
-                                {cam.title}
-                              </h3>
-                              {cam.description && (
-                                <p className="text-sm"
-                                  style={{ color: 'var(--text-secondary)' }}
+                              {cam.images?.[0]?.url && (
+                                <div className="aspect-video overflow-hidden">
+                                  <OptimizedImage
+                                    src={cam.images[0].url}
+                                    alt={cam.images[0].altText || cam.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <div className="p-6">
+                                <h3 className="text-lg font-semibold mb-2"
+                                  style={{ color: 'var(--text-primary)' }}
                                 >
-                                  {cam.description.substring(0, 200)}
-                                </p>
-                              )}
-                              {cam.status && (
-                                <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-2 ${
-                                  cam.status.toLowerCase() === 'active'
-                                    ? 'bg-green-500/20 text-green-400'
-                                    : 'bg-red-500/20 text-red-400'
-                                }`}>
-                                  {cam.status}
-                                </span>
-                              )}
+                                  {cam.title}
+                                </h3>
+                                {cam.description && (
+                                  <p className="text-sm"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {cam.description.substring(0, 200)}
+                                  </p>
+                                )}
+                                {cam.status && (
+                                  <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-2 ${
+                                    cam.status.toLowerCase() === 'active'
+                                      ? 'bg-green-500/20 text-green-400'
+                                      : 'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {cam.status}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
