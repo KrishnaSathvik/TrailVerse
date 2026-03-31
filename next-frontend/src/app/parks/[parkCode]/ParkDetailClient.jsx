@@ -847,43 +847,46 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           {webcams.map((cam, index) => (
                             <div
                               key={cam.id || index}
-                              className="rounded-xl overflow-hidden"
+                              className="p-6 rounded-xl"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              {cam.images?.[0]?.url && (
-                                <div className="aspect-video overflow-hidden">
-                                  <OptimizedImage
-                                    src={cam.images[0].url}
-                                    alt={cam.images[0].altText || cam.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              )}
-                              <div className="p-6">
-                                <h3 className="text-lg font-semibold mb-2"
-                                  style={{ color: 'var(--text-primary)' }}
+                              <h3 className="text-lg font-semibold mb-2"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
+                                {cam.title}
+                              </h3>
+                              {cam.description && (
+                                <p className="text-sm"
+                                  style={{ color: 'var(--text-secondary)' }}
                                 >
-                                  {cam.title}
-                                </h3>
-                                {cam.description && (
-                                  <p className="text-sm"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                  >
-                                    {cam.description.substring(0, 200)}
-                                  </p>
-                                )}
+                                  {cam.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-3 mt-3">
                                 {cam.status && (
-                                  <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-2 ${
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                     cam.status.toLowerCase() === 'active'
                                       ? 'bg-green-500/20 text-green-400'
                                       : 'bg-red-500/20 text-red-400'
                                   }`}>
                                     {cam.status}
                                   </span>
+                                )}
+                                {cam.url && (
+                                  <a
+                                    href={cam.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+                                    style={{ color: 'var(--text-accent, #3b82f6)' }}
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    View Live Feed
+                                  </a>
                                 )}
                               </div>
                             </div>
