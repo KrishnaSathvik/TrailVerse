@@ -1128,6 +1128,56 @@ class NPSService {
     }
   }
 
+  // --- Per-park videos (no bulk fetch — 9,375+ videos across all parks) ---
+
+  async getParkVideos(parkCode) {
+    const cacheKey = `videos_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/multimedia/videos', {
+        params: { parkCode, limit: 50 }
+      });
+      const data = response.data.data || [];
+      console.log(`🎬 Videos for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on videos for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkVideos for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
+  // --- Per-park gallery photos (no bulk fetch — large dataset) ---
+
+  async getParkGalleryPhotos(parkCode) {
+    const cacheKey = `gallery_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/multimedia/galleries/assets', {
+        params: { parkCode, limit: 50 }
+      });
+      const data = response.data.data || [];
+      console.log(`🖼️ Gallery photos for ${parkCode}: ${data.length} found`);
+      this._setEndpointCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on gallery for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkGalleryPhotos for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
   // Get all events from NPS API with caching — uses bulk paginated fetch
   async getAllEvents(limit = 100) {
     // Check cache first

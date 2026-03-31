@@ -95,13 +95,16 @@ exports.getParkDetails = async (req, res, next) => {
       npsService.getParkVisitorCenters(parkCode),
       npsService.getParkPlaces(parkCode),
       npsService.getParkTours(parkCode),
-      npsService.getParkWebcams(parkCode)
+      npsService.getParkWebcams(parkCode),
+      npsService.getParkVideos(parkCode),
+      npsService.getParkGalleryPhotos(parkCode)
     ]);
 
     const [
       parkResult, activitiesResult, alertsResult,
       campgroundsResult, visitorCentersResult,
-      placesResult, toursResult, webcamsResult
+      placesResult, toursResult, webcamsResult,
+      videosResult, galleryResult
     ] = results;
     const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
     const activities = activitiesResult.status === 'fulfilled' ? activitiesResult.value : [];
@@ -111,10 +114,12 @@ exports.getParkDetails = async (req, res, next) => {
     const places = placesResult.status === 'fulfilled' ? placesResult.value : [];
     const tours = toursResult.status === 'fulfilled' ? toursResult.value : [];
     const webcams = webcamsResult.status === 'fulfilled' ? webcamsResult.value : [];
+    const videos = videosResult.status === 'fulfilled' ? videosResult.value : [];
+    const galleryPhotos = galleryResult.status === 'fulfilled' ? galleryResult.value : [];
 
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
-        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters', 'places', 'tours', 'webcams'];
+        const sections = ['park', 'activities', 'alerts', 'campgrounds', 'visitorCenters', 'places', 'tours', 'webcams', 'videos', 'galleryPhotos'];
         console.error(`Failed to fetch ${sections[index]} for ${parkCode}:`, result.reason?.message || result.reason);
       }
     });
@@ -136,7 +141,9 @@ exports.getParkDetails = async (req, res, next) => {
         visitorCenters,
         places,
         tours,
-        webcams
+        webcams,
+        videos,
+        galleryPhotos
       }
     });
   } catch (error) {

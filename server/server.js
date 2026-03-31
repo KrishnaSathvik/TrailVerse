@@ -28,107 +28,17 @@ connectDB().then(() => {
   // Start the scheduler after database connection is established
   startScheduler();
 
-  // Warm all NPS caches in the background so user/build requests don't
-  // depend on the first request succeeding against the NPS API.
-  // Stagger calls with delays so we don't burst the rate limit window.
+  // Only warm the parks list at startup — it's needed for the parks listing page.
+  // All other NPS data (alerts, campgrounds, visitor centers, places, tours,
+  // webcams, events, activities, videos, gallery photos) is fetched per-park
+  // when a user visits that park, then cached for 24h. This avoids burning
+  // hundreds of API calls on every deploy.
   setImmediate(async () => {
     try {
       const parks = await npsService.getAllParks();
       console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
     } catch (error) {
       console.warn(`⚠️ Parks snapshot warm-up failed: ${error.message}`);
-    }
-
-    // Wait 5s before hitting events to let the rate limit window breathe
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const events = await npsService.getAllEvents();
-      console.log(`📅 Warmed events cache with ${events.length} events`);
-    } catch (error) {
-      console.warn(`⚠️ Events cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before activities
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const activities = await npsService.getAllActivities();
-      console.log(`🎯 Warmed activities cache with ${activities.length} activities`);
-    } catch (error) {
-      console.warn(`⚠️ Activities cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before alerts
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const alerts = await npsService.getAllAlerts();
-      const parkCount = Object.keys(alerts).length;
-      const totalAlerts = Object.values(alerts).reduce((sum, a) => sum + a.length, 0);
-      console.log(`🚨 Warmed alerts cache with ${totalAlerts} alerts across ${parkCount} parks`);
-    } catch (error) {
-      console.warn(`⚠️ Alerts cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before campgrounds
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const campgrounds = await npsService.getAllCampgrounds();
-      const parkCount = Object.keys(campgrounds).length;
-      const total = Object.values(campgrounds).reduce((sum, a) => sum + a.length, 0);
-      console.log(`⛺ Warmed campgrounds cache with ${total} campgrounds across ${parkCount} parks`);
-    } catch (error) {
-      console.warn(`⚠️ Campgrounds cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before visitor centers
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const vcs = await npsService.getAllVisitorCenters();
-      const parkCount = Object.keys(vcs).length;
-      const total = Object.values(vcs).reduce((sum, a) => sum + a.length, 0);
-      console.log(`🏛️ Warmed visitor centers cache with ${total} visitor centers across ${parkCount} parks`);
-    } catch (error) {
-      console.warn(`⚠️ Visitor centers cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before places
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const places = await npsService.getAllPlaces();
-      const parkCount = Object.keys(places).length;
-      const total = Object.values(places).reduce((sum, a) => sum + a.length, 0);
-      console.log(`📍 Warmed places cache with ${total} places across ${parkCount} parks`);
-    } catch (error) {
-      console.warn(`⚠️ Places cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before tours
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const tours = await npsService.getAllTours();
-      const parkCount = Object.keys(tours).length;
-      const total = Object.values(tours).reduce((sum, a) => sum + a.length, 0);
-      console.log(`🗺️ Warmed tours cache with ${total} tours across ${parkCount} parks`);
-    } catch (error) {
-      console.warn(`⚠️ Tours cache warm-up failed: ${error.message}`);
-    }
-
-    // Wait another 5s before webcams
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    try {
-      const webcams = await npsService.getAllWebcams();
-      const parkCount = Object.keys(webcams).length;
-      const total = Object.values(webcams).reduce((sum, a) => sum + a.length, 0);
-      console.log(`📹 Warmed webcams cache with ${total} webcams across ${parkCount} parks`);
-    } catch (error) {
-      console.warn(`⚠️ Webcams cache warm-up failed: ${error.message}`);
     }
   });
 }).catch((err) => {

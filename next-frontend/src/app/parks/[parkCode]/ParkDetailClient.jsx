@@ -5,7 +5,7 @@ import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
-  Shield, ExternalLink, Route, Monitor
+  Shield, ExternalLink, Route, Monitor, Play
 } from '@components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -35,7 +35,20 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
 
-  const { park, campgrounds, activities, alerts, places, tours, webcams } = initialData;
+  const { park, campgrounds, activities, alerts, places, tours, webcams, videos, galleryPhotos } = initialData;
+
+  // Merge park.images with gallery photos for the Photos tab and lightbox
+  const allPhotos = React.useMemo(() => {
+    const parkImages = park?.images || [];
+    const gallery = (galleryPhotos || []).map(p => ({
+      url: p.url || p.fileUrl,
+      altText: p.altText || p.title,
+      caption: p.caption || p.description,
+      credit: p.credit
+    })).filter(p => p.url);
+    const existingUrls = new Set(parkImages.map(i => i.url));
+    return [...parkImages, ...gallery.filter(g => !existingUrls.has(g.url))];
+  }, [park?.images, galleryPhotos]);
 
   useEffect(() => {
     if (park) {
@@ -123,6 +136,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
     { id: 'tours', label: 'Tours', icon: Route },
     { id: 'facilities', label: 'Facilities', icon: Utensils },
     { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'videos', label: 'Videos', icon: Play },
     { id: 'webcams', label: 'Webcams', icon: Monitor },
     { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
     { id: 'reviews', label: 'Reviews', icon: Star }
@@ -677,10 +691,15 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         style={{ color: 'var(--text-primary)' }}
                       >
                         Photo Gallery
+                        {allPhotos.length > 0 && (
+                          <span className="text-base font-normal ml-2" style={{ color: 'var(--text-tertiary)' }}>
+                            ({allPhotos.length})
+                          </span>
+                        )}
                       </h2>
-                      {park.images && park.images.length > 0 ? (
+                      {allPhotos.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {park.images.map((image, index) => (
+                          {allPhotos.map((image, index) => (
                             <button
                               key={index}
                               onClick={() => {
@@ -700,6 +719,83 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       ) : (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No photos available
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'videos' && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-6"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        Videos
+                        {videos && videos.length > 0 && (
+                          <span className="text-base font-normal ml-2" style={{ color: 'var(--text-tertiary)' }}>
+                            ({videos.length})
+                          </span>
+                        )}
+                      </h2>
+                      {videos && videos.length > 0 ? (
+                        <div className="space-y-4">
+                          {videos.map((video, index) => {
+                            const durationMin = video.durationMs ? Math.round(video.durationMs / 60000) : null;
+                            return (
+                              <div
+                                key={video.id || index}
+                                className="p-6 rounded-xl"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
+                                <h3 className="text-lg font-semibold mb-2"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {video.title}
+                                </h3>
+                                {video.description && (
+                                  <p className="text-sm"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {video.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                                  {durationMin && (
+                                    <span className="flex items-center gap-1 text-sm"
+                                      style={{ color: 'var(--text-tertiary)' }}
+                                    >
+                                      <Clock className="h-3.5 w-3.5" />
+                                      {durationMin} min
+                                    </span>
+                                  )}
+                                  {video.credit && (
+                                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                      Credit: {video.credit}
+                                    </span>
+                                  )}
+                                  {video.permalinkUrl && (
+                                    <a
+                                      href={video.permalinkUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+                                      style={{ color: 'var(--text-accent, #3b82f6)' }}
+                                    >
+                                      <Play className="h-3.5 w-3.5" />
+                                      Watch Video
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No videos available
                         </p>
                       )}
                     </div>
@@ -1142,9 +1238,9 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
       <Footer />
 
       {/* Photo Lightbox */}
-      {lightboxOpen && park.images?.length > 0 && (
+      {lightboxOpen && allPhotos.length > 0 && (
         <PhotoLightbox
-          images={park.images}
+          images={allPhotos}
           initialIndex={selectedImageIndex}
           onClose={() => setLightboxOpen(false)}
         />
