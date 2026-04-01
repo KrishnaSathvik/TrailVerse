@@ -159,18 +159,18 @@ exports.getProviders = async (req, res, next) => {
   try {
     const providers = [
       {
-        id: 'openai',
-        name: 'OpenAI GPT-4',
-        description: 'Advanced language model with excellent reasoning capabilities',
-        model: 'gpt-4',
-        available: !!process.env.OPENAI_API_KEY
-      },
-      {
         id: 'claude',
-        name: 'Claude 3.5 Sonnet',
-        description: 'Anthropic\'s most capable model with strong safety features',
+        name: 'The Local',
+        description: 'Quick insider tips, opinionated picks, casual travel buddy',
         model: 'claude-3-5-sonnet-20241022',
         available: !!process.env.ANTHROPIC_API_KEY && !!claudeService
+      },
+      {
+        id: 'openai',
+        name: 'The Planner',
+        description: 'Detailed itineraries, full logistics, comprehensive plans',
+        model: 'gpt-4',
+        available: !!process.env.OPENAI_API_KEY
       }
     ];
 

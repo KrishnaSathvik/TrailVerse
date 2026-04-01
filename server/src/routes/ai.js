@@ -711,9 +711,9 @@ router.get('/providers-anonymous', (req, res) => {
   if (anthropic && process.env.ANTHROPIC_API_KEY) {
     providers.push({
       id: 'claude',
-      name: 'Claude',
-      model: 'Sonnet 4.5',
-      description: 'Anthropic Claude - Best for detailed planning (with fallback to 3.5 Sonnet)',
+      name: 'The Local',
+      model: 'Claude 3.5 Sonnet',
+      description: 'Quick insider tips, opinionated picks, casual travel buddy',
       available: true
     });
   }
@@ -721,15 +721,15 @@ router.get('/providers-anonymous', (req, res) => {
   if (openai && process.env.OPENAI_API_KEY) {
     providers.push({
       id: 'openai',
-      name: 'ChatGPT',
+      name: 'The Planner',
       model: 'GPT-4',
-      description: 'OpenAI GPT-4 - Fast and versatile',
+      description: 'Detailed itineraries, full logistics, comprehensive plans',
       available: true
     });
   }
 
   if (providers.length === 0) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'No AI providers configured',
       providers: []
     });
@@ -745,9 +745,9 @@ router.get('/providers', protect, (req, res) => {
   if (anthropic && process.env.ANTHROPIC_API_KEY) {
     providers.push({
       id: 'claude',
-      name: 'Claude',
-      model: 'Sonnet 4.5',
-      description: 'Anthropic Claude - Best for detailed planning (with fallback to 3.5 Sonnet)',
+      name: 'The Local',
+      model: 'Claude 3.5 Sonnet',
+      description: 'Quick insider tips, opinionated picks, casual travel buddy',
       available: true
     });
   }
@@ -755,15 +755,15 @@ router.get('/providers', protect, (req, res) => {
   if (openai && process.env.OPENAI_API_KEY) {
     providers.push({
       id: 'openai',
-      name: 'ChatGPT',
+      name: 'The Planner',
       model: 'GPT-4',
-      description: 'OpenAI GPT-4 - Fast and versatile',
+      description: 'Detailed itineraries, full logistics, comprehensive plans',
       available: true
     });
   }
 
   if (providers.length === 0) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'No AI providers configured',
       providers: []
     });
