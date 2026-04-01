@@ -33,8 +33,8 @@ try {
   console.warn('OpenAI SDK not available:', error.message);
 }
 
-// Chat endpoint
-router.post('/chat', protect, checkTokenLimit, trackTokenUsage, async (req, res) => {
+// Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
+router.post('/chat', protect, trackTokenUsage, async (req, res) => {
   try {
     console.log('[AI] Chat request received:', { 
       provider: req.body.provider, 
