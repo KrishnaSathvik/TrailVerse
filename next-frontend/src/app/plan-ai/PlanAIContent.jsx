@@ -1398,7 +1398,7 @@ const PlanAIContent = ({ tripId }) => {
           {/* Empty State */}
           {((activeTab === 'active' && tripHistory.length === 0) || (activeTab === 'archive' && archivedTrips.length === 0)) && (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🗂️</div>
+              <div className="text-6xl mb-4"><FolderSimple className="inline h-16 w-16" style={{ color: 'var(--text-tertiary)' }} /></div>
               <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                 {activeTab === 'active' ? 'No Active Trips' : 'No Archived Trips'}
               </h3>

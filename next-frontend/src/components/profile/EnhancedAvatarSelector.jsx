@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Shuffle } from '@components/icons';
+import { Check, Shuffle, Clock, RefreshCw } from '@components/icons';
 import { generateAvatarCollection, generateRandomAvatar } from '../../utils/avatarGenerator';
 
 /**
@@ -66,7 +66,7 @@ const EnhancedAvatarSelector = ({ user, userStats, currentAvatar, onAvatarChange
             border: '1px solid var(--border)'
           }}
         >
-          {isGenerating ? '⏳' : '🔄'} Refresh
+          {isGenerating ? <Clock className="inline h-4 w-4 mr-1 align-text-bottom" /> : <RefreshCw className="inline h-4 w-4 mr-1 align-text-bottom" />} Refresh
         </button>
       </div>
 

@@ -6,7 +6,7 @@ import {
   ArrowLeft, MapPin, Utensils, Bed, Fuel,
   Search, X, Loader2, ExternalLink, Route, Clock,
   ChevronRight, Star, DollarSign, Phone, Globe,
-  Heart, Calendar, ChevronDown, ChevronUp, Info
+  Heart, Calendar, ChevronDown, ChevronUp, Info, Lightbulb
 } from '@components/icons';
 import Header from '@components/common/Header';
 import { useToast } from '@/context/ToastContext';
@@ -1726,7 +1726,7 @@ const MapPage = () => {
                     <h2 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Plan Your Route</h2>
                     <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Add places to create a custom route with directions</p>
                     {routeWaypoints.length > 1 && (
-                      <p className="text-xs text-gray-500 mt-1">💡 Drag places to reorder your route</p>
+                      <p className="text-xs text-gray-500 mt-1"><Lightbulb className="inline h-3.5 w-3.5 align-text-bottom" /> Drag places to reorder your route</p>
               )}
             </div>
 

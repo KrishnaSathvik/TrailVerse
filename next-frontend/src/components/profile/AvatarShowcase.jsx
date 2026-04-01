@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Sparkles, ArrowUp, Shuffle } from '@components/icons';
+import { Palette, Sparkles, ArrowUp, Shuffle, ArchiveRestore, Target } from '@components/icons';
 import {
   generateRandomAvatar,
   generateAvatarCollection,
@@ -83,7 +83,7 @@ const AvatarShowcase = () => {
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          🎨 Avatar System Showcase
+          <Palette className="inline h-7 w-7 align-text-bottom" /> Avatar System Showcase
         </h1>
         <p style={{ color: 'var(--text-secondary)' }}>
           Preview the improved avatar generation system
@@ -120,7 +120,7 @@ const AvatarShowcase = () => {
             border: '2px solid var(--border)'
           }}
         >
-          📦 Collection
+          <ArchiveRestore className="inline h-4 w-4 mr-1 align-text-bottom" /> Collection
         </button>
         
         <button
@@ -136,7 +136,7 @@ const AvatarShowcase = () => {
             border: '2px solid var(--border)'
           }}
         >
-          🎯 Types
+          <Target className="inline h-4 w-4 mr-1 align-text-bottom" /> Types
         </button>
         
         <button
@@ -152,7 +152,7 @@ const AvatarShowcase = () => {
             border: '2px solid var(--border)'
           }}
         >
-          🎨 Styles
+          <Palette className="inline h-4 w-4 mr-1 align-text-bottom" /> Styles
         </button>
       </div>
 
