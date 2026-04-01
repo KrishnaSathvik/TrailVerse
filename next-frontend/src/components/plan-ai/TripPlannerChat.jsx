@@ -1959,7 +1959,17 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                     const msgIndex = messages.indexOf(message);
                     const userMsg = messages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
                     if (userMsg) {
+                      // Auto-alternate: switch to the other AI provider
+                      const otherProvider = providers.find(p => p.id !== selectedProvider);
+                      if (otherProvider) {
+                        setSelectedProvider(otherProvider.id);
+                        showToast(`Regenerating with ${otherProvider.name}...`, 'info');
+                      } else {
+                        showToast('Regenerating...', 'info');
+                      }
                       setMessages(prev => prev.filter(m => m.id !== message.id));
+                      // Small delay to let provider switch take effect
+                      await new Promise(r => setTimeout(r, 100));
                       await handleSendMessage(userMsg.content);
                     }
                   } : undefined}
