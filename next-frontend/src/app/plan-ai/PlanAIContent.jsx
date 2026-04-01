@@ -271,12 +271,12 @@ const PlanAIContent = ({ tripId }) => {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Header bar */}
-        <header
-          className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b"
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Sub-header bar */}
+        <div
+          className="flex-shrink-0 flex items-center gap-3 px-4 py-2.5 border-b"
           style={{
-            backgroundColor: 'var(--surface)',
+            backgroundColor: 'var(--bg-primary)',
             borderColor: 'var(--border)'
           }}
         >
@@ -293,11 +293,20 @@ const PlanAIContent = ({ tripId }) => {
           )}
 
           <div className="flex items-center gap-2 min-w-0">
-            <Sparkles className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-            <span className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+            <Sparkles className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
               Plan AI
             </span>
           </div>
+
+          {/* Trip context pills inline */}
+          {effectiveParkName && (
+            <div className="hidden sm:flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                {effectiveParkName}
+              </span>
+            </div>
+          )}
 
           {/* Quick Fill button */}
           <button
@@ -313,14 +322,7 @@ const PlanAIContent = ({ tripId }) => {
             <Edit2 className="h-3.5 w-3.5" />
             Quick Fill
           </button>
-        </header>
-
-        {/* Trip Context Bar - show when there is active context */}
-        <TripContextBar
-          parkName={effectiveParkName}
-          formData={effectiveFormData}
-          onEdit={() => setQuickFillOpen(true)}
-        />
+        </div>
 
         {/* Chat - always visible (chat-first approach) */}
         <TripPlannerChat
