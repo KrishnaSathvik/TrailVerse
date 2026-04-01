@@ -248,7 +248,9 @@ const PlanAIContent = ({ tripId }) => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <Header />
+      <div className="flex-1 flex">
       {/* Trip History Drawer */}
       {user && (tripHistory.length > 0 || archivedTrips.length > 0) && (
         <TripHistoryDrawer
@@ -332,6 +334,7 @@ const PlanAIContent = ({ tripId }) => {
         />
       </div>
 
+      </div>
       {/* Quick Fill Modal */}
       <QuickFillModal
         isOpen={quickFillOpen}

@@ -105,7 +105,7 @@ const MessageBubble = ({
               isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
             style={{
-              backgroundColor: isUser ? 'var(--surface)' : 'var(--surface)',
+              backgroundColor: isUser ? 'var(--accent-green-light)' : 'var(--surface)',
               borderWidth: '1px',
               borderColor: 'var(--border)',
               color: 'var(--text-primary)',
@@ -313,7 +313,7 @@ const MessageBubble = ({
                     title={feedbackState === 'up' ? 'Liked!' : 'Good response'}
                     aria-label="Thumbs up"
                   >
-                    <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill={feedbackState === 'up' ? '#fff' : 'none'} />
+                    <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" weight={feedbackState === 'up' ? 'fill' : 'regular'} />
                   </button>
                   <button
                     type="button"
@@ -332,7 +332,7 @@ const MessageBubble = ({
                     title={feedbackState === 'down' ? 'Disliked' : 'Bad response'}
                     aria-label="Thumbs down"
                   >
-                    <ThumbsDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill={feedbackState === 'down' ? '#fff' : 'none'} />
+                    <ThumbsDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" weight={feedbackState === 'down' ? 'fill' : 'regular'} />
                   </button>
                 </>
               )}
