@@ -5,7 +5,8 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Sparkles, MapPin, Calendar, Users, Tent,
   Utensils, ArrowRight, ArrowLeft, Loader2, ChevronDown,
-  MessageCircle, Plus, Clock, CheckCircle, LogIn, X
+  MessageCircle, Plus, Clock, CheckCircle, LogIn, X,
+  Mountain, Camera, Trees, Car, Route, Star, Landmark, FolderSimple
 } from '@components/icons';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
@@ -370,14 +371,14 @@ const PlanAIContent = ({ tripId }) => {
   const totalSteps = 4;
 
   const interests = [
-    { id: 'hiking', label: 'Hiking', icon: '🏔️' },
-    { id: 'photography', label: 'Photography', icon: '📸' },
-    { id: 'wildlife', label: 'Wildlife', icon: '🦌' },
-    { id: 'camping', label: 'Camping', icon: '⛺' },
-    { id: 'scenic-drives', label: 'Scenic Drives', icon: '🚗' },
-    { id: 'water-activities', label: 'Water Activities', icon: '🚣' },
-    { id: 'stargazing', label: 'Stargazing', icon: '⭐' },
-    { id: 'history', label: 'History & Culture', icon: '🏛️' }
+    { id: 'hiking', label: 'Hiking', icon: Mountain },
+    { id: 'photography', label: 'Photography', icon: Camera },
+    { id: 'wildlife', label: 'Wildlife', icon: Trees },
+    { id: 'camping', label: 'Camping', icon: Tent },
+    { id: 'scenic-drives', label: 'Scenic Drives', icon: Car },
+    { id: 'water-activities', label: 'Water Activities', icon: Route },
+    { id: 'stargazing', label: 'Stargazing', icon: Star },
+    { id: 'history', label: 'History & Culture', icon: Landmark }
   ];
 
   const toggleInterest = (interestId) => {

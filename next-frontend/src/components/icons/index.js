@@ -196,6 +196,9 @@ export { BrainIcon as Brain } from '@phosphor-icons/react';
 export { LightbulbIcon as Lightbulb } from '@phosphor-icons/react';
 export { SparkleIcon as Sparkles } from '@phosphor-icons/react';
 export { TrophyIcon as Award } from '@phosphor-icons/react';
+export { ShuffleIcon as Shuffle } from '@phosphor-icons/react';
+export { PaletteIcon as Palette } from '@phosphor-icons/react';
+export { FolderSimpleIcon as FolderSimple } from '@phosphor-icons/react';
 
 // Emojis & Reactions
 export { SmileyIcon as Smile } from '@phosphor-icons/react';

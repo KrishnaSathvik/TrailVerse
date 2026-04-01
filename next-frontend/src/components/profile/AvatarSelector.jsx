@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Shuffle } from '@components/icons';
 import { generateEmojiAvatar } from '../../utils/avatarGenerator';
 
 const AvatarSelector = ({ user, userStats, onAvatarChange }) => {
@@ -36,7 +37,7 @@ const AvatarSelector = ({ user, userStats, onAvatarChange }) => {
           {isGenerating ? (
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-500"></div>
           ) : (
-            <span className="text-lg">🎲</span>
+            <Shuffle className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
           )}
           
           <span className="font-medium text-sm"
