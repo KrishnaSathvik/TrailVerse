@@ -101,7 +101,7 @@ const MessageBubble = ({
       <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
         <div className="flex flex-col gap-1.5">
           <div
-            className={`inline-block max-w-full sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm chat-message-bubble break-words overflow-wrap-anywhere ${
+            className={`inline-block max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm chat-message-bubble ${
               isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
             style={{
@@ -110,19 +110,19 @@ const MessageBubble = ({
               borderColor: 'var(--border)',
               color: 'var(--text-primary)',
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-              hyphens: 'auto'
+              overflowWrap: 'anywhere',
+              wordBreak: 'normal',
+              hyphens: 'none'
             }}
           >
 
-          <div className="prose prose-sm max-w-none break-words"
+          <div className="prose prose-sm max-w-none"
             style={{
               '--tw-prose-bullets': 'var(--text-primary)',
               '--tw-prose-counters': 'var(--text-primary)',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-              hyphens: 'auto'
+              overflowWrap: 'anywhere',
+              wordBreak: 'normal',
+              hyphens: 'none'
             }}
           >
             <ReactMarkdown

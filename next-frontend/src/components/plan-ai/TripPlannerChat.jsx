@@ -2039,15 +2039,15 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         </div>
       )}
 
-      {/* Input Area - Responsive width */}
-      <div className="sticky bottom-0 z-20 backdrop-blur-xl border-t chat-input-area"
+      {/* Input Area */}
+      <div className="flex-shrink-0 z-20 border-t"
           style={{
             backgroundColor: 'var(--bg-primary)',
             borderColor: 'var(--border)',
-            boxShadow: '0 -1px 3px 0 rgba(0, 0, 0, 0.1), 0 -1px 2px 0 rgba(0, 0, 0, 0.06)'
+            boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)'
           }}
         >
-          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-4 sm:py-5">
+          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-3 sm:py-4">
             {/* Quick Prompts - Only show for new users (not returning users with newchat, personalized, or park-specific chats) */}
             {messages.length === 1 && !isGenerating && !isPersonalized && !isNewChat && !(typeof window !== 'undefined' && window.location.search.includes('park=')) && (
               <div className="mb-4">

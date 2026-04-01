@@ -248,9 +248,9 @@ const PlanAIContent = ({ tripId }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
       {/* Trip History Drawer */}
       {user && (tripHistory.length > 0 || archivedTrips.length > 0) && (
         <TripHistoryDrawer
