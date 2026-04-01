@@ -1027,44 +1027,80 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       )}
                       {!parkingLoading && parkingLots !== null && parkingLots.length > 0 ? (
                         <div className="space-y-4">
-                          {parkingLots.map((lot, index) => (
-                            <div
-                              key={lot.id || index}
-                              className="p-6 rounded-xl"
-                              style={{
-                                backgroundColor: 'var(--surface-hover)',
-                                borderWidth: '1px',
-                                borderColor: 'var(--border)'
-                              }}
-                            >
-                              <h3 className="text-lg font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)' }}
+                          {parkingLots.map((lot, index) => {
+                            const accessibility = lot.accessibility;
+                            const liveStatus = lot.liveStatus;
+                            const fee = lot.fees?.[0];
+                            return (
+                              <div
+                                key={lot.id || index}
+                                className="p-6 rounded-xl"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
                               >
-                                {lot.name}
-                              </h3>
-                              {lot.description && (
-                                <p className="text-sm mb-3"
-                                  style={{ color: 'var(--text-secondary)' }}
-                                >
-                                  {lot.description}
-                                </p>
-                              )}
-                              <div className="flex flex-wrap items-center gap-3 mt-3">
-                                {lot.isAccessibleToDisabled && (
-                                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/20 text-green-400">
-                                    Accessible
-                                  </span>
-                                )}
-                                {lot.managedByOrganization && (
-                                  <span className="text-xs"
-                                    style={{ color: 'var(--text-tertiary)' }}
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <h3 className="text-lg font-semibold"
+                                    style={{ color: 'var(--text-primary)' }}
                                   >
-                                    Managed by: {lot.managedByOrganization}
-                                  </span>
+                                    {lot.name}
+                                  </h3>
+                                  {liveStatus?.occupancy && (
+                                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
+                                      liveStatus.occupancy.toLowerCase() === 'light' ? 'bg-green-500/20 text-green-400' :
+                                      liveStatus.occupancy.toLowerCase() === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                                      liveStatus.occupancy.toLowerCase() === 'full' ? 'bg-red-500/20 text-red-400' :
+                                      'bg-blue-500/20 text-blue-400'
+                                    }`}>
+                                      {liveStatus.occupancy}
+                                    </span>
+                                  )}
+                                </div>
+                                {lot.description && (
+                                  <p className="text-sm mb-3"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {lot.description}
+                                  </p>
                                 )}
+                                <div className="flex flex-wrap items-center gap-3 mt-3">
+                                  {accessibility?.totalSpaces > 0 && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                      style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
+                                    >
+                                      {accessibility.totalSpaces} spaces
+                                    </span>
+                                  )}
+                                  {accessibility?.numberofAdaSpaces > 0 && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/20 text-green-400">
+                                      {accessibility.numberofAdaSpaces} ADA
+                                    </span>
+                                  )}
+                                  {accessibility?.numberOfOversizeVehicleSpaces > 0 && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                      style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
+                                    >
+                                      {accessibility.numberOfOversizeVehicleSpaces} oversize
+                                    </span>
+                                  )}
+                                  {fee && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                      style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
+                                    >
+                                      ${fee.cost}
+                                    </span>
+                                  )}
+                                  {liveStatus?.estimatedWaitTimeInMinutes > 0 && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-500/20 text-orange-400">
+                                      ~{liveStatus.estimatedWaitTimeInMinutes} min wait
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : !parkingLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>

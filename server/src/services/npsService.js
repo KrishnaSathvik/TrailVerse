@@ -23,21 +23,21 @@ class NPSService {
     this.eventsCache = {
       data: null,
       timestamp: null,
-      ttl: 6 * 60 * 60 * 1000 // 6 hours — events don't change by the minute
+      ttl: 3 * 24 * 60 * 60 * 1000 // 3 days — events are set up weeks/months ahead
     };
 
     // Cache all parks aggressively since the upstream dataset is relatively static
     this.parksCache = {
       data: null,
       timestamp: null,
-      ttl: 24 * 60 * 60 * 1000 // 24 hours
+      ttl: 7 * 24 * 60 * 60 * 1000 // 7 days — parks almost never change
     };
 
     // Cache for activities (bulk fetch, rarely changes)
     this.activitiesCache = {
       data: null,
       timestamp: null,
-      ttl: 24 * 60 * 60 * 1000 // 24 hours
+      ttl: 7 * 24 * 60 * 60 * 1000 // 7 days
     };
 
     // Bulk alerts cache keyed by parkCode (alerts are time-sensitive but
@@ -93,15 +93,15 @@ class NPSService {
     // Per-endpoint caches for individual park data
     this.endpointCache = new Map();
     this.endpointCacheTTLs = {
-      alerts: 30 * 60 * 1000,        // 30 min — time-sensitive
-      activities: 24 * 60 * 60 * 1000, // 24 hours
-      campgrounds: 24 * 60 * 60 * 1000, // 24 hours
-      visitorcenters: 24 * 60 * 60 * 1000, // 24 hours
-      parksByState: 24 * 60 * 60 * 1000, // 24 hours
-      places: 24 * 60 * 60 * 1000,     // 24 hours
-      tours: 24 * 60 * 60 * 1000,      // 24 hours
-      webcams: 24 * 60 * 60 * 1000,     // 24 hours
-      parkinglots: 24 * 60 * 60 * 1000  // 24 hours
+      alerts: 30 * 60 * 1000,           // 30 min — safety-critical, can change anytime
+      parkinglots: 10 * 60 * 1000,      // 10 min — live occupancy data
+      activities: 7 * 24 * 60 * 60 * 1000, // 7 days — rarely changes
+      campgrounds: 7 * 24 * 60 * 60 * 1000, // 7 days — seasonal changes only
+      visitorcenters: 7 * 24 * 60 * 60 * 1000, // 7 days — rarely changes
+      parksByState: 7 * 24 * 60 * 60 * 1000,  // 7 days — almost never changes
+      places: 7 * 24 * 60 * 60 * 1000,     // 7 days — almost never changes
+      tours: 7 * 24 * 60 * 60 * 1000,      // 7 days — almost never changes
+      webcams: 24 * 60 * 60 * 1000,        // 24 hours — status can change
     };
   }
 
