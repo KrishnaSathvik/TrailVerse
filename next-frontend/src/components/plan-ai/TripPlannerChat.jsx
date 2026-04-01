@@ -2058,10 +2058,11 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
           style={{
             backgroundColor: 'var(--bg-primary)',
             borderColor: 'var(--border)',
-            boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)'
+            boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
+            paddingBottom: 'env(safe-area-inset-bottom, 16px)'
           }}
         >
-          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-3 sm:py-4">
+          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 pt-3 pb-4 sm:pt-4 sm:pb-5">
             {/* Quick Prompts - Only show for new users (not returning users with newchat, personalized, or park-specific chats) */}
             {messages.length === 1 && !isGenerating && !isPersonalized && !isNewChat && !(typeof window !== 'undefined' && window.location.search.includes('park=')) && (
               <div className="mb-4">
