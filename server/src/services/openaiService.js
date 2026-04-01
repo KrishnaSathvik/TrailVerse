@@ -50,10 +50,10 @@ Redirect non-US/non-travel politely: "I specialize in US trip planning! What des
       ];
 
       const response = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4.1',
         messages: messagesWithSystem,
         temperature: 0.4,
-        max_tokens: 2000
+        max_tokens: 4096
       });
 
       return response.choices[0].message.content;
@@ -71,10 +71,10 @@ Redirect non-US/non-travel politely: "I specialize in US trip planning! What des
       ];
 
       const stream = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4.1',
         messages: messagesWithSystem,
         temperature: 0.4,
-        max_tokens: 2000,
+        max_tokens: 4096,
         stream: true
       });
 

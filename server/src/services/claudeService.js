@@ -41,8 +41,8 @@ Redirect non-US/non-travel politely: "I'm your US travel insider! What American 
       const claudeMessages = messages.filter(msg => msg.role !== 'system');
 
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
         temperature: 0.4,
         system: systemPrompt,
         messages: claudeMessages
@@ -61,8 +61,8 @@ Redirect non-US/non-travel politely: "I'm your US travel insider! What American 
       const claudeMessages = messages.filter(msg => msg.role !== 'system');
 
       const stream = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
         temperature: 0.4,
         system: systemPrompt,
         messages: claudeMessages,

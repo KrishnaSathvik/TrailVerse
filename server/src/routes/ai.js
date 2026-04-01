@@ -131,10 +131,8 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
 
       // Try models in order of preference
       const modelsToTry = [
-        'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
-        'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
-        'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
-        'claude-3-haiku-20240307'      // Claude 3 Haiku (fastest, reliable fallback)
+        'claude-sonnet-4-6',           // Claude Sonnet 4.6 (latest, fast)
+        'claude-haiku-4-5-20251001',   // Claude Haiku 4.5 (budget fallback)
       ];
 
       let lastError = null;
@@ -143,9 +141,9 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       for (const model of modelsToTry) {
         try {
           console.log(`[Chat] Trying Claude model: ${model}`);
-          
+
           const claudeResponse = await anthropic.messages.create({
-            model: model || 'claude-3-5-sonnet-20241022',
+            model: model || 'claude-sonnet-4-6',
             max_tokens: maxTokens,
             temperature: temperature,
             system: enhancedSystemPrompt,
@@ -230,7 +228,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
 
       const openaiResponse = await openai.chat.completions.create({
-        model: model || 'gpt-4',
+        model: model || 'gpt-4.1',
         messages: openaiMessages,
         max_tokens: maxTokens,
         temperature: temperature,
@@ -240,7 +238,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       response = {
         content: openaiResponse.choices[0].message.content,
         provider: 'openai',
-        model: 'gpt-4',
+        model: 'gpt-4.1',
         usage: {
           inputTokens: openaiResponse.usage.prompt_tokens,
           outputTokens: openaiResponse.usage.completion_tokens,
@@ -478,10 +476,8 @@ Ready to continue planning? 🚀`,
 
       // Try models in order of preference
       const modelsToTry = [
-        'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
-        'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
-        'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
-        'claude-3-haiku-20240307'      // Claude 3 Haiku (fastest, reliable fallback)
+        'claude-sonnet-4-6',           // Claude Sonnet 4.6 (latest, fast)
+        'claude-haiku-4-5-20251001',   // Claude Haiku 4.5 (budget fallback)
       ];
 
       let lastError = null;
@@ -490,9 +486,9 @@ Ready to continue planning? 🚀`,
       for (const model of modelsToTry) {
         try {
           console.log(`[Chat] Trying Claude model for anonymous user: ${model}`);
-          
+
           const claudeResponse = await anthropic.messages.create({
-            model: model || 'claude-3-5-sonnet-20241022',
+            model: model || 'claude-sonnet-4-6',
             max_tokens: maxTokens,
             temperature: temperature,
             system: enhancedSystemPrompt,
@@ -577,7 +573,7 @@ Ready to continue planning? 🚀`,
       const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
 
       const openaiResponse = await openai.chat.completions.create({
-        model: model || 'gpt-4',
+        model: model || 'gpt-4.1',
         messages: openaiMessages,
         max_tokens: maxTokens,
         temperature: temperature,
@@ -587,7 +583,7 @@ Ready to continue planning? 🚀`,
       response = {
         content: openaiResponse.choices[0].message.content,
         provider: 'openai',
-        model: 'gpt-4',
+        model: 'gpt-4.1',
         usage: {
           inputTokens: openaiResponse.usage.prompt_tokens,
           outputTokens: openaiResponse.usage.completion_tokens,
@@ -712,7 +708,7 @@ router.get('/providers-anonymous', (req, res) => {
     providers.push({
       id: 'claude',
       name: 'The Local',
-      model: 'Claude 3.5 Sonnet',
+      model: 'Claude Sonnet 4.6',
       description: 'Quick insider tips, opinionated picks, casual travel buddy',
       available: true
     });
@@ -722,7 +718,7 @@ router.get('/providers-anonymous', (req, res) => {
     providers.push({
       id: 'openai',
       name: 'The Planner',
-      model: 'GPT-4',
+      model: 'GPT-4.1',
       description: 'Detailed itineraries, full logistics, comprehensive plans',
       available: true
     });
@@ -746,7 +742,7 @@ router.get('/providers', protect, (req, res) => {
     providers.push({
       id: 'claude',
       name: 'The Local',
-      model: 'Claude 3.5 Sonnet',
+      model: 'Claude Sonnet 4.6',
       description: 'Quick insider tips, opinionated picks, casual travel buddy',
       available: true
     });
@@ -756,7 +752,7 @@ router.get('/providers', protect, (req, res) => {
     providers.push({
       id: 'openai',
       name: 'The Planner',
-      model: 'GPT-4',
+      model: 'GPT-4.1',
       description: 'Detailed itineraries, full logistics, comprehensive plans',
       available: true
     });
@@ -779,11 +775,8 @@ router.get('/test-models', protect, async (req, res) => {
   }
 
   const modelsToTest = [
-    'claude-3-5-sonnet-20241022',  // Claude 3.5 Sonnet (stable - latest)
-    'claude-3-5-sonnet-20240620',  // Claude 3.5 Sonnet (earlier version)
-    'claude-3-opus-20240229',      // Claude 3 Opus (most capable)
-    'claude-3-sonnet-20240229',    // Claude 3 Sonnet
-    'claude-3-haiku-20240307'      // Claude 3 Haiku (fastest)
+    'claude-sonnet-4-6',           // Claude Sonnet 4.6 (latest)
+    'claude-haiku-4-5-20251001',   // Claude Haiku 4.5 (budget)
   ];
 
   const results = [];
