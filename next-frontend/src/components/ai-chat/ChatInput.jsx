@@ -98,7 +98,7 @@ const ChatInput = ({
 
   return (
     <form onSubmit={handleSubmit} className="w-full relative" aria-label="Chat composer">
-      <div className="flex items-end gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Input Container */}
         <div className="flex-1 relative">
           <label htmlFor="chat-input" className="sr-only">Message</label>
@@ -114,7 +114,7 @@ const ChatInput = ({
             disabled={disabled}
             placeholder={placeholder}
             rows={1}
-            className="w-full px-4 sm:px-5 py-3 sm:py-3.5 pr-20 sm:pr-24 rounded-xl outline-none transition-all duration-200 disabled:opacity-50 resize-none max-h-32 scrollbar-thin text-sm sm:text-base leading-relaxed focus:ring-2 focus:ring-offset-0"
+            className="w-full px-4 sm:px-5 py-3 pr-24 sm:pr-28 rounded-xl outline-none transition-all duration-200 disabled:opacity-50 resize-none scrollbar-thin text-sm sm:text-base leading-relaxed focus:ring-2 focus:ring-offset-0"
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -183,21 +183,20 @@ const ChatInput = ({
           </div>
         </div>
 
-        {/* Send Button - Improved design */}
+        {/* Send Button - Aligned with input */}
         <button
           type="submit"
           disabled={!message.trim() || disabled}
-          className="px-3 sm:px-6 py-3 sm:py-3.5 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-lg flex items-center gap-2 flex-shrink-0 justify-center touch-manipulation"
+          className="rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-lg flex items-center justify-center flex-shrink-0 touch-manipulation"
           style={{
             backgroundColor: message.trim() && !disabled ? 'var(--accent-green)' : 'var(--surface-hover)',
             color: message.trim() && !disabled ? 'white' : 'var(--text-tertiary)',
-            minHeight: '48px',
-            minWidth: '48px'
+            height: '48px',
+            width: '48px'
           }}
           aria-label="Send message"
         >
-          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="hidden sm:inline text-sm">Send</span>
+          <Send className="h-5 w-5" />
         </button>
       </div>
 
