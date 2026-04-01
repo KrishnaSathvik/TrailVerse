@@ -71,12 +71,21 @@ const TripPlannerChat = ({
   const chatContainerRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
   const previousExistingTripIdRef = useRef(existingTripId);
+  const lastMessageCountRef = useRef(0);
+  const userSentMessageRef = useRef(false);
 
-  // Auto-scroll when new messages arrive
+  // Auto-scroll only when USER sends a message (not when AI responds)
+  // This lets the user read AI responses from the top without being yanked to the bottom
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (userSentMessageRef.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      userSentMessageRef.current = false;
+    }
+    // When AI starts generating, scroll to show the typing indicator
+    if (isGenerating && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+    lastMessageCountRef.current = messages.length;
   }, [messages.length, isGenerating]);
 
   // Helper functions that need to be defined before loadExistingTrip
@@ -730,6 +739,7 @@ const TripPlannerChat = ({
     };
 
     setMessages(prev => [...prev, userMessage]);
+    userSentMessageRef.current = true; // flag for auto-scroll
     setIsGenerating(true);
     setThinkingStartTime(Date.now());
     setThinkingMessage('Thinking...');
