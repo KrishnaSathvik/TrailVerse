@@ -80,6 +80,90 @@ class AIService {
   }
 
   /**
+   * Streaming chat — uses SSE via fetch + ReadableStream.
+   * Calls onChunk for each text fragment, onDone when complete, onError on failure.
+   */
+  async chatStream({
+    messages,
+    provider,
+    temperature = 0.4,
+    top_p = 0.9,
+    max_tokens = 2000,
+    conversationId = null,
+    signal,
+    metadata,
+    onChunk,
+    onDone,
+    onError
+  }) {
+    const API_URL =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'https://trailverse.onrender.com/api'
+        : 'http://localhost:5001/api');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    const response = await fetch(`${API_URL}/ai/chat-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        messages,
+        provider,
+        temperature,
+        top_p,
+        maxTokens: max_tokens,
+        conversationId,
+        metadata
+      }),
+      signal
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      throw new Error(errBody || `Stream request failed with status ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      // Keep the last potentially incomplete line in the buffer
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === 'chunk') onChunk?.(data.content);
+          if (data.type === 'done') onDone?.(data);
+          if (data.type === 'error') onError?.(data.message);
+        } catch (e) {
+          /* skip parse errors on partial chunks */
+        }
+      }
+    }
+
+    // Process any remaining buffer
+    if (buffer.startsWith('data: ')) {
+      try {
+        const data = JSON.parse(buffer.slice(6));
+        if (data.type === 'chunk') onChunk?.(data.content);
+        if (data.type === 'done') onDone?.(data);
+        if (data.type === 'error') onError?.(data.message);
+      } catch (e) { /* skip */ }
+    }
+  }
+
+  /**
    * Back-compat: simple single-turn ask (kept for convenience).
    * Not recommended for planning—use chat() instead.
    */

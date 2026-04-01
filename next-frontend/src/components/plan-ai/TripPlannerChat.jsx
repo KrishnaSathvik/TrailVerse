@@ -804,22 +804,90 @@ const TripPlannerChat = ({
           canSendMore: data.canSendMore
         });
       } else {
-        data = await aiService.chat({
-          messages: msgs,
+        // Use streaming for authenticated users
+        let streamedContent = '';
+        const streamAssistantId = Date.now() + 1;
+
+        // Add empty assistant message that will be filled by streaming
+        setMessages(prev => [...prev, {
+          id: streamAssistantId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
           provider: selectedProvider,
-          temperature: 0.4,
-          top_p: 0.9,
-          max_tokens: 2000,
-          conversationId: currentTripId,
-          signal: controller.signal,
-          metadata: {
-            parkCode: formData.parkCode,
-            parkName,
-            lat: formData.coordinates?.lat,
-            lon: formData.coordinates?.lon,
-            userId: user?.id
-          }
-        });
+          isStreaming: true
+        }]);
+
+        setIsGenerating(false); // Hide typing indicator, show streaming message instead
+
+        try {
+          await aiService.chatStream({
+            messages: msgs,
+            provider: selectedProvider,
+            temperature: 0.4,
+            top_p: 0.9,
+            max_tokens: 2000,
+            conversationId: currentTripId,
+            signal: controller.signal,
+            metadata: {
+              parkCode: formData.parkCode,
+              parkName,
+              lat: formData.coordinates?.lat,
+              lon: formData.coordinates?.lon,
+              userId: user?.id
+            },
+            onChunk: (chunk) => {
+              streamedContent += chunk;
+              const currentContent = streamedContent;
+              setMessages(prev => prev.map(m =>
+                m.id === streamAssistantId
+                  ? { ...m, content: currentContent }
+                  : m
+              ));
+            },
+            onDone: (result) => {
+              data = {
+                content: result.content,
+                provider: result.provider,
+                model: result.model
+              };
+              setMessages(prev => prev.map(m =>
+                m.id === streamAssistantId
+                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false }
+                  : m
+              ));
+            },
+            onError: (err) => {
+              console.error('Stream error:', err);
+            }
+          });
+        } catch (streamErr) {
+          if (streamErr.name === 'AbortError') throw streamErr;
+          console.error('Streaming failed, falling back to non-streaming:', streamErr.message);
+        }
+
+        // Fallback: if streaming did not produce a result, use regular non-streaming call
+        if (!data) {
+          // Remove the incomplete streaming message
+          setMessages(prev => prev.filter(m => m.id !== streamAssistantId));
+          setIsGenerating(true);
+          data = await aiService.chat({
+            messages: msgs,
+            provider: selectedProvider,
+            temperature: 0.4,
+            top_p: 0.9,
+            max_tokens: 2000,
+            conversationId: currentTripId,
+            signal: controller.signal,
+            metadata: {
+              parkCode: formData.parkCode,
+              parkName,
+              lat: formData.coordinates?.lat,
+              lon: formData.coordinates?.lon,
+              userId: user?.id
+            }
+          });
+        }
       }
 
       // Check if this is a conversion message

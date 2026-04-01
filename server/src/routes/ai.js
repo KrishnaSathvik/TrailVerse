@@ -33,93 +33,95 @@ try {
   console.warn('OpenAI SDK not available:', error.message);
 }
 
+// Helper: parse request body and prepare messages, facts, and system prompt
+async function prepareChatContext(body, logPrefix = '[AI]') {
+  let {
+    messages = [],
+    provider = 'claude',
+    model,
+    temperature = 0.4,
+    top_p = 0.9,
+    maxTokens = 2000,
+    systemPrompt,
+    metadata = {} // { parkCode, parkName, lat, lon, userId }
+  } = body;
+
+  if (!messages || !Array.isArray(messages)) {
+    throw Object.assign(new Error('Messages array is required'), { statusCode: 400 });
+  }
+
+  // Smart context management — trim long conversations
+  const MAX_CONTEXT_MESSAGES = 20;
+  if (messages.length > MAX_CONTEXT_MESSAGES) {
+    const systemMsg = messages.find(m => m.role === 'system');
+    const recentMessages = messages.filter(m => m.role !== 'system').slice(-15);
+    const olderMessages = messages.filter(m => m.role !== 'system').slice(0, -15);
+    const summaryText = `[Previous conversation summary: The user and AI discussed ${olderMessages.length} earlier messages about trip planning. Key topics covered include the initial trip setup and early recommendations.]`;
+
+    messages = [
+      ...(systemMsg ? [systemMsg] : []),
+      { role: 'system', content: summaryText },
+      ...recentMessages
+    ];
+  }
+
+  // Filter out system messages from the messages array (Claude API doesn't allow them)
+  const filteredMessages = messages.filter(m => m.role !== 'system');
+
+  // Extract the last user message for fact fetching
+  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+
+  // Fetch relevant facts based on user message and metadata
+  let weatherFacts = null;
+  let npsFacts = null;
+
+  try {
+    const factsResult = await fetchRelevantFacts({
+      userMessage: lastUserMessage,
+      parkCode: metadata.parkCode,
+      lat: metadata.lat,
+      lon: metadata.lon,
+      parkName: metadata.parkName
+    });
+    weatherFacts = factsResult.weatherFacts;
+    npsFacts = factsResult.npsFacts;
+    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts });
+  } catch (factsError) {
+    console.error(`${logPrefix} Facts fetching error:`, factsError.message);
+  }
+
+  // Build enhanced system prompt with facts
+  let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
+
+  if (npsFacts) {
+    enhancedSystemPrompt += `\n\nNPS FACTS for ${metadata.parkName || 'this park'}:\n${npsFacts}\n\nUse these in answers. Do not invent closures or permits.`;
+  }
+  if (weatherFacts) {
+    enhancedSystemPrompt += `\n\nLIVE WEATHER FACTS for ${metadata.parkName || 'this park'}:\n${weatherFacts}\nDo not guess weather beyond these facts.`;
+  }
+
+  const augmentedMessages = filteredMessages;
+
+  console.log(`${logPrefix} Augmented messages:`, {
+    hasSystemFacts: !!(npsFacts || weatherFacts),
+    totalMessageCount: augmentedMessages.length,
+    provider
+  });
+
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata };
+}
+
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
 router.post('/chat', protect, trackTokenUsage, async (req, res) => {
   try {
-    console.log('[AI] Chat request received:', { 
-      provider: req.body.provider, 
+    console.log('[AI] Chat request received:', {
+      provider: req.body.provider,
       messageCount: req.body.messages?.length,
       hasMetadata: !!req.body.metadata,
       metadata: req.body.metadata
     });
 
-    const { 
-      messages = [], 
-      provider = 'claude', 
-      model,
-      temperature = 0.4,
-      top_p = 0.9,
-      maxTokens = 2000,
-      systemPrompt,
-      metadata = {} // { parkCode, parkName, lat, lon, userId }
-    } = req.body;
-
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Messages array is required' });
-    }
-
-    // Smart context management — trim long conversations
-    const MAX_CONTEXT_MESSAGES = 20;
-    if (messages.length > MAX_CONTEXT_MESSAGES) {
-      // Keep the system message (first), last 15 user/assistant messages
-      const systemMsg = messages.find(m => m.role === 'system');
-      const recentMessages = messages.filter(m => m.role !== 'system').slice(-15);
-
-      // Create a summary of older messages
-      const olderMessages = messages.filter(m => m.role !== 'system').slice(0, -15);
-      const summaryText = `[Previous conversation summary: The user and AI discussed ${olderMessages.length} earlier messages about trip planning. Key topics covered include the initial trip setup and early recommendations.]`;
-
-      messages = [
-        ...(systemMsg ? [systemMsg] : []),
-        { role: 'system', content: summaryText },
-        ...recentMessages
-      ];
-    }
-
-    // Filter out system messages from the messages array (Claude API doesn't allow them)
-    const filteredMessages = messages.filter(m => m.role !== 'system');
-
-    // Extract the last user message for fact fetching
-    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
-
-    // Fetch relevant facts based on user message and metadata
-    let weatherFacts = null;
-    let npsFacts = null;
-    
-    try {
-      const factsResult = await fetchRelevantFacts({
-        userMessage: lastUserMessage,
-        parkCode: metadata.parkCode,
-        lat: metadata.lat,
-        lon: metadata.lon,
-        parkName: metadata.parkName
-      });
-      weatherFacts = factsResult.weatherFacts;
-      npsFacts = factsResult.npsFacts;
-      console.log('[AI] Facts fetched:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts });
-    } catch (factsError) {
-      console.error('[AI] Facts fetching error:', factsError.message);
-      // Continue without facts if fetching fails
-    }
-
-    // Build enhanced system prompt with facts
-    let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
-    
-    if (npsFacts) {
-      enhancedSystemPrompt += `\n\nNPS FACTS for ${metadata.parkName || 'this park'}:\n${npsFacts}\n\nUse these in answers. Do not invent closures or permits.`;
-    }
-    if (weatherFacts) {
-      enhancedSystemPrompt += `\n\nLIVE WEATHER FACTS for ${metadata.parkName || 'this park'}:\n${weatherFacts}\nDo not guess weather beyond these facts.`;
-    }
-
-    // Use the filtered conversation messages without system role messages
-    const augmentedMessages = filteredMessages;
-    
-    console.log('[AI] Augmented messages:', { 
-      hasSystemFacts: !!(npsFacts || weatherFacts),
-      totalMessageCount: augmentedMessages.length,
-      provider 
-    });
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages } = await prepareChatContext(req.body);
 
     let response;
 
@@ -297,6 +299,95 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       errorType: error.type || 'unknown',
       suggestion: 'Please try again in a moment or switch providers'
     });
+  }
+});
+
+// Streaming chat endpoint — SSE for authenticated users
+router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
+  try {
+    console.log('[AI] Stream chat request received:', {
+      provider: req.body.provider,
+      messageCount: req.body.messages?.length,
+      hasMetadata: !!req.body.metadata,
+      metadata: req.body.metadata
+    });
+
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages } = await prepareChatContext(req.body, '[AI Stream]');
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+      if (provider === 'claude') {
+        if (!anthropic) {
+          res.write(`data: ${JSON.stringify({ type: 'error', message: 'Claude API key not configured' })}\n\n`);
+          return res.end();
+        }
+
+        const stream = await anthropic.messages.create({
+          model: model || 'claude-sonnet-4-6',
+          max_tokens: maxTokens,
+          temperature: temperature,
+          system: enhancedSystemPrompt,
+          messages: augmentedMessages,
+          stream: true
+        });
+
+        let fullContent = '';
+        for await (const chunk of stream) {
+          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+            fullContent += chunk.delta.text;
+            res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk.delta.text })}\n\n`);
+          }
+          if (chunk.type === 'message_stop') {
+            res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'claude', model: model || 'claude-sonnet-4-6' })}\n\n`);
+          }
+        }
+      } else if (provider === 'openai') {
+        if (!openai) {
+          res.write(`data: ${JSON.stringify({ type: 'error', message: 'OpenAI API key not configured' })}\n\n`);
+          return res.end();
+        }
+
+        const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
+
+        const stream = await openai.chat.completions.create({
+          model: model || 'gpt-4.1',
+          messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
+          temperature: temperature,
+          max_tokens: maxTokens,
+          stream: true
+        });
+
+        let fullContent = '';
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content || '';
+          if (text) {
+            fullContent += text;
+            res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
+          }
+        }
+        res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'openai', model: model || 'gpt-4.1' })}\n\n`);
+      } else {
+        res.write(`data: ${JSON.stringify({ type: 'error', message: 'Invalid provider. Use "claude" or "openai"' })}\n\n`);
+      }
+
+      res.end();
+    } catch (error) {
+      console.error('[AI Stream] Streaming error:', error.message);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    // prepareChatContext validation error (headers not yet sent)
+    console.error('[AI Stream] Setup error:', error.message);
+    if (error.statusCode === 400) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to start AI stream', details: error.message });
   }
 });
 
