@@ -296,24 +296,6 @@ const MessageBubble = ({
                 )}
               </button>
 
-              {/* Export button for itinerary messages */}
-              {!isUser && onExport && message &&
-                (message.includes('Day 1') || message.includes('## Day') ||
-                 message.toLowerCase().includes('itinerary')) && (
-                <button
-                  onClick={() => onExport('copy', message)}
-                  className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
-                  style={{
-                    color: 'var(--text-tertiary)',
-                    backgroundColor: 'var(--surface-hover)'
-                  }}
-                  aria-label="Copy plan"
-                  title="Copy plan"
-                >
-                  <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
-              )}
-
               {onRegenerate && (
                 <button
                   onClick={onRegenerate}
