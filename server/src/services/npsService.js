@@ -1108,22 +1108,6 @@ class NPSService {
       });
       const data = response.data.data;
 
-      // Diagnostic: log first webcam's fields to identify image/url structure
-      if (data?.[0]) {
-        const sample = data[0];
-        console.log(`📹 Webcam fields for ${parkCode}:`, JSON.stringify({
-          title: sample.title,
-          status: sample.status,
-          statusMessage: sample.statusMessage,
-          url: sample.url,
-          images: sample.images?.length || 0,
-          firstImage: sample.images?.[0],
-          isStreaming: sample.isStreaming,
-          streamUrl: sample.streamUrl,
-          allKeys: Object.keys(sample)
-        }));
-      }
-
       this._setEndpointCache(cacheKey, data);
       return data;
     } catch (error) {
@@ -1334,20 +1318,6 @@ class NPSService {
 
         const events = response.data.data;
         if (!events || events.length === 0) break;
-
-        // Log first event's date fields on first page to diagnose format
-        if (page === 0 && events[0]) {
-          const sample = events[0];
-          console.log(`📅 Sample event date fields:`, JSON.stringify({
-            datestart: sample.datestart,
-            dateend: sample.dateend,
-            date: sample.date,
-            dates: sample.dates,
-            recurrencedates: sample.recurrencedates,
-            title: sample.title,
-            allDateKeys: Object.keys(sample).filter(k => /date/i.test(k))
-          }));
-        }
 
         totalFetched += events.length;
 

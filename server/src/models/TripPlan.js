@@ -6,6 +6,11 @@ const tripPlanSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  shareId: {
+    type: String,
+    unique: true,
+    sparse: true // allows null values
+  },
   title: {
     type: String,
     default: 'New Trip Plan'

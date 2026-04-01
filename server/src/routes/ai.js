@@ -58,9 +58,27 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
+    // Smart context management — trim long conversations
+    const MAX_CONTEXT_MESSAGES = 20;
+    if (messages.length > MAX_CONTEXT_MESSAGES) {
+      // Keep the system message (first), last 15 user/assistant messages
+      const systemMsg = messages.find(m => m.role === 'system');
+      const recentMessages = messages.filter(m => m.role !== 'system').slice(-15);
+
+      // Create a summary of older messages
+      const olderMessages = messages.filter(m => m.role !== 'system').slice(0, -15);
+      const summaryText = `[Previous conversation summary: The user and AI discussed ${olderMessages.length} earlier messages about trip planning. Key topics covered include the initial trip setup and early recommendations.]`;
+
+      messages = [
+        ...(systemMsg ? [systemMsg] : []),
+        { role: 'system', content: summaryText },
+        ...recentMessages
+      ];
+    }
+
     // Filter out system messages from the messages array (Claude API doesn't allow them)
     const filteredMessages = messages.filter(m => m.role !== 'system');
-    
+
     // Extract the last user message for fact fetching
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 

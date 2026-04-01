@@ -1945,6 +1945,20 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                     }
                   }}
                   initialFeedback={message.userFeedback}
+                  onRegenerate={message.role === 'assistant' ? async () => {
+                    const msgIndex = messages.indexOf(message);
+                    const userMsg = messages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
+                    if (userMsg) {
+                      setMessages(prev => prev.filter(m => m.id !== message.id));
+                      await handleSendMessage(userMsg.content);
+                    }
+                  } : undefined}
+                  onExport={message.role === 'assistant' ? (action, content) => {
+                    if (action === 'copy') {
+                      navigator.clipboard.writeText(content);
+                      showToast('Plan copied to clipboard!', 'success');
+                    }
+                  } : undefined}
                 />
               ))}
 

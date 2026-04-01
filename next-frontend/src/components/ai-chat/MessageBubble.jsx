@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check } from '@components/icons';
+import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw } from '@components/icons';
 
 
 const MessageBubble = ({
@@ -9,7 +9,9 @@ const MessageBubble = ({
   isUser = false,
   timestamp,
   onCopy,
+  onRegenerate,
   onFeedback,
+  onExport,
   userAvatar = null,
   messageData = null, // Additional data for feedback
   initialFeedback = null // Initial feedback state from database ('up' or 'down')
@@ -280,7 +282,7 @@ const MessageBubble = ({
               <button
                 onClick={handleCopy}
                 className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
-                style={{ 
+                style={{
                   color: copied ? 'var(--accent-green)' : 'var(--text-tertiary)',
                   backgroundColor: copied ? 'var(--accent-green)/10' : 'var(--surface-hover)'
                 }}
@@ -293,6 +295,39 @@ const MessageBubble = ({
                   <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 )}
               </button>
+
+              {/* Export button for itinerary messages */}
+              {!isUser && onExport && message &&
+                (message.includes('Day 1') || message.includes('## Day') ||
+                 message.toLowerCase().includes('itinerary')) && (
+                <button
+                  onClick={() => onExport('copy', message)}
+                  className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
+                  style={{
+                    color: 'var(--text-tertiary)',
+                    backgroundColor: 'var(--surface-hover)'
+                  }}
+                  aria-label="Copy plan"
+                  title="Copy plan"
+                >
+                  <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              )}
+
+              {onRegenerate && (
+                <button
+                  onClick={onRegenerate}
+                  className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
+                  style={{
+                    color: 'var(--text-tertiary)',
+                    backgroundColor: 'var(--surface-hover)'
+                  }}
+                  aria-label="Regenerate response"
+                  title="Regenerate"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+              )}
 
               {onFeedback && (
                 <>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Smile } from '@components/icons';
+import { Send, Paperclip, Smile, Microphone } from '@components/icons';
 
 const ChatInput = ({
   onSend,
@@ -10,7 +10,42 @@ const ChatInput = ({
 }) => {
   const [message, setMessage] = useState('');
   const [isComposing, setIsComposing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Check for browser SpeechRecognition support
+  const SpeechRecognition = typeof window !== 'undefined'
+    ? window.SpeechRecognition || window.webkitSpeechRecognition
+    : null;
+
+  const handleMicClick = () => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setMessage(prev => prev ? `${prev} ${transcript}` : transcript);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.start();
+  };
 
   // autosize once per value change (no infinite growth)
   useEffect(() => {
@@ -107,10 +142,25 @@ const ChatInput = ({
             >
               <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
+            {SpeechRecognition && (
+              <button
+                type="button"
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation ${isListening ? 'animate-pulse' : ''}`}
+                style={{
+                  color: isListening ? 'var(--accent-green)' : 'var(--text-tertiary)',
+                  backgroundColor: 'transparent'
+                }}
+                title={isListening ? 'Stop listening' : 'Voice input'}
+                onClick={handleMicClick}
+                aria-label={isListening ? 'Stop listening' : 'Voice input'}
+              >
+                <Microphone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </button>
+            )}
             <button
               type="button"
               className="p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation"
-              style={{ 
+              style={{
                 color: 'var(--text-tertiary)',
                 backgroundColor: 'transparent'
               }}

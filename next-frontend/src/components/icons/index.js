@@ -204,5 +204,8 @@ export { FolderSimpleIcon as FolderSimple } from '@phosphor-icons/react';
 export { SmileyIcon as Smile } from '@phosphor-icons/react';
 export { CookieIcon as Cookie } from '@phosphor-icons/react';
 
+// Voice
+export { MicrophoneIcon as Microphone } from '@phosphor-icons/react';
+
 // Weather extras
 export { SnowflakeIcon as Snowflake } from '@phosphor-icons/react';

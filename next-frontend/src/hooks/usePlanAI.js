@@ -283,14 +283,8 @@ export default function usePlanAI(tripId) {
     if (user) {
       // If userTrips is available, process it
       if (userTrips) {
-        console.log('🔄 PlanAIPage: Raw userTrips from DB:', userTrips);
-        console.log('🔄 PlanAIPage: Trip statuses:', userTrips.map(t => ({ id: t._id || t.id, status: t.status, title: t.title || t.parkName })));
-
         const activeTrips = userTrips.filter(t => t.status === 'active');
         const archivedTripsList = userTrips.filter(t => t.status === 'archived');
-
-        console.log('🔄 PlanAIPage: Active trips:', activeTrips.length);
-        console.log('🔄 PlanAIPage: Archived trips:', archivedTripsList.length);
 
         setTripHistory(activeTrips.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
         setArchivedTrips(archivedTripsList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
@@ -317,7 +311,7 @@ export default function usePlanAI(tripId) {
       if (savedState) {
         // Clear the saved state since we're not restoring it
         localStorage.removeItem('planai-chat-state');
-        console.log('🔄 Cleared saved chat state - user will start on main page');
+        // Cleared saved chat state - user will start on main page
       }
 
       setIsRestoringState(false);
@@ -330,7 +324,7 @@ export default function usePlanAI(tripId) {
             setShowChat(parsedState.showChat);
             setChatFormData(parsedState.chatFormData);
             setSelectedParkName(parsedState.selectedParkName || '');
-            console.log('🔄 Restored chat state from localStorage');
+            // Restored chat state from localStorage
           }
         } catch (error) {
           console.error('Error loading saved chat state:', error);
@@ -567,15 +561,12 @@ export default function usePlanAI(tripId) {
 
   const handleArchiveTrip = async (tripId) => {
     try {
-      console.log('🗄️ Archiving trip:', tripId);
-      const response = await tripService.archiveTrip(tripId);
-      console.log('🗄️ Archive response:', response);
+      await tripService.archiveTrip(tripId);
 
       // Immediately update local state
       const tripToArchive = tripHistory.find(trip => (trip._id || trip.id) === tripId);
       if (tripToArchive) {
         const updatedTrip = { ...tripToArchive, status: 'archived' };
-        console.log('🗄️ Moving trip to archived:', updatedTrip);
         setTripHistory(prev => prev.filter(trip => (trip._id || trip.id) !== tripId));
         setArchivedTrips(prev => [updatedTrip, ...prev]);
 
@@ -584,7 +575,6 @@ export default function usePlanAI(tripId) {
       }
 
       // Also refresh from backend to ensure consistency
-      console.log('🗄️ Refreshing trips from backend...');
       await refetchUserTrips();
 
       showToast('Trip archived successfully', 'success');
@@ -597,15 +587,12 @@ export default function usePlanAI(tripId) {
   const handleRestoreTrip = async (tripId) => {
     setRestoringTripId(tripId);
     try {
-      console.log('📦 Restoring trip:', tripId);
-      const response = await tripService.unarchiveTrip(tripId);
-      console.log('📦 Restore response:', response);
+      await tripService.unarchiveTrip(tripId);
 
       // Immediately update local state
       const tripToRestore = archivedTrips.find(trip => (trip._id || trip.id) === tripId);
       if (tripToRestore) {
         const updatedTrip = { ...tripToRestore, status: 'active' };
-        console.log('📦 Moving trip to active:', updatedTrip);
         setArchivedTrips(prev => prev.filter(trip => (trip._id || trip.id) !== tripId));
         setTripHistory(prev => [updatedTrip, ...prev]);
 
@@ -614,7 +601,6 @@ export default function usePlanAI(tripId) {
       }
 
       // Also refresh from backend to ensure consistency
-      console.log('📦 Refreshing trips from backend...');
       await refetchUserTrips();
 
       showToast('Trip restored successfully', 'success');
