@@ -24,13 +24,6 @@ async function getAllParks() {
 
 const featuredParkCodes = ['yell', 'yose', 'grca', 'zion', 'glac', 'acad'];
 
-const featurePills = [
-  ['AI Trip Planning', 'Smart itineraries that match your style', 'Sparkles'],
-  ['Real-time Updates', 'Weather and current conditions', 'Clock'],
-  ['Expert Guidance', 'Local insights and trail recommendations', 'Mountain'],
-  ['Privacy First', 'Your data stays with you', 'Shield'],
-];
-
 export default async function LandingPage() {
   const allParks = await getAllParks();
   const featuredParks = featuredParkCodes
@@ -151,30 +144,6 @@ export default async function LandingPage() {
               >
                 View All 470+ Parks
               </Link>
-            </div>
-          </div>
-        </section>
-
-        <section id="features" className="relative z-10 py-16" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {featurePills.map(([title, description, iconName]) => (
-                <div
-                  key={title}
-                  className="rounded-2xl p-5 backdrop-blur group hover:-translate-y-1 transition-all duration-300"
-                  style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
-                >
-                  <div className="flex gap-4 items-start">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 flex-shrink-0 transition-transform group-hover:scale-110" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-                      <IconGlyph name={iconName} className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold tracking-tight mb-1" style={{ color: 'var(--text-primary)' }}>{title}</p>
-                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{description}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </section>
