@@ -61,7 +61,7 @@ const SEO = ({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'TrailVerse',
-    alternateName: 'National Parks Explorer USA',
+    alternateName: 'TrailVerse',
     url: 'https://www.nationalparksexplorerusa.com',
     description,
     potentialAction: {

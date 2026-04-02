@@ -6,8 +6,54 @@ const npsService = require('../services/npsService');
 // @access  Public
 exports.getAllEvents = async (req, res, next) => {
   try {
-    const { parkCode, category, upcoming, page = 1, limit = 10 } = req.query;
+    const {
+      parkCode,
+      category,
+      upcoming,
+      summary,
+      page = 1,
+      limit = 10,
+      stateCode,
+      q,
+      dateStart,
+      dateEnd,
+      eventType,
+      expandRecurring,
+    } = req.query;
     const skip = (page - 1) * limit;
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0];
+
+    if (summary === 'true') {
+      const customQuery = {};
+      if (parkCode) customQuery.parkCode = parkCode;
+      if (category) customQuery.category = category;
+      if (upcoming === 'true') {
+        customQuery.date = { $gte: new Date() };
+        customQuery.status = 'upcoming';
+      }
+
+      const customCount = await Event.countDocuments(customQuery);
+      const npsCount = await npsService.getEventsTotal({
+        parkCode,
+        stateCode,
+        q,
+        dateStart: dateStart || (upcoming === 'true' ? formattedToday : undefined),
+        dateEnd,
+        eventType,
+        expandRecurring: expandRecurring === 'true',
+      });
+
+      return res.status(200).json({
+        success: true,
+        count: customCount + npsCount,
+        data: [],
+        meta: {
+          customCount,
+          npsCount,
+        }
+      });
+    }
 
     // Build query for custom events
     const query = {};
@@ -28,11 +74,18 @@ exports.getAllEvents = async (req, res, next) => {
     // Get NPS events if no specific park code or if we want all events
     let npsEvents = [];
     try {
-      if (parkCode) {
-        npsEvents = await npsService.getEventsByPark(parkCode);
-      } else {
-        npsEvents = await npsService.getAllEvents();
-      }
+      npsEvents = await npsService.getAllEvents({
+        parkCode,
+        stateCode,
+        q,
+        dateStart: dateStart || (upcoming === 'true' ? formattedToday : undefined),
+        dateEnd,
+        eventType,
+        expandRecurring: expandRecurring === 'true',
+        includePast: upcoming !== 'true',
+        pageSize: 100,
+        limit: Number(limit) || 500,
+      });
     } catch (npsError) {
       console.warn('NPS Events API error:', npsError.message);
       // Continue without NPS events if API fails

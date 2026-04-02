@@ -15,7 +15,7 @@ const AdminSettingsPage = () => {
   const [settings, setSettings] = useState({
     // General Settings
     siteName: 'TrailVerse',
-    siteDescription: 'National Parks Explorer',
+    siteDescription: 'Smart trip planning for America\'s national parks',
     contactEmail: 'trailverseteam@gmail.com',
     supportEmail: 'trailverseteam@gmail.com',
 

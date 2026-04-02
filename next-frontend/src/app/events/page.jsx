@@ -5,36 +5,136 @@ import {
   MapPin, Tag, Filter,
   Search, X, CalendarDays,
   Sparkles, TrendingUp,
-  AlertCircle, List
+  AlertCircle, Grid
 } from '@components/icons';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/context/AuthContext';
-import { useEvents } from '@/hooks/useEvents';
+import { useEvents, useEventSummary } from '@/hooks/useEvents';
 import { useAllParks } from '@/hooks/useParks';
 import { useSavedEvents } from '@/hooks/useSavedEvents';
 import EventCard from '@/components/events/EventCard';
 import EventListItem from '@/components/events/EventListItem';
 
+const STATE_NAMES = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+  DC: 'District of Columbia',
+  AS: 'American Samoa',
+  GU: 'Guam',
+  MP: 'Northern Mariana Islands',
+  PR: 'Puerto Rico',
+  VI: 'U.S. Virgin Islands'
+};
+
 const EventsPage = () => {
+  const formatLocalDate = (date) => (
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  );
+
+  const parseLocalDate = (dateString) => {
+    if (!dateString) return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+    if (match) {
+      const [, year, month, day] = match;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+
+    const parsed = new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  };
+
   const { isAuthenticated } = useAuth();
-  const { data: eventsData, isLoading, error } = useEvents();
-  const { data: allParksData } = useAllParks();
-  const allParks = allParksData?.data;
-  const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
-
-
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedMonthOffset, setSelectedMonthOffset] = useState(0);
 
   const [filters, setFilters] = useState({
-    parks: [],
-    states: [],
     categories: [],
-    dateRange: 'upcoming' // Default to upcoming events instead of all
   });
+  const monthOptions = useMemo(() => (
+    Array.from({ length: 12 }, (_, offset) => {
+      const baseDate = new Date();
+      const monthDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + offset, 1);
+      const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+      const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+
+      return {
+        offset,
+        label: monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        dateStart: formatLocalDate(monthStart),
+        dateEnd: formatLocalDate(monthEnd),
+      };
+    })
+  ), []);
+  const selectedMonth = monthOptions[selectedMonthOffset] || monthOptions[0];
+  const eventQueryOptions = useMemo(() => {
+    return {
+      upcoming: 'true',
+      dateStart: selectedMonth?.dateStart || null,
+      dateEnd: selectedMonth?.dateEnd || null,
+      limit: 150,
+    };
+  }, [selectedMonth]);
+  const { data: eventsData, isLoading, error } = useEvents(eventQueryOptions);
+  const { data: futureSummary } = useEventSummary({ upcoming: 'true' });
+  const { data: allParksData } = useAllParks();
+  const allParks = allParksData?.data || [];
+  const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,24 +153,21 @@ const EventsPage = () => {
     { id: 'cultural', label: 'Cultural Events', color: 'bg-purple-500' }
   ];
 
-  // Helper function to get park states
-  const getParkStates = (parkCode) => {
-    if (!parkCode || !allParks) return [];
-    const park = allParks.find(p => p.parkCode === parkCode);
-    if (!park || !park.states) return [];
-    // NPS API returns states as a comma-separated string like "CA,NV"
-    return park.states.split(',').map(s => s.trim());
-  };
-
   // Process and enhance NPS events data
   const events = useMemo(() => {
     if (!eventsData || eventsData.length === 0) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    return eventsData.map(event => {
+    return eventsData.map((event, index) => {
       const getEventCategory = (event) => {
+        const typesText = Array.isArray(event.types)
+          ? event.types.map(type => String(type).toLowerCase()).join(' ')
+          : '';
+        const categoryText = String(event.category || '').toLowerCase();
         const title = (event.title || '').toLowerCase();
         const description = (event.description || '').toLowerCase();
-        const text = `${title} ${description}`;
+        const text = `${categoryText} ${typesText} ${title} ${description}`;
 
         if (text.includes('ranger') || text.includes('ranger program') || text.includes('ranger talk')) return 'ranger-programs';
         if (text.includes('workshop') || text.includes('class') || text.includes('photography') || text.includes('field class')) return 'workshops';
@@ -84,62 +181,43 @@ const EventsPage = () => {
       };
 
       const parseEventDate = (dateString) => {
-        if (!dateString) return null;
-        try {
-          const date = new Date(dateString);
-          const today = new Date(); // Use actual current date
-          today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+        return parseLocalDate(dateString);
+      };
+      const resolveDisplayDate = (rawEvent) => {
+        const recurringDates = Array.isArray(rawEvent.dates)
+          ? rawEvent.dates
+              .map(parseEventDate)
+              .filter(Boolean)
+              .sort((a, b) => a - b)
+          : [];
+        const nextRecurringDate = recurringDates.find((date) => date >= today);
 
-          // Handle invalid dates or dates before today
-          if (isNaN(date.getTime()) || date < today) {
-            return null;
-          }
-
-          // Normalize the date to start of day for consistent comparison
-          date.setHours(0, 0, 0, 0);
-          return date;
-        } catch {
-          return null;
+        if (nextRecurringDate) {
+          return nextRecurringDate;
         }
-      };
 
-      const getParkName = (parkCode) => {
-        if (!parkCode || !allParks) return 'National Park';
-        const park = allParks.find(p => p.parkCode === parkCode);
-        return park ? park.fullName : `${parkCode.toUpperCase()} National Park`;
-      };
+        const directDate = parseEventDate(rawEvent.date);
+        if (directDate && directDate >= today) {
+          return directDate;
+        }
 
-      // Parse the event date - prioritize datestart for recurring events
-      let eventDate = parseEventDate(event.datestart || event.date);
-      const parkName = getParkName(event.parkCode);
-      const today = new Date(); // Use actual current date
-      today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
-
-      // For recurring events, use the datestart if it's in the future
-      if (!eventDate || eventDate < today) {
-        const startDate = parseEventDate(event.datestart);
+        const startDate = parseEventDate(rawEvent.datestart);
         if (startDate && startDate >= today) {
-          eventDate = startDate;
-        } else if (event.datestart && event.dateend) {
-          // For recurring events with a date range, generate a date within the range
-          const startDate = new Date(event.datestart);
-          const endDate = new Date(event.dateend);
-
-          if (endDate >= today) {
-            // Generate a realistic date within the recurring period
-            const daysInRange = Math.floor((endDate - Math.max(startDate, today)) / (1000 * 60 * 60 * 24));
-            if (daysInRange > 0) {
-              const randomDays = Math.floor(Math.random() * Math.min(daysInRange, 90));
-              eventDate = new Date(Math.max(startDate, today));
-              eventDate.setDate(eventDate.getDate() + randomDays);
-            }
-          }
+          return startDate;
         }
-      }
 
-      // If still no valid future date, skip this event
-      if (!eventDate || eventDate < today) {
-        return null; // This will be filtered out
+        return directDate || startDate || parseEventDate(rawEvent.dateend);
+      };
+
+      const resolvedParkCode = event.parkCode || event.sitecode || '';
+      const matchedPark = resolvedParkCode && allParks
+        ? allParks.find(p => p.parkCode === resolvedParkCode)
+        : null;
+      const parkName = event.parkfullname || matchedPark?.fullName || (resolvedParkCode ? `${resolvedParkCode.toUpperCase()} National Park` : 'National Park');
+      const eventDate = resolveDisplayDate(event);
+
+      if (!eventDate) {
+        return null;
       }
 
       // Helper function to strip HTML tags and clean up text
@@ -156,16 +234,22 @@ const EventsPage = () => {
           .trim(); // Remove leading/trailing whitespace
       };
 
+      const baseId = event.id || `${resolvedParkCode}-${event.title?.replace(/\s+/g, '-').toLowerCase()}`;
+      const eventDateKey = eventDate ? eventDate.toISOString().split('T')[0] : 'unknown-date';
+
       return {
-        id: event.id || `${event.parkCode}-${event.title?.replace(/\s+/g, '-').toLowerCase()}`,
+        id: baseId,
+        renderKey: `${baseId}-${resolvedParkCode || 'unknown-park'}-${eventDateKey}-${index}`,
         title: event.title || 'Untitled Event',
         description: stripHtml(event.description),
-        parkCode: event.parkCode,
+        parkCode: resolvedParkCode,
         parkName,
-        states: getParkStates(event.parkCode),
+        states: matchedPark?.states ? matchedPark.states.split(',').map(s => s.trim()) : [],
         category: getEventCategory(event),
-        date: eventDate ? eventDate.toISOString().split('T')[0] : null,
-        eventid: event.id, // Use the UUID format ID for NPS event links
+        date: eventDate
+          ? `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`
+          : null,
+        eventid: event.id,
         time: (() => {
           if (typeof event.times === 'string') return event.times;
           if (Array.isArray(event.times) && event.times.length > 0) {
@@ -187,56 +271,62 @@ const EventsPage = () => {
         })(),
         location: event.location || 'Location TBD',
         difficulty: 'easy',
-        price: event.feeInfo && event.feeInfo.trim() !== '' ? event.feeInfo : 'Free',
-        isFree: !event.feeInfo || event.feeInfo.toLowerCase().includes('free'),
-        contactInfo: event.contactInfo,
+        price: event.feeinfo && event.feeinfo.trim() !== '' ? event.feeinfo : 'Free',
+        isFree: Boolean(event.isfree) || !event.feeinfo || event.feeinfo.toLowerCase().includes('free'),
+        contactInfo: event.contactname || event.contactemailaddress || event.contacttelephonenumber,
         ageRange: event.ageRange,
-        accessibility: event.accessibility
+        accessibility: event.accessibility,
+        detailsUrl: event.regresurl || (event.id ? `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}` : null),
+        dateLabel: event.isrecurring && event.dateend
+          ? `${eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • Recurring`
+          : null,
       };
-    }).filter(event => event && event.date);
+    }).filter(event => event && event.date).filter((event, index, list) => (
+      list.findIndex((candidate) => (
+        candidate.id === event.id &&
+        candidate.date === event.date &&
+        candidate.time === event.time &&
+        candidate.parkCode === event.parkCode
+      )) === index
+    ));
   }, [eventsData, allParks]);
 
   // Filter and sort events by date
   const filteredEvents = useMemo(() => {
-    const filtered = events.filter(event => {
+    const selectedMonthStart = selectedMonth?.dateStart ? parseLocalDate(selectedMonth.dateStart) : null;
+    const selectedMonthEnd = selectedMonth?.dateEnd ? parseLocalDate(selectedMonth.dateEnd) : null;
 
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        if (!event.title.toLowerCase().includes(search) &&
-            !event.description.toLowerCase().includes(search) &&
-            !event.parkName.toLowerCase().includes(search)) {
+    const filtered = events.filter(event => {
+      const eventDate = parseLocalDate(event.date);
+
+      if (!eventDate) {
+        return false;
+      }
+
+      if (selectedMonthStart && selectedMonthEnd) {
+        if (eventDate < selectedMonthStart || eventDate > selectedMonthEnd) {
           return false;
         }
       }
 
-      if (filters.parks.length > 0 && !filters.parks.includes(event.parkCode)) {
-        return false;
-      }
-
-      if (filters.states.length > 0) {
-        // Check if event's park is in any of the selected states
-        const hasMatchingState = event.states.some(state => filters.states.includes(state));
-        if (!hasMatchingState) {
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        const searchableStates = event.states.join(' ').toLowerCase();
+        const searchableStateNames = event.states
+          .map(stateCode => STATE_NAMES[stateCode] || stateCode)
+          .join(' ')
+          .toLowerCase();
+        if (!event.title.toLowerCase().includes(search) &&
+            !event.description.toLowerCase().includes(search) &&
+            !event.parkName.toLowerCase().includes(search) &&
+            !searchableStates.includes(search) &&
+            !searchableStateNames.includes(search)) {
           return false;
         }
       }
 
       if (filters.categories.length > 0 && !filters.categories.includes(event.category)) {
         return false;
-      }
-
-      const eventDate = new Date(event.date);
-      const today = new Date(); // Use actual current date
-      today.setHours(0, 0, 0, 0);
-
-      if (filters.dateRange === 'upcoming') {
-        return eventDate >= today;
-      } else if (filters.dateRange === 'this-month') {
-        return eventDate.getMonth() === today.getMonth() && eventDate.getFullYear() === today.getFullYear();
-      } else if (filters.dateRange === 'next-month') {
-        const nextMonth = new Date(today);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        return eventDate.getMonth() === nextMonth.getMonth() && eventDate.getFullYear() === nextMonth.getFullYear();
       }
 
       return true;
@@ -255,7 +345,7 @@ const EventsPage = () => {
       // Secondary sort: by title (alphabetical) for events on the same date
       return a.title.localeCompare(b.title);
     });
-  }, [events, searchTerm, filters]);
+  }, [events, searchTerm, filters, selectedMonth]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
@@ -266,39 +356,21 @@ const EventsPage = () => {
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filters]);
+  }, [searchTerm, filters, selectedMonthOffset]);
 
-  // Group events by month for calendar view (use paginated events)
+  // Group events by month for calendar view
   const eventsByMonth = useMemo(() => {
     const grouped = {};
-    paginatedEvents.forEach(event => {
+    filteredEvents.forEach(event => {
       const date = new Date(event.date);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      const key = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
       if (!grouped[key]) {
         grouped[key] = [];
       }
       grouped[key].push(event);
     });
     return grouped;
-  }, [paginatedEvents]);
-
-  const toggleParkFilter = (parkCode) => {
-    setFilters(prev => ({
-      ...prev,
-      parks: prev.parks.includes(parkCode)
-        ? prev.parks.filter(p => p !== parkCode)
-        : [...prev.parks, parkCode]
-    }));
-  };
-
-  const toggleStateFilter = (stateCode) => {
-    setFilters(prev => ({
-      ...prev,
-      states: prev.states.includes(stateCode)
-        ? prev.states.filter(s => s !== stateCode)
-        : [...prev.states, stateCode]
-    }));
-  };
+  }, [filteredEvents]);
 
   const toggleCategoryFilter = (categoryId) => {
     setFilters(prev => ({
@@ -311,65 +383,15 @@ const EventsPage = () => {
 
   const clearAllFilters = () => {
     setFilters({
-      parks: [],
-      states: [],
       categories: [],
-      dateRange: 'upcoming'
     });
     setSearchTerm('');
+    setSelectedMonthOffset(0);
     setCurrentPage(1); // Reset to first page
   };
 
   const activeFiltersCount =
-    filters.parks.length +
-    filters.states.length +
-    filters.categories.length +
-    (filters.dateRange !== 'upcoming' ? 1 : 0);
-
-  // Get unique park codes from events
-  const availableParks = useMemo(() => {
-    const parkCodes = [...new Set(events.map(e => e.parkCode))];
-    return parkCodes.map(parkCode => {
-      const event = events.find(e => e.parkCode === parkCode);
-      return {
-        code: parkCode,
-        name: event?.parkName || `${parkCode.toUpperCase()} National Park`
-      };
-    });
-  }, [events]);
-
-  // Get unique states from events with full state names
-  const availableStates = useMemo(() => {
-    const stateNames = {
-      'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
-      'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
-      'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
-      'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
-      'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
-      'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
-      'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
-      'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
-      'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
-      'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
-      'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
-      'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
-      'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia',
-      'AS': 'American Samoa', 'GU': 'Guam', 'MP': 'Northern Mariana Islands',
-      'PR': 'Puerto Rico', 'VI': 'U.S. Virgin Islands'
-    };
-
-    const stateCodes = new Set();
-    events.forEach(event => {
-      event.states.forEach(state => stateCodes.add(state));
-    });
-
-    return Array.from(stateCodes)
-      .map(code => ({
-        code,
-        name: stateNames[code] || code
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [events]);
+    filters.categories.length;
 
   return (
     <div className="events-page min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -379,10 +401,6 @@ const EventsPage = () => {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-8 sm:py-20">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/20 to-transparent" />
-        </div>
-
         <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
 
           <div className="mt-3 sm:mt-6">
@@ -449,14 +467,10 @@ const EventsPage = () => {
           {/* Quick Stats */}
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Total Events', value: events.length, icon: CalendarDays },
-                { label: 'This Month', value: (() => {
-                  const today = new Date();
-                  const monthKey = `${today.getFullYear()}-${today.getMonth()}`;
-                  return eventsByMonth[monthKey]?.length || 0;
-                })(), icon: TrendingUp },
+                { label: 'Future Events', value: futureSummary.count || 0, icon: CalendarDays },
+                { label: selectedMonth?.label || 'Selected Month', value: filteredEvents.length, icon: TrendingUp },
                 { label: 'Categories', value: categories.length, icon: Tag },
-                { label: 'Parks Featured', value: availableParks.length, icon: MapPin }
+                { label: 'Parks This Month', value: new Set(filteredEvents.map(event => event.parkCode).filter(Boolean)).size, icon: MapPin }
               ].map((stat, index) => {
                 const Icon = stat.icon;
                 return (
@@ -505,10 +519,10 @@ const EventsPage = () => {
                   )}
                 </Button>
 
-              {/* Date Range Filter */}
+              {/* Month Filter */}
                 <select
-                  value={filters.dateRange}
-                  onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                  value={selectedMonthOffset}
+                  onChange={(e) => setSelectedMonthOffset(Number(e.target.value))}
                   className="px-4 py-2.5 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none"
                   style={{
                     backgroundColor: 'var(--surface)',
@@ -521,10 +535,11 @@ const EventsPage = () => {
                     backgroundSize: '1.5em 1.5em'
                   }}
                 >
-                  <option value="upcoming">Upcoming</option>
-                  <option value="this-month">This Month</option>
-                  <option value="next-month">Next Month</option>
-                  <option value="all">All Dates</option>
+                  {monthOptions.map(month => (
+                    <option key={month.offset} value={month.offset}>
+                      {month.label}
+                    </option>
+                  ))}
                 </select>
 
               {/* Clear Button - Desktop only */}
@@ -542,31 +557,33 @@ const EventsPage = () => {
         </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-2 p-1 rounded-xl"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <Button
-                onClick={() => setViewMode('grid')}
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                size="sm"
-                icon={List}
-                className="px-4 py-2"
-              >
-                List
-              </Button>
-              <Button
-                onClick={() => setViewMode('calendar')}
-                variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
-                size="sm"
-                icon={CalendarDays}
-                className="px-4 py-2"
-              >
-                Calendar
-              </Button>
+            <div className="flex items-center gap-2">
+              {[
+                { key: 'grid', label: 'Grid', Icon: Grid },
+                { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+              ].map(({ key, label, Icon }) => {
+                const isActive = viewMode === key;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setViewMode(key)}
+                    className="inline-flex min-w-[112px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                      borderColor: isActive ? 'var(--border-hover)' : 'var(--border)',
+                      color: 'var(--text-primary)',
+                      boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)',
+                    }}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -586,36 +603,8 @@ const EventsPage = () => {
                   Filters
                 </h3>
 
-                {/* States */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    States ({availableStates.length})
-                  </h4>
-                  <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                    {availableStates.map(state => (
-                      <label key={state.code} className="flex items-center gap-2 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={filters.states.includes(state.code)}
-                          onChange={() => toggleStateFilter(state.code)}
-                          className="rounded border-2 w-4 h-4 text-purple-500 focus:ring-purple-500/50"
-                          style={{ borderColor: 'var(--border)' }}
-                        />
-                        <span className="text-sm group-hover:text-purple-400 transition truncate"
-                          style={{ color: 'var(--text-secondary)' }}
-                          title={state.name}
-                        >
-                          {state.name}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Categories */}
-                <div className="mb-6">
+                <div>
                   <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
                     style={{ color: 'var(--text-secondary)' }}
                   >
@@ -636,34 +625,6 @@ const EventsPage = () => {
                           style={{ color: 'var(--text-secondary)' }}
                         >
                           {category.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Parks */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Parks ({availableParks.length})
-                  </h4>
-                  <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                    {availableParks.map(park => (
-                      <label key={park.code} className="flex items-center gap-2 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={filters.parks.includes(park.code)}
-                          onChange={() => toggleParkFilter(park.code)}
-                          className="rounded border-2 w-4 h-4 text-purple-500 focus:ring-purple-500/50"
-                          style={{ borderColor: 'var(--border)' }}
-                        />
-                        <span className="text-sm group-hover:text-purple-400 transition truncate"
-                          style={{ color: 'var(--text-secondary)' }}
-                          title={park.name}
-                        >
-                          {park.name}
                         </span>
                       </label>
                     ))}
@@ -748,7 +709,7 @@ const EventsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {paginatedEvents.map(event => (
                       <EventCard
-                        key={event.id}
+                        key={event.renderKey}
                         event={event}
                         categories={categories}
                         onSaveEvent={saveEvent}
@@ -832,7 +793,7 @@ const EventsPage = () => {
                           <div className="space-y-4">
                             {monthEvents.map(event => (
                               <EventListItem
-                                key={event.id}
+                                key={event.renderKey}
                                 event={event}
                                 categories={categories}
                                 onSaveEvent={saveEvent}
@@ -881,16 +842,15 @@ const EventsPage = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Date Range */}
               <div>
                 <h4 className="text-sm font-semibold mb-3"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  DATE RANGE
+                  MONTH
                 </h4>
                 <select
-                  value={filters.dateRange}
-                  onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                  value={selectedMonthOffset}
+                  onChange={(e) => setSelectedMonthOffset(Number(e.target.value))}
                   className="w-full px-4 py-3 pr-10 rounded-xl text-sm font-medium outline-none cursor-pointer transition appearance-none"
                   style={{
                     backgroundColor: 'var(--surface)',
@@ -903,38 +863,12 @@ const EventsPage = () => {
                     backgroundSize: '1.5em 1.5em'
                   }}
                 >
-                  <option value="upcoming">Upcoming</option>
-                  <option value="this-month">This Month</option>
-                  <option value="next-month">Next Month</option>
-                  <option value="all">All Dates</option>
-                </select>
-              </div>
-
-              {/* States */}
-              <div>
-                <h4 className="text-sm font-semibold mb-3"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  STATES ({availableStates.length})
-                </h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableStates.map(state => (
-                    <label key={state.code} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.states.includes(state.code)}
-                        onChange={() => toggleStateFilter(state.code)}
-                        className="rounded border-2 w-5 h-5 text-purple-500 focus:ring-purple-500/50"
-                        style={{ borderColor: 'var(--border)' }}
-                      />
-                      <span className="text-sm"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {state.name}
-                      </span>
-                    </label>
+                  {monthOptions.map(month => (
+                    <option key={month.offset} value={month.offset}>
+                      {month.label}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Categories */}
@@ -965,32 +899,6 @@ const EventsPage = () => {
                 </div>
               </div>
 
-              {/* Parks */}
-              <div>
-                <h4 className="text-sm font-semibold mb-3"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  PARKS ({availableParks.length})
-                </h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableParks.map(park => (
-                    <label key={park.code} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.parks.includes(park.code)}
-                        onChange={() => toggleParkFilter(park.code)}
-                        className="rounded border-2 w-5 h-5 text-purple-500 focus:ring-purple-500/50"
-                        style={{ borderColor: 'var(--border)' }}
-                      />
-                      <span className="text-sm"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {park.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="mt-8 flex gap-3">

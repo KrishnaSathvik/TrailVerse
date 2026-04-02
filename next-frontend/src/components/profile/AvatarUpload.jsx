@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { Camera, Lightbulb } from '@components/icons';
 import imageUploadService from '../../services/imageUploadService';
 import { useToast } from '../../context/ToastContext';
 
@@ -143,7 +144,7 @@ const AvatarUpload = ({
           </div>
         ) : (
           <div className="flex flex-col items-center space-y-3">
-            <div className="text-4xl">📸</div>
+            <Camera className="h-10 w-10" style={{ color: 'var(--text-secondary)' }} />
             <div>
               <p className="text-lg font-medium">
                 {isDragActive ? 'Drop your image here' : 'Upload Avatar'}
@@ -206,7 +207,7 @@ const AvatarUpload = ({
 
       {/* Upload Tips */}
       <div className="mt-4 text-xs opacity-60" style={{ color: 'var(--text-secondary)' }}>
-        <p>💡 <strong>Tips:</strong> Use square images for best results. Images will be automatically resized to 400x400px.</p>
+        <p><Lightbulb className="inline h-4 w-4 align-text-bottom" /> <strong>Tips:</strong> Use square images for best results. Images will be automatically resized to 400x400px.</p>
       </div>
     </div>
   );

@@ -1,5 +1,89 @@
 const npsService = require('../services/npsService');
 
+const normalizeActivityName = (activityName = '') => {
+  const name = activityName.toLowerCase();
+
+  if (
+    name.includes('hike') ||
+    name.includes('walk') ||
+    name.includes('trail') ||
+    name.includes('front-country') ||
+    name.includes('back-country') ||
+    name.includes('backpack') ||
+    name.includes('trek')
+  ) {
+    return 'Hiking';
+  }
+
+  if (name.includes('camp') || name.includes('backpack')) {
+    return 'Camping';
+  }
+
+  if (name.includes('photo') || name.includes('scenic') || name.includes('view')) {
+    return 'Photography';
+  }
+
+  if (name.includes('wildlife') || name.includes('bird') || name.includes('animal')) {
+    return 'Wildlife Watching';
+  }
+
+  if (
+    name.includes('kayak') ||
+    name.includes('canoe') ||
+    name.includes('boat') ||
+    name.includes('swim')
+  ) {
+    return 'Boating';
+  }
+
+  if (name.includes('climb') || name.includes('canyoneer') || name.includes('adventure')) {
+    return 'Climbing';
+  }
+
+  if (name.includes('star') || name.includes('astronomy') || name.includes('night')) {
+    return 'Stargazing';
+  }
+
+  if (name.includes('fish')) {
+    return 'Fishing';
+  }
+
+  if (name.includes('bike') || name.includes('cycle')) {
+    return 'Biking';
+  }
+
+  return null;
+};
+
+const buildParkActivityIndex = async () => {
+  const allActivities = await npsService.getAllActivities(5000);
+  const activityIndex = new Map();
+
+  allActivities.forEach((thingToDo) => {
+    const relatedParks = Array.isArray(thingToDo?.relatedParks) ? thingToDo.relatedParks : [];
+    if (!relatedParks.length || !Array.isArray(thingToDo.activities)) return;
+
+    thingToDo.activities.forEach((activity) => {
+      if (!activity?.name) return;
+      const normalized = normalizeActivityName(activity.name);
+      if (!normalized) return;
+
+      relatedParks.forEach((park) => {
+        const parkCode = park?.parkCode?.toLowerCase();
+        if (!parkCode) return;
+
+        if (!activityIndex.has(parkCode)) {
+          activityIndex.set(parkCode, new Map());
+        }
+
+        activityIndex.get(parkCode).set(normalized, { name: normalized });
+      });
+    });
+  });
+
+  return activityIndex;
+};
+
 // @desc    Get all parks with pagination
 // @route   GET /api/parks?page=1&limit=12
 // @access  Public
@@ -23,7 +107,16 @@ exports.getAllParks = async (req, res, next) => {
         park.designation && park.designation.toLowerCase().includes('national park')
       );
     }
-    
+
+    if (skipPagination) {
+      const activityIndex = await buildParkActivityIndex();
+
+      filteredParks = filteredParks.map((park) => ({
+        ...park,
+        activities: Array.from(activityIndex.get(park.parkCode?.toLowerCase())?.values() || [])
+      }));
+    }
+
     // If client wants all parks (for filtering/searching), return everything
     if (skipPagination) {
       return res.status(200).json({

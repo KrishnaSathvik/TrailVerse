@@ -110,19 +110,13 @@ exports.updateTrip = async (req, res, next) => {
 
     // Update allowed fields
     const allowedFields = ['title', 'formData', 'plan', 'status', 'conversation', 'summary', 'provider'];
-    console.log('🔄 TripController: Updating trip with body:', req.body);
-    console.log('🔄 TripController: Current trip status:', trip.status);
-    
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        console.log(`🔄 TripController: Updating ${field} from ${trip[field]} to ${req.body[field]}`);
         trip[field] = req.body[field];
       }
     });
 
-    console.log('🔄 TripController: Trip status after update:', trip.status);
     await trip.save();
-    console.log('🔄 TripController: Trip saved successfully with status:', trip.status);
 
     // Notify via WebSocket
     const wsService = req.app.get('wsService');

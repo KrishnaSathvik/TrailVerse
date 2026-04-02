@@ -1,6 +1,6 @@
-const CACHE_NAME = 'trailverse-v5';
-const OFFLINE_CACHE = 'trailverse-offline-v5';
-const API_CACHE = 'trailverse-api-v5';
+const CACHE_NAME = 'trailverse-v6';
+const OFFLINE_CACHE = 'trailverse-offline-v6';
+const API_CACHE = 'trailverse-api-v6';
 
 // Files to cache for offline functionality
 const STATIC_CACHE_URLS = [

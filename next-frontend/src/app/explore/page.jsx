@@ -33,6 +33,7 @@ const ExploreContent = () => {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   const hasMounted = useRef(false);
+  const lastAppliedUrlSearch = useRef(null);
   const prevFiltersRef = useRef({
     search: '',
     npOnly: true,
@@ -98,6 +99,17 @@ const ExploreContent = () => {
   }, [searchParams]);
 
   useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch === lastAppliedUrlSearch.current) return;
+
+    lastAppliedUrlSearch.current = urlSearch;
+
+    if (typeof urlSearch === 'string') {
+      setSearchTerm(urlSearch);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (showSortDropdown && !event.target.closest('.sort-dropdown-container')) {
         setShowSortDropdown(false);
@@ -107,7 +119,8 @@ const ExploreContent = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showSortDropdown]);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const normalizedSearchTerm = searchTerm.trim();
+  const debouncedSearchTerm = useDebounce(normalizedSearchTerm, 300);
 
   useEffect(() => {
     if (debouncedSearchTerm && debouncedSearchTerm.length > 2) {
@@ -136,31 +149,72 @@ const ExploreContent = () => {
     if (!allParks || !Array.isArray(allParks)) return [];
     let result = [...allParks];
 
-    if (debouncedSearchTerm) {
-      const searchLower = debouncedSearchTerm.toLowerCase();
-      result = result.filter(park => {
-        const parkStates = park.states ? park.states.split(',').map(s => s.trim().toLowerCase()) : [];
-        const stateNameMap = {
-          'alabama': 'al', 'alaska': 'ak', 'arizona': 'az', 'arkansas': 'ar', 'california': 'ca',
-          'colorado': 'co', 'connecticut': 'ct', 'delaware': 'de', 'florida': 'fl', 'georgia': 'ga',
-          'hawaii': 'hi', 'idaho': 'id', 'illinois': 'il', 'indiana': 'in', 'iowa': 'ia',
-          'kansas': 'ks', 'kentucky': 'ky', 'louisiana': 'la', 'maine': 'me', 'maryland': 'md',
-          'massachusetts': 'ma', 'michigan': 'mi', 'minnesota': 'mn', 'mississippi': 'ms', 'missouri': 'mo',
-          'montana': 'mt', 'nebraska': 'ne', 'nevada': 'nv', 'new hampshire': 'nh', 'new jersey': 'nj',
-          'new mexico': 'nm', 'new york': 'ny', 'north carolina': 'nc', 'north dakota': 'nd', 'ohio': 'oh',
-          'oklahoma': 'ok', 'oregon': 'or', 'pennsylvania': 'pa', 'rhode island': 'ri', 'south carolina': 'sc',
-          'south dakota': 'sd', 'tennessee': 'tn', 'texas': 'tx', 'utah': 'ut', 'vermont': 'vt',
-          'virginia': 'va', 'washington': 'wa', 'west virginia': 'wv', 'wisconsin': 'wi', 'wyoming': 'wy'
-        };
-        const stateCode = stateNameMap[searchLower];
-        const searchTerms = [searchLower];
-        if (stateCode) searchTerms.push(stateCode);
-        return (
-          park.fullName.toLowerCase().includes(searchLower) ||
-          park.description.toLowerCase().includes(searchLower) ||
-          parkStates.some(state => searchTerms.some(term => state.includes(term)))
-        );
-      });
+    if (normalizedSearchTerm) {
+      const searchLower = normalizedSearchTerm.toLowerCase();
+      const scoredMatches = result
+        .map((park) => {
+          const parkStates = park.states ? park.states.split(',').map(s => s.trim().toLowerCase()) : [];
+          const stateNameMap = {
+            'alabama': 'al', 'alaska': 'ak', 'arizona': 'az', 'arkansas': 'ar', 'california': 'ca',
+            'colorado': 'co', 'connecticut': 'ct', 'delaware': 'de', 'florida': 'fl', 'georgia': 'ga',
+            'hawaii': 'hi', 'idaho': 'id', 'illinois': 'il', 'indiana': 'in', 'iowa': 'ia',
+            'kansas': 'ks', 'kentucky': 'ky', 'louisiana': 'la', 'maine': 'me', 'maryland': 'md',
+            'massachusetts': 'ma', 'michigan': 'mi', 'minnesota': 'mn', 'mississippi': 'ms', 'missouri': 'mo',
+            'montana': 'mt', 'nebraska': 'ne', 'nevada': 'nv', 'new hampshire': 'nh', 'new jersey': 'nj',
+            'new mexico': 'nm', 'new york': 'ny', 'north carolina': 'nc', 'north dakota': 'nd', 'ohio': 'oh',
+            'oklahoma': 'ok', 'oregon': 'or', 'pennsylvania': 'pa', 'rhode island': 'ri', 'south carolina': 'sc',
+            'south dakota': 'sd', 'tennessee': 'tn', 'texas': 'tx', 'utah': 'ut', 'vermont': 'vt',
+            'virginia': 'va', 'washington': 'wa', 'west virginia': 'wv', 'wisconsin': 'wi', 'wyoming': 'wy'
+          };
+          const stateCode = stateNameMap[searchLower];
+          const searchTerms = [searchLower];
+          if (stateCode) searchTerms.push(stateCode);
+          const fullName = park.fullName?.toLowerCase() || '';
+          const description = park.description?.toLowerCase() || '';
+          const parkCode = park.parkCode?.toLowerCase() || '';
+
+          let score = 0;
+          let directMatch = false;
+
+          if (fullName.startsWith(searchLower)) {
+            score += 120;
+            directMatch = true;
+          } else if (fullName.includes(searchLower)) {
+            score += 90;
+            directMatch = true;
+          }
+
+          if (parkCode === searchLower) {
+            score += 80;
+            directMatch = true;
+          } else if (parkCode.includes(searchLower)) {
+            score += 50;
+            directMatch = true;
+          }
+
+          if (parkStates.some((state) => searchTerms.some((term) => state === term))) {
+            score += 70;
+            directMatch = true;
+          } else if (parkStates.some((state) => searchTerms.some((term) => state.includes(term)))) {
+            score += 45;
+            directMatch = true;
+          }
+
+          if (description.includes(searchLower)) score += 15;
+
+          return { park, score, directMatch, descriptionMatch: description.includes(searchLower) };
+        })
+        .filter(({ score }) => score > 0);
+
+      const hasDirectMatches = scoredMatches.some(({ directMatch }) => directMatch);
+
+      result = scoredMatches
+        .filter(({ directMatch, descriptionMatch }) => {
+          if (!hasDirectMatches) return directMatch || descriptionMatch;
+          return directMatch;
+        })
+        .sort((a, b) => b.score - a.score || a.park.fullName.localeCompare(b.park.fullName))
+        .map(({ park }) => park);
     }
 
     if (filters.nationalParksOnly) {
@@ -179,13 +233,13 @@ const ExploreContent = () => {
     if (filters.activities.length > 0) {
       result = result.filter(park =>
         filters.activities.some(activity =>
-          park.activities?.some(a => a.name === activity)
+          park.activities?.some(a => a.name?.toLowerCase() === activity.toLowerCase())
         )
       );
     }
 
     return result;
-  }, [allParks, debouncedSearchTerm, filters]);
+  }, [allParks, normalizedSearchTerm, filters]);
 
   const calculatedTotalPages = needsAllParks ? Math.ceil(filteredParks.length / parksPerPage) : (totalPages || 1);
   const startIndex = (currentPage - 1) * parksPerPage;
@@ -195,6 +249,10 @@ const ExploreContent = () => {
     let parks;
     if (needsAllParks) {
       let sortedParks = [...filteredParks];
+      if (normalizedSearchTerm) {
+        parks = sortedParks.slice(startIndex, endIndex);
+        return parks;
+      }
       if (sortBy === 'name') {
         sortedParks.sort((a, b) => a.fullName.localeCompare(b.fullName));
       } else if (sortBy === 'state') {
@@ -208,13 +266,13 @@ const ExploreContent = () => {
       }
     }
     return parks;
-  }, [needsAllParks, filteredParks, startIndex, endIndex, allParks, sortBy]);
+  }, [needsAllParks, filteredParks, startIndex, endIndex, allParks, sortBy, normalizedSearchTerm]);
 
   // Reset page when filters change
   useEffect(() => {
     const prev = prevFiltersRef.current;
     const changed =
-      prev.search !== debouncedSearchTerm ||
+      prev.search !== normalizedSearchTerm ||
       prev.npOnly !== filters.nationalParksOnly ||
       prev.statesLen !== filters.states.length ||
       prev.actsLen !== filters.activities.length;
@@ -227,12 +285,12 @@ const ExploreContent = () => {
     }
 
     prevFiltersRef.current = {
-      search: debouncedSearchTerm,
+      search: normalizedSearchTerm,
       npOnly: filters.nationalParksOnly,
       statesLen: filters.states.length,
       actsLen: filters.activities.length,
     };
-  }, [debouncedSearchTerm, filters.nationalParksOnly, filters.states.length, filters.activities.length]);
+  }, [normalizedSearchTerm, filters.nationalParksOnly, filters.states.length, filters.activities.length, pathname, router, searchParams]);
 
   // Handle page reset when switching between server/client pagination
   useEffect(() => {
@@ -308,10 +366,6 @@ const ExploreContent = () => {
 
       {/* Hero/Search Section */}
       <section className="relative overflow-hidden py-8 sm:py-20">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
-        </div>
-
         <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           <div className="mt-3 sm:mt-6">
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
@@ -435,7 +489,7 @@ const ExploreContent = () => {
                     <span className="text-sm font-medium group-hover:text-forest-400 transition"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({displayedNationalParksCount})
+                      National Parks Only ({displayedNationalParksCount})
                     </span>
                   </label>
                 </div>
@@ -529,15 +583,33 @@ const ExploreContent = () => {
                   </div>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-2 p-1 rounded-xl"
-                  style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}
-                >
-                  <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-white/10' : 'hover:bg-white/5'}`} style={{ color: 'var(--text-primary)' }}>
-                    <Grid className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white/10' : 'hover:bg-white/5'}`} style={{ color: 'var(--text-primary)' }}>
-                    <List className="h-4 w-4" />
-                  </button>
+                <div className="hidden sm:flex items-center gap-2">
+                  {[
+                    { key: 'grid', label: 'Grid', Icon: Grid },
+                    { key: 'list', label: 'List', Icon: List },
+                  ].map(({ key, label, Icon }) => {
+                    const isActive = viewMode === key;
+
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setViewMode(key)}
+                        className="inline-flex min-w-[96px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+                        style={{
+                          backgroundColor: 'var(--surface)',
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          borderColor: isActive ? 'var(--border-hover)' : 'var(--border)',
+                          color: 'var(--text-primary)',
+                          boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)',
+                        }}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -637,7 +709,7 @@ const ExploreContent = () => {
                 <input type="checkbox" checked={filters.nationalParksOnly} onChange={(e) => setFilters({ ...filters, nationalParksOnly: e.target.checked })}
                   className="rounded border-2 w-5 h-5 text-forest-500 focus:ring-forest-500/50" style={{ borderColor: 'var(--border)' }} />
                 <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {debouncedSearchTerm ? 'Major Parks & Sites' : 'National Parks Only'} ({displayedNationalParksCount})
+                  National Parks Only ({displayedNationalParksCount})
                 </span>
               </label>
               <div>

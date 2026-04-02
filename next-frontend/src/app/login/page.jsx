@@ -11,7 +11,7 @@ import { Lock, Mail, Eye, EyeOff, CheckCircle, AlertCircle, Check } from '@compo
 const LoginContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { login, authTransition } = useAuth();
   const { showToast } = useToast();
   
   // Get state passed from signup page via searchParams
@@ -75,7 +75,10 @@ const LoginContent = () => {
     
     try {
       console.log('Login attempt with rememberMe:', rememberMe);
-      await login(formData.email, formData.password, rememberMe);
+      const result = await login(formData.email, formData.password, rememberMe);
+      if (result?.redirectedToChat) {
+        return;
+      }
       showToast('Welcome back!', 'success');
       router.push('/home');
     } catch (error) {
@@ -95,10 +98,30 @@ const LoginContent = () => {
   return (
     <AuthShell
       desktopTitle="Welcome back!"
-      desktopDescription="Sign in to save your favorite parks, track visited sites, plan trips with AI, and pick up right where you left off."
+      desktopDescription="Sign in to save your favorite parks, track visited sites, keep your current AI chat, and pick up right where you left off."
       mobileTitle="Sign in to your account"
-      mobileDescription="Save favorite parks, continue AI trip plans, and pick up right where you left off."
+      mobileDescription="Save favorite parks, keep your current AI chat, and pick up right where you left off."
     >
+            {authTransition.active && (
+              <div 
+                className="mb-6 p-4 rounded-xl border-2 flex items-start gap-3 animate-fade-in"
+                style={{
+                  backgroundColor: 'var(--surface-hover)',
+                  borderColor: 'var(--accent-green)',
+                }}
+              >
+                <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--accent-green)' }} />
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                    Saving your chat
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {authTransition.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
           {/* Verification Success Banner */}
           {showVerificationBanner && (
             <div 
@@ -178,8 +201,8 @@ const LoginContent = () => {
           <div
             className="hidden lg:block lg:mb-8 lg:rounded-none lg:border-0 lg:px-0 lg:py-0"
             style={{
-              backgroundColor: 'var(--surface-hover)',
-              borderColor: 'var(--border)'
+              backgroundColor: 'transparent',
+              borderColor: 'transparent'
             }}
           >
             <h2 className="text-2xl font-semibold tracking-tight lg:text-4xl lg:mb-2" style={{ color: 'var(--text-primary)' }}>

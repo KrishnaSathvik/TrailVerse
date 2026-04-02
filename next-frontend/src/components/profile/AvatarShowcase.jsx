@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Palette, Sparkles, ArrowUp, Shuffle, ArchiveRestore, Target } from '@components/icons';
 import {
   generateRandomAvatar,
   generateAvatarCollection,
@@ -82,7 +83,7 @@ const AvatarShowcase = () => {
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          🎨 Avatar System Showcase
+          <Palette className="inline h-7 w-7 align-text-bottom" /> Avatar System Showcase
         </h1>
         <p style={{ color: 'var(--text-secondary)' }}>
           Preview the improved avatar generation system
@@ -103,7 +104,7 @@ const AvatarShowcase = () => {
             color: 'white'
           }}
         >
-          🎲 Random Mix
+          <Shuffle className="inline h-4 w-4 mr-1 align-text-bottom" /> Random Mix
         </button>
         
         <button
@@ -119,7 +120,7 @@ const AvatarShowcase = () => {
             border: '2px solid var(--border)'
           }}
         >
-          📦 Collection
+          <ArchiveRestore className="inline h-4 w-4 mr-1 align-text-bottom" /> Collection
         </button>
         
         <button
@@ -135,7 +136,7 @@ const AvatarShowcase = () => {
             border: '2px solid var(--border)'
           }}
         >
-          🎯 Types
+          <Target className="inline h-4 w-4 mr-1 align-text-bottom" /> Types
         </button>
         
         <button
@@ -151,7 +152,7 @@ const AvatarShowcase = () => {
             border: '2px solid var(--border)'
           }}
         >
-          🎨 Styles
+          <Palette className="inline h-4 w-4 mr-1 align-text-bottom" /> Styles
         </button>
       </div>
 
@@ -196,7 +197,7 @@ const AvatarShowcase = () => {
         </div>
       ) : (
         <div className="text-center py-20" style={{ color: 'var(--text-tertiary)' }}>
-          <p className="text-lg mb-2">👆 Click a button above to generate avatars</p>
+          <p className="text-lg mb-2"><ArrowUp className="inline h-5 w-5 align-text-bottom" /> Click a button above to generate avatars</p>
           <p className="text-sm">Choose from Random Mix, Collection, Types, or Styles</p>
         </div>
       )}
@@ -212,7 +213,7 @@ const AvatarShowcase = () => {
           }}
         >
           <h3 className="font-semibold mb-2 flex items-center space-x-2">
-            <span>🎨</span>
+            <Palette className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
             <span style={{ color: 'var(--text-primary)' }}>Available Styles</span>
           </h3>
           <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
@@ -232,7 +233,7 @@ const AvatarShowcase = () => {
           }}
         >
           <h3 className="font-semibold mb-2 flex items-center space-x-2">
-            <span>🌈</span>
+            <Palette className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
             <span style={{ color: 'var(--text-primary)' }}>Color Palettes</span>
           </h3>
           <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
@@ -252,7 +253,7 @@ const AvatarShowcase = () => {
           }}
         >
           <h3 className="font-semibold mb-2 flex items-center space-x-2">
-            <span>✨</span>
+            <Sparkles className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
             <span style={{ color: 'var(--text-primary)' }}>Boring Avatars</span>
           </h3>
           <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>

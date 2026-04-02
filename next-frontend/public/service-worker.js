@@ -1,7 +1,7 @@
 // Simple service worker for development
 // This prevents the 404 error in the console
 
-const CACHE_NAME = 'npe-usa-v1';
+const CACHE_NAME = 'npe-usa-v2';
 
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...');

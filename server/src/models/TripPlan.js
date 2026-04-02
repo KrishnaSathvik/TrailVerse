@@ -6,6 +6,11 @@ const tripPlanSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  shareId: {
+    type: String,
+    unique: true,
+    sparse: true // allows null values
+  },
   title: {
     type: String,
     default: 'New Trip Plan'
@@ -53,9 +58,12 @@ const tripPlanSchema = new mongoose.Schema({
     responseTime: Number,
     userFeedback: {
       type: String,
-      enum: ['up', 'down'],
       default: null,
-      required: false
+      required: false,
+      validate: {
+        validator: (value) => value === null || value === undefined || ['up', 'down'].includes(value),
+        message: 'userFeedback must be "up", "down", or null'
+      }
     }
   }],
   plan: {

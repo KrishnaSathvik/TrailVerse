@@ -1,16 +1,50 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Smile } from '@components/icons';
+import { Send, Paperclip, Microphone } from '@components/icons';
 
 const ChatInput = ({
   onSend,
   onAttach,           // NEW (optional)
-  onEmoji,            // NEW (optional)
   disabled = false,
   placeholder = "Type your message..."
 }) => {
   const [message, setMessage] = useState('');
   const [isComposing, setIsComposing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Check for browser SpeechRecognition support
+  const SpeechRecognition = typeof window !== 'undefined'
+    ? window.SpeechRecognition || window.webkitSpeechRecognition
+    : null;
+
+  const handleMicClick = () => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setMessage(prev => prev ? `${prev} ${transcript}` : transcript);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.start();
+  };
 
   // autosize once per value change (no infinite growth)
   useEffect(() => {
@@ -62,7 +96,7 @@ const ChatInput = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full relative" aria-label="Chat composer">
+    <form onSubmit={handleSubmit} className="relative w-full" aria-label="Chat composer">
       <div className="flex items-end gap-2 sm:gap-3">
         {/* Input Container */}
         <div className="flex-1 relative">
@@ -79,14 +113,15 @@ const ChatInput = ({
             disabled={disabled}
             placeholder={placeholder}
             rows={1}
-            className="w-full px-4 sm:px-5 py-3 sm:py-3.5 pr-20 sm:pr-24 rounded-xl outline-none transition-all duration-200 disabled:opacity-50 resize-none max-h-32 scrollbar-thin text-sm sm:text-base leading-relaxed focus:ring-2 focus:ring-offset-0"
+            className="w-full resize-none rounded-2xl px-4 py-3 pr-24 text-sm leading-relaxed outline-none transition-all duration-200 disabled:opacity-50 scrollbar-thin focus:ring-2 focus:ring-offset-0 sm:px-5 sm:pr-28 sm:text-base"
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
               borderColor: 'var(--border)',
               color: 'var(--text-primary)',
-              minHeight: '48px',
-              maxHeight: '120px',
+              minHeight: '54px',
+              maxHeight: '132px',
+              boxShadow: 'none',
               '--tw-ring-color': 'var(--accent-green)',
               '--tw-ring-opacity': '0.3'
             }}
@@ -94,23 +129,25 @@ const ChatInput = ({
 
           {/* Action Buttons - Fixed positioning */}
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {SpeechRecognition && (
+              <button
+                type="button"
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation ${isListening ? 'animate-pulse' : ''}`}
+                style={{
+                  color: isListening ? 'var(--accent-green)' : 'var(--text-tertiary)',
+                  backgroundColor: 'transparent'
+                }}
+                title={isListening ? 'Stop listening' : 'Voice input'}
+                onClick={handleMicClick}
+                aria-label={isListening ? 'Stop listening' : 'Voice input'}
+              >
+                <Microphone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </button>
+            )}
             <button
               type="button"
               className="p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation"
-              style={{ 
-                color: 'var(--text-tertiary)',
-                backgroundColor: 'transparent'
-              }}
-              title="Add emoji"
-              onClick={() => onEmoji?.()}
-              aria-label="Add emoji"
-            >
-              <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </button>
-            <button
-              type="button"
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 touch-manipulation"
-              style={{ 
+              style={{
                 color: 'var(--text-tertiary)',
                 backgroundColor: 'transparent'
               }}
@@ -133,21 +170,21 @@ const ChatInput = ({
           </div>
         </div>
 
-        {/* Send Button - Improved design */}
+        {/* Send Button - Aligned with input */}
         <button
           type="submit"
           disabled={!message.trim() || disabled}
-          className="px-3 sm:px-6 py-3 sm:py-3.5 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:shadow-lg flex items-center gap-2 flex-shrink-0 justify-center touch-manipulation"
+          className="flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center rounded-xl font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 hover:opacity-90 touch-manipulation sm:h-[54px] sm:w-[54px]"
           style={{
             backgroundColor: message.trim() && !disabled ? 'var(--accent-green)' : 'var(--surface-hover)',
             color: message.trim() && !disabled ? 'white' : 'var(--text-tertiary)',
-            minHeight: '48px',
-            minWidth: '48px'
+            boxShadow: message.trim() && !disabled
+              ? '0 10px 24px rgba(67, 160, 106, 0.22)'
+              : 'none'
           }}
           aria-label="Send message"
         >
-          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="hidden sm:inline text-sm">Send</span>
+          <Send className="h-5 w-5" />
         </button>
       </div>
 

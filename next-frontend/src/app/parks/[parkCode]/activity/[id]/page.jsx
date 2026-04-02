@@ -33,7 +33,12 @@ const ActivityDetailPage = () => {
   });
 
   const handleBack = () => {
-    router.back();
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.replace(`/parks/${parkCode}?tab=activities`);
   };
 
   if (isLoading) {
@@ -153,6 +158,8 @@ const ActivityDetailPage = () => {
                       title={activity.title}
                       description={activity.shortDescription || activity.description}
                       image={activity.images?.[0]?.url}
+                      type="park"
+                      showPrint={false}
                     />
                   </div>
                 </div>

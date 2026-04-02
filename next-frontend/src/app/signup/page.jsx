@@ -173,15 +173,15 @@ const SignupPage = () => {
   return (
     <AuthShell
       desktopTitle="Join the adventure!"
-      desktopDescription="Create a free account to save favorites, track your visited parks, plan trips with AI, and get personalized recommendations."
+      desktopDescription="Create a free account to save favorites, keep your current AI chat, plan trips with AI, and get personalized recommendations."
       mobileTitle="Create Account"
-      mobileDescription="Unlock favorites, AI trip planning, and personalized recommendations."
+      mobileDescription="Unlock favorites, save your current AI chat, and get personalized recommendations."
     >
           <div
             className="hidden lg:block lg:mb-8 lg:rounded-none lg:border-0 lg:px-0 lg:py-0"
             style={{
-              backgroundColor: 'var(--surface-hover)',
-              borderColor: 'var(--border)'
+              backgroundColor: 'transparent',
+              borderColor: 'transparent'
             }}
           >
             <h1 className="text-2xl font-semibold tracking-tight lg:text-4xl lg:mb-2" style={{ color: 'var(--text-primary)' }}>

@@ -6,11 +6,7 @@
 const requiredEnvVars = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'NPS_API_KEY',
-  'OPENAI_API_KEY',
-  'ANTHROPIC_API_KEY',
-  'RESEND_API_KEY',
-  'EMAIL_FROM_ADDRESS'
+  'NPS_API_KEY'
 ];
 
 const optionalEnvVars = [
@@ -41,6 +37,18 @@ function validateEnvironment() {
       invalid.push(`${varName} (contains placeholder value)`);
     }
   });
+
+  if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    missing.push('OPENAI_API_KEY or ANTHROPIC_API_KEY');
+  }
+
+  if (process.env.RESEND_API_KEY && !process.env.EMAIL_FROM_ADDRESS) {
+    missing.push('EMAIL_FROM_ADDRESS (required when RESEND_API_KEY is set)');
+  }
+
+  if (process.env.EMAIL_FROM_ADDRESS && !process.env.RESEND_API_KEY) {
+    missing.push('RESEND_API_KEY (required when EMAIL_FROM_ADDRESS is set)');
+  }
 
   // Validate JWT_SECRET strength
   if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {

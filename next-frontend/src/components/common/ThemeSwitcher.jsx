@@ -205,7 +205,7 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
             className="absolute -top-1 -right-1 h-3 w-3 rounded-full flex items-center justify-center"
             style={{ backgroundColor: 'var(--surface-active)' }}
           >
-            <span className="text-xs">🖥️</span>
+            <Monitor className="h-2 w-2" />
           </div>
         )}
       </button>

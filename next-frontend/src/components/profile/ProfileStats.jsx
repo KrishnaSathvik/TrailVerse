@@ -12,33 +12,18 @@ const ProfileStats = ({ stats }) => {
         return (
           <div
             key={index}
-            className="group relative overflow-hidden rounded-2xl p-4 lg:p-5 transition-all hover:-translate-y-0.5"
+            className="rounded-2xl p-4 lg:p-5 transition-all"
             style={{
-              backgroundImage: 'linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, white 12%) 0%, var(--surface) 55%, color-mix(in srgb, var(--surface-hover) 84%, var(--accent-green-light) 16%) 100%)',
+              backgroundColor: 'var(--surface)',
               borderWidth: '1px',
               borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-              e.currentTarget.style.borderColor = 'var(--border-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'var(--shadow)';
-              e.currentTarget.style.borderColor = 'var(--border)';
+              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.04)'
             }}
           >
-            {/* Subtle glow */}
-            <div
-              className="pointer-events-none absolute right-0 top-0 h-16 w-16 translate-x-4 -translate-y-4 rounded-full blur-2xl"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--accent-green-light) 50%, transparent 50%)' }}
-            />
-
-            {/* Icon + Value on the same row (desktop), stacked (mobile) */}
-            <div className="relative flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <div className="flex-shrink-0 inline-flex p-2.5 rounded-xl"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--accent-green-light) 78%, white 22%)',
+                  backgroundColor: 'var(--surface-hover)',
                   color: 'var(--accent-green)'
                 }}
               >

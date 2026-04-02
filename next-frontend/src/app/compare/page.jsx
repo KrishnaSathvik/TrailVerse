@@ -2,24 +2,20 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Search, X, Plus, ChevronDown, ChevronUp, Check,
   MapPin, Star, RefreshCw,
-  TrendingUp, Mountain
+  TrendingUp, Mountain, Calendar
 } from '@components/icons';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { useAllParks } from '@/hooks/useParks';
 import { useParkComparison } from '@/hooks/useEnhancedParks';
-import { useAuth } from '@/context/AuthContext';
 
 const ComparePage = () => {
   const { data: allParksData, isLoading } = useAllParks();
   const allParks = allParksData?.data;
-  const { isAuthenticated } = useAuth();
-  const router = useRouter();
   const [selectedParks, setSelectedParks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSelector, setShowSelector] = useState(false);
@@ -31,14 +27,10 @@ const ComparePage = () => {
 
   const getParkColors = (parkCodes) => {
     const colors = [
-      { bg: 'bg-blue-600/15', text: 'text-blue-700', border: 'border-blue-600/30' },
-      { bg: 'bg-green-600/15', text: 'text-green-700', border: 'border-green-600/30' },
-      { bg: 'bg-purple-600/15', text: 'text-purple-700', border: 'border-purple-600/30' },
-      { bg: 'bg-orange-600/15', text: 'text-orange-700', border: 'border-orange-600/30' },
-      { bg: 'bg-pink-600/15', text: 'text-pink-700', border: 'border-pink-600/30' },
-      { bg: 'bg-indigo-600/15', text: 'text-indigo-700', border: 'border-indigo-600/30' },
-      { bg: 'bg-teal-600/15', text: 'text-teal-700', border: 'border-teal-600/30' },
-      { bg: 'bg-red-600/15', text: 'text-red-700', border: 'border-red-600/30' }
+      { accent: 'var(--accent-blue)' },
+      { accent: 'var(--accent-green)' },
+      { accent: 'var(--accent-orange)' },
+      { accent: 'var(--error-red)' }
     ];
 
     const colorMap = {};
@@ -56,7 +48,16 @@ const ComparePage = () => {
       }
 
       usedColors.add(index);
-      colorMap[parkCode] = colors[index];
+      colorMap[parkCode] = {
+        accent: colors[index].accent,
+        text: { color: colors[index].accent },
+        border: { borderColor: `color-mix(in srgb, ${colors[index].accent} 32%, var(--border) 68%)` },
+        chip: {
+          backgroundColor: `color-mix(in srgb, ${colors[index].accent} 12%, transparent)`,
+          color: colors[index].accent,
+          borderColor: `color-mix(in srgb, ${colors[index].accent} 26%, var(--border) 74%)`
+        }
+      };
     });
 
     return colorMap;
@@ -157,6 +158,73 @@ const ComparePage = () => {
 
   const parkColors = getParkColors(parkCodes);
 
+  const formatTemperature = (park) => {
+    const temp = park.weather?.current?.temp ?? park.weather?.current?.temperature;
+    return typeof temp === 'number' ? `${Math.round(temp)}°F` : 'N/A';
+  };
+
+  const getNumericTemperature = (park) => {
+    const temp = park.weather?.current?.temp ?? park.weather?.current?.temperature;
+    return typeof temp === 'number' ? temp : null;
+  };
+
+  const getTopActivities = (park) => {
+    if (Array.isArray(park.topActivities) && park.topActivities.length > 0) {
+      return [...new Set(park.topActivities)].slice(0, 4);
+    }
+
+    if (Array.isArray(park.activities) && park.activities.length > 0) {
+      return [...new Set(
+        park.activities
+          .map((activity) => activity?.name || activity?.title || activity)
+          .filter(Boolean)
+      )].slice(0, 4);
+    }
+
+    return [];
+  };
+
+  const getEntranceFeeInfo = (park) => {
+    const rawFee = park.entranceFee ?? park.entranceFees?.[0]?.cost;
+    const numericFee = Number(rawFee);
+
+    if (Number.isFinite(numericFee) && numericFee > 0) {
+      return {
+        amount: `$${numericFee.toFixed(0)}`,
+        note: park.entranceFees?.[0]?.title || 'Standard private vehicle rate'
+      };
+    }
+
+    return null;
+  };
+
+  const getCrowdRank = (park) => {
+    const level = park.crowdLevel?.level || 'Moderate';
+    return { 'Very Low': 1, 'Low': 2, 'Moderate': 3, 'High': 4, 'Very High': 5 }[level] || 3;
+  };
+
+  const getCrowdPillStyle = (level) => {
+    if (level === 'Very High' || level === 'High') {
+      return {
+        backgroundColor: 'color-mix(in srgb, var(--error-red) 14%, transparent)',
+        color: 'var(--error-red)',
+        borderColor: 'color-mix(in srgb, var(--error-red) 26%, var(--border) 74%)'
+      };
+    }
+    if (level === 'Moderate') {
+      return {
+        backgroundColor: 'color-mix(in srgb, var(--accent-orange) 14%, transparent)',
+        color: 'var(--accent-orange)',
+        borderColor: 'color-mix(in srgb, var(--accent-orange) 26%, var(--border) 74%)'
+      };
+    }
+    return {
+      backgroundColor: 'var(--accent-green-light)',
+      color: 'var(--accent-green)',
+      borderColor: 'color-mix(in srgb, var(--accent-green) 26%, var(--border) 74%)'
+    };
+  };
+
   const enhancedParks = selectedParks.map(selectedPark => {
     const enhancedPark = comparisonData?.parks?.find(p => p.parkCode === selectedPark.parkCode);
 
@@ -189,16 +257,64 @@ const ComparePage = () => {
     };
   });
 
+  const comparisonHighlights = useMemo(() => {
+    if (enhancedParks.length < 2) return [];
+
+    const ratedParks = [...enhancedParks].sort((a, b) => {
+      const ratingDiff = (b.reviews?.averageRating || 0) - (a.reviews?.averageRating || 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return getCrowdRank(a) - getCrowdRank(b);
+    });
+
+    const temperatureParks = enhancedParks.filter((park) => getNumericTemperature(park) !== null);
+    const warmestPark = temperatureParks.length > 0
+      ? [...temperatureParks].sort((a, b) => getNumericTemperature(b) - getNumericTemperature(a))[0]
+      : null;
+
+    const leastCrowdedPark = [...enhancedParks].sort((a, b) => getCrowdRank(a) - getCrowdRank(b))[0];
+    const sharedActivities = [
+      ...(comparisonData?.commonActivities?.commonToAll || []),
+      ...(comparisonData?.commonActivities?.mostlyCommon || [])
+    ].slice(0, 4);
+
+    return [
+      {
+        title: 'Best overall bet',
+        value: ratedParks[0]?.fullName || 'N/A',
+        note: ratedParks[0]?.reviews?.averageRating
+          ? `${ratedParks[0].reviews.averageRating.toFixed(1)} average rating`
+          : 'Strong overall fit based on current comparison data',
+        icon: Star
+      },
+      {
+        title: 'Warmest right now',
+        value: warmestPark?.fullName || 'Unavailable',
+        note: warmestPark ? formatTemperature(warmestPark) : 'Current temperature data unavailable',
+        icon: TrendingUp
+      },
+      {
+        title: 'Lower crowd option',
+        value: leastCrowdedPark?.fullName || 'Unavailable',
+        note: leastCrowdedPark?.crowdLevel?.level || 'Crowd level unavailable',
+        icon: Mountain
+      },
+      {
+        title: 'Shared highlights',
+        value: sharedActivities.length > 0 ? sharedActivities.map((item) => item.title).join(', ') : 'Not much overlap',
+        note: sharedActivities.length > 0 ? 'Activities you can expect across this set' : 'These parks offer more distinct experiences',
+        icon: Calendar
+      }
+    ];
+  }, [comparisonData, enhancedParks]);
+
+  const hasEntranceFeeData = enhancedParks.some((park) => getEntranceFeeInfo(park));
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-8 sm:py-20">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-orange-500/20 to-transparent" />
-        </div>
-
         <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           <div className="mt-3 sm:mt-6">
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
@@ -263,6 +379,7 @@ const ComparePage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
               {Array.from({ length: maxParks }).map((_, index) => {
                 const park = selectedParks[index];
+                const parkColor = park ? parkColors[park.parkCode] : null;
 
                 if (park) {
                   return (
@@ -291,6 +408,12 @@ const ComparePage = () => {
                         </button>
 
                         <div className="absolute bottom-2 left-2 right-2">
+                          <div
+                            className="mb-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+                            style={parkColor?.chip}
+                          >
+                            {park.designation || 'Park'}
+                          </div>
                           <h3 className="text-sm font-bold text-white line-clamp-2">
                             {park.fullName}
                           </h3>
@@ -308,10 +431,17 @@ const ComparePage = () => {
                   <button
                     key={index}
                     onClick={() => setShowSelector(true)}
-                    className="h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition hover:bg-white/5"
+                    className="h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition"
                     style={{
+                      backgroundColor: 'var(--surface)',
                       borderColor: 'var(--border)',
                       color: 'var(--text-tertiary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--surface)';
                     }}
                   >
                     <Plus className="h-8 w-8" />
@@ -350,8 +480,14 @@ const ComparePage = () => {
                       </h3>
                       <button
                         onClick={() => setShowSelector(false)}
-                        className="p-2 rounded-lg hover:bg-white/5"
-                        style={{ color: 'var(--text-primary)' }}
+                        className="p-2 rounded-lg transition"
+                        style={{ color: 'var(--text-primary)', backgroundColor: 'transparent' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                       >
                         <X className="h-5 w-5" />
                       </button>
@@ -399,11 +535,17 @@ const ComparePage = () => {
                           <button
                             key={park.parkCode}
                             onClick={() => handleAddPark(park)}
-                            className="text-left p-2 sm:p-3 rounded-lg sm:rounded-xl transition hover:bg-white/5"
+                            className="text-left p-2 sm:p-3 rounded-lg sm:rounded-xl transition"
                             style={{
                               backgroundColor: 'var(--surface)',
                               borderWidth: '1px',
                               borderColor: 'var(--border)'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'var(--surface)';
                             }}
                           >
                             <h4 className="font-semibold text-sm mb-1 line-clamp-2"
@@ -438,19 +580,56 @@ const ComparePage = () => {
               </div>
             ) : (
               <div className="space-y-4">
+                {comparisonHighlights.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {comparisonHighlights.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={item.title}
+                          className="rounded-2xl p-5"
+                          style={{
+                            backgroundColor: 'var(--surface)',
+                            border: '1px solid var(--border)'
+                          }}
+                        >
+                          <div
+                            className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl"
+                            style={{ backgroundColor: 'var(--surface-hover)' }}
+                          >
+                            <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                          </div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
+                            {item.title}
+                          </p>
+                          <h3 className="mt-2 text-lg font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
+                            {item.value}
+                          </h3>
+                          <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                            {item.note}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <ComparisonSection
                   title="Park Comparison Summary"
                   icon={TrendingUp}
                   isExpanded={expandedSections.summary}
                   onToggle={() => toggleSection('summary')}
                 >
-                  {/* Desktop Park Names Header */}
-                  <div className="hidden lg:block">
+                  <div className="overflow-x-auto overscroll-x-contain snap-x snap-mandatory pb-2">
+                    <div className="min-w-[68rem]">
+                  {/* Park Names Header */}
+                  <div>
                     <div className="flex min-w-max">
-                      <div className="flex-shrink-0 w-48 px-4 py-4 font-semibold text-sm text-left"
+                      <div className="hidden lg:block flex-shrink-0 w-48 px-4 py-4 font-semibold text-sm text-left lg:sticky lg:left-0 lg:z-10"
                         style={{
                           backgroundColor: 'var(--surface-hover)',
-                          color: 'var(--text-secondary)'
+                          color: 'var(--text-secondary)',
+                          boxShadow: '10px 0 24px -18px rgba(15,23,42,0.18)'
                         }}
                       >
                         Comparison
@@ -458,11 +637,14 @@ const ComparePage = () => {
                       {enhancedParks.map((park) => {
                         const parkColor = parkColors[park.parkCode];
                         return (
-                          <div key={park.parkCode} className="flex-1 px-4 py-4 font-semibold text-sm text-center min-w-0"
+                          <div key={park.parkCode} className="flex-1 min-w-[9.5rem] sm:min-w-[11rem] lg:min-w-0 px-3 sm:px-4 py-4 font-semibold text-xs sm:text-sm text-center snap-start"
                             style={{ backgroundColor: 'var(--surface-hover)' }}
                           >
-                            <span className={parkColor ? parkColor.text : ''}
-                              style={{ color: parkColor ? undefined : 'var(--text-primary)' }}
+                            <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] lg:hidden" style={{ color: 'var(--text-tertiary)' }}>
+                              Comparison
+                            </div>
+                            <span
+                              style={parkColor ? parkColor.text : { color: 'var(--text-primary)' }}
                             >
                               {park.fullName}
                             </span>
@@ -484,21 +666,29 @@ const ComparePage = () => {
                   <ComparisonRow label="Ratings & Reviews" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`h-3 w-3 ${
-                                star <= (park.reviews?.averageRating || 0)
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-400'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <div className="text-xs font-medium whitespace-nowrap">
-                          {park.reviews?.averageRating?.toFixed(1) || '0.0'} ({park.reviews?.totalReviews || 0})
-                        </div>
+                        {(park.reviews?.totalReviews || 0) > 0 ? (
+                          <>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-3 w-3 ${
+                                    star <= (park.reviews?.averageRating || 0)
+                                      ? 'text-yellow-400 fill-current'
+                                      : 'text-slate-400'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <div className="text-xs font-medium whitespace-nowrap">
+                              {park.reviews.averageRating.toFixed(1)} ({park.reviews.totalReviews})
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                            No TrailVerse reviews yet
+                          </div>
+                        )}
                       </div>
                     ))}
                   </ComparisonRow>
@@ -560,7 +750,14 @@ const ComparePage = () => {
                       <div key={park.parkCode} className="flex flex-col gap-2">
                         <div className="flex flex-wrap gap-1 justify-center">
                           {(park.bestTimeToVisit?.months || ['Year Round']).map((month, index) => (
-                            <span key={index} className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium">
+                            <span
+                              key={index}
+                              className="px-2 py-1 rounded-full text-xs font-medium"
+                              style={{
+                                backgroundColor: 'var(--accent-green-light)',
+                                color: 'var(--accent-green)'
+                              }}
+                            >
                               {month}
                             </span>
                           ))}
@@ -576,13 +773,8 @@ const ComparePage = () => {
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-2 items-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            park.crowdLevel?.level === 'Very High' || park.crowdLevel?.level === 'High'
-                              ? 'bg-red-500/20 text-red-400'
-                              : park.crowdLevel?.level === 'Moderate'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-green-500/20 text-green-400'
-                          }`}
+                          className="px-3 py-1 rounded-full text-xs font-semibold border"
+                          style={getCrowdPillStyle(park.crowdLevel?.level)}
                         >
                           {park.crowdLevel?.level || 'Unknown'}
                         </span>
@@ -595,50 +787,74 @@ const ComparePage = () => {
                     ))}
                   </ComparisonRow>
 
-                  {comparisonData?.commonActivities && (comparisonData.commonActivities.commonToAll.length > 0 || comparisonData.commonActivities.mostlyCommon.length > 0) && (
-                    <ComparisonRow label="Activities" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
-                      {enhancedParks.map((park) => {
-                        const allActivities = [
-                          ...(comparisonData.commonActivities.commonToAll || []),
-                          ...(comparisonData.commonActivities.mostlyCommon || [])
-                        ];
+                  {hasEntranceFeeData && (
+                    <ComparisonRow label="Entrance Fee" desktopAlign="center">
+                      {enhancedParks.map(park => {
+                        const feeInfo = getEntranceFeeInfo(park);
 
                         return (
-                          <div key={park.parkCode} className="flex flex-col gap-1 w-full">
-                            <div className="flex flex-wrap gap-1 justify-center w-full">
-                              {allActivities.slice(0, Math.ceil(allActivities.length / 2)).map((item, itemIndex) => (
-                                <span key={itemIndex} className="px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium whitespace-nowrap">
-                                  {item.title}
-                                </span>
-                              ))}
+                          <div key={park.parkCode} className="flex flex-col gap-1 items-center">
+                            <div className="text-sm font-medium">
+                              {feeInfo ? feeInfo.amount : 'Check park page'}
                             </div>
-                            {allActivities.length > Math.ceil(allActivities.length / 2) && (
-                              <div className="flex flex-wrap gap-1 justify-center w-full">
-                                {allActivities.slice(Math.ceil(allActivities.length / 2)).map((item, itemIndex) => (
-                                  <span key={itemIndex + Math.ceil(allActivities.length / 2)} className="px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium whitespace-nowrap">
-                                    {item.title}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                            <div className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
+                              {feeInfo ? feeInfo.note : 'Fee details unavailable'}
+                            </div>
                           </div>
                         );
                       })}
                     </ComparisonRow>
                   )}
 
-                  <ComparisonRow label="Quick Actions" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors}>
+                  <ComparisonRow label="Top Activities" desktopAlign="left">
+                    {enhancedParks.map((park) => {
+                      const activities = getTopActivities(park);
+                      return (
+                        <div key={park.parkCode} className="flex flex-col gap-1 w-full">
+                          {activities.length > 0 ? (
+                            <div className="flex flex-col gap-1.5 w-full">
+                              {activities.map((activity) => (
+                                <span
+                                  key={activity}
+                                  className="px-2 py-1 rounded-md border text-xs font-medium"
+                                  style={{
+                                    backgroundColor: 'var(--accent-green-light)',
+                                    color: 'var(--accent-green)',
+                                    borderColor: 'color-mix(in srgb, var(--accent-green) 22%, var(--border) 78%)'
+                                  }}
+                                >
+                                  {activity}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                              Activity data unavailable
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </ComparisonRow>
+
+                  <ComparisonRow label="Quick Actions">
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex justify-center">
                         <Link
                           href={`/parks/${park.parkCode}`}
-                          className="px-3 py-2 rounded-lg text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors border border-blue-400/20 hover:border-blue-400/40"
+                          className="px-3 py-2 rounded-lg text-sm font-medium transition-colors border"
+                          style={{
+                            color: 'var(--accent-green)',
+                            borderColor: 'color-mix(in srgb, var(--accent-green) 24%, var(--border) 76%)'
+                          }}
                         >
                           View Details →
                         </Link>
                       </div>
                     ))}
                   </ComparisonRow>
+                    </div>
+                  </div>
                 </ComparisonSection>
               </div>
             )
@@ -678,7 +894,13 @@ const ComparisonSection = ({ title, icon: Icon, isExpanded, onToggle, children }
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition"
+        className="w-full flex items-center justify-between p-6 transition"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
       >
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg flex items-center justify-center"
@@ -708,70 +930,34 @@ const ComparisonSection = ({ title, icon: Icon, isExpanded, onToggle, children }
   );
 };
 
-const ComparisonRow = ({ label, children, parkNames = [], parkCodes = [], parkColors = {} }) => {
+const ComparisonRow = ({ label, children, desktopAlign = 'center' }) => {
   const childArray = React.Children.toArray(children);
 
   return (
-    <div>
-      {/* Desktop Layout */}
-      <div className="hidden lg:block">
-        <div className="flex min-w-max" style={{ borderColor: 'var(--border)' }}>
-          <div className="flex-shrink-0 w-48 px-4 py-4 font-semibold text-sm text-left"
-            style={{
-              color: 'var(--text-secondary)',
-              backgroundColor: 'var(--surface-hover)'
-            }}
-          >
+    <div className="flex min-w-max border-b" style={{ borderColor: 'var(--border)' }}>
+      <div
+        className="hidden lg:block flex-shrink-0 w-48 px-4 py-4 font-semibold text-sm text-left lg:sticky lg:left-0 lg:z-10 lg:shadow-[10px_0_24px_-18px_rgba(15,23,42,0.18)]"
+        style={{
+          color: 'var(--text-secondary)',
+          backgroundColor: 'var(--surface-hover)'
+        }}
+      >
+        <div className="leading-relaxed">{label}</div>
+      </div>
+      {childArray.map((child, index) => (
+        <div
+          key={index}
+          className="flex-1 min-w-[10.5rem] sm:min-w-[11rem] lg:min-w-0 px-3 sm:px-4 py-4 text-sm snap-start"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] lg:hidden" style={{ color: 'var(--text-tertiary)' }}>
             {label}
           </div>
-          {childArray.map((child, index) => (
-            <div key={index} className="flex-1 px-4 py-4 text-sm min-w-0"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <div className="w-full text-center leading-relaxed">{child}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile Card Layout */}
-      <div className="lg:hidden">
-        <div className="border-b p-4" style={{ borderColor: 'var(--border)' }}>
-          <div className="mb-3">
-            <h4 className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</h4>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {childArray.map((child, index) => {
-              const parkCode = parkCodes[index];
-              const parkColor = parkCode ? parkColors[parkCode] : null;
-
-              return (
-                <div key={index}
-                  className={`p-3 rounded-lg ${parkColor ? parkColor.border : ''}`}
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: parkColor ? undefined : 'var(--border)'
-                  }}
-                >
-                  {parkNames[index] && (
-                    <div className={`mb-2 pb-2 border-b ${parkColor ? parkColor.border : ''}`}
-                      style={{ borderColor: parkColor ? undefined : 'var(--border)' }}
-                    >
-                      <h5 className={`font-semibold text-xs ${parkColor ? parkColor.text : ''}`}
-                        style={{ color: parkColor ? undefined : 'var(--text-secondary)' }}
-                      >
-                        {parkNames[index]}
-                      </h5>
-                    </div>
-                  )}
-                  <div className="text-sm" style={{ color: 'var(--text-primary)' }}>{child}</div>
-                </div>
-              );
-            })}
+          <div className={`w-full leading-relaxed ${desktopAlign === 'left' ? 'text-left' : 'text-center'}`}>
+            {child}
           </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 };

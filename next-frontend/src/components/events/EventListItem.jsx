@@ -3,7 +3,14 @@ import { MapPin, Users, Clock, ArrowRight, Heart, HeartOff } from '@components/i
 
 const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
   const category = useMemo(() => categories.find(c => c.id === event.category), [categories, event.category]);
-  const eventDate = useMemo(() => new Date(event.date), [event.date]);
+  const eventDate = useMemo(() => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(event.date || '');
+    if (match) {
+      const [, year, month, day] = match;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+    return new Date(event.date);
+  }, [event.date]);
 
   const handleSaveToggle = useCallback(() => {
     if (isSaved) {
@@ -21,15 +28,12 @@ const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isS
         borderColor: 'var(--border)'
       }}
     >
-      <div className="flex gap-4">
-        {/* Date */}
-        <div className="flex-shrink-0 text-center bg-white rounded-xl p-3 shadow-lg h-fit">
-          <div className="text-xs font-semibold text-gray-600 uppercase">
-            {eventDate.toLocaleDateString('en-US', { month: 'short' })}
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {eventDate.getDate()}
-          </div>
+      <div className="flex items-start gap-4">
+        {/* Date - compact calendar badge */}
+        <div className="h-16 flex-shrink-0 flex items-center justify-center rounded-xl bg-white px-4 text-center shadow-lg">
+          <span className="text-sm font-bold uppercase tracking-[0.14em] text-gray-900 leading-none whitespace-nowrap">
+            {eventDate.toLocaleDateString('en-US', { month: 'short' })} {eventDate.getDate()}
+          </span>
         </div>
 
         {/* Content */}
@@ -53,13 +57,18 @@ const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isS
                 <MapPin className="h-3 w-3" />
                 <span>{event.parkName}</span>
               </div>
+              {event.dateLabel && (
+                <div className="text-xs font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>
+                  {event.dateLabel}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
                 <a
-                  href={event.id ? 
+                  href={event.detailsUrl || (event.id ?
                     `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}` :
                     `https://www.nps.gov/${event.parkCode}/planyourvisit/events.htm`
-                  }
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm font-semibold text-purple-400 hover:text-purple-300"

@@ -22,7 +22,7 @@ const NotFound = () => {
     url: 'https://www.nationalparksexplorerusa.com/404',
     mainEntity: {
       '@type': 'Thing',
-      name: 'TrailVerse - National Parks Explorer',
+      name: 'TrailVerse',
       description: 'Explore America\'s 470+ National Parks & Sites'
     }
   };

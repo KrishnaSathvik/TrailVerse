@@ -5,7 +5,14 @@ import Button from '../common/Button';
 
 const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
   const category = useMemo(() => categories?.find(c => c.id === event.category), [categories, event.category]);
-  const eventDate = useMemo(() => new Date(event.date), [event.date]);
+  const eventDate = useMemo(() => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(event.date || '');
+    if (match) {
+      const [, year, month, day] = match;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+    return new Date(event.date);
+  }, [event.date]);
 
   const handleSaveToggle = useCallback(() => {
     if (isSaved) {
@@ -46,12 +53,9 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
             />
 
             {/* Date Badge */}
-            <div className="text-center bg-white rounded-xl p-2 shadow-lg">
-              <div className="text-xs font-semibold text-gray-600 uppercase">
-                {eventDate.toLocaleDateString('en-US', { month: 'short' })}
-              </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {eventDate.getDate()}
+            <div className="flex min-h-11 items-center justify-center rounded-xl bg-white px-3 py-2 text-center shadow-lg">
+              <div className="text-sm font-bold uppercase leading-none tracking-[0.14em] text-gray-900">
+                {eventDate.toLocaleDateString('en-US', { month: 'short' })} {eventDate.getDate()}
               </div>
             </div>
           </div>
@@ -72,6 +76,12 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
         >
           {event.title}
         </h3>
+
+        {event.dateLabel && (
+          <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-tertiary)' }}>
+            {event.dateLabel}
+          </p>
+        )}
 
         <p className="text-sm mb-4 line-clamp-2"
           style={{ color: 'var(--text-secondary)' }}
@@ -98,7 +108,7 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
 
         <div className="flex items-center justify-end">
           <Button
-            href={`https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}`}
+            href={event.detailsUrl || `https://www.nps.gov/planyourvisit/event-details.htm?id=${event.id}`}
             target="_blank"
             rel="noopener noreferrer"
             variant="secondary"

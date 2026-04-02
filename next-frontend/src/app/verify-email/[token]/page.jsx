@@ -10,7 +10,7 @@ import { CheckCircle, XCircle, Loader2, Sparkles, ArrowRight } from '@components
 const VerifyEmailPage = () => {
   const { token } = useParams();
   const router = useRouter();
-  const { setUserAfterVerification } = useAuth();
+  const { setUserAfterVerification, authTransition } = useAuth();
   const [status, setStatus] = useState('verifying'); // verifying, success, error
   const [message, setMessage] = useState('');
   const [resendingEmail, setResendingEmail] = useState(false);
@@ -45,9 +45,12 @@ const VerifyEmailPage = () => {
         // If verification includes a token, auto-login the user
         if (response.token && response.data) {
           // Update AuthContext immediately with user data and token
-          setUserAfterVerification(response.data, response.token);
+          const verificationResult = await setUserAfterVerification(response.data, response.token);
           
           console.log('✅ VerifyEmailPage: User authenticated after verification');
+          if (verificationResult?.redirectedToChat) {
+            return;
+          }
           console.log('✅ VerifyEmailPage: Redirecting to explore page in 2 seconds...');
           
           // Redirect to explore page after 2 seconds (reduced from 3 for better UX)
@@ -178,7 +181,9 @@ const VerifyEmailPage = () => {
                   {message || 'Your email has been verified successfully!'}
                 </p>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
-                  You&apos;ve been automatically signed in. Redirecting you to explore national parks...
+                  {authTransition.active
+                    ? authTransition.message
+                    : 'You&apos;ve been automatically signed in. Redirecting you to explore national parks...'}
                 </p>
                 
                 <div className="flex items-center justify-center gap-2 mb-6">
@@ -187,7 +192,7 @@ const VerifyEmailPage = () => {
                     style={{ color: 'var(--accent-green)' }} 
                   />
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Taking you to explore...
+                    {authTransition.active ? 'Moving your chat into your account...' : 'Taking you to explore...'}
                   </span>
                 </div>
 

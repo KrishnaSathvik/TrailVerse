@@ -1,4 +1,6 @@
+"use client";
 import Link from 'next/link';
+import { Mountain } from '@components/icons';
 
 export default function ParkNotFound() {
   return (
@@ -8,7 +10,7 @@ export default function ParkNotFound() {
           className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
           style={{ backgroundColor: 'var(--surface-hover)' }}
         >
-          <span className="text-4xl">🏔️</span>
+          <Mountain className="h-10 w-10" style={{ color: 'var(--text-secondary)' }} />
         </div>
 
         <h1 className="text-4xl font-bold tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>
