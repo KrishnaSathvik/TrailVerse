@@ -232,47 +232,41 @@ const LandingPage = () => {
                   }}
                 >
                   <Search className="h-6 w-6 text-white/70 ml-6 flex-shrink-0" />
-                  <div style={{ position: 'relative', flex: '1 1 0%', minWidth: 0 }}>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onFocus={() => setSearchFocused(true)}
-                      placeholder="Search parks, monuments, historic sites..."
-                      className="bg-transparent border-none ring-0 focus:ring-0 outline-none focus:outline-none shadow-none text-white font-medium placeholder-white/50 text-base sm:text-lg py-4 sm:py-5 px-4"
-                      id="hero-search"
-                      autoComplete="off"
-                      style={{ width: '100%', paddingRight: searchQuery ? '2.5rem' : '0.5rem' }}
-                    />
-                    {searchQuery && (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => { setSearchQuery(''); document.getElementById('hero-search')?.focus(); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { setSearchQuery(''); document.getElementById('hero-search')?.focus(); } }}
-                        aria-label="Clear search"
-                        style={{
-                          position: 'absolute',
-                          right: '4px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '50%',
-                          backgroundColor: 'rgba(255,255,255,0.25)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          zIndex: 10,
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M11 3L3 11M3 3L11 11" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    placeholder="Search parks, monuments, historic sites..."
+                    className="flex-1 min-w-0 bg-transparent border-none ring-0 focus:ring-0 outline-none focus:outline-none shadow-none text-white font-medium placeholder-white/50 text-base sm:text-lg py-4 sm:py-5 px-4"
+                    id="hero-search"
+                    autoComplete="off"
+                  />
+                  {searchQuery && (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setSearchQuery(''); document.getElementById('hero-search')?.focus(); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { setSearchQuery(''); document.getElementById('hero-search')?.focus(); } }}
+                      aria-label="Clear search"
+                      style={{
+                        flexShrink: 0,
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        marginRight: '4px',
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 3L3 11M3 3L11 11" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                  )}
                   <button
                     type="submit"
                     className="mr-2 px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-shrink-0 flex items-center gap-2 hover:scale-105"
