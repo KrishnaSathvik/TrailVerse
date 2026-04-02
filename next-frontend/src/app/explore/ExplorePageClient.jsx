@@ -58,7 +58,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
   });
 
   const hasActiveFilters = searchTerm || filters.states.length > 0 || filters.activities.length > 0;
-  const needsAllParks = hasActiveFilters || sortBy === 'state';
+  const needsAllParks = !filters.nationalParksOnly || hasActiveFilters || sortBy === 'state';
 
   const { data: paginatedData, isLoading: paginatedLoading, isPending: paginatedPending, error: paginatedError } = useParks(
     currentPage,
