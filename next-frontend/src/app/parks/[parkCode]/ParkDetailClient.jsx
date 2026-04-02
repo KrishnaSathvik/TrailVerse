@@ -5,7 +5,7 @@ import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
-  Shield, ExternalLink, Route, Monitor, Play, Car
+  Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight
 } from '@components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -522,6 +522,14 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                   <p className="text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
                     Browse Park Details
                   </p>
+                  {canScrollTabsRight && !canScrollTabsLeft && (
+                    <span className="flex items-center gap-0.5 text-[11px]"
+                      style={{ color: 'var(--text-tertiary)' }}
+                    >
+                      Scroll for more
+                      <ChevronRight className="h-3 w-3" />
+                    </span>
+                  )}
                 </div>
                 <div className="relative">
                   {canScrollTabsLeft && (

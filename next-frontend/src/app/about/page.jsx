@@ -254,7 +254,7 @@ export default function AboutPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    ['433+', 'Parks & Sites'],
+                    ['470+', 'Parks & Sites'],
                     ['Smart', 'Trip Planning'],
                     ['Real-time', 'Weather & Events'],
                     ['Community', 'Driven Reviews']

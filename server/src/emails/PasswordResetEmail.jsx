@@ -3,16 +3,16 @@ import {
   Button,
   Container,
   Head,
-  Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
   Text,
-  Tailwind,
+  Hr,
 } from '@react-email/components';
 import * as React from 'react';
+
+const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 const PasswordResetEmail = ({
   username = 'there',
@@ -23,167 +23,95 @@ const PasswordResetEmail = ({
 
   return (
     <Html>
+      <Head />
       <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Head />
-        <Body className="bg-gray-50 font-sans">
-          <Container className="bg-white mx-auto my-0 max-w-[600px]">
-            {/* Header */}
-            <Section className="bg-red-600 py-12 px-8 text-center">
-              <Img
-                src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
-                width="64"
-                height="64"
-                alt="TrailVerse"
-                className="mx-auto mb-6 rounded-xl"
-              />
-              <Heading className="text-white text-3xl font-bold m-0 mb-3">
-                Password Reset
-              </Heading>
-              <Text className="text-red-100 text-lg m-0">
-                Secure your TrailVerse account
-              </Text>
-            </Section>
+      <Body style={{ margin: 0, padding: 0, backgroundColor: '#0B1D0F', fontFamily, WebkitFontSmoothing: 'antialiased', color: '#111827' }}>
+        <Section style={{ backgroundColor: '#0B1D0F', padding: '40px 20px' }}>
+          <Container style={{ maxWidth: '600px', backgroundColor: '#ffffff', margin: '0 auto' }}>
+            <Section style={{ padding: '40px 50px' }}>
 
-            {/* Main Content */}
-            <Section className="px-8 py-10">
-              <div className="text-center mb-8">
-                <Text className="text-gray-900 text-2xl font-bold m-0 mb-4">
-                  Hi {username}!
-                </Text>
-                <Text className="text-gray-600 text-lg leading-relaxed m-0 max-w-2xl mx-auto">
-                  We received a request to reset your TrailVerse password. If you made this request, click the button below to set a new password.
-                </Text>
+              {/* Logo */}
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <span style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
+                  TrailVerse
+                </span>
               </div>
 
-              {/* Primary CTA */}
-              <div className="text-center mb-10">
+              {/* Body */}
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Hey {username} 👋
+              </Text>
+
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                We received a request to reset your <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> password. If you made this request, click the button below to set a new password.
+              </Text>
+
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                This link will expire in <strong>{expirationTime}</strong>. If you didn't request this reset, you can safely ignore this email — your password will remain unchanged.
+              </Text>
+
+              {/* CTA */}
+              <div style={{ textAlign: 'center', margin: '40px 0 32px' }}>
                 <Button
-                  className="bg-red-600 text-white rounded-xl px-10 py-4 text-xl font-bold no-underline inline-block shadow-lg"
                   href={resetUrl}
+                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  🔐 Reset Password
+                  Reset Password
                 </Button>
               </div>
 
               {/* Backup Link */}
-              <div className="mb-10 text-center">
-                <Text className="text-gray-600 text-base mb-4">
-                  Having trouble? Copy this link:
-                </Text>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <Text className="text-red-600 text-sm break-all m-0 font-mono">
-                    {resetUrl}
-                  </Text>
-                </div>
-              </div>
-
-              {/* Security Notice */}
-              <div className="bg-yellow-50 rounded-xl p-6 mb-10 border border-yellow-200 text-center">
-                <Text className="text-yellow-600 text-2xl mb-3">⚠️</Text>
-                <Text className="text-yellow-900 text-lg font-bold m-0 mb-2">
-                  Security Notice
-                </Text>
-                <Text className="text-yellow-800 text-base m-0">
-                  This link expires in <strong>{expirationTime}</strong>. If you didn't request this reset, please ignore this email or contact support immediately.
-                </Text>
-              </div>
+              <Text style={{ margin: '0 0 8px', fontSize: '13px', lineHeight: '1.6', color: '#6b7280' }}>
+                Having trouble? Copy and paste this link into your browser:
+              </Text>
+              <Text style={{ margin: '0 0 24px', fontSize: '13px', lineHeight: '1.4', color: '#06B569', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                {resetUrl}
+              </Text>
 
               {/* Security Tips */}
-              <div className="mb-10">
-                <Text className="text-gray-900 text-xl font-bold text-center m-0 mb-6">
-                  Security Tips
-                </Text>
-                
-                <div className="space-y-4">
-                  {[
-                    {
-                      icon: '🔒',
-                      title: 'Use a Strong Password',
-                      description: 'Mix letters, numbers, and symbols'
-                    },
-                    {
-                      icon: '🔄',
-                      title: 'Make it Unique',
-                      description: 'Don\'t reuse passwords from other accounts'
-                    },
-                    {
-                      icon: '📱',
-                      title: 'Enable 2FA',
-                      description: 'Add an extra layer of security'
-                    }
-                  ].map((tip, index) => (
-                    <div key={index} className="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
-                      <Text className="text-3xl m-0 mb-3">{tip.icon}</Text>
-                      <Text className="text-gray-900 text-lg font-bold m-0 mb-2">
-                        {tip.title}
-                      </Text>
-                      <Text className="text-gray-600 text-base m-0">
-                        {tip.description}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <h3 style={{ margin: '32px 0 16px', fontSize: '18px', fontWeight: 800, color: '#111827' }}>
+                🔒 Security Tips:
+              </h3>
+              <ol style={{ margin: '0 0 24px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Use a strong password</strong> — Mix letters, numbers, and symbols.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Make it unique</strong> — Don't reuse passwords from other accounts.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Enable 2FA</strong> — Add an extra layer of security to your account.
+                </li>
+              </ol>
 
-              {/* Additional Info */}
-              <div className="bg-gray-50 rounded-xl p-6 mb-10 border border-gray-200 text-center">
-                <Text className="text-gray-800 text-lg font-bold m-0 mb-3">
-                  Why did I receive this?
-                </Text>
-                <Text className="text-gray-600 text-base m-0">
-                  Someone requested a password reset for your TrailVerse account. If you didn't make this request, you can safely ignore this email.
-                </Text>
-              </div>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                — The <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> team
+              </Text>
 
-              {/* Help */}
-              <div className="text-center">
-                <Text className="text-gray-600 text-base m-0 mb-4">
-                  Need help? Contact our security team!
-                </Text>
-                <div className="text-center">
-                  <Link 
-                    href="mailto:trailverseteam@gmail.com" 
-                    className="text-red-600 text-base font-semibold underline inline-block mr-6"
-                  >
-                    💬 Contact Support
-                  </Link>
-                  <Link 
-                    href="https://nationalparksexplorerusa.com/faq" 
-                    className="text-red-600 text-base font-semibold underline inline-block mr-6"
-                  >
-                    📚 Security FAQ
-                  </Link>
-                </div>
-              </div>
-            </Section>
+              {/* Divider */}
+              <Hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '40px 0 32px' }} />
 
-            {/* Footer */}
-            <Section className="bg-gray-100 px-8 py-8 border-t border-gray-200">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <Img
-                    src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
-                    width="32"
-                    height="32"
-                    alt="TrailVerse"
-                    className="rounded-lg"
-                  />
-                  <Text className="text-gray-800 text-lg font-bold m-0">
+              {/* Footer */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
                     TrailVerse
-                  </Text>
+                  </span>
                 </div>
-                <Text className="text-gray-500 text-sm m-0 mb-2">
+                <Text style={{ margin: '0 0 8px', fontSize: '11px', color: '#6b7280' }}>
                   This is an automated security email. Please do not reply.
                 </Text>
-                <Text className="text-gray-500 text-sm m-0">
-                  © 2025 TrailVerse. All rights reserved.
+                <Text style={{ margin: 0, fontSize: '11px' }}>
+                  <Link href="mailto:trailverseteam@gmail.com" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                    Contact support
+                  </Link>
                 </Text>
               </div>
+
             </Section>
           </Container>
-        </Body>
-      </Tailwind>
+        </Section>
+      </Body>
     </Html>
   );
 };

@@ -3,16 +3,16 @@ import {
   Button,
   Container,
   Head,
-  Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
   Text,
-  Tailwind,
+  Hr,
 } from '@react-email/components';
 import * as React from 'react';
+
+const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 const AccountDeletionEmail = ({
   username = 'there',
@@ -23,205 +23,128 @@ const AccountDeletionEmail = ({
   supportEmail = 'trailverseteam@gmail.com',
 }) => {
   const previewText = `Your TrailVerse account has been deleted - ${username}`;
-  
-  // Format deletion date properly
-  const formattedDeletionDate = deletionDate instanceof Date 
-    ? deletionDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+
+  const formattedDeletionDate = deletionDate instanceof Date
+    ? deletionDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       })
     : deletionDate;
 
   return (
     <Html>
+      <Head />
       <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Head />
-        <Body className="bg-gray-50 font-sans">
-          <Container className="bg-white mx-auto my-0 max-w-[600px]">
-            {/* Header */}
-            <Section className="bg-gray-600 py-12 px-8 text-center">
-              <Img
-                src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
-                width="64"
-                height="64"
-                alt="TrailVerse"
-                className="mx-auto mb-6 rounded-xl"
-              />
-              <Heading className="text-white text-3xl font-bold m-0 mb-3">
-                Account Deleted
-              </Heading>
-              <Text className="text-gray-100 text-lg m-0">
-                We're sorry to see you go
+      <Body style={{ margin: 0, padding: 0, backgroundColor: '#0B1D0F', fontFamily, WebkitFontSmoothing: 'antialiased', color: '#111827' }}>
+        <Section style={{ backgroundColor: '#0B1D0F', padding: '40px 20px' }}>
+          <Container style={{ maxWidth: '600px', backgroundColor: '#ffffff', margin: '0 auto' }}>
+            <Section style={{ padding: '40px 50px' }}>
+
+              {/* Logo */}
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <span style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
+                  TrailVerse
+                </span>
+              </div>
+
+              {/* Body */}
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Hey {username} 👋
               </Text>
-            </Section>
 
-            {/* Main Content */}
-            <Section className="px-8 py-10">
-              <div className="text-center mb-8">
-                <Text className="text-gray-900 text-2xl font-bold m-0 mb-4">
-                  Hi {username},
-                </Text>
-                <Text className="text-gray-600 text-lg leading-relaxed m-0 max-w-2xl mx-auto">
-                  We're writing to confirm that your TrailVerse account associated with <strong className="text-gray-800">{userEmail}</strong> 
-                  has been successfully deleted as of {formattedDeletionDate}.
-                </Text>
-              </div>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                We're writing to confirm that your <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> account associated with <strong>{userEmail}</strong> has been successfully deleted as of {formattedDeletionDate}.
+              </Text>
 
-              {/* Farewell Message */}
-              <div className="bg-gray-50 rounded-xl p-8 mb-10 border border-gray-200 text-center">
-                <Text className="text-gray-800 text-xl font-bold mb-4">
-                  Thank you for being part of our community
-                </Text>
-                <Text className="text-gray-600 text-base m-0">
-                  We're sorry to see you go, but we respect your decision. Your account and all associated data have been permanently removed from our systems. 
-                  We hope you enjoyed exploring America's national parks with us!
-                </Text>
-              </div>
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                We're sorry to see you go, but we respect your decision. We hope you enjoyed exploring America's national parks with us!
+              </Text>
+
+              {/* What was deleted */}
+              <h3 style={{ margin: '32px 0 16px', fontSize: '18px', fontWeight: 800, color: '#111827' }}>
+                🗑️ What was deleted:
+              </h3>
+              <ul style={{ margin: '0 0 24px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Personal Profile</strong> — Your account information, avatar, and personal details.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Saved Parks & Visits</strong> — All your favorite parks, wish lists, and visited park history.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>AI Trip Plans</strong> — Your saved AI chat conversations and itineraries.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Reviews & Photos</strong> — Your park reviews and uploaded photos.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Preferences & Credentials</strong> — Notification settings, email preferences, and login data.
+                </li>
+              </ul>
 
               {/* Important Notice */}
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-6 mb-10 text-center">
-                <Text className="text-yellow-600 text-2xl mb-3">⚠️</Text>
-                <Text className="text-yellow-900 text-lg font-bold m-0 mb-2">
-                  Important Information
-                </Text>
-                <Text className="text-yellow-800 text-base m-0">
-                  Your account data will be retained for <strong>{dataRetentionPeriod}</strong> for security and legal purposes, 
-                  after which it will be permanently deleted. This action cannot be undone.
-                </Text>
-              </div>
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                ⚠️ Your account data will be retained for <strong>{dataRetentionPeriod}</strong> for security and legal purposes, after which it will be permanently deleted. This action cannot be undone.
+              </Text>
 
-              {/* What Was Deleted */}
-              <div className="mb-10">
-                <Text className="text-gray-900 text-xl font-bold text-center m-0 mb-6">
-                  What was deleted:
-                </Text>
-                
-                <div className="space-y-4">
-                  {[
-                    {
-                      icon: '👤',
-                      title: 'Personal Profile',
-                      description: 'Your account information and personal details'
-                    },
-                    {
-                      icon: '⭐',
-                      title: 'Saved Parks',
-                      description: 'All your favorite parks and wish lists'
-                    },
-                    {
-                      icon: '📝',
-                      title: 'Reviews & Experiences',
-                      description: 'Your park reviews and shared experiences'
-                    },
-                    {
-                      icon: '📧',
-                      title: 'Email Preferences',
-                      description: 'Notification settings and email preferences'
-                    },
-                    {
-                      icon: '🔐',
-                      title: 'Login Credentials',
-                      description: 'Authentication data and security information'
-                    }
-                  ].map((item, index) => (
-                    <div key={index} className="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
-                      <Text className="text-3xl m-0 mb-3">{item.icon}</Text>
-                      <Text className="text-gray-800 text-lg font-bold m-0 mb-2">
-                        {item.title}
-                      </Text>
-                      <Text className="text-gray-600 text-base m-0">
-                        {item.description}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Changed your mind */}
+              <h3 style={{ margin: '32px 0 16px', fontSize: '18px', fontWeight: 800, color: '#111827' }}>
+                🔄 Changed your mind?
+              </h3>
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                If you deleted your account by mistake, you may be able to reactivate it within the next <strong>{dataRetentionPeriod}</strong>.
+              </Text>
 
-              {/* Reactivation Option */}
-              <div className="bg-green-50 rounded-xl p-8 mb-10 border border-green-200 text-center">
-                <Text className="text-gray-800 text-xl font-bold mb-4">
-                  Changed your mind?
-                </Text>
-                <Text className="text-gray-600 text-base mb-6">
-                  If you deleted your account by mistake, you may be able to reactivate it within the next {dataRetentionPeriod}.
-                </Text>
+              {/* CTA */}
+              <div style={{ textAlign: 'center', margin: '40px 0 32px' }}>
                 <Button
-                  className="bg-green-600 text-white rounded-xl px-8 py-4 text-lg font-bold no-underline inline-block shadow-lg"
                   href={reactivationUrl}
+                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  🔄 Try to Reactivate Account
+                  Try to Reactivate Account
                 </Button>
               </div>
 
-              {/* Data Export Info */}
-              <div className="bg-gray-50 rounded-xl p-8 mb-10 border border-gray-200 text-center">
-                <Text className="text-gray-800 text-xl font-bold mb-4">
-                  Data Export
-                </Text>
-                <Text className="text-gray-600 text-base mb-6">
-                  If you requested a data export before deletion, you should have received it via email. 
-                  If you didn't receive it or need assistance, please contact our support team.
-                </Text>
-                <Button
-                  className="bg-gray-200 border border-gray-300 text-gray-700 rounded-xl px-8 py-4 text-lg font-bold no-underline inline-block hover:bg-gray-300"
-                  href={`mailto:${supportEmail}?subject=Account Deletion - Data Export Request`}
-                >
-                  💬 Contact Support
-                </Button>
-              </div>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                If you need a data export or have any questions, reach out to our support team at{' '}
+                <Link href={`mailto:${supportEmail}?subject=Account Deletion - Data Export Request`} style={{ color: '#06B569', textDecoration: 'underline' }}>
+                  {supportEmail}
+                </Link>.
+              </Text>
 
-              {/* Help Section */}
-              <div className="text-center mb-8">
-                <Text className="text-gray-600 text-base m-0 mb-4">
-                  Need help or have questions? Our support team is here to help.
-                </Text>
-                <div className="text-center">
-                  <Link 
-                    href={`mailto:${supportEmail}`} 
-                    className="text-green-600 text-base font-semibold underline"
-                  >
-                    💬 Contact Support Team
-                  </Link>
-                </div>
-              </div>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Thank you for being part of the <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> community. We hope to see you again soon! 🌲
+              </Text>
 
-              {/* Final Message */}
-              <div className="text-center">
-                <Text className="text-gray-600 text-base m-0">
-                  Thank you for being part of the TrailVerse community. 
-                  We hope you enjoyed exploring America's national parks with us! 🌲
-                </Text>
-              </div>
-            </Section>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                — The <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> team
+              </Text>
 
-            {/* Footer */}
-            <Section className="bg-gray-100 px-8 py-8 border-t border-gray-200">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <Img
-                    src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
-                    width="32"
-                    height="32"
-                    alt="TrailVerse"
-                    className="rounded-lg"
-                  />
-                  <Text className="text-gray-800 text-lg font-bold m-0">
+              {/* Divider */}
+              <Hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '40px 0 32px' }} />
+
+              {/* Footer */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
                     TrailVerse
-                  </Text>
+                  </span>
                 </div>
-                <Text className="text-gray-500 text-sm m-0 mb-2">
+                <Text style={{ margin: '0 0 8px', fontSize: '11px', color: '#6b7280' }}>
                   This is a confirmation that your TrailVerse account has been deleted.
                 </Text>
-                <Text className="text-gray-500 text-sm m-0">
-                  © 2025 TrailVerse. All rights reserved.
+                <Text style={{ margin: 0, fontSize: '11px' }}>
+                  <Link href={`mailto:${supportEmail}`} style={{ color: '#06B569', textDecoration: 'underline' }}>
+                    Contact support
+                  </Link>
                 </Text>
               </div>
+
             </Section>
           </Container>
-        </Body>
-      </Tailwind>
+        </Section>
+      </Body>
     </Html>
   );
 };

@@ -10,7 +10,7 @@ const getAllParksCacheTimeKey = (includeActivities = false) =>
 const PARKS_QUERY_VERSION = 'v3';
 
 // Hook for paginated parks (default behavior - fetches one page at a time)
-export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initialData = null) => {
+export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initialData = undefined) => {
   return useQuery({
     queryKey: ['parks', PARKS_QUERY_VERSION, page, limit, nationalParksOnly],
     queryFn: async () => {
@@ -48,13 +48,13 @@ export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initial
     refetchOnMount: false, // Don't refetch when component mounts if data is fresh
     retry: 2, // Retry failed requests only 2 times
     placeholderData: keepPreviousData, // Keep previous data while fetching new page (smooth UX)
-    initialData,
+    ...(initialData !== undefined && initialData !== null ? { initialData } : {}),
   });
 };
 
 
 // Hook to fetch ALL parks (for filtering/searching on client side)
-export const useAllParks = (initialData = null, includeActivities = false, enabled = true) => {
+export const useAllParks = (initialData = undefined, includeActivities = false, enabled = true) => {
   return useQuery({
     queryKey: ['parks', PARKS_QUERY_VERSION, 'all', includeActivities],
     queryFn: async () => {
@@ -89,7 +89,7 @@ export const useAllParks = (initialData = null, includeActivities = false, enabl
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 2,
-    initialData,
+    ...(initialData !== undefined && initialData !== null ? { initialData } : {}),
   });
 };
 

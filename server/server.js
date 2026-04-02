@@ -19,14 +19,16 @@ const { app, server, wsService } = require('./src/app');
 // Database connection
 const connectDB = require('./src/config/database');
 
-// Scheduler service for scheduled blog posts
+// Scheduler services
 const { startScheduler } = require('./src/services/schedulerService');
+const { startDailyFeedScheduler } = require('./src/services/dailyFeedScheduler');
 const npsService = require('./src/services/npsService');
 
 // Connect to database
 connectDB().then(() => {
-  // Start the scheduler after database connection is established
+  // Start schedulers after database connection is established
   startScheduler();
+  startDailyFeedScheduler();
 
   // Only warm the parks list at startup — it's needed for the parks listing page.
   // All other NPS data (alerts, campgrounds, visitor centers, places, tours,

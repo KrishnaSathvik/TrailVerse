@@ -23,8 +23,8 @@ const generatePrerenderedHTML = async (req, res, next) => {
 
     const pathname = req.path;
     let metaTags = {
-      title: 'TrailVerse - Explore America\'s 433+ Parks & Sites',
-      description: 'Discover, plan, and explore America\'s 433+ parks and sites with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
+      title: 'TrailVerse - Explore America\'s 470+ Parks & Sites',
+      description: 'Discover, plan, and explore America\'s 470+ parks and sites with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
       image: 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
       url: `https://www.nationalparksexplorerusa.com${pathname}`,
       type: 'website'

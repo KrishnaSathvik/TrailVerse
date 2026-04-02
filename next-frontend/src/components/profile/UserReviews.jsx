@@ -106,34 +106,32 @@ const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
           }}
         >
           <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Link
-                  href={`/parks/${review.parkCode}`}
-                  className="text-lg font-semibold hover:text-forest-400 transition"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {parksLoading ? (
-                    <span className="animate-pulse bg-gray-300 rounded h-5 w-32 inline-block"></span>
-                  ) : (
-                    parkNameMap[review.parkCode] || review.parkName || `Park ${review.parkCode}`
-                  )}
-                </Link>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${
-                        i < review.rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'fill-gray-400 text-gray-400'
-                      }`}
-                    />
-                  ))}
-                </div>
+            <div className="flex-1 min-w-0">
+              <Link
+                href={`/parks/${review.parkCode}`}
+                className="text-lg font-semibold hover:text-forest-400 transition block"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {parksLoading ? (
+                  <span className="animate-pulse bg-gray-300 rounded h-5 w-32 inline-block"></span>
+                ) : (
+                  parkNameMap[review.parkCode] || review.parkName || `Park ${review.parkCode}`
+                )}
+              </Link>
+              <div className="flex items-center gap-1 mt-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-4 w-4 ${
+                      i < review.rating
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'fill-gray-400 text-gray-400'
+                    }`}
+                  />
+                ))}
               </div>
-              
-              <div className="flex items-center gap-4 text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   <span>Visited {review.visitYear || 'Unknown Year'}</span>
@@ -145,7 +143,7 @@ const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex-shrink-0">
               <button
                 onClick={() => handleDeleteReview(review)}
                 className="p-2 rounded-lg hover:bg-red-500/20 transition"
@@ -157,7 +155,7 @@ const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
             </div>
           </div>
 
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
             {review.title}
           </h3>
           

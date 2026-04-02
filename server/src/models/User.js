@@ -118,6 +118,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  emailVerificationCode: {
+    type: String,
+    default: null
+  },
   resetPasswordToken: {
     type: String,
     default: null
@@ -292,14 +296,17 @@ userSchema.methods.getResetPasswordToken = function() {
 userSchema.methods.getEmailVerificationToken = function() {
   const crypto = require('crypto');
   const verificationToken = crypto.randomBytes(20).toString('hex');
-  
+
   this.emailVerificationToken = crypto
     .createHash('sha256')
     .update(verificationToken)
     .digest('hex');
-  
+
   this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-  
+
+  // Generate a 6-digit verification code
+  this.emailVerificationCode = crypto.randomInt(100000, 999999).toString();
+
   return verificationToken;
 };
 

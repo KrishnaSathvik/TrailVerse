@@ -169,10 +169,11 @@ const ProfilePage = () => {
   // Force re-render key for debugging
   const [renderKey, setRenderKey] = useState(0);
   const [favoriteBlogsCount, setFavoriteBlogsCount] = useState(0);
+  const [favoritesSubTab, setFavoritesSubTab] = useState('parks');
 
   const tabs = useMemo(() => [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'favorites', label: 'All Favorites', icon: Heart },
+    { id: 'favorites', label: 'Favorites', icon: Heart },
     { id: 'adventures', label: 'Visited Parks', icon: Compass },
     { id: 'reviews', label: 'My Reviews', icon: Star },
     { id: 'testimonials', label: 'Testimonials', icon: Star },
@@ -424,13 +425,16 @@ const ProfilePage = () => {
   }, [lastLoadTime, profileData.avatar, showToast, user, userStats]);
 
   useEffect(() => {
+    // Wait for auth to finish validating before deciding to redirect
+    if (!userDataLoaded) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
     loadProfileData();
-  }, [isAuthenticated, loadProfileData, router]);
+  }, [isAuthenticated, userDataLoaded, loadProfileData, router]);
 
   const loadUserStats = async () => {
     // Debounce: Don't make API calls more than once every 5 seconds
@@ -1316,7 +1320,7 @@ const ProfilePage = () => {
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        All Favorites
+                        Favorites
                       </h3>
                       <p className="text-sm"
                         style={{ color: 'var(--text-secondary)' }}
@@ -1326,30 +1330,35 @@ const ProfilePage = () => {
                     </div>
                   </div>
 
-                  {/* Favorites Sections */}
-                  <div className="space-y-8">
-                    {/* Favorite Parks Section */}
-                    <div
-                      className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        border: '1px solid var(--border)'
-                      }}
-                    >
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-green)')}>
-                          <PhTreeEvergreen size={22} weight="duotone" style={{ color: 'var(--accent-green)' }} />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                            Favorite Parks
-                          </h4>
-                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            National parks you&apos;ve saved for future visits
-                          </p>
-                        </div>
-                      </div>
+                  {/* Sub-tab pills */}
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {[
+                      { id: 'parks', label: 'Parks', count: favorites.length },
+                      { id: 'blogs', label: 'Blogs', count: favoriteBlogsCount },
+                      { id: 'events', label: 'Events', count: savedEvents.length },
+                    ].map((sub) => (
+                      <button
+                        key={sub.id}
+                        onClick={() => setFavoritesSubTab(sub.id)}
+                        className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"
+                        style={{
+                          backgroundColor: favoritesSubTab === sub.id ? 'var(--accent-green)' : 'var(--surface-hover)',
+                          color: favoritesSubTab === sub.id ? 'white' : 'var(--text-secondary)',
+                        }}
+                      >
+                        {sub.label}
+                        {sub.count > 0 && (
+                          <span className="ml-1.5 text-xs opacity-80">
+                            {sub.count}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
 
+                  {/* Favorite Parks */}
+                  {favoritesSubTab === 'parks' && (
+                    <>
                       {favoritesLoading ? (
                         <div className="flex items-center justify-center py-12">
                           <div
@@ -1367,63 +1376,23 @@ const ProfilePage = () => {
                           onRemove={handleRemoveFavorite}
                         />
                       )}
-                    </div>
+                    </>
+                  )}
 
-                    {/* Favorite Blogs Section */}
-                    <div
-                      className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        border: '1px solid var(--border)'
-                      }}
-                    >
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-blue)')}>
-                          <PhBookOpenText size={22} weight="duotone" style={{ color: 'var(--accent-blue)' }} />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                            Favorite Blogs
-                          </h4>
-                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            Travel stories and guides you&apos;ve saved
-                          </p>
-                        </div>
-                      </div>
-                      <FavoriteBlogs onCountChange={setFavoriteBlogsCount} />
-                    </div>
+                  {/* Favorite Blogs */}
+                  {favoritesSubTab === 'blogs' && (
+                    <FavoriteBlogs onCountChange={setFavoriteBlogsCount} />
+                  )}
 
-                    {/* Saved Events Section */}
-                    <div
-                      className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        border: '1px solid var(--border)'
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-orange)')}>
-                            <PhCalendarDots size={22} weight="duotone" style={{ color: 'var(--accent-orange)' }} />
-                          </div>
-                          <div>
-                            <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                              Saved Events
-                            </h4>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                              Events and activities you&apos;re interested in
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <SavedEvents
-                        savedEvents={savedEvents}
-                        loading={savedEventsLoading}
-                        onRemove={unsaveEvent}
-                        onClearAll={clearAllSavedEvents}
-                      />
-                    </div>
-                  </div>
+                  {/* Saved Events */}
+                  {favoritesSubTab === 'events' && (
+                    <SavedEvents
+                      savedEvents={savedEvents}
+                      loading={savedEventsLoading}
+                      onRemove={unsaveEvent}
+                      onClearAll={clearAllSavedEvents}
+                    />
+                  )}
                 </div>
               )}
 
@@ -1443,7 +1412,7 @@ const ProfilePage = () => {
                       <h3 className="text-2xl sm:text-3xl font-bold mb-2"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Visited Park
+                        Visited Parks
                       </h3>
                       <p className="text-sm"
                         style={{ color: 'var(--text-secondary)' }}

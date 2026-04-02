@@ -1,15 +1,29 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Heart, ChevronRight } from '@components/icons';
+import { MapPin, Heart, Calendar } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
+import { useAllParks } from '../../hooks/useParks';
+
 const SavedParks = ({ savedParks, onRemove }) => {
-  // Log when savedParks prop changes
+  const { data: allParksData } = useAllParks();
+  const parksData = allParksData?.data;
+
+  // Map parkCode → NPS park data for enrichment
+  const parkDataMap = useMemo(() => {
+    if (!parksData) return {};
+    return parksData.reduce((map, park) => {
+      map[park.parkCode] = park;
+      return map;
+    }, {});
+  }, [parksData]);
+
   useEffect(() => {
     console.log('[SavedParks] 🔄 Received updated savedParks:', savedParks?.length || 0);
-    console.log('[SavedParks] 🔄 Park codes:', savedParks?.map(p => p.parkCode) || []);
   }, [savedParks]);
 
-  const handleRemove = async (parkCode) => {
+  const handleRemove = async (e, parkCode) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (window.confirm('Remove this park from your saved list?')) {
       try {
         await onRemove(parkCode);
@@ -20,7 +34,6 @@ const SavedParks = ({ savedParks, onRemove }) => {
   };
 
   if (!savedParks || savedParks.length === 0) {
-    console.log('[SavedParks] No saved parks to display');
     return (
       <div className="text-center py-12">
         <MapPin className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
@@ -35,67 +48,81 @@ const SavedParks = ({ savedParks, onRemove }) => {
   }
 
   return (
-    <div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      {savedParks.map(park => (
-        <div
-          key={park.parkCode}
-          className="rounded-2xl overflow-hidden backdrop-blur group"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)'
-          }}
-        >
-          <div className="relative h-40 sm:h-48 overflow-hidden">
-            <OptimizedImage
-              src={park.imageUrl || `https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&fit=crop&crop=center`}
-              alt={park.parkName}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              onError={(e) => {
-                // If the park image fails to load, try a more generic nature fallback
-                if (e.target.src !== 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center') {
-                  e.target.src = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center';
-                }
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            
-            <button
-              onClick={() => handleRemove(park.parkCode)}
-              className="absolute top-3 right-3 p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition"
-            >
-              <Heart className="h-4 w-4 fill-current" />
-            </button>
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {savedParks.map(park => {
+        const npsData = parkDataMap[park.parkCode];
+        const stateAbbr = npsData?.states || '';
+        const description = npsData?.description || '';
 
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h4 className="text-lg font-bold text-white mb-1">
-                {park.parkName}
-              </h4>
-              <p className="text-sm text-white/80 flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {park.parkCode} National Park
-              </p>
+        return (
+          <Link
+            key={park.parkCode}
+            href={`/parks/${park.parkCode}`}
+            className="group rounded-2xl overflow-hidden hover:-translate-y-1 transition-all duration-300"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <div className="relative h-56 overflow-hidden">
+              <OptimizedImage
+                src={park.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&fit=crop&crop=center'}
+                alt={park.parkName}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                onError={(e) => {
+                  if (e.target.src !== 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center') {
+                    e.target.src = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center';
+                  }
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+              {/* Remove heart button - top left */}
+              <button
+                onClick={(e) => handleRemove(e, park.parkCode)}
+                className="absolute top-4 left-4 p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition z-10"
+              >
+                <Heart className="h-4 w-4 fill-current" />
+              </button>
+
+              {/* State badge - top right */}
+              {stateAbbr && (
+                <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {stateAbbr}
+                </span>
+              )}
             </div>
-          </div>
 
-          <div className="p-4 flex items-center justify-between">
-            <span className="text-xs"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Saved {new Date(park.createdAt).toLocaleDateString()}
-            </span>
-            <Link
-              href={`/parks/${park.parkCode}`}
-              className="text-sm font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1"
-            >
-              View Details
-              <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-        </div>
-      ))}
-      </div>
+            <div className="p-5">
+              <h4 className="text-lg font-semibold mb-1 line-clamp-2 group-hover:text-forest-500 transition-colors"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {npsData?.fullName || park.parkName}
+              </h4>
+
+              {description && (
+                <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--text-secondary)' }}>
+                  {description}
+                </p>
+              )}
+
+              <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {stateAbbr || park.parkCode}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Saved {new Date(park.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 };

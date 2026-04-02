@@ -339,6 +339,7 @@ exports.verifyEmail = async (req, res, next) => {
     user.isEmailVerified = true;
     user.emailVerificationToken = null;
     user.emailVerificationExpire = null;
+    user.emailVerificationCode = null;
     await user.save();
     
     // Send welcome email after verification

@@ -23,7 +23,7 @@ const NotFound = () => {
     mainEntity: {
       '@type': 'Thing',
       name: 'TrailVerse',
-      description: 'Explore America\'s 433+ Parks & Sites'
+      description: 'Explore America\'s 470+ Parks & Sites'
     }
   };
 

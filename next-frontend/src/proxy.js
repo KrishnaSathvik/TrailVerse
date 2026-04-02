@@ -21,10 +21,10 @@ export function proxy(request) {
     }
   }
 
-  // 2. If accessing an auth route while already logged in, redirect to profile/home
+  // 2. If accessing an auth route while already logged in, redirect to home
   if (publicOnlyRoutes.some(route => pathname.startsWith(route))) {
     if (token) {
-      return NextResponse.redirect(new URL('/profile', request.url));
+      return NextResponse.redirect(new URL('/home', request.url));
     }
   }
 

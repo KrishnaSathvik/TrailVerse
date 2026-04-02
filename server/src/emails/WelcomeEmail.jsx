@@ -3,16 +3,16 @@ import {
   Button,
   Container,
   Head,
-  Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
   Text,
-  Tailwind,
+  Hr,
 } from '@react-email/components';
 import * as React from 'react';
+
+const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 const WelcomeEmail = ({
   username = 'there',
@@ -23,161 +23,113 @@ const WelcomeEmail = ({
 
   return (
     <Html>
+      <Head />
       <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Head />
-        <Body className="bg-gray-50 font-sans">
-          <Container className="bg-white mx-auto my-0 max-w-[600px]">
-            {/* Header */}
-            <Section className="bg-green-600 py-12 px-8 text-center">
-              <Img
-                src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
-                width="64"
-                height="64"
-                alt="TrailVerse"
-                className="mx-auto mb-6 rounded-xl"
-              />
-              <Heading className="text-white text-3xl font-bold m-0 mb-3">
-                Welcome to TrailVerse!
-              </Heading>
-              <Text className="text-green-100 text-lg m-0">
-                Your National Parks Adventure Awaits
-              </Text>
-            </Section>
+      <Body style={{ margin: 0, padding: 0, backgroundColor: '#0B1D0F', fontFamily, WebkitFontSmoothing: 'antialiased', color: '#111827' }}>
+        <Section style={{ backgroundColor: '#0B1D0F', padding: '40px 20px' }}>
+          <Container style={{ maxWidth: '600px', backgroundColor: '#ffffff', margin: '0 auto' }}>
+            <Section style={{ padding: '40px 50px' }}>
 
-            {/* Main Content */}
-            <Section className="px-8 py-10">
-              <div className="text-center mb-8">
-                <Text className="text-gray-900 text-2xl font-bold m-0 mb-4">
-                  Hi {username}!
-                </Text>
-                <Text className="text-gray-600 text-lg leading-relaxed m-0 max-w-2xl mx-auto">
-                  Welcome to TrailVerse! Your account has been created with <strong className="text-green-600">{userEmail}</strong> and you're ready to explore America's incredible national parks.
-                </Text>
+              {/* Logo */}
+              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <span style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
+                  TrailVerse
+                </span>
               </div>
 
-              {/* Primary CTA */}
-              <div className="text-center mb-10">
+              {/* Body */}
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Hey {username} 👋
+              </Text>
+
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Welcome to <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span>! Your account has been created with <strong>{userEmail}</strong> and you're ready to explore America's incredible national parks.
+              </Text>
+
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Exploring national parks is one of the most rewarding ways to experience America's natural beauty. At <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span>, we've made it easy to discover, plan, and track your adventures.
+              </Text>
+
+              {/* What you can do */}
+              <h3 style={{ margin: '32px 0 16px', fontSize: '18px', fontWeight: 800, color: '#111827' }}>
+                What you can do now:
+              </h3>
+              <ol style={{ margin: '0 0 24px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Explore 470+ Parks & Sites</strong> — Browse by state, filter by activities, and view parks on an interactive map.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Dual AI Trip Planning</strong> — Build personalized itineraries with Claude or ChatGPT based on your dates, pace, and interests. Your chat history is saved so you can keep refining.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Compare Parks Side-by-Side</strong> — Compare up to 4 parks with detailed metrics to pick the right destination.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Weather & Park Alerts</strong> — Check real-time weather, 5-day forecasts, and official NPS alerts before you go.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  <strong>Save Favorites & Track Visits</strong> — Build wish lists, mark parks as visited, and write reviews with photos.
+                </li>
+              </ol>
+
+              {/* Get Started */}
+              <h3 style={{ margin: '32px 0 16px', fontSize: '18px', fontWeight: 800, color: '#111827' }}>
+                Get started in 3 steps:
+              </h3>
+              <ol style={{ margin: '0 0 24px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <li style={{ marginBottom: '8px' }}>
+                  Head to <strong>Explore</strong> and browse parks by state or activity.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  Open <strong>Plan with AI</strong> and tell it where and when you want to go.
+                </li>
+                <li style={{ marginBottom: '8px' }}>
+                  Save your favorites and start building your National Park bucket list.
+                </li>
+              </ol>
+
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                — The <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> team
+              </Text>
+
+              {/* CTA */}
+              <div style={{ textAlign: 'center', margin: '40px 0 32px' }}>
                 <Button
-                  className="bg-green-600 text-white rounded-xl px-10 py-4 text-xl font-bold no-underline inline-block shadow-lg"
                   href={loginUrl}
+                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  🚀 Start Exploring
+                  Start Exploring
                 </Button>
               </div>
 
-              {/* Key Features */}
-              <div className="mb-10">
-                <Text className="text-gray-900 text-xl font-bold text-center m-0 mb-6">
-                  What you can do:
-                </Text>
-                
-                <div className="space-y-4">
-                  {[
-                    {
-                      icon: '🗺️',
-                      title: 'Explore 433+ Parks & Sites',
-                      description: 'Interactive maps and detailed information'
-                    },
-                    {
-                      icon: '🤖',
-                      title: 'AI Trip Planning',
-                      description: 'Personalized itineraries for your adventures'
-                    },
-                    {
-                      icon: '⭐',
-                      title: 'Save Favorites',
-                      description: 'Create wish lists and track your visits'
-                    }
-                  ].map((feature, index) => (
-                    <div key={index} className="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
-                      <Text className="text-4xl m-0 mb-3">{feature.icon}</Text>
-                      <Text className="text-gray-900 text-lg font-bold m-0 mb-2">
-                        {feature.title}
-                      </Text>
-                      <Text className="text-gray-600 text-base m-0">
-                        {feature.description}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Divider */}
+              <Hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '40px 0 32px' }} />
 
-              {/* Quick Start */}
-              <div className="bg-blue-50 rounded-xl p-8 mb-10 border border-blue-200 text-center">
-                <Text className="text-gray-900 text-xl font-bold m-0 mb-6">
-                  Get Started
-                </Text>
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 flex items-center justify-center text-2xl font-bold flex-shrink-0 text-green-600">
-                      1
-                    </div>
-                    <Text className="text-gray-700 text-base m-0 flex-1">Complete your profile for personalized recommendations</Text>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 flex items-center justify-center text-2xl font-bold flex-shrink-0 text-green-600">
-                      2
-                    </div>
-                    <Text className="text-gray-700 text-base m-0 flex-1">Browse parks by state or use our AI search</Text>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 flex items-center justify-center text-2xl font-bold flex-shrink-0 text-green-600">
-                      3
-                    </div>
-                    <Text className="text-gray-700 text-base m-0 flex-1">Plan your first trip with our trip planner</Text>
-                  </div>
-                </div>
-              </div>
-
-              {/* Help */}
-              <div className="text-center">
-                <Text className="text-gray-600 text-base m-0 mb-4">
-                  Need help? We're here for you!
-                </Text>
-                <div className="text-center">
-                  <Link 
-                    href="https://nationalparksexplorerusa.com/faq" 
-                    className="text-green-600 text-base font-semibold underline inline-block mr-6"
-                  >
-                    📚 FAQ
-                  </Link>
-                  <Link 
-                    href="mailto:trailverseteam@gmail.com" 
-                    className="text-green-600 text-base font-semibold underline inline-block mr-6"
-                  >
-                    💬 Contact Support
-                  </Link>
-                </div>
-              </div>
-            </Section>
-
-            {/* Footer */}
-            <Section className="bg-gray-100 px-8 py-8 border-t border-gray-200">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <Img
-                    src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
-                    width="32"
-                    height="32"
-                    alt="TrailVerse"
-                    className="rounded-lg"
-                  />
-                  <Text className="text-gray-800 text-lg font-bold m-0">
+              {/* Footer */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
                     TrailVerse
-                  </Text>
+                  </span>
                 </div>
-                <Text className="text-gray-500 text-sm m-0 mb-2">
+                <Text style={{ margin: '0 0 8px', fontSize: '11px', color: '#6b7280' }}>
                   You're receiving this because you created a TrailVerse account.
                 </Text>
-                <Text className="text-gray-500 text-sm m-0">
-                  © 2025 TrailVerse. All rights reserved.
+                <Text style={{ margin: 0, fontSize: '11px' }}>
+                  <Link href="https://nationalparksexplorerusa.com/faq" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                    FAQ
+                  </Link>
+                  {' · '}
+                  <Link href="mailto:trailverseteam@gmail.com" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                    Contact support
+                  </Link>
                 </Text>
               </div>
+
             </Section>
           </Container>
-        </Body>
-      </Tailwind>
+        </Section>
+      </Body>
     </Html>
   );
 };

@@ -120,7 +120,7 @@ const SavedEvents = ({ savedEvents, loading, onRemove, onClearAll }) => {
               }}
             >
               {/* Header with date and actions */}
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                 {/* Date */}
                 <div className="flex-shrink-0">
                   <div className="bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl p-3 text-white shadow-lg min-w-[50px] text-center">
@@ -165,7 +165,7 @@ const SavedEvents = ({ savedEvents, loading, onRemove, onClearAll }) => {
               </div>
 
               {/* Event Content */}
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 {/* Category and Title */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">

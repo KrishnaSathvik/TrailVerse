@@ -1,6 +1,6 @@
-const CACHE_NAME = 'trailverse-v6';
-const OFFLINE_CACHE = 'trailverse-offline-v6';
-const API_CACHE = 'trailverse-api-v6';
+const CACHE_NAME = 'trailverse-v7';
+const OFFLINE_CACHE = 'trailverse-offline-v7';
+const API_CACHE = 'trailverse-api-v7';
 
 // Files to cache for offline functionality
 const STATIC_CACHE_URLS = [
@@ -74,31 +74,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return;
   }
-  
-  // Skip development server requests
+
+  // In development, skip ALL caching — let requests pass through directly.
+  // The SW cache-first strategy causes stale data issues during local dev.
   if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-    // In development, only handle API requests and specific assets
-    if (url.pathname.startsWith('/api/')) {
-      event.respondWith(handleApiRequest(request));
-      return;
-    }
-    
-    // Skip source files and dev server requests
-    if (url.pathname.includes('/src/') || 
-        url.pathname.includes('/pages/') || 
-        url.pathname.includes('/components/') ||
-        url.pathname.includes('/@') ||
-        url.pathname.includes('/__vite') ||
-        url.pathname.includes('/_next/') ||
-        url.pathname.includes('/node_modules/') ||
-        url.pathname.match(/\.(jsx|ts|tsx)$/)) {
-      return; // Let the request pass through to dev server
-    }
+    return;
   }
   
   // Handle API requests

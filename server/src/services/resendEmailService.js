@@ -76,7 +76,7 @@ class ResendEmailService {
       const html = await reactEmailRenderer.renderVerificationEmail({
         username: user.firstName || user.name,
         verificationUrl,
-        verificationCode: user.verificationCode || '123456' // You might want to generate this
+        verificationCode: user.emailVerificationCode || '------'
       });
 
       const { data, error } = await resend.emails.send({

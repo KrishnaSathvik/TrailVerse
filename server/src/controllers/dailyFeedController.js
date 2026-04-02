@@ -87,380 +87,168 @@ function haversine(a, b) {
   return distance;
 }
 
-// @desc    Get personalized daily feed
+// ---------- Background generator (called by scheduler + on-demand fallback) ----------
+
+/**
+ * Generate the full daily feed and save to MongoDB.
+ * Returns the saved document. Skips if today's feed already exists.
+ */
+const generateAndSaveDailyFeed = async () => {
+  const now = new Date();
+  const todayDate = now.toISOString().split('T')[0];
+
+  // Already generated?
+  const existing = await DailyFeed.findOne({ date: todayDate, isShared: true });
+  if (existing?.parkOfDay?.parkCode && existing?.natureFact) {
+    console.log(`📦 Daily feed already exists for ${todayDate}, skipping`);
+    return existing;
+  }
+
+  console.log(`🔄 Generating daily feed for ${todayDate}…`);
+
+  // 1. Pick today's park
+  const selectedPark = await getRandomParkOfDay(todayDate);
+  if (!selectedPark?.parkCode) throw new Error('No park selected');
+
+  const parkLocation = {
+    latitude: selectedPark.latitude || 40.7128,
+    longitude: selectedPark.longitude || -74.0060
+  };
+
+  // 2. Fetch weather + astro in parallel
+  const [astroResult, weatherResult, rawAstroResult, rawWeatherResult] = await Promise.allSettled([
+    getAstroData(parkLocation, selectedPark.name),
+    getWeatherData(parkLocation),
+    getRawAstroData(parkLocation),
+    getRawWeatherData(parkLocation)
+  ]);
+
+  const astroData = astroResult.status === 'fulfilled' ? astroResult.value : null;
+  const weatherData = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+  let rawAstroData = rawAstroResult.status === 'fulfilled' ? rawAstroResult.value : null;
+  const rawWeatherData = rawWeatherResult.status === 'fulfilled' ? rawWeatherResult.value : null;
+
+  if (!astroData) console.warn('⚠️ Astro data unavailable');
+  if (!weatherData) console.warn('⚠️ Weather data unavailable');
+
+  // 3. Generate all 8 AI sections in parallel (30s timeout each)
+  console.log('🤖 Generating AI content…');
+  const AI_TIMEOUT = 30000;
+  const withTimeout = (promise, label) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), AI_TIMEOUT))
+    ]);
+
+  const aiResults = await Promise.allSettled([
+    withTimeout(getDailyNatureFact(selectedPark.parkCode, selectedPark.name), 'natureFact'),
+    withTimeout(getWeatherInsights(weatherData, selectedPark.name), 'weatherInsights'),
+    withTimeout(getAIQuickStatsInsights(selectedPark, weatherData, astroData), 'quickStats'),
+    withTimeout(getAISkyDataInsights(selectedPark, astroData, weatherData), 'skyData'),
+    withTimeout(getAIParkInfoInsights(selectedPark, weatherData, astroData), 'parkInfo'),
+    withTimeout(getPersonalizedRecommendations(null, selectedPark, weatherData, astroData), 'recommendations'),
+    withTimeout(getSkyInsights(astroData, selectedPark.name), 'skyInsights'),
+    withTimeout(getStargazingGuide(astroData, selectedPark.name, weatherData), 'stargazingGuide')
+  ]);
+
+  const pick = (r, label) => {
+    if (r.status === 'fulfilled') return r.value;
+    console.warn(`⚠️ AI "${label}" failed:`, r.reason?.message);
+    return null;
+  };
+
+  const natureFact = pick(aiResults[0], 'natureFact');
+  const weatherInsights = pick(aiResults[1], 'weatherInsights');
+  const quickStatsInsights = pick(aiResults[2], 'quickStats');
+  const skyDataInsights = pick(aiResults[3], 'skyData');
+  const parkInfoInsights = pick(aiResults[4], 'parkInfo');
+  const personalizedRecommendations = pick(aiResults[5], 'recommendations');
+  const skyInsights = pick(aiResults[6], 'skyInsights');
+  const stargazingGuide = pick(aiResults[7], 'stargazingGuide');
+
+  // 4. Recent parks (7-day memory)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentFeeds = await DailyFeed.find({
+    isShared: true,
+    date: { $gte: sevenDaysAgo.toISOString().split('T')[0], $lt: todayDate }
+  }).sort({ createdAt: -1 }).limit(7);
+
+  const recentParks = [{ parkCode: selectedPark.parkCode, name: selectedPark.name, date: todayDate, selectedAt: new Date() }];
+  recentFeeds.forEach(feed => {
+    if (feed.parkOfDay?.parkCode) {
+      recentParks.push({ parkCode: feed.parkOfDay.parkCode, name: feed.parkOfDay.name, date: feed.date, selectedAt: feed.createdAt || new Date() });
+    }
+  });
+
+  // 5. Fix rawAstroData local times
+  if (astroData && rawAstroData) {
+    if (!rawAstroData.localTimes) rawAstroData.localTimes = {};
+    rawAstroData.localTimes.sunrise = astroData.sunrise || rawAstroData.localTimes.sunrise;
+    rawAstroData.localTimes.sunset = astroData.sunset || rawAstroData.localTimes.sunset;
+    rawAstroData.localTimes.timezone = astroData.timezone || rawAstroData.localTimes?.timezone || rawAstroData.processedData?.timezone;
+  } else if (astroData && !rawAstroData) {
+    rawAstroData = { source: 'astroData-value', timestamp: now.toISOString(), localTimes: { sunrise: astroData.sunrise, sunset: astroData.sunset, timezone: astroData.timezone } };
+  }
+
+  // 6. Save to MongoDB
+  const feedData = {
+    parkOfDay: selectedPark,
+    recentParks: recentParks.slice(0, 7),
+    natureFact,
+    weatherInsights,
+    quickStatsInsights,
+    skyDataInsights,
+    parkInfoInsights,
+    personalizedRecommendations,
+    skyInsights,
+    stargazingGuide,
+    weatherData,
+    astroData,
+    rawWeatherData,
+    rawAstroData,
+    timestamp: now.toISOString(),
+    generatedAt: now.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  };
+
+  await DailyFeed.updateOne(
+    { date: todayDate, isShared: true },
+    {
+      $set: { ...feedData, updatedAt: new Date() },
+      $setOnInsert: { userId: null, date: todayDate, isShared: true, createdAt: new Date(), expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+    },
+    { upsert: true }
+  );
+
+  console.log(`✅ Daily feed saved for ${todayDate} — park: ${selectedPark.name}`);
+  return await DailyFeed.findOne({ date: todayDate, isShared: true });
+};
+
+exports.generateAndSaveDailyFeed = generateAndSaveDailyFeed;
+
+// ---------- API handlers ----------
+
+// @desc    Get daily feed (reads pre-generated feed from DB)
 // @route   GET /api/feed/daily
 // @access  Private
 exports.getDailyFeed = async (req, res, next) => {
   try {
-    console.log('🌅 Daily Feed API called by user:', req.user._id);
-    const userId = req.user._id;
-    const userAgent = req.get('User-Agent') || '';
-    const deviceType = userAgent.includes('Mobile') ? 'Mobile' : 'Desktop';
-    console.log(`📱 Device type: ${deviceType}`);
-    
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
+    const todayDate = new Date().toISOString().split('T')[0];
+
+    // Read from DB — should be instant since the scheduler pre-generates it
+    let feed = await DailyFeed.findOne({ date: todayDate, isShared: true });
+
+    // Fallback: generate on-demand if scheduler hasn't run yet
+    if (!feed?.parkOfDay?.parkCode) {
+      console.log(`⚠️ No pre-generated feed for ${todayDate}, generating on-demand…`);
+      feed = await generateAndSaveDailyFeed();
     }
 
-    // Use default location for weather/astro data
-    const userLocation = { latitude: 40.7128, longitude: -74.0060 }; // Default to NYC
-
-    const now = new Date();
-    const todayDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-    const forceRefresh = req.query.forceRefresh === 'true' || req.query.refresh === 'true'; // Get from query params
-    console.log(`📅 Checking database for daily feed date ${todayDate} (calendar date)`);
-    console.log(`🔄 Smart caching: ${forceRefresh ? 'Force refresh requested' : 'Using database cache for same calendar date'}`);
-    
-    // Check if we have existing shared daily feed in database (unless force refresh is requested)
-    let existingFeed = null;
-    if (!forceRefresh) {
-      // First check for shared feed (cost-effective approach)
-      existingFeed = await DailyFeed.findOne({ date: todayDate, isShared: true });
-      if (existingFeed) {
-        console.log(`📦 Found shared daily feed for date ${todayDate}`);
-      } else {
-        // Fallback to user-specific feed for backward compatibility
-        existingFeed = await DailyFeed.findOne({ userId, date: todayDate });
-        if (existingFeed) {
-          console.log(`📦 Found user-specific daily feed for user ${userId} on date ${todayDate}`);
-        }
-      }
-    } else {
-      console.log(`🔄 Force refresh: Deleting existing shared daily feed for date ${todayDate}`);
-      // Delete existing shared feed to force regeneration
-      const deleteResult = await DailyFeed.deleteOne({ date: todayDate, isShared: true });
-      console.log(`🔄 Force refresh: Delete result:`, {
-        deletedCount: deleteResult.deletedCount,
-        acknowledged: deleteResult.acknowledged
-      });
-    }
-    
-    if (existingFeed) {
-      console.log(`📦 Returning daily feed from database for user ${userId} on date ${todayDate}`);
-      console.log(`📊 Cached 100% AI-powered feed data structure:`, {
-        hasParkOfDay: !!existingFeed.parkOfDay,
-        parkName: existingFeed.parkOfDay?.name,
-        hasNatureFact: !!existingFeed.natureFact,
-        hasWeatherInsights: !!existingFeed.weatherInsights,
-        hasQuickStatsInsights: !!existingFeed.quickStatsInsights,
-        hasSkyDataInsights: !!existingFeed.skyDataInsights,
-        hasParkInfoInsights: !!existingFeed.parkInfoInsights,
-        hasPersonalizedRecommendations: !!existingFeed.personalizedRecommendations,
-        hasStargazingGuide: !!existingFeed.stargazingGuide,
-        hasRawWeatherData: !!existingFeed.rawWeatherData,
-        hasRawAstroData: !!existingFeed.rawAstroData
-      });
-      
-      // Debug: Log the actual data structure
-      console.log(`🔍 Full database data:`, JSON.stringify(existingFeed, null, 2));
-      
-      // Set cache-busting headers to prevent browser caching
-      res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      });
-      
-      return res.status(200).json({
-        success: true,
-        data: existingFeed,
-        cached: true
-      });
-    }
-    
-    console.log(`🔄 No existing daily feed found, generating new shared feed for all users on date ${todayDate}`);
-
-    // Get random park for shared daily feed (cost-effective approach)
-    const [parkOfDay] = await Promise.allSettled([
-      getRandomParkOfDay(todayDate)
-    ]);
-
-    // Get park-specific weather and astro data
-    let astroData, weatherData, rawAstroData, rawWeatherData;
-    if (parkOfDay.status === 'fulfilled' && parkOfDay.value && parkOfDay.value.parkCode) {
-      const parkLocation = {
-        latitude: parkOfDay.value.latitude || userLocation.latitude,
-        longitude: parkOfDay.value.longitude || userLocation.longitude
-      };
-      
-      console.log(`🌤️ Getting weather/astro for park ${parkOfDay.value.parkCode} at ${parkLocation.latitude}, ${parkLocation.longitude}`);
-      
-      const [astroResult, weatherResult] = await Promise.allSettled([
-        getAstroData(parkLocation, parkOfDay.value.name),
-        getWeatherData(parkLocation)
-      ]);
-      
-      astroData = astroResult;
-      weatherData = weatherResult;
-      
-      // Get raw API data for reference
-      console.log(`📊 Getting raw API data for reference...`);
-      try {
-        const [rawAstroResult, rawWeatherResult] = await Promise.allSettled([
-          getRawAstroData(parkLocation),
-          getRawWeatherData(parkLocation)
-        ]);
-        
-        rawAstroData = rawAstroResult.status === 'fulfilled' ? rawAstroResult.value : null;
-        rawWeatherData = rawWeatherResult.status === 'fulfilled' ? rawWeatherResult.value : null;
-        
-        console.log(`📊 Raw data status:`, {
-          astro: rawAstroResult.status,
-          weather: rawWeatherResult.status
-        });
-      } catch (error) {
-        console.warn('Could not fetch raw API data:', error.message);
-        rawAstroData = null;
-        rawWeatherData = null;
-      }
-    } else {
-      // No park selected, cannot generate AI content
-      throw new Error('No park selected - cannot generate AI-powered content');
+    if (!feed) {
+      return res.status(503).json({ success: false, error: 'Daily feed is being generated. Please try again in a moment.' });
     }
 
-    // Extract successful results - all must be successful for AI-powered content
-    console.log(`📊 Controller: Processing results:`, {
-      parkOfDay: parkOfDay.status,
-      astroData: astroData.status,
-      weatherData: weatherData.status
-    });
-
-    // Verify all required data is available
-    if (parkOfDay.status !== 'fulfilled' || !parkOfDay.value) {
-      throw new Error('Failed to get park of the day');
-    }
-    if (astroData.status !== 'fulfilled' || !astroData.value) {
-      throw new Error('Failed to get astro data');
-    }
-    if (weatherData.status !== 'fulfilled' || !weatherData.value) {
-      throw new Error('Failed to get weather data');
-    }
-
-    const selectedPark = parkOfDay.value;
-    
-
-    // Generate ALL AI-powered content with timeouts to prevent hanging
-    console.log('🤖 Generating 100% AI-powered content...');
-    const AI_TIMEOUT = 30000; // 30 second timeout per AI call
-    const withTimeout = (promise, label) =>
-      Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${AI_TIMEOUT / 1000}s`)), AI_TIMEOUT))
-      ]);
-
-    const aiResults = await Promise.allSettled([
-      withTimeout(getDailyNatureFact(selectedPark.parkCode, selectedPark.name), 'natureFact'),
-      withTimeout(getWeatherInsights(weatherData.value, selectedPark.name), 'weatherInsights'),
-      withTimeout(getAIQuickStatsInsights(selectedPark, weatherData.value, astroData.value), 'quickStatsInsights'),
-      withTimeout(getAISkyDataInsights(selectedPark, astroData.value, weatherData.value), 'skyDataInsights'),
-      withTimeout(getAIParkInfoInsights(selectedPark, weatherData.value, astroData.value), 'parkInfoInsights'),
-      withTimeout(getPersonalizedRecommendations(user, selectedPark, weatherData.value, astroData.value), 'personalizedRecommendations'),
-      withTimeout(getSkyInsights(astroData.value, selectedPark.name), 'skyInsights'),
-      withTimeout(getStargazingGuide(astroData.value, selectedPark.name, weatherData.value), 'stargazingGuide')
-    ]);
-
-    const extractResult = (result, label) => {
-      if (result.status === 'fulfilled') return result.value;
-      console.warn(`⚠️ AI content "${label}" failed:`, result.reason?.message);
-      return null;
-    };
-
-    const natureFact = extractResult(aiResults[0], 'natureFact');
-    const weatherInsights = extractResult(aiResults[1], 'weatherInsights');
-    const quickStatsInsights = extractResult(aiResults[2], 'quickStatsInsights');
-    const skyDataInsights = extractResult(aiResults[3], 'skyDataInsights');
-    const parkInfoInsights = extractResult(aiResults[4], 'parkInfoInsights');
-    const personalizedRecommendations = extractResult(aiResults[5], 'personalizedRecommendations');
-    const skyInsights = extractResult(aiResults[6], 'skyInsights');
-    const stargazingGuide = extractResult(aiResults[7], 'stargazingGuide');
-
-    // Get recent parks for memory tracking
-    const targetDate = new Date(todayDate);
-    const sevenDaysAgo = new Date(targetDate);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-    
-    // Get recent parks from the last 7 days
-    const recentFeeds = await DailyFeed.find({
-      isShared: true,
-      date: { $gte: sevenDaysAgoStr, $lte: todayDate }
-    }).sort({ createdAt: -1 }).limit(7); // Limit to last 7 days
-    
-    // Build recent parks array
-    const recentParks = [];
-    recentFeeds.forEach(feed => {
-      if (feed.parkOfDay?.parkCode) {
-        recentParks.push({
-          parkCode: feed.parkOfDay.parkCode,
-          name: feed.parkOfDay.name,
-          date: feed.date,
-          selectedAt: feed.createdAt || new Date()
-        });
-      }
-    });
-    
-    // Add current park to recent parks
-    recentParks.unshift({
-      parkCode: selectedPark.parkCode,
-      name: selectedPark.name,
-      date: todayDate,
-      selectedAt: new Date()
-    });
-    
-    // Keep only last 7 parks
-    const recentParksTrimmed = recentParks.slice(0, 7);
-
-    // Ensure rawAstroData has the correct local times from astroData.value (used by AI)
-    // This fixes the mismatch where AI uses correct local times but frontend shows UTC times
-    if (astroData.value) {
-      // Create rawAstroData if it doesn't exist
-      if (!rawAstroData) {
-        rawAstroData = {
-          source: 'astroData-value',
-          timestamp: new Date().toISOString(),
-          localTimes: {}
-        };
-      }
-      
-      // Ensure localTimes object exists
-      if (!rawAstroData.localTimes) {
-        rawAstroData.localTimes = {};
-      }
-      
-      // Use the same local times that were used for AI generation
-      // This ensures frontend displays the same times that AI mentions
-      rawAstroData.localTimes.sunrise = astroData.value.sunrise || rawAstroData.localTimes.sunrise;
-      rawAstroData.localTimes.sunset = astroData.value.sunset || rawAstroData.localTimes.sunset;
-      rawAstroData.localTimes.timezone = astroData.value.timezone || rawAstroData.localTimes.timezone || rawAstroData.processedData?.timezone;
-      
-      console.log(`✅ Fixed rawAstroData local times to match AI:`, {
-        sunrise: rawAstroData.localTimes.sunrise,
-        sunset: rawAstroData.localTimes.sunset,
-        timezone: rawAstroData.localTimes.timezone
-      });
-    }
-
-    const dailyFeed = {
-      date: now.toISOString().split('T')[0],
-      timestamp: now.toISOString(), // Add timestamp to ensure uniqueness
-      generatedAt: now.toLocaleString('en-US', { 
-        timeZone: 'America/New_York',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      }), // Formatted timestamp for display
-      parkOfDay: selectedPark,
-      // Recent parks memory (7-day tracking)
-      recentParks: recentParksTrimmed,
-      // 100% AI-Powered Content
-      natureFact,
-      weatherInsights,
-      quickStatsInsights,
-      skyDataInsights,
-      parkInfoInsights,
-      personalizedRecommendations,
-      skyInsights,
-      stargazingGuide,
-      // Raw data from APIs (for reference only)
-      rawWeatherData: rawWeatherData,
-      rawAstroData: rawAstroData
-    };
-
-    console.log(`📊 Controller: 100% AI-Powered Daily Feed Generated:`, {
-      parkName: dailyFeed.parkOfDay?.name,
-      parkCode: dailyFeed.parkOfDay?.parkCode,
-      natureFact: dailyFeed.natureFact?.substring(0, 50) + '...',
-      weatherInsights: dailyFeed.weatherInsights?.substring(0, 50) + '...',
-      quickStatsInsights: dailyFeed.quickStatsInsights?.length || 0,
-      skyDataInsights: dailyFeed.skyDataInsights?.length || 0,
-      parkInfoInsights: dailyFeed.parkInfoInsights?.length || 0,
-      personalizedRecommendations: dailyFeed.personalizedRecommendations?.length || 0,
-      stargazingGuide: dailyFeed.stargazingGuide?.substring(0, 50) + '...',
-      recentParksCount: dailyFeed.recentParks?.length || 0
-    });
-    
-    console.log(`🧠 Recent Parks Memory (7-day tracking):`, {
-      currentPark: dailyFeed.parkOfDay?.name,
-      recentParks: dailyFeed.recentParks?.map(p => p.name) || [],
-      dates: dailyFeed.recentParks?.map(p => p.date) || []
-    });
-    
-    console.log(`🤖 AI-Powered Content Summary:`, {
-      natureFact: !!dailyFeed.natureFact,
-      weatherInsights: !!dailyFeed.weatherInsights,
-      quickStatsInsights: dailyFeed.quickStatsInsights?.length || 0,
-      skyDataInsights: dailyFeed.skyDataInsights?.length || 0,
-      parkInfoInsights: dailyFeed.parkInfoInsights?.length || 0,
-      personalizedRecommendations: dailyFeed.personalizedRecommendations?.length || 0,
-      stargazingGuide: !!dailyFeed.stargazingGuide
-    });
-
-    // Log any errors but don't fail the entire request
-    if (parkOfDay.status === 'rejected') {
-      console.warn('⚠️ Park of day failed:', parkOfDay.reason?.message);
-    }
-    if (astroData.status === 'rejected') {
-      console.warn('⚠️ Astro data failed:', astroData.reason?.message);
-    }
-    if (weatherData.status === 'rejected') {
-      console.warn('⚠️ Weather data failed:', weatherData.reason?.message);
-    }
-
-    console.log('🌅 Daily Feed response:', {
-      parkName: dailyFeed.parkOfDay.name,
-      parkCode: dailyFeed.parkOfDay.parkCode,
-      hasWeather: !!dailyFeed.weatherData,
-      hasWeatherInsights: !!dailyFeed.weatherInsights,
-      hasAstro: !!dailyFeed.astroData,
-      natureFact: dailyFeed.natureFact
-    });
-    
-    // Save the shared daily feed data to database
-    console.log(`💾 Saving shared daily feed data to database for all users on date ${todayDate}`);
-    try {
-      // Remove date from dailyFeed to avoid conflict with unique index
-      const { date, ...dailyFeedWithoutDate } = dailyFeed;
-      await DailyFeed.updateOne(
-        { date: todayDate, isShared: true },
-        { 
-          $set: { 
-            ...dailyFeedWithoutDate, 
-            updatedAt: new Date() 
-          }, 
-          $setOnInsert: { 
-            userId: null, // No specific user for shared feeds
-            date: todayDate, 
-            isShared: true,
-            createdAt: new Date() 
-          } 
-        },
-        { upsert: true }
-      );
-      console.log(`✅ Shared daily feed saved to database successfully`);
-    } catch (saveError) {
-      console.error('❌ Error saving shared daily feed to database:', saveError);
-      // Continue with response even if save fails
-    }
-    
-    // Set cache-busting headers to prevent browser caching
-    res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-    
-    res.status(200).json({
-      success: true,
-      data: dailyFeed,
-      cached: false
-    });
+    res.json({ success: true, data: feed, cached: true });
   } catch (error) {
     console.error('Error getting daily feed:', error);
     next(error);

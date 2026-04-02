@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const unsubscribeService = require('../services/unsubscribeService');
 const simpleEmailService = require('../services/simpleEmailService');
+const resendEmailService = require('../services/resendEmailService');
 const User = require('../models/User');
 
 const router = express.Router();
@@ -140,6 +141,17 @@ router.post('/unsubscribe', async (req, res) => {
     } else {
       // Unsubscribe from all emails (simplified system)
       result = await unsubscribeService.unsubscribe(email, emailType, token);
+    }
+
+    // Send unsubscribe confirmation email
+    try {
+      const user = await User.findOne({ email });
+      if (user) {
+        await resendEmailService.sendUnsubscribeConfirmation(user, emailType || 'all emails');
+      }
+    } catch (emailError) {
+      console.error('Failed to send unsubscribe confirmation email:', emailError);
+      // Don't fail the unsubscribe if email fails
     }
 
     res.json({

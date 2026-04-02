@@ -12,8 +12,8 @@ const {
 } = require('../controllers/dailyFeedController');
 
 // @route   GET /api/feed/daily
-// @desc    Get personalized daily feed
-// @access  Private (requires auth for personalization)
+// @desc    Get pre-generated daily feed from DB
+// @access  Private
 router.get('/daily', protect, getDailyFeed);
 
 // @route   GET /api/feed/park-of-day

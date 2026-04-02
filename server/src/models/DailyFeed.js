@@ -53,7 +53,7 @@ const dailyFeedSchema = new mongoose.Schema({
   },
   natureFact: {
     type: String,
-    required: true
+    default: null
   },
   weatherData: {
     current: {
@@ -68,7 +68,7 @@ const dailyFeedSchema = new mongoose.Schema({
   },
   weatherInsights: {
     type: String,
-    required: true
+    default: null
   },
   astroData: {
     sunrise: String,

@@ -29,7 +29,7 @@ I built TrailVerse to solve that problem in a way that feels practical: discover
 
 ## Core Features
 
-- Explore 433+ U.S. parks and sites with search, filtering, and map-based browsing.
+- Explore 470+ U.S. parks and sites with search, filtering, and map-based browsing.
 - Park detail pages with 12 tabs: activities, camping, places, tours, parking, photos, videos, webcams, alerts, facilities, and reviews.
 - Full NPS photo galleries with lightbox viewer, swipe navigation, and download.
 - In-app NPS video player with captions and duration info.
@@ -63,7 +63,7 @@ TrailVerse integrates with 12 National Park Service API endpoints to provide com
 
 - **Lazy-loaded tabs**: Park pages load instantly with just park info and alerts. Each tab fetches its own data on click (~200-500ms), then caches for 24 hours.
 - **Per-park caching**: Only parks that users visit cost API calls. Each endpoint is cached per-park for 24 hours.
-- **Parks list warm-up**: The full parks list (433 NPS units) is loaded from a MongoDB persistent snapshot on server startup — zero NPS API calls on deploy when the snapshot is fresh.
+- **Parks list warm-up**: The full parks list (474 NPS units) is loaded from a MongoDB persistent snapshot on server startup — zero NPS API calls on deploy when the snapshot is fresh.
 - **Rate limit protection**: All NPS API calls handle 429 responses gracefully, falling back to cached data or returning empty arrays without crashing.
 
 ## Built From Experience

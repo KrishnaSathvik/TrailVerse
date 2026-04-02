@@ -10,12 +10,12 @@ async function getInitialParks() {
     });
 
     if (!response.ok) {
-      return null;
+      return undefined;
     }
 
     return response.json();
   } catch {
-    return null;
+    return undefined;
   }
 }
 

@@ -31,6 +31,9 @@
   --error-red: #ef4444;
   --warning: #f59e0b;
   
+  /* Skeleton */
+  --skeleton: rgba(255, 255, 255, 0.12);
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
@@ -73,6 +76,9 @@
   --error-red: #dc2626;     /* Error red for destructive actions */
   --warning: #d97706;       /* Warning orange */
   
+  /* Skeleton */
+  --skeleton: #DDD8D0;
+
   /* Shadows - Soft, natural shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);

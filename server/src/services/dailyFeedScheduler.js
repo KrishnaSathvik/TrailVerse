@@ -1,0 +1,47 @@
+const { generateAndSaveDailyFeed } = require('../controllers/dailyFeedController');
+
+let generating = false;
+
+/**
+ * Attempt to generate today's daily feed if it doesn't already exist.
+ * Guards against concurrent runs.
+ */
+const ensureTodaysFeed = async () => {
+  if (generating) {
+    console.log('🌅 Daily feed generation already in progress, skipping');
+    return;
+  }
+
+  generating = true;
+  try {
+    const feed = await generateAndSaveDailyFeed();
+    console.log(`🌅 Daily feed ready — ${feed?.parkOfDay?.name || 'unknown park'}`);
+  } catch (error) {
+    console.error('❌ Daily feed generation failed:', error.message);
+  } finally {
+    generating = false;
+  }
+};
+
+/**
+ * Start the daily feed scheduler.
+ * - Generates immediately on startup (if not already cached for today).
+ * - Re-checks every hour to handle day transitions.
+ */
+const startDailyFeedScheduler = () => {
+  console.log('🌅 Starting daily feed scheduler…');
+
+  // Generate after a short delay so the server finishes booting first
+  setTimeout(() => {
+    ensureTodaysFeed();
+  }, 5000);
+
+  // Re-check every minute (catches midnight day transitions quickly)
+  setInterval(() => {
+    ensureTodaysFeed();
+  }, 60 * 1000);
+
+  console.log('✅ Daily feed scheduler started (checks every minute)');
+};
+
+module.exports = { startDailyFeedScheduler, ensureTodaysFeed };

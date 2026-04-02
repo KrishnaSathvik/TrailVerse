@@ -20,7 +20,7 @@ const TermsPage = () => {
             If you do not agree, please do not use our platform.
           </p>
           <p className="mb-4">
-            TrailVerse helps users explore, plan, and discover America&apos;s 433+ parks and sites through 
+            TrailVerse helps users explore, plan, and discover America&apos;s 470+ parks and sites through 
             Smart trip planning, real-time weather, interactive maps, and community-driven content.
           </p>
         </>

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
+const resendEmailService = require('../services/resendEmailService');
 
 // @route   PUT /api/user/change-password
 // @desc    Change user's password
@@ -181,6 +182,14 @@ router.delete('/delete-account', protect, async (req, res) => {
 
     // Log account deletion for audit
     console.log(`🗑️ Account deletion initiated for: ${user.email}`);
+
+    // Send account deletion confirmation email BEFORE deleting the user
+    try {
+      await resendEmailService.sendAccountDeletionConfirmation(user);
+    } catch (emailError) {
+      console.error('Failed to send account deletion email:', emailError);
+      // Don't fail deletion if email fails
+    }
 
     // Delete user and associated data
     // Note: In a production app, you'd want to handle cascading deletes

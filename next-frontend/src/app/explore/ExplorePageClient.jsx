@@ -15,6 +15,7 @@ import { useParks, useAllParks } from '@/hooks/useParks';
 import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchPrefetch } from '@/hooks/useSmartPrefetch';
+import STATE_NAMES from '@/utils/stateNames';
 
 const ExploreContent = ({ initialPaginatedData }) => {
   const pathname = usePathname();
@@ -65,7 +66,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
     currentPage,
     parksPerPage,
     filters.nationalParksOnly,
-    currentPage === 1 && parksPerPage === 12 && filters.nationalParksOnly ? initialPaginatedData : null
+    currentPage === 1 && parksPerPage === 12 && filters.nationalParksOnly ? initialPaginatedData : undefined
   );
   const { data: allParksData, isLoading: allParksLoading, isPending: allParksPending, error: allParksError } = useAllParks();
   const {
@@ -88,6 +89,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
   const allParks = needsAllParks ? activeAllParksData?.data : paginatedData?.data;
   const totalParks = needsAllParks ? activeAllParksData?.total : paginatedData?.total;
   const totalPages = needsAllParks ? null : paginatedData?.pages;
+
   const hasFullParksData = Array.isArray(allParksData?.data) && allParksData.data.length > 0;
 
   useEffect(() => {
@@ -149,7 +151,9 @@ const ExploreContent = ({ initialPaginatedData }) => {
         park.states.split(',').forEach(state => states.add(state.trim()));
       }
     });
-    return Array.from(states).sort();
+    return Array.from(states).sort((a, b) =>
+      (STATE_NAMES[a] || a).localeCompare(STATE_NAMES[b] || b)
+    );
   }, [allParksData]);
 
   const popularActivities = [
@@ -166,19 +170,9 @@ const ExploreContent = ({ initialPaginatedData }) => {
       const scoredMatches = result
         .map((park) => {
           const parkStates = park.states ? park.states.split(',').map(s => s.trim().toLowerCase()) : [];
-          const stateNameMap = {
-            'alabama': 'al', 'alaska': 'ak', 'arizona': 'az', 'arkansas': 'ar', 'california': 'ca',
-            'colorado': 'co', 'connecticut': 'ct', 'delaware': 'de', 'florida': 'fl', 'georgia': 'ga',
-            'hawaii': 'hi', 'idaho': 'id', 'illinois': 'il', 'indiana': 'in', 'iowa': 'ia',
-            'kansas': 'ks', 'kentucky': 'ky', 'louisiana': 'la', 'maine': 'me', 'maryland': 'md',
-            'massachusetts': 'ma', 'michigan': 'mi', 'minnesota': 'mn', 'mississippi': 'ms', 'missouri': 'mo',
-            'montana': 'mt', 'nebraska': 'ne', 'nevada': 'nv', 'new hampshire': 'nh', 'new jersey': 'nj',
-            'new mexico': 'nm', 'new york': 'ny', 'north carolina': 'nc', 'north dakota': 'nd', 'ohio': 'oh',
-            'oklahoma': 'ok', 'oregon': 'or', 'pennsylvania': 'pa', 'rhode island': 'ri', 'south carolina': 'sc',
-            'south dakota': 'sd', 'tennessee': 'tn', 'texas': 'tx', 'utah': 'ut', 'vermont': 'vt',
-            'virginia': 'va', 'washington': 'wa', 'west virginia': 'wv', 'wisconsin': 'wi', 'wyoming': 'wy'
-          };
-          const stateCode = stateNameMap[searchLower];
+          const stateCode = Object.entries(STATE_NAMES).find(
+            ([, name]) => name.toLowerCase() === searchLower
+          )?.[0]?.toLowerCase();
           const searchTerms = [searchLower];
           if (stateCode) searchTerms.push(stateCode);
           const fullName = park.fullName?.toLowerCase() || '';
@@ -229,17 +223,25 @@ const ExploreContent = ({ initialPaginatedData }) => {
         .map(({ park }) => park);
     }
 
-    if (filters.nationalParksOnly) {
-      result = result.filter(park =>
-        park.designation && park.designation.toLowerCase().includes('national park')
-      );
-    }
-
     if (filters.states.length > 0) {
-      result = result.filter(park => {
+      const stateFiltered = result.filter(park => {
         const parkStates = park.states ? park.states.split(',').map(s => s.trim()) : [];
         return filters.states.some(state => parkStates.includes(state));
       });
+
+      if (filters.nationalParksOnly) {
+        const nationalOnly = stateFiltered.filter(park =>
+          park.designation && park.designation.toLowerCase().includes('national park')
+        );
+        // Fall back to all sites in selected states if no national parks exist there
+        result = nationalOnly.length > 0 ? nationalOnly : stateFiltered;
+      } else {
+        result = stateFiltered;
+      }
+    } else if (filters.nationalParksOnly) {
+      result = result.filter(park =>
+        park.designation && park.designation.toLowerCase().includes('national park')
+      );
     }
 
     if (filters.activities.length > 0) {
@@ -522,7 +524,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
                           style={{ borderColor: 'var(--border)' }}
                         />
                         <span className="text-sm group-hover:text-forest-400 transition" style={{ color: 'var(--text-secondary)' }}>
-                          {state}
+                          {STATE_NAMES[state] || state}
                         </span>
                       </label>
                     ))}
@@ -756,7 +758,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
                     <label key={state} className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={filters.states.includes(state)} onChange={() => toggleStateFilter(state)}
                         className="rounded border-2 w-4 h-4 text-forest-500 focus:ring-forest-500/50" style={{ borderColor: 'var(--border)' }} />
-                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{state}</span>
+                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{STATE_NAMES[state] || state}</span>
                     </label>
                   ))}
                 </div>
