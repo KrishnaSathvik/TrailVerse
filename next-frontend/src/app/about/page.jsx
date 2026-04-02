@@ -4,6 +4,12 @@ import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
 
+export const metadata = {
+  title: 'About Krishna — The Story Behind TrailVerse',
+  description:
+    'TrailVerse was built by Krishna, a traveler who visited 17+ national parks across 23 states. Learn the story behind the platform and the experience that shaped it.',
+};
+
 const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'trailverseteam@gmail.com';
 
 const stats = [
