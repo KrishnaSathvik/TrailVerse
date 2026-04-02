@@ -3,8 +3,10 @@ import npsApi from '../services/npsApi';
 import { get, set } from 'idb-keyval';
 
 const ALL_PARKS_CACHE_VERSION = 'v3';
-const ALL_PARKS_CACHE_KEY = `trailverse_all_parks_${ALL_PARKS_CACHE_VERSION}`;
-const ALL_PARKS_CACHE_TIME_KEY = `trailverse_all_parks_time_${ALL_PARKS_CACHE_VERSION}`;
+const getAllParksCacheKey = (includeActivities = false) =>
+  `trailverse_all_parks_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
+const getAllParksCacheTimeKey = (includeActivities = false) =>
+  `trailverse_all_parks_time_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
 const PARKS_QUERY_VERSION = 'v3';
 
 // Hook for paginated parks (default behavior - fetches one page at a time)
@@ -15,9 +17,9 @@ export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initial
       // Check IndexedDB before hitting the network for paginated queries
       // to achieve near-instant loads without redundant API calls.
       try {
-        const idbCacheTime = await get(ALL_PARKS_CACHE_TIME_KEY);
+        const idbCacheTime = await get(getAllParksCacheTimeKey(false));
         if (idbCacheTime && (Date.now() - parseInt(idbCacheTime)) < 1000 * 60 * 60 * 24) {
-          const allParks = await get(ALL_PARKS_CACHE_KEY);
+          const allParks = await get(getAllParksCacheKey(false));
           if (allParks?.data) {
             // Filter and paginate from the full dataset
             let parks = allParks.data;
@@ -52,15 +54,17 @@ export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initial
 
 
 // Hook to fetch ALL parks (for filtering/searching on client side)
-export const useAllParks = (initialData = null) => {
+export const useAllParks = (initialData = null, includeActivities = false, enabled = true) => {
   return useQuery({
-    queryKey: ['parks', PARKS_QUERY_VERSION, 'all'],
+    queryKey: ['parks', PARKS_QUERY_VERSION, 'all', includeActivities],
     queryFn: async () => {
+      const cacheKey = getAllParksCacheKey(includeActivities);
+      const cacheTimeKey = getAllParksCacheTimeKey(includeActivities);
       try {
         // Try IndexedDB first for instant loads
-        const idbCacheTime = await get(ALL_PARKS_CACHE_TIME_KEY);
+        const idbCacheTime = await get(cacheTimeKey);
         if (idbCacheTime && (Date.now() - parseInt(idbCacheTime)) < 1000 * 60 * 60 * 24) {
-          const cached = await get(ALL_PARKS_CACHE_KEY);
+          const cached = await get(cacheKey);
           if (cached) return cached;
         }
       } catch (e) {
@@ -68,17 +72,18 @@ export const useAllParks = (initialData = null) => {
       }
 
       try {
-        const response = await npsApi.getAllParks(1, 1000, true, false); // fetchAll=true, nationalParksOnly=false to get all 433 NPS units
+        const response = await npsApi.getAllParks(1, 1000, true, false, includeActivities);
         try {
           // Cache to IndexedDB for instant loads on refresh (avoids 5MB localStorage limit)
-          await set(ALL_PARKS_CACHE_KEY, response);
-          await set(ALL_PARKS_CACHE_TIME_KEY, Date.now().toString());
+          await set(cacheKey, response);
+          await set(cacheTimeKey, Date.now().toString());
         } catch (e) { console.warn('IndexedDB full or disabled'); }
         return response;
       } catch (error) {
         throw error;
       }
     },
+    enabled,
     staleTime: 1000 * 60 * 60 * 24, // 24 hours - parks data rarely changes
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
     refetchOnWindowFocus: false,

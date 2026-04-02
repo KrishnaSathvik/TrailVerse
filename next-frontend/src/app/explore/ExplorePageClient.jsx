@@ -58,6 +58,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
   });
 
   const hasActiveFilters = searchTerm || filters.states.length > 0 || filters.activities.length > 0;
+  const activityFiltersActive = filters.activities.length > 0;
   const needsAllParks = !filters.nationalParksOnly || hasActiveFilters || sortBy === 'state';
 
   const { data: paginatedData, isLoading: paginatedLoading, isPending: paginatedPending, error: paginatedError } = useParks(
@@ -67,13 +68,25 @@ const ExploreContent = ({ initialPaginatedData }) => {
     currentPage === 1 && parksPerPage === 12 && filters.nationalParksOnly ? initialPaginatedData : null
   );
   const { data: allParksData, isLoading: allParksLoading, isPending: allParksPending, error: allParksError } = useAllParks();
+  const {
+    data: allParksWithActivitiesData,
+    isLoading: allParksWithActivitiesLoading,
+    isPending: allParksWithActivitiesPending,
+    error: allParksWithActivitiesError
+  } = useAllParks(null, true, activityFiltersActive);
+
+  const activeAllParksData = activityFiltersActive ? allParksWithActivitiesData : allParksData;
+  const activeAllParksLoading = activityFiltersActive
+    ? (allParksWithActivitiesLoading || allParksWithActivitiesPending)
+    : (allParksLoading || allParksPending);
+  const activeAllParksError = activityFiltersActive ? allParksWithActivitiesError : allParksError;
 
   // In React Query v5, isLoading = isPending && isFetching (only true on first load with no cache).
   // Use isPending as fallback to catch cases where cache is empty but fetch hasn't started yet.
-  const isLoading = needsAllParks ? (allParksLoading || allParksPending) : (paginatedLoading || paginatedPending);
-  const error = needsAllParks ? allParksError : paginatedError;
-  const allParks = needsAllParks ? allParksData?.data : paginatedData?.data;
-  const totalParks = needsAllParks ? allParksData?.total : paginatedData?.total;
+  const isLoading = needsAllParks ? activeAllParksLoading : (paginatedLoading || paginatedPending);
+  const error = needsAllParks ? activeAllParksError : paginatedError;
+  const allParks = needsAllParks ? activeAllParksData?.data : paginatedData?.data;
+  const totalParks = needsAllParks ? activeAllParksData?.total : paginatedData?.total;
   const totalPages = needsAllParks ? null : paginatedData?.pages;
   const hasFullParksData = Array.isArray(allParksData?.data) && allParksData.data.length > 0;
 

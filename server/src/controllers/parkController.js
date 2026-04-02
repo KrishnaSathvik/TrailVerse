@@ -108,7 +108,9 @@ exports.getAllParks = async (req, res, next) => {
       );
     }
 
-    if (skipPagination) {
+    const includeActivities = req.query.includeActivities === 'true';
+
+    if (skipPagination && includeActivities) {
       const activityIndex = await buildParkActivityIndex();
 
       filteredParks = filteredParks.map((park) => ({

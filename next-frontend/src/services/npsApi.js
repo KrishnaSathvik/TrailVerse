@@ -5,9 +5,9 @@ const ALL_PARKS_CACHE_VERSION = 'v3';
 
 class NPSApi {
   // Get all parks with pagination support
-  async getAllParks(page = 1, limit = 12, fetchAll = false, nationalParksOnly = true) {
+  async getAllParks(page = 1, limit = 12, fetchAll = false, nationalParksOnly = true, includeActivities = false) {
     const cacheKey = fetchAll
-      ? `all-parks-${ALL_PARKS_CACHE_VERSION}-nationalOnly-${nationalParksOnly}`
+      ? `all-parks-${ALL_PARKS_CACHE_VERSION}-nationalOnly-${nationalParksOnly}-activities-${includeActivities}`
       : `parks-page-${page}-limit-${limit}-nationalOnly-${nationalParksOnly}`;
     
     const result = await globalCacheManager.get(
@@ -17,6 +17,9 @@ class NPSApi {
         const params = {};
         if (fetchAll) {
           params.all = 'true';
+          if (includeActivities) {
+            params.includeActivities = 'true';
+          }
         } else {
           params.page = page;
           params.limit = limit;
