@@ -41,8 +41,8 @@ const FeaturesPage = () => {
         {
           icon: MapPin,
           title: "Interactive Park Explorer",
-          description: "Browse 470+ National Parks, Monuments, and Historic Sites with advanced filtering by state, activities, and amenities. Available on all devices.",
-          benefits: ["470+ destinations", "Advanced filtering", "Activity-based search", "Mobile-friendly"]
+          description: "Browse 433+ parks and sites with advanced filtering by state, activities, and amenities. Available on all devices.",
+          benefits: ["433+ destinations", "Advanced filtering", "Activity-based search", "Mobile-friendly"]
         },
         {
           icon: Globe,

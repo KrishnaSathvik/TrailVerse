@@ -2,10 +2,10 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import npsApi from '../services/npsApi';
 import { get, set } from 'idb-keyval';
 
-const ALL_PARKS_CACHE_VERSION = 'v2';
+const ALL_PARKS_CACHE_VERSION = 'v3';
 const ALL_PARKS_CACHE_KEY = `trailverse_all_parks_${ALL_PARKS_CACHE_VERSION}`;
 const ALL_PARKS_CACHE_TIME_KEY = `trailverse_all_parks_time_${ALL_PARKS_CACHE_VERSION}`;
-const PARKS_QUERY_VERSION = 'v2';
+const PARKS_QUERY_VERSION = 'v3';
 
 // Hook for paginated parks (default behavior - fetches one page at a time)
 export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initialData = null) => {
@@ -68,7 +68,7 @@ export const useAllParks = (initialData = null) => {
       }
 
       try {
-        const response = await npsApi.getAllParks(1, 1000, true, false); // fetchAll=true, nationalParksOnly=false to get ALL 474 parks
+        const response = await npsApi.getAllParks(1, 1000, true, false); // fetchAll=true, nationalParksOnly=false to get all 433 NPS units
         try {
           // Cache to IndexedDB for instant loads on refresh (avoids 5MB localStorage limit)
           await set(ALL_PARKS_CACHE_KEY, response);

@@ -1,13 +1,13 @@
 import enhancedApi from './enhancedApi';
 import globalCacheManager from './globalCacheManager';
 
-const ALL_PARKS_CACHE_VERSION = 'v2';
+const ALL_PARKS_CACHE_VERSION = 'v3';
 
 class NPSApi {
   // Get all parks with pagination support
   async getAllParks(page = 1, limit = 12, fetchAll = false, nationalParksOnly = true) {
     const cacheKey = fetchAll
-      ? `all-parks-${ALL_PARKS_CACHE_VERSION}`
+      ? `all-parks-${ALL_PARKS_CACHE_VERSION}-nationalOnly-${nationalParksOnly}`
       : `parks-page-${page}-limit-${limit}-nationalOnly-${nationalParksOnly}`;
     
     const result = await globalCacheManager.get(

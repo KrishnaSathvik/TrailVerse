@@ -100,7 +100,7 @@ const VerifyEmailPage = () => {
                 Welcome aboard!
               </h1>
               <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                Your adventure through 470+ National Parks begins now.
+                Your adventure through 433+ parks and sites begins now.
               </p>
             </>
           )}

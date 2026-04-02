@@ -69,7 +69,7 @@ class EmailService {
           'List-Unsubscribe': `<mailto:${process.env.SUPPORT_EMAIL || process.env.EMAIL_USER}?subject=unsubscribe>`,
         },
         // Add text version
-        text: `Hi ${user.firstName || user.name},\n\nWelcome to TrailVerse! 🏞️\n\nYour account has been verified and you're all set to start exploring America's 470+ National Parks and Sites.\n\nStart your adventure at: ${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}\n\nBest regards,\nThe TrailVerse Team`
+        text: `Hi ${user.firstName || user.name},\n\nWelcome to TrailVerse! 🏞️\n\nYour account has been verified and you're all set to start exploring America's 433+ parks and sites.\n\nStart your adventure at: ${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}\n\nBest regards,\nThe TrailVerse Team`
       };
 
       await transporter.sendMail(mailOptions);

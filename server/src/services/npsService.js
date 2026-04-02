@@ -360,7 +360,7 @@ class NPSService {
           break;
         }
 
-        // Safety limit to prevent infinite loops (but allow for 474+ parks)
+        // Safety limit to prevent infinite loops while still allowing the full NPS unit dataset
         if (allParks.length >= limit) {
           break;
         }

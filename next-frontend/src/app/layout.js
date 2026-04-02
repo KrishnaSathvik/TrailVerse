@@ -4,9 +4,9 @@ import Script from "next/script";
 import Providers from "../components/Providers";
 
 export const metadata = {
-  title: "TrailVerse — Explore America's 470+ National Parks, Monuments & Historic Sites",
+  title: "TrailVerse — Explore America's 433+ Parks & Sites",
   applicationName: "TrailVerse",
-  description: "Browse all 470+ National Parks with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
+  description: "Browse all 433+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -14,8 +14,8 @@ export const metadata = {
     statusBarStyle: "default",
   },
   openGraph: {
-    title: "TrailVerse — Explore America's 470+ National Parks, Monuments & Historic Sites",
-    description: "Browse all 470+ National Parks with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
+    title: "TrailVerse — Explore America's 433+ Parks & Sites",
+    description: "Browse all 433+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
     type: "website",
   }
 };

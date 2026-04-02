@@ -31,24 +31,24 @@ const getMetaTags = async (req, res, next) => {
     }
 
     let metaTags = {
-      title: 'TrailVerse - Explore America\'s 470+ National Parks & Sites',
-      description: 'Discover, plan, and explore America\'s 470+ National Parks, Monuments, Historic Sites, and more with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
+      title: 'TrailVerse - Explore America\'s 433+ Parks & Sites',
+      description: 'Discover, plan, and explore America\'s 433+ parks and sites with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
       image: 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
       url: url,
       type: 'website',
       og: {
         type: 'website',
         url: url,
-        title: 'TrailVerse - Explore America\'s 470+ National Parks & Sites',
-        description: 'Discover, plan, and explore America\'s 470+ National Parks, Monuments, Historic Sites, and more with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
+        title: 'TrailVerse - Explore America\'s 433+ Parks & Sites',
+        description: 'Discover, plan, and explore America\'s 433+ parks and sites with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
         image: 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
         site_name: 'TrailVerse'
       },
       twitter: {
         card: 'summary_large_image',
         url: url,
-        title: 'TrailVerse - Explore America\'s 470+ National Parks & Sites',
-        description: 'Discover, plan, and explore America\'s 470+ National Parks, Monuments, Historic Sites, and more with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
+        title: 'TrailVerse - Explore America\'s 433+ Parks & Sites',
+        description: 'Discover, plan, and explore America\'s 433+ parks and sites with AI-powered trip planning, interactive maps, events calendar, and expert travel guides.',
         image: 'https://www.nationalparksexplorerusa.com/og-image-trailverse.jpg',
         site: '@TrailVerse'
       }
@@ -159,4 +159,3 @@ const getMetaTags = async (req, res, next) => {
 router.get('/', getMetaTags);
 
 module.exports = router;
-

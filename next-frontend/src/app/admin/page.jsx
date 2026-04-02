@@ -30,7 +30,7 @@ import {
 const initialStats = {
   totalUsers: 0,
   totalPosts: 0,
-  totalParks: 470,
+  totalParks: 433,
   totalTrips: 0,
   totalTestimonials: 0,
   pendingTestimonials: 0,
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
         totalPosts: allPosts.length,
         totalUsers: statsResponse.data?.data?.totalUsers || statsResponse.data?.totalUsers || 0,
         totalTrips: statsResponse.data?.data?.totalTrips || statsResponse.data?.totalTrips || 0,
-        totalParks: 470,
+        totalParks: 433,
         totalTestimonials: testimonialsStats.total,
         pendingTestimonials: testimonialsStats.pending,
         activeUsers: statsResponse.data?.data?.activeUsers || statsResponse.data?.activeUsers || 0,

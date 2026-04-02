@@ -10,7 +10,7 @@ const faqCategories = [
     questions: [
       {
         question: "What is TrailVerse?",
-        answer: "TrailVerse is your comprehensive guide to exploring America's 470+ National Parks, Monuments, Historic Sites, and other protected areas. We combine real-time weather data, interactive maps, community reviews, and smart trip planning to help you discover and plan the perfect park adventure."
+        answer: "TrailVerse is your comprehensive guide to exploring America's 433+ parks and sites. We combine real-time weather data, interactive maps, community reviews, and smart trip planning to help you discover and plan the perfect park adventure."
       },
       {
         question: "How do I get started?",
@@ -18,7 +18,7 @@ const faqCategories = [
       },
       {
         question: "What makes TrailVerse different?",
-        answer: "TrailVerse uniquely combines smart trip planning (Claude + ChatGPT), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks with personalized recommendations."
+        answer: "TrailVerse uniquely combines smart trip planning (Claude + ChatGPT), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 433+ parks and sites with personalized recommendations."
       }
     ]
   },
@@ -50,7 +50,7 @@ const faqCategories = [
     questions: [
       {
         question: "What parks are included?",
-        answer: "TrailVerse includes all 470+ units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, and Preserves. From Yellowstone and Yosemite to hidden gems and historic sites, we cover them all."
+        answer: "TrailVerse includes all 433 units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, and Preserves. From Yellowstone and Yosemite to hidden gems and historic sites, we cover them all."
       },
       {
         question: "How do Google Maps features work?",

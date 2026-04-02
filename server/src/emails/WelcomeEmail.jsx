@@ -76,7 +76,7 @@ const WelcomeEmail = ({
                   {[
                     {
                       icon: '🗺️',
-                      title: 'Explore 470+ Parks',
+                      title: 'Explore 433+ Parks & Sites',
                       description: 'Interactive maps and detailed information'
                     },
                     {

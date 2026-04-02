@@ -53,7 +53,7 @@ export default async function LandingPage() {
             <div className="w-full max-w-6xl mx-auto text-center">
               <div className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 backdrop-blur-md mb-8 sm:mb-10 shadow-lg bg-black/30 border border-white/10">
                 <IconGlyph name="Route" className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
-                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90">470+ Parks. One Platform.</span>
+                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90">433+ Parks. One Platform.</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 text-white w-full text-center drop-shadow-xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '0.95' }}>
@@ -62,7 +62,7 @@ export default async function LandingPage() {
               </h1>
 
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-white/90 max-w-3xl mx-auto mb-2">
-                Explore 470+ National Parks with real-time weather, interactive maps, community reviews, and smart trip planning.
+                Explore 433+ parks and sites with real-time weather, interactive maps, community reviews, and smart trip planning.
               </p>
               <p className="text-base sm:text-lg lg:text-xl font-medium text-white/70 max-w-3xl mx-auto mb-10 sm:mb-12">
                 Your next adventure starts here.
@@ -142,7 +142,7 @@ export default async function LandingPage() {
                 className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
                 style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
-                View All 470+ Parks
+                View All 433+ Parks
               </Link>
             </div>
           </div>
