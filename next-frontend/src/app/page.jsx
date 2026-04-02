@@ -261,7 +261,7 @@ const LandingPage = () => {
                 <div
                   className="absolute top-full left-0 right-0 mt-3 rounded-[1.5rem] overflow-hidden backdrop-blur-md z-[70] animate-fade-in"
                   style={{
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'var(--bg-primary)',
                     borderWidth: '1px',
                     borderColor: 'var(--border)',
                     boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
@@ -288,7 +288,9 @@ const LandingPage = () => {
                             router.push(`/parks/${park.parkCode}`);
                             setSearchFocused(false);
                           }}
-                          className="w-full flex items-center gap-4 px-4 sm:px-6 py-4 text-left transition-colors hover:bg-black/5"
+                          className="w-full flex items-center gap-4 px-4 sm:px-6 py-4 text-left transition-colors"
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           style={{ borderBottom: '1px solid var(--border)' }}
                         >
                           {park.images?.[0]?.url ? (
