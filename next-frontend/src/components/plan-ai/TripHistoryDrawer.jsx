@@ -46,9 +46,9 @@ const TripHistoryDrawer = ({
       {/* Drawer */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-[280px] flex flex-col
+          fixed inset-y-0 left-0 z-50 flex w-[86vw] max-w-[320px] flex-col
           transition-transform duration-300 ease-in-out
-          lg:relative lg:z-auto lg:translate-x-0 lg:border-r lg:flex-shrink-0
+          lg:relative lg:z-auto lg:w-[320px] lg:max-w-none lg:translate-x-0 lg:border-r lg:flex-shrink-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'}
         `}
         style={{
@@ -58,16 +58,21 @@ const TripHistoryDrawer = ({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+          className="flex items-center justify-between border-b px-4 py-4 flex-shrink-0"
           style={{ borderColor: 'var(--border)' }}
         >
-          <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Trip History
-          </h2>
+          <div>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Trip History
+            </h2>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Reopen saved conversations or start fresh.
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg transition-colors hover:opacity-80"
-            style={{ color: 'var(--text-secondary)' }}
+            className="rounded-xl border p-2 transition-colors hover:opacity-80"
+            style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
             aria-label="Close history"
           >
             <X className="h-5 w-5" />
@@ -75,10 +80,14 @@ const TripHistoryDrawer = ({
         </div>
 
         {/* Tab bar */}
-        <div className="flex px-3 py-2 gap-1 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
+        <div className="border-b px-3 py-3 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
+        <div
+          className="grid grid-cols-2 gap-2 rounded-2xl p-1"
+          style={{ backgroundColor: 'var(--surface-hover)' }}
+        >
           <button
             onClick={() => setActiveTab('active')}
-            className="flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all"
+            className="rounded-xl px-3 py-2.5 text-sm font-medium transition-all"
             style={{
               backgroundColor: activeTab === 'active' ? 'var(--accent-green)' : 'transparent',
               color: activeTab === 'active' ? 'white' : 'var(--text-secondary)'
@@ -88,7 +97,7 @@ const TripHistoryDrawer = ({
           </button>
           <button
             onClick={() => setActiveTab('archive')}
-            className="flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all"
+            className="rounded-xl px-3 py-2.5 text-sm font-medium transition-all"
             style={{
               backgroundColor: activeTab === 'archive' ? 'var(--accent-green)' : 'transparent',
               color: activeTab === 'archive' ? 'white' : 'var(--text-secondary)'
@@ -97,11 +106,15 @@ const TripHistoryDrawer = ({
             Archived ({archivedTrips.length})
           </button>
         </div>
+        </div>
 
         {/* Trip list */}
-        <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="flex-1 overflow-y-auto px-3 py-3">
           {trips.length === 0 ? (
-            <div className="text-center py-10">
+            <div
+              className="rounded-2xl border px-4 py-10 text-center"
+              style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}
+            >
               <FolderSimple className="h-10 w-10 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
               <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 {activeTab === 'active' ? 'No Active Trips' : 'No Archived Trips'}
@@ -113,7 +126,7 @@ const TripHistoryDrawer = ({
               </p>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2.5">
               {trips.map((trip) => {
                 const tripId = trip._id || trip.id;
                 const isDeleting = deletingTripId === tripId;
@@ -123,15 +136,27 @@ const TripHistoryDrawer = ({
                   <div key={tripId} className="group relative">
                     <button
                       onClick={() => onSelectTrip(tripId)}
-                      className="w-full text-left px-3 py-3 rounded-lg transition-colors hover:opacity-90"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                      className="w-full rounded-2xl border px-3.5 py-3.5 text-left transition-all hover:-translate-y-0.5 hover:opacity-95"
+                      style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.76)',
+                        borderColor: 'var(--border)',
+                        boxShadow: '0 10px 24px rgba(15, 23, 42, 0.05)'
+                      }}
                       disabled={isDeleting || isRestoring}
                     >
                       <div className="flex items-start gap-2.5">
-                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                        <div
+                          className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: 'rgba(67, 160, 106, 0.12)' }}
+                        >
+                          <MapPin className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                          <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                             {trip.parkName || trip.title || 'Untitled Trip'}
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                            {activeTab === 'active' ? 'Continue this planning conversation.' : 'Restore this archived trip to keep planning.'}
                           </p>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -150,11 +175,11 @@ const TripHistoryDrawer = ({
                     </button>
 
                     {/* Action buttons */}
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5">
+                    <div className="absolute right-2 top-2 hidden items-center gap-1 md:flex md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
                       {activeTab === 'active' && onArchive && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onArchive(tripId); }}
-                          className="p-1.5 rounded-md transition-colors hover:opacity-80"
+                          className="rounded-lg border p-1.5 transition-colors hover:opacity-80"
                           style={{ color: 'var(--text-tertiary)', backgroundColor: 'var(--surface)' }}
                           title="Archive"
                         >
@@ -164,7 +189,7 @@ const TripHistoryDrawer = ({
                       {activeTab === 'archive' && onRestore && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onRestore(tripId); }}
-                          className="p-1.5 rounded-md transition-colors hover:opacity-80"
+                          className="rounded-lg border p-1.5 transition-colors hover:opacity-80"
                           style={{ color: 'var(--text-tertiary)', backgroundColor: 'var(--surface)' }}
                           title="Restore"
                           disabled={isRestoring}
@@ -175,7 +200,7 @@ const TripHistoryDrawer = ({
                       {onDelete && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onDelete(tripId); }}
-                          className="p-1.5 rounded-md transition-colors hover:opacity-80"
+                          className="rounded-lg border p-1.5 transition-colors hover:opacity-80"
                           style={{ color: 'var(--text-tertiary)', backgroundColor: 'var(--surface)' }}
                           title="Delete"
                           disabled={isDeleting}
@@ -192,11 +217,14 @@ const TripHistoryDrawer = ({
         </div>
 
         {/* Footer */}
-        <div className="px-3 py-3 border-t flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
+        <div className="border-t px-3 py-3 flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={onNewChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-white"
-            style={{ backgroundColor: 'var(--accent-green)' }}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white transition-colors"
+            style={{
+              backgroundColor: 'var(--accent-green)',
+              boxShadow: '0 14px 28px rgba(67, 160, 106, 0.22)'
+            }}
           >
             <Plus className="h-4 w-4" />
             New Chat

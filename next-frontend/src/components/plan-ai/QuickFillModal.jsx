@@ -48,58 +48,93 @@ const QuickFillModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+      onClick={handleClose}
+    >
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 sm:p-8"
+        className="relative w-full max-w-2xl overflow-hidden rounded-3xl shadow-2xl animate-scale-up"
         style={{
-          backgroundColor: 'var(--surface)',
+          backgroundColor: 'var(--bg-primary)',
           borderWidth: '1px',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-xl)'
+          boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)'
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg transition-colors hover:opacity-80"
-          style={{ color: 'var(--text-secondary)' }}
-          aria-label="Close"
+        <div
+          className="border-b px-5 py-4 sm:px-6"
+          style={{
+            borderColor: 'var(--border)',
+            background: 'linear-gradient(180deg, rgba(67, 160, 106, 0.05) 0%, rgba(255,255,255,0) 100%)'
+          }}
         >
-          <X className="h-5 w-5" />
-        </button>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                style={{
+                  backgroundColor: 'rgba(67, 160, 106, 0.12)',
+                  color: 'var(--accent-green)'
+                }}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Quick Fill
+              </div>
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                Add trip details fast
+              </h2>
+              <p className="mt-1 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
+                Fill in the trip basics once, then continue planning in chat.
+              </p>
+            </div>
 
-        {/* Step indicator */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Step {step} of {totalSteps}
-            </span>
-            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              {Math.round((step / totalSteps) * 100)}%
-            </span>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl transition-colors"
+              style={{
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border)'
+              }}
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-hover)' }}>
-            <div
-              className="h-full bg-forest-500 transition-all duration-500"
-              style={{ width: `${(step / totalSteps) * 100}%` }}
-            />
+
+          <div className="mt-5">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Step {step} of {totalSteps}
+              </span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                {Math.round((step / totalSteps) * 100)}%
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }}>
+              <div
+                className="h-full bg-forest-500 transition-all duration-500"
+                style={{ width: `${(step / totalSteps) * 100}%` }}
+              />
+            </div>
           </div>
         </div>
 
+        <div
+          className="max-h-[calc(90vh-190px)] overflow-y-auto px-5 py-6 sm:px-6 sm:py-7"
+          style={{ backgroundColor: 'var(--bg-primary)' }}
+        >
         {/* Step 1: Park selector */}
         {step === 1 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 Where do you want to go?
-              </h2>
+              </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
                 Choose a national park to explore
               </p>
@@ -158,9 +193,9 @@ const QuickFillModal = ({
         {step === 2 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 When are you traveling?
-              </h2>
+              </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
                 Select your travel dates
               </p>
@@ -256,9 +291,9 @@ const QuickFillModal = ({
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 What are you interested in?
-              </h2>
+              </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
                 Select all activities you&apos;d like to do
               </p>
@@ -290,9 +325,9 @@ const QuickFillModal = ({
         {step === 4 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 Final preferences
-              </h2>
+              </h3>
               <p style={{ color: 'var(--text-secondary)' }}>
                 Tell us about your budget and fitness level
               </p>
@@ -363,10 +398,11 @@ const QuickFillModal = ({
             </div>
           </div>
         )}
+        </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between gap-3 mt-8 pt-6 border-t"
-          style={{ borderColor: 'var(--border)' }}
+        <div className="flex items-center justify-between gap-3 border-t px-5 py-4 sm:px-6"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
         >
           <div className="flex items-center gap-3">
             {step > 1 && (

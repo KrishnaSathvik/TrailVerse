@@ -94,6 +94,8 @@ class NPSService {
     this.endpointCache = new Map();
     this.endpointCacheTTLs = {
       alerts: 30 * 60 * 1000,           // 30 min — safety-critical, can change anytime
+      eventsQuery: 24 * 60 * 60 * 1000,  // 1 day — event lists rarely change daily
+      eventsSummary: 24 * 60 * 60 * 1000, // 1 day — count can be cached separately
       parkinglots: 10 * 60 * 1000,      // 10 min — live occupancy data
       activities: 7 * 24 * 60 * 60 * 1000, // 7 days — rarely changes
       campgrounds: 7 * 24 * 60 * 60 * 1000, // 7 days — seasonal changes only
@@ -170,6 +172,64 @@ class NPSService {
 
   _setEndpointCache(key, data) {
     this.endpointCache.set(key, { data, timestamp: Date.now() });
+  }
+
+  _buildQueryCacheKey(prefix, params = {}) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([key, value]) => {
+        searchParams.set(key, String(value));
+      });
+
+    const serialized = searchParams.toString();
+    return serialized ? `${prefix}:${serialized}` : prefix;
+  }
+
+  _normalizeNpsEvent(event) {
+    const normalizedImages = Array.isArray(event.images)
+      ? event.images
+          .map((image) => ({
+            ...image,
+            url: image?.url
+              ? (image.url.startsWith('http') ? image.url : `https://www.nps.gov${image.url}`)
+              : '',
+          }))
+          .filter((image) => image.url)
+      : [];
+
+    return {
+      ...event,
+      parkCode: event.parkCode || event.sitecode || '',
+      parkName: event.parkfullname || event.parkName || '',
+      images: normalizedImages,
+    };
+  }
+
+  _dedupeNpsEvents(events) {
+    const seen = new Set();
+
+    return events.filter((event) => {
+      const normalized = this._normalizeNpsEvent(event);
+      const firstTime = Array.isArray(normalized.times) && normalized.times.length > 0
+        ? `${normalized.times[0]?.timestart || ''}-${normalized.times[0]?.timeend || ''}`
+        : normalized.timeinfo || '';
+      const key = [
+        normalized.id || normalized.eventid || normalized.title,
+        normalized.parkCode,
+        normalized.date || normalized.datestart || '',
+        firstTime,
+      ].join('::');
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    }).map((event) => this._normalizeNpsEvent(event));
   }
 
   // --- MongoDB snapshot helpers for all bulk data ---
@@ -1286,18 +1346,73 @@ class NPSService {
   }
 
   // Get all events from NPS API with caching — uses bulk paginated fetch
-  async getAllEvents(limit = 100) {
-    // Check cache first
-    const cachedEvents = this.getCachedEvents();
-    if (cachedEvents) {
-      return cachedEvents.slice(0, limit);
-    }
+  async getAllEvents(options = {}) {
+    const {
+      parkCode,
+      stateCode,
+      q,
+      dateStart,
+      dateEnd,
+      eventType,
+      expandRecurring = false,
+      includePast = false,
+      pageSize = 50,
+      maxPages = 20,
+      limit = 100,
+    } = options;
+    const normalizedLimit = Math.max(Number(limit) || 100, 1);
+    const normalizedPageSize = Math.min(Number(pageSize) || 50, 50);
 
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-events', this.eventsCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.setEventsCache(snapshot.data);
-      return snapshot.data.slice(0, limit);
+    const hasFilters = Boolean(
+      parkCode ||
+      stateCode ||
+      q ||
+      dateStart ||
+      dateEnd ||
+      eventType ||
+      expandRecurring ||
+      includePast
+    );
+    const queryCacheKey = hasFilters
+      ? this._buildQueryCacheKey('events-query', {
+          parkCode,
+          stateCode,
+          q,
+          dateStart,
+          dateEnd,
+          eventType,
+          expandRecurring,
+          includePast,
+          limit: normalizedLimit,
+        })
+      : null;
+
+    if (!hasFilters) {
+      const cachedEvents = this.getCachedEvents();
+      if (cachedEvents) {
+        return this._dedupeNpsEvents(cachedEvents).slice(0, normalizedLimit);
+      }
+
+      const snapshot = await this._loadSnapshot('bulk-events', this.eventsCache.ttl);
+      if (snapshot && !snapshot.stale) {
+        const dedupedSnapshot = this._dedupeNpsEvents(snapshot.data);
+        this.setEventsCache(dedupedSnapshot);
+        return dedupedSnapshot.slice(0, normalizedLimit);
+      }
+    } else {
+      const cachedQueryEvents = this._getEndpointCache(queryCacheKey, 'eventsQuery');
+      if (cachedQueryEvents) {
+        console.log(`📦 Returning cached filtered events for ${queryCacheKey}`);
+        return cachedQueryEvents.slice(0, normalizedLimit);
+      }
+
+      const querySnapshot = await this._loadSnapshot(queryCacheKey, this.endpointCacheTTLs.eventsQuery);
+      if (querySnapshot?.data && !querySnapshot.stale) {
+        const dedupedSnapshot = this._dedupeNpsEvents(querySnapshot.data);
+        this._setEndpointCache(queryCacheKey, dedupedSnapshot);
+        console.log(`🗄️ Returning cached filtered events snapshot for ${queryCacheKey}`);
+        return dedupedSnapshot.slice(0, normalizedLimit);
+      }
     }
 
     try {
@@ -1306,83 +1421,168 @@ class NPSService {
       let allEvents = [];
       let totalFetched = 0;
       const today = new Date();
-      const pageSize = 50;
-      const maxPages = 20; // Cap at 1000 events to avoid endless pagination
-      let start = 0;
 
-      // Paginated bulk fetch — no per-park iteration
-      for (let page = 0; page < maxPages; page++) {
+      for (let page = 1; page <= maxPages; page++) {
         const response = await this.api.get('/events', {
-          params: { limit: pageSize, start }
+          params: {
+            pageSize: normalizedPageSize,
+            pageNumber: page,
+            expandRecurring,
+            ...(parkCode ? { parkCode } : {}),
+            ...(stateCode ? { stateCode } : {}),
+            ...(q ? { q } : {}),
+            ...(dateStart ? { dateStart } : {}),
+            ...(dateEnd ? { dateEnd } : {}),
+            ...(eventType ? { eventType } : {}),
+          }
         });
 
-        const events = response.data.data;
+        const events = response.data.data || [];
         if (!events || events.length === 0) break;
 
         totalFetched += events.length;
 
-        // Filter to events that are still relevant (future or ongoing/recurring)
-        // Matches frontend logic: if dateend >= today, event is still active
         const validEvents = events.filter(event => {
-          const startDate = new Date(event.datestart || event.date || event.dates?.[0]);
+          if (includePast) {
+            return true;
+          }
+
+          const startDate = new Date(event.date || event.datestart || event.dates?.[0]);
           const endDate = new Date(event.dateend);
 
-          // If end date is valid and in the future, event is still active (recurring)
           if (!isNaN(endDate.getTime()) && endDate >= today) return true;
-
-          // Otherwise check if start date is in the future
           if (!isNaN(startDate.getTime()) && startDate >= today) return true;
 
           return false;
         });
 
         allEvents = allEvents.concat(validEvents);
-        start += pageSize;
 
-        console.log(`📅 Fetched page ${page + 1}/${maxPages}, ${totalFetched} total events, ${allEvents.length} future`);
+        console.log(`📅 Fetched page ${page}/${maxPages}, ${totalFetched} total events, ${allEvents.length} kept`);
 
-        if (events.length < pageSize) break; // last page
+        if (allEvents.length >= normalizedLimit) break;
+        if (events.length < normalizedPageSize) break;
 
-        // Small delay between pages
         await new Promise(resolve => setTimeout(resolve, 200));
       }
 
-      // Sort events by start date
+      allEvents = this._dedupeNpsEvents(allEvents);
+
       allEvents.sort((a, b) => {
-        const dateA = new Date(a.datestart || a.date || a.dates?.[0]);
-        const dateB = new Date(b.datestart || b.date || b.dates?.[0]);
+        const dateA = new Date(a.date || a.datestart || a.dates?.[0]);
+        const dateB = new Date(b.date || b.datestart || b.dates?.[0]);
         return dateA - dateB;
       });
 
-      // Cache the results (even if empty — prevents re-fetching)
-      this.setEventsCache(allEvents);
+      if (!hasFilters) {
+        this.setEventsCache(allEvents);
+        await this._saveSnapshot('bulk-events', allEvents);
+      } else if (queryCacheKey) {
+        this._setEndpointCache(queryCacheKey, allEvents);
+        await this._saveSnapshot(queryCacheKey, allEvents);
+      }
 
-      console.log(`✅ Events fetch complete: ${allEvents.length} future events out of ${totalFetched} total`);
-      await this._saveSnapshot('bulk-events', allEvents);
-      return allEvents.slice(0, limit);
+      console.log(`✅ Events fetch complete: ${allEvents.length} kept events out of ${totalFetched} total`);
+      return allEvents.slice(0, normalizedLimit);
     } catch (error) {
-      // On 429, return stale cache if available
       if (error.response?.status === 429) {
-        if (this.eventsCache.data) {
+        if (!hasFilters && this.eventsCache.data) {
           console.warn('⚠️ NPS 429 rate limit on events — returning stale cache');
-          return this.eventsCache.data.slice(0, limit);
+          return this._dedupeNpsEvents(this.eventsCache.data).slice(0, normalizedLimit);
         }
+        if (hasFilters && queryCacheKey) {
+          const cachedQueryEvents = this._getEndpointCache(queryCacheKey, 'eventsQuery');
+          if (cachedQueryEvents) {
+            console.warn(`⚠️ NPS 429 on filtered events — returning cached query results for ${queryCacheKey}`);
+            return cachedQueryEvents.slice(0, normalizedLimit);
+          }
+          const querySnapshot = await this._loadSnapshot(queryCacheKey, this.endpointCacheTTLs.eventsQuery);
+          if (querySnapshot?.data) {
+            console.warn(`⚠️ NPS 429 on filtered events — returning snapshot for ${queryCacheKey}`);
+            const dedupedSnapshot = this._dedupeNpsEvents(querySnapshot.data);
+            this._setEndpointCache(queryCacheKey, dedupedSnapshot);
+            return dedupedSnapshot.slice(0, normalizedLimit);
+          }
+        }
+        const snapshot = !hasFilters ? await this._loadSnapshot('bulk-events', this.eventsCache.ttl) : null;
         if (snapshot?.data) {
           console.warn('⚠️ NPS 429 on bulk events — returning stale snapshot');
-          this.setEventsCache(snapshot.data);
-          return snapshot.data.slice(0, limit);
+          const dedupedSnapshot = this._dedupeNpsEvents(snapshot.data);
+          this.setEventsCache(dedupedSnapshot);
+          return dedupedSnapshot.slice(0, normalizedLimit);
         }
-        const dbSnapshot = await this._loadSnapshot('bulk-events', Infinity);
+        const dbSnapshot = !hasFilters ? await this._loadSnapshot('bulk-events', Infinity) : null;
         if (dbSnapshot?.data) {
           console.warn('⚠️ NPS 429 on bulk events — returning DB snapshot');
-          this.setEventsCache(dbSnapshot.data);
-          return dbSnapshot.data.slice(0, limit);
+          const dedupedSnapshot = this._dedupeNpsEvents(dbSnapshot.data);
+          this.setEventsCache(dedupedSnapshot);
+          return dedupedSnapshot.slice(0, normalizedLimit);
         }
         console.warn('⚠️ NPS 429 on bulk events — no cache available, returning empty');
         return [];
       }
       console.error('NPS API Error (getAllEvents):', error.message);
       return [];
+    }
+  }
+
+  async getEventsTotal(options = {}) {
+    const {
+      parkCode,
+      stateCode,
+      q,
+      dateStart,
+      dateEnd,
+      eventType,
+      expandRecurring = false,
+    } = options;
+    const summaryCacheKey = this._buildQueryCacheKey('events-summary', {
+      parkCode,
+      stateCode,
+      q,
+      dateStart,
+      dateEnd,
+      eventType,
+      expandRecurring,
+    });
+
+    const cachedSummary = this._getEndpointCache(summaryCacheKey, 'eventsSummary');
+    if (cachedSummary !== null) {
+      console.log(`📦 Returning cached event summary for ${summaryCacheKey}`);
+      return cachedSummary;
+    }
+
+    const summarySnapshot = await this._loadSnapshot(summaryCacheKey, this.endpointCacheTTLs.eventsSummary);
+    if (summarySnapshot?.data !== undefined && !summarySnapshot.stale) {
+      this._setEndpointCache(summaryCacheKey, summarySnapshot.data);
+      console.log(`🗄️ Returning cached event summary snapshot for ${summaryCacheKey}`);
+      return summarySnapshot.data;
+    }
+
+    try {
+      const response = await this.api.get('/events', {
+        params: {
+          pageSize: 1,
+          pageNumber: 1,
+          expandRecurring,
+          ...(parkCode ? { parkCode } : {}),
+          ...(stateCode ? { stateCode } : {}),
+          ...(q ? { q } : {}),
+          ...(dateStart ? { dateStart } : {}),
+          ...(dateEnd ? { dateEnd } : {}),
+          ...(eventType ? { eventType } : {}),
+        }
+      });
+      const total = Number(response.data?.total || 0);
+      this._setEndpointCache(summaryCacheKey, total);
+      await this._saveSnapshot(summaryCacheKey, total);
+      return total;
+    } catch (error) {
+      console.error('NPS API Error (getEventsTotal):', error.message);
+      if (summarySnapshot?.data !== undefined) {
+        return Number(summarySnapshot.data || 0);
+      }
+      return 0;
     }
   }
 
@@ -1393,10 +1593,7 @@ class NPSService {
     if (cached) return cached;
 
     try {
-      const response = await this.api.get('/events', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
+      const data = await this.getAllEvents({ parkCode, pageSize: 100, limit: 100 });
       console.log(`Events for ${parkCode}: ${data.length}`);
       this._setEndpointCache(cacheKey, data);
       return data;

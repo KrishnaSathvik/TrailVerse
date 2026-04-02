@@ -4,7 +4,8 @@
   color: var(--text-primary);
   line-height: 1.8;
   font-size: 1.125rem;
-  max-width: 72ch;
+  max-width: 68ch;
+  margin: 0 auto;
 }
 
 /* Headings */
@@ -28,7 +29,7 @@
 }
 
 .blog-prose h2 {
-  font-size: 2rem;
+  font-size: 1.95rem;
   padding-bottom: 0.65rem;
   border-bottom: 1px solid var(--border);
 }
@@ -45,13 +46,13 @@
 .blog-prose p {
   color: var(--text-primary);
   margin-bottom: 1.35rem;
-  line-height: 1.9;
+  line-height: 1.85;
 }
 
 .blog-prose p:first-of-type {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   color: var(--text-secondary);
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 /* Links */
@@ -177,14 +178,14 @@
 /* Lists */
 .blog-prose ul,
 .blog-prose ol {
-  margin: 1.5rem 0;
+  margin: 1.6rem 0;
   padding-left: 2rem;
 }
 
 .blog-prose ul li,
 .blog-prose ol li {
-  margin-bottom: 0.75rem;
-  line-height: 1.7;
+  margin-bottom: 0.85rem;
+  line-height: 1.75;
   color: var(--text-primary);
 }
 
@@ -258,7 +259,8 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  display: table;
+  display: block;
+  overflow-x: auto;
   min-width: 100%;
 }
 
@@ -280,6 +282,14 @@
 
 .blog-prose tr:last-child td {
   border-bottom: none;
+}
+
+.blog-prose > *:first-child {
+  margin-top: 0;
+}
+
+.blog-prose > *:last-child {
+  margin-bottom: 0;
 }
 
 /* Horizontal Rule */

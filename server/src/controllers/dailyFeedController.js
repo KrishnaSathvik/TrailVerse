@@ -12,6 +12,53 @@ function sanityCheck(ai) {
   // Optional: forbid content not in inputs by checking proper nouns against a whitelist
   return true;
 }
+
+function parseAiJsonStringArray(response) {
+  if (!response || typeof response !== 'string') return null;
+
+  const candidates = [
+    response.trim(),
+    response.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim()
+  ];
+
+  const fencedMatch = response.match(/```json\s*([\s\S]*?)```/i) || response.match(/```\s*([\s\S]*?)```/i);
+  if (fencedMatch?.[1]) {
+    candidates.push(fencedMatch[1].trim());
+  }
+
+  const firstBracket = response.indexOf('[');
+  const lastBracket = response.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    candidates.push(response.slice(firstBracket, lastBracket + 1).trim());
+  }
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const parsed = JSON.parse(candidate);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(item => typeof item === 'string')
+          .map(item => item.replace(/\*\*(.*?)\*\*/g, '$1').trim())
+          .filter(Boolean);
+      }
+    } catch (error) {
+      // Try next candidate form.
+    }
+  }
+
+  return null;
+}
+
+function fallbackAiLines(response, limit) {
+  return String(response || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !['```json', '```', '[', ']'].includes(line))
+    .map(line => line.replace(/^[-•\d+.\]"',\s]+/, '').replace(/\*\*(.*?)\*\*/g, '$1').trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
 const astronomicalService = require('../services/astronomicalService');
 const reliableAstronomicalService = require('../services/reliableAstronomicalService');
 const elevationService = require('../services/elevationService');
@@ -725,6 +772,7 @@ async function getRandomParkOfDay(dateStr) {
     return {
       parkCode: 'yose',
       name: 'Yosemite National Park',
+      states: 'CA',
       designation: 'National Park',
       description: 'Yosemite National Park is known for its granite cliffs, waterfalls, clear streams, and giant sequoia groves.',
       image: '/background1.png',
@@ -1389,19 +1437,13 @@ async function getPersonalizedRecommendations(user, park, weatherData, astroData
     ]);
     
     // Try to parse JSON response
-    try {
-      const recommendations = JSON.parse(response);
-      if (Array.isArray(recommendations)) {
-        console.log(`🤖 AI Generated ${recommendations.length} personalized recommendations for ${park.name}`);
-        return recommendations.slice(0, 3).map(rec => rec.replace(/\*\*(.*?)\*\*/g, '$1'));
-      }
-    } catch (parseError) {
-      console.warn('Failed to parse AI recommendations as JSON:', parseError.message);
+    const recommendations = parseAiJsonStringArray(response);
+    if (recommendations?.length) {
+      console.log(`🤖 AI Generated ${recommendations.length} personalized recommendations for ${park.name}`);
+      return recommendations.slice(0, 3);
     }
-    
-    // Fallback: split by lines and clean up
-    const lines = response.split('\n').filter(line => line.trim()).slice(0, 3);
-    return lines.map(line => line.replace(/^\d+\.\s*/, '').replace(/\*\*(.*?)\*\*/g, '$1').trim());
+
+    return fallbackAiLines(response, 3);
   } catch (error) {
     console.warn('AI recommendations unavailable:', error.message);
     const fallbackSeason = getSeason(new Date().getMonth());
@@ -1604,7 +1646,7 @@ function getTimezoneAbbreviation(longitude) {
 // Helper function to get correct local times using astronomical service
 async function getCorrectLocalTimes(latitude, longitude, dateStr) {
   try {
-    const ReliableAstronomicalService = require('./src/services/reliableAstronomicalService');
+    const ReliableAstronomicalService = require('../services/reliableAstronomicalService');
     const date = new Date(dateStr);
     
     const result = await ReliableAstronomicalService.getAstronomicalData(latitude, longitude, date);
@@ -1787,19 +1829,13 @@ async function getAIQuickStatsInsights(park, weatherData, astroData) {
       { role: 'user', content: prompt }
     ]);
     
-    try {
-      const insights = JSON.parse(response);
-      if (Array.isArray(insights)) {
-        console.log(`🤖 AI Generated ${insights.length} quick stats insights for ${park.name}`);
-        return insights.slice(0, 4).map(insight => insight.replace(/\*\*(.*?)\*\*/g, '$1'));
-      }
-    } catch (parseError) {
-      console.warn('Failed to parse AI quick stats insights as JSON:', parseError.message);
+    const insights = parseAiJsonStringArray(response);
+    if (insights?.length) {
+      console.log(`🤖 AI Generated ${insights.length} quick stats insights for ${park.name}`);
+      return insights.slice(0, 4);
     }
-    
-    // Fallback: split by lines and clean up
-    const lines = response.split('\n').filter(line => line.trim()).slice(0, 4);
-    return lines.map(line => line.replace(/^\d+\.\s*/, '').replace(/\*\*(.*?)\*\*/g, '$1').trim());
+
+    return fallbackAiLines(response, 4);
   } catch (error) {
     console.warn('AI quick stats insights unavailable:', error.message);
     return [
@@ -1853,19 +1889,13 @@ async function getAISkyDataInsights(park, astroData, weatherData) {
       { role: 'user', content: prompt }
     ]);
     
-    try {
-      const insights = JSON.parse(response);
-      if (Array.isArray(insights)) {
-        console.log(`🌙 AI Generated ${insights.length} sky data insights for ${park.name}`);
-        return insights.slice(0, 4).map(insight => insight.replace(/\*\*(.*?)\*\*/g, '$1'));
-      }
-    } catch (parseError) {
-      console.warn('Failed to parse AI sky data insights as JSON:', parseError.message);
+    const insights = parseAiJsonStringArray(response);
+    if (insights?.length) {
+      console.log(`🌙 AI Generated ${insights.length} sky data insights for ${park.name}`);
+      return insights.slice(0, 4);
     }
-    
-    // Fallback: split by lines and clean up
-    const lines = response.split('\n').filter(line => line.trim()).slice(0, 4);
-    return lines.map(line => line.replace(/^\d+\.\s*/, '').replace(/\*\*(.*?)\*\*/g, '$1').trim());
+
+    return fallbackAiLines(response, 4);
   } catch (error) {
     console.warn('AI sky data insights unavailable:', error.message);
     return [
@@ -1912,19 +1942,13 @@ async function getAIParkInfoInsights(park, weatherData, astroData) {
       { role: 'user', content: prompt }
     ]);
     
-    try {
-      const insights = JSON.parse(response);
-      if (Array.isArray(insights)) {
-        console.log(`🏞️ AI Generated ${insights.length} park info insights for ${park.name}`);
-        return insights.slice(0, 4).map(insight => insight.replace(/\*\*(.*?)\*\*/g, '$1'));
-      }
-    } catch (parseError) {
-      console.warn('Failed to parse AI park info insights as JSON:', parseError.message);
+    const insights = parseAiJsonStringArray(response);
+    if (insights?.length) {
+      console.log(`🏞️ AI Generated ${insights.length} park info insights for ${park.name}`);
+      return insights.slice(0, 4);
     }
-    
-    // Fallback: split by lines and clean up
-    const lines = response.split('\n').filter(line => line.trim()).slice(0, 4);
-    return lines.map(line => line.replace(/^\d+\.\s*/, '').replace(/\*\*(.*?)\*\*/g, '$1').trim());
+
+    return fallbackAiLines(response, 4);
   } catch (error) {
     console.warn('AI park info insights unavailable:', error.message);
     return [

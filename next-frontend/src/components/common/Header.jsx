@@ -25,8 +25,18 @@ const Header = () => {
     { path: '/compare', label: 'Compare' },
   ];
 
+  const authenticatedOnlyNavItems = [
+    { path: '/chat-history', label: 'Chat History' },
+  ];
+
   // Add Profile to nav items for authenticated users
-  const allNavItems = isAuthenticated ? [...navItems, { path: '/profile', label: 'Profile' }] : navItems;
+  const allNavItems = isAuthenticated
+    ? [
+        ...navItems,
+        ...authenticatedOnlyNavItems,
+        { path: '/profile', label: 'Profile' }
+      ]
+    : navItems;
   
   // For unauthenticated users, show only public pages (exclude Daily Feed and Profile)
   const publicNavItems = navItems.filter(item => 
@@ -34,7 +44,11 @@ const Header = () => {
   );
   const mobileNavItems = isAuthenticated ? allNavItems : publicNavItems;
 
-  const isActive = (path) => pathname === path;
+  const isActive = (path) => {
+    if (path === '/plan-ai') return pathname.startsWith('/plan-ai');
+    if (path === '/chat-history') return pathname.startsWith('/chat-history');
+    return pathname === path;
+  };
 
   const handleLogout = () => {
     logout();

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from './useWebSocket';
 import tripService from '../services/tripService';
 
+const unwrapTripPayload = (response) => response?.data || response;
+
 export const useTrips = () => {
   const { user, isAuthenticated } = useAuth();
   const { subscribe, unsubscribe, subscribeToTrips } = useWebSocket();
@@ -92,8 +94,9 @@ export const useTrips = () => {
   const createTrip = async (tripData) => {
     try {
       const response = await tripService.createTrip(tripData);
-      setTrips(prev => [response.data, ...prev]);
-      return response;
+      const trip = unwrapTripPayload(response);
+      setTrips(prev => [trip, ...prev]);
+      return trip;
     } catch (err) {
       console.error('Error creating trip:', err);
       throw err;
@@ -103,15 +106,20 @@ export const useTrips = () => {
   const updateTrip = async (tripId, tripData) => {
     try {
       const response = await tripService.updateTrip(tripId, tripData);
+      const updatedTrip = unwrapTripPayload(response);
       setTrips(prev => 
-        prev.map(trip => trip._id === tripId ? response.data : trip)
+        prev.map(trip => trip._id === tripId ? updatedTrip : trip)
       );
-      return response;
+      return updatedTrip;
     } catch (err) {
       console.error('Error updating trip:', err);
       throw err;
     }
   };
+
+  const archiveTrip = async (tripId) => updateTrip(tripId, { status: 'archived' });
+
+  const restoreTrip = async (tripId) => updateTrip(tripId, { status: 'active' });
 
   const deleteTrip = async (tripId) => {
     try {
@@ -133,10 +141,11 @@ export const useTrips = () => {
   const addMessage = async (tripId, messageData) => {
     try {
       const response = await tripService.addMessage(tripId, messageData);
+      const updatedTrip = unwrapTripPayload(response);
       setTrips(prev => 
-        prev.map(trip => trip._id === tripId ? response.data : trip)
+        prev.map(trip => trip._id === tripId ? updatedTrip : trip)
       );
-      return response;
+      return updatedTrip;
     } catch (err) {
       console.error('Error adding message:', err);
       throw err;
@@ -153,6 +162,8 @@ export const useTrips = () => {
     error,
     createTrip,
     updateTrip,
+    archiveTrip,
+    restoreTrip,
     deleteTrip,
     addMessage,
     getTrip,

@@ -3,6 +3,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
+  UserCircle as PhUserCircle,
+  EnvelopeSimple as PhEnvelopeSimple,
+  GlobeHemisphereWest as PhGlobeHemisphereWest,
+  TreeEvergreen as PhTreeEvergreen,
+  BookOpenText as PhBookOpenText,
+  CalendarDots as PhCalendarDots
+} from '@phosphor-icons/react';
+import {
   User, Settings, Heart, Calendar, MapPin,
   Mail, Globe, Edit2, Save, X, Trash2,
   Shield, ChevronRight,
@@ -23,6 +31,7 @@ import UnifiedAvatarSelector from '@components/profile/UnifiedAvatarSelector';
 import FavoriteBlogs from '@components/profile/FavoriteBlogs';
 import ProfileHero from '@components/profile/ProfileHero';
 import ProfileStats from '@components/profile/ProfileStats';
+import ParkTabs from '@components/park-details/ParkTabs';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@hooks/useFavorites';
@@ -186,6 +195,22 @@ const ProfilePage = () => {
     setPrivacyError('');
   };
 
+  const closeChangePasswordModal = useCallback(() => {
+    setShowChangePasswordModal(false);
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordErrors({});
+    setPrivacyError('');
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+  }, []);
+
+  const closeDeleteAccountModal = useCallback(() => {
+    setShowDeleteAccountModal(false);
+    setDeleteForm({ password: '', confirmation: '' });
+    setPrivacyError('');
+  }, []);
+
   // Debug logging for favorites (can be removed after testing)
   // Force re-render when favorites change
   useEffect(() => {
@@ -303,14 +328,32 @@ const ProfilePage = () => {
     backgroundColor: 'var(--surface)',
     borderWidth: '1px',
     borderColor: 'var(--border)',
-    backgroundImage: 'linear-gradient(155deg, color-mix(in srgb, var(--surface) 90%, white 10%) 0%, var(--surface) 48%, color-mix(in srgb, var(--surface-hover) 86%, var(--accent-green-light) 14%) 100%)',
-    boxShadow: 'var(--shadow-lg)'
+    boxShadow: '0 12px 28px rgba(15, 23, 42, 0.04)'
   }), []);
 
   const sectionBadgeStyle = useMemo(() => ({
     backgroundColor: 'color-mix(in srgb, var(--surface-hover) 72%, white 28%)',
     color: 'var(--text-secondary)',
     border: '1px solid color-mix(in srgb, var(--border) 86%, white 14%)'
+  }), []);
+
+  const getSectionIconShellStyle = useCallback((accentVar) => ({
+    backgroundColor: `color-mix(in srgb, ${accentVar} 12%, white 88%)`,
+    border: `1px solid color-mix(in srgb, ${accentVar} 20%, var(--border) 80%)`,
+    boxShadow: '0 8px 18px rgba(15, 23, 42, 0.04)'
+  }), []);
+
+  const modalCardStyle = useMemo(() => ({
+    backgroundColor: 'var(--bg-primary)',
+    border: '1px solid var(--border)',
+    boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)'
+  }), []);
+
+  const modalInputStyle = useMemo(() => ({
+    backgroundColor: 'var(--surface-hover)',
+    borderColor: 'var(--border)',
+    borderWidth: '1px',
+    color: 'var(--text-primary)'
   }), []);
 
   // Debug stats array
@@ -982,80 +1025,20 @@ const ProfilePage = () => {
 
           {/* Stats Section - Extracted Component */}
           <ProfileStats stats={stats} />
+        </div>
 
-          {/* Tab Navigation */}
-          <div className="mb-8">
-            <div
-              className="rounded-[1.75rem] p-2 sm:p-3"
-              role="tablist"
-              aria-label="Profile sections"
-              onKeyDown={handleTabKeyDown}
-              style={{
-                background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, white 10%) 0%, color-mix(in srgb, var(--surface-hover) 82%, white 18%) 100%)',
-                border: '1px solid color-mix(in srgb, var(--border) 82%, white 18%)',
-                boxShadow: 'var(--shadow-lg)'
-              }}
-            >
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => handleTabChange(tab.id)}
-                    className="group min-h-11 whitespace-nowrap rounded-full border px-3 py-2 transition-all duration-200 hover:-translate-y-0.5 sm:w-auto w-full justify-center flex items-center"
-                    style={activeTab === tab.id ? {
-                      backgroundImage: 'linear-gradient(135deg, color-mix(in srgb, var(--surface-hover) 58%, white 42%) 0%, color-mix(in srgb, var(--accent-green-light) 20%, white 80%) 100%)',
-                      borderColor: 'color-mix(in srgb, var(--accent-green) 35%, var(--border) 65%)',
-                      boxShadow: '0 10px 24px color-mix(in srgb, var(--accent-green-light) 20%, transparent 80%), inset 0 1px 0 rgba(255,255,255,0.55)',
-                      transform: 'translateY(-1px)',
-                      color: 'var(--text-primary)'
-                    } : {
-                      backgroundColor: 'color-mix(in srgb, var(--surface) 55%, transparent 45%)',
-                      borderColor: 'color-mix(in srgb, var(--border) 88%, white 12%)',
-                      color: 'var(--text-secondary)',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)'
-                    }}
-                    id={`profile-tab-${tab.id}`}
-                    role="tab"
-                    aria-selected={activeTab === tab.id}
-                    aria-controls={`profile-panel-${tab.id}`}
-                    tabIndex={activeTab === tab.id ? 0 : -1}
-                  >
-                    <span className="flex items-center justify-center sm:justify-start gap-2.5">
-                      <span
-                        className="relative inline-flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200"
-                        style={activeTab === tab.id ? {
-                          background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-green-light) 76%, white 24%) 0%, color-mix(in srgb, var(--accent-blue) 10%, white 90%) 100%)',
-                          color: 'var(--accent-green)',
-                          boxShadow: '0 8px 16px color-mix(in srgb, var(--accent-green-light) 28%, transparent 72%)'
-                        } : {
-                          backgroundColor: 'color-mix(in srgb, var(--surface-hover) 74%, white 26%)',
-                          color: 'var(--text-tertiary)'
-                        }}
-                      >
-                        {activeTab === tab.id && (
-                          <span
-                            className="absolute inset-0 rounded-full"
-                            style={{
-                              background: 'radial-gradient(circle, color-mix(in srgb, var(--accent-green-light) 48%, transparent 52%) 0%, transparent 70%)'
-                            }}
-                          />
-                        )}
-                        <tab.icon className="relative h-4 w-4" />
-                      </span>
-                      <span className="text-sm font-semibold">{tab.label}</span>
-                      {activeTab === tab.id && (
-                        <span
-                          className="ml-1 inline-block h-2 w-2 rounded-full"
-                          style={{ backgroundColor: 'var(--accent-green)' }}
-                        />
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* Tab Navigation */}
+        <ParkTabs
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          tabs={tabs}
+          ariaLabel="Profile sections"
+          onKeyDown={handleTabKeyDown}
+          getTabId={(tab) => `profile-tab-${tab.id}`}
+          getAriaControls={(tab) => `profile-panel-${tab.id}`}
+        />
+
+        <div className="w-full max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 mt-8">
 
           {/* Main Content Area */}
           <div className="min-w-0">
@@ -1117,12 +1100,12 @@ const ProfilePage = () => {
                     )}
                   </div>
 
-                  <div className="space-y-8">
-                    {/* Personal Information Section */}
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-green)', opacity: 0.1 }}>
-                          <User className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
+                    <div className="space-y-8">
+                      {/* Personal Information Section */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3 mb-6">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-green)')}>
+                          <PhUserCircle size={22} weight="duotone" style={{ color: 'var(--accent-green)' }} />
                         </div>
                         <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                           Personal Information
@@ -1179,8 +1162,8 @@ const ProfilePage = () => {
                     {/* Contact Information Section */}
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-blue)', opacity: 0.1 }}>
-                          <Mail className="h-6 w-6" style={{ color: 'var(--accent-blue)' }} />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-blue)')}>
+                          <PhEnvelopeSimple size={22} weight="duotone" style={{ color: 'var(--accent-blue)' }} />
                         </div>
                         <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                           Contact Information
@@ -1259,8 +1242,8 @@ const ProfilePage = () => {
                     {/* Additional Information Section */}
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.1 }}>
-                          <Globe className="h-6 w-6" style={{ color: 'var(--accent-orange)' }} />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-orange)')}>
+                          <PhGlobeHemisphereWest size={22} weight="duotone" style={{ color: 'var(--accent-orange)' }} />
                         </div>
                         <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                           Additional Information
@@ -1346,10 +1329,16 @@ const ProfilePage = () => {
                   {/* Favorites Sections */}
                   <div className="space-y-8">
                     {/* Favorite Parks Section */}
-                    <div className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--surface-hover) 58%, white 42%)', border: '1px solid color-mix(in srgb, var(--border) 90%, white 10%)' }}>
+                    <div
+                      className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)'
+                      }}
+                    >
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-green)', opacity: 0.1 }}>
-                          <MapPin className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-green)')}>
+                          <PhTreeEvergreen size={22} weight="duotone" style={{ color: 'var(--accent-green)' }} />
                         </div>
                         <div>
                           <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -1381,10 +1370,16 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Favorite Blogs Section */}
-                    <div className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--surface-hover) 58%, white 42%)', border: '1px solid color-mix(in srgb, var(--border) 90%, white 10%)' }}>
+                    <div
+                      className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)'
+                      }}
+                    >
                       <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-blue)', opacity: 0.1 }}>
-                          <BookOpen className="h-6 w-6" style={{ color: 'var(--accent-blue)' }} />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-blue)')}>
+                          <PhBookOpenText size={22} weight="duotone" style={{ color: 'var(--accent-blue)' }} />
                         </div>
                         <div>
                           <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -1399,11 +1394,17 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Saved Events Section */}
-                    <div className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6" style={{ backgroundColor: 'color-mix(in srgb, var(--surface-hover) 58%, white 42%)', border: '1px solid color-mix(in srgb, var(--border) 90%, white 10%)' }}>
+                    <div
+                      className="rounded-[1.75rem] p-4 sm:p-5 lg:p-6"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)'
+                      }}
+                    >
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--accent-orange)', opacity: 0.1 }}>
-                            <CalendarDays className="h-6 w-6" style={{ color: 'var(--accent-orange)' }} />
+                          <div className="flex h-11 w-11 items-center justify-center rounded-full" style={getSectionIconShellStyle('var(--accent-orange)')}>
+                            <PhCalendarDots size={22} weight="duotone" style={{ color: 'var(--accent-orange)' }} />
                           </div>
                           <div>
                             <h4 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -1649,13 +1650,13 @@ const ProfilePage = () => {
                           borderColor: 'var(--border)'
                         }}
                       >
-                        <p className="text-sm font-medium flex items-center gap-2">
+                        <div className="text-sm font-medium flex items-center gap-2">
                           <div
                             className="animate-spin rounded-full h-4 w-4 border-b-2"
                             style={{ borderColor: 'var(--accent-blue)' }}
                           ></div>
                           Saving email preferences...
-                        </p>
+                        </div>
                       </div>
                     )}
 
@@ -1755,13 +1756,13 @@ const ProfilePage = () => {
                           borderColor: 'var(--border)'
                         }}
                       >
-                        <p className="text-sm font-medium flex items-center gap-2">
+                        <div className="text-sm font-medium flex items-center gap-2">
                           <div
                             className="animate-spin rounded-full h-4 w-4 border-b-2"
                             style={{ borderColor: 'var(--accent-blue)' }}
                           ></div>
                           Processing...
-                        </p>
+                        </div>
                       </div>
                     )}
 
@@ -1830,50 +1831,67 @@ const ProfilePage = () => {
 
       {/* Enhanced Change Password Modal */}
       {showChangePasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="rounded-2xl p-8 w-full max-w-lg shadow-2xl"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderColor: 'var(--border)',
-              borderWidth: '1px'
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'var(--accent-green-light)' }}
-              >
-                <Lock className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold"
-                  style={{ color: 'var(--text-primary)' }}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={closeChangePasswordModal}>
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl animate-scale-up" style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+            <div
+              className="border-b px-5 py-4 sm:px-6"
+              style={{
+                borderColor: 'var(--border)',
+                background: 'linear-gradient(180deg, rgba(67, 160, 106, 0.05) 0%, rgba(255,255,255,0) 100%)'
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{
+                      backgroundColor: 'rgba(67, 160, 106, 0.12)',
+                      color: 'var(--accent-green)'
+                    }}
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    Security
+                  </div>
+                  <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                    Change Password
+                  </h3>
+                  <p className="mt-1 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
+                    Update your account security with a new password.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Close change password dialog"
+                  onClick={closeChangePasswordModal}
+                  className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl transition-colors"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border)'
+                  }}
                 >
-                  Change Password
-                </h3>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Update your account security
-                </p>
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            {/* Error Message */}
+            <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" style={{ backgroundColor: 'var(--bg-primary)' }}>
+
             {privacyError && (
               <div
-                className="mb-4 p-4 rounded-xl border flex items-start gap-3"
+                className="mb-5 flex items-start gap-3 rounded-2xl border p-4"
                 style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                  borderColor: 'var(--error)'
+                  backgroundColor: 'color-mix(in srgb, var(--error-red) 10%, white 90%)',
+                  borderColor: 'color-mix(in srgb, var(--error-red) 28%, var(--border) 72%)'
                 }}
               >
-                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--error)' }} />
-                <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>{privacyError}</p>
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: 'var(--error-red)' }} />
+                <p className="text-sm font-medium" style={{ color: 'var(--error-red)' }}>{privacyError}</p>
               </div>
             )}
 
             <div className="space-y-5">
-              {/* Current Password */}
               <div>
                 <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
@@ -1888,10 +1906,9 @@ const ProfilePage = () => {
                     onChange={(e) => handlePasswordFieldChange('currentPassword', e.target.value)}
                     className="w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition"
                     style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderColor: passwordErrors.currentPassword ? 'var(--error)' : 'var(--border)',
+                      ...modalInputStyle,
+                      borderColor: passwordErrors.currentPassword ? 'var(--error-red)' : 'var(--border)',
                       borderWidth: '1px',
-                      color: 'var(--text-primary)'
                     }}
                     placeholder="Enter current password"
                   />
@@ -1905,14 +1922,13 @@ const ProfilePage = () => {
                   </button>
                 </div>
                 {passwordErrors.currentPassword && (
-                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error)' }}>
+                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error-red)' }}>
                     <AlertCircle className="h-3 w-3" />
                     {passwordErrors.currentPassword}
                   </p>
                 )}
               </div>
 
-              {/* New Password */}
               <div>
                 <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
@@ -1927,10 +1943,9 @@ const ProfilePage = () => {
                     onChange={(e) => handlePasswordFieldChange('newPassword', e.target.value)}
                     className="w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition"
                     style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderColor: passwordErrors.newPassword ? 'var(--error)' : 'var(--border)',
+                      ...modalInputStyle,
+                      borderColor: passwordErrors.newPassword ? 'var(--error-red)' : 'var(--border)',
                       borderWidth: '1px',
-                      color: 'var(--text-primary)'
                     }}
                     placeholder="Enter new password"
                   />
@@ -1974,14 +1989,13 @@ const ProfilePage = () => {
                 })()}
 
                 {passwordErrors.newPassword && (
-                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error)' }}>
+                  <p className="mt-2 text-xs flex items-center gap-1" style={{ color: 'var(--error-red)' }}>
                     <AlertCircle className="h-3 w-3" />
                     {passwordErrors.newPassword}
                   </p>
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <label className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
@@ -1996,10 +2010,9 @@ const ProfilePage = () => {
                     onChange={(e) => handlePasswordFieldChange('confirmPassword', e.target.value)}
                     className="w-full pl-11 pr-11 py-3.5 rounded-xl outline-none transition"
                     style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderColor: passwordErrors.confirmPassword ? 'var(--error)' : 'var(--border)',
+                      ...modalInputStyle,
+                      borderColor: passwordErrors.confirmPassword ? 'var(--error-red)' : 'var(--border)',
                       borderWidth: '1px',
-                      color: 'var(--text-primary)'
                     }}
                     placeholder="Confirm new password"
                   />
@@ -2027,33 +2040,28 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            <div className="flex gap-3 mt-8">
-              <Button
-                onClick={() => {
-                  setShowChangePasswordModal(false);
-                  setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                  setPasswordErrors({});
-                  setPrivacyError('');
-                  setShowCurrentPassword(false);
-                  setShowNewPassword(false);
-                  setShowConfirmPassword(false);
-                }}
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleChangePassword}
-                disabled={privacyLoading}
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-                loading={privacyLoading}
-              >
-                {privacyLoading ? 'Changing...' : 'Change Password'}
-              </Button>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t px-5 py-4 sm:px-6" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}>
+              <div />
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={closeChangePasswordModal}
+                  variant="secondary"
+                  size="md"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={privacyLoading}
+                  variant="primary"
+                  size="md"
+                  loading={privacyLoading}
+                >
+                  {privacyLoading ? 'Changing...' : 'Change Password'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -2061,24 +2069,82 @@ const ProfilePage = () => {
 
       {/* Delete Account Modal */}
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md"
-            style={{ backgroundColor: 'var(--surface)' }}
-          >
-            <h3 className="text-xl font-bold mb-4 text-red-600">
-              Delete Account
-            </h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={closeDeleteAccountModal}>
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl animate-scale-up" style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+            <div
+              className="border-b px-5 py-4 sm:px-6"
+              style={{
+                borderColor: 'var(--border)',
+                background: 'linear-gradient(180deg, rgba(220, 38, 38, 0.06) 0%, rgba(255,255,255,0) 100%)'
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{
+                      backgroundColor: 'rgba(220, 38, 38, 0.12)',
+                      color: 'var(--error-red)'
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Danger Zone
+                  </div>
+                  <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                    Delete Account
+                  </h3>
+                  <p className="mt-1 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
+                    Permanently remove your account and all associated data.
+                  </p>
+                </div>
 
-            <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200">
-              <p className="text-sm text-red-700">
-                <strong>Warning:</strong> This action cannot be undone. All your data, including profile, trips, favorites, and reviews will be permanently deleted.
+                <button
+                  type="button"
+                  aria-label="Close delete account dialog"
+                  onClick={closeDeleteAccountModal}
+                  className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl transition-colors"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border)'
+                  }}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" style={{ backgroundColor: 'var(--bg-primary)' }}>
+
+            <div
+              className="mb-5 rounded-2xl border p-4"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--error-red) 10%, white 90%)',
+                borderColor: 'color-mix(in srgb, var(--error-red) 28%, var(--border) 72%)'
+              }}
+            >
+              <p className="text-sm leading-6" style={{ color: 'var(--error-red)' }}>
+                <span className="font-semibold">Warning:</span> This action cannot be undone. Your profile, trips, favorites, reviews, and saved history will be permanently deleted.
               </p>
             </div>
 
+            {privacyError && (
+              <div
+                className="mb-5 flex items-start gap-3 rounded-2xl border p-4"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--error-red) 10%, white 90%)',
+                  borderColor: 'color-mix(in srgb, var(--error-red) 28%, var(--border) 72%)'
+                }}
+              >
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: 'var(--error-red)' }} />
+                <p className="text-sm font-medium" style={{ color: 'var(--error-red)' }}>{privacyError}</p>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Enter your password to confirm
                 </label>
@@ -2086,19 +2152,15 @@ const ProfilePage = () => {
                   type="password"
                   value={deleteForm.password}
                   onChange={(e) => setDeleteForm({...deleteForm, password: e.target.value})}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
+                  className="w-full rounded-xl px-4 py-3.5 outline-none transition"
+                  style={modalInputStyle}
                   placeholder="Enter your password"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--text-primary)' }}
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Type &quot;DELETE&quot; to confirm
                 </label>
@@ -2106,40 +2168,35 @@ const ProfilePage = () => {
                   type="text"
                   value={deleteForm.confirmation}
                   onChange={(e) => setDeleteForm({...deleteForm, confirmation: e.target.value})}
-                  className="w-full px-3 py-2 rounded-lg border"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
+                  className="w-full rounded-xl px-4 py-3.5 outline-none transition"
+                  style={modalInputStyle}
                   placeholder="Type DELETE to confirm"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <Button
-                onClick={() => {
-                  setShowDeleteAccountModal(false);
-                  setDeleteForm({ password: '', confirmation: '' });
-                  setPrivacyError('');
-                }}
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleDeleteAccount}
-                disabled={privacyLoading}
-                variant="danger"
-                size="lg"
-                className="flex-1"
-                loading={privacyLoading}
-              >
-                {privacyLoading ? 'Deleting...' : 'Delete Account'}
-              </Button>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t px-5 py-4 sm:px-6" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}>
+              <div />
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={closeDeleteAccountModal}
+                  variant="secondary"
+                  size="md"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDeleteAccount}
+                  disabled={privacyLoading}
+                  variant="danger"
+                  size="md"
+                  loading={privacyLoading}
+                >
+                  {privacyLoading ? 'Deleting...' : 'Delete Account'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

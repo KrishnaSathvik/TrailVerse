@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
+import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import CommentSection from '@/components/blog/CommentSection';
 import LikeFavorite from '@/components/blog/LikeFavorite';
@@ -150,8 +151,6 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
     return <BlogPostNotFound />;
   }
 
-  const wordCount = post.content ? post.content.split(/\s+/).filter(Boolean).length : 0;
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
@@ -167,7 +166,14 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
       </div>
 
       <article ref={articleRef} className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 lg:py-12">
-        <div className="mb-10 lg:mb-14 max-w-[88rem]">
+        <div
+          className="mb-10 rounded-[2rem] border px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"
+          style={{
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, white 6%), var(--surface))',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-sm)'
+          }}
+        >
           <Link href="/blog" className="inline-flex items-center gap-2 mb-6" style={{ color: 'var(--text-secondary)' }}>
             <ArrowLeft className="h-4 w-4" />
             Back to Blog
@@ -176,18 +182,6 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <span className="inline-block px-4 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
               {post.category}
-            </span>
-            <span
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                color: 'var(--text-secondary)'
-              }}
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              {wordCount.toLocaleString()} words
             </span>
           </div>
 
@@ -202,8 +196,8 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
           )}
 
           <div
-            className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 text-sm pb-6"
-            style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            className="flex flex-col gap-5 text-sm lg:flex-row lg:items-center lg:justify-between"
+            style={{ color: 'var(--text-secondary)' }}
           >
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {post.author}</span>
@@ -217,16 +211,18 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
                 title={post.title}
                 description={post.excerpt}
                 image={post.featuredImage}
+                type="article"
               />
             </div>
           </div>
-        </div>
 
-        {post.featuredImage && (
-          <div className="mb-10 lg:mb-14 max-w-[88rem]">
-            <OptimizedImage src={post.featuredImage} alt={post.title} className="w-full aspect-[16/8.5] object-cover rounded-[2rem] shadow-lg" />
-          </div>
-        )}
+          {post.featuredImage && (
+            <div className="mt-8">
+              <OptimizedImage src={post.featuredImage} alt={post.title} className="w-full aspect-[16/8.5] object-cover rounded-[1.75rem] shadow-lg" />
+            </div>
+          )}
+
+        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)] gap-8 xl:gap-10 2xl:gap-12 items-start">
           <aside className="xl:order-1 xl:pr-2 2xl:pr-4">
@@ -237,12 +233,11 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
 
           <div className="xl:order-2 min-w-0 max-w-[72rem]">
             <div
-              className="rounded-[2rem] px-5 py-8 sm:px-8 lg:px-10 xl:px-12 2xl:px-14 xl:py-10 mb-12"
+              className="rounded-[2rem] border px-5 py-8 sm:px-8 lg:px-10 xl:px-12 2xl:px-14 xl:py-10 mb-12"
               style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
+                background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, white 4%), var(--surface))',
                 borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow-sm)'
+                boxShadow: 'var(--shadow)'
               }}
             >
               <div
@@ -306,6 +301,8 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
           </div>
         </div>
       </article>
+
+      <Footer />
     </div>
   );
 };

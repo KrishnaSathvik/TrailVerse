@@ -14,7 +14,8 @@ const MessageBubble = ({
   onExport,
   userAvatar = null,
   messageData = null, // Additional data for feedback
-  initialFeedback = null // Initial feedback state from database ('up' or 'down')
+  initialFeedback = null, // Initial feedback state from database ('up' or 'down')
+  hideActions = false
 }) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -64,7 +65,7 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`flex items-start gap-3 sm:gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} group mb-4 sm:mb-6`}
+      className={`flex items-start gap-3 sm:gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} group mb-5 sm:mb-7`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       role="group"
@@ -103,7 +104,7 @@ const MessageBubble = ({
       <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
         <div className="flex flex-col gap-1.5">
           <div
-            className={`inline-block max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] rounded-2xl px-4 sm:px-5 py-3 sm:py-4 backdrop-blur-sm chat-message-bubble ${
+            className={`inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4 backdrop-blur-sm chat-message-bubble ${
               isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
             style={{
@@ -111,7 +112,9 @@ const MessageBubble = ({
               borderWidth: '1px',
               borderColor: 'var(--border)',
               color: 'var(--text-primary)',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              boxShadow: isUser
+                ? '0 16px 32px rgba(67, 160, 106, 0.10)'
+                : '0 18px 38px rgba(15, 23, 42, 0.06)',
               overflowWrap: 'anywhere',
               wordBreak: 'normal',
               hyphens: 'none'
@@ -274,7 +277,7 @@ const MessageBubble = ({
           </div>
 
           {/* Actions (assistant only) */}
-          {!isUser && (
+          {!isUser && !hideActions && (
             <div
               className="flex items-center gap-1.5 mt-4 pt-3 border-t"
               style={{ borderColor: 'var(--border)' }}

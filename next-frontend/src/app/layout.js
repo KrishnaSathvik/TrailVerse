@@ -1,5 +1,6 @@
 import "./globals.css";
 
+import Script from "next/script";
 import Providers from "../components/Providers";
 
 export const metadata = {
@@ -23,6 +24,19 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <Script
+          id="disable-prod-console-noise"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                console.log = function () {};
+                console.info = function () {};
+                console.debug = function () {};
+              }
+            `
+          }}
+        />
         <Providers>
           {children}
         </Providers>

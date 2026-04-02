@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
@@ -24,16 +24,37 @@ import Button from '@/components/common/Button';
 
 const ParkDetailClient = ({ initialData, parkCode }) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isAuthenticated, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
   const { isParkVisited, markAsVisited, removeVisited, markingAsVisited, removingVisited } = useVisitedParks();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Info },
+    { id: 'activities', label: 'Activities', icon: Mountain },
+    { id: 'camping', label: 'Camping', icon: Tent },
+    { id: 'places', label: 'Places', icon: MapPinCheck },
+    { id: 'tours', label: 'Tours', icon: Route },
+    { id: 'parking', label: 'Parking', icon: Car },
+    { id: 'facilities', label: 'Facilities', icon: Utensils },
+    { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'videos', label: 'Videos', icon: Play },
+    { id: 'webcams', label: 'Webcams', icon: Monitor },
+    { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
+    { id: 'reviews', label: 'Reviews', icon: Star }
+  ];
+  const validTabIds = tabs.map((tab) => tab.id);
+  const requestedTab = searchParams.get('tab');
+  const activeTab = validTabIds.includes(requestedTab) ? requestedTab : 'overview';
   const [activeActivityTab, setActiveActivityTab] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+  const tabScrollRef = useRef(null);
 
   const { park, alerts } = initialData;
 
@@ -66,6 +87,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const { data: webcams, loading: webcamsLoading } = useTabData(parkCode, 'webcams', activeTab === 'webcams');
   const { data: videos, loading: videosLoading } = useTabData(parkCode, 'videos', activeTab === 'videos');
   const { data: galleryPhotos, loading: galleryLoading } = useTabData(parkCode, 'gallery', activeTab === 'photos');
+  const { data: facilities, loading: facilitiesLoading } = useTabData(parkCode, 'facilities', activeTab === 'facilities');
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -87,11 +109,50 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   }, [park, parkCode]);
 
   const handleTabChange = (tabId) => {
-    setActiveTab(tabId);
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (tabId === 'overview') {
+      nextParams.delete('tab');
+    } else {
+      nextParams.set('tab', tabId);
+    }
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     if (tabId !== 'activities') {
       setActiveActivityTab(null);
     }
   };
+
+  useEffect(() => {
+    const tabsNode = tabScrollRef.current;
+    if (!tabsNode) return;
+
+    const updateIndicators = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsNode;
+      setCanScrollTabsLeft(scrollLeft > 8);
+      setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 8);
+    };
+
+    updateIndicators();
+    tabsNode.addEventListener('scroll', updateIndicators, { passive: true });
+    window.addEventListener('resize', updateIndicators);
+
+    return () => {
+      tabsNode.removeEventListener('scroll', updateIndicators);
+      window.removeEventListener('resize', updateIndicators);
+    };
+  }, []);
+
+  useEffect(() => {
+    const tabsNode = tabScrollRef.current;
+    const activeButton = tabsNode?.querySelector(`[data-tab-id="${activeTab}"]`);
+    if (!tabsNode || !activeButton) return;
+
+    activeButton.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest'
+    });
+  }, [activeTab]);
 
   const isSaved = isParkFavorited(parkCode);
   const isVisited = isParkVisited(parkCode);
@@ -158,20 +219,63 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
     }
   };
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: Info },
-    { id: 'activities', label: 'Activities', icon: Mountain },
-    { id: 'camping', label: 'Camping', icon: Tent },
-    { id: 'places', label: 'Places', icon: MapPinCheck },
-    { id: 'tours', label: 'Tours', icon: Route },
-    { id: 'parking', label: 'Parking', icon: Car },
-    { id: 'facilities', label: 'Facilities', icon: Utensils },
-    { id: 'photos', label: 'Photos', icon: Camera },
-    { id: 'videos', label: 'Videos', icon: Play },
-    { id: 'webcams', label: 'Webcams', icon: Monitor },
-    { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
-    { id: 'reviews', label: 'Reviews', icon: Star }
+  const nearbySections = [
+    {
+      id: 'lodging',
+      label: 'Lodging',
+      description: 'Hotels, lodges, and stays near the park',
+      icon: Tent,
+      query: 'lodging'
+    },
+    {
+      id: 'restaurant',
+      label: 'Food',
+      description: 'Restaurants and quick stops nearby',
+      icon: Utensils,
+      query: 'restaurants'
+    },
+    {
+      id: 'gas_station',
+      label: 'Gas',
+      description: 'Fuel stops before or after your visit',
+      icon: Car,
+      query: 'gas stations'
+    },
+    {
+      id: 'tourist_attraction_park_specific',
+      label: 'Attractions',
+      description: 'Nearby points of interest and landmarks',
+      icon: Camera,
+      query: 'attractions'
+    },
   ];
+
+  const createNearbySearchLink = (query) => {
+    const latitude = park?.latitude;
+    const longitude = park?.longitude;
+    const destination = `${query} near ${park?.fullName || 'this park'}`;
+    const coords = latitude && longitude ? `&query=${encodeURIComponent(destination)}&center=${latitude},${longitude}` : `&query=${encodeURIComponent(destination)}`;
+    return `https://www.google.com/maps/search/?api=1${coords}`;
+  };
+
+  const createParkGoogleMapsLink = () => {
+    const parkAddress = park?.addresses?.[0];
+    const parkLocation = [
+      park?.fullName,
+      parkAddress?.city,
+      parkAddress?.stateCode
+    ].filter(Boolean).join(', ');
+
+    if (parkLocation) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parkLocation)}`;
+    }
+
+    if (park?.latitude && park?.longitude) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${park.latitude},${park.longitude}`)}`;
+    }
+
+    return null;
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -229,7 +333,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
 
                 <div className="space-y-3 mb-3">
                   <div className="w-full">
-                    <h1 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-tight drop-shadow-lg"
+                    <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-[1.05] drop-shadow-lg"
                       title={park.fullName}
                     >
                       {park.fullName}
@@ -258,27 +362,30 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       </Button>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
                       <Button
                         onClick={handleSavePark}
                         disabled={savingPark}
                         variant={isSaved ? 'danger' : 'secondary'}
                         size="sm"
                         icon={Heart}
-                        className="p-3 backdrop-blur flex-shrink-0"
+                        className="backdrop-blur w-full sm:w-auto sm:flex-shrink-0"
                         style={{
-                          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'var(--surface)',
+                          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)',
                           borderWidth: '1px',
-                          borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'
+                          borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.3)'
                         }}
                         title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
-                      />
+                      >
+                        <span className="truncate">{isSaved ? 'Favorited' : 'Favorite'}</span>
+                      </Button>
 
                       <ShareButtons
                         url={typeof window !== 'undefined' ? window.location.href : `https://www.nationalparksexplorerusa.com/parks/${parkCode}`}
                         title={park.fullName}
                         description={park.description}
                         image={park.images?.[0]?.url}
+                        type="park"
                         showPrint={false}
                       />
                     </div>
@@ -411,19 +518,50 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
 
               {/* Tabs */}
               <div className="mb-6 sm:mb-8">
-                <div className="flex gap-1 pb-2 mb-4 sm:mb-6 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <p className="text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
+                    Browse Park Details
+                  </p>
+                </div>
+                <div className="relative">
+                  {canScrollTabsLeft && (
+                    <div
+                      className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 rounded-l-2xl"
+                      style={{ background: 'linear-gradient(to right, var(--bg-primary), transparent)' }}
+                    />
+                  )}
+                  {canScrollTabsRight && (
+                    <div
+                      className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-2xl"
+                      style={{ background: 'linear-gradient(to left, var(--bg-primary), transparent)' }}
+                    />
+                  )}
+                  <div
+                    ref={tabScrollRef}
+                    role="tablist"
+                    aria-label="Park detail sections"
+                    className="flex gap-1 border-b pb-0 mb-4 sm:mb-6 overflow-x-auto park-tabs-scroll scroll-smooth"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const showBadge = tab.id === 'alerts' && alerts && alerts.length > 0;
                     return (
-                      <Button
+                      <button
                         key={tab.id}
+                        data-tab-id={tab.id}
                         onClick={() => handleTabChange(tab.id)}
-                        variant={activeTab === tab.id ? 'secondary' : 'ghost'}
-                        size="sm"
-                        icon={Icon}
-                        className="whitespace-nowrap flex-shrink-0 relative"
+                        type="button"
+                        role="tab"
+                        className="whitespace-nowrap flex-shrink-0 relative inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+                        aria-selected={activeTab === tab.id}
+                        style={{
+                          backgroundColor: 'transparent',
+                          borderBottomColor: activeTab === tab.id ? 'var(--text-primary)' : 'transparent',
+                          color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-secondary)'
+                        }}
                       >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
                         {tab.label}
                         {showBadge && (
                           <span
@@ -440,9 +578,10 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             {alerts.length}
                           </span>
                         )}
-                      </Button>
+                      </button>
                     );
                   })}
+                  </div>
                 </div>
 
                 {/* Tab Content */}
@@ -692,39 +831,76 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       >
                         Facilities & Amenities
                       </h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {[
-                          { icon: Wifi, label: 'Visitor Center', available: true },
-                          { icon: Tent, label: 'Camping', available: campgrounds?.length > 0 },
-                          { icon: Utensils, label: 'Food Services', available: true },
-                          { icon: Phone, label: 'Cell Service', available: false }
-                        ].map((facility, index) => {
-                          const Icon = facility.icon;
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-center gap-3 p-4 rounded-xl"
-                              style={{
-                                backgroundColor: 'var(--surface-hover)',
-                                borderWidth: '1px',
-                                borderColor: 'var(--border)'
-                              }}
-                            >
-                              <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
-                              <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                                {facility.label}
-                              </span>
-                              <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
-                                facility.available
-                                  ? 'bg-green-500/20 text-green-400'
-                                  : 'bg-red-500/20 text-red-400'
-                              }`}>
-                                {facility.available ? 'Available' : 'Limited'}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {facilitiesLoading && (
+                        <div className="flex justify-center py-12">
+                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
+                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
+                        </div>
+                      )}
+                      {!facilitiesLoading && facilities && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            {
+                              icon: Wifi,
+                              label: 'Visitor Centers',
+                              available: facilities.visitorCenters?.available,
+                              details: facilities.visitorCenters?.count
+                                ? `${facilities.visitorCenters.count} location${facilities.visitorCenters.count === 1 ? '' : 's'}`
+                                : 'No visitor centers listed'
+                            },
+                            {
+                              icon: Tent,
+                              label: 'Camping',
+                              available: facilities.camping?.available,
+                              details: facilities.camping?.count
+                                ? `${facilities.camping.count} campground${facilities.camping.count === 1 ? '' : 's'}`
+                                : 'No campgrounds listed'
+                            },
+                            {
+                              icon: Utensils,
+                              label: 'Food Services',
+                              available: facilities.restaurants?.available,
+                              details: facilities.restaurants?.note || 'No food service details available'
+                            },
+                            {
+                              icon: Phone,
+                              label: 'Accessibility',
+                              available: facilities.accessibility?.wheelchairAccessible,
+                              details: facilities.accessibility?.accessibleTrails || 'Accessibility information unavailable'
+                            }
+                          ].map((facility, index) => {
+                            const Icon = facility.icon;
+                            return (
+                              <div
+                                key={index}
+                                className="p-4 rounded-xl"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                                    {facility.label}
+                                  </span>
+                                  <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
+                                    facility.available
+                                      ? 'bg-green-500/20 text-green-400'
+                                      : 'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {facility.available ? 'Available' : 'Limited'}
+                                  </span>
+                                </div>
+                                <p className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                  {facility.details}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1377,21 +1553,106 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                   {park.addresses?.[0]?.line1}<br />
                   {park.addresses?.[0]?.city}, {park.addresses?.[0]?.stateCode} {park.addresses?.[0]?.postalCode}
                 </p>
-                {park.latitude && park.longitude && (
-                  <button
-                    onClick={() => router.push('/map')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      color: 'var(--text-primary)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)'
-                    }}
-                  >
-                    <Navigation className="h-4 w-4" />
-                    View on Map
-                  </button>
-                )}
+                <div className="flex flex-wrap gap-3">
+                  {park.latitude && park.longitude && (
+                    <button
+                      onClick={() => router.push(`/map?park=${encodeURIComponent(park.parkCode)}`)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
+                      style={{
+                        backgroundColor: 'var(--surface-hover)',
+                        color: 'var(--text-primary)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)'
+                      }}
+                    >
+                      <Navigation className="h-4 w-4" />
+                      View on Map
+                    </button>
+                  )}
+
+                  {createParkGoogleMapsLink() && (
+                    <a
+                      href={createParkGoogleMapsLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
+                      style={{
+                        backgroundColor: 'var(--surface-hover)',
+                        color: 'var(--text-primary)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)'
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open in Google Maps
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Around This Park */}
+              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <MapPinCheck className="h-5 w-5" />
+                  Around This Park
+                </h3>
+                <p className="text-sm mb-4"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Open nearby essentials in Google Maps without leaving your planning flow.
+                </p>
+
+                <div className="space-y-3">
+                  {nearbySections.map((section) => {
+                    const Icon = section.icon;
+
+                    return (
+                      <a
+                        key={section.id}
+                        href={createNearbySearchLink(section.query)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-xl p-3 transition hover:-translate-y-0.5"
+                        style={{
+                          backgroundColor: 'var(--surface-hover)',
+                          borderWidth: '1px',
+                          borderColor: 'var(--border)'
+                        }}
+                      >
+                        <div
+                          className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: 'var(--surface)' }}
+                        >
+                          <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            {section.label}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                            {section.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-[11px] font-medium uppercase tracking-wider"
+                            style={{ color: 'var(--text-tertiary)' }}
+                          >
+                            Open
+                          </span>
+                          <ExternalLink className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Plan Trip CTA */}

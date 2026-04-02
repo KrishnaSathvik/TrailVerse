@@ -165,7 +165,13 @@ const LandingPage = () => {
       {/* ═══════════════════════════════════════════════════════
           HERO — Search-First, Exploration-First 
           ═══════════════════════════════════════════════════════ */}
-      <section className="relative w-full overflow-hidden" style={{ minHeight: 'calc(100dvh - 64px)' }}>
+      <section
+        className="relative z-30 w-full overflow-x-hidden overflow-y-visible"
+        style={{
+          minHeight: 'calc(100dvh - 64px)',
+          paddingBottom: searchFocused && searchQuery.trim() ? '22rem' : undefined
+        }}
+      >
         {/* Background Image */}
         <div
           className="absolute inset-0 w-full bg-cover bg-no-repeat"
@@ -216,7 +222,7 @@ const LandingPage = () => {
             </p>
 
             {/* ──── HERO SEARCH BAR ──── */}
-            <div ref={searchRef} className="relative w-full max-w-3xl mx-auto mb-10">
+            <div ref={searchRef} className="relative z-30 w-full max-w-3xl mx-auto mb-10">
               <form onSubmit={handleSearchSubmit} className="relative z-20">
                 <div
                   className="flex items-center rounded-[2rem] overflow-hidden backdrop-blur-md transition-all duration-300 group shadow-2xl"
@@ -251,59 +257,85 @@ const LandingPage = () => {
               </form>
 
               {/* Search Results Dropdown */}
-              {searchFocused && searchQuery.trim() && searchResults.length > 0 && (
+              {searchFocused && searchQuery.trim() && (
                 <div
-                  className="absolute top-full left-0 right-0 mt-3 rounded-2xl overflow-hidden backdrop-blur-md z-50 animate-fade-in"
+                  className="absolute top-full left-0 right-0 mt-3 rounded-[1.5rem] overflow-hidden backdrop-blur-md z-[70] animate-fade-in"
                   style={{
-                    backgroundColor: 'var(--surface)',
+                    backgroundColor: '#ffffff',
                     borderWidth: '1px',
                     borderColor: 'var(--border)',
                     boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
                   }}
                 >
-                  {searchResults.map((park) => (
-                    <button
-                      key={park.parkCode}
-                      onClick={() => {
-                        router.push(`/parks/${park.parkCode}`);
-                        setSearchFocused(false);
-                      }}
-                      className="w-full flex items-center gap-4 px-6 py-4 text-left transition-colors hover:bg-black/5"
-                      style={{ borderBottom: '1px solid var(--border)' }}
-                    >
-                      {park.images?.[0]?.url ? (
-                        <img
-                          src={park.images[0].url}
-                          alt=""
-                          className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 shadow-sm"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center"
-                          style={{ backgroundColor: 'var(--surface-hover)' }}
+                  <div
+                    className="flex items-center justify-between gap-3 px-5 py-3"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                  >
+                    <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--text-secondary)' }}>
+                      {searchResults.length > 0 ? 'Matching Parks' : 'No Exact Matches'}
+                    </p>
+                    <p className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                      {searchResults.length > 0 ? `${searchResults.length} shown` : 'Try a broader search'}
+                    </p>
+                  </div>
+
+                  {searchResults.length > 0 ? (
+                    <div>
+                      {searchResults.map((park) => (
+                        <button
+                          key={park.parkCode}
+                          onClick={() => {
+                            router.push(`/parks/${park.parkCode}`);
+                            setSearchFocused(false);
+                          }}
+                          className="w-full flex items-center gap-4 px-4 sm:px-6 py-4 text-left transition-colors hover:bg-black/5"
+                          style={{ borderBottom: '1px solid var(--border)' }}
                         >
-                          <Mountain className="h-6 w-6" style={{ color: 'var(--text-tertiary)' }} />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                          {park.fullName}
-                        </p>
-                        <p className="text-sm truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                          {park.states} • {park.designation}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-                    </button>
-                  ))}
+                          {park.images?.[0]?.url ? (
+                            <img
+                              src={park.images[0].url}
+                              alt=""
+                              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover flex-shrink-0 shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex-shrink-0 flex items-center justify-center"
+                              style={{ backgroundColor: 'var(--surface-hover)' }}
+                            >
+                              <Mountain className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: 'var(--text-tertiary)' }} />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm sm:text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                              {park.fullName}
+                            </p>
+                            <p className="text-xs sm:text-sm truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                              {park.states} • {park.designation}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-5 py-5 text-left">
+                      <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                        No parks matched &ldquo;{searchQuery}&rdquo;
+                      </p>
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        Search by park name, state abbreviation, or park code.
+                      </p>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => {
                       router.push(`/explore?search=${encodeURIComponent(searchQuery)}`);
                       setSearchFocused(false);
                     }}
-                    className="w-full px-6 py-4 text-sm font-bold text-center transition-colors"
+                    className="w-full px-5 sm:px-6 py-4 text-sm font-bold text-left sm:text-center transition-colors"
                     style={{ color: 'var(--accent-green)', backgroundColor: 'var(--surface-hover)' }}
                   >
-                    View all results for &ldquo;{searchQuery}&rdquo; →
+                    Open full explore results for &ldquo;{searchQuery}&rdquo; →
                   </button>
                 </div>
               )}
@@ -345,7 +377,7 @@ const LandingPage = () => {
       {/* ═══════════════════════════════════════════════════════
           FEATURED PARKS — Immediate Visual Exploration
           ═══════════════════════════════════════════════════════ */}
-      <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <section className="relative z-0 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-[92rem] mx-auto">
           {/* Section Header */}
           <div className="flex items-end justify-between mb-10">

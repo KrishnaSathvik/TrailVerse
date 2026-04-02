@@ -1014,6 +1014,159 @@ const ShareButtons = ({ url, title, description, image, type = 'default', showPr
 
   // Check if Web Share API is supported
   const supportsNativeShare = typeof navigator !== 'undefined' && navigator.share;
+  const isCompactShareMenu = type === 'park' || type === 'article';
+
+  if (isCompactShareMenu) {
+    const isArticleStyle = type === 'article';
+    const buttonLabel = isArticleStyle ? 'Share Article' : 'Share Park';
+    const menuLabel = isArticleStyle ? 'Share This Article' : 'Share This Park';
+
+    return (
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="relative w-full sm:w-auto sm:flex-shrink-0">
+          <Button
+            onClick={async () => {
+              if (!isArticleStyle && supportsNativeShare) {
+                try {
+                  await handleNativeShare();
+                  return;
+                } catch (error) {
+                  if (error.name === 'AbortError') {
+                    return;
+                  }
+                }
+              }
+              setShowMoreOptions(!showMoreOptions);
+            }}
+            variant="secondary"
+            size="sm"
+            icon={Share2}
+            className="backdrop-blur w-full sm:w-auto sm:flex-shrink-0"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)'
+            }}
+            title={menuLabel}
+          >
+            {buttonLabel}
+          </Button>
+
+          {showMoreOptions && (
+            <div
+              className="absolute right-0 mt-2 w-56 rounded-2xl p-2 z-50"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+                boxShadow: 'var(--shadow-lg)'
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
+                  {menuLabel}
+                </p>
+              </div>
+
+              <Button
+                onClick={async () => {
+                  if (supportsNativeShare) {
+                    await handleNativeShare();
+                  } else {
+                    handleCopyLink();
+                  }
+                  setShowMoreOptions(false);
+                }}
+                variant="ghost"
+                size="sm"
+                icon={Share2}
+                className="w-full justify-start mb-1 mt-1"
+              >
+                Share via...
+              </Button>
+
+              <Button
+                onClick={() => {
+                  handleCopyLink();
+                  setShowMoreOptions(false);
+                }}
+                variant="ghost"
+                size="sm"
+                icon={Link2}
+                className="w-full justify-start mb-1"
+              >
+                Copy link
+              </Button>
+
+              {shareLinks
+                .filter((link) => ['Facebook', 'Twitter', 'Email'].includes(link.name))
+                .map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <Button
+                      key={link.name}
+                      onClick={() => {
+                        const nextShareUrl = getShareUrl(link.name);
+                        window.open(nextShareUrl, '_blank', 'noopener,noreferrer');
+                        setShowMoreOptions(false);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      icon={Icon}
+                      className="w-full justify-start mb-1"
+                    >
+                      {link.name}
+                    </Button>
+                  );
+                })}
+
+              {!isArticleStyle && shouldShowPrint && (
+                <Button
+                  onClick={() => {
+                    handlePrint();
+                    setShowMoreOptions(false);
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  icon={Printer}
+                  className="w-full justify-start"
+                >
+                  Print / Save PDF
+                </Button>
+              )}
+            </div>
+          )}
+
+          {showMoreOptions && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowMoreOptions(false)}
+              style={{ cursor: 'pointer' }}
+            />
+          )}
+        </div>
+
+        {isArticleStyle && shouldShowPrint && (
+          <Button
+            onClick={handlePrint}
+            variant="secondary"
+            size="sm"
+            icon={Printer}
+            className="backdrop-blur w-full sm:w-auto sm:flex-shrink-0"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)'
+            }}
+            title="Print or Save as PDF"
+          >
+            Print / Save PDF
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1 sm:gap-2 flex-wrap sm:flex-nowrap relative">

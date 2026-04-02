@@ -1,14 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Sparkles, Loader2, Clock, CheckCircle, Menu, X, Edit2
-} from '@components/icons';
+import { Loader2, Clock, Sparkles, CheckCircle, Edit2 } from '@components/icons';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
-import TripHistoryDrawer from '@components/plan-ai/TripHistoryDrawer';
-import TripContextBar from '@components/plan-ai/TripContextBar';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
 import usePlanAI from '@hooks/usePlanAI';
 
@@ -26,30 +22,25 @@ const defaultFormData = {
 
 const PlanAIContent = ({ tripId }) => {
   const {
-    // State
-    showChat, chatFormData, selectedParkName, step, isRestoringState, loadingTrip,
-    isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
-    deletingTripId, restoringTripId, activeTab, showLimitDialog, timeUntilReset,
-    formData, isPersonalized, isNewChat, isPublicAccess,
-    allParks, parksLoading, parksError, user, isAuthenticated,
-
-    // Setters
-    setShowChat, setChatFormData, setSelectedParkName, setStep, setActiveTab, setFormData,
-
-    // Handlers
-    handleNext, handleBack, validateStep, handleGenerate,
-    handleBackToForm, handleStartNewChat, handlePersonalizedRecommendations,
-    handleDeleteTrip, handleArchiveTrip, handleRestoreTrip,
-    toggleInterest, loadTripFromBackend, refetchUserTrips,
-
-    // Constants
-    totalSteps, interests
+    isRestoringState,
+    loadingTrip,
+    showLimitDialog,
+    timeUntilReset,
+    chatFormData,
+    selectedParkName,
+    formData,
+    setFormData,
+    isPersonalized,
+    isNewChat,
+    refetchUserTrips,
+    allParks,
+    parksLoading,
+    interests,
+    toggleInterest,
+    handleStartNewChat
   } = usePlanAI(tripId);
-
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
 
-  // Loading screen while restoring state or loading trip
   if (isRestoringState || loadingTrip) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -63,7 +54,6 @@ const PlanAIContent = ({ tripId }) => {
     );
   }
 
-  // Limit dialog for anonymous users
   if (showLimitDialog) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -79,7 +69,6 @@ const PlanAIContent = ({ tripId }) => {
                 boxShadow: 'var(--shadow-xl)'
               }}
             >
-              {/* Header */}
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
                   style={{
@@ -97,7 +86,6 @@ const PlanAIContent = ({ tripId }) => {
                 </p>
               </div>
 
-              {/* Countdown Timer */}
               {timeUntilReset && (
                 <div
                   className="mb-8 px-4 py-4 rounded-xl text-center"
@@ -116,9 +104,7 @@ const PlanAIContent = ({ tripId }) => {
                 </div>
               )}
 
-              {/* Feature Comparison */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {/* Create Account Card */}
                 <div
                   className="rounded-xl p-5 sm:p-6"
                   style={{
@@ -151,8 +137,8 @@ const PlanAIContent = ({ tripId }) => {
                       'Save your trip plans',
                       'Access conversation history',
                       'Get personalized recommendations'
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2.5">
+                    ].map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5">
                         <CheckCircle
                           className="h-4 w-4 flex-shrink-0 mt-0.5"
                           style={{ color: 'var(--accent-green)' }}
@@ -165,7 +151,6 @@ const PlanAIContent = ({ tripId }) => {
                   </ul>
                 </div>
 
-                {/* Wait Option Card */}
                 <div
                   className="rounded-xl p-5 sm:p-6"
                   style={{
@@ -198,8 +183,8 @@ const PlanAIContent = ({ tripId }) => {
                       'No account required',
                       'Completely free',
                       'Session resets automatically'
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2.5">
+                    ].map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5">
                         <CheckCircle
                           className="h-4 w-4 flex-shrink-0 mt-0.5"
                           style={{ color: 'var(--text-tertiary)' }}
@@ -220,124 +205,61 @@ const PlanAIContent = ({ tripId }) => {
     );
   }
 
-  // Determine the effective form data and park name for chat
   const effectiveFormData = chatFormData || defaultFormData;
   const effectiveParkName = selectedParkName || '';
   const effectiveIsNewChat = isNewChat || !chatFormData?.parkCode;
 
-  // Handler to select a trip from the drawer
-  const handleSelectTrip = (selectedTripId) => {
-    setHistoryOpen(false);
-    loadTripFromBackend(selectedTripId);
-  };
-
-  // Handler for new chat from drawer
-  const handleNewChatFromDrawer = () => {
-    setHistoryOpen(false);
-    handleStartNewChat();
-  };
-
-  // Handler for QuickFill apply
   const handleQuickFillApply = (data) => {
-    const selectedPark = allParks?.find(p => p.parkCode === data.parkCode);
-    const parkName = selectedPark?.fullName || '';
-    setChatFormData(data);
-    setSelectedParkName(parkName);
+    setFormData(data);
     setQuickFillOpen(false);
-    setShowChat(true);
   };
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <div className="flex-1 flex overflow-hidden">
-      {/* Trip History Drawer */}
-      {user && (tripHistory.length > 0 || archivedTrips.length > 0) && (
-        <TripHistoryDrawer
-          isOpen={historyOpen}
-          onClose={() => setHistoryOpen(false)}
-          tripHistory={tripHistory}
-          archivedTrips={archivedTrips}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onSelectTrip={handleSelectTrip}
-          onArchive={handleArchiveTrip}
-          onRestore={handleRestoreTrip}
-          onDelete={handleDeleteTrip}
-          onNewChat={handleNewChatFromDrawer}
-          deletingTripId={deletingTripId}
-          restoringTripId={restoringTripId}
-        />
-      )}
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {/* Sub-header bar */}
-        <div
-          className="flex-shrink-0 flex items-center gap-3 px-4 py-2.5 border-b"
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            borderColor: 'var(--border)'
-          }}
-        >
-          {/* History toggle - only show if user has trips */}
-          {user && (tripHistory.length > 0 || archivedTrips.length > 0) && (
-            <button
-              onClick={() => setHistoryOpen(true)}
-              className="p-2 rounded-lg transition-colors hover:opacity-80 flex-shrink-0"
-              style={{ color: 'var(--text-secondary)' }}
-              aria-label="Open trip history"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          )}
-
-          <div className="flex items-center gap-2 min-w-0">
-            <Sparkles className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Plan AI
-            </span>
-          </div>
-
-          {/* Trip context pills inline */}
-          {effectiveParkName && (
-            <div className="hidden sm:flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }}>
-                {effectiveParkName}
-              </span>
+      <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
+        <section className="relative z-10 overflow-hidden border-b px-4 py-2 sm:px-6 sm:py-4 lg:px-10 xl:px-12" style={{ borderColor: 'var(--border)' }}>
+          <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p
+                className="text-[11px] font-medium uppercase tracking-[0.18em] sm:text-xs sm:tracking-wider"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Plan AI
+              </p>
+              <h1 className="mt-1 truncate text-base font-semibold sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
+                {effectiveParkName || 'Trip planner chat'}
+              </h1>
             </div>
-          )}
 
-          {/* Quick Fill button */}
-          <button
-            onClick={() => setQuickFillOpen(true)}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:opacity-80 flex-shrink-0"
-            style={{
-              backgroundColor: 'var(--surface-hover)',
-              color: 'var(--text-secondary)',
-              border: '1px solid',
-              borderColor: 'var(--border)'
-            }}
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-            Quick Fill
-          </button>
+            <button
+              type="button"
+              onClick={handleStartNewChat}
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-xs font-semibold text-white transition hover:opacity-90 sm:h-10 sm:rounded-xl sm:px-4 sm:text-sm"
+              style={{
+                backgroundColor: 'var(--accent-green)',
+                boxShadow: '0 10px 24px rgba(67, 160, 106, 0.22)'
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>New Chat</span>
+            </button>
+          </div>
+        </section>
+
+        <div className="relative z-10 flex flex-1 min-h-0 flex-col overflow-hidden">
+          <TripPlannerChat
+            formData={effectiveFormData}
+            parkName={effectiveParkName}
+            existingTripId={tripId}
+            isPersonalized={isPersonalized}
+            isNewChat={effectiveIsNewChat}
+            refreshTrips={refetchUserTrips}
+            onOpenQuickFill={() => setQuickFillOpen(true)}
+          />
         </div>
+      </main>
 
-        {/* Chat - always visible (chat-first approach) */}
-        <TripPlannerChat
-          formData={effectiveFormData}
-          parkName={effectiveParkName}
-          onBack={handleBackToForm}
-          existingTripId={tripId}
-          isPersonalized={isPersonalized}
-          isNewChat={effectiveIsNewChat}
-          refreshTrips={refetchUserTrips}
-        />
-      </div>
-
-      </div>
-      {/* Quick Fill Modal */}
       <QuickFillModal
         isOpen={quickFillOpen}
         onClose={() => setQuickFillOpen(false)}

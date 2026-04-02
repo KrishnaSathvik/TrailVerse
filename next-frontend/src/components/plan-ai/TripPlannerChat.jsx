@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
-  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn
+  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -16,7 +15,6 @@ import feedbackService from '../../services/feedbackService';
 import { logAIChat } from '../../utils/analytics';
 import ChatInput from '../ai-chat/ChatInput';
 import MessageBubble from '../ai-chat/MessageBubble';
-import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import TypingIndicator from '../ai-chat/TypingIndicator';
 import Button from '../common/Button';
 import { getBestAvatar } from '../../utils/avatarGenerator';
@@ -29,9 +27,9 @@ const TripPlannerChat = ({
   existingTripId = null,
   isPersonalized = false,
   isNewChat = false,
-  refreshTrips = null
+  refreshTrips = null,
+  onOpenQuickFill = null
 }) => {
-  const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
   const { showToast } = useToast();
   const { subscribe, unsubscribe, subscribeToProfile, subscribeToTrips } = useWebSocket();
@@ -66,6 +64,7 @@ const TripPlannerChat = ({
   const [isSessionRestored, setIsSessionRestored] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [saveState, setSaveState] = useState('idle');
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -73,6 +72,37 @@ const TripPlannerChat = ({
   const previousExistingTripIdRef = useRef(existingTripId);
   const lastMessageCountRef = useRef(0);
   const userSentMessageRef = useRef(false);
+
+  const chatStatus = isAnonymous
+    ? {
+        label: 'Temporary session',
+        description: 'Sign in to save this chat to your trip history.',
+        tone: 'neutral'
+      }
+    : saveState === 'saving'
+      ? {
+          label: 'Saving...',
+          description: 'Updating your trip history.',
+          tone: 'saving'
+        }
+      : currentTripId || saveState === 'saved'
+        ? {
+            label: 'Saved',
+            description: 'This conversation is stored in your account.',
+            tone: 'saved'
+          }
+        : null;
+  const anonymousMessagesRemaining = Math.max(0, 3 - messageCount);
+  const anonymousQuotaLabel =
+    isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < 3
+      ? `${anonymousMessagesRemaining} free ${anonymousMessagesRemaining === 1 ? 'message' : 'messages'} left`
+      : null;
+
+  const isWelcomeState =
+    messages.length === 1 &&
+    !isGenerating &&
+    !messages.some((message) => message.role === 'user') &&
+    !messages.some((message) => message.isConversionMessage);
 
   // Auto-scroll only when USER sends a message (not when AI responds)
   // This lets the user read AI responses from the top without being yanked to the bottom
@@ -103,10 +133,10 @@ const TripPlannerChat = ({
       const context = await tripHistoryService.getAIContext(user.id);
       
       if (context.totalTrips === 0) {
-        return `🌟 This is your first trip with TrailVerse! I'm excited to help you plan it.`;
+        return 'This is your first trip with TrailVerse. I can help you shape it from scratch.';
       }
 
-      let contextMsg = `📚 **Based on your ${context.totalTrips} previous ${context.totalTrips === 1 ? 'trip' : 'trips'}:**\n`;
+      let contextMsg = `**Based on your ${context.totalTrips} previous ${context.totalTrips === 1 ? 'trip' : 'trips'}:**\n`;
       
       if (context.favoriteParks && context.favoriteParks.length > 0) {
         contextMsg += `- You've enjoyed: ${context.favoriteParks.join(', ')}\n`;
@@ -119,7 +149,7 @@ const TripPlannerChat = ({
       return contextMsg;
     } catch (error) {
       console.error('Error getting user context:', error);
-      return `🌟 Let's plan an amazing trip together!`;
+      return "Let's plan an amazing trip together.";
     }
   };
 
@@ -166,7 +196,7 @@ const TripPlannerChat = ({
     const welcomeMessage = {
       id: Date.now(),
       role: 'assistant',
-      content: `Let's plan your ${parkName} trip! I'll put together a general itinerary to get us started.\n\nWant me to customize it? Tell me your dates, group size, and what you're most excited about — or tap Quick Fill above.`,
+      content: `Let's plan your ${parkName} trip! I'll put together a general itinerary to get us started.\n\nWant me to customize it? Tell me your dates, group size, and what you're most excited about.`,
       timestamp: new Date()
     };
 
@@ -185,6 +215,7 @@ const TripPlannerChat = ({
       console.log('🔄 Trip conversation:', trip.conversation);
     
       if (trip) {
+        setSaveState('saved');
         // Check if trip has conversationId (localStorage trip) or direct messages (backend trip)
         if (trip.conversationId) {
           try {
@@ -647,6 +678,7 @@ const TripPlannerChat = ({
       console.log('🆕 Starting NEW chat (explicit action) - resetting currentTripId');
       setCurrentTripId(null);
       setCurrentPlan(null);
+      setSaveState('idle');
       localStorage.removeItem('planai-chat-state');
     }
     // Update existingTripId if it changed (loading different trip)
@@ -768,6 +800,7 @@ const TripPlannerChat = ({
 
       // Call appropriate AI service based on authentication status
       let data;
+      let streamAssistantId = null;
       if (isAnonymous) {
         data = await aiService.chatAnonymous({
           messages: msgs,
@@ -806,7 +839,7 @@ const TripPlannerChat = ({
       } else {
         // Use streaming for authenticated users
         let streamedContent = '';
-        const streamAssistantId = Date.now() + 1;
+        streamAssistantId = Date.now() + 1;
 
         // Add empty assistant message that will be filled by streaming
         setMessages(prev => [...prev, {
@@ -922,18 +955,26 @@ const TripPlannerChat = ({
 
       // Add AI response
       const responseTime = Date.now() - thinkingStartTime;
-      const assistantMessage = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: data.content,
-        timestamp: new Date(),
-        provider: data.provider,
-        model: data.model,
-        responseTime: responseTime
-      };
 
       setMessages(prev => {
-        const updatedMessages = [...prev, assistantMessage];
+        const updatedMessages = isAnonymous
+          ? [
+              ...prev,
+              {
+                id: Date.now() + 1,
+                role: 'assistant',
+                content: data.content,
+                timestamp: new Date(),
+                provider: data.provider,
+                model: data.model,
+                responseTime
+              }
+            ]
+          : prev.map(msg =>
+              msg.id === streamAssistantId
+                ? { ...msg, responseTime, isStreaming: false }
+                : msg
+            );
         
         // Auto-save conversation to history after AI response
         console.log('🔄 About to call autoSaveConversation with:', {
@@ -993,12 +1034,12 @@ const TripPlannerChat = ({
       
       // Check if it's a token limit error
       let errorMessage = 'Failed to get AI response';
-      let assistantMessage = '⚠️ I couldn\'t reach the AI provider. Please try again or switch providers.';
+      let assistantMessage = 'I couldn\'t reach the AI provider. Please try again or switch providers.';
       
       if (errorStatus === 429) {
         if (errorDetails?.error === 'Daily token limit exceeded') {
           errorMessage = 'Daily usage limit reached. Please try again tomorrow.';
-          assistantMessage = `🚫 **Daily Limit Reached**\n\nYou've reached your daily usage limit. Please try again tomorrow.`;
+          assistantMessage = `**Daily Limit Reached**\n\nYou've reached your daily usage limit. Please try again tomorrow.`;
         } else {
           errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
           assistantMessage = '⏳ **Rate Limited**\n\nYou\'re making requests too quickly. Please wait a moment and try again.';
@@ -1007,16 +1048,16 @@ const TripPlannerChat = ({
         // API configuration error
         const details = errorDetails?.details || errorDetails?.error || error.message;
         errorMessage = 'AI provider configuration error';
-        assistantMessage = `⚠️ **Configuration Error**\n\n${details}\n\nPlease check your API configuration or try switching providers.`;
+        assistantMessage = `**Configuration Error**\n\n${details}\n\nPlease check your API configuration or try switching providers.`;
       } else if (errorStatus === 401 || errorStatus === 403) {
         // Authentication error
         errorMessage = 'AI provider authentication failed';
-        assistantMessage = `🔐 **Authentication Error**\n\nUnable to authenticate with the AI provider. Please check API key configuration.`;
+        assistantMessage = `**Authentication Error**\n\nUnable to authenticate with the AI provider. Please check API key configuration.`;
       } else if (errorStatus === 500 || errorStatus === 503) {
         // Server/provider error
         const details = errorDetails?.error || errorDetails?.details || 'The AI provider is temporarily unavailable';
         errorMessage = 'AI provider error';
-        assistantMessage = `⚠️ **Provider Error**\n\n${details}\n\nPlease try again in a moment or switch providers.`;
+        assistantMessage = `**Provider Error**\n\n${details}\n\nPlease try again in a moment or switch providers.`;
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         // Timeout error
         errorMessage = 'Request timed out';
@@ -1024,7 +1065,7 @@ const TripPlannerChat = ({
       } else if (!error.response) {
         // Network error
         errorMessage = 'Network error';
-        assistantMessage = '🌐 **Network Error**\n\nUnable to reach the AI provider. Please check your connection and try again.';
+        assistantMessage = '**Network Error**\n\nUnable to reach the AI provider. Please check your connection and try again.';
       }
       
       showToast(errorMessage, 'error');
@@ -1092,7 +1133,7 @@ const TripPlannerChat = ({
 
 ## Response Format:
 - Use **markdown formatting** for better readability
-- Include **emojis** to make responses engaging and scannable
+- Keep responses visually clean and easy to scan without relying on emojis
 - Structure with **clear headers** and **bullet points**
 - Provide **specific recommendations** with reasoning
 - Include **practical tips** and **pro tips** where relevant
@@ -1169,7 +1210,7 @@ For clearly scoped questions, answer directly and concisely.
 - Use bullet points (-) for lists when helpful
 - Use bold text (**text**) for key information when relevant
 - Use italics (*text*) for emphasis when needed
-- Include relevant emojis sparingly and appropriately
+- Use plain language and structured formatting rather than emojis
 - Be practical and realistic
 - Ask clarifying questions if needed
 - Remember context from the conversation
@@ -1332,20 +1373,20 @@ WEATHER & LIVE INFO RESPONSES:
       const parkWelcomeMessage = {
         id: Date.now(),
         role: 'assistant',
-        content: `# 🏞️ Welcome to ${parkName}, ${userName}!
+        content: `# Welcome to ${parkName}, ${userName}
 
 I'm **TrailVerse AI**, and I'm excited to help you explore **${parkName}**! This is an incredible destination with so much to discover.
 
-## 🌟 What I Can Help You With
+## What I Can Help You With
 
-- **🗺️ Park Highlights**: Must-see attractions and hidden gems
-- **🥾 Trail Recommendations**: Hiking options for all skill levels
-- **📸 Photography Spots**: Best locations and timing for stunning photos
-- **🌤️ Weather & Seasons**: When to visit and what to expect
-- **🎒 Planning Tips**: Permits, lodging, dining, and essential gear
-- **🦌 Wildlife & Nature**: What to look for and safety tips
+- **Park Highlights**: Must-see attractions and hidden gems
+- **Trail Recommendations**: Hiking options for all skill levels
+- **Photography Spots**: Best locations and timing for stunning photos
+- **Weather & Seasons**: When to visit and what to expect
+- **Planning Tips**: Permits, lodging, dining, and essential gear
+- **Wildlife & Nature**: What to look for and safety tips
 
-## 🚀 Ready to Explore?
+## Ready to Explore?
 
 Ask me anything about ${parkName}:
 - "What are the best trails for beginners?"
@@ -1353,7 +1394,7 @@ Ask me anything about ${parkName}:
 - "What should I not miss?"
 - "Help me plan a 3-day trip"
 
-Let's make your ${parkName} adventure unforgettable! 🎯`
+Let's make your ${parkName} adventure unforgettable.`
       };
       
       setMessages([parkWelcomeMessage]);
@@ -1363,26 +1404,26 @@ Let's make your ${parkName} adventure unforgettable! 🎯`
       const freshWelcomeMessage = {
         id: Date.now(),
         role: 'assistant',
-        content: `# 🎉 Welcome to TrailVerse AI, ${userName}!
+        content: `# Welcome to TrailVerse AI, ${userName}
 
 I'm **TrailVerse AI**, your expert guide to America's 63 National Parks! I'm absolutely thrilled to help you plan your next incredible adventure.
 
-## 🌟 What I Can Help You With
+## What I Can Help You With
 
-- **🏔️ Park Recommendations**: Find the perfect park for your interests and travel style
-- **📅 Trip Planning**: Create detailed itineraries with activities, lodging, and dining
-- **🥾 Trail & Activity Suggestions**: Discover hiking, scenic drives, wildlife viewing, and photography spots
-- **🌤️ Weather & Timing**: Get advice on the best times to visit and what to expect
-- **🎒 Preparation Tips**: Essential gear, permits, and safety considerations
+- **Park Recommendations**: Find the perfect park for your interests and travel style
+- **Trip Planning**: Create detailed itineraries with activities, lodging, and dining
+- **Trail & Activity Suggestions**: Discover hiking, scenic drives, wildlife viewing, and photography spots
+- **Weather & Timing**: Get advice on the best times to visit and what to expect
+- **Preparation Tips**: Essential gear, permits, and safety considerations
 
-## 🚀 Ready to Start Planning?
+## Ready to Start Planning?
 
 You can:
 1. **Share your trip details** - I'll create a custom itinerary
 2. **Ask specific questions** - "Best trails for beginners?" "When's peak season?"
 3. **Explore a park** - Learn about highlights and hidden gems
 
-What kind of adventure are you dreaming of? Let's make it happen! 🎯`
+What kind of adventure are you dreaming of? Let's make it happen.`
       };
       
       setMessages([freshWelcomeMessage]);
@@ -1408,6 +1449,11 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
   };
 
   const handleSignupFromChat = () => {
+    if (isAuthenticated) {
+      window.location.href = '/profile';
+      return;
+    }
+
     // Store chat context for redirect after signup
     const chatContext = {
       anonymousId,
@@ -1419,10 +1465,15 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
     localStorage.setItem('returnToChat', JSON.stringify(chatContext));
     
     // Navigate to signup with chat flag
-    router.push('/signup?from=chat');
+    window.location.href = '/signup?from=chat';
   };
 
   const handleLoginFromChat = () => {
+    if (isAuthenticated) {
+      window.location.href = '/profile';
+      return;
+    }
+
     // Store chat context for redirect after login
     const chatContext = {
       anonymousId,
@@ -1434,7 +1485,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
     localStorage.setItem('returnToChat', JSON.stringify(chatContext));
     
     // Navigate to login with chat flag
-    router.push('/login?from=chat');
+    window.location.href = '/login?from=chat';
   };
 
   const autoSaveConversation = async (messagesToSave) => {
@@ -1449,6 +1500,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
 
     // Auto-save ALL conversations to database (no manual save needed)
     try {
+      setSaveState('saving');
       const tripSummary = createTripSummary(messagesToSave);
 
       if (currentTripId && !currentTripId.startsWith('temp-')) {
@@ -1500,6 +1552,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         plan: currentPlan,
         provider: selectedProvider
       });
+      setSaveState('saved');
     } catch (error) {
       console.error('Error auto-saving conversation:', error);
       // Still save to temp state even if database save fails
@@ -1509,6 +1562,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
         plan: currentPlan,
         provider: selectedProvider
       });
+      setSaveState('idle');
     }
   };
 
@@ -1605,25 +1659,6 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
       year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
     });
   };
-
-  // Dynamic quick prompts based on context and user preferences
-  const quickPrompts = window.location.search.includes('park=') 
-    ? [
-        "🗓️ When's the absolute best time to visit for my interests?",
-        "🥾 What are the must-do trails and hidden gems?",
-        "📸 Where are the most Instagram-worthy photo spots?",
-        "🌤️ What should I expect for weather and conditions?",
-        "🏕️ What are the best camping and lodging options?",
-        "🎯 Create a personalized itinerary for my trip!"
-      ]
-    : [
-        "🗓️ Create my perfect day-by-day adventure itinerary",
-        "🎒 What's the essential packing list for my activities?",
-        "📸 Show me the best photography spots and tips",
-        "💰 Give me a detailed budget breakdown and money-saving tips",
-        "🌤️ What's the weather like and when should I visit?",
-        "🥾 Recommend trails that match my fitness level"
-      ];
 
   // Provider selector modal removed - auto-select first provider for better UX
 
@@ -1729,7 +1764,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                   Ready to Continue Planning?
                 </h2>
                 <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You've already used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.
+                  You&apos;ve used your 3 free questions. Save this chat to an account and keep going now, or wait 48 hours for 3 fresh free questions.
                 </p>
               </div>
 
@@ -1777,19 +1812,19 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                     </div>
                     <div>
                       <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Create Account
+                        Save This Chat
                       </h3>
                       <p className="text-xs font-medium" style={{ color: 'var(--accent-green)' }}>
-                        Recommended
+                        Continue now
                       </p>
                     </div>
                   </div>
                   <ul className="space-y-2.5">
                     {[
-                      'Ask unlimited questions',
-                      'Save your trip plans',
-                      'Access conversation history',
-                      'Get personalized recommendations'
+                      'Keep this exact conversation',
+                      'Save it to your trip history',
+                      'Ask unlimited follow-up questions',
+                      'Continue right where you left off'
                     ].map((feature, index) => (
                       <li key={index} className="flex items-start gap-2.5">
                         <CheckCircle 
@@ -1827,7 +1862,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                         Wait 48 Hours
                       </h3>
                       <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                        Free Option
+                        Free reset
                       </p>
                     </div>
                   </div>
@@ -1850,7 +1885,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                       'Get 3 fresh questions',
                       'No account required',
                       'Completely free',
-                      'Session resets automatically'
+                      'This current chat will not be saved'
                     ].map((feature, index) => (
                       <li key={index} className="flex items-start gap-2.5">
                         <CheckCircle 
@@ -1873,25 +1908,33 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
   }
 
   return (
-    <div className="flex-1 flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
-
+    <div
+      className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
+    >
       {/* Chat Messages - Responsive width */}
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto chat-messages-container"
+        className="relative flex-1 min-h-0 overflow-y-auto chat-messages-container"
         onScroll={(e) => {
           const { scrollTop, scrollHeight, clientHeight } = e.target;
           setShowScrollButton(scrollHeight - scrollTop - clientHeight > 200);
         }}
       >
-          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-4 sm:py-6">
-            <div className="space-y-2 sm:space-y-3">
-              {messages.map((message) => (
+          <div className={`mx-auto w-full max-w-5xl px-3 sm:px-6 lg:px-8 ${isWelcomeState ? 'min-h-full py-2 sm:py-8' : 'py-2 sm:py-8'}`}>
+            <div className={isWelcomeState ? 'flex min-h-full items-start justify-center sm:items-center' : ''}>
+            <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-4xl' : ''}`}>
+              {messages.map((message, index) => (
                 <MessageBubble
                   key={`${message.id}-${user?.id || 'anonymous'}-${avatarVersion}`}
                   message={message.content}
                   isUser={message.role === 'user'}
                   timestamp={message.timestamp}
+                  hideActions={
+                    isWelcomeState &&
+                    message.role === 'assistant' &&
+                    index === 0
+                  }
                   userAvatar={message.role === 'user' ? (() => {
                     // Try multiple avatar properties in order of preference
                     const userAvatar = user?.avatar || user?.profilePicture || user?.profile?.avatar;
@@ -1984,6 +2027,11 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
                         
                         return updatedMessages;
                       });
+
+                      if (isAnonymous || !isAuthenticated) {
+                        console.log('ℹ️ Skipping feedback API submission for anonymous chat');
+                        return;
+                      }
                       
                       // Only submit feedback to analytics API if we have required data
                       // Note: userMessage can be empty for welcome messages
@@ -2056,6 +2104,7 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
 
               <div ref={messagesEndRef} />
             </div>
+            </div>
           </div>
         </div>
 
@@ -2088,14 +2137,13 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
 
       {/* Conversion Message for Anonymous Users */}
       {isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
-        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 py-4">
+        <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div 
-            className="rounded-2xl p-5 sm:p-6 backdrop-blur"
+            className="rounded-[28px] border p-5 sm:p-6 backdrop-blur"
             style={{
               backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
               borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow)'
+              boxShadow: 'var(--shadow-xl)'
             }}
           >
             <div className="text-center">
@@ -2112,8 +2160,8 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
               </h3>
               <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
                 {isSessionRestored 
-                  ? `You've already used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.`
-                  : `You've used your 3 free questions! Create an account for unlimited access, or come back in 48 hours for 3 fresh questions.`
+                  ? `You've already used your 3 free questions. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free questions.`
+                  : `You've used your 3 free questions. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free questions.`
                 }
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -2142,34 +2190,97 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
       )}
 
       {/* Input Area */}
-      <div className="flex-shrink-0 z-20 border-t"
+      <div className="relative z-20 flex-shrink-0 border-t"
           style={{
             backgroundColor: 'var(--bg-primary)',
             borderColor: 'var(--border)',
-            boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 -6px 18px rgba(15, 23, 42, 0.04)',
             paddingBottom: 'env(safe-area-inset-bottom, 16px)'
           }}
         >
-          <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-10 xl:px-12 pt-3 pb-4 sm:pt-4 sm:pb-5">
-            {/* Quick Prompts - Only show for new users (not returning users with newchat, personalized, or park-specific chats) */}
-            {messages.length === 1 && !isGenerating && !isPersonalized && !isNewChat && !(typeof window !== 'undefined' && window.location.search.includes('park=')) && (
-              <div className="mb-4">
-                <SuggestedPrompts
-                  prompts={quickPrompts}
-                  onSelect={(prompt) => handleSendMessage(prompt)}
-                  title="Quick start"
-                />
+          <div className="mx-auto w-full max-w-5xl px-3 pb-2 pt-1.5 sm:px-6 sm:pb-5 sm:pt-4 lg:px-8">
+            <div className="px-1 sm:px-0">
+            <div className="mb-1.5 flex flex-col gap-1.5 sm:mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:gap-2">
+                {chatStatus && (
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: chatStatus.tone === 'saved'
+                        ? 'rgba(34, 197, 94, 0.12)'
+                        : chatStatus.tone === 'saving'
+                          ? 'rgba(245, 158, 11, 0.12)'
+                          : 'var(--surface-hover)',
+                      color: chatStatus.tone === 'saved'
+                        ? '#15803d'
+                        : chatStatus.tone === 'saving'
+                          ? '#b45309'
+                          : 'var(--text-secondary)',
+                      border: '1px solid',
+                      borderColor: chatStatus.tone === 'saved'
+                        ? 'rgba(34, 197, 94, 0.22)'
+                        : chatStatus.tone === 'saving'
+                          ? 'rgba(245, 158, 11, 0.22)'
+                          : 'var(--border)'
+                    }}
+                  >
+                    <span>{chatStatus.label}</span>
+                  </div>
+                )}
+                {anonymousQuotaLabel && (
+                  <div
+                    className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: anonymousMessagesRemaining === 1
+                        ? 'rgba(239, 68, 68, 0.12)'
+                        : 'rgba(245, 158, 11, 0.12)',
+                      color: anonymousMessagesRemaining === 1 ? '#b91c1c' : '#b45309',
+                      border: '1px solid',
+                      borderColor: anonymousMessagesRemaining === 1
+                        ? 'rgba(239, 68, 68, 0.2)'
+                        : 'rgba(245, 158, 11, 0.2)'
+                    }}
+                  >
+                    {anonymousQuotaLabel}
+                  </div>
+                )}
+                {onOpenQuickFill && (
+                  <button
+                    type="button"
+                    onClick={onOpenQuickFill}
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)'
+                    }}
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    Quick Fill
+                  </button>
+                )}
               </div>
+              {chatStatus?.description && (
+                <p className="hidden max-w-md text-xs leading-relaxed sm:block" style={{ color: 'var(--text-tertiary)' }}>
+                  {chatStatus.description}
+                </p>
+              )}
+            </div>
+
+            {isWelcomeState && onOpenQuickFill && (
+              <p className="mb-2 text-[11px] leading-4 sm:mb-3 sm:text-sm sm:leading-6" style={{ color: 'var(--text-secondary)' }}>
+                Use Quick Fill to add your destination, dates, budget, and interests before you ask for an itinerary.
+              </p>
             )}
 
             {/* Chat Input */}
             <ChatInput
               onSend={handleSendMessage}
               onAttach={(file) => showToast(`Attached: ${file.name}`, 'success')}
-              onEmoji={() => showToast('Emoji picker coming soon', 'success')}
               disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
-              placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Create an account to continue chatting..." : "Ask me about your trip..."}
+              placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in or create an account to save this chat and continue..." : "Ask me about your trip..."}
             />
+            </div>
           </div>
         </div>
 
@@ -2198,16 +2309,33 @@ What kind of adventure are you dreaming of? Let's make it happen! 🎯`
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  🏞️ Chat About Park
-                </h2>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: 'rgba(67, 160, 106, 0.12)', color: 'var(--accent-green)' }}
+                  >
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    Chat About Park
+                  </h2>
+                </div>
                 <button
                   onClick={() => {
                     setShowParkInputModal(false);
                     setParkInput('');
                   }}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition"
-                  style={{ color: 'var(--text-secondary)' }}
+                  className="p-2 rounded-lg transition"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
                   <X className="h-5 w-5" />
                 </button>

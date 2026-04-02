@@ -156,9 +156,10 @@ export const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => 
  */
 export const checkServerHealth = async (baseURL = API_URL) => {
   try {
-    const response = await fetch(`${baseURL}/health`, {
+    const normalizedBaseUrl = baseURL.replace(/\/+$/, '').replace(/\/api$/, '');
+    const response = await fetch(`${normalizedBaseUrl}/health/ping`, {
       method: 'GET',
-      timeout: 5000
+      signal: AbortSignal.timeout(5000)
     });
     return response.ok;
   } catch (error) {

@@ -9,6 +9,9 @@
 .table-of-contents-sticky {
   position: sticky;
   top: 104px;
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+  scrollbar-width: thin;
 }
 
 .toc-header {
@@ -86,6 +89,19 @@
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+.table-of-contents-sticky::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-of-contents-sticky::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-tertiary) 40%, transparent);
+  border-radius: 999px;
+}
+
+.table-of-contents-sticky::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .toc-item {

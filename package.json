@@ -6,7 +6,7 @@
   "engines": { "node": "20.x" },
   "scripts": {
     "dev": "concurrently -n frontend,backend -c blue,green \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd next-frontend && npm run dev",
+    "dev:frontend": "cd next-frontend && npm run dev -- --hostname 127.0.0.1",
     "dev:backend": "cd server && npm run dev",
     "start": "cd next-frontend && npm run start",
     "build": "cd next-frontend && npm run build",

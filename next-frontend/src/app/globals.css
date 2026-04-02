@@ -605,3 +605,19 @@ section {
 /* ============================================
    END OF GOOGLE MAPS PIN ANIMATIONS
    ============================================ */
+
+.profile-tabs-scroll {
+  scrollbar-width: none;
+}
+
+.profile-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.park-tabs-scroll {
+  scrollbar-width: none;
+}
+
+.park-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}

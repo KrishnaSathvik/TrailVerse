@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
@@ -62,32 +62,6 @@ const FeaturedLeadCard = ({ post }) => (
   </Link>
 );
 
-const FeaturedStackCard = ({ post }) => (
-  <Link
-    href={`/blog/${post.slug}`}
-    className="group grid grid-cols-[120px_minmax(0,1fr)] gap-4 rounded-[1.5rem] p-4 transition hover:-translate-y-1"
-    style={{
-      backgroundColor: 'var(--surface)',
-      borderWidth: '1px',
-      borderColor: 'var(--border)'
-    }}
-  >
-    <OptimizedImage src={post.featuredImage} alt={post.title} className="w-full h-28 rounded-2xl object-cover" />
-    <div className="min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--accent-blue)' }}>
-        {post.category}
-      </p>
-      <h3 className="text-lg font-semibold line-clamp-2 mb-3" style={{ color: 'var(--text-primary)' }}>
-        {post.title}
-      </h3>
-      <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readTime} min</span>
-        <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.views?.toLocaleString() || 0}</span>
-      </div>
-    </div>
-  </Link>
-);
-
 const BlogContent = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -104,6 +78,9 @@ const BlogContent = () => {
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [postsPerPage, setPostsPerPage] = useState(6);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const resultsAnchorRef = useRef(null);
+  const shouldScrollToResultsRef = useRef(false);
 
   useEffect(() => {
     const updatePostsPerPage = () => {
@@ -124,8 +101,11 @@ const BlogContent = () => {
         const [categoriesData, featuredData, popularData] = await Promise.all([
           blogService.getBlogCategories(),
           blogService.getFeaturedPosts(3),
-          blogService.getPopularPosts(4)
+          blogService.getPopularPosts(2)
         ]);
+
+        const nextFeaturedPosts = featuredData.data || [];
+        const nextPopularPosts = (popularData.data || []).slice(0, 2);
 
         setCategories([
           { id: 'all', label: 'All Posts', count: categoriesData.totalCount || 0 },
@@ -135,17 +115,26 @@ const BlogContent = () => {
             count: category.count
           }))
         ]);
-        setFeaturedPosts(featuredData.data || []);
-        setPopularPosts((popularData.data || []).slice(0, 4));
+        setFeaturedPosts(nextFeaturedPosts);
+        setPopularPosts(nextPopularPosts);
 
-        const params = { page: currentPage, limit: postsPerPage };
+        const shouldDeduplicateCollections = !searchTerm && selectedCategory === 'all' && currentPage === 1;
+        const hiddenIds = new Set([
+          ...nextFeaturedPosts.map((post) => post._id),
+          ...nextPopularPosts.map((post) => post._id)
+        ]);
+        const params = {
+          page: currentPage,
+          limit: shouldDeduplicateCollections ? postsPerPage + hiddenIds.size : postsPerPage
+        };
         if (selectedCategory !== 'all') params.category = selectedCategory;
         if (searchTerm) params.search = searchTerm;
         if (selectedTag) params.tag = selectedTag;
 
         const data = await blogService.getAllPosts(params);
         setPosts(data.data || []);
-        setTotalPages(data.pages || 1);
+        setTotalPages(Math.max(1, Math.ceil((data.total || 0) / postsPerPage)));
+        setTotalPosts(data.total || 0);
       } catch {
         setError('Failed to load blog posts. Please try again later.');
       } finally {
@@ -156,21 +145,38 @@ const BlogContent = () => {
     fetchData();
   }, [currentPage, postsPerPage, searchTerm, selectedCategory, selectedTag]);
 
+  useEffect(() => {
+    if (!shouldScrollToResultsRef.current || loading) {
+      return;
+    }
+
+    shouldScrollToResultsRef.current = false;
+    resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loading, selectedCategory, selectedTag, currentPage]);
+
   const clearTagFilter = () => {
     setSelectedTag('');
     setCurrentPage(1);
     router.replace(pathname, { scroll: false });
   };
 
+  const shouldDeduplicateCollections = !searchTerm && selectedCategory === 'all' && currentPage === 1;
+
+  const visiblePosts = shouldDeduplicateCollections
+    ? posts.filter(
+        (post) =>
+          !featuredPosts.some((featuredPost) => featuredPost._id === post._id) &&
+          !popularPosts.some((popularPost) => popularPost._id === post._id)
+      ).slice(0, postsPerPage)
+    : posts;
+
+  const visibleResultsLabel = visiblePosts.length === 1 ? 'article' : 'articles';
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
       <section className="relative overflow-hidden py-8 sm:py-20">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-transparent" />
-        </div>
-
         <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           <div className="mt-3 sm:mt-6">
             <div
@@ -243,14 +249,7 @@ const BlogContent = () => {
                       Featured Stories
                     </h2>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.9fr)] gap-6">
-                    <FeaturedLeadCard post={featuredPosts[0]} />
-                    <div className="grid gap-4">
-                      {featuredPosts.slice(1).map((post) => (
-                        <FeaturedStackCard key={post._id} post={post} />
-                      ))}
-                    </div>
-                  </div>
+                  <FeaturedLeadCard post={featuredPosts[0]} />
                 </div>
               )}
 
@@ -264,20 +263,21 @@ const BlogContent = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {popularPosts.map((post) => (
-                      <FeaturedStackCard key={post._id} post={post} />
+                      <BlogCard key={post._id} post={post} />
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="mb-8 overflow-x-auto pb-2 scrollbar-hide">
+              <div ref={resultsAnchorRef} className="mb-8 overflow-x-auto pb-2 scrollbar-hide">
                 <div className="flex gap-2">
                   {categories.map((category) => (
                     <Button
                       key={category.id}
                       onClick={() => {
+                        shouldScrollToResultsRef.current = true;
                         setSelectedCategory(category.id);
                         setCurrentPage(1);
                       }}
@@ -298,7 +298,15 @@ const BlogContent = () => {
                     Filtered by tag:
                   </span>
                   <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">#{selectedTag}</span>
-                  <Button onClick={clearTagFilter} variant="ghost" size="sm" className="text-sm underline">
+                  <Button
+                    onClick={() => {
+                      shouldScrollToResultsRef.current = true;
+                      clearTagFilter();
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    className="text-sm underline"
+                  >
                     Clear filter
                   </Button>
                 </div>
@@ -306,7 +314,8 @@ const BlogContent = () => {
 
               <div className="mb-6">
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {posts.length} {posts.length === 1 ? 'article' : 'articles'} found
+                  Showing {visiblePosts.length} {visibleResultsLabel}
+                  {totalPosts !== visiblePosts.length ? ` of ${totalPosts}` : ''}
                 </p>
               </div>
 
@@ -319,10 +328,10 @@ const BlogContent = () => {
                   <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{error}</p>
                   <Button onClick={() => window.location.reload()} variant="secondary" size="md">Try Again</Button>
                 </div>
-              ) : posts.length > 0 ? (
+              ) : visiblePosts.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
-                    {posts.map((post) => (
+                    {visiblePosts.map((post) => (
                       <BlogCard key={post._id} post={post} />
                     ))}
                   </div>

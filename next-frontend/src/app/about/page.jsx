@@ -50,7 +50,7 @@ const AboutPage = () => {
     {
       icon: Facebook,
       label: "Facebook",
-      url: "https://www.facebook.com/Gitam2015?mibextid=wwXIfr&rdid=hoZGy7n3XmTV6RMD&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1AGvmiNw7B%2F%3Fmibextid%3DwwXIfr#",
+      url: "https://www.facebook.com/Gitam2015",
       description: "Travel Community"
     },
     {
@@ -180,6 +180,19 @@ const AboutPage = () => {
                 <div className="max-w-4xl mx-auto">
                   {/* Hero Content */}
                   <div>
+                    <div
+                      className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6"
+                      style={{
+                        backgroundColor: 'var(--surface-hover)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)'
+                      }}
+                    >
+                      <Sparkles className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                        Krishna&apos;s Story Behind TrailVerse
+                      </span>
+                    </div>
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
                       style={{ color: 'var(--text-primary)' }}
                     >
@@ -188,9 +201,17 @@ const AboutPage = () => {
                     <p className="text-lg leading-relaxed mb-6"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      A travel enthusiast who loves exploring new places and sharing my experiences with others. From beautiful destinations to insightful travel tips, my blog is the perfect place to find inspiration for your next adventure. 🏞️ <strong>17 National Parks Explored</strong> • 📸 <strong>Nikon Z6ii Astrophotographer</strong> • 🗺️ <strong>Google Level 8 Contributor</strong>
+                      I&apos;m Krishna, a Nikon Z6ii astrophotographer and Google Maps Level 8 contributor who has explored 17 National Parks across 23 states. TrailVerse is the all-in-one trip planning tool I always wished existed while planning my own park adventures.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4">
+                      <Button
+                        onClick={() => router.push('/plan-ai')}
+                        variant="primary"
+                        size="md"
+                        icon={Sparkles}
+                      >
+                        Try the AI Trip Planner
+                      </Button>
                       <Button
                         onClick={() => router.push('/explore')}
                         variant="secondary"
@@ -236,28 +257,19 @@ const AboutPage = () => {
               
               <div className="space-y-6 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                 <p>
-                  I&apos;m thrilled to share all my travel experiences, curated with accurate reviews and insightful tips. 
-                  As a Google Level 8 reviewer, I&apos;ve made it my mission to help users navigate and explore the world, 
-                  ensuring they have the best possible travel experiences. Follow me (krishna) on this journey as we 
-                  embark on exciting destinations, uncover hidden gems, and create unforgettable memories together!
+                  TrailVerse started from the way I already travel: planning deeply, documenting everything, and sharing what actually helps once you&apos;re on the road. Over time, that turned into thousands of Google Maps contributions, park visits across the country, and a clearer idea of what travelers really need in one place.
                 </p>
                 
                 <p>
-                  Being a Level 8 reviewer means I&apos;ve dedicated countless hours to crafting accurate and valuable reviews. 
-                  Whether it&apos;s rating accommodations, restaurants, and attractions, or giving useful tips, I strive to 
-                  assist travellers in making the most informed decisions during their adventures.
+                  As a Google Maps Level 8 reviewer, I&apos;ve spent years writing detailed reviews, sharing photos, and leaving practical notes about what&apos;s worth your time. That experience shaped TrailVerse into something grounded in real visits, not just scraped data or generic travel advice.
                 </p>
                 
                 <p>
-                  I created this app for everyone to use and plan National Parks trips with ease. With smart planning 
-                  that gives you personalized plans based on your choices, you can see all live NPS events on the events 
-                  page to easily save them. You can even save parks and plan according to your interests - one easy, simple 
-                  app that helps you do all things. With my curated blogs, you can get all tips and guides for all travel-related 
-                  needs. Join this mission and make sure you spread the word. Thanks for choosing NPE!
+                  I built TrailVerse to make national park planning feel modern and useful: AI trip planning, interactive maps, saved chats, live NPS events, weather, blogs, and community reviews all working together. The goal is simple: help you spend less time juggling tabs and more time planning a trip you&apos;re actually excited about.
                 </p>
                 
                 <p>
-                  Nothing makes me happier than knowing my insights have helped someone create their perfect vacation.
+                  The best outcome is when someone opens TrailVerse, finds the right park, builds a better itinerary, and heads out feeling more prepared and more inspired than they would have otherwise.
                 </p>
               </div>
             </div>
@@ -272,7 +284,7 @@ const AboutPage = () => {
                 My Journey by Numbers
               </h2>
               <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                From Grand Canyon to Big Bend - my National Parks adventure
+                17 parks, thousands of miles, and one big idea: TrailVerse
               </p>
             </div>
 
@@ -380,7 +392,7 @@ const AboutPage = () => {
                 What I Do
               </h2>
               <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                My passion for National Parks and photography expertise
+                The mix of travel experience, photography, and product building behind TrailVerse
               </p>
             </div>
 
@@ -467,7 +479,7 @@ const AboutPage = () => {
           </div>
         </section>
 
-        {/* About TrailVerse Section */}
+      {/* About TrailVerse Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
@@ -488,12 +500,11 @@ const AboutPage = () => {
                   </div>
                 </div>
                 <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-forest-400 to-forest-600 bg-clip-text text-transparent">
-                  About TrailVerse
+                  Why I Built TrailVerse
                 </h2>
               </div>
               <p className="text-xl max-w-4xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                TrailVerse is my way of giving back to the travel community, combining my passion for 
-                National Parks with cutting-edge technology to help others discover these incredible places.
+                TrailVerse is my attempt to turn real travel experience into a better planning product for people who love parks, road trips, and meaningful outdoor travel.
               </p>
             </div>
 
@@ -510,33 +521,19 @@ const AboutPage = () => {
                   >
                     <Mountain className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
                     <span className="text-sm font-semibold" style={{ color: 'var(--accent-green)' }}>
-                      Our Mission
+                      Why I Built It
                     </span>
                   </div>
                   <h3 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
-                    Making National Parks Accessible to Everyone
+                    Making trip planning feel less fragmented
                 </h3>
                   <div className="space-y-4 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     <p>
-                      After visiting 17+ National Parks and contributing thousands of reviews on Google Maps, 
-                      I realized there was a gap in the market for comprehensive, modern trip planning 
-                      specifically designed for America’s incredible park system.
+                      After visiting 17 parks and sharing thousands of reviews and photos on Google Maps, I kept running into the same problem: trip planning was scattered across too many apps and too many tabs.
                     </p>
                     <p>
-                      TrailVerse bridges that gap by combining real-world experience with modern technology, 
-                      offering personalized itineraries, real-time weather updates, and community-driven insights 
-                      to help you make the most of your National Parks adventure.
+                      TrailVerse brings those pieces together with AI planning, maps, weather, events, reviews, and saved history so you can go from idea to itinerary without losing context.
                     </p>
-                  </div>
-                  <div className="mt-8">
-                    <Button
-                      onClick={() => router.push('/explore')}
-                      variant="secondary"
-                      size="lg"
-                      icon={Compass}
-                    >
-                      Start Exploring
-                    </Button>
                   </div>
                 </div>
                 
@@ -621,7 +618,7 @@ const AboutPage = () => {
                   Why TrailVerse?
                 </h3>
                 <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  Built by a traveler, for travelers - every feature is designed with real-world experience in mind.
+                  Built by a traveler, for travelers. The strongest parts of TrailVerse are the ones I wanted myself while planning park trips.
                 </p>
               </div>
               
@@ -642,9 +639,7 @@ const AboutPage = () => {
                     Dual AI Trip Planning
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Choose between Claude and ChatGPT for personalized itineraries based on your interests, 
-                    travel style, and time constraints. Our AI learns from thousands of successful park visits 
-                    to create your perfect adventure with real-time conversation persistence.
+                    Build itineraries around your dates, pace, interests, and travel style. Your saved chat history lets you return to a plan and keep refining it instead of starting over.
                   </p>
                 </div>
 
@@ -664,9 +659,7 @@ const AboutPage = () => {
                     Interactive Maps
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    View all parks on Google Maps with animated markers and search. Desktop users get full 
-                    Google Places integration with nearby restaurants, lodging, gas stations, route planning, 
-                    and turn-by-turn directions. Mobile users enjoy smooth map browsing with park details.
+                    Explore parks visually, compare destinations, and find nearby essentials without bouncing between separate map tools and park pages.
                   </p>
                        </div>
                        
@@ -686,9 +679,7 @@ const AboutPage = () => {
                     Live Events & Weather
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Stay updated with real-time NPS events, ranger programs, current weather conditions, 
-                    5-day forecasts, park alerts, and closures. Save events to your profile and plan with 
-                    confidence knowing the latest conditions.
+                    See real-time NPS events, current conditions, forecasts, alerts, and closures so your plan reflects what&apos;s actually happening on the ground.
                   </p>
                 </div>
 
@@ -708,9 +699,7 @@ const AboutPage = () => {
                     Community Reviews & Blog
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Write reviews with up to 5 photos per review. Read verified user reviews with images, 
-                    engage with expert blog content featuring guides and tips, leave comments with likes 
-                    and nested replies, and share your own experiences from real park visits.
+                    Read practical guides, browse real reviews, and learn from actual visits instead of relying only on generic roundup articles.
                   </p>
                        </div>
                        
@@ -730,9 +719,7 @@ const AboutPage = () => {
                     Smart Features & Tracking
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Save favorite parks, blogs, and events. Track visited locations with dates, manage trip 
-                    history with archive/restore, compare up to 4 parks side-by-side, choose from 1000+ avatar 
-                    options, and enjoy real-time sync across all devices.
+                    Save parks, events, and trip history, compare destinations side by side, and keep your planning synced across devices.
                   </p>
                 </div>
 
@@ -752,77 +739,44 @@ const AboutPage = () => {
                     Offline-Ready
                   </h4>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Install TrailVerse to your home screen for seamless offline support and instant navigation. 
-                    Access your saved trips and park guides even when you don’t have cell service in the wilderness.
+                    Install TrailVerse and keep key trip details accessible when your signal disappears in the park.
                   </p>
                 </div>
                          </div>
                        </div>
                        
-            {/* Powered By Section */}
-            <div className="max-w-6xl mx-auto mt-24">
-              <div className="text-center mb-12">
+            <div className="max-w-4xl mx-auto mt-20">
+              <div
+                className="rounded-3xl p-8 text-center sm:p-10"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)'
+                }}
+              >
                 <h3 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                  Powered By Real-Time Data
+                  Ready to plan your next trip?
                 </h3>
-                <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  TrailVerse leverages official sources to deliver the most accurate park information.
+                <p className="text-base leading-7 mb-8" style={{ color: 'var(--text-secondary)' }}>
+                  Start with TrailVerse AI if you want help shaping an itinerary, or jump into Explore if you want to compare parks first.
                 </p>
-              </div>
-              
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="rounded-2xl p-6 backdrop-blur"
-                             style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>National Park Service</h4>
-                  <div className="space-y-3">
-                    {['Live Alerts', 'Visitor Centers', 'Campgrounds', 'Ranger Events'].map((tech) => (
-                      <div key={tech} className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="rounded-2xl p-6 backdrop-blur"
-                             style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Live Weather</h4>
-                  <div className="space-y-3">
-                    {['Real-time Conditions', '5-Day Forecasts', 'Temperature High/Lows', 'Precipitation Data'].map((tech) => (
-                      <div key={tech} className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-blue)' }} />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="rounded-2xl p-6 backdrop-blur"
-                             style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <h4 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Smart Planning</h4>
-                  <div className="space-y-3">
-                    {['Interactive Maps', 'Custom Itineraries', 'Nearby Places', 'Community Reviews'].map((tech) => (
-                      <div key={tech} className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent-orange)' }} />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{tech}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Button
+                    onClick={() => router.push('/plan-ai')}
+                    variant="primary"
+                    size="lg"
+                    icon={Sparkles}
+                  >
+                    Try the AI Trip Planner
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/explore')}
+                    variant="secondary"
+                    size="lg"
+                    icon={Compass}
+                  >
+                    Start Exploring Parks
+                  </Button>
                 </div>
               </div>
             </div>

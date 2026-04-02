@@ -237,12 +237,12 @@ class WeatherService {
 
   // Prefetch weather data for better UX
   async prefetchWeatherData(latitude: number, longitude: number) {
-    if (!latitude || !longitude) return;
+    if (!latitude || !longitude || !OPENWEATHER_API_KEY) return;
     
     const params = {
       lat: latitude.toString(),
       lon: longitude.toString(),
-      appid: OPENWEATHER_API_KEY || '',
+      appid: OPENWEATHER_API_KEY,
       units: 'imperial'
     };
     
