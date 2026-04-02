@@ -246,10 +246,10 @@ const LandingPage = () => {
                     <button
                       type="button"
                       onClick={() => { setSearchQuery(''); document.getElementById('hero-search')?.focus(); }}
-                      className="flex-shrink-0 p-1.5 rounded-full transition-colors hover:bg-white/20"
+                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/15 hover:bg-white/30"
                       aria-label="Clear search"
                     >
-                      <X className="h-5 w-5 text-white/70" />
+                      <X className="h-4 w-4 text-white" weight="bold" />
                     </button>
                   )}
                   <button
