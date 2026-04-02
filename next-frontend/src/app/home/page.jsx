@@ -379,7 +379,11 @@ const DailyFeedPage = () => {
               <button
                 onClick={() => { refetch(); setLoadingTooLong(false); }}
                 className="mt-4 px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
-                style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)'
+                }}
               >
                 Retry
               </button>
@@ -414,7 +418,7 @@ const DailyFeedPage = () => {
           <Card className="p-8 text-center">
             <h1 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Couldn&apos;t load today&apos;s feed</h1>
             <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>Please check your connection and try again.</p>
-            <Button onClick={() => window.location.reload()} className="px-6 py-3" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
+            <Button onClick={() => window.location.reload()} variant="primary" className="px-6 py-3">
               Retry
             </Button>
           </Card>
@@ -432,7 +436,7 @@ const DailyFeedPage = () => {
           <Card className="p-8 text-center">
             <h1 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>No data available</h1>
             <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>Try refreshing the page.</p>
-            <Button onClick={() => window.location.reload()} className="px-6 py-3" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
+            <Button onClick={() => window.location.reload()} variant="primary" className="px-6 py-3">
               Refresh
             </Button>
           </Card>

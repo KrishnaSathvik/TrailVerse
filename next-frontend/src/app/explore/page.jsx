@@ -527,9 +527,22 @@ const ExploreContent = () => {
                         key={activity}
                         onClick={() => toggleActivityFilter(activity)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                          filters.activities.includes(activity) ? 'bg-forest-500 text-white' : 'ring-1 hover:bg-white/5'
+                          filters.activities.includes(activity) ? '' : 'ring-1 hover:bg-white/5'
                         }`}
-                        style={!filters.activities.includes(activity) ? { backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text-secondary)' } : {}}
+                        style={
+                          filters.activities.includes(activity)
+                            ? {
+                                backgroundColor: 'var(--surface-active)',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border-hover)',
+                                color: 'var(--text-primary)'
+                              }
+                            : {
+                                backgroundColor: 'var(--surface)',
+                                borderColor: 'var(--border)',
+                                color: 'var(--text-secondary)'
+                              }
+                        }
                       >
                         {activity}
                       </button>
@@ -634,7 +647,16 @@ const ExploreContent = () => {
                   <Compass className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
                   <p className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No parks found</p>
                   <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Try adjusting your search or filters</p>
-                  <button onClick={clearAllFilters} className="px-6 py-3 rounded-full bg-forest-500 hover:bg-forest-600 text-white font-semibold transition">
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-6 py-3 rounded-full font-semibold transition"
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)'
+                    }}
+                  >
                     Clear Filters
                   </button>
                 </div>
@@ -733,9 +755,24 @@ const ExploreContent = () => {
                 <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>ACTIVITIES</h4>
                 <div className="flex flex-wrap gap-2">
                   {popularActivities.map(activity => (
-                    <button key={activity} onClick={() => toggleActivityFilter(activity)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${filters.activities.includes(activity) ? 'bg-forest-500 text-white' : 'ring-1 hover:bg-white/5'}`}
-                      style={!filters.activities.includes(activity) ? { backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text-secondary)' } : {}}
+                    <button
+                      key={activity}
+                      onClick={() => toggleActivityFilter(activity)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${filters.activities.includes(activity) ? '' : 'ring-1 hover:bg-white/5'}`}
+                      style={
+                        filters.activities.includes(activity)
+                          ? {
+                              backgroundColor: 'var(--bg-secondary)',
+                              borderWidth: '1px',
+                              borderColor: 'var(--border)',
+                              color: 'var(--text-primary)'
+                            }
+                          : {
+                              backgroundColor: 'var(--surface)',
+                              borderColor: 'var(--border)',
+                              color: 'var(--text-secondary)'
+                            }
+                      }
                     >{activity}</button>
                   ))}
                 </div>
@@ -744,7 +781,18 @@ const ExploreContent = () => {
             <div className="mt-8 flex gap-3">
               <button onClick={clearAllFilters} className="flex-1 py-3 rounded-xl font-semibold transition"
                 style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>Clear All</button>
-              <button onClick={() => setShowFilters(false)} className="flex-1 py-3 rounded-xl bg-forest-500 hover:bg-forest-600 text-white font-semibold transition">Apply Filters</button>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="flex-1 py-3 rounded-xl font-semibold transition"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                Apply Filters
+              </button>
             </div>
           </div>
         </div>

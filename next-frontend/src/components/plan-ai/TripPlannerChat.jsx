@@ -1691,14 +1691,15 @@ What kind of adventure are you dreaming of? Let's make it happen.`
               onClick={onBack}
               className="px-6 py-3 rounded-xl font-semibold transition"
               style={{
-                backgroundColor: 'var(--accent-green)',
-                color: 'white'
+                backgroundColor: 'var(--button-filled-bg)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)'
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = 'var(--accent-green-hover, var(--accent-green))';
+                e.target.style.backgroundColor = 'var(--button-filled-hover)';
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'var(--accent-green)';
+                e.target.style.backgroundColor = 'var(--button-filled-bg)';
               }}
             >
               Go Back
@@ -1781,7 +1782,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                 </Button>
                 <Button
                   onClick={handleLoginFromChat}
-                  variant="outline"
+                  variant="secondary"
                   size="lg"
                   icon={LogIn}
                   className="flex-1 sm:flex-none"
@@ -2176,7 +2177,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                 </Button>
                 <Button
                   onClick={handleLoginFromChat}
-                  variant="outline"
+                  variant="secondary"
                   size="md"
                   icon={LogIn}
                   className="flex-1 sm:flex-none"

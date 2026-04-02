@@ -9,6 +9,8 @@
   --surface: rgba(255, 255, 255, 0.05);
   --surface-hover: rgba(255, 255, 255, 0.10);
   --surface-active: rgba(255, 255, 255, 0.15);
+  --button-filled-bg: #131719;
+  --button-filled-hover: #1A1F21;
   
   /* Borders */
   --border: rgba(255, 255, 255, 0.10);
@@ -47,6 +49,8 @@
   --surface: rgba(255, 255, 255, 0.8);  /* Semi-transparent white */
   --surface-hover: rgba(255, 255, 255, 0.9);  /* More opaque on hover */
   --surface-active: rgba(255, 255, 255, 0.95);  /* Nearly opaque when active */
+  --button-filled-bg: #ffffff;
+  --button-filled-hover: rgba(255, 255, 255, 0.95);
   
   /* Borders - Soft, natural borders */
   --border: rgba(0, 0, 0, 0.08);  /* Very subtle dark borders */

@@ -34,9 +34,11 @@ I built TrailVerse to solve that problem in a way that feels practical: discover
 - Full NPS photo galleries with lightbox viewer, swipe navigation, and download.
 - In-app NPS video player with captions and duration info.
 - Live webcam feeds, self-guided tours with stops, and real-time parking lot data.
-- AI trip planning for itineraries and personalized travel suggestions.
+- AI trip planning with chat history, archived sessions, and personalized travel suggestions.
+- Daily Feed with a featured park, nature facts, weather context, and sky insights.
+- Monthly events browsing for ranger programs, guided tours, and seasonal park happenings.
 - Compare parks side by side. Save favorites, track visited parks, and plan trips.
-- Blog content, user reviews, events, ranger programs, and community features.
+- Blog content, user reviews, saved events, and community features.
 
 ## NPS API Integration
 
@@ -115,11 +117,22 @@ npm run dev
 
 Frontend:
 
-- `http://localhost:3000`
+- `http://127.0.0.1:3000`
 
 Backend:
 
 - `http://localhost:5001`
+
+## Common Commands
+
+From the repo root:
+
+```bash
+npm run dev      # start frontend + backend
+npm run build    # production build for the Next.js frontend
+npm run lint     # frontend linting
+npm run test     # frontend tests
+```
 
 ## Project Structure
 
@@ -128,4 +141,3 @@ next-frontend/   Next.js frontend
 server/          Express API and backend services
 scripts/         Utility and maintenance scripts
 ```
-

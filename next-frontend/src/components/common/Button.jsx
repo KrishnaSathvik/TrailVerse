@@ -75,18 +75,18 @@ const Button = ({
   // Color variants - Proper distinction between all variants
   const variantStyles = {
     primary: {
-      backgroundColor: 'var(--accent-green)',
-      color: '#ffffff',
-      borderColor: 'var(--accent-green)',
-      hoverBackgroundColor: 'var(--accent-green-dark)',
-      hoverBorderColor: 'var(--accent-green-dark)',
+      backgroundColor: 'var(--button-filled-bg)',
+      color: 'var(--text-primary)',
+      borderColor: 'var(--border)',
+      hoverBackgroundColor: 'var(--button-filled-hover)',
+      hoverBorderColor: 'var(--border-hover)',
       hoverShadow: 'var(--shadow-lg)'
     },
     secondary: {
-      backgroundColor: 'var(--surface)',
+      backgroundColor: 'var(--button-filled-bg)',
       color: 'var(--text-primary)',
       borderColor: 'var(--border)',
-      hoverBackgroundColor: 'var(--surface-hover)',
+      hoverBackgroundColor: 'var(--button-filled-hover)',
       hoverBorderColor: 'var(--border-hover)',
       hoverShadow: 'var(--shadow-lg)'
     },

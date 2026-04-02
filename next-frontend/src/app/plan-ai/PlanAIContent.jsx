@@ -235,10 +235,12 @@ const PlanAIContent = ({ tripId }) => {
             <button
               type="button"
               onClick={handleStartNewChat}
-              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-xs font-semibold text-white transition hover:opacity-90 sm:h-10 sm:rounded-xl sm:px-4 sm:text-sm"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition sm:h-10 sm:rounded-xl sm:px-4 sm:text-sm"
               style={{
-                backgroundColor: 'var(--accent-green)',
-                boxShadow: '0 10px 24px rgba(67, 160, 106, 0.22)'
+                backgroundColor: 'var(--button-filled-bg)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                boxShadow: 'var(--shadow)'
               }}
             >
               <Sparkles className="h-4 w-4" />

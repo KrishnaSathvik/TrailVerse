@@ -282,9 +282,12 @@ const PrivacyPage = () => {
         <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
-              style={{ backgroundColor: 'var(--accent-green)' }}
+              style={{
+                backgroundColor: 'var(--surface-active)',
+                border: '1px solid var(--border-hover)'
+              }}
             >
-              <Shield className="h-8 w-8 text-white" />
+              <Shield className="h-8 w-8" style={{ color: 'var(--text-primary)' }} />
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
               style={{ color: 'var(--text-primary)' }}
@@ -314,14 +317,14 @@ const PrivacyPage = () => {
           <div className="max-w-4xl mx-auto">
             <div className="rounded-2xl p-6 sm:p-8 backdrop-blur border-2"
               style={{
-                backgroundColor: 'var(--accent-green)/5',
-                borderColor: 'var(--accent-green)'
+                backgroundColor: 'var(--surface-active)',
+                borderColor: 'var(--border-hover)'
               }}
             >
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2"
                 style={{ color: 'var(--text-primary)' }}
               >
-                <Shield className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
+                <Shield className="h-6 w-6" style={{ color: 'var(--text-primary)' }} />
                 Privacy at a Glance
               </h2>
               <div className="grid md:grid-cols-3 gap-4 text-sm">
@@ -358,9 +361,12 @@ const PrivacyPage = () => {
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: 'var(--accent-green)/10' }}
+                      style={{
+                        backgroundColor: 'var(--surface-active)',
+                        border: '1px solid var(--border-hover)'
+                      }}
                     >
-                      <section.icon className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                      <section.icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                     </div>
                     <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                       {index + 1}. {section.title}
@@ -400,8 +406,9 @@ const PrivacyPage = () => {
                 href="mailto:trailverseteam@gmail.com"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition"
                 style={{
-                  backgroundColor: 'var(--accent-green)',
-                  color: 'white'
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)'
                 }}
               >
                 <Shield className="h-5 w-5" />
