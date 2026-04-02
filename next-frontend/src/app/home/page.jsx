@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -283,7 +283,7 @@ const DailyFeedPage = () => {
     return dailyFeedService.getDailyFeed(user._id, false);
   };
 
-  const { data: dailyFeed, isLoading, error } = useQuery({
+  const { data: dailyFeed, isLoading, error, refetch } = useQuery({
     queryKey: ['dailyFeed', new Date().toISOString().split('T')[0], user?._id || 'anonymous'],
     queryFn: fetchFeed,
     staleTime: 24 * 60 * 60 * 1000,
@@ -295,6 +295,17 @@ const DailyFeedPage = () => {
     retryDelay: 1000,
     enabled: !authLoading && userDataLoaded && isAuthenticated && !!user?._id,
   });
+
+  // Track how long we've been loading to show helpful messaging
+  const [loadingTooLong, setLoadingTooLong] = useState(false);
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingTooLong(false);
+      return;
+    }
+    const timer = setTimeout(() => setLoadingTooLong(true), 15000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const park = dailyFeed?.parkOfDay;
   const weather = dailyFeed?.rawWeatherData?.processedData?.current || dailyFeed?.rawWeatherData?.rawResponse?.current;
@@ -358,8 +369,21 @@ const DailyFeedPage = () => {
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
-            <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Generating your personalized daily feed…</p>
-            <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>Crafting insights & recommendations</p>
+            <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
+              {loadingTooLong ? 'Still working on it…' : 'Generating your personalized daily feed…'}
+            </p>
+            <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+              {loadingTooLong ? 'This is taking longer than usual. You can retry or wait.' : 'Crafting insights & recommendations'}
+            </p>
+            {loadingTooLong && (
+              <button
+                onClick={() => { refetch(); setLoadingTooLong(false); }}
+                className="mt-4 px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+              >
+                Retry
+              </button>
+            )}
           </div>
         </div>
         <Footer />

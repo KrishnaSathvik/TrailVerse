@@ -244,27 +244,40 @@ exports.getDailyFeed = async (req, res, next) => {
     const selectedPark = parkOfDay.value;
     
 
-    // Generate ALL AI-powered content
+    // Generate ALL AI-powered content with timeouts to prevent hanging
     console.log('🤖 Generating 100% AI-powered content...');
-    const [
-      natureFact,
-      weatherInsights,
-      quickStatsInsights,
-      skyDataInsights,
-      parkInfoInsights,
-      personalizedRecommendations,
-      skyInsights,
-      stargazingGuide
-    ] = await Promise.all([
-      getDailyNatureFact(selectedPark.parkCode, selectedPark.name),
-      getWeatherInsights(weatherData.value, selectedPark.name),
-      getAIQuickStatsInsights(selectedPark, weatherData.value, astroData.value),
-      getAISkyDataInsights(selectedPark, astroData.value, weatherData.value),
-      getAIParkInfoInsights(selectedPark, weatherData.value, astroData.value),
-      getPersonalizedRecommendations(user, selectedPark, weatherData.value, astroData.value),
-      getSkyInsights(astroData.value, selectedPark.name),
-      getStargazingGuide(astroData.value, selectedPark.name, weatherData.value)
+    const AI_TIMEOUT = 30000; // 30 second timeout per AI call
+    const withTimeout = (promise, label) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${AI_TIMEOUT / 1000}s`)), AI_TIMEOUT))
+      ]);
+
+    const aiResults = await Promise.allSettled([
+      withTimeout(getDailyNatureFact(selectedPark.parkCode, selectedPark.name), 'natureFact'),
+      withTimeout(getWeatherInsights(weatherData.value, selectedPark.name), 'weatherInsights'),
+      withTimeout(getAIQuickStatsInsights(selectedPark, weatherData.value, astroData.value), 'quickStatsInsights'),
+      withTimeout(getAISkyDataInsights(selectedPark, astroData.value, weatherData.value), 'skyDataInsights'),
+      withTimeout(getAIParkInfoInsights(selectedPark, weatherData.value, astroData.value), 'parkInfoInsights'),
+      withTimeout(getPersonalizedRecommendations(user, selectedPark, weatherData.value, astroData.value), 'personalizedRecommendations'),
+      withTimeout(getSkyInsights(astroData.value, selectedPark.name), 'skyInsights'),
+      withTimeout(getStargazingGuide(astroData.value, selectedPark.name, weatherData.value), 'stargazingGuide')
     ]);
+
+    const extractResult = (result, label) => {
+      if (result.status === 'fulfilled') return result.value;
+      console.warn(`⚠️ AI content "${label}" failed:`, result.reason?.message);
+      return null;
+    };
+
+    const natureFact = extractResult(aiResults[0], 'natureFact');
+    const weatherInsights = extractResult(aiResults[1], 'weatherInsights');
+    const quickStatsInsights = extractResult(aiResults[2], 'quickStatsInsights');
+    const skyDataInsights = extractResult(aiResults[3], 'skyDataInsights');
+    const parkInfoInsights = extractResult(aiResults[4], 'parkInfoInsights');
+    const personalizedRecommendations = extractResult(aiResults[5], 'personalizedRecommendations');
+    const skyInsights = extractResult(aiResults[6], 'skyInsights');
+    const stargazingGuide = extractResult(aiResults[7], 'stargazingGuide');
 
     // Get recent parks for memory tracking
     const targetDate = new Date(todayDate);
