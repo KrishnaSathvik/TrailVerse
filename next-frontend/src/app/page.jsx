@@ -238,7 +238,7 @@ const LandingPage = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setSearchFocused(true)}
                     placeholder="Search parks, monuments, historic sites..."
-                    className="w-full bg-transparent border-none ring-0 focus:ring-0 outline-none focus:outline-none shadow-none text-white font-medium placeholder-white/50 text-base sm:text-lg py-4 sm:py-5 px-4"
+                    className="flex-1 min-w-0 bg-transparent border-none ring-0 focus:ring-0 outline-none focus:outline-none shadow-none text-white font-medium placeholder-white/50 text-base sm:text-lg py-4 sm:py-5 px-4"
                     id="hero-search"
                     autoComplete="off"
                   />
@@ -246,10 +246,11 @@ const LandingPage = () => {
                     <button
                       type="button"
                       onClick={() => { setSearchQuery(''); document.getElementById('hero-search')?.focus(); }}
-                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/15 hover:bg-white/30"
+                      className="flex-shrink-0 mr-1 w-8 h-8 rounded-full transition-colors"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       aria-label="Clear search"
                     >
-                      <X className="h-4 w-4 text-white" weight="bold" />
+                      <X className="h-4 w-4" style={{ color: '#ffffff' }} />
                     </button>
                   )}
                   <button
