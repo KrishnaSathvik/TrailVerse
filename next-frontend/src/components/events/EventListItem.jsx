@@ -30,12 +30,9 @@ const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isS
     >
       <div className="flex items-start gap-4">
         {/* Date - compact calendar badge */}
-        <div className="w-16 h-16 flex-shrink-0 flex flex-col items-center justify-center rounded-xl bg-white text-center shadow-lg">
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 leading-none">
-            {eventDate.toLocaleDateString('en-US', { month: 'short' })}
-          </span>
-          <span className="text-xl font-bold text-gray-900 leading-tight mt-0.5">
-            {eventDate.getDate()}
+        <div className="h-16 flex-shrink-0 flex items-center justify-center rounded-xl bg-white px-4 text-center shadow-lg">
+          <span className="text-sm font-bold uppercase tracking-[0.14em] text-gray-900 leading-none whitespace-nowrap">
+            {eventDate.toLocaleDateString('en-US', { month: 'short' })} {eventDate.getDate()}
           </span>
         </div>
 
