@@ -35,7 +35,7 @@ const LandingPage = () => {
   const searchRef = useRef(null);
 
   // Fetch daily feed (for unauthenticated or quick preview)
-  const { data: dailyFeed } = useQuery({
+  const { data: dailyFeed, isLoading: isDailyFeedLoading } = useQuery({
     queryKey: ['landingDailyFeed'],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
@@ -47,7 +47,7 @@ const LandingPage = () => {
         if (cached) return JSON.parse(cached);
       } catch (e) { /* ignore parse errors */ }
 
-      // If no local cache, fetch from network securely
+      // If no local cache, fetch park data first then nature fact in parallel where possible
       const parkData = await dailyFeedService.getParkOfDay().catch(() => null);
       if (!parkData) return null;
 
@@ -494,7 +494,8 @@ const LandingPage = () => {
       {/* ═══════════════════════════════════════════════════════
           DAILY FEED FEATURE — Public Inspiration
           ═══════════════════════════════════════════════════════ */}
-      {dailyFeed?.parkOfDay && dailyFeed?.natureFact && (
+      {/* Daily Feed: show skeleton while loading, full content when ready */}
+      {(isDailyFeedLoading || (dailyFeed?.parkOfDay && dailyFeed?.natureFact)) && (
         <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-[92rem] mx-auto">
             <div className="flex items-end justify-between mb-10">
@@ -521,6 +522,7 @@ const LandingPage = () => {
               </div>
             </div>
 
+            {dailyFeed?.parkOfDay && dailyFeed?.natureFact ? (
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch">
               <Link
                 href={`/parks/${dailyFeed.parkOfDay.parkCode}`}
@@ -601,6 +603,38 @@ const LandingPage = () => {
                 </div>
               </div>
             </div>
+            ) : (
+            /* Skeleton loader while daily feed is loading */
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch animate-pulse">
+              <div
+                className="relative rounded-2xl overflow-hidden"
+                style={{ minHeight: '28rem', backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <div className="absolute top-5 left-5 sm:top-6 sm:left-6 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                  <Sparkles className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <span className="text-xs font-bold tracking-wide" style={{ color: 'var(--text-tertiary)' }}>PARK OF THE DAY</span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                  <div className="h-3 w-24 rounded-full mb-4" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-7 w-72 rounded-full mb-3" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-4 w-96 max-w-full rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                </div>
+              </div>
+
+              <div
+                className="rounded-2xl p-6 sm:p-8"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <div className="h-7 w-32 rounded-full mb-5" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                <div className="space-y-3 mb-8">
+                  <div className="h-5 w-full rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-5 w-full rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-5 w-3/4 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                </div>
+                <div className="h-12 w-48 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }} />
+              </div>
+            </div>
+            )}
           </div>
         </section>
       )}
