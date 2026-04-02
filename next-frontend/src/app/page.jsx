@@ -18,7 +18,7 @@ import { handleApiError, fallbackData } from '@/utils/errorHandler';
 import {
   Compass, Mountain, Sparkles, Clock, Shield,
   MapPin, Calendar, Heart, Camera, BookOpen, Route,
-  Star, Eye, Search, ArrowRight, Map, Trees, Landmark, ChevronRight
+  Star, Eye, Search, ArrowRight, Map, Trees, Landmark, ChevronRight, X
 } from '@components/icons';
 
 const LandingPage = () => {
@@ -242,6 +242,16 @@ const LandingPage = () => {
                     id="hero-search"
                     autoComplete="off"
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchQuery(''); document.getElementById('hero-search')?.focus(); }}
+                      className="flex-shrink-0 p-1.5 rounded-full transition-colors hover:bg-white/20"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-5 w-5 text-white/70" />
+                    </button>
+                  )}
                   <button
                     type="submit"
                     className="mr-2 px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-shrink-0 flex items-center gap-2 hover:scale-105"
