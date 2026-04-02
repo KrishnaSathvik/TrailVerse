@@ -44,7 +44,7 @@ const AboutPage = () => {
     {
       icon: Instagram,
       label: "Instagram",
-      url: "https://www.instagram.com/astrobykrishna/",
+      url: "https://instagram.com/astrobykrishna",
       description: "@astrobykrishna"
     },
     {
