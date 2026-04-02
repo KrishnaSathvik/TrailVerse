@@ -225,7 +225,7 @@ const LandingPage = () => {
             <div ref={searchRef} className="relative z-30 w-full max-w-3xl mx-auto mb-10">
               <form onSubmit={handleSearchSubmit} className="relative z-20">
                 <div
-                  className="flex items-center rounded-[2rem] overflow-hidden backdrop-blur-md transition-all duration-300 group shadow-2xl"
+                  className="relative flex items-center rounded-[2rem] overflow-hidden backdrop-blur-md transition-all duration-300 group shadow-2xl"
                   style={{
                     backgroundColor: searchFocused ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
                     border: searchFocused ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.15)'
@@ -241,17 +241,36 @@ const LandingPage = () => {
                     className="flex-1 min-w-0 bg-transparent border-none ring-0 focus:ring-0 outline-none focus:outline-none shadow-none text-white font-medium placeholder-white/50 text-base sm:text-lg py-4 sm:py-5 px-4"
                     id="hero-search"
                     autoComplete="off"
+                    style={{ paddingRight: searchQuery ? '3rem' : '1rem' }}
                   />
+                  {/* Clear button — absolutely positioned so global button * pointer-events:none doesn't block it */}
                   {searchQuery && (
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => { setSearchQuery(''); document.getElementById('hero-search')?.focus(); }}
-                      className="flex-shrink-0 mr-1 w-8 h-8 rounded-full transition-colors"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { setSearchQuery(''); document.getElementById('hero-search')?.focus(); } }}
                       aria-label="Clear search"
+                      style={{
+                        position: 'absolute',
+                        right: '7.5rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 10,
+                      }}
                     >
-                      <X className="h-4 w-4" style={{ color: '#ffffff' }} />
-                    </button>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 3L3 11M3 3L11 11" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </div>
                   )}
                   <button
                     type="submit"
