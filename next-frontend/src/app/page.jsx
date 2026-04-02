@@ -8,6 +8,7 @@ import Footer from '@/components/common/Footer';
 
 import Button from '@/components/common/Button';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import SearchBar from '@/components/explore/SearchBar';
 import TestimonialsSection from '@/components/testimonials/TestimonialsSection';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -35,7 +36,7 @@ const LandingPage = () => {
   const searchRef = useRef(null);
 
   // Fetch daily feed (for unauthenticated or quick preview)
-  const { data: dailyFeed } = useQuery({
+  const { data: dailyFeed, isLoading: isDailyFeedLoading } = useQuery({
     queryKey: ['landingDailyFeed'],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
@@ -47,7 +48,7 @@ const LandingPage = () => {
         if (cached) return JSON.parse(cached);
       } catch (e) { /* ignore parse errors */ }
 
-      // If no local cache, fetch from network securely
+      // If no local cache, fetch park data first then nature fact in parallel where possible
       const parkData = await dailyFeedService.getParkOfDay().catch(() => null);
       if (!parkData) return null;
 
@@ -223,38 +224,16 @@ const LandingPage = () => {
 
             {/* ──── HERO SEARCH BAR ──── */}
             <div ref={searchRef} className="relative z-30 w-full max-w-3xl mx-auto mb-10">
-              <form onSubmit={handleSearchSubmit} className="relative z-20">
-                <div
-                  className="flex items-center rounded-[2rem] overflow-hidden backdrop-blur-md transition-all duration-300 group shadow-2xl"
-                  style={{
-                    backgroundColor: searchFocused ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
-                    border: searchFocused ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.15)'
-                  }}
-                >
-                  <Search className="h-6 w-6 text-white/70 ml-6 flex-shrink-0" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setSearchFocused(true)}
-                    placeholder="Search parks, monuments, historic sites..."
-                    className="w-full bg-transparent border-none ring-0 focus:ring-0 outline-none focus:outline-none shadow-none text-white font-medium placeholder-white/50 text-base sm:text-lg py-4 sm:py-5 px-4"
-                    id="hero-search"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="submit"
-                    className="mr-2 px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 flex-shrink-0 flex items-center gap-2 hover:scale-105"
-                    style={{
-                      backgroundColor: 'var(--accent-green)',
-                      color: 'white',
-                    }}
-                  >
-                    <span className="hidden sm:inline">Explore</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                </div>
-              </form>
+              <div
+                onFocus={() => setSearchFocused(true)}
+              >
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(val) => setSearchQuery(val)}
+                  onClear={() => setSearchQuery('')}
+                  placeholder="Search parks, monuments, historic sites..."
+                />
+              </div>
 
               {/* Search Results Dropdown */}
               {searchFocused && searchQuery.trim() && (
@@ -494,7 +473,8 @@ const LandingPage = () => {
       {/* ═══════════════════════════════════════════════════════
           DAILY FEED FEATURE — Public Inspiration
           ═══════════════════════════════════════════════════════ */}
-      {dailyFeed?.parkOfDay && dailyFeed?.natureFact && (
+      {/* Daily Feed: show skeleton while loading, full content when ready */}
+      {(isDailyFeedLoading || (dailyFeed?.parkOfDay && dailyFeed?.natureFact)) && (
         <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-[92rem] mx-auto">
             <div className="flex items-end justify-between mb-10">
@@ -521,6 +501,7 @@ const LandingPage = () => {
               </div>
             </div>
 
+            {dailyFeed?.parkOfDay && dailyFeed?.natureFact ? (
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch">
               <Link
                 href={`/parks/${dailyFeed.parkOfDay.parkCode}`}
@@ -601,6 +582,38 @@ const LandingPage = () => {
                 </div>
               </div>
             </div>
+            ) : (
+            /* Skeleton loader while daily feed is loading */
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch animate-pulse">
+              <div
+                className="relative rounded-2xl overflow-hidden"
+                style={{ minHeight: '28rem', backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <div className="absolute top-5 left-5 sm:top-6 sm:left-6 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                  <Sparkles className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                  <span className="text-xs font-bold tracking-wide" style={{ color: 'var(--text-tertiary)' }}>PARK OF THE DAY</span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                  <div className="h-3 w-24 rounded-full mb-4" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-7 w-72 rounded-full mb-3" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-4 w-96 max-w-full rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                </div>
+              </div>
+
+              <div
+                className="rounded-2xl p-6 sm:p-8"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <div className="h-7 w-32 rounded-full mb-5" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                <div className="space-y-3 mb-8">
+                  <div className="h-5 w-full rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-5 w-full rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                  <div className="h-5 w-3/4 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                </div>
+                <div className="h-12 w-48 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }} />
+              </div>
+            </div>
+            )}
           </div>
         </section>
       )}

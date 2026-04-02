@@ -28,12 +28,12 @@ const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isS
         borderColor: 'var(--border)'
       }}
     >
-      <div className="flex gap-4">
-        {/* Date */}
-        <div className="flex min-h-11 flex-shrink-0 items-center justify-center rounded-xl bg-white px-3 py-2 text-center shadow-lg">
-          <div className="text-sm font-bold uppercase leading-none tracking-[0.14em] text-gray-900">
+      <div className="flex items-start gap-4">
+        {/* Date - compact calendar badge */}
+        <div className="h-16 flex-shrink-0 flex items-center justify-center rounded-xl bg-white px-4 text-center shadow-lg">
+          <span className="text-sm font-bold uppercase tracking-[0.14em] text-gray-900 leading-none whitespace-nowrap">
             {eventDate.toLocaleDateString('en-US', { month: 'short' })} {eventDate.getDate()}
-          </div>
+          </span>
         </div>
 
         {/* Content */}
