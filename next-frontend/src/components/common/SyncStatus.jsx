@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, RefreshCw } from '@components/icons';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -110,4 +112,3 @@ const SyncStatus = () => {
 };
 
 export default SyncStatus;
-

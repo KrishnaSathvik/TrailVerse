@@ -106,6 +106,8 @@ export { EnvelopeSimpleIcon as Mail } from '@phosphor-icons/react';
 export { PhoneIcon as Phone } from '@phosphor-icons/react';
 export { InstagramLogoIcon as Instagram } from '@phosphor-icons/react';
 export { FacebookLogoIcon as Facebook } from '@phosphor-icons/react';
+export { PinterestLogoIcon as Pinterest } from '@phosphor-icons/react';
+export { GoogleLogoIcon as Google } from '@phosphor-icons/react';
 export { XLogoIcon as Twitter } from '@phosphor-icons/react';
 
 // Weather

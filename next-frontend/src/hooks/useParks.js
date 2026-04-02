@@ -8,7 +8,7 @@ const ALL_PARKS_CACHE_TIME_KEY = `trailverse_all_parks_time_${ALL_PARKS_CACHE_VE
 const PARKS_QUERY_VERSION = 'v2';
 
 // Hook for paginated parks (default behavior - fetches one page at a time)
-export const useParks = (page = 1, limit = 12, nationalParksOnly = true) => {
+export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initialData = null) => {
   return useQuery({
     queryKey: ['parks', PARKS_QUERY_VERSION, page, limit, nationalParksOnly],
     queryFn: async () => {
@@ -46,12 +46,13 @@ export const useParks = (page = 1, limit = 12, nationalParksOnly = true) => {
     refetchOnMount: false, // Don't refetch when component mounts if data is fresh
     retry: 2, // Retry failed requests only 2 times
     placeholderData: keepPreviousData, // Keep previous data while fetching new page (smooth UX)
+    initialData,
   });
 };
 
 
 // Hook to fetch ALL parks (for filtering/searching on client side)
-export const useAllParks = () => {
+export const useAllParks = (initialData = null) => {
   return useQuery({
     queryKey: ['parks', PARKS_QUERY_VERSION, 'all'],
     queryFn: async () => {
@@ -83,6 +84,7 @@ export const useAllParks = () => {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 2,
+    initialData,
   });
 };
 

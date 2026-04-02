@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useMemo } from 'react';
 
 // Normalize image URL - convert HTTP to HTTPS and handle relative paths

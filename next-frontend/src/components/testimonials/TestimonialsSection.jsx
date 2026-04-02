@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Star, Quote, MapPin, Award, ChevronLeft, ChevronRight } from '@components/icons';
 import testimonialService from '../../services/testimonialService';
