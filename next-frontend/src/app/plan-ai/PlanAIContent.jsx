@@ -207,7 +207,7 @@ const PlanAIContent = ({ tripId }) => {
 
   const effectiveFormData = chatFormData || defaultFormData;
   const effectiveParkName = selectedParkName || '';
-  const effectiveIsNewChat = isNewChat || !chatFormData?.parkCode;
+  const effectiveIsNewChat = tripId ? false : (isNewChat || !chatFormData?.parkCode);
 
   const handleQuickFillApply = (data) => {
     setFormData(data);
