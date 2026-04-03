@@ -693,15 +693,20 @@ const TripPlannerChat = ({
 
   // Initialize chat after providers are loaded
   useEffect(() => {
-    console.log('🔄 Chat initialization useEffect triggered:', { 
-      isStartingFresh, 
-      providersLoaded, 
-      existingTripId 
+    console.log('🔄 Chat initialization useEffect triggered:', {
+      isStartingFresh,
+      providersLoaded,
+      existingTripId,
+      isNewChat,
+      isPersonalized
     });
-    
+
     // Don't initialize if we're starting a fresh conversation
     if (isStartingFresh) return;
-    
+
+    // Skip restoration when explicitly starting a new chat or personalized session
+    if (isNewChat || isPersonalized) return;
+
     if (providersLoaded) {
       if (existingTripId) {
         console.log('🔄 Loading existing trip from URL:', existingTripId);
@@ -724,7 +729,7 @@ const TripPlannerChat = ({
         showWelcomeMessage();
       }
     }
-  }, [providersLoaded, existingTripId, isStartingFresh]);
+  }, [providersLoaded, existingTripId, isStartingFresh, isNewChat, isPersonalized]);
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || isGenerating) return;
@@ -839,19 +844,8 @@ const TripPlannerChat = ({
       } else {
         // Use streaming for authenticated users
         let streamedContent = '';
+        let streamStarted = false;
         streamAssistantId = Date.now() + 1;
-
-        // Add empty assistant message that will be filled by streaming
-        setMessages(prev => [...prev, {
-          id: streamAssistantId,
-          role: 'assistant',
-          content: '',
-          timestamp: new Date(),
-          provider: selectedProvider,
-          isStreaming: true
-        }]);
-
-        setIsGenerating(false); // Hide typing indicator, show streaming message instead
 
         try {
           await aiService.chatStream({
@@ -872,11 +866,25 @@ const TripPlannerChat = ({
             onChunk: (chunk) => {
               streamedContent += chunk;
               const currentContent = streamedContent;
-              setMessages(prev => prev.map(m =>
-                m.id === streamAssistantId
-                  ? { ...m, content: currentContent }
-                  : m
-              ));
+              if (!streamStarted) {
+                // Add assistant message on first chunk so no empty bubble shows
+                streamStarted = true;
+                setIsGenerating(false);
+                setMessages(prev => [...prev, {
+                  id: streamAssistantId,
+                  role: 'assistant',
+                  content: currentContent,
+                  timestamp: new Date(),
+                  provider: selectedProvider,
+                  isStreaming: true
+                }]);
+              } else {
+                setMessages(prev => prev.map(m =>
+                  m.id === streamAssistantId
+                    ? { ...m, content: currentContent }
+                    : m
+                ));
+              }
             },
             onDone: (result) => {
               data = {
