@@ -2,6 +2,7 @@ import React, { memo, useCallback, useMemo } from 'react';
 // import { Link } from 'react-router-dom';
 import { MapPin, Clock, Users, ExternalLink, Heart, HeartOff } from '@components/icons';
 import Button from '../common/Button';
+import { htmlToPlainText } from '../../utils/htmlUtils';
 
 const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved = false }) => {
   const category = useMemo(() => categories?.find(c => c.id === event.category), [categories, event.category]);
@@ -86,7 +87,7 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
         <p className="text-sm mb-4 line-clamp-2"
           style={{ color: 'var(--text-secondary)' }}
         >
-          {event.description}
+          {htmlToPlainText(event.description)}
         </p>
 
         <div className="space-y-2 mb-4">

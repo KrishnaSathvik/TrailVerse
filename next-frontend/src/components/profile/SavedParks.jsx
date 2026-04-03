@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { MapPin, Heart, Calendar } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 import { useAllParks } from '../../hooks/useParks';
+import { htmlToPlainText } from '../../utils/htmlUtils';
 
 const SavedParks = ({ savedParks, onRemove }) => {
   const { data: allParksData } = useAllParks();
@@ -105,7 +106,7 @@ const SavedParks = ({ savedParks, onRemove }) => {
 
               {description && (
                 <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--text-secondary)' }}>
-                  {description}
+                  {htmlToPlainText(description)}
                 </p>
               )}
 

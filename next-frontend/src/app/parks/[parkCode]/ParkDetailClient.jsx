@@ -12,7 +12,7 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useVisitedParks } from '@/hooks/useVisitedParks';
 import { logParkView, logUserAction } from '@/utils/analytics';
-import { processHtmlContent } from '@/utils/htmlUtils';
+import { processHtmlContent, htmlToPlainText } from '@/utils/htmlUtils';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
@@ -609,9 +609,9 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                       </h2>
                       <p className="text-base leading-relaxed mb-6"
                         style={{ color: 'var(--text-secondary)' }}
-                      >
-                        {park.description}
-                      </p>
+                        dangerouslySetInnerHTML={{ __html: processHtmlContent(park.description) }}
+                      />
+
 
                       {park.weatherInfo && (
                         <div className="mt-8">
@@ -622,9 +622,8 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           </h3>
                           <p className="text-base leading-relaxed"
                             style={{ color: 'var(--text-secondary)' }}
-                          >
-                            {park.weatherInfo}
-                          </p>
+                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.weatherInfo) }}
+                          />
                         </div>
                       )}
 
@@ -637,9 +636,8 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           </h3>
                           <p className="text-base leading-relaxed"
                             style={{ color: 'var(--text-secondary)' }}
-                          >
-                            {park.directionsInfo}
-                          </p>
+                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.directionsInfo) }}
+                          />
                           {park.latitude && park.longitude && (
                             <Button
                               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(park.fullName)}`}
@@ -819,7 +817,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                               <p className="text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
-                                {campground.description}
+                                {htmlToPlainText(campground.description)}
                               </p>
                             </div>
                           ))}
@@ -1091,7 +1089,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                               <p className="text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
-                                {place.listingDescription || place.bodyText?.substring(0, 300)}
+                                {htmlToPlainText(place.listingDescription || place.bodyText)?.substring(0, 300)}
                               </p>
                             </div>
                           ))}
@@ -1137,7 +1135,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                               <p className="text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
-                                {tour.description?.substring(0, 400)}
+                                {htmlToPlainText(tour.description)?.substring(0, 400)}
                               </p>
                               {tour.duration && (
                                 <div className="flex items-center gap-1.5 text-sm mt-3"
@@ -1177,7 +1175,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                             </p>
                                           )}
                                           <p className="text-sm" style={{ color: stop.title ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-                                            {stop.significance?.substring(0, 200) || stop.description?.substring(0, 200) || stop.assetName || 'Stop details not available'}
+                                            {htmlToPlainText(stop.significance)?.substring(0, 200) || htmlToPlainText(stop.description)?.substring(0, 200) || stop.assetName || 'Stop details not available'}
                                           </p>
                                         </div>
                                       </div>
@@ -1246,7 +1244,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                   <p className="text-sm mb-3"
                                     style={{ color: 'var(--text-secondary)' }}
                                   >
-                                    {lot.description}
+                                    {htmlToPlainText(lot.description)}
                                   </p>
                                 )}
                                 <div className="flex flex-wrap items-center gap-3 mt-3">

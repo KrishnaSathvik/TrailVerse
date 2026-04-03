@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { MapPin, Star, Heart, ExternalLink } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 import { useParkRatings } from '../../hooks/useParkRatings';
+import { htmlToPlainText } from '../../utils/htmlUtils';
 
 const ParkCard = memo(({ park, onSave, isSaved = false }) => {
   const { data: parkRatings } = useParkRatings();
@@ -66,7 +67,7 @@ const ParkCard = memo(({ park, onSave, isSaved = false }) => {
         <p className="text-sm mb-4 line-clamp-2"
           style={{ color: 'var(--text-secondary)' }}
         >
-          {park.description}
+          {htmlToPlainText(park.description)}
         </p>
 
         <div className="flex items-center justify-between">

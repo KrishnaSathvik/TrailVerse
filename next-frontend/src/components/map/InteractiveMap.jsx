@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Navigation, ZoomIn, ZoomOut } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
+import { htmlToPlainText } from '../../utils/htmlUtils';
 import 'leaflet/dist/leaflet.css';
 
 // Custom marker icon
@@ -89,7 +90,7 @@ const InteractiveMap = ({
               <div className="p-2">
                 <h3 className="font-bold text-base mb-2">{park.fullName}</h3>
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                  {park.description}
+                  {htmlToPlainText(park.description)}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <MapPin className="h-3 w-3" />
