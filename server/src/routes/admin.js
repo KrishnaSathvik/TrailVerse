@@ -1,12 +1,14 @@
 const express = require('express');
 const { protect, admin } = require('../middleware/auth');
-const { 
-  getStats, 
-  getRecentActivity, 
-  getUsers, 
-  getUser, 
-  updateUser, 
-  deleteUser, 
+const {
+  getStats,
+  getUserGrowth,
+  getAIStats,
+  getRecentActivity,
+  getUsers,
+  getUser,
+  updateUser,
+  deleteUser,
   bulkActionUsers,
   getSettings,
   updateSettings,
@@ -24,6 +26,16 @@ router.use(admin);
 // @desc    Get admin dashboard statistics
 // @access  Admin only
 router.get('/stats', getStats);
+
+// @route   GET /api/admin/user-growth
+// @desc    Get daily user signups for last 30 days
+// @access  Admin only
+router.get('/user-growth', getUserGrowth);
+
+// @route   GET /api/admin/ai-stats
+// @desc    Get AI chat analytics summary
+// @access  Admin only
+router.get('/ai-stats', getAIStats);
 
 // @route   GET /api/admin/recent-activity
 // @desc    Get recent admin activity

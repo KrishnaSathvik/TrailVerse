@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const BlogPost = require('../models/BlogPost');
 const TripPlan = require('../models/TripPlan');
+const Conversation = require('../models/Conversation');
+const Feedback = require('../models/Feedback');
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
@@ -53,6 +55,90 @@ exports.getStats = async (req, res, next) => {
     
     console.log('Sending stats response:', responseData);
     res.status(200).json(responseData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get daily user signups for sparkline (last 30 days)
+// @route   GET /api/admin/user-growth
+// @access  Admin only
+exports.getUserGrowth = async (req, res, next) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const dailySignups = await User.aggregate([
+      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Fill in missing days with 0
+    const result = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const found = dailySignups.find(d => d._id === dateStr);
+      result.push({ date: dateStr, count: found ? found.count : 0 });
+    }
+
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get AI chat analytics summary for admin dashboard
+// @route   GET /api/admin/ai-stats
+// @access  Admin only
+exports.getAIStats = async (req, res, next) => {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [totalConversations, recentConversations, totalFeedback, positiveFeedback, topParks] = await Promise.all([
+      TripPlan.countDocuments(),
+      TripPlan.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      Feedback.countDocuments(),
+      Feedback.countDocuments({ feedback: 'up' }),
+      TripPlan.aggregate([
+        { $match: { parkCode: { $ne: null, $ne: '' } } },
+        { $group: { _id: '$parkCode', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ])
+    ]);
+
+    // Average messages per conversation
+    const avgMessages = await TripPlan.aggregate([
+      { $match: { 'conversation.0': { $exists: true } } },
+      { $project: { msgCount: { $size: '$conversation' } } },
+      { $group: { _id: null, avg: { $avg: '$msgCount' } } }
+    ]);
+
+    const satisfactionRate = totalFeedback > 0
+      ? Math.round((positiveFeedback / totalFeedback) * 100)
+      : null;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalConversations,
+        recentConversations,
+        avgMessagesPerChat: avgMessages[0]?.avg ? Math.round(avgMessages[0].avg * 10) / 10 : 0,
+        satisfactionRate,
+        totalFeedback,
+        topParks: topParks.map(p => ({ parkCode: p._id, count: p.count }))
+      }
+    });
   } catch (error) {
     next(error);
   }
