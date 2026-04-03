@@ -8,6 +8,19 @@ export const metadata = {
   title: 'About Krishna — The Story Behind TrailVerse',
   description:
     'TrailVerse was built by Krishna, a traveler who visited 17+ national parks across 23 states. Learn the story behind the platform and the experience that shaped it.',
+  openGraph: {
+    title: 'About Krishna — The Story Behind TrailVerse',
+    description: 'TrailVerse was built by Krishna, a traveler who visited 17+ national parks across 23 states. Learn the story behind the platform.',
+    url: 'https://www.nationalparksexplorerusa.com/about',
+    type: 'website',
+    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse — About' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Krishna — The Story Behind TrailVerse',
+    description: 'TrailVerse was built by Krishna, a traveler who visited 17+ national parks across 23 states.',
+    images: ['/og-image-trailverse.jpg'],
+  },
 };
 
 const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'trailverseteam@gmail.com';
