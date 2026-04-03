@@ -24,11 +24,9 @@ import {
   LogOut,
   Zap,
   RefreshCw,
-  AlertCircle,
-  Sparkles,
-  TrendingUp,
-  ThumbsUp
+  AlertCircle
 } from '@components/icons';
+import { Sparkle, TrendUp, ThumbsUp } from '@phosphor-icons/react';
 
 const initialStats = {
   totalUsers: 0,
@@ -373,7 +371,7 @@ const AdminDashboard = () => {
                       className="h-11 w-11 rounded-xl flex items-center justify-center"
                       style={{ backgroundColor: 'var(--surface-hover)' }}
                     >
-                      <TrendingUp className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      <TrendUp className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                     </div>
                     <div>
                       <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>User Signups</h3>
@@ -411,7 +409,7 @@ const AdminDashboard = () => {
                     className="h-11 w-11 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: 'var(--surface-hover)' }}
                   >
-                    <Sparkles className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                    <Sparkle className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                   </div>
                   <div>
                     <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>AI Chat Analytics</h3>
