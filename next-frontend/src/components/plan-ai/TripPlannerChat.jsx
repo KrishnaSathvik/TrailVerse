@@ -705,7 +705,8 @@ const TripPlannerChat = ({
     if (isStartingFresh) return;
 
     // Skip restoration when explicitly starting a new chat or personalized session
-    if (isNewChat || isPersonalized) return;
+    // BUT still load if there's an existingTripId (loading from chat history)
+    if ((isNewChat || isPersonalized) && !existingTripId) return;
 
     if (providersLoaded) {
       if (existingTripId) {
