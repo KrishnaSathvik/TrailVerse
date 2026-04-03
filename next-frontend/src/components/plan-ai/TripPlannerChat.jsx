@@ -1050,9 +1050,15 @@ const TripPlannerChat = ({
         errorMessage = 'AI provider configuration error';
         assistantMessage = `**Configuration Error**\n\n${details}\n\nPlease check your API configuration or try switching providers.`;
       } else if (errorStatus === 401 || errorStatus === 403) {
-        // Authentication error
-        errorMessage = 'AI provider authentication failed';
-        assistantMessage = `**Authentication Error**\n\nUnable to authenticate with the AI provider. Please check API key configuration.`;
+        // Authentication error - check if it's a session expiration vs AI provider issue
+        const errMsg = errorDetails?.error || error.message || '';
+        if (errMsg.includes('Not authorized') || errMsg.includes('token') || errMsg.includes('expired') || errMsg.includes('log in')) {
+          errorMessage = 'Session expired';
+          assistantMessage = `**Session Expired**\n\nYour login session has expired. Please refresh the page and log in again to continue chatting.`;
+        } else {
+          errorMessage = 'AI provider authentication failed';
+          assistantMessage = `**Authentication Error**\n\nUnable to authenticate with the AI provider. Please check API key configuration.`;
+        }
       } else if (errorStatus === 500 || errorStatus === 503) {
         // Server/provider error
         const details = errorDetails?.error || errorDetails?.details || 'The AI provider is temporarily unavailable';

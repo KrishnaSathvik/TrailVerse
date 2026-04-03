@@ -123,7 +123,11 @@ class AIService {
 
     if (!response.ok) {
       const errBody = await response.text();
-      throw new Error(errBody || `Stream request failed with status ${response.status}`);
+      let parsed;
+      try { parsed = JSON.parse(errBody); } catch { parsed = null; }
+      const err = new Error(parsed?.error || errBody || `Stream request failed with status ${response.status}`);
+      err.response = { status: response.status, data: parsed || { error: errBody } };
+      throw err;
     }
 
     const reader = response.body.getReader();
