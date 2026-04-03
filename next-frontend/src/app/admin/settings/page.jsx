@@ -123,7 +123,7 @@ const AdminSettingsPage = () => {
             borderColor: 'var(--border)'
           }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Link
@@ -179,14 +179,14 @@ const AdminSettingsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar */}
             <div className="lg:col-span-1">
-              <div className="rounded-2xl p-6 backdrop-blur sticky top-24"
+              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur sticky top-24"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)'
                 }}
               >
-                <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                <h3 className="hidden lg:block text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                   Settings Categories
                 </h3>
                 <nav className="flex overflow-x-auto gap-2 lg:flex-col lg:overflow-x-visible">
@@ -216,7 +216,7 @@ const AdminSettingsPage = () => {
 
             {/* Main Content */}
             <div className="lg:col-span-3">
-              <div className="rounded-2xl p-6 backdrop-blur"
+              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',

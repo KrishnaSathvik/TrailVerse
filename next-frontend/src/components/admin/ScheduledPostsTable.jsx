@@ -23,7 +23,7 @@ const ScheduledPostsTable = ({
   });
 
   return (
-    <div className="rounded-2xl p-6 backdrop-blur"
+    <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
@@ -60,10 +60,10 @@ const ScheduledPostsTable = ({
         <table className="w-full">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Title</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Scheduled Date</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Status</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+              <th className="text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Title</th>
+              <th className="hidden sm:table-cell text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Scheduled Date</th>
+              <th className="text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Status</th>
+              <th className="text-right py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -71,21 +71,21 @@ const ScheduledPostsTable = ({
               const scheduledStatus = getScheduledStatus(post.scheduledAt);
               return (
                 <tr key={post._id} className="border-b hover:bg-white/5 transition" style={{ borderColor: 'var(--border)' }}>
-                  <td className="py-4 px-4">
-                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
+                    <p className="font-semibold truncate max-w-[200px] sm:max-w-none" style={{ color: 'var(--text-primary)' }}>
                       {post.title}
                     </p>
                     <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                       Created: {formatDate(post.createdAt)}
                     </p>
                   </td>
-                  <td className="py-4 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       {post.scheduledAt ? formatDateTime(post.scheduledAt) : 'Not set'}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       scheduledStatus.status === 'overdue'
                         ? 'bg-red-500/20 text-red-400'
@@ -99,7 +99,7 @@ const ScheduledPostsTable = ({
                       {scheduledStatus.label}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
                     <div className="flex items-center justify-end gap-2">
                       {scheduledStatus.status === 'overdue' && (
                         <button

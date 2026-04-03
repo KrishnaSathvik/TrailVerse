@@ -135,7 +135,7 @@ const TestimonialsManagement = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="text-xl sm:text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
             Testimonials Management
           </h2>
           <p style={{ color: 'var(--text-secondary)' }}>
@@ -166,7 +166,7 @@ const TestimonialsManagement = () => {
             />
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {['all', 'pending', 'approved', 'featured'].map((filterType) => (
             <button
               key={filterType}
@@ -199,7 +199,7 @@ const TestimonialsManagement = () => {
           filteredTestimonials.map((testimonial) => (
             <div
               key={testimonial._id}
-              className="p-6 rounded-xl border"
+              className="p-4 sm:p-6 rounded-xl border"
               style={{
                 backgroundColor: 'var(--surface)',
                 borderColor: 'var(--border)'
@@ -225,7 +225,7 @@ const TestimonialsManagement = () => {
                     {getStatusBadge(testimonial)}
                   </div>
 
-                  <div className="flex items-center gap-4 mb-3">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3">
                     <div className="flex items-center gap-1">
                       {renderStars(testimonial.rating)}
                     </div>
@@ -313,11 +313,11 @@ const TestimonialsManagement = () => {
       {/* Modal for detailed view */}
       {showModal && selectedTestimonial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div 
-            className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          <div
+            className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto"
             style={{ backgroundColor: 'var(--surface)' }}
           >
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                   Testimonial Details

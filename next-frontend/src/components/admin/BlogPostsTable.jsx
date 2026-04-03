@@ -18,7 +18,7 @@ const BlogPostsTable = ({
   const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
 
   return (
-    <div className="rounded-2xl p-6 backdrop-blur"
+    <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
@@ -43,11 +43,11 @@ const BlogPostsTable = ({
         <table className="w-full">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Title</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Author</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Status</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Views</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+              <th className="text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Title</th>
+              <th className="hidden sm:table-cell text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Author</th>
+              <th className="text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Status</th>
+              <th className="hidden sm:table-cell text-left py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Views</th>
+              <th className="text-right py-3 px-3 sm:px-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -60,18 +60,18 @@ const BlogPostsTable = ({
             ) : (
               currentPosts.map((post) => (
                 <tr key={post._id} className="border-b hover:bg-white/5 transition" style={{ borderColor: 'var(--border)' }}>
-                  <td className="py-4 px-4">
-                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
+                    <p className="font-semibold truncate max-w-[200px] sm:max-w-none" style={{ color: 'var(--text-primary)' }}>
                       {post.title}
                     </p>
                     <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                       {post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.createdAt)}
                     </p>
                   </td>
-                  <td className="py-4 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {post.author || 'Admin'}
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       post.status === 'published'
                         ? 'bg-green-500/20 text-green-400'
@@ -82,13 +82,13 @@ const BlogPostsTable = ({
                       {post.status}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     <div className="flex items-center gap-1">
                       <Eye className="h-4 w-4" />
                       {post.views || 0}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/admin/blog/edit/${post._id}`}

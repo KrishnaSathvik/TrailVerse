@@ -218,7 +218,7 @@ const AdminUsersPage = () => {
         <section className="pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Filters and Search */}
-          <div className="rounded-2xl p-6 backdrop-blur mb-6"
+          <div className="rounded-2xl p-4 sm:p-6 backdrop-blur mb-6"
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -337,7 +337,7 @@ const AdminUsersPage = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                    <th className="text-left py-4 px-6">
+                    <th className="text-left py-3 sm:py-4 px-3 sm:px-6">
                       <input
                         type="checkbox"
                         checked={selectedUsers.length === users.length && users.length > 0}
@@ -345,27 +345,27 @@ const AdminUsersPage = () => {
                         className="rounded border-gray-300"
                       />
                     </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold"
+                    <th className="text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       User
                     </th>
-                    <th className="hidden sm:table-cell text-left py-4 px-6 text-sm font-semibold"
+                    <th className="hidden sm:table-cell text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Role
                     </th>
-                    <th className="hidden sm:table-cell text-left py-4 px-6 text-sm font-semibold"
+                    <th className="hidden sm:table-cell text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Status
                     </th>
-                    <th className="hidden sm:table-cell text-left py-4 px-6 text-sm font-semibold"
+                    <th className="hidden sm:table-cell text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Joined
                     </th>
-                    <th className="text-right py-4 px-6 text-sm font-semibold"
+                    <th className="text-right py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Actions
@@ -377,7 +377,7 @@ const AdminUsersPage = () => {
                     <tr key={user._id} className="border-b hover:bg-white/5 transition"
                       style={{ borderColor: 'var(--border)' }}
                     >
-                      <td className="py-4 px-6">
+                      <td className="py-3 sm:py-4 px-3 sm:px-6">
                         <input
                           type="checkbox"
                           checked={selectedUsers.includes(user._id)}
@@ -385,37 +385,37 @@ const AdminUsersPage = () => {
                           className="rounded border-gray-300"
                         />
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 sm:py-4 px-3 sm:px-6">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-semibold text-xs sm:text-sm">
                               {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </span>
                           </div>
-                          <div>
-                            <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                               {user.name || 'No Name'}
                             </p>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
                               {user.email}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="hidden sm:table-cell py-4 px-6">
+                      <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-6">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadge(user.role)}`}>
                           {user.role}
                         </span>
                       </td>
-                      <td className="hidden sm:table-cell py-4 px-6">
+                      <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-6">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(user.isEmailVerified)}`}>
                           {user.isEmailVerified ? 'Verified' : 'Unverified'}
                         </span>
                       </td>
-                      <td className="hidden sm:table-cell py-4 px-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
                         {formatDate(user.createdAt)}
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 sm:py-4 px-3 sm:px-6">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleUserAction(user._id, 'view')}
@@ -459,7 +459,7 @@ const AdminUsersPage = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-6 border-t"
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6 border-t"
                 style={{ borderColor: 'var(--border)' }}
               >
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
