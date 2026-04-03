@@ -693,15 +693,20 @@ const TripPlannerChat = ({
 
   // Initialize chat after providers are loaded
   useEffect(() => {
-    console.log('🔄 Chat initialization useEffect triggered:', { 
-      isStartingFresh, 
-      providersLoaded, 
-      existingTripId 
+    console.log('🔄 Chat initialization useEffect triggered:', {
+      isStartingFresh,
+      providersLoaded,
+      existingTripId,
+      isNewChat,
+      isPersonalized
     });
-    
+
     // Don't initialize if we're starting a fresh conversation
     if (isStartingFresh) return;
-    
+
+    // Skip restoration when explicitly starting a new chat or personalized session
+    if (isNewChat || isPersonalized) return;
+
     if (providersLoaded) {
       if (existingTripId) {
         console.log('🔄 Loading existing trip from URL:', existingTripId);
@@ -724,7 +729,7 @@ const TripPlannerChat = ({
         showWelcomeMessage();
       }
     }
-  }, [providersLoaded, existingTripId, isStartingFresh]);
+  }, [providersLoaded, existingTripId, isStartingFresh, isNewChat, isPersonalized]);
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || isGenerating) return;
