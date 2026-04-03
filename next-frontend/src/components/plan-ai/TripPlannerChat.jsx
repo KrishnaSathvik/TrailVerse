@@ -839,19 +839,8 @@ const TripPlannerChat = ({
       } else {
         // Use streaming for authenticated users
         let streamedContent = '';
+        let streamStarted = false;
         streamAssistantId = Date.now() + 1;
-
-        // Add empty assistant message that will be filled by streaming
-        setMessages(prev => [...prev, {
-          id: streamAssistantId,
-          role: 'assistant',
-          content: '',
-          timestamp: new Date(),
-          provider: selectedProvider,
-          isStreaming: true
-        }]);
-
-        setIsGenerating(false); // Hide typing indicator, show streaming message instead
 
         try {
           await aiService.chatStream({
@@ -872,11 +861,25 @@ const TripPlannerChat = ({
             onChunk: (chunk) => {
               streamedContent += chunk;
               const currentContent = streamedContent;
-              setMessages(prev => prev.map(m =>
-                m.id === streamAssistantId
-                  ? { ...m, content: currentContent }
-                  : m
-              ));
+              if (!streamStarted) {
+                // Add assistant message on first chunk so no empty bubble shows
+                streamStarted = true;
+                setIsGenerating(false);
+                setMessages(prev => [...prev, {
+                  id: streamAssistantId,
+                  role: 'assistant',
+                  content: currentContent,
+                  timestamp: new Date(),
+                  provider: selectedProvider,
+                  isStreaming: true
+                }]);
+              } else {
+                setMessages(prev => prev.map(m =>
+                  m.id === streamAssistantId
+                    ? { ...m, content: currentContent }
+                    : m
+                ));
+              }
             },
             onDone: (result) => {
               data = {
