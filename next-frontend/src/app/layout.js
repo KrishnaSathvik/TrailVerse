@@ -4,9 +4,9 @@ import Script from "next/script";
 import Providers from "../components/Providers";
 
 export const metadata = {
-  title: "TrailVerse — Explore America's 470+ Parks & Sites",
+  title: "TrailVerse — Explore America's 470+ National Parks & Sites",
   applicationName: "TrailVerse",
-  description: "Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
+  description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning. Free to explore — no account needed.",
   manifest: "/manifest.json",
   metadataBase: new URL("https://www.nationalparksexplorerusa.com"),
   appleWebApp: {
@@ -15,8 +15,8 @@ export const metadata = {
     statusBarStyle: "default",
   },
   openGraph: {
-    title: "TrailVerse — Explore America's 470+ Parks & Sites",
-    description: "Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
+    title: "TrailVerse — Explore America's 470+ National Parks & Sites",
+    description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning. Free to explore — no account needed.",
     url: "https://www.nationalparksexplorerusa.com",
     siteName: "TrailVerse",
     type: "website",
@@ -31,8 +31,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TrailVerse — Explore America's 470+ Parks & Sites",
-    description: "Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning.",
+    title: "TrailVerse — Explore America's 470+ National Parks & Sites",
+    description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning.",
     images: ["/og-image-trailverse.jpg"],
   },
 };
