@@ -118,10 +118,27 @@ export const AuthProvider = ({ children }) => {
 
 
   useEffect(() => {
-    // Add localStorage event listener to track changes
+    // Sync auth state across tabs via localStorage events
     const handleStorageChange = (e) => {
-      if (e.key === 'user' || e.key === 'token') {
-
+      if (e.key === 'token') {
+        if (!e.newValue) {
+          // Token removed in another tab — log out here too
+          setUser(null);
+          setUserDataLoaded(false);
+        }
+      }
+      if (e.key === 'user') {
+        if (e.newValue) {
+          try {
+            const updatedUser = JSON.parse(e.newValue);
+            setUser(updatedUser);
+            setUserDataLoaded(true);
+          } catch { /* ignore parse errors */ }
+        } else {
+          // User removed in another tab — log out here too
+          setUser(null);
+          setUserDataLoaded(false);
+        }
       }
     };
     
