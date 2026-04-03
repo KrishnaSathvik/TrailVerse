@@ -24,9 +24,9 @@ import {
   LogOut,
   Zap,
   RefreshCw,
-  AlertCircle,
-  Star
+  AlertCircle
 } from '@components/icons';
+import { Sparkle, TrendUp, ThumbsUp } from '@phosphor-icons/react';
 
 const initialStats = {
   totalUsers: 0,
@@ -371,7 +371,7 @@ const AdminDashboard = () => {
                       className="h-11 w-11 rounded-xl flex items-center justify-center"
                       style={{ backgroundColor: 'var(--surface-hover)' }}
                     >
-                      <Activity className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      <TrendUp className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                     </div>
                     <div>
                       <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>User Signups</h3>
@@ -409,7 +409,7 @@ const AdminDashboard = () => {
                     className="h-11 w-11 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: 'var(--surface-hover)' }}
                   >
-                    <Zap className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                    <Sparkle className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                   </div>
                   <div>
                     <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>AI Chat Analytics</h3>
@@ -435,7 +435,7 @@ const AdminDashboard = () => {
                       <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
                         <div className="text-lg font-bold flex items-center gap-1" style={{ color: 'var(--text-primary)' }}>
                           {aiStats.satisfactionRate !== null ? (
-                            <><Star className="h-4 w-4 text-green-400" />{aiStats.satisfactionRate}%</>
+                            <><ThumbsUp className="h-4 w-4 text-green-400" />{aiStats.satisfactionRate}%</>
                           ) : '—'}
                         </div>
                         <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Satisfaction</div>
