@@ -171,9 +171,9 @@ const AdminUsersPage = () => {
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4"
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tighter leading-none mb-4"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   User Management
@@ -350,17 +350,17 @@ const AdminUsersPage = () => {
                     >
                       User
                     </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold"
+                    <th className="hidden sm:table-cell text-left py-4 px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Role
                     </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold"
+                    <th className="hidden sm:table-cell text-left py-4 px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Status
                     </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold"
+                    <th className="hidden sm:table-cell text-left py-4 px-6 text-sm font-semibold"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Joined
@@ -402,17 +402,17 @@ const AdminUsersPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="hidden sm:table-cell py-4 px-6">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadge(user.role)}`}>
                           {user.role}
                         </span>
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="hidden sm:table-cell py-4 px-6">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(user.isEmailVerified)}`}>
                           {user.isEmailVerified ? 'Verified' : 'Unverified'}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <td className="hidden sm:table-cell py-4 px-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
                         {formatDate(user.createdAt)}
                       </td>
                       <td className="py-4 px-6">
@@ -459,7 +459,7 @@ const AdminUsersPage = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-6 border-t"
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-6 border-t"
                 style={{ borderColor: 'var(--border)' }}
               >
                 <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>

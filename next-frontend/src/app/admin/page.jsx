@@ -411,12 +411,6 @@ const AdminDashboard = () => {
                       </div>
                       <span className="font-medium">Manage Users</span>
                     </Link>
-                    <Link href="/admin/performance" className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition" style={{ color: 'var(--text-secondary)' }}>
-                      <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                        <Zap className="h-4 w-4 text-blue-400" />
-                      </div>
-                      <span className="font-medium">Performance Monitor</span>
-                    </Link>
                     <Link href="/admin/settings" className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition" style={{ color: 'var(--text-secondary)' }}>
                       <div className="h-8 w-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
                         <Settings className="h-4 w-4 text-orange-400" />

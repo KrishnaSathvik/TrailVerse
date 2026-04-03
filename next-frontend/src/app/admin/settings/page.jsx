@@ -124,7 +124,7 @@ const AdminSettingsPage = () => {
           }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Link
                   href="/admin"
@@ -141,13 +141,13 @@ const AdminSettingsPage = () => {
                   <span className="sm:hidden">Back</span>
                 </Link>
                 <div>
-                  <h1 className="text-3xl font-bold mb-1 flex items-center gap-3"
+                  <h1 className="text-xl sm:text-3xl font-bold mb-1 flex items-center gap-3"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    <Settings className="h-8 w-8 text-orange-500" />
+                    <Settings className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500" />
                     Admin Settings
                   </h1>
-                  <p style={{ color: 'var(--text-secondary)' }}>
+                  <p className="hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
                     Configure system settings and preferences
                   </p>
                 </div>
@@ -189,14 +189,14 @@ const AdminSettingsPage = () => {
                 <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                   Settings Categories
                 </h3>
-                <nav className="space-y-2">
+                <nav className="flex overflow-x-auto gap-2 lg:flex-col lg:overflow-x-visible">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition ${
+                        className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-left transition whitespace-nowrap lg:w-full ${
                           activeTab === tab.id
                             ? 'bg-forest-500/20 text-forest-400'
                             : 'hover:bg-white/5'
@@ -205,8 +205,8 @@ const AdminSettingsPage = () => {
                           color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-secondary)'
                         }}
                       >
-                        <Icon className="h-5 w-5" />
-                        {tab.label}
+                        <Icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="text-sm lg:text-base">{tab.label}</span>
                       </button>
                     );
                   })}
