@@ -345,7 +345,7 @@ const TestimonialsManagement = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <div className="flex items-center gap-1">
                     {renderStars(selectedTestimonial.rating)}
                     <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
