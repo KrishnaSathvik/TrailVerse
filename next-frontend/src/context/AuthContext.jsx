@@ -229,8 +229,7 @@ export const AuthProvider = ({ children }) => {
     const response = await authService.login(email, password, rememberMe);
 
     setUser(response.data);
-    
-    // Invalidate daily feed cache to ensure fresh data for the logged-in user
+    setUserDataLoaded(true);
     if (response.data?._id) {
       console.log('🔄 AuthContext: Invalidating daily feed cache for new user');
       invalidateCache.dailyFeed(response.data._id);
@@ -273,7 +272,8 @@ export const AuthProvider = ({ children }) => {
     
     // Update state immediately
     setUser(userData);
-    
+    setUserDataLoaded(true);
+
     const redirectedToChat = await migrateAnonymousChat(token);
     if (redirectedToChat) {
       return { redirectedToChat: true };
