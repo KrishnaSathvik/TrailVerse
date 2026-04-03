@@ -3,6 +3,7 @@ const BlogPost = require('../models/BlogPost');
 const TripPlan = require('../models/TripPlan');
 const Conversation = require('../models/Conversation');
 const Feedback = require('../models/Feedback');
+const AnonymousSession = require('../models/AnonymousSession');
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
@@ -136,6 +137,60 @@ exports.getAIStats = async (req, res, next) => {
         avgMessagesPerChat: avgMessages[0]?.avg ? Math.round(avgMessages[0].avg * 10) / 10 : 0,
         satisfactionRate,
         totalFeedback,
+        topParks: topParks.map(p => ({ parkCode: p._id, count: p.count }))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get anonymous user analytics for admin dashboard
+// @route   GET /api/admin/anonymous-stats
+// @access  Admin only
+exports.getAnonymousStats = async (req, res, next) => {
+  try {
+    const [totalSessions, convertedSessions, activeSessions, avgMessages, topParks] = await Promise.all([
+      AnonymousSession.countDocuments(),
+      AnonymousSession.countDocuments({ isConverted: true }),
+      AnonymousSession.countDocuments({
+        lastActivity: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) }
+      }),
+      AnonymousSession.aggregate([
+        { $project: { userMsgCount: { $size: { $filter: { input: '$messages', as: 'm', cond: { $eq: ['$$m.role', 'user'] } } } } } },
+        { $group: { _id: null, avg: { $avg: '$userMsgCount' } } }
+      ]),
+      AnonymousSession.aggregate([
+        { $match: { parkCode: { $nin: [null, ''] } } },
+        { $group: { _id: '$parkCode', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 }
+      ])
+    ]);
+
+    const conversionRate = totalSessions > 0
+      ? Math.round((convertedSessions / totalSessions) * 100 * 10) / 10
+      : 0;
+
+    // Messages that hit the limit (3 user messages)
+    const hitLimit = await AnonymousSession.countDocuments({
+      'messages.2': { $exists: true } // at least 3 messages
+    });
+
+    const hitLimitRate = totalSessions > 0
+      ? Math.round((hitLimit / totalSessions) * 100 * 10) / 10
+      : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalSessions,
+        activeSessions,
+        convertedSessions,
+        conversionRate,
+        avgMessagesPerSession: avgMessages[0]?.avg ? Math.round(avgMessages[0].avg * 10) / 10 : 0,
+        hitLimitCount: hitLimit,
+        hitLimitRate,
         topParks: topParks.map(p => ({ parkCode: p._id, count: p.count }))
       }
     });

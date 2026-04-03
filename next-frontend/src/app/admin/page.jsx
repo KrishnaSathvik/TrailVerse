@@ -60,7 +60,7 @@ const Sparkline = ({ data, height = 40, color = '#22c55e' }) => {
 
 const StatCard = ({ icon: Icon, label, value, badge, apiConnected }) => (
   <div
-    className="rounded-2xl p-5 backdrop-blur"
+    className="rounded-2xl p-4 sm:p-5 backdrop-blur"
     style={{
       backgroundColor: 'var(--surface)',
       borderWidth: '1px',
@@ -80,7 +80,7 @@ const StatCard = ({ icon: Icon, label, value, badge, apiConnected }) => (
         {!apiConnected && <span className="text-xs text-orange-400">Offline</span>}
       </div>
     </div>
-    <div className="text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{value}</div>
+    <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{value}</div>
     <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</div>
   </div>
 );
@@ -97,6 +97,7 @@ const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [userGrowth, setUserGrowth] = useState([]);
   const [aiStats, setAIStats] = useState(null);
+  const [anonymousStats, setAnonymousStats] = useState(null);
   const postsPerPage = 5;
 
   const fetchData = useCallback(async () => {
@@ -108,7 +109,7 @@ const AdminDashboard = () => {
     let allPosts = [];
 
     try {
-      const [publishedData, draftData, scheduledData, archivedData, testimonialsStats, statsResponse, activityResponse, growthResponse, aiStatsResponse] = await Promise.all([
+      const [publishedData, draftData, scheduledData, archivedData, testimonialsStats, statsResponse, activityResponse, growthResponse, aiStatsResponse, anonStatsResponse] = await Promise.all([
         blogService.getAllPosts({ status: 'published', limit: 1000 }),
         blogService.getAllPosts({ status: 'draft', limit: 1000 }),
         blogService.getAllPosts({ status: 'scheduled', limit: 1000 }),
@@ -117,7 +118,8 @@ const AdminDashboard = () => {
         api.get('/admin/stats').catch(() => ({ data: { data: {} } })),
         api.get('/admin/recent-activity').catch(() => ({ data: { data: [] } })),
         api.get('/admin/user-growth').catch(() => ({ data: { data: [] } })),
-        api.get('/admin/ai-stats').catch(() => ({ data: { data: null } }))
+        api.get('/admin/ai-stats').catch(() => ({ data: { data: null } })),
+        api.get('/admin/anonymous-stats').catch(() => ({ data: { data: null } }))
       ]);
 
       allPosts = [
@@ -151,6 +153,7 @@ const AdminDashboard = () => {
       setRecentActivity(Array.isArray(activityResponse.data?.data) ? activityResponse.data.data : []);
       setUserGrowth(Array.isArray(growthResponse.data?.data) ? growthResponse.data.data : []);
       setAIStats(aiStatsResponse.data?.data || null);
+      setAnonymousStats(anonStatsResponse.data?.data || null);
     } catch (error) {
       setPosts(allPosts);
       setStats((previous) => ({
@@ -283,7 +286,7 @@ const AdminDashboard = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                   Admin Dashboard
                 </h1>
                 <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
@@ -472,8 +475,83 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Anonymous Users Funnel */}
+            {anonymousStats && (
+              <div
+                className="rounded-2xl p-5 backdrop-blur mb-8"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  boxShadow: 'var(--shadow)'
+                }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="h-11 w-11 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--surface-hover)' }}
+                  >
+                    <Users className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Anonymous Users</h3>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Freemium funnel analytics</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{anonymousStats.totalSessions}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total Sessions</div>
+                  </div>
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{anonymousStats.activeSessions}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Active (48h)</div>
+                  </div>
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{anonymousStats.avgMessagesPerSession}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Avg Msgs/Session</div>
+                  </div>
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                    <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{anonymousStats.hitLimitRate}%</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Hit 3-Msg Limit</div>
+                  </div>
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                    <div className="text-lg font-bold text-green-400">{anonymousStats.convertedSessions}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Converted</div>
+                  </div>
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                    <div className="text-lg font-bold text-green-400">{anonymousStats.conversionRate}%</div>
+                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Conversion Rate</div>
+                  </div>
+                </div>
+
+                {anonymousStats.topParks?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Top Parks (Anonymous)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {anonymousStats.topParks.filter(p => p.parkCode).map((p) => (
+                        <span
+                          key={p.parkCode}
+                          className="text-xs px-2 py-1 rounded-full font-medium"
+                          style={{
+                            backgroundColor: 'var(--surface-hover)',
+                            color: 'var(--text-primary)',
+                            borderWidth: '1px',
+                            borderColor: 'var(--border)'
+                          }}
+                        >
+                          {p.parkCode.toUpperCase()} ({p.count})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)] gap-6 mb-8">
-              <div className="rounded-2xl p-6 backdrop-blur"
+              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -481,7 +559,7 @@ const AdminDashboard = () => {
                 }}
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  <h2 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                     Recent Activity
                   </h2>
                   <Activity className="h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
@@ -491,7 +569,7 @@ const AdminDashboard = () => {
                   {recentActivity.length > 0 ? recentActivity.map((activity) => (
                     <div
                       key={activity.id}
-                      className="flex items-start gap-4 p-4 rounded-xl"
+                      className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         borderWidth: '1px',
@@ -533,14 +611,14 @@ const AdminDashboard = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="rounded-2xl p-6 backdrop-blur"
+                <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
                     borderColor: 'var(--border)'
                   }}
                 >
-                  <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                     Quick Actions
                   </h2>
                   <div className="space-y-2">
@@ -565,18 +643,18 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="rounded-2xl p-6 backdrop-blur"
+                <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
                     borderColor: 'var(--border)'
                   }}
                 >
-                  <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <h2 className="text-lg sm:text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                     Active Now
                   </h2>
                   <div className="text-center">
-                    <div className="text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                    <div className="text-2xl sm:text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                       {stats.activeUsers}
                     </div>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -607,7 +685,7 @@ const AdminDashboard = () => {
                 onDelete={handleDelete}
               />
 
-              <div id="testimonials-management" className="rounded-2xl p-6 backdrop-blur"
+              <div id="testimonials-management" className="rounded-2xl p-4 sm:p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',

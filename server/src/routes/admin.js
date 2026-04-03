@@ -4,6 +4,7 @@ const {
   getStats,
   getUserGrowth,
   getAIStats,
+  getAnonymousStats,
   getRecentActivity,
   getUsers,
   getUser,
@@ -36,6 +37,11 @@ router.get('/user-growth', getUserGrowth);
 // @desc    Get AI chat analytics summary
 // @access  Admin only
 router.get('/ai-stats', getAIStats);
+
+// @route   GET /api/admin/anonymous-stats
+// @desc    Get anonymous user analytics
+// @access  Admin only
+router.get('/anonymous-stats', getAnonymousStats);
 
 // @route   GET /api/admin/recent-activity
 // @desc    Get recent admin activity
