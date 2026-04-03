@@ -110,7 +110,7 @@ exports.getAIStats = async (req, res, next) => {
       Feedback.countDocuments(),
       Feedback.countDocuments({ feedback: 'up' }),
       TripPlan.aggregate([
-        { $match: { parkCode: { $ne: null, $ne: '' } } },
+        { $match: { parkCode: { $nin: [null, ''] } } },
         { $group: { _id: '$parkCode', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 }

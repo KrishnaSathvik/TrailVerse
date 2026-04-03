@@ -114,8 +114,8 @@ const AdminDashboard = () => {
         blogService.getAllPosts({ status: 'scheduled', limit: 1000 }),
         blogService.getAllPosts({ status: 'archived', limit: 1000 }),
         testimonialService.getTestimonialsStats(),
-        api.get('/admin/stats'),
-        api.get('/admin/recent-activity'),
+        api.get('/admin/stats').catch(() => ({ data: { data: {} } })),
+        api.get('/admin/recent-activity').catch(() => ({ data: { data: [] } })),
         api.get('/admin/user-growth').catch(() => ({ data: { data: [] } })),
         api.get('/admin/ai-stats').catch(() => ({ data: { data: null } }))
       ]);
@@ -446,7 +446,7 @@ const AdminDashboard = () => {
                       <div>
                         <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Most Asked Parks</p>
                         <div className="flex flex-wrap gap-2">
-                          {aiStats.topParks.map((p) => (
+                          {aiStats.topParks.filter(p => p.parkCode).map((p) => (
                             <span
                               key={p.parkCode}
                               className="text-xs px-2 py-1 rounded-full font-medium"
