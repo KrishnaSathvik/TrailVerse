@@ -8,6 +8,7 @@ export const metadata = {
   applicationName: "TrailVerse",
   description: "Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://www.nationalparksexplorerusa.com"),
   appleWebApp: {
     capable: true,
     title: "TrailVerse",
@@ -16,8 +17,24 @@ export const metadata = {
   openGraph: {
     title: "TrailVerse — Explore America's 470+ Parks & Sites",
     description: "Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.",
+    url: "https://www.nationalparksexplorerusa.com",
+    siteName: "TrailVerse",
     type: "website",
-  }
+    images: [
+      {
+        url: "/og-image-trailverse.jpg",
+        width: 1200,
+        height: 630,
+        alt: "TrailVerse — Explore America's National Parks",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TrailVerse — Explore America's 470+ Parks & Sites",
+    description: "Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning.",
+    images: ["/og-image-trailverse.jpg"],
+  },
 };
 
 export default function RootLayout({ children }) {
