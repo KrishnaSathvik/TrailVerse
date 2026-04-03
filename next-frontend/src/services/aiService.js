@@ -1,4 +1,5 @@
 import enhancedApi from './enhancedApi';
+import { getStoredToken } from './authService';
 
 class AIService {
   /**
@@ -101,7 +102,7 @@ class AIService {
       (process.env.NODE_ENV === 'production'
         ? 'https://trailverse.onrender.com/api'
         : 'http://localhost:5001/api');
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? getStoredToken() : null;
 
     const response = await fetch(`${API_URL}/ai/chat-stream`, {
       method: 'POST',
@@ -123,7 +124,11 @@ class AIService {
 
     if (!response.ok) {
       const errBody = await response.text();
-      throw new Error(errBody || `Stream request failed with status ${response.status}`);
+      let parsed;
+      try { parsed = JSON.parse(errBody); } catch { parsed = null; }
+      const err = new Error(parsed?.error || errBody || `Stream request failed with status ${response.status}`);
+      err.response = { status: response.status, data: parsed || { error: errBody } };
+      throw err;
     }
 
     const reader = response.body.getReader();

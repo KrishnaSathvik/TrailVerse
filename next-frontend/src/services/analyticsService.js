@@ -1,3 +1,5 @@
+import { getStoredToken } from './authService';
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
@@ -170,7 +172,7 @@ class AnalyticsService {
     };
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getStoredToken();
       const headers = {
         'Content-Type': 'application/json'
       };

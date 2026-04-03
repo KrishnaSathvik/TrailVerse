@@ -2,6 +2,7 @@
  * Offline Data Manager
  * Handles caching and retrieval of data for offline use
  */
+import { getStoredToken } from './authService';
 
 import serviceWorkerManager from '../utils/serviceWorkerRegistration';
 
@@ -146,7 +147,7 @@ class OfflineDataManager {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${getStoredToken()}`
       },
       body: JSON.stringify(data)
     });

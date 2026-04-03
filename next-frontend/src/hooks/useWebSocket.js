@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getStoredToken } from '../services/authService';
 import websocketService from '../services/websocketService';
 
 export const useWebSocket = () => {
@@ -9,7 +10,7 @@ export const useWebSocket = () => {
   // Connect when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const token = localStorage.getItem('token');
+      const token = getStoredToken();
       if (token) {
         // Small delay to ensure server is ready
         const connectTimer = setTimeout(() => {
