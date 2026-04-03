@@ -40,6 +40,7 @@ import { useSavedEvents } from '@hooks/useSavedEvents';
 import { useUserReviews } from '@hooks/useUserReviews';
 import { useWebSocket } from '@hooks/useWebSocket';
 import userService from '@/services/userService';
+import { getStoredToken } from '@/services/authService';
 import { getBestAvatar, generateRandomAvatar } from '@utils/avatarGenerator';
 
 const ProfilePage = () => {
@@ -497,7 +498,7 @@ const ProfilePage = () => {
 
       const response = await fetch(`/api/email/preferences/${user.email}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getStoredToken()}`
         }
       });
 
@@ -587,7 +588,7 @@ const ProfilePage = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getStoredToken()}`
         },
         body: JSON.stringify({ emailNotifications: newValue })
       });
@@ -712,7 +713,7 @@ const ProfilePage = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getStoredToken()}`
         },
         body: JSON.stringify({
           currentPassword: passwordForm.currentPassword,
@@ -762,7 +763,7 @@ const ProfilePage = () => {
       const response = await fetch('/api/user/data/download', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getStoredToken()}`
         }
       });
 
@@ -818,7 +819,7 @@ const ProfilePage = () => {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${getStoredToken()}`
         },
         body: JSON.stringify({
           password: deleteForm.password,

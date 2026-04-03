@@ -1,4 +1,5 @@
 import enhancedApi from './enhancedApi';
+import { getStoredToken } from './authService';
 
 class AIService {
   /**
@@ -101,7 +102,7 @@ class AIService {
       (process.env.NODE_ENV === 'production'
         ? 'https://trailverse.onrender.com/api'
         : 'http://localhost:5001/api');
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? getStoredToken() : null;
 
     const response = await fetch(`${API_URL}/ai/chat-stream`, {
       method: 'POST',

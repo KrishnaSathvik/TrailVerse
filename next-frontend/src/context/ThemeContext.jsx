@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getStoredToken } from '../services/authService';
 
 const ThemeContext = createContext();
 
@@ -67,7 +68,7 @@ export const ThemeProvider = ({ children }) => {
   // Setup WebSocket real-time sync for preferences
   useEffect(() => {
     // Check if user is logged in by checking localStorage token
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (!token) return;
 
     // Dynamically import WebSocket service to avoid circular dependency
