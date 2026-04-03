@@ -24,7 +24,10 @@ import {
   LogOut,
   Zap,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  TrendingUp,
+  ThumbsUp
 } from '@components/icons';
 
 const initialStats = {
@@ -36,6 +39,25 @@ const initialStats = {
   pendingTestimonials: 0,
   activeUsers: 0,
   apiConnected: false
+};
+
+const Sparkline = ({ data, height = 40, color = '#22c55e' }) => {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.map(d => d.count), 1);
+  const width = 100;
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - (d.count / max) * (height - 4);
+    return `${x},${y}`;
+  }).join(' ');
+  const areaPoints = `0,${height} ${points} ${width},${height}`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ height }} preserveAspectRatio="none">
+      <polyline fill="none" stroke={color} strokeWidth="1.5" points={points} />
+      <polygon fill={color} fillOpacity="0.1" points={areaPoints} />
+    </svg>
+  );
 };
 
 const StatCard = ({ icon: Icon, label, value, badge, apiConnected }) => (
@@ -75,6 +97,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [userGrowth, setUserGrowth] = useState([]);
+  const [aiStats, setAIStats] = useState(null);
   const postsPerPage = 5;
 
   const fetchData = useCallback(async () => {
@@ -86,14 +110,16 @@ const AdminDashboard = () => {
     let allPosts = [];
 
     try {
-      const [publishedData, draftData, scheduledData, archivedData, testimonialsStats, statsResponse, activityResponse] = await Promise.all([
+      const [publishedData, draftData, scheduledData, archivedData, testimonialsStats, statsResponse, activityResponse, growthResponse, aiStatsResponse] = await Promise.all([
         blogService.getAllPosts({ status: 'published', limit: 1000 }),
         blogService.getAllPosts({ status: 'draft', limit: 1000 }),
         blogService.getAllPosts({ status: 'scheduled', limit: 1000 }),
         blogService.getAllPosts({ status: 'archived', limit: 1000 }),
         testimonialService.getTestimonialsStats(),
         api.get('/admin/stats'),
-        api.get('/admin/recent-activity')
+        api.get('/admin/recent-activity'),
+        api.get('/admin/user-growth').catch(() => ({ data: { data: [] } })),
+        api.get('/admin/ai-stats').catch(() => ({ data: { data: null } }))
       ]);
 
       allPosts = [
@@ -125,6 +151,8 @@ const AdminDashboard = () => {
         apiConnected: true
       });
       setRecentActivity(Array.isArray(activityResponse.data?.data) ? activityResponse.data.data : []);
+      setUserGrowth(Array.isArray(growthResponse.data?.data) ? growthResponse.data.data : []);
+      setAIStats(aiStatsResponse.data?.data || null);
     } catch (error) {
       setPosts(allPosts);
       setStats((previous) => ({
@@ -325,6 +353,125 @@ const AdminDashboard = () => {
                 apiConnected={stats.apiConnected}
                 badge={stats.pendingTestimonials > 0 ? `${stats.pendingTestimonials} pending` : null}
               />
+            </div>
+
+            {/* User Growth & AI Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* User Growth Sparkline */}
+              <div
+                className="rounded-2xl p-5 backdrop-blur"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  boxShadow: 'var(--shadow)'
+                }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-11 w-11 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                    >
+                      <TrendingUp className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>User Signups</h3>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Last 30 days</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {userGrowth.reduce((sum, d) => sum + d.count, 0)}
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>new users</p>
+                  </div>
+                </div>
+                <Sparkline data={userGrowth} height={48} color="#22c55e" />
+                {userGrowth.length > 0 && (
+                  <div className="flex justify-between mt-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    <span>{new Date(userGrowth[0]?.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span>Today</span>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Chat Analytics */}
+              <div
+                className="rounded-2xl p-5 backdrop-blur"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  boxShadow: 'var(--shadow)'
+                }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="h-11 w-11 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--surface-hover)' }}
+                  >
+                    <Sparkles className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>AI Chat Analytics</h3>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Conversation insights</p>
+                  </div>
+                </div>
+
+                {aiStats ? (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{aiStats.totalConversations}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total Chats</div>
+                      </div>
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{aiStats.recentConversations}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Last 30 Days</div>
+                      </div>
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{aiStats.avgMessagesPerChat}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Avg Msgs/Chat</div>
+                      </div>
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold flex items-center gap-1" style={{ color: 'var(--text-primary)' }}>
+                          {aiStats.satisfactionRate !== null ? (
+                            <><ThumbsUp className="h-4 w-4 text-green-400" />{aiStats.satisfactionRate}%</>
+                          ) : '—'}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Satisfaction</div>
+                      </div>
+                    </div>
+
+                    {aiStats.topParks?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Most Asked Parks</p>
+                        <div className="flex flex-wrap gap-2">
+                          {aiStats.topParks.map((p) => (
+                            <span
+                              key={p.parkCode}
+                              className="text-xs px-2 py-1 rounded-full font-medium"
+                              style={{
+                                backgroundColor: 'var(--surface-hover)',
+                                color: 'var(--text-primary)',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border)'
+                              }}
+                            >
+                              {p.parkCode.toUpperCase()} ({p.count})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>No AI analytics data available</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)] gap-6 mb-8">
