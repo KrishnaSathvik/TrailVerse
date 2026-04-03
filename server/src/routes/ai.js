@@ -41,7 +41,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     model,
     temperature = 0.4,
     top_p = 0.9,
-    maxTokens = 2000,
+    maxTokens = 8000,
     systemPrompt,
     metadata = {} // { parkCode, parkName, lat, lon, userId }
   } = body;
@@ -408,7 +408,7 @@ router.post('/chat-anonymous', async (req, res) => {
       model,
       temperature = 0.4,
       top_p = 0.9,
-      maxTokens = 2000,
+      maxTokens = 8000,
       systemPrompt,
       metadata = {}, // { parkCode, parkName, lat, lon }
       anonymousId: clientAnonymousId // Use client-provided anonymousId if available

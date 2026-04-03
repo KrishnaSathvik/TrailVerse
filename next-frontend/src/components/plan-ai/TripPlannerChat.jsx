@@ -813,7 +813,7 @@ const TripPlannerChat = ({
           provider: selectedProvider,
           temperature: 0.4,
           top_p: 0.9,
-          max_tokens: 2000,
+          max_tokens: 8000,
           signal: controller.signal,
           metadata: {
             parkCode: formData.parkCode,
@@ -854,7 +854,7 @@ const TripPlannerChat = ({
             provider: selectedProvider,
             temperature: 0.4,
             top_p: 0.9,
-            max_tokens: 2000,
+            max_tokens: 8000,
             conversationId: currentTripId,
             signal: controller.signal,
             metadata: {
@@ -918,7 +918,7 @@ const TripPlannerChat = ({
             provider: selectedProvider,
             temperature: 0.4,
             top_p: 0.9,
-            max_tokens: 2000,
+            max_tokens: 8000,
             conversationId: currentTripId,
             signal: controller.signal,
             metadata: {

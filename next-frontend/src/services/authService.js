@@ -33,10 +33,11 @@ const clearStoredAuth = () => {
 const persistAuth = (token, user, rememberMe) => {
   clearStoredAuth();
 
-  const storage = rememberMe ? localStorage : sessionStorage;
-  storage.setItem(TOKEN_KEY, token);
-  storage.setItem(USER_KEY, JSON.stringify(user));
+  // Always use localStorage so auth works across tabs
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 
+  // Remember Me controls cookie duration: 30 days vs session-only
   const cookieParts = [`trailverse_auth_token=${token}`, 'path=/', 'SameSite=Lax'];
   if (rememberMe) {
     cookieParts.push('max-age=2592000');
@@ -108,7 +109,7 @@ class AuthService {
       
       persistAuth(response.data.token, response.data.data, rememberMe);
       
-      console.log(`✅ AuthService: Token and user data stored in ${rememberMe ? 'localStorage' : 'sessionStorage'} and cookies`);
+      console.log(`✅ AuthService: Token and user data stored in localStorage and cookies (rememberMe: ${rememberMe})`);
       
       // Verify storage
       const storedToken = getStoredToken();
