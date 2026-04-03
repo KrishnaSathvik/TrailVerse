@@ -475,18 +475,18 @@ router.post('/chat-anonymous', async (req, res) => {
         role: 'assistant',
         content: `Hey traveler! 👋
 
-Thanks for your follow-up question about "${lastUserMessageContent}". I'd love to help you plan more amazing adventures, but as an unauthenticated user, you can only ask 3 questions.
+Thanks for your follow-up message about "${lastUserMessageContent}". I'd love to help you plan more amazing adventures, but as an unauthenticated user, you can only send 3 messages.
 
 You have two options to continue:
 
 🚀 **Create an Account (Recommended)**
-• Ask unlimited questions
+• Send unlimited messages
 • Save your trip plans
 • Access your conversation history
 • Get personalized recommendations
 
 ⏰ **Wait 48 Hours (Free)**
-• Get 3 fresh questions automatically
+• Get 3 fresh messages automatically
 • No account required
 • Completely free
 • Session resets automatically

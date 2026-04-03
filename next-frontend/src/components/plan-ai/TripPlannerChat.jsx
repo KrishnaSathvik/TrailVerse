@@ -1765,7 +1765,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   Ready to Continue Planning?
                 </h2>
                 <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You&apos;ve used your 3 free questions. Save this chat to an account and keep going now, or wait 48 hours for 3 fresh free questions.
+                  You&apos;ve used your 3 free messages. Save this chat to an account and keep going now, or wait 48 hours for 3 fresh free messages.
                 </p>
               </div>
 
@@ -2161,8 +2161,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
               </h3>
               <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
                 {isSessionRestored 
-                  ? `You've already used your 3 free questions. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free questions.`
-                  : `You've used your 3 free questions. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free questions.`
+                  ? `You've already used your 3 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free messages.`
+                  : `You've used your 3 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free messages.`
                 }
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
