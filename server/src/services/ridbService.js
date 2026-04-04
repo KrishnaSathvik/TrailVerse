@@ -107,26 +107,42 @@ class RIDBService {
       return null;
     }
 
-    // First search with full name
-    let results = await this._searchRecAreas(fullName, stateCode);
-
-    // Retry with stripped suffix if no match
-    if (results.length === 0) {
-      const stripped = this._stripCommonSuffixes(fullName);
-      if (stripped && stripped !== fullName) {
-        results = await this._searchRecAreas(stripped, stateCode);
+    // Helper to find best match in a result set
+    const findBest = (results) => {
+      let best = null;
+      let score = 0;
+      for (const recArea of results) {
+        const s = this._scoreMatch(recArea.RecAreaName, fullName);
+        if (s > score) { score = s; best = recArea; }
       }
+      return { best, score };
+    };
+
+    // Try queries in order of most specific → least specific.
+    // RIDB's state filter can hide exact-name matches (RIDB's state
+    // field doesn't always align with NPS), so always try no-state
+    // as a fallback.
+    const stripped = this._stripCommonSuffixes(fullName);
+    const attempts = [
+      { query: fullName, state: stateCode },
+      { query: fullName, state: null }
+    ];
+    if (stripped && stripped !== fullName) {
+      attempts.push({ query: stripped, state: stateCode });
+      attempts.push({ query: stripped, state: null });
     }
 
-    // Fuzzy match
     let bestMatch = null;
     let bestScore = 0;
-    for (const recArea of results) {
-      const score = this._scoreMatch(recArea.RecAreaName, fullName);
+    for (const attempt of attempts) {
+      const results = await this._searchRecAreas(attempt.query, attempt.state);
+      const { best, score } = findBest(results);
       if (score > bestScore) {
         bestScore = score;
-        bestMatch = recArea;
+        bestMatch = best;
       }
+      // If we got a strong match (exact name), stop searching
+      if (bestScore >= 90) break;
     }
 
     // Require minimum score of 70 to avoid false matches
