@@ -182,6 +182,7 @@ export { CodeSimpleIcon as Code2 } from '@phosphor-icons/react';
 
 // Content & Text
 export { BookOpenIcon as BookOpen } from '@phosphor-icons/react';
+export { TicketIcon as Ticket } from '@phosphor-icons/react';
 export { QuotesIcon as Quote } from '@phosphor-icons/react';
 export { ArrowBendUpLeftIcon as Reply } from '@phosphor-icons/react';
 export { TextBolderIcon as Bold } from '@phosphor-icons/react';

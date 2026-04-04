@@ -6,7 +6,7 @@ import {
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
   Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight,
-  BookOpen, Download, FileText
+  BookOpen, Download, FileText, Ticket
 } from '@components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -42,6 +42,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
     { id: 'parking', label: 'Parking', icon: Car },
     { id: 'facilities', label: 'Facilities', icon: Utensils },
     { id: 'brochures', label: 'Brochures', icon: BookOpen },
+    { id: 'permits', label: 'Permits', icon: Ticket },
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'videos', label: 'Videos', icon: Play },
     { id: 'webcams', label: 'Webcams', icon: Monitor },
@@ -91,6 +92,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const { data: galleryPhotos, loading: galleryLoading } = useTabData(parkCode, 'gallery', activeTab === 'photos');
   const { data: facilities, loading: facilitiesLoading } = useTabData(parkCode, 'facilities', activeTab === 'facilities');
   const { data: brochureData, loading: brochuresLoading } = useTabData(parkCode, 'brochures', activeTab === 'brochures');
+  const { data: permits, loading: permitsLoading } = useTabData(parkCode, 'permits', activeTab === 'permits');
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -615,6 +617,144 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         dangerouslySetInnerHTML={{ __html: processHtmlContent(park.description) }}
                       />
 
+                      {park.entranceFees && park.entranceFees.length > 0 && (
+                        <div className="mt-8">
+                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            <DollarSign className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                            Entrance Fees
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {park.entranceFees.map((fee, index) => (
+                              <div key={index} className="rounded-xl p-4"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-1">
+                                  <h4 className="font-semibold text-sm leading-snug"
+                                    style={{ color: 'var(--text-primary)' }}
+                                  >
+                                    {fee.title}
+                                  </h4>
+                                  {fee.cost !== undefined && fee.cost !== null && (
+                                    <span className="text-base font-bold whitespace-nowrap"
+                                      style={{ color: 'var(--accent-green, #22c55e)' }}
+                                    >
+                                      ${parseFloat(fee.cost).toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                                {fee.description && (
+                                  <p className="text-xs leading-relaxed"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {htmlToPlainText(fee.description)}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {park.operatingHours && park.operatingHours.length > 0 && (
+                        <div className="mt-8">
+                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            <Clock className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                            Operating Hours
+                          </h3>
+                          <div className="space-y-3">
+                            {park.operatingHours.map((hours, index) => (
+                              <div key={index} className="rounded-xl p-4"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
+                                <h4 className="font-semibold text-sm mb-2"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {hours.name}
+                                </h4>
+                                {hours.description && (
+                                  <p className="text-sm leading-relaxed mb-3"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {htmlToPlainText(hours.description)}
+                                  </p>
+                                )}
+                                {hours.standardHours && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                                      hours.standardHours[day] && (
+                                        <div key={day} className="flex justify-between">
+                                          <span className="capitalize" style={{ color: 'var(--text-tertiary)' }}>
+                                            {day.slice(0, 3)}
+                                          </span>
+                                          <span style={{ color: 'var(--text-secondary)' }}>
+                                            {hours.standardHours[day]}
+                                          </span>
+                                        </div>
+                                      )
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {park.entrancePasses && park.entrancePasses.length > 0 && (
+                        <div className="mt-8">
+                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            <Shield className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                            Entrance Passes
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {park.entrancePasses.map((pass, index) => (
+                              <div key={index} className="rounded-xl p-4"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
+                                <div className="flex items-start justify-between gap-3 mb-1">
+                                  <h4 className="font-semibold text-sm leading-snug"
+                                    style={{ color: 'var(--text-primary)' }}
+                                  >
+                                    {pass.title}
+                                  </h4>
+                                  {pass.cost !== undefined && pass.cost !== null && (
+                                    <span className="text-base font-bold whitespace-nowrap"
+                                      style={{ color: 'var(--accent-green, #22c55e)' }}
+                                    >
+                                      ${parseFloat(pass.cost).toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                                {pass.description && (
+                                  <p className="text-xs leading-relaxed"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {htmlToPlainText(pass.description)}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {park.weatherInfo && (
                         <div className="mt-8">
@@ -1483,6 +1623,128 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                             View all resources on NPS.gov
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'permits' && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
+                        >
+                          <Ticket className="h-5 w-5" style={{ color: '#10b981' }} />
+                        </div>
+                        Permits & Reservations
+                      </h2>
+
+                      {permitsLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-32 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                          ))}
+                        </div>
+                      ) : permits?.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {permits.map((permit) => (
+                            <div
+                              key={permit.id}
+                              className="rounded-xl overflow-hidden p-4"
+                              style={{
+                                backgroundColor: 'var(--surface-hover)',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border)',
+                                borderLeftWidth: '4px',
+                                borderLeftColor: '#10b981'
+                              }}
+                            >
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+                                >
+                                  <Ticket className="h-5 w-5" style={{ color: '#10b981' }} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-bold text-base leading-snug line-clamp-2"
+                                    style={{ color: 'var(--text-primary)' }}
+                                  >
+                                    {permit.name}
+                                  </h3>
+                                  {permit.type && (
+                                    <span className="inline-block text-xs px-2 py-0.5 rounded-full font-semibold mt-1"
+                                      style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}
+                                    >
+                                      {permit.type}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {permit.description && (
+                                <p className="text-sm leading-relaxed line-clamp-3 mb-3"
+                                  style={{ color: 'var(--text-secondary)' }}
+                                >
+                                  {htmlToPlainText(permit.description)}
+                                </p>
+                              )}
+                              {permit.facilityName && (
+                                <p className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>
+                                  {permit.facilityName}
+                                </p>
+                              )}
+                              <a
+                                href={permit.reservationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition hover:opacity-80 w-full sm:w-auto justify-center"
+                                style={{ backgroundColor: '#10b981', color: 'white' }}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Reserve on Recreation.gov
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
+                            style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+                          >
+                            <Ticket className="h-8 w-8" style={{ color: '#10b981' }} />
+                          </div>
+                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
+                            No permits required
+                          </p>
+                          <p className="text-sm mt-1 mb-4" style={{ color: 'var(--text-tertiary)' }}>
+                            This park may not require advance permits, or permit information is not available
+                          </p>
+                          <a
+                            href={`https://www.nps.gov/${parkCode}/planyourvisit/permits.htm`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition hover:opacity-80"
+                            style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Check NPS Permits Page
+                          </a>
+                        </div>
+                      )}
+
+                      {permits?.length > 0 && (
+                        <div className="mt-6 text-center">
+                          <a
+                            href="https://www.recreation.gov"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Data from Recreation.gov
                           </a>
                         </div>
                       )}
