@@ -661,6 +661,57 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         </div>
                       )}
 
+                      {park.operatingHours && park.operatingHours.length > 0 && (
+                        <div className="mt-8">
+                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            <Clock className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                            Operating Hours
+                          </h3>
+                          <div className="space-y-3">
+                            {park.operatingHours.map((hours, index) => (
+                              <div key={index} className="rounded-xl p-4"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)'
+                                }}
+                              >
+                                <h4 className="font-semibold text-sm mb-2"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {hours.name}
+                                </h4>
+                                {hours.description && (
+                                  <p className="text-sm leading-relaxed mb-3"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {htmlToPlainText(hours.description)}
+                                  </p>
+                                )}
+                                {hours.standardHours && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs">
+                                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                                      hours.standardHours[day] && (
+                                        <div key={day} className="flex justify-between">
+                                          <span className="capitalize" style={{ color: 'var(--text-tertiary)' }}>
+                                            {day.slice(0, 3)}
+                                          </span>
+                                          <span style={{ color: 'var(--text-secondary)' }}>
+                                            {hours.standardHours[day]}
+                                          </span>
+                                        </div>
+                                      )
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {park.entrancePasses && park.entrancePasses.length > 0 && (
                         <div className="mt-8">
                           <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
