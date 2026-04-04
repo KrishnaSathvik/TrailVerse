@@ -6,7 +6,6 @@ import { Mail } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import SyncStatus from './SyncStatus';
-import PWAInstallButton from './PWAInstallButton';
 
 const Footer = () => {
   useTheme();
@@ -86,7 +85,6 @@ const Footer = () => {
             <p className="text-base sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
               &copy; {new Date().getFullYear()} TrailVerse. All rights reserved.
             </p>
-            <PWAInstallButton />
           </div>
         </div>
       </div>

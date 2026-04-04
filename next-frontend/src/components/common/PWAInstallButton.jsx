@@ -45,17 +45,17 @@ const PWAInstallButton = () => {
     <>
       <button
         onClick={handleInstall}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition hover:opacity-90 flex-shrink-0"
+        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold transition hover:opacity-90 hover:scale-105 active:scale-95"
         style={{
           backgroundColor: 'var(--accent-green)',
           color: 'white',
-          pointerEvents: 'auto',
-          cursor: 'pointer',
-          zIndex: 10
+          boxShadow: '0 8px 24px rgba(34, 197, 94, 0.35), 0 2px 8px rgba(0, 0, 0, 0.12)',
+          cursor: 'pointer'
         }}
+        aria-label="Install TrailVerse app"
       >
-        <Icon className="h-4 w-4" />
-        Install App
+        <Icon className="h-5 w-5" />
+        <span className="hidden sm:inline">Install App</span>
       </button>
 
       {(showIOSInstructions || showAndroidInstructions) && (
