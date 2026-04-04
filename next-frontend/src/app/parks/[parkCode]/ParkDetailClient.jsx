@@ -617,6 +617,47 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         dangerouslySetInnerHTML={{ __html: processHtmlContent(park.description) }}
                       />
 
+                      {park.weatherInfo && (
+                        <div className="mt-8">
+                          <h3 className="text-xl font-semibold mb-3"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            Weather Information
+                          </h3>
+                          <p className="text-base leading-relaxed"
+                            style={{ color: 'var(--text-secondary)' }}
+                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.weatherInfo) }}
+                          />
+                        </div>
+                      )}
+
+                      {park.directionsInfo && (
+                        <div className="mt-8">
+                          <h3 className="text-xl font-semibold mb-3"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            Getting There
+                          </h3>
+                          <p className="text-base leading-relaxed"
+                            style={{ color: 'var(--text-secondary)' }}
+                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.directionsInfo) }}
+                          />
+                          {park.latitude && park.longitude && (
+                            <Button
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(park.fullName)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variant="secondary"
+                              size="md"
+                              icon={Navigation}
+                              className="mt-4"
+                            >
+                              Get Directions
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
                       {park.entranceFees && park.entranceFees.length > 0 && (
                         <div className="mt-8">
                           <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
@@ -756,46 +797,6 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         </div>
                       )}
 
-                      {park.weatherInfo && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Weather Information
-                          </h3>
-                          <p className="text-base leading-relaxed"
-                            style={{ color: 'var(--text-secondary)' }}
-                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.weatherInfo) }}
-                          />
-                        </div>
-                      )}
-
-                      {park.directionsInfo && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Getting There
-                          </h3>
-                          <p className="text-base leading-relaxed"
-                            style={{ color: 'var(--text-secondary)' }}
-                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.directionsInfo) }}
-                          />
-                          {park.latitude && park.longitude && (
-                            <Button
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(park.fullName)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              variant="secondary"
-                              size="md"
-                              icon={Navigation}
-                              className="mt-4"
-                            >
-                              Get Directions
-                            </Button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   )}
 
