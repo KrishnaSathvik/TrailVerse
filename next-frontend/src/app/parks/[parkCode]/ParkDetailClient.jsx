@@ -5,7 +5,8 @@ import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
-  Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight
+  Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight,
+  BookOpen, Download, FileText
 } from '@components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -33,16 +34,17 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Info },
+    { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
     { id: 'activities', label: 'Activities', icon: Mountain },
     { id: 'camping', label: 'Camping', icon: Tent },
     { id: 'places', label: 'Places', icon: MapPinCheck },
     { id: 'tours', label: 'Tours', icon: Route },
     { id: 'parking', label: 'Parking', icon: Car },
     { id: 'facilities', label: 'Facilities', icon: Utensils },
+    { id: 'brochures', label: 'Brochures', icon: BookOpen },
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'videos', label: 'Videos', icon: Play },
     { id: 'webcams', label: 'Webcams', icon: Monitor },
-    { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
     { id: 'reviews', label: 'Reviews', icon: Star }
   ];
   const validTabIds = tabs.map((tab) => tab.id);
@@ -88,6 +90,7 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   const { data: videos, loading: videosLoading } = useTabData(parkCode, 'videos', activeTab === 'videos');
   const { data: galleryPhotos, loading: galleryLoading } = useTabData(parkCode, 'gallery', activeTab === 'photos');
   const { data: facilities, loading: facilitiesLoading } = useTabData(parkCode, 'facilities', activeTab === 'facilities');
+  const { data: brochureData, loading: brochuresLoading } = useTabData(parkCode, 'brochures', activeTab === 'brochures');
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -1369,6 +1372,119 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No webcams information available
                         </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'brochures' && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)' }}
+                        >
+                          <BookOpen className="h-5 w-5" style={{ color: '#3b82f6' }} />
+                        </div>
+                        Brochures & Maps
+                      </h2>
+
+                      {brochuresLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-20 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--surface-hover)' }} />
+                          ))}
+                        </div>
+                      ) : brochureData?.brochures?.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {brochureData.brochures.map((brochure, index) => (
+                            <div
+                              key={index}
+                              className="rounded-xl overflow-hidden flex items-center gap-4 p-4"
+                              style={{
+                                backgroundColor: 'var(--surface-hover)',
+                                borderWidth: '1px',
+                                borderColor: 'var(--border)'
+                              }}
+                            >
+                              <div className="h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
+                              >
+                                <FileText className="h-5 w-5" style={{ color: '#3b82f6' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm leading-snug line-clamp-2"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {brochure.title}
+                                </p>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>PDF</p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <a
+                                  href={brochure.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-80"
+                                  style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  View
+                                </a>
+                                <a
+                                  href={brochure.url}
+                                  download
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-80"
+                                  style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
+                            style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
+                          >
+                            <BookOpen className="h-8 w-8" style={{ color: '#3b82f6' }} />
+                          </div>
+                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
+                            No brochures found
+                          </p>
+                          <p className="text-sm mt-1 mb-4" style={{ color: 'var(--text-tertiary)' }}>
+                            Brochures may not be available for this park
+                          </p>
+                          {brochureData?.planYourVisitUrl && (
+                            <a
+                              href={brochureData.planYourVisitUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition hover:opacity-80"
+                              style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Visit NPS Plan Your Visit Page
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Always show NPS link at bottom */}
+                      {brochureData?.brochures?.length > 0 && brochureData?.planYourVisitUrl && (
+                        <div className="mt-6 text-center">
+                          <a
+                            href={brochureData.planYourVisitUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            View all resources on NPS.gov
+                          </a>
+                        </div>
                       )}
                     </div>
                   )}
