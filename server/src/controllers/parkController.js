@@ -224,6 +224,108 @@ exports.getParkVideos = makeTabHandler(npsService.getParkVideos.bind(npsService)
 exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bind(npsService), 'galleryPhotos');
 exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
 
+// In-memory cache for brochure URLs (30 days)
+const brochureCache = new Map();
+const BROCHURE_CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// @desc    Get park brochure/PDF links by scraping NPS brochure pages
+// @route   GET /api/parks/:parkCode/brochures
+// @access  Public
+exports.getParkBrochures = async (req, res, next) => {
+  try {
+    const parkCode = req.params.parkCode.toLowerCase();
+
+    // Check cache
+    const cached = brochureCache.get(parkCode);
+    if (cached && Date.now() - cached.timestamp < BROCHURE_CACHE_TTL) {
+      return res.status(200).json({ success: true, data: cached.data, cached: true });
+    }
+
+    const cheerio = require('cheerio');
+
+    // Try multiple known URL patterns for brochure pages
+    const pagePaths = [
+      `/${parkCode}/planyourvisit/brochures.htm`,
+      `/${parkCode}/planyourvisit/park-brochure.htm`,
+      `/${parkCode}/planyourvisit/publications.htm`,
+      `/${parkCode}/planyourvisit/maps.htm`
+    ];
+
+    const brochures = [];
+    const seenUrls = new Set();
+
+    for (const pagePath of pagePaths) {
+      try {
+        const url = `https://www.nps.gov${pagePath}`;
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; TrailVerse/1.0; +https://www.nationalparksexplorerusa.com)',
+            'Accept': 'text/html'
+          },
+          signal: AbortSignal.timeout(8000)
+        });
+
+        if (!response.ok) continue;
+
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        // Find all PDF links on the page
+        $('a[href*=".pdf"]').each((_, el) => {
+          let href = $(el).attr('href');
+          if (!href) return;
+
+          // Make absolute URL
+          if (href.startsWith('/')) {
+            href = `https://www.nps.gov${href}`;
+          } else if (!href.startsWith('http')) {
+            href = `https://www.nps.gov/${parkCode}/planyourvisit/${href}`;
+          }
+
+          // Skip duplicates
+          if (seenUrls.has(href)) return;
+          seenUrls.add(href);
+
+          // Get link text as title, clean it up
+          let title = $(el).text().trim();
+          if (!title || title.length < 2) {
+            // Try parent element or alt text
+            title = $(el).find('img').attr('alt') || $(el).attr('title') || '';
+          }
+          if (!title || title.length < 2) {
+            // Extract title from filename
+            const filename = href.split('/').pop().replace('.pdf', '').replace(/[-_]/g, ' ');
+            title = filename.replace(/\b\w/g, c => c.toUpperCase());
+          }
+
+          brochures.push({
+            title: title.substring(0, 200),
+            url: href,
+            source: pagePath
+          });
+        });
+      } catch {
+        // Page doesn't exist or timed out, try next pattern
+        continue;
+      }
+    }
+
+    // Always add a fallback link to the NPS Plan Your Visit page
+    const result = {
+      brochures,
+      planYourVisitUrl: `https://www.nps.gov/${parkCode}/planyourvisit/index.htm`,
+      scrapedAt: new Date().toISOString()
+    };
+
+    // Cache the result
+    brochureCache.set(parkCode, { data: result, timestamp: Date.now() });
+
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Search parks
 // @route   GET /api/parks/search
 // @access  Public
