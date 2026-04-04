@@ -151,7 +151,7 @@ class RIDBService {
     if (recAreaId) {
       console.log(`[RIDB] resolved ${parkCode} (${fullName}) → recAreaId=${recAreaId} "${bestMatch.RecAreaName}" score=${bestScore}`);
     } else {
-      console.log(`[RIDB] no match for ${parkCode} (${fullName}) — ${results.length} results, best score=${bestScore}`);
+      console.log(`[RIDB] no match for ${parkCode} (${fullName}) — best score=${bestScore}`);
     }
 
     this.parkCodeToRecAreaId.set(key, { id: recAreaId, timestamp: Date.now() });
