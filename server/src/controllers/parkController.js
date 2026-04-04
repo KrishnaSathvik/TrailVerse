@@ -251,6 +251,9 @@ exports.getParkBrochures = async (req, res, next) => {
       `/${parkCode}/planyourvisit/maps.htm`
     ];
 
+    // Keywords that indicate non-brochure PDFs we should skip
+    const skipPatterns = /(press-release|news-release|compliance|foia|procurement|contract|solicitation|rfp|rfq|audit|financial|budget|meeting-minutes|agenda|resume|application-form|w-9|w9|1099|tax-form|reimbursement)/i;
+
     const brochures = [];
     const seenUrls = new Set();
 
@@ -275,27 +278,44 @@ exports.getParkBrochures = async (req, res, next) => {
           let href = $(el).attr('href');
           if (!href) return;
 
-          // Make absolute URL
-          if (href.startsWith('/')) {
-            href = `https://www.nps.gov${href}`;
-          } else if (!href.startsWith('http')) {
-            href = `https://www.nps.gov/${parkCode}/planyourvisit/${href}`;
+          // Make absolute URL — use URL resolver for relative paths
+          try {
+            const baseUrl = `https://www.nps.gov${pagePath}`;
+            href = new URL(href, baseUrl).href;
+          } catch {
+            return;
           }
+
+          // Only include PDFs hosted on nps.gov or home.nps.gov
+          if (!/^https?:\/\/(www\.|home\.)?nps\.gov\//i.test(href)) return;
+
+          // Normalize home.nps.gov to www.nps.gov
+          href = href.replace(/^https?:\/\/home\.nps\.gov/i, 'https://www.nps.gov');
+
+          // Must be a PDF
+          if (!/\.pdf(\?|#|$)/i.test(href)) return;
+
+          // Skip irrelevant documents
+          if (skipPatterns.test(href)) return;
 
           // Skip duplicates
           if (seenUrls.has(href)) return;
           seenUrls.add(href);
 
           // Get link text as title, clean it up
-          let title = $(el).text().trim();
-          if (!title || title.length < 2) {
-            // Try parent element or alt text
-            title = $(el).find('img').attr('alt') || $(el).attr('title') || '';
+          let title = $(el).text().trim().replace(/\s+/g, ' ');
+          // Remove common noise like "(PDF)" or "[PDF]" suffixes
+          title = title.replace(/\s*[\(\[]pdf[\)\]]\s*$/i, '').trim();
+
+          if (!title || title.length < 3 || /^(download|click here|view|more|link|pdf|here)$/i.test(title)) {
+            // Try aria-label, title attr, or img alt
+            title = $(el).attr('aria-label') || $(el).attr('title') || $(el).find('img').attr('alt') || '';
+            title = title.trim();
           }
-          if (!title || title.length < 2) {
+          if (!title || title.length < 3) {
             // Extract title from filename
-            const filename = href.split('/').pop().replace('.pdf', '').replace(/[-_]/g, ' ');
-            title = filename.replace(/\b\w/g, c => c.toUpperCase());
+            const filename = href.split('/').pop().split('?')[0].replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+            title = filename.replace(/\b\w/g, c => c.toUpperCase()).trim();
           }
 
           brochures.push({
