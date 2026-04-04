@@ -349,20 +349,37 @@ class RIDBService {
         const facilities = await this._getFacilitiesForRecArea(recAreaId);
         result.facilities = {
           count: facilities.length,
-          sample: facilities.slice(0, 3).map(f => ({
+          all: facilities.map(f => ({
             id: f.FacilityID,
-            name: f.FacilityName
+            name: f.FacilityName,
+            typeDescription: f.FacilityTypeDescription,
+            reservable: f.Reservable
           }))
         };
 
         if (facilities.length > 0) {
-          // Check first few facilities for permits
-          let totalPermits = 0;
-          for (const f of facilities.slice(0, 5)) {
+          // Check ALL facilities for permits
+          const permitsByFacility = [];
+          for (const f of facilities) {
             const permits = await this._getPermitsForFacility(f.FacilityID);
-            totalPermits += permits.length;
+            if (permits.length > 0) {
+              permitsByFacility.push({
+                facilityId: f.FacilityID,
+                facilityName: f.FacilityName,
+                permitCount: permits.length,
+                permits: permits.map(p => ({
+                  id: p.PermitEntranceID,
+                  name: p.PermitEntranceName,
+                  type: p.PermitEntranceType
+                }))
+              });
+            }
           }
-          result.permits = { sampledFromFirst5: totalPermits };
+          result.permits = {
+            facilitiesWithPermits: permitsByFacility.length,
+            totalPermits: permitsByFacility.reduce((sum, f) => sum + f.permitCount, 0),
+            detail: permitsByFacility
+          };
         }
       }
     } catch (err) {
