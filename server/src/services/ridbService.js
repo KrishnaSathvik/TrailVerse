@@ -193,6 +193,19 @@ class RIDBService {
     }
   }
 
+  _isPermitLikeFacility(facility) {
+    const type = (facility.FacilityTypeDescription || '').toLowerCase();
+    return type === 'permit' || type === 'timed entry' || type === 'ticket facility';
+  }
+
+  _buildReservationUrl(facility) {
+    const type = (facility.FacilityTypeDescription || '').toLowerCase();
+    const id = facility.FacilityID;
+    if (type === 'timed entry') return `https://www.recreation.gov/timed-entry/${id}`;
+    if (type === 'ticket facility') return `https://www.recreation.gov/ticket/facility/${id}`;
+    return `https://www.recreation.gov/permits/${id}`;
+  }
+
   async _fetchPermits(parkCode) {
     const recAreaId = await this.resolveRecAreaId(parkCode);
     if (!recAreaId) return [];
@@ -204,26 +217,24 @@ class RIDBService {
     const allPermits = [];
     const seen = new Set();
 
-    // Sequential loop to respect 50 req/min rate limit
+    // Extract permit-like facilities directly. RIDB treats some
+    // facilities AS permits (timed entry, ticket facility, permit)
+    // rather than containers of permit entrances.
     for (const facility of facilities) {
-      const permits = await this._getPermitsForFacility(facility.FacilityID);
-      if (permits.length > 0) {
-        console.log(`[RIDB] facility ${facility.FacilityID} "${facility.FacilityName}" → ${permits.length} permits`);
-      }
-      for (const permit of permits) {
-        const id = permit.PermitEntranceID;
+      if (this._isPermitLikeFacility(facility)) {
+        const id = facility.FacilityID;
         if (seen.has(id)) continue;
         seen.add(id);
         allPermits.push({
           id,
-          name: permit.PermitEntranceName || 'Permit',
-          description: permit.PermitEntranceDescription || '',
-          type: permit.PermitEntranceType || null,
-          accessible: permit.PermitEntranceAccessible || false,
-          district: permit.District || null,
-          town: permit.Town || null,
+          name: facility.FacilityName || 'Permit',
+          description: facility.FacilityDescription || '',
+          type: facility.FacilityTypeDescription || null,
+          accessible: facility.FacilityAdaAccess || false,
+          district: null,
+          town: null,
           facilityName: facility.FacilityName || null,
-          reservationUrl: `https://www.recreation.gov/permits/${id}`
+          reservationUrl: this._buildReservationUrl(facility)
         });
       }
     }
