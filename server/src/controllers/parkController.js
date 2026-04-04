@@ -360,20 +360,6 @@ exports.getParkPermits = async (req, res, next) => {
   }
 };
 
-// @desc    Diagnostic endpoint to debug RIDB integration
-// @route   GET /api/parks/:parkCode/permits-debug
-// @access  Public
-exports.getParkPermitsDebug = async (req, res, next) => {
-  try {
-    const ridbService = require('../services/ridbService');
-    const { parkCode } = req.params;
-    const debug = await ridbService.debugResolve(parkCode);
-    res.status(200).json({ success: true, data: debug });
-  } catch (error) {
-    next(error);
-  }
-};
-
 // @desc    Search parks
 // @route   GET /api/parks/search
 // @access  Public

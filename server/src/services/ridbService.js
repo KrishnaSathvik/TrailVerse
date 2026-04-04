@@ -195,7 +195,25 @@ class RIDBService {
 
   _isPermitLikeFacility(facility) {
     const type = (facility.FacilityTypeDescription || '').toLowerCase();
-    return type === 'permit' || type === 'timed entry' || type === 'ticket facility';
+    if (type !== 'permit' && type !== 'timed entry' && type !== 'ticket facility') return false;
+    // Filter out obviously outdated facilities (e.g. "2020" pilots)
+    const name = (facility.FacilityName || '').toLowerCase();
+    if (/-20(19|20|21|22)\b/.test(name)) return false;
+    return true;
+  }
+
+  _stripHtml(html) {
+    if (!html) return '';
+    return String(html)
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   _buildReservationUrl(facility) {
@@ -228,7 +246,7 @@ class RIDBService {
         allPermits.push({
           id,
           name: facility.FacilityName || 'Permit',
-          description: facility.FacilityDescription || '',
+          description: this._stripHtml(facility.FacilityDescription || ''),
           type: facility.FacilityTypeDescription || null,
           accessible: facility.FacilityAdaAccess || false,
           district: null,
@@ -274,130 +292,6 @@ class RIDBService {
 
     this.inFlight.set(key, promise);
     return promise;
-  }
-
-  // Diagnostic method - bypasses cache and reports each step
-  async debugResolve(parkCode) {
-    const result = {
-      parkCode,
-      apiKeySet: !!RIDB_API_KEY,
-      apiKeyPrefix: RIDB_API_KEY ? RIDB_API_KEY.substring(0, 8) + '...' : null,
-      nps: null,
-      searches: [],
-      bestMatch: null,
-      facilities: null,
-      permits: null,
-      error: null
-    };
-
-    // Clear caches for this park so we get fresh data
-    const key = parkCode.toLowerCase();
-    this.parkCodeToRecAreaId.delete(key);
-    this.permitsByParkCode.delete(key);
-
-    try {
-      // Get NPS park info
-      const npsService = require('./npsService');
-      const park = await npsService.getParkByCode(parkCode);
-      if (!park) {
-        result.error = 'NPS park not found';
-        return result;
-      }
-      const states = park.states ? park.states.split(',').map(s => s.trim()) : [];
-      result.nps = {
-        fullName: park.fullName,
-        state: states[0] || null,
-        allStates: park.states
-      };
-
-      // Search with full name + state
-      const search1 = await this._searchRecAreas(park.fullName, states[0]);
-      result.searches.push({
-        query: park.fullName,
-        state: states[0],
-        count: search1.length,
-        results: search1.slice(0, 5).map(r => ({
-          id: r.RecAreaID,
-          name: r.RecAreaName,
-          score: this._scoreMatch(r.RecAreaName, park.fullName)
-        }))
-      });
-
-      // Search stripped name
-      const stripped = this._stripCommonSuffixes(park.fullName);
-      if (stripped !== park.fullName) {
-        const search2 = await this._searchRecAreas(stripped, states[0]);
-        result.searches.push({
-          query: stripped,
-          state: states[0],
-          count: search2.length,
-          results: search2.slice(0, 5).map(r => ({
-            id: r.RecAreaID,
-            name: r.RecAreaName,
-            score: this._scoreMatch(r.RecAreaName, park.fullName)
-          }))
-        });
-      }
-
-      // Search without state filter
-      const search3 = await this._searchRecAreas(park.fullName, null);
-      result.searches.push({
-        query: park.fullName,
-        state: null,
-        count: search3.length,
-        results: search3.slice(0, 5).map(r => ({
-          id: r.RecAreaID,
-          name: r.RecAreaName,
-          score: this._scoreMatch(r.RecAreaName, park.fullName)
-        }))
-      });
-
-      // What would resolveRecAreaId actually return?
-      const recAreaId = await this.resolveRecAreaId(parkCode);
-      result.bestMatch = recAreaId;
-
-      if (recAreaId) {
-        const facilities = await this._getFacilitiesForRecArea(recAreaId);
-        result.facilities = {
-          count: facilities.length,
-          all: facilities.map(f => ({
-            id: f.FacilityID,
-            name: f.FacilityName,
-            typeDescription: f.FacilityTypeDescription,
-            reservable: f.Reservable
-          }))
-        };
-
-        if (facilities.length > 0) {
-          // Check ALL facilities for permits
-          const permitsByFacility = [];
-          for (const f of facilities) {
-            const permits = await this._getPermitsForFacility(f.FacilityID);
-            if (permits.length > 0) {
-              permitsByFacility.push({
-                facilityId: f.FacilityID,
-                facilityName: f.FacilityName,
-                permitCount: permits.length,
-                permits: permits.map(p => ({
-                  id: p.PermitEntranceID,
-                  name: p.PermitEntranceName,
-                  type: p.PermitEntranceType
-                }))
-              });
-            }
-          }
-          result.permits = {
-            facilitiesWithPermits: permitsByFacility.length,
-            totalPermits: permitsByFacility.reduce((sum, f) => sum + f.permitCount, 0),
-            detail: permitsByFacility
-          };
-        }
-      }
-    } catch (err) {
-      result.error = err.message;
-    }
-
-    return result;
   }
 }
 
