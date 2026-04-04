@@ -326,6 +326,20 @@ exports.getParkBrochures = async (req, res, next) => {
   }
 };
 
+// @desc    Get park permits/reservations from Recreation.gov RIDB API
+// @route   GET /api/parks/:parkCode/permits
+// @access  Public
+exports.getParkPermits = async (req, res, next) => {
+  try {
+    const ridbService = require('../services/ridbService');
+    const { parkCode } = req.params;
+    const data = await ridbService.getPermitsForPark(parkCode);
+    res.status(200).json({ success: true, count: data.length, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Search parks
 // @route   GET /api/parks/search
 // @access  Public

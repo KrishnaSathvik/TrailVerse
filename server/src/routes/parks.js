@@ -15,7 +15,8 @@ const {
   getParkVideos,
   getParkGalleryPhotos,
   getParkParkingLots,
-  getParkBrochures
+  getParkBrochures,
+  getParkPermits
 } = require('../controllers/parkController');
 
 router.get('/', getAllParks);
@@ -32,6 +33,7 @@ router.get('/:parkCode/videos', getParkVideos);
 router.get('/:parkCode/gallery', getParkGalleryPhotos);
 router.get('/:parkCode/parkinglots', getParkParkingLots);
 router.get('/:parkCode/brochures', getParkBrochures);
+router.get('/:parkCode/permits', getParkPermits);
 router.get('/:parkCode', getParkByCode);
 
 module.exports = router;
