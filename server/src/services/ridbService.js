@@ -55,17 +55,27 @@ class RIDBService {
   }
 
   async _searchRecAreas(query, state) {
+    if (!RIDB_API_KEY) {
+      console.warn('⚠️ RIDB_API_KEY not set — skipping recareas search');
+      return [];
+    }
     try {
-      const response = await this.api.get('/recareas', {
-        params: { query, state, limit: 5 }
-      });
-      return response.data?.RECDATA || [];
+      const params = { query, limit: 10 };
+      if (state) params.state = state;
+      const response = await this.api.get('/recareas', { params });
+      const results = response.data?.RECDATA || [];
+      console.log(`[RIDB] search "${query}" state=${state || 'any'} → ${results.length} results`);
+      return results;
     } catch (error) {
       if (error.response?.status === 429) {
         console.warn('⚠️ RIDB 429 on recareas search');
         return [];
       }
-      console.error('RIDB recareas search error:', error.message);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.error('⚠️ RIDB auth failed — check RIDB_API_KEY. Status:', error.response.status);
+      } else {
+        console.error('RIDB recareas search error:', error.message, 'query:', query);
+      }
       return [];
     }
   }
@@ -122,6 +132,12 @@ class RIDBService {
     // Require minimum score of 70 to avoid false matches
     const recAreaId = (bestMatch && bestScore >= 70) ? bestMatch.RecAreaID : null;
 
+    if (recAreaId) {
+      console.log(`[RIDB] resolved ${parkCode} (${fullName}) → recAreaId=${recAreaId} "${bestMatch.RecAreaName}" score=${bestScore}`);
+    } else {
+      console.log(`[RIDB] no match for ${parkCode} (${fullName}) — ${results.length} results, best score=${bestScore}`);
+    }
+
     this.parkCodeToRecAreaId.set(key, { id: recAreaId, timestamp: Date.now() });
     return recAreaId;
   }
@@ -166,6 +182,7 @@ class RIDBService {
     if (!recAreaId) return [];
 
     const facilities = await this._getFacilitiesForRecArea(recAreaId);
+    console.log(`[RIDB] ${parkCode} recArea=${recAreaId} → ${facilities.length} facilities`);
     if (facilities.length === 0) return [];
 
     const allPermits = [];
@@ -174,6 +191,9 @@ class RIDBService {
     // Sequential loop to respect 50 req/min rate limit
     for (const facility of facilities) {
       const permits = await this._getPermitsForFacility(facility.FacilityID);
+      if (permits.length > 0) {
+        console.log(`[RIDB] facility ${facility.FacilityID} "${facility.FacilityName}" → ${permits.length} permits`);
+      }
       for (const permit of permits) {
         const id = permit.PermitEntranceID;
         if (seen.has(id)) continue;
@@ -192,6 +212,7 @@ class RIDBService {
       }
     }
 
+    console.log(`[RIDB] ${parkCode} → ${allPermits.length} total permits`);
     return allPermits;
   }
 
