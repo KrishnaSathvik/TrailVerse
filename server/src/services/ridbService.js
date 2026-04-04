@@ -248,6 +248,113 @@ class RIDBService {
     this.inFlight.set(key, promise);
     return promise;
   }
+
+  // Diagnostic method - bypasses cache and reports each step
+  async debugResolve(parkCode) {
+    const result = {
+      parkCode,
+      apiKeySet: !!RIDB_API_KEY,
+      apiKeyPrefix: RIDB_API_KEY ? RIDB_API_KEY.substring(0, 8) + '...' : null,
+      nps: null,
+      searches: [],
+      bestMatch: null,
+      facilities: null,
+      permits: null,
+      error: null
+    };
+
+    // Clear caches for this park so we get fresh data
+    const key = parkCode.toLowerCase();
+    this.parkCodeToRecAreaId.delete(key);
+    this.permitsByParkCode.delete(key);
+
+    try {
+      // Get NPS park info
+      const npsService = require('./npsService');
+      const park = await npsService.getParkByCode(parkCode);
+      if (!park) {
+        result.error = 'NPS park not found';
+        return result;
+      }
+      const states = park.states ? park.states.split(',').map(s => s.trim()) : [];
+      result.nps = {
+        fullName: park.fullName,
+        state: states[0] || null,
+        allStates: park.states
+      };
+
+      // Search with full name + state
+      const search1 = await this._searchRecAreas(park.fullName, states[0]);
+      result.searches.push({
+        query: park.fullName,
+        state: states[0],
+        count: search1.length,
+        results: search1.slice(0, 5).map(r => ({
+          id: r.RecAreaID,
+          name: r.RecAreaName,
+          score: this._scoreMatch(r.RecAreaName, park.fullName)
+        }))
+      });
+
+      // Search stripped name
+      const stripped = this._stripCommonSuffixes(park.fullName);
+      if (stripped !== park.fullName) {
+        const search2 = await this._searchRecAreas(stripped, states[0]);
+        result.searches.push({
+          query: stripped,
+          state: states[0],
+          count: search2.length,
+          results: search2.slice(0, 5).map(r => ({
+            id: r.RecAreaID,
+            name: r.RecAreaName,
+            score: this._scoreMatch(r.RecAreaName, park.fullName)
+          }))
+        });
+      }
+
+      // Search without state filter
+      const search3 = await this._searchRecAreas(park.fullName, null);
+      result.searches.push({
+        query: park.fullName,
+        state: null,
+        count: search3.length,
+        results: search3.slice(0, 5).map(r => ({
+          id: r.RecAreaID,
+          name: r.RecAreaName,
+          score: this._scoreMatch(r.RecAreaName, park.fullName)
+        }))
+      });
+
+      // What would resolveRecAreaId actually return?
+      const recAreaId = await this.resolveRecAreaId(parkCode);
+      result.bestMatch = recAreaId;
+
+      if (recAreaId) {
+        const facilities = await this._getFacilitiesForRecArea(recAreaId);
+        result.facilities = {
+          count: facilities.length,
+          sample: facilities.slice(0, 3).map(f => ({
+            id: f.FacilityID,
+            name: f.FacilityName
+          }))
+        };
+
+        if (facilities.length > 0) {
+          // Check first few facilities for permits
+          let totalPermits = 0;
+          for (const f of facilities.slice(0, 5)) {
+            const permits = await this._getPermitsForFacility(f.FacilityID);
+            totalPermits += permits.length;
+          }
+          result.permits = { sampledFromFirst5: totalPermits };
+        }
+      }
+    } catch (err) {
+      result.error = err.message;
+    }
+
+    return result;
+  }
 }
 
 module.exports = new RIDBService();
