@@ -1,13 +1,18 @@
 import { notFound } from 'next/navigation';
-import { getAllParkCodes, getParkDetails } from '@/lib/parkApi';
+import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
 import ParkDetailClient from './ParkDetailClient';
 
 export const revalidate = 300; // 5 minutes — park data includes dynamic NPS content
 
 export async function generateStaticParams() {
   try {
-    const codes = await getAllParkCodes();
-    return codes.map((parkCode) => ({ parkCode }));
+    const parkSlugs = await getAllParkSlugs();
+    // Return both slug and code so both /parks/yellowstone-national-park
+    // and /parks/yell generate during build (needed until redirects fully propagate)
+    return parkSlugs.flatMap(({ code, slug }) => [
+      { parkCode: slug },
+      { parkCode: code },
+    ]);
   } catch {
     return [];
   }
@@ -15,7 +20,10 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }) {
   const { parkCode } = await params;
-  const data = await getParkDetails(parkCode);
+  // If parkCode is longer than 4 chars, it's a slug — look up by slug
+  const data = parkCode.length > 4
+    ? await getParkDetailsBySlug(parkCode)
+    : await getParkDetails(parkCode);
 
   if (!data?.park) {
     return { title: 'Park Not Found - TrailVerse' };
@@ -24,7 +32,8 @@ export async function generateMetadata({ params }) {
   const { park } = data;
   const description = `Explore ${park.fullName} in ${park.states}. ${park.description?.substring(0, 150)}... Find activities, camping, weather, and plan your visit.`;
   const image = park.images?.[0]?.url;
-  const url = `https://www.nationalparksexplorerusa.com/parks/${park.parkCode}`;
+  const slug = park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+  const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
     title: `${park.fullName} - Complete Guide & Travel Information | TrailVerse`,
@@ -50,7 +59,10 @@ export async function generateMetadata({ params }) {
 
 export default async function ParkPage({ params }) {
   const { parkCode } = await params;
-  const data = await getParkDetails(parkCode);
+  // If parkCode is longer than 4 chars, it's a slug — look up by slug
+  const data = parkCode.length > 4
+    ? await getParkDetailsBySlug(parkCode)
+    : await getParkDetails(parkCode);
 
   if (!data?.park) {
     notFound();
@@ -76,7 +88,7 @@ export default async function ParkPage({ params }) {
       latitude: park.latitude,
       longitude: park.longitude,
     },
-    url: `https://www.nationalparksexplorerusa.com/parks/${park.parkCode}`,
+    url: `https://www.nationalparksexplorerusa.com/parks/${park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`,
     sameAs: park.url,
   };
 

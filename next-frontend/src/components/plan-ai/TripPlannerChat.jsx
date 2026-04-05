@@ -2114,7 +2114,40 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                 />
               ))}
 
-              {isGenerating && <TypingIndicator 
+              {isAnonymous &&
+               messages.filter(m => m.role === 'user').length === 1 &&
+               !isGenerating &&
+               messages[messages.length - 1]?.role === 'assistant' && (
+                <div className="mx-auto max-w-3xl px-3 sm:px-6">
+                  <div
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl px-4 py-3"
+                    style={{
+                      backgroundColor: 'rgba(67, 160, 106, 0.08)',
+                      borderWidth: '1px',
+                      borderColor: 'rgba(67, 160, 106, 0.25)',
+                    }}
+                  >
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        Love this plan? Save it to your account.
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        Free account — keeps your trip history and unlocks unlimited planning.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleSignupFromChat}
+                      variant="primary"
+                      size="sm"
+                      icon={Sparkles}
+                    >
+                      Save Trip Free
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {isGenerating && <TypingIndicator
                 text={thinkingMessage}
               />}
 
@@ -2274,6 +2307,41 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     <Edit2 className="h-3.5 w-3.5" />
                     Quick Fill
                   </button>
+                )}
+                {providersLoaded && providers.length > 1 && (
+                  <div
+                    className="inline-flex items-center rounded-full p-0.5"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    {providers.map((provider) => {
+                      const id = (provider.id || provider.name || '').toLowerCase();
+                      const label = id.includes('openai') || id.includes('gpt') ? 'GPT-4'
+                        : id.includes('claude') || id.includes('anthropic') ? 'Claude'
+                        : provider.name;
+                      const subtitle = id.includes('openai') || id.includes('gpt') ? 'Detailed planner'
+                        : id.includes('claude') || id.includes('anthropic') ? 'Insider tips'
+                        : '';
+                      const isActive = selectedProvider === provider.id;
+                      return (
+                        <button
+                          key={provider.id}
+                          type="button"
+                          onClick={() => setSelectedProvider(provider.id)}
+                          className="rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition-all duration-150 sm:px-3 sm:text-xs"
+                          style={{
+                            backgroundColor: isActive ? 'var(--accent-green)' : 'transparent',
+                            color: isActive ? '#fff' : 'var(--text-secondary)',
+                          }}
+                          title={subtitle}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               {chatStatus?.description && (

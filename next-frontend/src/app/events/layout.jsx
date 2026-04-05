@@ -1,19 +1,13 @@
 export const metadata = {
-  title: 'National Parks Events Calendar - Ranger Programs & Activities | TrailVerse',
-  description: 'Discover upcoming events, ranger programs, workshops, and special activities at America\'s National Parks. Plan your visit around exciting park events.',
-  keywords: 'national parks events, ranger programs, park activities, workshops, guided tours, national park calendar',
+  title: 'National Park Events & Ranger Programs | TrailVerse',
+  description: 'Browse upcoming national park events, ranger programs, guided tours, and junior ranger activities. Filter by park, date, and activity type.',
+  alternates: { canonical: 'https://www.nationalparksexplorerusa.com/events' },
   openGraph: {
-    title: 'National Parks Events Calendar - Ranger Programs & Activities | TrailVerse',
-    description: 'Discover upcoming events, ranger programs, workshops, and special activities at America\'s National Parks.',
+    title: 'National Park Events & Ranger Programs | TrailVerse',
+    description: 'Browse upcoming ranger programs, guided tours, and events at US national parks.',
     url: 'https://www.nationalparksexplorerusa.com/events',
+    siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse — National Parks Events' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'National Parks Events Calendar - Ranger Programs & Activities | TrailVerse',
-    description: 'Discover upcoming events, ranger programs, workshops, and special activities at America\'s National Parks.',
-    images: ['/og-image-trailverse.jpg'],
   },
 };
 
