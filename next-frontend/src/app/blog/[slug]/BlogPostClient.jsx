@@ -200,7 +200,7 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
             style={{ color: 'var(--text-secondary)' }}
           >
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {post.author}</span>
+              <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {(post.author && post.author !== 'Admin') ? post.author : 'TrailVerse Team'}</span>
               <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /><span>{formatDate(post.publishedAt)}</span></div>
               <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /><span>{post.readTime} min read</span></div>
               <div className="flex items-center gap-1.5"><Eye className="h-4 w-4" /><span>{post.views?.toLocaleString() || 0} views</span></div>
