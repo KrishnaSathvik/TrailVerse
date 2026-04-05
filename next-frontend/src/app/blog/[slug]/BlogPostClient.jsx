@@ -14,6 +14,7 @@ import TableOfContents from '@/components/blog/TableOfContents';
 import blogService from '@/services/blogService';
 import { logBlogView } from '@/utils/analytics';
 import { injectHeadingIdsIntoHtml, parseBlogHeadingsFromHtml } from '@/utils/blogHeadings';
+import { linkifyParkNamesHtml } from '@/utils/parkLinkifier';
 import { Calendar, Clock, Eye, ArrowLeft, BookOpen } from '@components/icons';
 import '@/styles/blog-prose.css';
 
@@ -115,8 +116,8 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
 
   const headings = useMemo(() => parseBlogHeadingsFromHtml(post?.content || ''), [post?.content]);
   const contentWithHeadingIds = useMemo(
-    () => injectHeadingIdsIntoHtml(post?.content || '', headings),
-    [headings, post?.content]
+    () => linkifyParkNamesHtml(injectHeadingIdsIntoHtml(post?.content || '', headings), slug),
+    [headings, post?.content, slug]
   );
 
   useEffect(() => {

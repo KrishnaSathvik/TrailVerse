@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw } from '@components/icons';
+import { linkifyParkNames } from '@/utils/parkLinkifier';
 
 
 const MessageBubble = ({
@@ -132,6 +133,7 @@ const MessageBubble = ({
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              children={!isUser ? linkifyParkNames(message) : message}
               components={{
                 // Headings
                 h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold mb-3 mt-2 break-words">{children}</h1>,
@@ -209,22 +211,31 @@ const MessageBubble = ({
                 ),
                 
                 // Links
-                a: ({ href, children }) => (
-                  <a 
-                    href={href} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="underline"
-                    style={{ 
-                      color: 'var(--forest-500)',
-                      '--hover-color': 'var(--forest-600)'
-                    }}
-                    onMouseEnter={(e) => e.target.style.color = 'var(--forest-600)'}
-                    onMouseLeave={(e) => e.target.style.color = 'var(--forest-500)'}
-                  >
-                    {children}
-                  </a>
-                ),
+                a: ({ href, children }) => {
+                  if (href?.startsWith('/parks/')) {
+                    return (
+                      <a href={href} className="underline" style={{ color: 'var(--accent-green)', textDecoration: 'underline' }}>
+                        {children}
+                      </a>
+                    );
+                  }
+                  return (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                      style={{
+                        color: 'var(--forest-500)',
+                        '--hover-color': 'var(--forest-600)'
+                      }}
+                      onMouseEnter={(e) => e.target.style.color = 'var(--forest-600)'}
+                      onMouseLeave={(e) => e.target.style.color = 'var(--forest-500)'}
+                    >
+                      {children}
+                    </a>
+                  );
+                },
                 
                 // Horizontal rule
                 hr: () => <hr className="my-4" style={{ borderColor: 'var(--border)' }} />,
@@ -271,9 +282,7 @@ const MessageBubble = ({
                   </td>
                 ),
               }}
-            >
-              {message}
-            </ReactMarkdown>
+            />
           </div>
 
           {/* Actions (assistant only) */}
