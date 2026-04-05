@@ -6,6 +6,7 @@ const { fetchRelevantFacts } = require('../services/factsService');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 const AnonymousSession = require('../models/AnonymousSession');
 const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerator');
+const { extractItineraryJSON } = require('../utils/extractItineraryJSON');
 
 // Initialize AI clients
 let anthropic = null;
@@ -251,6 +252,35 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       return res.status(400).json({ error: 'Invalid provider. Use "claude" or "openai"' });
     }
 
+    // Extract and strip itinerary JSON from response
+    const { cleanContent, itineraryData } = extractItineraryJSON(response.content);
+    response.content = cleanContent;
+    response.hasItinerary = !!itineraryData;
+
+    if (itineraryData) {
+      const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
+      if (tripId) {
+        try {
+          const TripPlan = require('../models/TripPlan');
+          await TripPlan.findByIdAndUpdate(tripId, {
+            plan: {
+              type: 'itinerary',
+              version: 1,
+              generatedAt: new Date().toISOString(),
+              createdFrom: 'ai',
+              parkName: req.body.metadata?.parkName || null,
+              parkCode: req.body.metadata?.parkCode || null,
+              ...itineraryData
+            }
+          });
+          console.log(`[AI] Itinerary saved to TripPlan ${tripId}`);
+        } catch (saveErr) {
+          console.error('[AI] Failed to save itinerary:', saveErr.message);
+          // Non-fatal — conversation still works without plan save
+        }
+      }
+    }
+
     res.json({ data: response });
 
   } catch (error) {
@@ -343,7 +373,32 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk.delta.text })}\n\n`);
           }
           if (chunk.type === 'message_stop') {
-            res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'claude', model: model || 'claude-sonnet-4-6' })}\n\n`);
+            const { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasItinerary: !!itineraryData })}\n\n`);
+
+            if (itineraryData) {
+              const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
+              if (tripId) {
+                try {
+                  const TripPlan = require('../models/TripPlan');
+                  await TripPlan.findByIdAndUpdate(tripId, {
+                    plan: {
+                      type: 'itinerary',
+                      version: 1,
+                      generatedAt: new Date().toISOString(),
+                      createdFrom: 'ai',
+                      parkName: req.body.metadata?.parkName || null,
+                      parkCode: req.body.metadata?.parkCode || null,
+                      ...itineraryData
+                    }
+                  });
+                  console.log(`[AI] Itinerary saved to TripPlan ${tripId}`);
+                } catch (saveErr) {
+                  console.error('[AI] Failed to save itinerary:', saveErr.message);
+                  // Non-fatal — conversation still saved by autoSaveConversation
+                }
+              }
+            }
           }
         }
       } else if (provider === 'openai') {
@@ -370,7 +425,31 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
           }
         }
-        res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'openai', model: model || 'gpt-4.1' })}\n\n`);
+        const { cleanContent: openaiCleanContent, itineraryData: openaiItineraryData } = extractItineraryJSON(fullContent);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasItinerary: !!openaiItineraryData })}\n\n`);
+
+        if (openaiItineraryData) {
+          const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
+          if (tripId) {
+            try {
+              const TripPlan = require('../models/TripPlan');
+              await TripPlan.findByIdAndUpdate(tripId, {
+                plan: {
+                  type: 'itinerary',
+                  version: 1,
+                  generatedAt: new Date().toISOString(),
+                  createdFrom: 'ai',
+                  parkName: req.body.metadata?.parkName || null,
+                  parkCode: req.body.metadata?.parkCode || null,
+                  ...openaiItineraryData
+                }
+              });
+              console.log(`[AI] Itinerary saved to TripPlan ${tripId}`);
+            } catch (saveErr) {
+              console.error('[AI] Failed to save itinerary:', saveErr.message);
+            }
+          }
+        }
       } else {
         res.write(`data: ${JSON.stringify({ type: 'error', message: 'Invalid provider. Use "claude" or "openai"' })}\n\n`);
       }
@@ -685,6 +764,10 @@ Ready to continue planning? 🚀`,
       return res.status(400).json({ error: 'Invalid provider. Use "claude" or "openai"' });
     }
 
+    // Extract and strip itinerary JSON from response (strip but do NOT save for anonymous)
+    const { cleanContent: anonCleanContent, itineraryData: anonItineraryData } = extractItineraryJSON(response.content);
+    response.content = anonCleanContent;
+
     // Add AI response to session
     await session.addMessage({
       role: 'assistant',
@@ -695,8 +778,8 @@ Ready to continue planning? 🚀`,
     });
 
     const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
-    
-    res.json({ 
+
+    res.json({
       data: {
         content: response.content,
         provider: response.provider,
@@ -704,7 +787,8 @@ Ready to continue planning? 🚀`,
         usage: response.usage,
         anonymousId: session.anonymousId,
         messageCount: userMessageCount,
-        canSendMore: session.canSendMessage()
+        canSendMore: session.canSendMessage(),
+        hasItinerary: !!anonItineraryData
       }
     });
 
