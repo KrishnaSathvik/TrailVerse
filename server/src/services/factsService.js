@@ -88,14 +88,18 @@ async function fetchNPSFacts({ parkCode }) {
   try {
     const npsService = require('./npsService');
 
-    // Use npsService which serves from bulk caches — zero NPS API calls
-    const [details, alerts] = await Promise.allSettled([
+    // Fetch park details, alerts, campgrounds, and visitor centers in parallel
+    const [details, alerts, campgrounds, visitorCenters] = await Promise.allSettled([
       npsService.getParkByCode(parkCode),
-      npsService.getParkAlerts(parkCode)
+      npsService.getParkAlerts(parkCode),
+      npsService.getParkCampgrounds(parkCode),
+      npsService.getParkVisitorCenters(parkCode)
     ]);
 
     const park = details.status === 'fulfilled' ? details.value : null;
     const parkAlerts = alerts.status === 'fulfilled' ? alerts.value : [];
+    const parkCampgrounds = campgrounds.status === 'fulfilled' ? campgrounds.value : [];
+    const parkVisitorCenters = visitorCenters.status === 'fulfilled' ? visitorCenters.value : [];
 
     if (!park) {
       console.log(`⚠️ No park details found for ${parkCode}`);
@@ -104,27 +108,60 @@ async function fetchNPSFacts({ parkCode }) {
 
     const facts = [];
 
-    // Add park highlights (activities, things to do)
-    if (park.activities && park.activities.length > 0) {
-      const topActivities = park.activities
-        .slice(0, 5)
-        .map(a => `- ${a.name}`)
+    // Entrance fees
+    if (park.entranceFees && park.entranceFees.length > 0) {
+      const fees = park.entranceFees
+        .slice(0, 3)
+        .map(f => `- ${f.title}: $${f.cost}`)
         .join('\n');
-      facts.push(`Highlights:\n${topActivities}`);
+      facts.push(`Entrance Fees:\n${fees}`);
     }
 
-    // Add active alerts
-    const activeAlerts = parkAlerts
-      .filter(alert => alert.category && ['Information', 'Caution', 'Closure'].includes(alert.category))
-      .slice(0, 3)
-      .map(a => `- ${a.title}${a.category ? ` (${a.category})` : ''}`)
-      .join('\n');
-
-    if (activeAlerts) {
-      facts.push(`Active Alerts:\n${activeAlerts}`);
-    } else {
-      facts.push('Active Alerts:\nNone reported');
+    // Activities
+    if (park.activities && park.activities.length > 0) {
+      const topActivities = park.activities.slice(0, 6).map(a => a.name).join(', ');
+      facts.push(`Available Activities: ${topActivities}`);
     }
+
+    // Alerts — split by category
+    const closures = parkAlerts.filter(a => a.category === 'Closure').slice(0, 3);
+    const cautions = parkAlerts.filter(a => a.category === 'Caution').slice(0, 3);
+    const infos = parkAlerts.filter(a => a.category === 'Information').slice(0, 3);
+
+    if (closures.length > 0) {
+      facts.push('⚠️ ACTIVE CLOSURES:\n' + closures.map(a => `- ${a.title}`).join('\n'));
+    }
+    if (cautions.length > 0) {
+      facts.push('Cautions:\n' + cautions.map(a => `- ${a.title}`).join('\n'));
+    }
+    if (infos.length > 0) {
+      facts.push('Park Info:\n' + infos.map(a => `- ${a.title}`).join('\n'));
+    }
+    if (closures.length === 0 && cautions.length === 0 && infos.length === 0) {
+      facts.push('Active Closures/Alerts: None reported');
+    }
+
+    // Campgrounds
+    if (parkCampgrounds.length > 0) {
+      const cgLines = parkCampgrounds.slice(0, 3).map(cg => {
+        const info = cg.reservationInfo || 'See recreation.gov';
+        return `- ${cg.name}: ${info}`;
+      }).join('\n');
+      facts.push(`Campgrounds (${parkCampgrounds.length} total):\n${cgLines}`);
+    }
+
+    // Visitor centers
+    if (parkVisitorCenters.length > 0) {
+      const vc = parkVisitorCenters[0];
+      let vcText = `Main Visitor Center: ${vc.name}`;
+      if (vc.description) {
+        vcText += `\nHours: ${vc.description}`;
+      }
+      facts.push(vcText);
+    }
+
+    // Permits — npsService.getParkPermits does not exist, skip gracefully
+    facts.push('Permits: No permit requirements in current data');
 
     return facts.filter(Boolean).join('\n\n');
   } catch (error) {
@@ -149,8 +186,9 @@ function needsWeatherFacts(userMessage) {
  * @returns {boolean} Whether NPS facts should be fetched
  */
 function needsNPSFacts(userMessage) {
-  const npsKeywords = /(alerts|closures|permits|trails|activities|highlights|campgrounds|visitor center|ranger|events|weather|forecast|climate)/i;
-  return npsKeywords.test(userMessage);
+  // Always fetch NPS data when we have a parkCode — users benefit from
+  // current conditions regardless of the specific question asked
+  return true;
 }
 
 /**
