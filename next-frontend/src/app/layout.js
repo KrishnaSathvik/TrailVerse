@@ -64,6 +64,28 @@ export default function RootLayout({ children }) {
           </>
         )}
         <Script
+          id="website-schema"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'TrailVerse',
+              url: 'https://www.nationalparksexplorerusa.com',
+              description: "Explore America's 470+ National Parks with AI-powered trip planning, real-time weather, interactive maps, and community reviews.",
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: {
+                  '@type': 'EntryPoint',
+                  urlTemplate: 'https://www.nationalparksexplorerusa.com/explore?q={search_term_string}',
+                },
+                'query-input': 'required name=search_term_string',
+              },
+            })
+          }}
+        />
+        <Script
           id="disable-prod-console-noise"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
