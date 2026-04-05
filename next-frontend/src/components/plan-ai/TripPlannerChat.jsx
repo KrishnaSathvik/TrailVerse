@@ -891,11 +891,12 @@ const TripPlannerChat = ({
               data = {
                 content: result.content,
                 provider: result.provider,
-                model: result.model
+                model: result.model,
+                hasItinerary: result.hasItinerary || false
               };
               setMessages(prev => prev.map(m =>
                 m.id === streamAssistantId
-                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false }
+                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasItinerary: result.hasItinerary || false }
                   : m
               ));
             },
@@ -976,7 +977,8 @@ const TripPlannerChat = ({
                 timestamp: new Date(),
                 provider: data.provider,
                 model: data.model,
-                responseTime
+                responseTime,
+                hasItinerary: data.hasItinerary || false
               }
             ]
           : prev.map(msg =>
@@ -1941,8 +1943,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
             <div className={isWelcomeState ? 'flex min-h-full items-start justify-center sm:items-center' : ''}>
             <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-4xl' : ''}`}>
               {messages.map((message, index) => (
+                <React.Fragment key={`${message.id}-${user?.id || 'anonymous'}-${avatarVersion}`}>
                 <MessageBubble
-                  key={`${message.id}-${user?.id || 'anonymous'}-${avatarVersion}`}
                   message={message.content}
                   isUser={message.role === 'user'}
                   timestamp={message.timestamp}
@@ -2112,6 +2114,28 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     }
                   } : undefined}
                 />
+                {message.hasItinerary && message.role === 'assistant' && currentTripId && !currentTripId.startsWith('temp-') && (
+                  <div className="mx-auto max-w-3xl px-3 sm:px-6 mt-1 mb-2">
+                    <button
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.location.href = `/plan-ai/${currentTripId}/itinerary`;
+                        }
+                      }}
+                      className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition hover:opacity-90"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--accent-green)',
+                        color: 'var(--accent-green)',
+                        fontSize: '13px'
+                      }}
+                    >
+                      <span>📋</span>
+                      <span>Open in Visual Itinerary Builder →</span>
+                    </button>
+                  </div>
+                )}
+                </React.Fragment>
               ))}
 
               {isGenerating && <TypingIndicator 
