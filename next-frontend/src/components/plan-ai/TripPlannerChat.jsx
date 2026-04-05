@@ -16,6 +16,7 @@ import { logAIChat } from '../../utils/analytics';
 import ChatInput from '../ai-chat/ChatInput';
 import MessageBubble from '../ai-chat/MessageBubble';
 import TypingIndicator from '../ai-chat/TypingIndicator';
+import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 
@@ -92,9 +93,9 @@ const TripPlannerChat = ({
             tone: 'saved'
           }
         : null;
-  const anonymousMessagesRemaining = Math.max(0, 3 - messageCount);
+  const anonymousMessagesRemaining = Math.max(0, 5 - messageCount);
   const anonymousQuotaLabel =
-    isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < 3
+    isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < 5
       ? `${anonymousMessagesRemaining} free ${anonymousMessagesRemaining === 1 ? 'message' : 'messages'} left`
       : null;
 
@@ -753,7 +754,7 @@ const TripPlannerChat = ({
       try {
         await validateSessionWithBackend(anonymousId);
         if (!canSendMore) {
-          showToast('You have reached your 3 message limit. Please create an account to continue.', 'error');
+          showToast('You have reached your 5 message limit. Please create an account to continue.', 'error');
           return;
         }
       } catch (error) {
@@ -1725,8 +1726,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
     );
   }
 
-  // Show warning message if user has exhausted their 3 messages
-  if (isAnonymous && !canSendMore && messageCount >= 3) {
+  // Show warning message if user has exhausted their 5 messages
+  if (isAnonymous && !canSendMore && messageCount >= 5) {
     return (
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
         {/* Floating Back Button */}
@@ -1780,7 +1781,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   Ready to Continue Planning?
                 </h2>
                 <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You&apos;ve used your 3 free messages. Save this chat to an account and keep going now, or wait 48 hours for 3 fresh free messages.
+                  You&apos;ve used your 5 free messages. Save this chat to an account and keep going now, or wait 48 hours for 5 fresh free messages.
                 </p>
               </div>
 
@@ -2176,8 +2177,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
               </h3>
               <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
                 {isSessionRestored 
-                  ? `You've already used your 3 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free messages.`
-                  : `You've used your 3 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 3 fresh free messages.`
+                  ? `You've already used your 5 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 5 fresh free messages.`
+                  : `You've used your 5 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 5 fresh free messages.`
                 }
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -2287,6 +2288,21 @@ What kind of adventure are you dreaming of? Let's make it happen.`
               <p className="mb-2 text-[11px] leading-4 sm:mb-3 sm:text-sm sm:leading-6" style={{ color: 'var(--text-secondary)' }}>
                 Use Quick Fill to add your destination, dates, budget, and interests before you ask for an itinerary.
               </p>
+            )}
+
+            {isWelcomeState && (
+              <div className="mb-3">
+                <SuggestedPrompts
+                  prompts={[
+                    { icon: Sparkles, text: "Plan a 5-day trip to Yellowstone for a family", color: "text-green-400" },
+                    { icon: MapPin, text: "Best national parks for stargazing in the Southwest", color: "text-blue-400" },
+                    { icon: Calendar, text: "Weekend hiking trip from Denver under $500", color: "text-yellow-400" },
+                    { icon: Edit2, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
+                  ]}
+                  onSelect={(text) => handleSendMessage(text)}
+                  title="Try asking..."
+                />
+              </div>
             )}
 
             {/* Chat Input */}
