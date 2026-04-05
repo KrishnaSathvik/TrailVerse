@@ -60,5 +60,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap: Failed to fetch blog posts', e);
   }
 
-  return [...staticRoutes, ...parkRoutes, ...blogRoutes];
+  // State aggregation pages
+  const stateRoutes: MetadataRoute.Sitemap = [
+    'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'florida',
+    'hawaii', 'idaho', 'kentucky', 'maine', 'michigan', 'minnesota', 'montana',
+    'nevada', 'new-mexico', 'north-dakota', 'ohio', 'oregon', 'south-dakota',
+    'tennessee', 'texas', 'utah', 'virginia', 'washington', 'west-virginia',
+    'wyoming', 'north-carolina', 'south-carolina', 'indiana',
+  ].map(stateCode => ({
+    url: `${BASE_URL}/parks/state/${stateCode}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  // Blog category pages
+  const categoryRoutes: MetadataRoute.Sitemap = [
+    'trip-planning', 'park-guides', 'gear-packing',
+    'seasonal', 'astrophotography', 'budget-travel'
+  ].map(cat => ({
+    url: `${BASE_URL}/blog/category/${cat}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes];
 }
