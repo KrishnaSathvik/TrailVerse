@@ -7,6 +7,7 @@ import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import CommentSection from '@/components/blog/CommentSection';
+import AuthorBioCard from '@/components/blog/AuthorBioCard';
 import LikeFavorite from '@/components/blog/LikeFavorite';
 import ShareButtons from '@/components/common/ShareButtons';
 import RelatedPosts from '@/components/blog/RelatedPosts';
@@ -292,6 +293,8 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
                 )}
               </div>
             </div>
+
+            <AuthorBioCard author={post.author} />
 
             <div className="mt-12">
               <CommentSection postId={post._id} />

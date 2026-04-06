@@ -50,7 +50,10 @@ const categories = [
   'History',
   'Conservation',
   'Fall Travel Blog',
-  'Travel Blogs'
+  'Travel Blogs',
+  'Astrophotography',
+  'National Parks',
+  'Seasonal Guides'
 ];
 
 const createSlug = (value) =>

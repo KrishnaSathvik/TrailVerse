@@ -32,7 +32,7 @@ const blogPostSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Hiking', 'Photography', 'Wildlife', 'Travel Tips', 'Park Guides', 'Camping', 'History', 'Conservation', 'Fall Travel Blog', 'Travel Blogs'],
+    enum: ['Hiking', 'Photography', 'Wildlife', 'Travel Tips', 'Park Guides', 'Camping', 'History', 'Conservation', 'Fall Travel Blog', 'Travel Blogs', 'Astrophotography', 'National Parks', 'Seasonal Guides'],
     default: 'Park Guides'
   },
   tags: [{
@@ -62,6 +62,10 @@ const blogPostSchema = new mongoose.Schema({
   featured: {
     type: Boolean,
     default: false
+  },
+  seoSchema: {
+    type: String,
+    default: null
   },
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
