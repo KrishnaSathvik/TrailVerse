@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/context/ToastContext';
 import blogService from '@/services/blogService';
@@ -62,6 +62,136 @@ const createSlug = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+/**
+ * Parse a .md file string into BlogPost form fields.
+ * Strips YAML frontmatter, converts Markdown body to HTML,
+ * injects JSON-LD schema if present in frontmatter.
+ */
+function parseMarkdownArticle(mdContent) {
+  // --- Strip and parse YAML frontmatter ---
+  const frontmatter = {};
+  let body = mdContent;
+
+  const fmMatch = mdContent.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (fmMatch) {
+    const fmRaw = fmMatch[1];
+    body = fmMatch[2];
+
+    fmRaw.split('\n').forEach(line => {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx === -1) return;
+      const key = line.slice(0, colonIdx).trim();
+      let val = line.slice(colonIdx + 1).trim();
+
+      // Handle array values like: tags: [a, b, c] or tags: ["a","b"]
+      if (val.startsWith('[') && val.endsWith(']')) {
+        val = val.slice(1, -1).split(',').map(v => v.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+      }
+      // Handle multi-line arrays (- item format) — collect next lines starting with '-'
+      frontmatter[key] = val;
+    });
+
+    // Handle block array style (- item on separate lines)
+    const blockArrayRegex = /^(\w+):\s*\n((?:[ \t]+-[^\n]+\n?)+)/gm;
+    let blockMatch;
+    while ((blockMatch = blockArrayRegex.exec(fmRaw)) !== null) {
+      const key = blockMatch[1];
+      const items = blockMatch[2].match(/- ([^\n]+)/g)?.map(m => m.replace('- ', '').trim()) || [];
+      frontmatter[key] = items;
+    }
+  }
+
+  // --- Convert Markdown to HTML ---
+  // Use a simple but reliable inline converter (no external deps needed)
+  let html = body
+    // Headings
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold + italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    // Images
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
+    // Blockquotes
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // Horizontal rules
+    .replace(/^[-*_]{3,}$/gm, '<hr />')
+    // Unordered lists — group consecutive li items
+    .replace(/^[-*+] (.+)$/gm, '<li>$1</li>')
+    // Ordered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Wrap consecutive <li> items in <ul> or <ol>
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`);
+
+  // Paragraphs — wrap non-HTML lines
+  const lines = html.split('\n');
+  const result = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (!line) { i++; continue; }
+    if (/^<(h[1-6]|ul|ol|li|blockquote|hr|pre|div|script|table)/.test(line)) {
+      result.push(line);
+    } else if (line) {
+      result.push(`<p>${line}</p>`);
+    }
+    i++;
+  }
+  html = result.join('\n');
+
+  // --- Extract title from H1 if not in frontmatter ---
+  let title = frontmatter.title || '';
+  if (!title) {
+    const h1Match = body.match(/^# (.+)$/m);
+    if (h1Match) title = h1Match[1];
+  }
+  // Remove H1 from HTML if it duplicates the title field
+  if (title) {
+    html = html.replace(`<h1>${title}</h1>`, '').trim();
+  }
+
+  // --- Build slug ---
+  const slug = frontmatter.slug || createSlug(title);
+
+  // --- Excerpt ---
+  const excerpt = (frontmatter.description || frontmatter.excerpt || '')
+    .toString().slice(0, 295);
+
+  // --- Tags ---
+  let tags = frontmatter.tags || [];
+  if (typeof tags === 'string') {
+    tags = tags.split(',').map(t => t.trim()).filter(Boolean);
+  }
+
+  // --- Category ---
+  const category = frontmatter.category || 'Park Guides';
+
+  // --- Featured image ---
+  const featuredImage = frontmatter.image || frontmatter.featuredImage || '';
+
+  // --- Author ---
+  const author = frontmatter.author || 'TrailVerse Team';
+
+  // --- JSON-LD injection ---
+  const schemaRaw = frontmatter.faqSchema || frontmatter.seo_schema || frontmatter.schema || frontmatter.jsonld || '';
+  if (schemaRaw) {
+    const schemaBlock = `<script type="application/ld+json">\n${schemaRaw}\n</script>\n\n`;
+    html = schemaBlock + html;
+  }
+
+  return { title, slug, excerpt, content: html, tags, category, featuredImage, author };
+}
+
 const BlogPostForm = ({ mode, postId }) => {
   const isEditMode = mode === 'edit';
   const draftStorageKey = isEditMode ? `blog_draft_edit_${postId}` : 'blog_draft_new';
@@ -79,6 +209,7 @@ const BlogPostForm = ({ mode, postId }) => {
   const [validationErrors, setValidationErrors] = useState({});
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const mdFileInputRef = useRef(null);
 
   useEffect(() => {
     if (!isEditMode || !postId) {
@@ -297,6 +428,50 @@ const BlogPostForm = ({ mode, postId }) => {
     }
   };
 
+  const handleMarkdownImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.md') && !file.name.endsWith('.markdown')) {
+      showToast('Please select a Markdown (.md) file', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = parseMarkdownArticle(ev.target.result);
+
+        // Only fill empty fields — don't overwrite existing content
+        setFormData(prev => ({
+          ...prev,
+          title: prev.title || parsed.title,
+          slug: prev.slug || parsed.slug,
+          excerpt: prev.excerpt || parsed.excerpt,
+          content: prev.content || parsed.content,
+          tags: prev.tags?.length > 0 ? prev.tags : parsed.tags,
+          category: prev.category || parsed.category,
+          featuredImage: prev.featuredImage || parsed.featuredImage,
+          author: prev.author || parsed.author,
+        }));
+
+        // Set image preview if parsed a featured image
+        if (!imagePreview && parsed.featuredImage) {
+          setImagePreview(parsed.featuredImage);
+        }
+
+        showToast(`Imported "${parsed.title || file.name}" — review and publish!`, 'success');
+      } catch (err) {
+        console.error('Markdown import error:', err);
+        showToast('Failed to parse Markdown file', 'error');
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be re-imported
+    e.target.value = '';
+  };
+
   const validateForm = () => {
     const errors = {};
 
@@ -433,6 +608,30 @@ const BlogPostForm = ({ mode, postId }) => {
                 </div>
 
                 <div className="header-actions">
+                  <input
+                    ref={mdFileInputRef}
+                    type="file"
+                    accept=".md,.markdown"
+                    onChange={handleMarkdownImport}
+                    className="hidden"
+                    aria-hidden="true"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => mdFileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-secondary)',
+                    }}
+                    title="Import a .md article file — auto-fills all fields"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import Markdown
+                  </button>
+
                   {autoSaving && (
                     <div className="auto-save-indicator">
                       <Clock size={16} />
