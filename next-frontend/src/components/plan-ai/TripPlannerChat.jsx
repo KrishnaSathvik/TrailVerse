@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft,
   MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2,
-  Share2
+  Share2,
+  Download
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -70,6 +71,7 @@ const TripPlannerChat = ({
   const [shareUrl, setShareUrl] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -1019,6 +1021,18 @@ const TripPlannerChat = ({
           content: data.content,
           formData
         });
+
+        // Fetch structured plan data (with days) from the server if trip is saved
+        if (currentTripId && !currentTripId.startsWith('temp-')) {
+          try {
+            const updatedTrip = await tripService.getTrip(currentTripId);
+            if (updatedTrip?.plan?.days) {
+              setCurrentPlan(updatedTrip.plan);
+            }
+          } catch (e) {
+            // Non-fatal — PDF export will use text-based plan as fallback
+          }
+        }
       }
 
       // Note: Auto-save removed - users must manually save trips
@@ -1472,6 +1486,51 @@ What kind of adventure are you dreaming of? Let's make it happen.`
     
     // Clear the input
     setParkInput('');
+  };
+
+  const handleExportPDF = async () => {
+    const hasPlanDays = currentPlan?.days && currentPlan.days.length > 0;
+    if (!hasPlanDays) {
+      showToast('Generate a full trip plan first to export as PDF', 'info');
+      return;
+    }
+
+    setIsExportingPDF(true);
+    try {
+      const { pdf } = await import('@react-pdf/renderer');
+      const { TripPDFDocument } = await import('../itinerary/TripPDFDocument');
+      const React = await import('react');
+
+      const tripData = {
+        title: formData?.tripTitle || parkName || 'Trip Plan',
+        parkName: parkName || formData?.parkName || null,
+        formData: formData || {},
+        plan: currentPlan,
+      };
+
+      const blob = await pdf(
+        React.createElement(TripPDFDocument, { trip: tripData })
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const fileName = (tripData.title || 'trip-plan')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      a.download = `${fileName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Trip plan exported as PDF!', 'success');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('Failed to export PDF. Please try again.', 'error');
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
 
   const handleSignupFromChat = () => {
@@ -2448,6 +2507,22 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   >
                     <Share2 className="h-3.5 w-3.5" />
                     {isSharing ? 'Sharing...' : 'Share'}
+                  </button>
+                )}
+                {messages.some(m => m.role === 'assistant') && (
+                  <button
+                    onClick={handleExportPDF}
+                    disabled={isExportingPDF}
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition disabled:opacity-50 hover:opacity-90 sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)'
+                    }}
+                    title={currentPlan?.days ? 'Export trip as PDF' : 'Generate a full itinerary first to export PDF'}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    {isExportingPDF ? 'Exporting...' : 'PDF'}
                   </button>
                 )}
               </div>
