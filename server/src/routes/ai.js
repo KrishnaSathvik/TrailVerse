@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
 const { fetchRelevantFacts } = require('../services/factsService');
+const { extractParkFromMessage } = require('../utils/parkExtractor');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 const AnonymousSession = require('../models/AnonymousSession');
 const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerator');
@@ -71,17 +72,30 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Extract the last user message for fact fetching
   const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
-  // Fetch relevant facts based on user message and metadata
+  // Auto-extract park from user message if not provided in metadata
+  let resolvedMetadata = { ...metadata };
+  if (!resolvedMetadata.parkCode && lastUserMessage) {
+    const extracted = extractParkFromMessage(lastUserMessage);
+    if (extracted) {
+      resolvedMetadata.parkCode = extracted.parkCode;
+      resolvedMetadata.parkName = resolvedMetadata.parkName || extracted.parkName;
+      resolvedMetadata.lat = resolvedMetadata.lat || extracted.lat;
+      resolvedMetadata.lon = resolvedMetadata.lon || extracted.lon;
+      console.log(`${logPrefix} Park auto-extracted from message: ${extracted.parkName} (${extracted.parkCode})`);
+    }
+  }
+
+  // Fetch relevant facts based on user message and resolved metadata
   let weatherFacts = null;
   let npsFacts = null;
 
   try {
     const factsResult = await fetchRelevantFacts({
       userMessage: lastUserMessage,
-      parkCode: metadata.parkCode,
-      lat: metadata.lat,
-      lon: metadata.lon,
-      parkName: metadata.parkName
+      parkCode: resolvedMetadata.parkCode,
+      lat: resolvedMetadata.lat,
+      lon: resolvedMetadata.lon,
+      parkName: resolvedMetadata.parkName
     });
     weatherFacts = factsResult.weatherFacts;
     npsFacts = factsResult.npsFacts;
@@ -93,11 +107,23 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Build enhanced system prompt with facts
   let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
 
-  if (npsFacts) {
-    enhancedSystemPrompt += `\n\nNPS FACTS for ${metadata.parkName || 'this park'}:\n${npsFacts}\n\nUse these in answers. Do not invent closures or permits.`;
-  }
-  if (weatherFacts) {
-    enhancedSystemPrompt += `\n\nLIVE WEATHER FACTS for ${metadata.parkName || 'this park'}:\n${weatherFacts}\nDo not guess weather beyond these facts.`;
+  if (npsFacts || weatherFacts) {
+    const parkLabel = resolvedMetadata.parkName || 'this park';
+    const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
+    enhancedSystemPrompt += `\nData current as of ${today}. Reference this data in your response.`;
+    enhancedSystemPrompt += `\nWhen citing alerts or conditions, say "as of today" or "current NPS data shows".`;
+    enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here.\n\n`;
+
+    if (npsFacts) {
+      enhancedSystemPrompt += npsFacts + '\n\n';
+    }
+    if (weatherFacts) {
+      enhancedSystemPrompt += weatherFacts + '\n';
+    }
+
+    enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
   }
 
   const augmentedMessages = filteredMessages;
@@ -108,7 +134,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     provider
   });
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, resolvedMetadata };
 }
 
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
@@ -121,7 +147,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages } = await prepareChatContext(req.body);
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata } = await prepareChatContext(req.body);
 
     let response;
 
@@ -251,7 +277,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       return res.status(400).json({ error: 'Invalid provider. Use "claude" or "openai"' });
     }
 
-    res.json({ data: response });
+    res.json({ data: { ...response, hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null } });
 
   } catch (error) {
     // Log detailed error information
@@ -312,7 +338,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages } = await prepareChatContext(req.body, '[AI Stream]');
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata } = await prepareChatContext(req.body, '[AI Stream]');
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -343,7 +369,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk.delta.text })}\n\n`);
           }
           if (chunk.type === 'message_stop') {
-            res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'claude', model: model || 'claude-sonnet-4-6' })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null })}\n\n`);
           }
         }
       } else if (provider === 'openai') {
@@ -370,7 +396,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
           }
         }
-        res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'openai', model: model || 'gpt-4.1' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: fullContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null })}\n\n`);
       } else {
         res.write(`data: ${JSON.stringify({ type: 'error', message: 'Invalid provider. Use "claude" or "openai"' })}\n\n`);
       }
@@ -513,21 +539,34 @@ Ready to continue planning? 🚀`,
 
     // Filter out system messages from the messages array (Claude API doesn't allow them)
     const filteredMessages = messages.filter(m => m.role !== 'system');
-    
+
     // Extract the last user message for fact fetching
     const lastUserMessageContent = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
-    // Fetch relevant facts based on user message and metadata
+    // Auto-extract park from user message if not provided in metadata
+    let resolvedMetadata = { ...metadata };
+    if (!resolvedMetadata.parkCode && lastUserMessageContent) {
+      const extracted = extractParkFromMessage(lastUserMessageContent);
+      if (extracted) {
+        resolvedMetadata.parkCode = extracted.parkCode;
+        resolvedMetadata.parkName = resolvedMetadata.parkName || extracted.parkName;
+        resolvedMetadata.lat = resolvedMetadata.lat || extracted.lat;
+        resolvedMetadata.lon = resolvedMetadata.lon || extracted.lon;
+        console.log(`[AI] Park auto-extracted from anonymous message: ${extracted.parkName} (${extracted.parkCode})`);
+      }
+    }
+
+    // Fetch relevant facts based on user message and resolved metadata
     let weatherFacts = null;
     let npsFacts = null;
-    
+
     try {
       const factsResult = await fetchRelevantFacts({
         userMessage: lastUserMessageContent,
-        parkCode: metadata.parkCode,
-        lat: metadata.lat,
-        lon: metadata.lon,
-        parkName: metadata.parkName
+        parkCode: resolvedMetadata.parkCode,
+        lat: resolvedMetadata.lat,
+        lon: resolvedMetadata.lon,
+        parkName: resolvedMetadata.parkName
       });
       weatherFacts = factsResult.weatherFacts;
       npsFacts = factsResult.npsFacts;
@@ -539,12 +578,24 @@ Ready to continue planning? 🚀`,
 
     // Build enhanced system prompt with facts
     let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
-    
-    if (npsFacts) {
-      enhancedSystemPrompt += `\n\nNPS FACTS for ${metadata.parkName || 'this park'}:\n${npsFacts}\n\nUse these in answers. Do not invent closures or permits.`;
-    }
-    if (weatherFacts) {
-      enhancedSystemPrompt += `\n\nLIVE WEATHER FACTS for ${metadata.parkName || 'this park'}:\n${weatherFacts}\nDo not guess weather beyond these facts.`;
+
+    if (npsFacts || weatherFacts) {
+      const parkLabel = resolvedMetadata.parkName || 'this park';
+      const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+      enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
+      enhancedSystemPrompt += `\nData current as of ${today}. Reference this data in your response.`;
+      enhancedSystemPrompt += `\nWhen citing alerts or conditions, say "as of today" or "current NPS data shows".`;
+      enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here.\n\n`;
+
+      if (npsFacts) {
+        enhancedSystemPrompt += npsFacts + '\n\n';
+      }
+      if (weatherFacts) {
+        enhancedSystemPrompt += weatherFacts + '\n';
+      }
+
+      enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
     }
 
     // Use the filtered conversation messages without system role messages
@@ -696,7 +747,7 @@ Ready to continue planning? 🚀`,
 
     const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
     
-    res.json({ 
+    res.json({
       data: {
         content: response.content,
         provider: response.provider,
@@ -704,7 +755,9 @@ Ready to continue planning? 🚀`,
         usage: response.usage,
         anonymousId: session.anonymousId,
         messageCount: userMessageCount,
-        canSendMore: session.canSendMessage()
+        canSendMore: session.canSendMessage(),
+        hasLiveData: !!(npsFacts || weatherFacts),
+        parkName: resolvedMetadata.parkName || null
       }
     });
 

@@ -892,11 +892,13 @@ const TripPlannerChat = ({
               data = {
                 content: result.content,
                 provider: result.provider,
-                model: result.model
+                model: result.model,
+                hasLiveData: result.hasLiveData,
+                parkName: result.parkName
               };
               setMessages(prev => prev.map(m =>
                 m.id === streamAssistantId
-                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false }
+                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName }
                   : m
               ));
             },
@@ -977,12 +979,14 @@ const TripPlannerChat = ({
                 timestamp: new Date(),
                 provider: data.provider,
                 model: data.model,
-                responseTime
+                responseTime,
+                hasLiveData: data.hasLiveData,
+                parkName: data.parkName
               }
             ]
           : prev.map(msg =>
               msg.id === streamAssistantId
-                ? { ...msg, responseTime, isStreaming: false }
+                ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName }
                 : msg
             );
         
@@ -1942,8 +1946,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
             <div className={isWelcomeState ? 'flex min-h-full items-start justify-center sm:items-center' : ''}>
             <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-4xl' : ''}`}>
               {messages.map((message, index) => (
+                <React.Fragment key={`${message.id}-${user?.id || 'anonymous'}-${avatarVersion}`}>
                 <MessageBubble
-                  key={`${message.id}-${user?.id || 'anonymous'}-${avatarVersion}`}
                   message={message.content}
                   isUser={message.role === 'user'}
                   timestamp={message.timestamp}
@@ -2113,6 +2117,16 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     }
                   } : undefined}
                 />
+                {message.role === 'assistant' && message.hasLiveData && (
+                  <div
+                    className="flex items-center gap-1.5 mt-1.5 text-xs px-1"
+                    style={{ color: 'var(--accent-green)' }}
+                  >
+                    <span style={{ fontSize: '8px' }}>●</span>
+                    <span>Live TrailVerse park data · {message.parkName || 'NPS'}</span>
+                  </div>
+                )}
+                </React.Fragment>
               ))}
 
               {isAnonymous &&
