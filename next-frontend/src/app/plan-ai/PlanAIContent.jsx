@@ -79,10 +79,10 @@ const PlanAIContent = ({ tripId }) => {
                   <Clock className="h-8 w-8" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-                  You&apos;ve Used Your 3 Free Questions
+                  You&apos;ve Used Your 5 Free Questions
                 </h2>
                 <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You&apos;ve reached your limit of 3 free questions. Create an account for unlimited access, or wait until your session resets.
+                  You&apos;ve reached your limit of 5 free questions. Create an account for unlimited access, or wait until your session resets.
                 </p>
               </div>
 
@@ -179,7 +179,7 @@ const PlanAIContent = ({ tripId }) => {
                   </div>
                   <ul className="space-y-2.5">
                     {[
-                      'Get 3 fresh questions',
+                      'Get 5 fresh questions',
                       'No account required',
                       'Completely free',
                       'Session resets automatically'

@@ -88,7 +88,7 @@ AnonymousSessionSchema.methods.addMessage = function(message) {
 // Method to check if user can send more messages
 AnonymousSessionSchema.methods.canSendMessage = function() {
   const userMessageCount = this.messages.filter(msg => msg.role === 'user').length;
-  return userMessageCount <= 3;
+  return userMessageCount <= 5;
 };
 
 // Method to get conversation summary
