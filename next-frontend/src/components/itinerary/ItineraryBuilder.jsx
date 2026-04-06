@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import tripService from '../../services/tripService';
 import Header from '../common/Header';
+import Button from '../common/Button';
 import DayColumn from './DayColumn';
 
 // Generate a simple unique id
@@ -285,14 +286,7 @@ export default function ItineraryBuilder({ tripId }) {
         </span>
 
         {/* Add Day */}
-        <button
-          onClick={addDay}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
-          style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Day
-        </button>
+        <Button variant="success" size="sm" icon={Plus} onClick={addDay}>Add Day</Button>
       </div>
 
       {/* Board — horizontal scroll */}

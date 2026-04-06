@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, MapPin } from '@components/icons';
 import { getApiBaseUrl } from '../../lib/apiBase';
+import Button from '../common/Button';
 
 export default function AddStopSearch({ onSelect, onClose }) {
   const [query, setQuery] = useState('');
@@ -128,14 +129,7 @@ export default function AddStopSearch({ onSelect, onClose }) {
                 color: 'var(--text-primary)'
               }}
             />
-            <button
-              onClick={handleAddCustom}
-              disabled={!customName.trim()}
-              className="px-2 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
-            >
-              Add
-            </button>
+            <Button variant="success" size="xs" onClick={handleAddCustom} disabled={!customName.trim()}>Add</Button>
           </div>
         ) : (
           <button
