@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { getAllParkCodes } from '@/lib/parkApi';
+import { getAllParkSlugs } from '@/lib/parkApi';
 
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 const API_URL =
@@ -29,15 +29,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Park routes
   let parkRoutes: MetadataRoute.Sitemap = [];
   try {
-    const parkCodes = await getAllParkCodes();
-    parkRoutes = parkCodes.map((code: string) => ({
-      url: `${BASE_URL}/parks/${code}`,
+    const parkSlugs = await getAllParkSlugs();
+    parkRoutes = parkSlugs.map(({ slug }: { slug: string }) => ({
+      url: `${BASE_URL}/parks/${slug}`,
       lastModified: new Date(),
       changeFrequency: 'daily' as const,
       priority: 0.8,
     }));
   } catch (e) {
-    console.error('Sitemap: Failed to fetch park codes', e);
+    console.error('Sitemap: Failed to fetch park slugs', e);
   }
 
   // Blog routes
