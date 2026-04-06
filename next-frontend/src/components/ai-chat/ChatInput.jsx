@@ -5,9 +5,10 @@ const ChatInput = ({
   onSend,
   onAttach,           // NEW (optional)
   disabled = false,
-  placeholder = "Type your message..."
+  placeholder = "Type your message...",
+  initialValue = ''
 }) => {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialValue);
   const [isComposing, setIsComposing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const inputRef = useRef(null);

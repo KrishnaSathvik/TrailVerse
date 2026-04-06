@@ -14,6 +14,7 @@ const NewBlogEmail = require('../emails/NewBlogEmail.jsx').default;
 const UnsubscribeEmail = require('../emails/UnsubscribeEmail.jsx').default;
 const AdminNotificationEmail = require('../emails/AdminNotificationEmail.jsx').default;
 const AccountDeletionEmail = require('../emails/AccountDeletionEmail.jsx').default;
+const FeatureAnnouncementEmail = require('../emails/FeatureAnnouncementEmail.jsx').default;
 
 class ReactEmailRenderer {
   /**
@@ -180,6 +181,29 @@ class ReactEmailRenderer {
       dataRetentionPeriod: dataRetentionPeriod || '30 days',
       reactivationUrl: reactivationUrl || 'https://nationalparksexplorerusa.com/reactivate?token=abc123',
       supportEmail: supportEmail || 'trailverseteam@gmail.com'
+    });
+
+    return await render(emailComponent);
+  }
+
+  /**
+   * Render feature announcement email
+   */
+  async renderFeatureAnnouncementEmail(data) {
+    const {
+      username,
+      userEmail,
+      planUrl,
+      exploreUrl,
+      unsubscribeUrl
+    } = data;
+
+    const emailComponent = React.createElement(FeatureAnnouncementEmail, {
+      username: username || 'there',
+      userEmail: userEmail || 'user@example.com',
+      planUrl: planUrl || 'https://nationalparksexplorerusa.com/plan-ai',
+      exploreUrl: exploreUrl || 'https://nationalparksexplorerusa.com/explore',
+      unsubscribeUrl: unsubscribeUrl || 'https://nationalparksexplorerusa.com/unsubscribe'
     });
 
     return await render(emailComponent);

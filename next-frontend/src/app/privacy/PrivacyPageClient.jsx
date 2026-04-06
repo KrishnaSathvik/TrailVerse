@@ -1,11 +1,7 @@
 "use client";
 import { Shield, Lock, Eye, AlertCircle } from '@components/icons';
 
-const LAST_UPDATED = new Intl.DateTimeFormat('en-US', {
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric'
-}).format(new Date());
+const LAST_UPDATED = 'April 6, 2026';
 
 const PrivacyPage = () => {
   const sections = [

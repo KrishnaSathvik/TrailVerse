@@ -37,7 +37,8 @@ const EMPTY_FORM = {
   featured: false,
   status: 'draft',
   scheduledAt: '',
-  isScheduled: false
+  isScheduled: false,
+  seoSchema: ''
 };
 
 const categories = [
@@ -133,6 +134,22 @@ function parseMarkdownArticle(mdContent) {
   // Wrap consecutive <li> items in <ul> or <ol>
   html = html.replace(/(<li>.*<\/li>\n?)+/g, match => `<ul>${match}</ul>`);
 
+  // Tables — convert markdown table blocks to HTML
+  html = html.replace(
+    /^(\|.+\|[ \t]*\n)(\|[ \t]*[-:]+[-| :\t]*\n)((\|.+\|[ \t]*\n?)*)/gm,
+    (match, headerLine, separatorLine, bodyBlock) => {
+      const parseRow = (row, tag) =>
+        '<tr>' + row.replace(/^\||\|$/g, '').split('|')
+          .map(cell => `<${tag}>${cell.trim()}</${tag}>`).join('') + '</tr>';
+      const thead = '<thead>' + parseRow(headerLine.trim(), 'th') + '</thead>';
+      const bodyRows = bodyBlock.trim().split('\n')
+        .filter(r => r.trim())
+        .map(r => parseRow(r.trim(), 'td')).join('');
+      const tbody = bodyRows ? '<tbody>' + bodyRows + '</tbody>' : '';
+      return '<table>' + thead + tbody + '</table>\n';
+    }
+  );
+
   // Paragraphs — wrap non-HTML lines
   const lines = html.split('\n');
   const result = [];
@@ -182,14 +199,10 @@ function parseMarkdownArticle(mdContent) {
   // --- Author ---
   const author = frontmatter.author || 'TrailVerse Team';
 
-  // --- JSON-LD injection ---
-  const schemaRaw = frontmatter.faqSchema || frontmatter.seo_schema || frontmatter.schema || frontmatter.jsonld || '';
-  if (schemaRaw) {
-    const schemaBlock = `<script type="application/ld+json">\n${schemaRaw}\n</script>\n\n`;
-    html = schemaBlock + html;
-  }
+  // --- SEO schema (JSON-LD) — store separately, not in HTML content ---
+  const seoSchema = frontmatter.faqSchema || frontmatter.seo_schema || frontmatter.schema || frontmatter.jsonld || '';
 
-  return { title, slug, excerpt, content: html, tags, category, featuredImage, author };
+  return { title, slug, excerpt, content: html, tags, category, featuredImage, author, seoSchema };
 }
 
 const BlogPostForm = ({ mode, postId }) => {
@@ -335,7 +348,8 @@ const BlogPostForm = ({ mode, postId }) => {
       author: 'Admin',
       status: finalStatus,
       scheduledAt,
-      readTime: Math.max(1, Math.ceil(wordCount / 200))
+      readTime: Math.max(1, Math.ceil(wordCount / 200)),
+      seoSchema: formData.seoSchema || null
     };
   }, [formData]);
 
@@ -454,6 +468,7 @@ const BlogPostForm = ({ mode, postId }) => {
           category: prev.category || parsed.category,
           featuredImage: prev.featuredImage || parsed.featuredImage,
           author: prev.author || parsed.author,
+          seoSchema: prev.seoSchema || parsed.seoSchema,
         }));
 
         // Set image preview if parsed a featured image

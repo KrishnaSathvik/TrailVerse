@@ -1,12 +1,12 @@
-const CACHE_NAME = 'trailverse-v7';
-const OFFLINE_CACHE = 'trailverse-offline-v7';
-const API_CACHE = 'trailverse-api-v7';
+const CACHE_NAME = 'trailverse-v8';
+const OFFLINE_CACHE = 'trailverse-offline-v8';
+const API_CACHE = 'trailverse-api-v8';
 
 // Files to cache for offline functionality
+// Next.js hashes its /_next/static/ assets so we can't list them here —
+// they get cached on first visit via handleStaticRequest instead.
 const STATIC_CACHE_URLS = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/android-chrome-192x192.png',
   '/android-chrome-512x512.png',
@@ -37,9 +37,7 @@ self.addEventListener('install', (event) => {
       caches.open(OFFLINE_CACHE).then(cache => {
         console.log('[SW] Setting up offline cache');
         return cache.addAll([
-          '/offline.html',
-          '/static/js/bundle.js',
-          '/static/css/main.css'
+          '/offline.html'
         ]);
       })
     ])
@@ -271,10 +269,10 @@ async function handleStaticRequest(request) {
     });
   }
   
-  // Skip HMR and dev server requests
-  if (url.pathname.includes('/@') || url.pathname.includes('/__vite') || url.pathname.includes('/_next/') || url.pathname.includes('/node_modules/')) {
+  // Skip HMR and dev server requests (but NOT /_next/static/ — those are production assets)
+  if (url.pathname.includes('/@') || url.pathname.includes('/__vite') || url.pathname.includes('/_next/data/') || url.pathname.includes('/node_modules/')) {
     return fetch(request).catch(error => {
-      console.log('[SW] HMR request failed, letting it pass through:', error);
+      console.log('[SW] Dev request failed, letting it pass through:', error);
       throw error;
     });
   }
@@ -284,11 +282,13 @@ async function handleStaticRequest(request) {
     const networkResponse = await fetch(request);
     
     if (networkResponse.ok) {
-      // Only cache production assets (not source files)
-      if (url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/) && 
-          !url.pathname.includes('/src/') && 
-          !url.pathname.includes('/pages/') && 
-          !url.pathname.includes('/components/')) {
+      // Cache production assets: /_next/static/ bundles and public static files
+      const isCacheableAsset = url.pathname.startsWith('/_next/static/') ||
+        (url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)$/) &&
+         !url.pathname.includes('/src/') &&
+         !url.pathname.includes('/pages/') &&
+         !url.pathname.includes('/components/'));
+      if (isCacheableAsset) {
         const cache = await caches.open(CACHE_NAME);
         cache.put(request, networkResponse.clone());
       }

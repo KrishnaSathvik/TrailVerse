@@ -1,4 +1,5 @@
 const resendEmailService = require('../services/resendEmailService');
+const reactEmailRenderer = require('../services/reactEmailRenderer');
 const User = require('../models/User');
 
 class FeatureAnnouncementController {
@@ -214,12 +215,14 @@ class FeatureAnnouncementController {
         };
       }
 
-      // Generate preview HTML
-      const html = await resendEmailService.compileTemplate('feature-announcement', {
-        firstName: user.firstName || user.name,
-        email: user.email,
-        mapUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/map`,
-        shareUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}?ref=feature-announcement`
+      // Generate preview HTML using React Email (same as production)
+      const baseUrl = process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com';
+      const html = await reactEmailRenderer.renderFeatureAnnouncementEmail({
+        username: user.firstName || user.name,
+        userEmail: user.email,
+        planUrl: `${baseUrl}/plan-ai`,
+        exploreUrl: `${baseUrl}/explore`,
+        unsubscribeUrl: `${baseUrl}/unsubscribe?email=${user.email || ''}`
       });
 
       res.setHeader('Content-Type', 'text/html');

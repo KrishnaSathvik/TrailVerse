@@ -270,22 +270,23 @@ class ResendEmailService {
 
   async sendFeatureAnnouncementEmail(user) {
     try {
-      const html = await compileTemplate('feature-announcement', {
-        firstName: user.firstName || user.name,
-        email: user.email,
-        mapUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/map`,
-        shareUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}?ref=feature-announcement`
+      const baseUrl = 'https://www.nationalparksexplorerusa.com';
+      const html = await reactEmailRenderer.renderFeatureAnnouncementEmail({
+        username: user.firstName || user.name,
+        userEmail: user.email,
+        planUrl: `${baseUrl}/plan-ai`,
+        exploreUrl: `${baseUrl}/explore`,
+        unsubscribeUrl: `${baseUrl}/unsubscribe?email=${user.email || ''}`
       });
 
-      // Use a verified domain for Resend
-      const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'onboarding@resend.dev';
+      const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com';
       const fromName = process.env.EMAIL_FROM_NAME || 'TrailVerse';
-      
+
       const { data, error } = await resend.emails.send({
         from: `${fromName} <${fromAddress}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
-        subject: '🎉 New Features: Google Maps & Enhanced Experience - TrailVerse',
+        subject: 'New in TrailVerse: AI Itinerary Builder, PDF Export & Trip Sharing',
         html,
         tags: [
           { name: 'category', value: 'feature-announcement' },

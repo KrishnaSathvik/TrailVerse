@@ -320,18 +320,14 @@ export default function ChatHistoryPage() {
           ) : (
             <>
               <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-                <div
-                  className="inline-flex rounded-xl p-1"
-                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                >
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setActiveTab('active')}
-                    className="rounded-lg px-4 py-2.5 text-sm font-semibold transition"
+                    className="px-3 py-1.5 text-sm font-semibold transition"
                     style={{
-                      backgroundColor: activeTab === 'active' ? 'var(--surface-active)' : 'transparent',
-                      color: activeTab === 'active' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      border: activeTab === 'active' ? '1px solid var(--border-hover)' : '1px solid transparent'
+                      color: activeTab === 'active' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                      borderBottom: activeTab === 'active' ? '2px solid var(--accent-green)' : '2px solid transparent'
                     }}
                   >
                     Active ({activeTrips.length})
@@ -339,11 +335,10 @@ export default function ChatHistoryPage() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('archived')}
-                    className="rounded-lg px-4 py-2.5 text-sm font-semibold transition"
+                    className="px-3 py-1.5 text-sm font-semibold transition"
                     style={{
-                      backgroundColor: activeTab === 'archived' ? 'var(--surface-active)' : 'transparent',
-                      color: activeTab === 'archived' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      border: activeTab === 'archived' ? '1px solid var(--border-hover)' : '1px solid transparent'
+                      color: activeTab === 'archived' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                      borderBottom: activeTab === 'archived' ? '2px solid var(--accent-green)' : '2px solid transparent'
                     }}
                   >
                     Archived ({archivedTrips.length})
@@ -392,16 +387,7 @@ export default function ChatHistoryPage() {
                       </p>
                     </div>
 
-                    {activeTab === 'active' && (
-                      <Button
-                        onClick={() => router.push('/plan-ai')}
-                        variant="secondary"
-                        size="lg"
-                        icon={Sparkles}
-                      >
-                        Start New Chat
-                      </Button>
-                    )}
+                    {/* "New Chat" button lives in the page header — no duplicate here */}
                   </div>
                 </div>
               ) : (

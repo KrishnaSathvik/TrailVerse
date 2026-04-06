@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { GripVertical, X, Edit2, Check, MapPin, Mountain, Tent, Info } from '@components/icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { GripVertical, X, Edit2, Check, MapPin, Mountain, Tent, Info, Home, Utensils, Clock } from '@components/icons';
 
 const TYPE_ICONS = {
   park: MapPin,
@@ -9,6 +9,8 @@ const TYPE_ICONS = {
   trail: Mountain,
   campground: Tent,
   visitor_center: Info,
+  lodging: Home,
+  food: Utensils,
   custom: MapPin,
 };
 
@@ -18,20 +20,51 @@ const TYPE_COLORS = {
   trail: '#3B82F6',
   campground: '#8B6914',
   visitor_center: '#7C3AED',
+  lodging: '#7C3AED',
+  food: '#F59E0B',
   custom: 'var(--text-tertiary)',
 };
+
+function formatTime12(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+function formatDuration(minutes) {
+  if (!minutes) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}hr`;
+  return `${h}h${m}m`;
+}
 
 export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [noteValue, setNoteValue] = useState(stop.note || '');
+  const textareaRef = useRef(null);
 
   const Icon = TYPE_ICONS[stop.type] || MapPin;
-  const iconColor = TYPE_COLORS[stop.type] || 'var(--text-tertiary)';
+  const typeColor = TYPE_COLORS[stop.type] || 'var(--text-tertiary)';
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      // Auto-resize
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [isEditing]);
 
   const handleNoteSave = () => {
     onUpdate(dayId, stop.id, { note: noteValue });
     setIsEditing(false);
   };
+
+  const hasTime = stop.startTime || stop.duration;
 
   return (
     <div
@@ -39,6 +72,7 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
       style={{
         backgroundColor: 'var(--bg-primary)',
         border: '1px solid var(--border)',
+        borderLeft: `3px solid ${typeColor}`,
       }}
     >
       <div className="flex items-start gap-2">
@@ -53,7 +87,7 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
 
         {/* Type icon */}
         <div className="mt-0.5 flex-shrink-0">
-          <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+          <Icon className="h-3.5 w-3.5" style={{ color: typeColor }} />
         </div>
 
         {/* Content */}
@@ -62,40 +96,51 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
             {stop.name}
           </p>
 
-          {/* Note — editable */}
-          {isEditing ? (
+          {/* Time display */}
+          {hasTime && (
             <div className="flex items-center gap-1 mt-1">
-              <input
+              <Clock className="h-2.5 w-2.5" style={{ color: 'var(--text-tertiary)' }} />
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>
+                {stop.startTime ? formatTime12(stop.startTime) : ''}
+                {stop.startTime && stop.duration ? ' · ' : ''}
+                {stop.duration ? formatDuration(stop.duration) : ''}
+              </p>
+            </div>
+          )}
+
+          {/* Note — expandable */}
+          {isEditing ? (
+            <div className="mt-1.5">
+              <textarea
+                ref={textareaRef}
                 value={noteValue}
-                onChange={e => setNoteValue(e.target.value)}
+                onChange={e => {
+                  setNoteValue(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
                 onKeyDown={e => {
-                  if (e.key === 'Enter') handleNoteSave();
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleNoteSave(); }
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
-                autoFocus
                 placeholder="Add a note..."
-                className="flex-1 text-xs bg-transparent outline-none border-b"
-                style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+                rows={2}
+                className="w-full text-xs bg-transparent outline-none border rounded-lg p-1.5 resize-none"
+                style={{ color: 'var(--text-secondary)', borderColor: 'var(--accent-green)' }}
               />
-              <button onClick={handleNoteSave} style={{ color: 'var(--accent-green)' }}>
-                <Check className="h-3 w-3" />
-              </button>
+              <div className="flex justify-end mt-1">
+                <button onClick={handleNoteSave} style={{ color: 'var(--accent-green)' }}>
+                  <Check className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           ) : (
             <p
-              className="text-xs mt-0.5 cursor-pointer hover:opacity-80"
+              className="text-xs mt-1 cursor-pointer hover:opacity-80 line-clamp-2"
               style={{ color: 'var(--text-tertiary)' }}
               onClick={() => setIsEditing(true)}
             >
               {stop.note || <span className="italic">Add a note...</span>}
-            </p>
-          )}
-
-          {/* Time meta */}
-          {stop.startTime && (
-            <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>
-              ⏱ {stop.startTime}
-              {stop.duration ? ` · ${Math.floor(stop.duration / 60)}h${stop.duration % 60 > 0 ? `${stop.duration % 60}m` : ''}` : ''}
             </p>
           )}
         </div>
@@ -121,3 +166,5 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
     </div>
   );
 }
+
+export { TYPE_COLORS, TYPE_ICONS };

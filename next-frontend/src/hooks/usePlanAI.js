@@ -53,6 +53,7 @@ export default function usePlanAI(tripId) {
   const [activeTab, setActiveTab] = useState('active');
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState(null);
+  const [suggestText, setSuggestText] = useState('');
 
   const [formData, setFormData] = useState({
     parkCode: '',
@@ -142,6 +143,28 @@ export default function usePlanAI(tripId) {
       return;
     }
 
+    // Handle suggest param (road trip from compare page)
+    const suggest = searchParams.get('suggest');
+    if (suggest) {
+      setSuggestText(suggest);
+      const defaultFormData = {
+        parkCode: '',
+        coordinates: null,
+        startDate: '',
+        endDate: '',
+        groupSize: 1,
+        budget: '',
+        interests: [],
+        fitnessLevel: '',
+        accommodation: ''
+      };
+      setChatFormData(defaultFormData);
+      setSelectedParkName('');
+      setShowChat(true);
+      setStep(4);
+      return;
+    }
+
     if (parkCode && parkName && allParks) {
       const selectedPark = allParks.find(p => p.parkCode === parkCode);
       setSelectedParkName(parkName);
@@ -183,7 +206,7 @@ export default function usePlanAI(tripId) {
 
   // Check if anonymous user has reached message limit (early check)
   useEffect(() => {
-    if (!isPublicAccess || tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat')) {
+    if (!isPublicAccess || tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
       return;
     }
 
@@ -272,7 +295,7 @@ export default function usePlanAI(tripId) {
   // Load trip history and check if user is returning
   useEffect(() => {
     // Skip this check if we're loading a specific trip or have URL parameters
-    if (tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat')) {
+    if (tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
       setIsRestoringState(false);
       return;
     }
@@ -617,7 +640,7 @@ export default function usePlanAI(tripId) {
     showChat, chatFormData, selectedParkName, step, isRestoringState, loadingTrip,
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab, showLimitDialog, timeUntilReset,
-    formData, isPersonalized, isNewChat, isPublicAccess,
+    formData, isPersonalized, isNewChat, isPublicAccess, suggestText,
     allParks, parksLoading, parksError, user, isAuthenticated,
 
     // Setters

@@ -187,11 +187,14 @@ export { QuotesIcon as Quote } from '@phosphor-icons/react';
 export { ArrowBendUpLeftIcon as Reply } from '@phosphor-icons/react';
 export { TextBolderIcon as Bold } from '@phosphor-icons/react';
 export { TextItalicIcon as Italic } from '@phosphor-icons/react';
+export { TextStrikethroughIcon as Strikethrough } from '@phosphor-icons/react';
 export { ListNumbersIcon as ListOrdered } from '@phosphor-icons/react';
 export { TextTIcon as Type } from '@phosphor-icons/react';
 export { AlignLeftIcon as AlignLeft } from '@phosphor-icons/react';
 export { TextAlignCenterIcon as AlignCenter } from '@phosphor-icons/react';
 export { AlignRightIcon as AlignRight } from '@phosphor-icons/react';
+export { ArrowCounterClockwiseIcon as Undo } from '@phosphor-icons/react';
+export { ArrowClockwiseIcon as Redo } from '@phosphor-icons/react';
 
 // AI & Features
 export { RobotIcon as Bot } from '@phosphor-icons/react';

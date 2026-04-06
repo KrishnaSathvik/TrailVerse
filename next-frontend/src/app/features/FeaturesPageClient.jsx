@@ -1,154 +1,174 @@
 "use client";
-import { 
+import Link from 'next/link';
+import {
   Sparkles, Compass, MapPin, Calendar, Heart, BookOpen, Route,
   Star, Shield, Users, MessageCircle, MessageSquare, ArchiveRestore,
-  CheckCircle, Bot, Mountain, Globe, Zap, Cloud, Sun, Moon, 
-  Sunrise, Sunset, Thermometer, Eye, Cookie, ExternalLink
+  CheckCircle, Bot, Mountain, Globe, Zap, Cloud, Sun, Moon,
+  Sunrise, Sunset, Thermometer, Eye, ExternalLink, Download,
+  Share2, GripVertical, Edit2
 } from '@components/icons';
 
 const FeaturesPage = () => {
   const features = [
     {
-      category: "Smart Trip Planning",
+      category: "AI Trip Planning",
       icon: Sparkles,
-      description: "Revolutionary AI assistance for your National Park adventures",
+      description: "Plan smarter with dual AI providers, live park data, and persistent conversations",
       items: [
         {
           icon: Bot,
-          title: "Smart AI Chat Assistant",
-          description: "Get personalized recommendations from Claude or ChatGPT. Ask questions about trails, weather, accommodations, and more.",
-          benefits: ["Real-time conversation", "Multiple AI providers", "Context-aware responses", "Persistent chat history"]
+          title: "Dual AI Chat — Claude Sonnet 4.6 & GPT-4.1",
+          description: "Switch between Anthropic Claude Sonnet 4.6 and OpenAI GPT-4.1 mid-conversation. Each provider brings a different style — use both to get the best plan.",
+          benefits: ["Switch providers anytime", "Streaming responses", "Context-aware follow-ups", "Persistent chat history"]
         },
         {
           icon: Route,
-          title: "Intelligent Itinerary Planning",
-          description: "AI creates custom itineraries based on your preferences, group size, budget, and fitness level.",
-          benefits: ["Personalized recommendations", "Budget optimization", "Fitness level matching", "Group size consideration"]
+          title: "Intelligent Itinerary Generation",
+          description: "AI builds day-by-day itineraries based on your dates, budget, group size, fitness level, and interests. Plans include timing, directions, and lodging.",
+          benefits: ["Personalized to your preferences", "Budget & fitness matching", "Day-by-day structure", "Seasonal awareness"]
+        },
+        {
+          icon: Mountain,
+          title: "Live NPS Data in AI Responses",
+          description: "AI responses are enriched with real-time data from the National Park Service — alerts, closures, events, and conditions pulled directly from NPS APIs.",
+          benefits: ["Real-time park alerts", "Active closures & cautions", "Campground status", "Visitor center hours"]
         },
         {
           icon: ArchiveRestore,
-          title: "Conversation History & Archives",
-          description: "All your AI conversations are automatically saved. Archive completed trips and restore them anytime with full context.",
-          benefits: ["Auto-save conversations", "Archive & restore trips", "Trip history", "Seamless continuation"]
+          title: "Chat History & Archives",
+          description: "Every conversation auto-saves. Resume any trip plan, archive finished ones, and restore them with full context preserved.",
+          benefits: ["Auto-save conversations", "Archive & restore", "Full context preserved", "Organized by trip"]
+        }
+      ]
+    },
+    {
+      category: "Itinerary Builder & Export",
+      icon: Calendar,
+      description: "Turn AI plans into visual, shareable, exportable itineraries",
+      items: [
+        {
+          icon: GripVertical,
+          title: "Drag-and-Drop Itinerary Builder",
+          description: "Your AI-generated plan converts into a visual timeline. Drag stops between days, reorder activities, add custom stops, and edit details.",
+          benefits: ["Visual day timeline", "Drag to reorder", "Add custom stops", "Edit descriptions"]
+        },
+        {
+          icon: Download,
+          title: "PDF Export",
+          description: "Export any trip plan as a clean, printable PDF. Includes day-by-day itinerary, stop details, and trip metadata — perfect for offline use.",
+          benefits: ["Print-ready format", "Day-by-day layout", "Offline reference", "One-click export"]
+        },
+        {
+          icon: Share2,
+          title: "Trip Sharing",
+          description: "Generate a public share link for any saved trip. Friends and travel companions can view your full plan — read-only, no account needed.",
+          benefits: ["Public share URLs", "No login required to view", "Full plan visible", "Social media ready"]
         }
       ]
     },
     {
       category: "Explore & Discover",
-      icon: Mountain,
-      description: "Find your perfect National Park with powerful search and real-time information",
+      icon: Compass,
+      description: "Browse 470+ parks with maps, weather, alerts, and comparison tools",
       items: [
         {
           icon: MapPin,
-          title: "Interactive Park Explorer",
-          description: "Browse 470+ parks and sites with advanced filtering by state, activities, and amenities. Available on all devices.",
-          benefits: ["470+ destinations", "Advanced filtering", "Activity-based search", "Mobile-friendly"]
+          title: "Park Explorer with Filters",
+          description: "Browse all 470+ NPS units. Filter by state, activities, and amenities. Each park page includes details, photos, weather, events, and reviews.",
+          benefits: ["470+ destinations", "Advanced filtering", "Rich park pages", "Activity-based search"]
         },
         {
           icon: Globe,
-          title: "Interactive Maps with Markers",
-          description: "View all parks on Google Maps with clickable markers. Search parks, zoom in on locations, and get park details instantly.",
-          benefits: ["Google Maps integration", "Park markers & search", "Click for details", "Works on all devices"]
-        },
-        {
-          icon: Route,
-          title: "Nearby Places & Directions",
-          description: "Find nearby restaurants, lodging, gas stations with Google Places. Plan routes and get turn-by-turn directions between parks.",
-          benefits: ["Nearby places search", "Route planning", "Turn-by-turn directions", "Distance calculations"],
-          badge: "Desktop Only"
+          title: "Interactive Map & Nearby Places",
+          description: "Interactive map of all 470+ parks with search and filtering. On each park page: nearby restaurants, lodging, and gas stations with directions — powered by Google Places.",
+          benefits: ["470+ park markers", "Nearby places on park pages", "Directions to nearby spots", "Search & filter parks"]
         },
         {
           icon: Cloud,
-          title: "Weather & Park Alerts",
-          description: "Real-time weather conditions, 5-day forecasts, and official NPS alerts about road closures, safety warnings, and park conditions.",
-          benefits: ["Current weather", "5-day forecasts", "Park alerts", "Safety warnings"]
+          title: "Real-Time Weather & Alerts",
+          description: "Current conditions and 5-day forecasts from OpenWeather. Plus official NPS alerts about road closures, safety warnings, and park conditions.",
+          benefits: ["Current conditions", "5-day forecasts", "NPS alerts", "Safety warnings"]
         },
         {
-          icon: Compass,
+          icon: Eye,
           title: "Park Comparison Tool",
-          description: "Compare up to 4 parks side-by-side with detailed metrics to find the perfect destination for your trip.",
-          benefits: ["Side-by-side comparison", "Up to 4 parks", "Feature highlighting", "Decision support"]
-        },
-        {
-          icon: Mountain,
-          title: "Detailed Activity Information",
-          description: "Explore comprehensive details about activities at each park. Click any activity from park details to learn more about hiking, camping, wildlife viewing, and more.",
-          benefits: ["Activity deep-dives", "Trail information", "What to expect", "Preparation tips"]
+          description: "Compare up to 4 parks side-by-side. See activities, weather, ratings, and features in a single view to pick the right destination.",
+          benefits: ["Up to 4 parks", "Side-by-side metrics", "Feature highlights", "Decision support"]
         }
       ]
     },
     {
       category: "Your Personal Journey",
-      icon: Calendar,
-      description: "Track and organize your National Park adventures",
+      icon: Heart,
+      description: "Track visits, save favorites, and build your National Park record",
       items: [
         {
           icon: Heart,
           title: "Favorites & Collections",
-          description: "Save parks, blogs, and events to your favorites. Organize everything you love in one place and build your personalized collection.",
-          benefits: ["Favorite parks", "Save blog articles", "Bookmark events", "Organized collections"]
+          description: "Save parks, blog articles, and NPS events to your favorites. Everything you save lives in one organized collection on your profile.",
+          benefits: ["Favorite parks", "Save events locally", "Visited parks tracker", "Organized profile"]
         },
         {
           icon: CheckCircle,
           title: "Visited Parks Tracker",
-          description: "Mark parks as visited with dates and memories. Keep a record of your adventures and build your National Park passport.",
-          benefits: ["Mark parks visited", "Add visit dates", "Memory preservation", "Achievement tracking"]
+          description: "Mark parks as visited with dates and memories. Build your personal National Park passport and track your adventure progress.",
+          benefits: ["Mark parks visited", "Add visit dates", "Memory notes", "Progress tracking"]
         },
         {
           icon: Users,
-          title: "Your Profile & Reviews",
-          description: "Manage all your park reviews in one place. Choose from 1000+ unique auto-generated avatars or upload your own photo. Track your contributions and community impact.",
-          benefits: ["Review management", "1000+ avatar combos", "Upload custom photo", "Contribution tracking"]
+          title: "Profile & Avatar System",
+          description: "Choose from 1,000+ auto-generated avatars or upload your own photo. Your profile tracks reviews, favorites, visited parks, and trip history.",
+          benefits: ["1000+ avatar combos", "Photo upload", "Review history", "Contribution stats"]
         }
       ]
     },
     {
-      category: "Community & Content",
-      icon: Users,
-      description: "Learn from experts and connect with fellow park enthusiasts",
+      category: "Blog & Community",
+      icon: BookOpen,
+      description: "Expert guides, community reviews, and real traveler insights",
       items: [
         {
-          icon: Star,
-          title: "User Reviews with Photos",
-          description: "Read and write authentic reviews with up to 5 photos per review. Share your experiences and help others plan their trips.",
-          benefits: ["Photo reviews (5 max)", "Authentic feedback", "Community insights", "Verified users"]
+          icon: BookOpen,
+          title: "Blog with Categories & Authors",
+          description: "In-depth park guides, hiking tips, photography advice, and travel planning. Browse by category, read author bios, and engage with comments.",
+          benefits: ["Category browsing", "Author bio cards", "Rich text articles", "Markdown import"]
         },
         {
-          icon: BookOpen,
-          title: "Expert Blog Articles",
-          description: "In-depth guides about National Parks, hiking tips, photography advice, and travel planning from experienced explorers.",
-          benefits: ["Expert knowledge", "Comprehensive guides", "Tips & tricks", "Regular updates"]
+          icon: Star,
+          title: "Photo Reviews",
+          description: "Write reviews with up to 5 photos per park. Read authentic experiences from real visitors to help plan your own trips.",
+          benefits: ["Up to 5 photos", "Star ratings", "Authentic feedback", "Community-driven"]
         },
         {
           icon: MessageSquare,
-          title: "Community Discussions",
-          description: "Engage through blog comments, testimonials, and discussions. Like comments, reply to threads, and share knowledge with the community.",
-          benefits: ["Comment on blogs", "Like & reply", "Share testimonials", "Knowledge exchange"]
+          title: "Comments & Discussions",
+          description: "Comment on blog posts, like comments, and share testimonials. Join the community discussion around park guides and travel tips.",
+          benefits: ["Blog comments", "Like comments", "Testimonials", "Community engagement"]
         }
       ]
     },
     {
-      category: "Seamless Experience",
+      category: "Platform & Performance",
       icon: Zap,
-      description: "Fast, reliable, and works everywhere you go",
+      description: "Fast, reliable, secure, and works offline",
       items: [
         {
           icon: Globe,
-          title: "Works Offline",
-          description: "Install as an app on your device with offline capabilities. Access cached park data, saved trips, and favorites even without internet.",
+          title: "Offline-Ready PWA",
+          description: "Install TrailVerse on your device. Access cached park data, saved trips, and favorites even without cell service in the park.",
           benefits: ["Install on device", "Offline access", "Cached content", "App-like experience"]
         },
         {
           icon: Zap,
           title: "Real-Time Sync",
-          description: "Your favorites, reviews, and trip plans sync instantly across all your devices. Start planning on desktop, continue on mobile.",
-          benefits: ["Multi-device sync", "Instant updates", "Cross-platform", "Seamless experience"]
+          description: "Favorites, reviews, and trip plans sync instantly across all devices. Start on desktop, continue on mobile.",
+          benefits: ["Multi-device sync", "Instant updates", "Cross-platform", "Seamless"]
         },
         {
           icon: Shield,
-          title: "Fast & Secure",
-          description: "Lightning-fast loading with smart caching. Your data is protected with secure authentication, password management, and privacy controls.",
-          benefits: ["Quick loading", "Secure login", "Privacy controls", "Protected data"]
+          title: "Secure & Fast",
+          description: "Encrypted authentication, bcrypt passwords, HTTPS everywhere. Smart caching for lightning-fast loading on every page.",
+          benefits: ["Encrypted auth", "Fast loading", "Privacy controls", "Protected data"]
         }
       ]
     },
@@ -157,40 +177,36 @@ const FeaturesPage = () => {
   const competitiveAdvantages = [
     {
       icon: Sparkles,
-      title: "AI-First Approach",
-      description: "Unlike other travel apps, we use advanced AI to create truly personalized trip plans that adapt to your preferences and provide real-time assistance.",
-      comparison: "Traditional apps: Static recommendations • TrailVerse: Dynamic AI guidance"
+      title: "Dual AI + Live Data",
+      description: "Choose between Claude and GPT-4, mid-conversation. Both are enriched with real-time NPS data — not just training data.",
+      comparison: "Other apps: single AI, static data. TrailVerse: dual AI, live NPS."
+    },
+    {
+      icon: GripVertical,
+      title: "Plan to Itinerary Pipeline",
+      description: "Go from AI chat to drag-and-drop itinerary to PDF export in one flow. No copy-pasting between apps.",
+      comparison: "Other apps: chat only. TrailVerse: chat + builder + export."
     },
     {
       icon: Mountain,
-      title: "National Parks Focus",
-      description: "We specialize exclusively in National Parks, providing deeper insights, more accurate information, and specialized features you won't find in general travel apps.",
-      comparison: "General apps: Broad coverage • TrailVerse: Deep park expertise"
+      title: "National Parks Specialist",
+      description: "Deep coverage of all 470+ NPS units with park-specific weather, alerts, events, and reviews. Not a generic travel app.",
+      comparison: "General apps: broad coverage. TrailVerse: deep park expertise."
     },
     {
       icon: MessageCircle,
-      title: "Persistent AI Conversations",
-      description: "Continue your planning conversations across sessions. Our AI remembers your preferences and builds on previous discussions for better recommendations.",
-      comparison: "Other apps: One-time interactions • TrailVerse: Evolving conversations"
-    },
-    {
-      icon: Shield,
-      title: "Verified Community",
-      description: "All reviews and testimonials are verified from real users. No fake reviews or sponsored content - just authentic experiences.",
-      comparison: "Other platforms: Mixed quality • TrailVerse: 100% verified content"
+      title: "Persistent Conversations",
+      description: "Every AI conversation auto-saves. Come back days later and continue exactly where you left off — full context preserved.",
+      comparison: "Other apps: one-time chats. TrailVerse: evolving conversations."
     }
   ];
 
   return (
     <>
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative overflow-hidden py-8 sm:py-12">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
-        </div>
-
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 mb-4 sm:mb-6 backdrop-blur"
+          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 mb-4 sm:mb-6"
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -215,223 +231,8 @@ const FeaturesPage = () => {
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            From interactive maps and community reviews to smart trip planning and daily nature feeds, TrailVerse provides all the tools you need to discover, plan, and enjoy America's National Parks.
+            AI trip planning with Claude & GPT-4, drag-and-drop itinerary builder, PDF export, interactive maps, real-time weather, and community reviews — all in one platform for 470+ parks.
           </p>
-        </div>
-      </section>
-
-      {/* Daily Feed Highlight */}
-      <section className="py-8 sm:py-12" style={{ backgroundColor: 'var(--surface)' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4"
-              style={{
-                backgroundColor: 'var(--accent-green)/10',
-                color: 'var(--accent-green)'
-              }}
-            >
-              <Sun className="h-4 w-4" />
-              <span className="text-sm font-medium">New Feature</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Your Daily Nature Feed
-            </h2>
-            <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-              Start each day with a personalized National Park recommendation, complete with weather insights, 
-              astronomy data, and actionable recommendations tailored just for you.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-green)/10' }}
-                >
-                  <Sparkles className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    Personalized Park Selection
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Smart selection based on real-time conditions, weather patterns, and optimal viewing opportunities to recommend the perfect park for today.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-green)/10' }}
-                >
-                  <Moon className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    Complete Weather & Astronomy Data
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Get sunrise/sunset times, moon phases, weather conditions, and stargazing opportunities for today's featured park.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-green)/10' }}
-                >
-                  <Zap className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    Lightning-Fast Performance
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Smart caching ensures your daily feed loads instantly. Data updates once per day for optimal performance.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-green)/10' }}
-                >
-                  <Star className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    Rich Weather Analysis
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Detailed weather insights including temperature, humidity, wind speed, visibility, and actionable recommendations for today's conditions.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-green)/10' }}
-                >
-                  <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    Park Insights & Recommendations
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Quick stats, park highlights, sky analysis, and personalized recommendations to help you make the most of your visit.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-green)/10' }}
-                >
-                  <BookOpen className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                    Daily Nature Facts
-                  </h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>
-                    Learn something new every day with fascinating park-specific nature facts and insights about wildlife, geology, and ecosystems.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative lg:sticky lg:top-8">
-              <div className="rounded-2xl p-6 sm:p-8 shadow-lg backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                {/* Hero Badge */}
-                <div className="flex items-center justify-between mb-6">
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-                    style={{ 
-                      backgroundColor: 'var(--accent-green)/10',
-                      color: 'var(--accent-green)'
-                    }}
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    PERSONALIZED
-                  </span>
-                </div>
-
-                {/* Park Header */}
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <Mountain className="h-8 w-8 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
-                        Olympic National Park
-                      </h3>
-                      <ExternalLink className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--text-secondary)' }} />
-                    </div>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      Washington • National Park
-                    </p>
-                  </div>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
-                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-                  >
-                    <Thermometer className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                    <span style={{ color: 'var(--text-primary)' }}>40°F / 4°C</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
-                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-                  >
-                    <Sunrise className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                    <span style={{ color: 'var(--text-primary)' }}>6:42 AM</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
-                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-                  >
-                    <Sunset className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                    <span style={{ color: 'var(--text-primary)' }}>7:15 PM</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
-                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-                  >
-                    <Moon className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                    <span style={{ color: 'var(--text-primary)' }}>Waxing Crescent</span>
-                  </div>
-                </div>
-
-                {/* Quick Preview */}
-                <div className="pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <div className="mt-1">
-                        <Sun className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                      </div>
-                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        Perfect conditions for coastal exploration with mild temperatures and clear skies expected throughout the day.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="mt-1">
-                        <Star className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                      </div>
-                      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        Waxing crescent moon provides excellent stargazing opportunities after sunset.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -441,10 +242,9 @@ const FeaturesPage = () => {
           <div className="space-y-12 sm:space-y-16">
             {features.map((category, categoryIndex) => (
               <div key={categoryIndex} className="text-center">
-                {/* Category Header */}
                 <div className="mb-12">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-                    style={{ backgroundColor: 'var(--accent-green)/10' }}
+                    style={{ backgroundColor: 'rgba(67, 160, 106, 0.1)' }}
                   >
                     <category.icon className="h-8 w-8" style={{ color: 'var(--accent-green)' }} />
                   </div>
@@ -456,11 +256,10 @@ const FeaturesPage = () => {
                   </p>
                 </div>
 
-                {/* Feature Items */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {category.items.map((item, itemIndex) => (
                     <div key={itemIndex} className="group">
-                      <div className="rounded-2xl p-6 sm:p-8 backdrop-blur hover:shadow-lg transition-all duration-200 h-full flex flex-col items-center text-center"
+                      <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 h-full flex flex-col items-center text-center"
                         style={{
                           backgroundColor: 'var(--surface)',
                           borderWidth: '1px',
@@ -468,39 +267,27 @@ const FeaturesPage = () => {
                         }}
                       >
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4"
-                          style={{ backgroundColor: 'var(--accent-green)/10' }}
+                          style={{ backgroundColor: 'rgba(67, 160, 106, 0.1)' }}
                         >
                           <item.icon className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
                         </div>
-                        
-                        <div className="flex items-center gap-2 mb-3 justify-center flex-wrap">
-                          <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                            {item.title}
-                          </h3>
-                          {item.badge && (
-                            <span className="px-2 py-1 text-xs font-medium rounded-full"
-                              style={{ 
-                                backgroundColor: 'var(--accent-blue)/10',
-                                color: 'var(--accent-blue)'
-                              }}
-                            >
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
+
+                        <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+                          {item.title}
+                        </h3>
+
+                        <p className="mb-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                           {item.description}
                         </p>
-                        
+
                         <div className="flex flex-col items-center">
                           <ul className="space-y-2">
                             {item.benefits.map((benefit, benefitIndex) => (
                               <li key={benefitIndex} className="flex items-center gap-2 text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
-                                <CheckCircle className="h-4 w-4 flex-shrink-0" 
-                                  style={{ color: 'var(--accent-green)' }} 
+                                <CheckCircle className="h-4 w-4 flex-shrink-0"
+                                  style={{ color: 'var(--accent-green)' }}
                                 />
                                 <span>{benefit}</span>
                               </li>
@@ -517,7 +304,6 @@ const FeaturesPage = () => {
         </div>
       </section>
 
-
       {/* Competitive Advantages */}
       <section className="py-8 sm:py-12" style={{ backgroundColor: 'var(--surface)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -526,7 +312,7 @@ const FeaturesPage = () => {
               Why TrailVerse Stands Out
             </h2>
             <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-              See how we compare to other travel and National Park apps
+              Built by a traveler who visited 17+ parks — not a generic travel aggregator
             </p>
           </div>
 
@@ -541,11 +327,11 @@ const FeaturesPage = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0"
-                    style={{ backgroundColor: 'var(--accent-green)/10' }}
+                    style={{ backgroundColor: 'rgba(67, 160, 106, 0.1)' }}
                   >
                     <advantage.icon className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
                   </div>
-                  
+
                   <div className="flex-1">
                     <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                       {advantage.title}
@@ -562,6 +348,49 @@ const FeaturesPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="rounded-3xl p-8 sm:p-12 text-center"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Ready to plan your next trip?
+            </h2>
+            <p className="text-base mb-8 max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              Start with the AI trip planner or browse 470+ parks. Free account, no credit card.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/plan-ai"
+                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition"
+                style={{ backgroundColor: 'var(--accent-green)' }}
+              >
+                <Sparkles className="h-4 w-4" />
+                Try the AI Trip Planner
+              </Link>
+              <Link
+                href="/explore"
+                className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                <Compass className="h-4 w-4" />
+                Explore Parks
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -1,24 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { BubbleMenu as BubbleMenuExtension } from '@tiptap/extension-bubble-menu';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import ImageExtension from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
 import {
   Bold,
   Italic,
+  Strikethrough,
   List,
   ListOrdered,
   Link,
   Upload,
   Eye,
   Code,
-  Type,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
+  Undo,
+  Redo,
+  Quote,
+  Minus,
+  Grid,
   X,
   Maximize2,
   Minimize2
@@ -27,20 +35,96 @@ import imageUploadService from '../services/imageUploadService';
 import { useToast } from '../context/ToastContext';
 import './ModernRichTextEditor.css';
 
-const headingOptions = [
-  { value: 'normal', label: 'Paragraph' },
-  { value: 'h1', label: 'Heading 1' },
-  { value: 'h2', label: 'Heading 2' },
-  { value: 'h3', label: 'Heading 3' },
-  { value: 'h4', label: 'Heading 4' },
-  { value: 'quote', label: 'Quote' }
-];
+/**
+ * Detect whether plain text looks like Markdown (has links, headings, bold, etc.)
+ * and convert it to HTML so TipTap can render it properly.
+ */
+function looksLikeMarkdown(text) {
+  return /\[.+?\]\(.+?\)/.test(text)      // [text](url)
+    || /^#{1,4} /m.test(text)              // headings
+    || /\*\*.+?\*\*/.test(text)            // bold
+    || /^[-*+] /m.test(text)               // unordered list
+    || /^\d+\. /m.test(text)               // ordered list
+    || /^> /m.test(text)                   // blockquote
+    || /^\|.+\|$/m.test(text);             // table
+}
+
+function markdownToHtml(md) {
+  let html = md
+    // Images before links (both use [] syntax)
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    // Headings
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold + italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    // Strikethrough
+    .replace(/~~(.+?)~~/g, '<s>$1</s>')
+    // Inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Blockquotes
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // Horizontal rules
+    .replace(/^[-*_]{3,}$/gm, '<hr />')
+    // Unordered list items
+    .replace(/^[-*+] (.+)$/gm, '<li>$1</li>')
+    // Ordered list items
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  // Tables
+  html = html.replace(
+    /^(\|.+\|[ \t]*\n)(\|[ \t]*[-:]+[-| :\t]*\n)((\|.+\|[ \t]*\n?)*)/gm,
+    (_match, headerLine, _sep, bodyBlock) => {
+      const parseRow = (row, tag) =>
+        '<tr>' + row.replace(/^\||\|$/g, '').split('|')
+          .map((cell) => `<${tag}>${cell.trim()}</${tag}>`).join('') + '</tr>';
+      const thead = '<thead>' + parseRow(headerLine.trim(), 'th') + '</thead>';
+      const bodyRows = bodyBlock.trim().split('\n')
+        .filter((r) => r.trim())
+        .map((r) => parseRow(r.trim(), 'td')).join('');
+      const tbody = bodyRows ? '<tbody>' + bodyRows + '</tbody>' : '';
+      return '<table>' + thead + tbody + '</table>\n';
+    }
+  );
+
+  // Wrap remaining plain lines in <p>
+  const lines = html.split('\n');
+  const result = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^<(h[1-6]|ul|ol|li|blockquote|hr|pre|div|table|img)/.test(trimmed)) {
+      result.push(trimmed);
+    } else {
+      result.push(`<p>${trimmed}</p>`);
+    }
+  }
+  return result.join('\n');
+}
 
 const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing your story...' }) => {
   const containerRef = useRef(null);
   const toolbarRef = useRef(null);
   const fileInputRef = useRef(null);
   const toolbarHeightRef = useRef(0);
+
+  const [bubbleMenuEl] = useState(() => {
+    if (typeof document === 'undefined') return null;
+    const el = document.createElement('div');
+    el.className = 'bubble-menu';
+    return el;
+  });
   const toolbarWidthRef = useRef(0);
   const toolbarLeftRef = useRef(0);
   const { showToast } = useToast();
@@ -51,7 +135,6 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
   const [isToolbarSticky, setIsToolbarSticky] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentFormat, setCurrentFormat] = useState('normal');
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -77,12 +160,19 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph']
-      })
+      }),
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      BubbleMenuExtension.configure({
+        element: bubbleMenuEl,
+      }),
     ],
     content: value || '',
     onUpdate: ({ editor: currentEditor }) => {
       onChange?.(currentEditor.getHTML());
-    }
+    },
   });
 
   useEffect(() => {
@@ -95,6 +185,32 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
       editor.commands.setContent(value || '', { emitUpdate: false });
     }
   }, [editor, value]);
+
+  // Convert pasted Markdown to HTML so TipTap renders links, headings, etc.
+  useEffect(() => {
+    if (!editor) return;
+
+    const handlePaste = (view, event) => {
+      // If clipboard already has HTML, let TipTap handle it natively
+      if (event.clipboardData?.types.includes('text/html')) return false;
+
+      const text = event.clipboardData?.getData('text/plain');
+      if (!text || !looksLikeMarkdown(text)) return false;
+
+      event.preventDefault();
+      const html = markdownToHtml(text);
+      editor.commands.insertContent(html, { parseOptions: { preserveWhitespace: false } });
+      return true;
+    };
+
+    editor.view.props.handlePaste = handlePaste;
+
+    return () => {
+      if (editor.view) {
+        editor.view.props.handlePaste = undefined;
+      }
+    };
+  }, [editor]);
 
   useEffect(() => {
     const updateToolbarDimensions = () => {
@@ -144,64 +260,11 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
   }, [isToolbarSticky]);
 
   useEffect(() => {
-    document.body.style.overflow = isFullscreen ? 'hidden' : '';
+    document.body.style.overflow = (isFullscreen || showPreview) ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isFullscreen]);
-
-  useEffect(() => {
-    if (!editor) {
-      return;
-    }
-
-    const syncCurrentFormat = () => {
-      if (editor.isActive('blockquote')) {
-        setCurrentFormat('quote');
-        return;
-      }
-
-      for (const level of [1, 2, 3, 4]) {
-        if (editor.isActive('heading', { level })) {
-          setCurrentFormat(`h${level}`);
-          return;
-        }
-      }
-
-      setCurrentFormat('normal');
-    };
-
-    syncCurrentFormat();
-    editor.on('selectionUpdate', syncCurrentFormat);
-    editor.on('transaction', syncCurrentFormat);
-
-    return () => {
-      editor.off('selectionUpdate', syncCurrentFormat);
-      editor.off('transaction', syncCurrentFormat);
-    };
-  }, [editor]);
-
-  const handleFormatChange = (selectedValue) => {
-    if (!editor) {
-      return;
-    }
-
-    editor.chain().focus();
-
-    if (selectedValue === 'normal') {
-      editor.chain().focus().setParagraph().run();
-      return;
-    }
-
-    if (selectedValue === 'quote') {
-      editor.chain().focus().toggleBlockquote().run();
-      return;
-    }
-
-    if (selectedValue.startsWith('h')) {
-      editor.chain().focus().toggleHeading({ level: Number(selectedValue.slice(1)) }).run();
-    }
-  };
+  }, [isFullscreen, showPreview]);
 
   const insertLink = () => {
     if (!editor) {
@@ -281,6 +344,8 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
 
   const toolbarButtonClass = (isActive) => `toolbar-btn ${isActive ? 'active' : ''}`;
 
+  const wordCount = value ? value.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length : 0;
+
   return (
     <div className={`modern-rich-text-editor ${isFullscreen ? 'fullscreen' : ''}`} ref={containerRef}>
       {isToolbarSticky && toolbarHeightRef.current > 0 && (
@@ -303,78 +368,93 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
           left: `${toolbarLeftRef.current}px`
         } : {}}
       >
-        <div className="toolbar-section">
-          <div className="toolbar-group">
-            <button type="button" className={toolbarButtonClass(editor?.isActive('bold'))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold">
-              <Bold size={18} />
-            </button>
-            <button type="button" className={toolbarButtonClass(editor?.isActive('italic'))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic">
-              <Italic size={18} />
-            </button>
-            <button type="button" className={toolbarButtonClass(editor?.isActive('underline'))} onClick={() => editor?.chain().focus().toggleUnderline().run()} title="Underline">
-              <Type size={18} />
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <select
-              className="format-selector"
-              title="Text Format"
-              value={currentFormat}
-              onChange={(event) => handleFormatChange(event.target.value)}
-            >
-              {headingOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="toolbar-group">
-            <button type="button" className={toolbarButtonClass(editor?.isActive('bulletList'))} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bullet List">
-              <List size={18} />
-            </button>
-            <button type="button" className={toolbarButtonClass(editor?.isActive('orderedList'))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered List">
-              <ListOrdered size={18} />
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button type="button" className={toolbarButtonClass(editor?.isActive({ textAlign: 'left' }))} onClick={() => editor?.chain().focus().setTextAlign('left').run()} title="Align Left">
-              <AlignLeft size={18} />
-            </button>
-            <button type="button" className={toolbarButtonClass(editor?.isActive({ textAlign: 'center' }))} onClick={() => editor?.chain().focus().setTextAlign('center').run()} title="Align Center">
-              <AlignCenter size={18} />
-            </button>
-            <button type="button" className={toolbarButtonClass(editor?.isActive({ textAlign: 'right' }))} onClick={() => editor?.chain().focus().setTextAlign('right').run()} title="Align Right">
-              <AlignRight size={18} />
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button type="button" className={toolbarButtonClass(editor?.isActive('link'))} onClick={insertLink} title="Insert Link">
-              <Link size={18} />
-            </button>
-            <button type="button" className="toolbar-btn primary-btn" onClick={() => fileInputRef.current?.click()} title="Upload Image">
-              <Upload size={18} />
-              <span className="btn-label">Image</span>
-            </button>
-            <button type="button" className={toolbarButtonClass(editor?.isActive('codeBlock'))} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} title="Code Block">
-              <Code size={18} />
-            </button>
-          </div>
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(false)} onClick={() => editor?.chain().focus().undo().run()} title="Undo (Ctrl+Z)">
+            <Undo size={18} />
+          </button>
+          <button type="button" className={toolbarButtonClass(false)} onClick={() => editor?.chain().focus().redo().run()} title="Redo (Ctrl+Shift+Z)">
+            <Redo size={18} />
+          </button>
         </div>
 
-        <div className="toolbar-section">
-          <div className="toolbar-group">
-            <button type="button" className={toolbarButtonClass(showPreview)} onClick={() => setShowPreview((previous) => !previous)} title="Toggle Preview">
-              <Eye size={18} />
-            </button>
-            <button type="button" className="toolbar-btn" onClick={() => setIsFullscreen((previous) => !previous)} title="Toggle Fullscreen">
-              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-            </button>
-          </div>
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(editor?.isActive('heading', { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2">
+            <span className="heading-label">H2</span>
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('heading', { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3">
+            <span className="heading-label">H3</span>
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(editor?.isActive('bold'))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)">
+            <Bold size={18} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('italic'))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)">
+            <Italic size={18} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('strike'))} onClick={() => editor?.chain().focus().toggleStrike().run()} title="Strikethrough (Ctrl+Shift+X)">
+            <Strikethrough size={18} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(editor?.isActive('blockquote'))} onClick={() => editor?.chain().focus().toggleBlockquote().run()} title="Blockquote">
+            <Quote size={18} />
+          </button>
+          <button type="button" className="toolbar-btn" onClick={() => editor?.chain().focus().setHorizontalRule().run()} title="Horizontal Rule">
+            <Minus size={18} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(editor?.isActive('bulletList'))} onClick={() => editor?.chain().focus().toggleBulletList().run()} title="Bullet List">
+            <List size={18} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('orderedList'))} onClick={() => editor?.chain().focus().toggleOrderedList().run()} title="Numbered List">
+            <ListOrdered size={18} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(editor?.isActive('link'))} onClick={insertLink} title="Insert Link (Ctrl+K)">
+            <Link size={18} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('image'))} onClick={() => fileInputRef.current?.click()} title="Upload Image">
+            <Upload size={18} />
+          </button>
+          <button type="button" className="toolbar-btn" onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert Table">
+            <Grid size={18} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(editor?.isActive('codeBlock'))} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} title="Code Block">
+            <Code size={18} />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        <div className="toolbar-group">
+          <button type="button" className={toolbarButtonClass(showPreview)} onClick={() => setShowPreview((previous) => !previous)} title="Toggle Preview">
+            <Eye size={18} />
+          </button>
+          <button type="button" className="toolbar-btn" onClick={() => setIsFullscreen((previous) => !previous)} title="Toggle Fullscreen">
+            {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
         </div>
       </div>
 
@@ -388,7 +468,7 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
       />
 
       <div className="editor-wrapper">
-        <div className={`editor-pane ${showPreview ? 'split-view' : ''}`}>
+        <div className="editor-pane">
           <div
             className={`editor-content ${isDragging ? 'dragging' : ''}`}
             onDragOver={(event) => {
@@ -442,6 +522,7 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
                 <X size={18} />
               </button>
             </div>
+            {/* Preview content uses editor-generated HTML which is sanitized by TipTap */}
             <div
               className="preview-content"
               dangerouslySetInnerHTML={{ __html: value || '<p class="empty-preview">Start writing to see preview...</p>' }}
@@ -450,9 +531,35 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
         )}
       </div>
 
+      {bubbleMenuEl && createPortal(
+        <>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('bold'))} onClick={() => editor?.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)">
+            <Bold size={16} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('italic'))} onClick={() => editor?.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)">
+            <Italic size={16} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('strike'))} onClick={() => editor?.chain().focus().toggleStrike().run()} title="Strikethrough">
+            <Strikethrough size={16} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('link'))} onClick={insertLink} title="Link (Ctrl+K)">
+            <Link size={16} />
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('heading', { level: 2 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2">
+            <span style={{ fontWeight: 700, fontSize: 14 }}>H2</span>
+          </button>
+          <button type="button" className={toolbarButtonClass(editor?.isActive('heading', { level: 3 }))} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3">
+            <span style={{ fontWeight: 700, fontSize: 14 }}>H3</span>
+          </button>
+        </>,
+        bubbleMenuEl
+      )}
+
       <div className="editor-footer">
-        <div className="word-count">
-          {value ? `${value.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length} words` : '0 words'}
+        <div className="footer-info">
+          <span className="word-count">{wordCount} words</span>
+          <span className="footer-divider">&middot;</span>
+          <span className="read-time">{Math.max(1, Math.ceil(wordCount / 200))} min read</span>
         </div>
       </div>
     </div>

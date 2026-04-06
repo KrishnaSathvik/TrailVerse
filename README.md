@@ -44,13 +44,19 @@ I built TrailVerse to solve that problem in a way that feels practical: discover
 - Park name auto-detection from user messages — no need to pre-select a park
 - Structured itinerary output: AI generates machine-readable day/stop data alongside visible markdown
 - Follow-up conversation with full context preservation across messages
-- Anonymous sessions (5 free messages) and authenticated sessions with full history
+- Anonymous sessions (5 free messages) with conversion flow and authenticated sessions with full history
+- Deep-link entry via `?suggest=` param — pre-fills the chat with a trip prompt from other pages (compare, explore)
+- In-page signup/login modal (SaveTripModal) — anonymous users can create an account or sign in without leaving the chat, with automatic chat migration to their new account
 
 ### Trip Management
 - Auto-save — every AI conversation saved to MongoDB automatically
 - Drag-and-drop visual itinerary builder at /plan-ai/[tripId]/itinerary
 - Day columns: add, rename, reorder, remove
-- Stop cards: park search + custom stops (hotels, restaurants, viewpoints), drag between days, inline note editing
+- **6 stop types** with type selector pills: Park, Trail, Campground, Lodging, Food, Custom — each with a distinct color and icon
+- **Multi-source search**: Trail, Campground, and Visitor Center types search a park first, then fetch sub-resources from NPS APIs (`/places`, `/campgrounds`, `/visitorcenters`) so users can pick a specific trail or campsite
+- **Time planning**: optional start time picker and duration dropdown (30min–Full day) per stop
+- Stop cards with colored left border per type, 12-hour time display, expandable notes with auto-resizing textarea
+- Park search + custom stops (hotels, restaurants, viewpoints), drag between days
 - PDF export: download AI-generated trip plan as a branded multi-page PDF
 - Trip sharing: generate a public shareable link for any saved trip
 - Public shared trip pages (/plan-ai/shared/[shareId]) — SEO-indexable, no auth required
@@ -58,11 +64,18 @@ I built TrailVerse to solve that problem in a way that feels practical: discover
 ### Community & Personalization
 - Daily Feed with featured park, nature facts, weather context, and sky insights
 - Monthly events browsing for ranger programs, guided tours, and seasonal park happenings
-- Compare parks side by side
+- Compare parks side by side with "Plan a Trip" CTA per park and road trip banner linking to AI planner
 - Save favorites, track visited parks with dates and memories, and build trip collections
 - Community reviews with photo upload (up to 5 photos, auto-optimized)
 - 1000+ avatar combinations with custom upload option
 - Blog with comments, replies, and likes — 6 category pages (trip-planning, park-guides, gear-packing, seasonal, astrophotography, budget-travel)
+
+### Conversion & Onboarding
+- Anonymous users get 5 free AI messages per 48-hour session
+- Limit dialog with value props and direct signup/login navigation when messages are exhausted
+- In-page SaveTripModal triggered after AI generates a trip plan — signup/login forms without leaving the chat
+- Automatic anonymous chat migration: chat context stored in localStorage, migrated to account on login via `migrateAnonymousChat`
+- Consistent conversion design language across all dialogs (matching QuickFillModal pattern)
 
 ### Technical & SEO
 - Full schema markup: TouristAttraction + BreadcrumbList on park pages, BlogPosting on blog posts, FAQPage on /faq, WebSite + SearchAction sitewide
@@ -205,7 +218,7 @@ npm run test     # frontend tests
 ## Project Structure
 
 ```text
-next-frontend/                  Next.js 15 App Router frontend (Vercel)
+next-frontend/                  Next.js 16 App Router frontend (Vercel)
   src/
     app/
       parks/[parkCode]/         Park detail pages (14 tabs)
@@ -219,7 +232,7 @@ next-frontend/                  Next.js 15 App Router frontend (Vercel)
         category/[category]/    Blog category pages
     components/
       ai-chat/                  Chat UI (MessageBubble, ChatInput, SuggestedPrompts)
-      plan-ai/                  TripPlannerChat, QuickFillModal
+      plan-ai/                  TripPlannerChat, QuickFillModal, SaveTripModal
       itinerary/                ItineraryBuilder, DayColumn, StopCard, AddStopSearch, TripPDFDocument
       park-details/             14-tab park detail UI
       common/                   Header, Footer, Button, OptimizedImage

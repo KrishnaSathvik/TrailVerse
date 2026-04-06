@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Search, X, Plus, ChevronDown, ChevronUp, Check,
-  MapPin, Star, RefreshCw,
+  MapPin, Star, RefreshCw, Sparkles,
   TrendingUp, Mountain, Calendar
 } from '@components/icons';
 import Header from '@/components/common/Header';
@@ -839,7 +839,7 @@ const ComparePage = () => {
 
                   <ComparisonRow label="Quick Actions">
                     {enhancedParks.map(park => (
-                      <div key={park.parkCode} className="flex justify-center">
+                      <div key={park.parkCode} className="flex flex-col items-center gap-2">
                         <Link
                           href={`/parks/${park.parkCode}`}
                           className="px-3 py-2 rounded-lg text-sm font-medium transition-colors border"
@@ -850,12 +850,48 @@ const ComparePage = () => {
                         >
                           View Details →
                         </Link>
+                        <Link
+                          href={`/plan-ai?park=${park.parkCode}&name=${encodeURIComponent(park.fullName)}`}
+                          className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                          style={{
+                            backgroundColor: 'var(--accent-green)',
+                            color: '#fff',
+                          }}
+                        >
+                          Plan a Trip →
+                        </Link>
                       </div>
                     ))}
                   </ComparisonRow>
                     </div>
                   </div>
                 </ComparisonSection>
+
+                {/* Road Trip Banner */}
+                {selectedParks.length >= 2 && (
+                  <div
+                    className="rounded-2xl p-6 sm:p-8 text-center"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <p className="text-lg sm:text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+                      Can&apos;t decide? Visit both.
+                    </p>
+                    <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
+                      Let AI plan a multi-park road trip itinerary for you.
+                    </p>
+                    <Link
+                      href={`/plan-ai?suggest=${encodeURIComponent(selectedParks.map(p => p.fullName).join(' and '))}`}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition hover:opacity-90"
+                      style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Plan a Road Trip with AI →
+                    </Link>
+                  </div>
+                )}
               </div>
             )
           ) : (

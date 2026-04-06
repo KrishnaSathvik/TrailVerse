@@ -4,7 +4,9 @@ import {
   ArrowLeft,
   MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2,
   Share2,
-  Download
+  Download,
+  Mountain,
+  Check
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -21,16 +23,27 @@ import MessageBubble from '../ai-chat/MessageBubble';
 import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
+import SaveTripModal from './SaveTripModal';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 
+const VALUE_PROPS = [
+  'Save this trip permanently',
+  'Unlimited AI trip planning',
+  'Drag-and-drop itinerary builder',
+  'Share trips with travel companions',
+  'Export as PDF',
+  'Save parks, track visits & write reviews',
+  'Access from any device',
+];
 
-const TripPlannerChat = ({ 
-  formData, 
-  onBack, 
-  parkName, 
+const TripPlannerChat = ({
+  formData,
+  onBack,
+  parkName,
   existingTripId = null,
   isPersonalized = false,
   isNewChat = false,
+  suggestText = '',
   refreshTrips = null,
   onOpenQuickFill = null
 }) => {
@@ -74,6 +87,7 @@ const TripPlannerChat = ({
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -83,11 +97,7 @@ const TripPlannerChat = ({
   const userSentMessageRef = useRef(false);
 
   const chatStatus = isAnonymous
-    ? {
-        label: 'Temporary session',
-        description: 'Sign in to save this chat to your trip history.',
-        tone: 'neutral'
-      }
+    ? null
     : saveState === 'saving'
       ? {
           label: 'Saving...',
@@ -189,6 +199,19 @@ const TripPlannerChat = ({
       return;
     }
 
+    // Road trip suggestion (from compare page)
+    if (suggestText) {
+      const roadTripWelcome = {
+        id: Date.now(),
+        role: 'assistant',
+        content: `Hey! Great choice — a road trip hitting ${suggestText} is one of the best ways to experience the area.\n\nI'll build you a full multi-park itinerary. Tell me:\n- How many days do you have?\n- What's your starting city?\n- Group size and any must-haves (camping, hiking, budget)?`,
+        timestamp: new Date()
+      };
+
+      setMessages([roadTripWelcome]);
+      return;
+    }
+
     // Check for new chat (generic welcome)
     if (isNewChat) {
       const newChatWelcome = {
@@ -210,7 +233,7 @@ const TripPlannerChat = ({
     };
 
     setMessages([welcomeMessage]);
-  }, [user, parkName, isPersonalized, isNewChat]);
+  }, [user, parkName, isPersonalized, isNewChat, suggestText]);
 
   // Define loadExistingTrip before the useEffect that uses it
   const loadExistingTrip = useCallback(async (tripId) => {
@@ -715,7 +738,10 @@ const TripPlannerChat = ({
 
     // Skip restoration when explicitly starting a new chat or personalized session
     // BUT still load if there's an existingTripId (loading from chat history)
-    if ((isNewChat || isPersonalized) && !existingTripId) return;
+    if ((isNewChat || isPersonalized) && !existingTripId) {
+      showWelcomeMessage();
+      return;
+    }
 
     if (providersLoaded) {
       if (existingTripId) {
@@ -1540,19 +1566,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
       window.location.href = '/profile';
       return;
     }
-
-    // Store chat context for redirect after signup
-    const chatContext = {
-      anonymousId,
-      parkName,
-      formData,
-      messages: messages,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('returnToChat', JSON.stringify(chatContext));
-    
-    // Navigate to signup with chat flag
-    window.location.href = '/signup?from=chat';
+    setShowSaveModal(true);
   };
 
   const handleLoginFromChat = () => {
@@ -1560,19 +1574,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
       window.location.href = '/profile';
       return;
     }
-
-    // Store chat context for redirect after login
-    const chatContext = {
-      anonymousId,
-      parkName,
-      formData,
-      messages: messages,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('returnToChat', JSON.stringify(chatContext));
-    
-    // Navigate to login with chat flag
-    window.location.href = '/login?from=chat';
+    setShowSaveModal(true);
   };
 
   const handleShare = async () => {
@@ -1849,193 +1851,87 @@ What kind of adventure are you dreaming of? Let's make it happen.`
   // Show warning message if user has exhausted their 5 messages
   if (isAnonymous && !canSendMore && messageCount >= 5) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        {/* Floating Back Button */}
-        <button
-          onClick={onBack}
-          className="fixed top-4 left-4 z-30 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-lg backdrop-blur-sm"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)',
-            color: 'var(--text-primary)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'var(--surface-hover)';
-            e.target.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'var(--surface)';
-            e.target.style.transform = 'translateY(0)';
-          }}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline text-sm font-semibold">Back to Planning</span>
-          <span className="sm:hidden text-sm font-semibold">Back</span>
-        </button>
-
-        {/* Warning Message */}
-        <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-          <div className="max-w-3xl w-full mx-auto">
-            <div 
-              className="rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur"
+      <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="flex flex-1 items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-md">
+            <div
+              className="rounded-2xl overflow-hidden"
               style={{
                 backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow-xl)'
+                border: '1px solid var(--border)',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.12)',
               }}
             >
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                  style={{
-                    backgroundColor: 'var(--accent-green)/10',
-                    color: 'var(--accent-green)'
-                  }}
-                >
-                  <Sparkles className="h-8 w-8" />
+              <div className="px-6 pt-6 pb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                  <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    Ready to Continue Planning?
+                  </h2>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-                  Ready to Continue Planning?
-                </h2>
-                <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You&apos;ve used your 5 free messages. Save this chat to an account and keep going now, or wait 48 hours for 5 fresh free messages.
+                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  You&apos;ve used your 5 free messages. Create a free account to:
                 </p>
+                <ul className="space-y-1.5 mb-4">
+                  {VALUE_PROPS.map((prop) => (
+                    <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                      {prop}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8">
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+
+              <div className="px-6 py-4 space-y-3">
                 <Button
-                  onClick={handleSignupFromChat}
+                  onClick={() => {
+                    localStorage.setItem('returnToChat', JSON.stringify({
+                      anonymousId, parkName, formData, messages, timestamp: Date.now(),
+                    }));
+                    router.push('/signup');
+                  }}
                   variant="primary"
-                  size="lg"
+                  size="md"
                   icon={Sparkles}
-                  className="flex-1 sm:flex-none"
+                  className="w-full"
                 >
-                  Create Account
+                  Create Free Account
                 </Button>
                 <Button
-                  onClick={handleLoginFromChat}
+                  onClick={() => {
+                    localStorage.setItem('returnToChat', JSON.stringify({
+                      anonymousId, parkName, formData, messages, timestamp: Date.now(),
+                    }));
+                    router.push('/login');
+                  }}
                   variant="secondary"
-                  size="lg"
+                  size="md"
                   icon={LogIn}
-                  className="flex-1 sm:flex-none"
+                  className="w-full"
                 >
-                  Login
+                  Sign In
                 </Button>
-              </div>
 
-              {/* Feature Comparison */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {/* Create Account Card */}
-                <div 
-                  className="rounded-xl p-5 sm:p-6"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                {timeUntilReset && (
+                  <div className="pt-1">
+                    <div
+                      className="px-4 py-3 rounded-xl text-center"
                       style={{
-                        backgroundColor: 'var(--accent-green)/10',
-                        color: 'var(--accent-green)'
+                        backgroundColor: 'var(--surface-hover)',
+                        border: '1px solid var(--border)',
                       }}
                     >
-                      <Sparkles className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Save This Chat
-                      </h3>
-                      <p className="text-xs font-medium" style={{ color: 'var(--accent-green)' }}>
-                        Continue now
+                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                        Or wait for free reset:
+                      </p>
+                      <p className="text-xl font-bold" style={{ color: 'var(--accent-green)' }}>
+                        {timeUntilReset}
                       </p>
                     </div>
                   </div>
-                  <ul className="space-y-2.5">
-                    {[
-                      'Keep this exact conversation',
-                      'Save it to your trip history',
-                      'Ask unlimited follow-up questions',
-                      'Continue right where you left off'
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2.5">
-                        <CheckCircle 
-                          className="h-4 w-4 flex-shrink-0 mt-0.5" 
-                          style={{ color: 'var(--accent-green)' }}
-                        />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Wait 48 Hours Card */}
-                <div 
-                  className="rounded-xl p-5 sm:p-6"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{
-                        backgroundColor: 'var(--text-tertiary)/10',
-                        color: 'var(--text-tertiary)'
-                      }}
-                    >
-                      <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Wait 48 Hours
-                      </h3>
-                      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                        Free reset
-                      </p>
-                    </div>
-                  </div>
-                  {timeUntilReset && (
-                    <div 
-                      className="mb-4 px-3 py-2 rounded-lg text-center"
-                      style={{
-                        backgroundColor: 'var(--accent-green)/10',
-                        borderWidth: '1px',
-                        borderColor: 'var(--accent-green)/20'
-                      }}
-                    >
-                      <p className="text-sm font-semibold" style={{ color: 'var(--accent-green)' }}>
-                        Reset in: {timeUntilReset}
-                      </p>
-                    </div>
-                  )}
-                  <ul className="space-y-2.5">
-                    {[
-                      'Get 3 fresh questions',
-                      'No account required',
-                      'Completely free',
-                      'This current chat will not be saved'
-                    ].map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2.5">
-                        <CheckCircle 
-                          className="h-4 w-4 flex-shrink-0 mt-0.5" 
-                          style={{ color: 'var(--text-tertiary)' }}
-                        />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -2243,7 +2139,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   </div>
                 )}
                 {message.hasItinerary && message.role === 'assistant' && currentTripId && !currentTripId.startsWith('temp-') && (
-                  <div className="mx-auto max-w-3xl px-3 sm:px-6 mt-1 mb-2">
+                  <div className="mx-auto max-w-3xl px-3 sm:px-6 mt-1 mb-2 flex flex-wrap gap-2">
                     <button
                       onClick={() => {
                         if (typeof window !== 'undefined') {
@@ -2260,6 +2156,20 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     >
                       <span>📋</span>
                       <span>Open in Visual Itinerary Builder →</span>
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      disabled={isExportingPDF}
+                      className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition hover:opacity-90 disabled:opacity-50"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)',
+                        fontSize: '13px'
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>{isExportingPDF ? 'Exporting...' : 'Export PDF'}</span>
                     </button>
                   </div>
                 )}
@@ -2339,52 +2249,63 @@ What kind of adventure are you dreaming of? Let's make it happen.`
       {/* Conversion Message for Anonymous Users */}
       {isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
         <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-          <div 
-            className="rounded-[28px] border p-5 sm:p-6 backdrop-blur"
+          <div
+            className="rounded-2xl overflow-hidden"
             style={{
               backgroundColor: 'var(--surface)',
-              borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow-xl)'
+              border: '1px solid var(--border)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.12)',
             }}
           >
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3"
-                style={{
-                  backgroundColor: 'var(--accent-green)/10',
-                  color: 'var(--accent-green)'
-                }}
-              >
-                <Sparkles className="h-6 w-6" />
+            <div className="px-6 pt-5 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Ready to Continue Planning?
+                </h3>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                Ready to Continue Planning?
-              </h3>
-              <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
-                {isSessionRestored 
-                  ? `You've already used your 5 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 5 fresh free messages.`
-                  : `You've used your 5 free messages. Sign in or create an account to save this chat and continue now, or wait 48 hours for 5 fresh free messages.`
-                }
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                You&apos;ve used your 5 free messages. Create a free account to:
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button
-                  onClick={handleSignupFromChat}
-                  variant="primary"
-                  size="md"
-                  icon={Sparkles}
-                  className="flex-1 sm:flex-none"
-                >
-                  Create Account
-                </Button>
-                <Button
-                  onClick={handleLoginFromChat}
-                  variant="secondary"
-                  size="md"
-                  icon={LogIn}
-                  className="flex-1 sm:flex-none"
-                >
-                  Login
-                </Button>
-              </div>
+              <ul className="space-y-1.5 mb-4">
+                {VALUE_PROPS.map((prop) => (
+                  <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                    {prop}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+            <div className="px-6 py-4 flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => {
+                  localStorage.setItem('returnToChat', JSON.stringify({
+                    anonymousId, parkName, formData, messages, timestamp: Date.now(),
+                  }));
+                  router.push('/signup');
+                }}
+                variant="primary"
+                size="md"
+                icon={Sparkles}
+                className="flex-1"
+              >
+                Create Free Account
+              </Button>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('returnToChat', JSON.stringify({
+                    anonymousId, parkName, formData, messages, timestamp: Date.now(),
+                  }));
+                  router.push('/login');
+                }}
+                variant="secondary"
+                size="md"
+                icon={LogIn}
+                className="flex-1"
+              >
+                Sign In
+              </Button>
             </div>
           </div>
         </div>
@@ -2511,22 +2432,6 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     {isSharing ? 'Sharing...' : 'Share'}
                   </button>
                 )}
-                {messages.some(m => m.role === 'assistant') && (
-                  <button
-                    onClick={handleExportPDF}
-                    disabled={isExportingPDF}
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition disabled:opacity-50 hover:opacity-90 sm:px-3 sm:text-xs"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--border)'
-                    }}
-                    title={currentPlan?.days ? 'Export trip as PDF' : 'Generate a full itinerary first to export PDF'}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    {isExportingPDF ? 'Exporting...' : 'PDF'}
-                  </button>
-                )}
                 {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && (
                   <button
                     onClick={() => router.push(`/plan-ai/${currentTripId}/itinerary`)}
@@ -2577,6 +2482,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
               onAttach={(file) => showToast(`Attached: ${file.name}`, 'success')}
               disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
               placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in or create an account to save this chat and continue..." : "Ask me about your trip..."}
+              initialValue={suggestText ? `Plan a road trip to ${suggestText}` : ''}
             />
             </div>
           </div>
@@ -2779,6 +2685,16 @@ What kind of adventure are you dreaming of? Let's make it happen.`
           </div>
         </div>
       )}
+
+      {/* Save Trip Modal — replaces redirect to /signup */}
+      <SaveTripModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        parkName={parkName}
+        anonymousId={anonymousId}
+        formData={formData}
+        messages={messages}
+      />
     </div>
   );
 };

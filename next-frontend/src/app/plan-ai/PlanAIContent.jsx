@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Loader2, Clock, Sparkles, CheckCircle, Edit2 } from '@components/icons';
+import { Loader2, Clock, Sparkles, Mountain, Check, LogIn } from '@components/icons';
 import Header from '@components/common/Header';
 import Footer from '@components/common/Footer';
+import Button from '@components/common/Button';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
 import usePlanAI from '@hooks/usePlanAI';
@@ -32,12 +33,14 @@ const PlanAIContent = ({ tripId }) => {
     setFormData,
     isPersonalized,
     isNewChat,
+    suggestText,
     refetchUserTrips,
     allParks,
     parksLoading,
     interests,
     toggleInterest,
-    handleStartNewChat
+    handleStartNewChat,
+    isAuthenticated
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
 
@@ -58,144 +61,84 @@ const PlanAIContent = ({ tripId }) => {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
-        <section className="py-16 sm:py-20">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <section className="flex flex-1 items-center justify-center py-16 sm:py-20">
+          <div className="max-w-md mx-auto px-4 sm:px-6">
             <div
-              className="rounded-2xl p-6 sm:p-8 lg:p-10 backdrop-blur"
+              className="rounded-2xl overflow-hidden"
               style={{
                 backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow-xl)'
+                border: '1px solid var(--border)',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.12)',
               }}
             >
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-                  style={{
-                    backgroundColor: 'var(--accent-green)/10',
-                    color: 'var(--accent-green)'
-                  }}
-                >
-                  <Clock className="h-8 w-8" />
+              <div className="px-6 pt-6 pb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                  <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    You&apos;ve Used Your 5 Free Messages
+                  </h2>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-                  You&apos;ve Used Your 5 Free Questions
-                </h2>
-                <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You&apos;ve reached your limit of 5 free questions. Create an account for unlimited access, or wait until your session resets.
+                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  Create a free account to:
                 </p>
+                <ul className="space-y-1.5 mb-4">
+                  {[
+                    'Save this trip permanently',
+                    'Unlimited AI trip planning',
+                    'Drag-and-drop itinerary builder',
+                    'Share trips with travel companions',
+                    'Export as PDF',
+                    'Save parks, track visits & write reviews',
+                    'Access from any device',
+                  ].map((prop) => (
+                    <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                      {prop}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              {timeUntilReset && (
-                <div
-                  className="mb-8 px-4 py-4 rounded-xl text-center"
-                  style={{
-                    backgroundColor: 'var(--accent-green)/10',
-                    borderWidth: '1px',
-                    borderColor: 'var(--accent-green)/20'
-                  }}
-                >
-                  <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                    Session resets in:
-                  </p>
-                  <p className="text-3xl font-bold" style={{ color: 'var(--accent-green)' }}>
-                    {timeUntilReset}
-                  </p>
-                </div>
-              )}
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div
-                  className="rounded-xl p-5 sm:p-6"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
+              <div className="px-6 py-4 space-y-3">
+                <Button
+                  onClick={() => { window.location.href = '/signup'; }}
+                  variant="primary"
+                  size="md"
+                  icon={Sparkles}
+                  className="w-full"
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+                  Create Free Account
+                </Button>
+                <Button
+                  onClick={() => { window.location.href = '/login'; }}
+                  variant="secondary"
+                  size="md"
+                  icon={LogIn}
+                  className="w-full"
+                >
+                  Sign In
+                </Button>
+
+                {timeUntilReset && (
+                  <div className="pt-1">
+                    <div
+                      className="px-4 py-3 rounded-xl text-center"
                       style={{
-                        backgroundColor: 'var(--accent-green)/10',
-                        color: 'var(--accent-green)'
+                        backgroundColor: 'var(--surface-hover)',
+                        border: '1px solid var(--border)',
                       }}
                     >
-                      <Sparkles className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Create Account
-                      </h3>
-                      <p className="text-xs font-medium" style={{ color: 'var(--accent-green)' }}>
-                        Recommended
+                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                        Or wait for free reset:
+                      </p>
+                      <p className="text-xl font-bold" style={{ color: 'var(--accent-green)' }}>
+                        {timeUntilReset}
                       </p>
                     </div>
                   </div>
-                  <ul className="space-y-2.5">
-                    {[
-                      'Ask unlimited questions',
-                      'Save your trip plans',
-                      'Access conversation history',
-                      'Get personalized recommendations'
-                    ].map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5">
-                        <CheckCircle
-                          className="h-4 w-4 flex-shrink-0 mt-0.5"
-                          style={{ color: 'var(--accent-green)' }}
-                        />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div
-                  className="rounded-xl p-5 sm:p-6"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{
-                        backgroundColor: 'var(--text-tertiary)/10',
-                        color: 'var(--text-tertiary)'
-                      }}
-                    >
-                      <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Wait for Reset
-                      </h3>
-                      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                        Free Option
-                      </p>
-                    </div>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {[
-                      'Get 5 fresh questions',
-                      'No account required',
-                      'Completely free',
-                      'Session resets automatically'
-                    ].map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5">
-                        <CheckCircle
-                          className="h-4 w-4 flex-shrink-0 mt-0.5"
-                          style={{ color: 'var(--text-tertiary)' }}
-                        />
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -232,20 +175,22 @@ const PlanAIContent = ({ tripId }) => {
               </h1>
             </div>
 
-            <button
-              type="button"
-              onClick={handleStartNewChat}
-              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition sm:h-10 sm:rounded-xl sm:px-4 sm:text-sm"
-              style={{
-                backgroundColor: 'var(--button-filled-bg)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-                boxShadow: 'var(--shadow)'
-              }}
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>New Chat</span>
-            </button>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={handleStartNewChat}
+                className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition sm:h-10 sm:rounded-xl sm:px-4 sm:text-sm"
+                style={{
+                  backgroundColor: 'var(--button-filled-bg)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  boxShadow: 'var(--shadow)'
+                }}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>New Chat</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -256,6 +201,7 @@ const PlanAIContent = ({ tripId }) => {
             existingTripId={tripId}
             isPersonalized={isPersonalized}
             isNewChat={effectiveIsNewChat}
+            suggestText={suggestText}
             refreshTrips={refetchUserTrips}
             onOpenQuickFill={() => setQuickFillOpen(true)}
           />
