@@ -210,5 +210,8 @@ export { CookieIcon as Cookie } from '@phosphor-icons/react';
 // Voice
 export { MicrophoneIcon as Microphone } from '@phosphor-icons/react';
 
+// Drag & Drop
+export { DotsSixVerticalIcon as GripVertical } from '@phosphor-icons/react';
+
 // Weather extras
 export { SnowflakeIcon as Snowflake } from '@phosphor-icons/react';

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
+import { useRouter } from 'next/navigation';
+import {
   ArrowLeft,
   MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2,
   Share2,
@@ -33,6 +34,7 @@ const TripPlannerChat = ({
   refreshTrips = null,
   onOpenQuickFill = null
 }) => {
+  const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
   const { showToast } = useToast();
   const { subscribe, unsubscribe, subscribeToProfile, subscribeToTrips } = useWebSocket();
@@ -2523,6 +2525,21 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   >
                     <Download className="h-3.5 w-3.5" />
                     {isExportingPDF ? 'Exporting...' : 'PDF'}
+                  </button>
+                )}
+                {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && (
+                  <button
+                    onClick={() => router.push(`/plan-ai/${currentTripId}/itinerary`)}
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-secondary)'
+                    }}
+                    title="Switch to visual itinerary builder"
+                  >
+                    <span style={{ fontSize: '12px' }}>📋</span>
+                    Itinerary
                   </button>
                 )}
               </div>
