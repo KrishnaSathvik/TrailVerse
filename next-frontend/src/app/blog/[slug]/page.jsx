@@ -145,6 +145,12 @@ export default async function BlogPostPage({ params }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbStructuredData) }}
         />
       )}
+      {post?.seoSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: post.seoSchema }}
+        />
+      )}
       <BlogPostClient slug={slug} initialPost={post} />
     </>
   );
