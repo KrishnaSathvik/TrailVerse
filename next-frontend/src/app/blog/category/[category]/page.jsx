@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
+import Button from '@/components/common/Button';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
@@ -127,13 +128,7 @@ export default async function BlogCategoryPage({ params }) {
                   <p className="text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
                     No articles in this category yet — check back soon.
                   </p>
-                  <Link
-                    href="/blog"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
-                    style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
-                  >
-                    Browse all articles
-                  </Link>
+                  <Button variant="success" size="sm" href="/blog">Browse all articles</Button>
                 </div>
               ) : (
                 <div className="space-y-6">

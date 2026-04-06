@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
+import Button from '@/components/common/Button';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
@@ -141,20 +142,8 @@ export default async function StateParkPage({ params }) {
                 {parks.length} national {parks.length === 1 ? 'park' : 'parks and sites'} — explore trails, campgrounds, weather, and plan your visit with AI.
               </p>
               <div className="flex gap-3 mt-6">
-                <Link
-                  href={`/plan-ai`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition"
-                  style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
-                >
-                  Plan a {state.name} Trip with AI
-                </Link>
-                <Link
-                  href="/explore"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition"
-                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                >
-                  All Parks
-                </Link>
+                <Button variant="success" size="sm" href="/plan-ai">Plan a {state.name} Trip with AI</Button>
+                <Button variant="outline" size="sm" href="/explore">All Parks</Button>
               </div>
             </div>
           </section>
