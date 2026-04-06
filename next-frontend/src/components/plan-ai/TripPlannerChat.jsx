@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-  ArrowLeft, 
-  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2
+  ArrowLeft,
+  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2,
+  Share2
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -66,6 +67,9 @@ const TripPlannerChat = ({
   const [timeUntilReset, setTimeUntilReset] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [saveState, setSaveState] = useState('idle');
+  const [shareUrl, setShareUrl] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -1510,6 +1514,55 @@ What kind of adventure are you dreaming of? Let's make it happen.`
     window.location.href = '/login?from=chat';
   };
 
+  const handleShare = async () => {
+    if (!currentTripId || currentTripId.startsWith('temp-') || !isAuthenticated) return;
+
+    setIsSharing(true);
+    try {
+      const res = await api.post(`/trips/${currentTripId}/share`);
+      const data = res.data || res;
+      if (data.success || data.shareId) {
+        const id = data.shareId || data.data?.shareId;
+        const url = `${window.location.origin}/plan-ai/shared/${id}`;
+        setShareUrl(url);
+        setShowShareModal(true);
+      } else {
+        showToast('Failed to generate share link', 'error');
+      }
+    } catch (err) {
+      showToast('Failed to generate share link', 'error');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleCopyShareUrl = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast('Link copied to clipboard!', 'success');
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = shareUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast('Link copied!', 'success');
+    }
+  };
+
+  const handleCopyForSocial = async () => {
+    const parkLabel = parkName || 'national park';
+    const text = `I planned my ${parkLabel} trip with TrailVerse AI 🏔️\n${shareUrl}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Social caption copied!', 'success');
+    } catch {
+      showToast('Could not copy', 'error');
+    }
+  };
+
   const autoSaveConversation = async (messagesToSave) => {
     if (!user || !messagesToSave || messagesToSave.length < 2 || isAnonymous) return;
 
@@ -2381,6 +2434,22 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     })}
                   </div>
                 )}
+                {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && messages.some(m => m.role === 'assistant') && (
+                  <button
+                    onClick={handleShare}
+                    disabled={isSharing}
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 disabled:opacity-50 sm:px-3 sm:text-xs"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)'
+                    }}
+                    title="Share this trip plan"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    {isSharing ? 'Sharing...' : 'Share'}
+                  </button>
+                )}
               </div>
               {chatStatus?.description && (
                 <p className="hidden max-w-md text-xs leading-relaxed sm:block" style={{ color: 'var(--text-tertiary)' }}>
@@ -2532,6 +2601,88 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Trip Modal */}
+      {showShareModal && shareUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowShareModal(false)}
+          />
+          {/* Modal */}
+          <div
+            className="relative w-full max-w-md mx-4 rounded-2xl"
+            style={{
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow-xl)'
+            }}
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: 'rgba(67, 160, 106, 0.12)', color: 'var(--accent-green)' }}
+                  >
+                    <Share2 className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    Share Your Trip Plan
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="p-2 rounded-lg transition"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* URL display */}
+              <div
+                className="flex items-center gap-2 p-3 rounded-xl mb-4"
+                style={{ backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              >
+                <p
+                  className="flex-1 text-sm truncate font-mono"
+                  style={{ color: 'var(--text-secondary)', fontSize: '12px' }}
+                >
+                  {shareUrl}
+                </p>
+                <button
+                  onClick={handleCopyShareUrl}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+                  style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                >
+                  Copy
+                </button>
+              </div>
+
+              {/* Social copy */}
+              <button
+                onClick={handleCopyForSocial}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition mb-4"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                Copy for Social Media
+              </button>
+
+              {/* Info */}
+              <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
+                Anyone with this link can view your trip plan (read-only)
+              </p>
             </div>
           </div>
         </div>
