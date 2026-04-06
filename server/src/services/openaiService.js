@@ -38,7 +38,50 @@ When answering casual questions:
 
 ## SCOPE
 US travel only — parks, cities, beaches, mountains, food, road trips.
-Redirect non-US/non-travel politely: "I specialize in US trip planning! What destination can I build a plan for?"`;
+Redirect non-US/non-travel politely: "I specialize in US trip planning! What destination can I build a plan for?"
+
+STRUCTURED OUTPUT INSTRUCTION:
+When you generate a day-by-day trip itinerary, you MUST append a structured data block at the very end of your response in this EXACT format (after all your regular content):
+
+[ITINERARY_JSON]
+{
+  "days": [
+    {
+      "id": "day-1",
+      "dayNumber": 1,
+      "label": "Day 1 — [short descriptive label]",
+      "stops": [
+        {
+          "id": "stop-1-1",
+          "order": 0,
+          "type": "landmark",
+          "name": "[stop name]",
+          "note": "[one line tip or description]",
+          "startTime": "09:00",
+          "duration": 120
+        }
+      ]
+    }
+  ],
+  "highlights": ["top highlight 1", "top highlight 2", "top highlight 3"],
+  "packingList": ["essential item 1", "essential item 2", "essential item 3"],
+  "permits": ["permit info or 'No permits required for this trip'"],
+  "estimatedCost": {
+    "entranceFee": "$X per vehicle",
+    "camping": "$X/night if applicable",
+    "total": "$X-X estimated for the trip"
+  }
+}
+[/ITINERARY_JSON]
+
+Rules:
+- Only include this block when generating a full day-by-day itinerary
+- Do NOT include it for simple questions, follow-ups, or refinements
+- The block must be valid JSON — use double quotes, no trailing commas
+- Stop types: "landmark", "trail", "campground", "visitor_center", "custom"
+- Duration is in minutes
+- Keep notes concise (one sentence max)
+- Include 3-8 stops per day maximum`;
   }
 
   async chat(messages, customSystemPrompt = null) {

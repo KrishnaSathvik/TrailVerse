@@ -894,11 +894,12 @@ const TripPlannerChat = ({
                 provider: result.provider,
                 model: result.model,
                 hasLiveData: result.hasLiveData,
-                parkName: result.parkName
+                parkName: result.parkName,
+                hasItinerary: result.hasItinerary || false
               };
               setMessages(prev => prev.map(m =>
                 m.id === streamAssistantId
-                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName }
+                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName, hasItinerary: result.hasItinerary || false }
                   : m
               ));
             },
@@ -981,7 +982,8 @@ const TripPlannerChat = ({
                 model: data.model,
                 responseTime,
                 hasLiveData: data.hasLiveData,
-                parkName: data.parkName
+                parkName: data.parkName,
+                hasItinerary: data.hasItinerary || false
               }
             ]
           : prev.map(msg =>
@@ -2124,6 +2126,27 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   >
                     <span style={{ fontSize: '8px' }}>●</span>
                     <span>Live TrailVerse park data · {message.parkName || 'NPS'}</span>
+                  </div>
+                )}
+                {message.hasItinerary && message.role === 'assistant' && currentTripId && !currentTripId.startsWith('temp-') && (
+                  <div className="mx-auto max-w-3xl px-3 sm:px-6 mt-1 mb-2">
+                    <button
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.location.href = `/plan-ai/${currentTripId}/itinerary`;
+                        }
+                      }}
+                      className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition hover:opacity-90"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--accent-green)',
+                        color: 'var(--accent-green)',
+                        fontSize: '13px'
+                      }}
+                    >
+                      <span>📋</span>
+                      <span>Open in Visual Itinerary Builder →</span>
+                    </button>
                   </div>
                 )}
                 </React.Fragment>
