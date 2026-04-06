@@ -200,7 +200,8 @@ const BlogPostForm = ({ mode, postId }) => {
       featured: formData.featured,
       author: 'Admin',
       status: finalStatus,
-      scheduledAt
+      scheduledAt,
+      readTime: Math.max(1, Math.ceil(wordCount / 200))
     };
   }, [formData]);
 
@@ -328,6 +329,35 @@ const BlogPostForm = ({ mode, postId }) => {
   };
 
   const handleSubmit = async (requestedStatus) => {
+    // Check for unresolved affiliate placeholders before publishing
+    if (requestedStatus === 'published') {
+      const affiliatePlaceholders = [
+        '{{AFFILIATE_LINK}}',
+        '{{AFFILIATE_URL}}',
+        '[AFFILIATE_LINK]',
+        '[AFFILIATE_URL]',
+        'YOUR_AFFILIATE_LINK',
+        'INSERT_AFFILIATE',
+        '{{REI_LINK}}',
+        '{{BOOKING_LINK}}',
+        '{{RECREATION_GOV_LINK}}'
+      ];
+
+      const contentToCheck = formData.content || '';
+      const titleToCheck = formData.title || '';
+      const foundPlaceholders = affiliatePlaceholders.filter(p =>
+        contentToCheck.includes(p) || titleToCheck.includes(p)
+      );
+
+      if (foundPlaceholders.length > 0) {
+        showToast(
+          `Warning: ${foundPlaceholders.length} unresolved affiliate placeholder(s) found. Publishing anyway — replace these before going live.`,
+          'warning'
+        );
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+    }
+
     if (!validateForm()) {
       showToast('Please fix the errors before submitting', 'error');
       return;
@@ -533,6 +563,23 @@ const BlogPostForm = ({ mode, postId }) => {
               <label className="section-label">
                 <span>Content</span>
                 <span className="word-count">{wordCount} words</span>
+                {(() => {
+                  const placeholders = ['{{AFFILIATE_LINK}}','{{AFFILIATE_URL}}','[AFFILIATE_LINK]','YOUR_AFFILIATE_LINK','{{REI_LINK}}','{{BOOKING_LINK}}','{{RECREATION_GOV_LINK}}'];
+                  const count = placeholders.filter(p => (formData.content || '').includes(p)).length;
+                  return count > 0 ? (
+                    <span
+                      className="ml-3 text-xs font-medium px-2 py-0.5 rounded-full"
+                      style={{
+                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                        color: '#d97706',
+                        border: '1px solid rgba(217, 119, 6, 0.3)'
+                      }}
+                      title="Unresolved affiliate placeholders — replace before publishing"
+                    >
+                      {count} affiliate placeholder{count > 1 ? 's' : ''}
+                    </span>
+                  ) : null;
+                })()}
               </label>
               <ModernRichTextEditor
                 value={formData.content}

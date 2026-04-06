@@ -131,7 +131,7 @@ exports.getPostById = async (req, res, next) => {
 // @access  Private/Admin
 exports.createPost = async (req, res, next) => {
   try {
-    const { title, excerpt, content, featuredImage, author, category, tags, status, featured, scheduledAt } = req.body;
+    const { title, excerpt, content, featuredImage, author, category, tags, status, featured, scheduledAt, seoSchema, readTime } = req.body;
     
     console.log('📝 Creating blog post with data:', {
       title,
@@ -176,7 +176,9 @@ exports.createPost = async (req, res, next) => {
       status: finalStatus,
       featured,
       scheduledAt: finalScheduledAt,
-      publishedAt: finalPublishedAt
+      publishedAt: finalPublishedAt,
+      seoSchema,
+      readTime
     });
     
     console.log('✅ Blog post created successfully:', post._id);
