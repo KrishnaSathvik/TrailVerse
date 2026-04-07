@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 
 const KRISHNA = {
   name: "Krishna",
-  title: "Astrophotographer & National Parks Explorer",
+  title: "Creator of TrailVerse",
   photo: "/authors/krishna.jpg",
-  bio: "Creator of TrailVerse. Astrophotographer and national parks nerd.",
+  bio: "Astrophotographer and national parks nerd. 17+ parks and counting.",
   socials: [
     { name: "Portfolio", href: "https://www.astrobykrishna.com/" },
     { name: "Instagram", href: "https://instagram.com/astrobykrishna" },
