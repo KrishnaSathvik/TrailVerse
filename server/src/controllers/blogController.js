@@ -423,9 +423,12 @@ async function sendBlogNotifications(post) {
       return;
     }
     
-    // Get all subscribed users
+    // Get all subscribed users (emailNotifications can be boolean true or object with blogNotifications: true)
     const users = await User.find({
-      emailNotifications: true
+      $or: [
+        { emailNotifications: true },
+        { 'emailNotifications.blogNotifications': true }
+      ]
     }).select('email name firstName');
     
     console.log(`📧 Sending blog notification to ${users.length} subscribers`);
