@@ -145,6 +145,8 @@ const ModernRichTextEditor = ({ value, onChange, placeholder = 'Start writing yo
       Underline,
       LinkExtension.configure({
         openOnClick: false,
+        autolink: true,
+        linkOnPaste: true,
         HTMLAttributes: {
           rel: 'noopener noreferrer',
           target: '_blank'

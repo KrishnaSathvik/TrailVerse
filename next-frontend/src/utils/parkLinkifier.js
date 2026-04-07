@@ -192,4 +192,36 @@ export function linkifyParkNamesHtml(content, currentSlug = '') {
   }).join('');
 }
 
+/**
+ * Convert bare URLs in HTML text to clickable <a> tags.
+ * Skips URLs already inside <a> tags or href attributes.
+ */
+export function linkifyUrlsHtml(content) {
+  if (!content || typeof content !== 'string') return content;
+
+  // Split on existing <a>...</a> blocks and HTML tags
+  const htmlBlockRegex = /<a\b[^>]*>[\s\S]*?<\/a>|<[^>]+>/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = htmlBlockRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ text: content.slice(lastIndex, match.index), process: true });
+    }
+    parts.push({ text: match[0], process: false });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length) {
+    parts.push({ text: content.slice(lastIndex), process: true });
+  }
+
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+
+  return parts.map(part => {
+    if (!part.process) return part.text;
+    return part.text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--accent-green);text-decoration:underline;word-break:break-all">$1</a>');
+  }).join('');
+}
+
 export default PARK_NAME_TO_SLUG;
