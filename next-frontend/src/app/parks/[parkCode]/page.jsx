@@ -25,11 +25,12 @@ export async function generateMetadata({ params }) {
     ? await getParkDetailsBySlug(parkCode)
     : await getParkDetails(parkCode);
 
-  if (!data?.park) {
+  // getParkDetails returns the park object directly (or { park } in some routes)
+  const park = data?.park || data;
+  if (!park?.fullName) {
     return { title: 'Park Not Found - TrailVerse' };
   }
 
-  const { park } = data;
   const description = `Explore ${park.fullName} in ${park.states}. ${park.description?.substring(0, 150)}... Find activities, camping, weather, and plan your visit.`;
   const image = park.images?.[0]?.url;
   const slug = park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
@@ -64,11 +65,10 @@ export default async function ParkPage({ params }) {
     ? await getParkDetailsBySlug(parkCode)
     : await getParkDetails(parkCode);
 
-  if (!data?.park) {
+  const park = data?.park || data;
+  if (!park?.fullName) {
     notFound();
   }
-
-  const { park } = data;
 
   // Structured data is built from our own server API data (trusted source)
   const structuredData = {

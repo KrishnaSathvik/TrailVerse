@@ -7,6 +7,10 @@ function getApiBaseUrl() {
   return configuredUrl.endsWith('/api') ? configuredUrl : `${configuredUrl}/api`;
 }
 
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '')
+  : (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com' : 'http://localhost:5001');
+
 function toAbsoluteImageUrl(imageUrl) {
   if (!imageUrl || imageUrl.trim() === '' || imageUrl.startsWith('data:')) {
     return `${SITE_URL}/og-image-trailverse.jpg`;
@@ -14,6 +18,11 @@ function toAbsoluteImageUrl(imageUrl) {
 
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
     return imageUrl;
+  }
+
+  // /uploads/ paths are served by the Express backend, not Next.js
+  if (imageUrl.startsWith('/uploads/')) {
+    return `${API_ORIGIN}${imageUrl}`;
   }
 
   return imageUrl.startsWith('/') ? `${SITE_URL}${imageUrl}` : `${SITE_URL}/${imageUrl}`;

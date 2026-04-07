@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Facebook, Twitter, Instagram, Link2, Mail, Share2, Printer } from '@components/icons';
+import { Facebook, Twitter, Instagram, Link2, Mail, Share2, Printer, X } from '@components/icons';
 import { useToast } from '../../context/ToastContext';
 import Button from './Button';
 
@@ -1052,118 +1052,222 @@ const ShareButtons = ({ url, title, description, image, type = 'default', showPr
             {buttonLabel}
           </Button>
 
-          {showMoreOptions && (
+          {/* Article share: centered modal dialog */}
+          {showMoreOptions && isArticleStyle && (
             <div
-              className="absolute right-0 mt-2 w-56 rounded-2xl p-2 z-50"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow-lg)'
-              }}
-              onClick={(event) => event.stopPropagation()}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+              onClick={() => setShowMoreOptions(false)}
             >
-              <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
-                  {menuLabel}
-                </p>
-              </div>
-
-              <Button
-                onClick={async () => {
-                  if (supportsNativeShare) {
-                    await handleNativeShare();
-                  } else {
-                    handleCopyLink();
-                  }
-                  setShowMoreOptions(false);
+              <div
+                className="relative w-full max-w-sm overflow-hidden rounded-3xl shadow-2xl"
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border)',
                 }}
-                variant="ghost"
-                size="sm"
-                icon={Share2}
-                className="w-full justify-start mb-1 mt-1"
+                onClick={(e) => e.stopPropagation()}
               >
-                Share via...
-              </Button>
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 pt-6 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                    >
+                      <Share2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Share This Article
+                      </h3>
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        Choose how to share
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowMoreOptions(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl transition-colors"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <X className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                  </button>
+                </div>
 
-              <Button
-                onClick={() => {
-                  handleCopyLink();
-                  setShowMoreOptions(false);
-                }}
-                variant="ghost"
-                size="sm"
-                icon={Link2}
-                className="w-full justify-start mb-1"
-              >
-                Copy link
-              </Button>
+                {/* Divider */}
+                <div style={{ height: '1px', backgroundColor: 'var(--border)' }} />
 
-              {shareLinks
-                .filter((link) => ['Facebook', 'Twitter', 'Email'].includes(link.name))
-                .map((link) => {
-                  const Icon = link.icon;
-                  return (
+                {/* Share options */}
+                <div className="p-4 flex flex-col gap-1">
+                  {supportsNativeShare && (
                     <Button
-                      key={link.name}
-                      onClick={() => {
-                        const nextShareUrl = getShareUrl(link.name);
-                        window.open(nextShareUrl, '_blank', 'noopener,noreferrer');
+                      onClick={async () => {
+                        await handleNativeShare();
                         setShowMoreOptions(false);
                       }}
                       variant="ghost"
                       size="sm"
-                      icon={Icon}
-                      className="w-full justify-start mb-1"
+                      icon={Share2}
+                      className="w-full justify-start"
                     >
-                      {link.name}
+                      Share via...
                     </Button>
-                  );
-                })}
+                  )}
 
-              {!isArticleStyle && shouldShowPrint && (
+                  <Button
+                    onClick={() => {
+                      handleCopyLink();
+                      setShowMoreOptions(false);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    icon={Link2}
+                    className="w-full justify-start"
+                  >
+                    Copy link
+                  </Button>
+
+                  {shareLinks
+                    .filter((link) => ['Facebook', 'Twitter', 'Email'].includes(link.name))
+                    .map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <Button
+                          key={link.name}
+                          onClick={() => {
+                            const nextShareUrl = getShareUrl(link.name);
+                            window.open(nextShareUrl, '_blank', 'noopener,noreferrer');
+                            setShowMoreOptions(false);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          icon={Icon}
+                          className="w-full justify-start"
+                        >
+                          {link.name}
+                        </Button>
+                      );
+                    })}
+
+                  {shouldShowPrint && (
+                    <>
+                      <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '4px 0' }} />
+                      <Button
+                        onClick={() => {
+                          handlePrint();
+                          setShowMoreOptions(false);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        icon={Printer}
+                        className="w-full justify-start"
+                      >
+                        Print / Save PDF
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Park share: small dropdown */}
+          {showMoreOptions && !isArticleStyle && (
+            <>
+              <div
+                className="absolute right-0 mt-2 w-56 rounded-2xl p-2 z-50"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  borderWidth: '1px',
+                  borderColor: 'var(--border)',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--text-tertiary)' }}>
+                    {menuLabel}
+                  </p>
+                </div>
+
                 <Button
-                  onClick={() => {
-                    handlePrint();
+                  onClick={async () => {
+                    if (supportsNativeShare) {
+                      await handleNativeShare();
+                    } else {
+                      handleCopyLink();
+                    }
                     setShowMoreOptions(false);
                   }}
                   variant="ghost"
                   size="sm"
-                  icon={Printer}
-                  className="w-full justify-start"
+                  icon={Share2}
+                  className="w-full justify-start mb-1 mt-1"
                 >
-                  Print / Save PDF
+                  Share via...
                 </Button>
-              )}
-            </div>
-          )}
 
-          {showMoreOptions && (
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setShowMoreOptions(false)}
-              style={{ cursor: 'pointer' }}
-            />
+                <Button
+                  onClick={() => {
+                    handleCopyLink();
+                    setShowMoreOptions(false);
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  icon={Link2}
+                  className="w-full justify-start mb-1"
+                >
+                  Copy link
+                </Button>
+
+                {shareLinks
+                  .filter((link) => ['Facebook', 'Twitter', 'Email'].includes(link.name))
+                  .map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <Button
+                        key={link.name}
+                        onClick={() => {
+                          const nextShareUrl = getShareUrl(link.name);
+                          window.open(nextShareUrl, '_blank', 'noopener,noreferrer');
+                          setShowMoreOptions(false);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        icon={Icon}
+                        className="w-full justify-start mb-1"
+                      >
+                        {link.name}
+                      </Button>
+                    );
+                  })}
+
+                {shouldShowPrint && (
+                  <Button
+                    onClick={() => {
+                      handlePrint();
+                      setShowMoreOptions(false);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    icon={Printer}
+                    className="w-full justify-start"
+                  >
+                    Print / Save PDF
+                  </Button>
+                )}
+              </div>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowMoreOptions(false)}
+                style={{ cursor: 'pointer' }}
+              />
+            </>
           )}
         </div>
 
-        {isArticleStyle && shouldShowPrint && (
-          <Button
-            onClick={handlePrint}
-            variant="secondary"
-            size="sm"
-            icon={Printer}
-            className="backdrop-blur w-full sm:w-auto sm:flex-shrink-0"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)'
-            }}
-            title="Print or Save as PDF"
-          >
-            Print / Save PDF
-          </Button>
-        )}
       </div>
     );
   }
