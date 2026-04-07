@@ -75,7 +75,7 @@ const getMetaTags = async (req, res, next) => {
               type: 'article',
               published: post.publishedAt?.toISOString(),
               modified: post.updatedAt?.toISOString(),
-              author: post.author?.name || 'TrailVerse Team',
+              author: post.author?.name || 'Krishna',
               og: {
                 type: 'article',
                 url: url,
@@ -85,7 +85,7 @@ const getMetaTags = async (req, res, next) => {
                 site_name: 'TrailVerse',
                 published_time: post.publishedAt?.toISOString(),
                 modified_time: post.updatedAt?.toISOString(),
-                author: post.author?.name || 'TrailVerse Team',
+                author: post.author?.name || 'Krishna',
                 section: 'Travel'
               },
               twitter: {

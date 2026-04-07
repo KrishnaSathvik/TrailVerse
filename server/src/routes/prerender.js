@@ -51,7 +51,7 @@ const generatePrerenderedHTML = async (req, res, next) => {
               type: 'article',
               published: post.publishedAt?.toISOString(),
               modified: post.updatedAt?.toISOString(),
-              author: post.author?.name || 'TrailVerse Team'
+              author: post.author?.name || 'Krishna'
             };
           }
         } catch (error) {
@@ -122,7 +122,7 @@ const generatePrerenderedHTML = async (req, res, next) => {
     <!-- Article specific tags -->
     <meta property="article:published_time" content="${metaTags.published || ''}" />
     ${metaTags.modified ? `<meta property="article:modified_time" content="${metaTags.modified}" />` : ''}
-    <meta property="article:author" content="${metaTags.author || 'TrailVerse Team'}" />
+    <meta property="article:author" content="${metaTags.author || 'Krishna'}" />
     <meta property="article:section" content="Travel" />
     ` : ''}
     

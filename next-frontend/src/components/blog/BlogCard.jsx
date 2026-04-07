@@ -56,11 +56,6 @@ const BlogCard = memo(({ post }) => {
           style={{ borderColor: 'var(--border)' }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {post.author?.name || post.author}
-            </span>
           </div>
           <div className="flex items-center gap-3 text-xs"
             style={{ color: 'var(--text-tertiary)' }}

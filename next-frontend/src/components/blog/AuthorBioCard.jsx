@@ -14,7 +14,7 @@ const KRISHNA = {
   ],
 };
 
-const AUTHOR_MATCHES = ["Krishna Sathvik", "Krishna", "TrailVerse Team"];
+const AUTHOR_MATCHES = ["Krishna Sathvik", "Krishna", "TrailVerse Team", "Admin"];
 
 const AuthorBioCard = ({ author }) => {
   if (!AUTHOR_MATCHES.includes(author)) {

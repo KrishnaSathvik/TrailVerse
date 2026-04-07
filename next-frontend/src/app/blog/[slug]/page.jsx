@@ -93,7 +93,7 @@ export default async function BlogPostPage({ params }) {
         ],
         author: {
           '@type': 'Person',
-          name: (post.author && post.author !== 'Admin') ? post.author : 'TrailVerse Team'
+          name: (post.author && post.author !== 'Admin') ? post.author : 'Krishna'
         },
         publisher: {
           '@type': 'Organization',

@@ -197,7 +197,7 @@ function parseMarkdownArticle(mdContent) {
   const featuredImage = frontmatter.image || frontmatter.featuredImage || '';
 
   // --- Author ---
-  const author = frontmatter.author || 'TrailVerse Team';
+  const author = frontmatter.author || 'Krishna';
 
   // --- SEO schema (JSON-LD) — store separately, not in HTML content ---
   const seoSchema = frontmatter.faqSchema || frontmatter.seo_schema || frontmatter.schema || frontmatter.jsonld || '';

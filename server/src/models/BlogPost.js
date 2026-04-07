@@ -28,7 +28,7 @@ const blogPostSchema = new mongoose.Schema({
   author: {
     type: String,
     required: [true, 'Please provide author name'],
-    default: 'TrailVerse Team'
+    default: 'Krishna'
   },
   category: {
     type: String,
