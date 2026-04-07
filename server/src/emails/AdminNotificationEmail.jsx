@@ -9,6 +9,7 @@ import {
   Section,
   Text,
   Hr,
+  Img,
 } from '@react-email/components';
 import * as React from 'react';
 
@@ -40,6 +41,13 @@ const AdminNotificationEmail = ({
 
               {/* Logo */}
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <Img
+                  src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
+                  width="48"
+                  height="48"
+                  alt="TrailVerse"
+                  style={{ display: 'block', margin: '0 auto 12px' }}
+                />
                 <span style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
                   TrailVerse
                 </span>

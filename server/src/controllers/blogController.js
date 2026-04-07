@@ -1,5 +1,6 @@
 const BlogPost = require('../models/BlogPost');
 const User = require('../models/User');
+const Subscriber = require('../models/Subscriber');
 const emailService = require('../services/resendEmailService');
 const unsubscribeService = require('../services/unsubscribeService');
 const { getScheduledPostsInfo } = require('../services/schedulerService');
@@ -434,12 +435,16 @@ async function sendBlogNotifications(post) {
       return;
     }
     
-    // Send emails using Resend service
+    // Collect all emails that will receive from registered users (to deduplicate)
+    const sentEmails = new Set();
+
+    // Send emails using Resend service to registered users
     const emailPromises = users.map(async (user) => {
       // Check if user should receive this email type
       const shouldReceive = await unsubscribeService.shouldReceiveEmail(user.email, 'blog_notification');
       if (shouldReceive) {
         try {
+          sentEmails.add(user.email.toLowerCase());
           return await emailService.sendBlogNotification(user, post);
         } catch (error) {
           console.error(`Failed to send blog notification to ${user.email}:`, error.message);
@@ -448,12 +453,37 @@ async function sendBlogNotifications(post) {
       }
       return null;
     });
-    
+
     // Filter out null promises and wait for all
     const validPromises = emailPromises.filter(promise => promise !== null);
     await Promise.all(validPromises);
-    
-    console.log(`✅ Blog notifications sent successfully to ${validPromises.length} subscribers`);
+
+    console.log(`✅ Blog notifications sent to ${validPromises.length} registered users`);
+
+    // Also notify confirmed newsletter subscribers (skip those already emailed as registered users)
+    try {
+      const subscribers = await Subscriber.find({ confirmed: true }).select('email firstName unsubscribeToken');
+      const newSubscribers = subscribers.filter(s => !sentEmails.has(s.email.toLowerCase()));
+
+      if (newSubscribers.length > 0) {
+        console.log(`📧 Sending blog notification to ${newSubscribers.length} newsletter subscribers`);
+
+        for (const sub of newSubscribers) {
+          try {
+            await emailService.sendBlogNotification(
+              { email: sub.email, firstName: sub.firstName, name: sub.firstName },
+              post
+            );
+          } catch (err) {
+            console.error(`Failed to send blog notification to subscriber ${sub.email}:`, err.message);
+          }
+        }
+
+        console.log(`✅ Blog notifications sent to ${newSubscribers.length} newsletter subscribers`);
+      }
+    } catch (subError) {
+      console.error('Error sending to newsletter subscribers:', subError);
+    }
   } catch (error) {
     console.error('Error sending blog notifications:', error);
   }

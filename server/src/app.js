@@ -243,6 +243,7 @@ app.use('/api', require('./routes/comments'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/gmaps', require('./routes/gmaps')); // Google Maps proxy
 app.use('/api/feature-announcement', require('./routes/featureAnnouncement')); // Feature announcement emails
+app.use('/api/subscribers', require('./routes/subscribers')); // Newsletter subscribers
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
