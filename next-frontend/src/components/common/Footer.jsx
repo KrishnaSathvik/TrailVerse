@@ -17,7 +17,7 @@ const Footer = () => {
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -89,6 +89,15 @@ const Footer = () => {
               <li><Link href="/about" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link></li>
               <li><Link href="/privacy" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Privacy Policy</Link></li>
               <li><Link href="/terms" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Terms of Service</Link></li>
+            </ul>
+          </div>
+
+          {/* Reports */}
+          <div>
+            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Reports</h3>
+            <ul className="space-y-2 text-base sm:text-sm">
+              <li><a href="/reports/national-parks-2025.html" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>2025 Park Report</a></li>
+              <li><a href="/reports/when-to-go.html" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Crowd Calendar</a></li>
             </ul>
           </div>
 

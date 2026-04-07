@@ -441,8 +441,76 @@ const BlogContent = ({ initialData }) => {
               )}
             </>
           )}
+          {/* Data Report Callout */}
+          <a
+            href="/reports/national-parks-2025.html"
+            className="block mt-12 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+            }}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex-1">
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: 'var(--accent-blue)' }}
+                >
+                  Data Investigation
+                </span>
+                <h3 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  America&apos;s Parks Are Being Loved to Death
+                </h3>
+                <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                  323 million visits. A $23B repair bill. 10 parks absorb half the crowd. Explore the data.
+                </p>
+              </div>
+              <span
+                className="shrink-0 inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all"
+                style={{ color: 'var(--accent-blue)' }}
+              >
+                Read Report <ChevronRight className="h-4 w-4" />
+              </span>
+            </div>
+          </a>
+
+          {/* Crowd Calendar Callout */}
+          <a
+            href="/reports/when-to-go.html"
+            className="block mt-4 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+            }}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex-1">
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: 'var(--accent-blue)' }}
+                >
+                  Interactive Tool
+                </span>
+                <h3 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  When to Go. Without the Crowd.
+                </h3>
+                <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                  Month-by-month crowd levels, shoulder season windows, and permit info for all 63 national parks.
+                </p>
+              </div>
+              <span
+                className="shrink-0 inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all"
+                style={{ color: 'var(--accent-blue)' }}
+              >
+                View Calendar <ChevronRight className="h-4 w-4" />
+              </span>
+            </div>
+          </a>
+
           {/* Newsletter */}
-          <div className="mt-12 mb-8">
+          <div className="mt-6 mb-8">
             <NewsletterWidget source="blog-listing" />
           </div>
         </div>

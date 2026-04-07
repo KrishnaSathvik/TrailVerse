@@ -15,8 +15,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/explore`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
-    { url: `${BASE_URL}/map`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE_URL}/plan-ai`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE_URL}/map`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/plan-ai`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/compare`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/features`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
@@ -24,6 +24,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE_URL}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/reports/national-parks-2025.html`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.7 },
+    { url: `${BASE_URL}/reports/when-to-go.html`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.7 },
   ];
 
   // Park routes
@@ -33,27 +35,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     parkRoutes = parkSlugs.map(({ slug }: { slug: string }) => ({
       url: `${BASE_URL}/parks/${slug}`,
       lastModified: new Date(),
-      changeFrequency: 'daily' as const,
+      changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
   } catch (e) {
     console.error('Sitemap: Failed to fetch park slugs', e);
   }
 
-  // Blog routes
+  // Blog routes — only published posts
   let blogRoutes: MetadataRoute.Sitemap = [];
   try {
-    const res = await fetch(`${API_URL}/blogs`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${API_URL}/blogs?status=published&limit=200`, { next: { revalidate: 3600 } });
     if (res.ok) {
       const json = await res.json();
       const posts = json.data || json.blogs || json || [];
       blogRoutes = Array.isArray(posts)
         ? posts.map((post: { slug: string }) => ({
-            url: `${BASE_URL}/blog/${post.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly' as const,
-            priority: 0.6,
-          }))
+          url: `${BASE_URL}/blog/${post.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        }))
         : [];
     }
   } catch (e) {
@@ -67,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     'nevada', 'new-mexico', 'north-dakota', 'ohio', 'oregon', 'south-dakota',
     'tennessee', 'texas', 'utah', 'virginia', 'washington', 'west-virginia',
     'wyoming', 'north-carolina', 'south-carolina', 'indiana',
+    'american-samoa', 'virgin-islands',
   ].map(stateCode => ({
     url: `${BASE_URL}/parks/state/${stateCode}`,
     lastModified: new Date(),

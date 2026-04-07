@@ -97,6 +97,36 @@ class BlogService {
     enhancedApi.clearCacheByType('blogPosts');
   }
 
+  async getParkGuides(parkCode, parkName = '') {
+    // Build tag variants: e.g. for "Grand Canyon" → ["grca", "grandcanyon", "grandcanyonnationalpark"]
+    const nameLower = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().replace(/[^a-z]/g, '');
+    const tags = [parkCode.toLowerCase(), nameLower, nameLower + 'nationalpark'].filter(Boolean);
+    const uniqueTags = [...new Set(tags)];
+
+    const cacheOpts = { cacheType: 'blogPosts', ttl: 60 * 60 * 1000 };
+
+    const findFirst = async (category) => {
+      for (const tag of uniqueTags) {
+        try {
+          const result = await enhancedApi.get('/blogs', { tag, category, limit: 1, page: 1 }, cacheOpts);
+          const post = result.data?.data?.[0];
+          if (post) return post;
+        } catch { /* continue */ }
+      }
+      return null;
+    };
+
+    try {
+      const [guide, astro] = await Promise.all([
+        findFirst('Park Guides'),
+        findFirst('Astrophotography')
+      ]);
+      return { guide, astro };
+    } catch {
+      return { guide: null, astro: null };
+    }
+  }
+
   async toggleLike(postId) {
     const response = await enhancedApi.post(`/blogs/${postId}/like`, {}, {
       invalidateCache: ['blogPosts']
