@@ -12,6 +12,7 @@ import LikeFavorite from '@/components/blog/LikeFavorite';
 import ShareButtons from '@/components/common/ShareButtons';
 import RelatedPosts from '@/components/blog/RelatedPosts';
 import TableOfContents from '@/components/blog/TableOfContents';
+import NewsletterWidget from '@/components/blog/NewsletterWidget';
 import blogService from '@/services/blogService';
 import { logBlogView } from '@/utils/analytics';
 import { injectHeadingIdsIntoHtml, parseBlogHeadingsFromHtml } from '@/utils/blogHeadings';
@@ -296,6 +297,10 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
             </div>
 
             <AuthorBioCard author={post.author} />
+
+            <div className="mt-10">
+              <NewsletterWidget source="blog-post" category={post.category} />
+            </div>
 
             <div className="mt-12">
               <CommentSection postId={post._id} />

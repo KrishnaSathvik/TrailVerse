@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
+import NewsletterWidget from '@/components/blog/NewsletterWidget';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
@@ -167,6 +168,10 @@ export default async function BlogCategoryPage({ params }) {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="mt-10">
+              <NewsletterWidget source="blog-category" category={category} />
             </div>
           </section>
         </main>

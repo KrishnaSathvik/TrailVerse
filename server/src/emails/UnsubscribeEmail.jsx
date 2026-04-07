@@ -9,6 +9,7 @@ import {
   Section,
   Text,
   Hr,
+  Img,
 } from '@react-email/components';
 import * as React from 'react';
 
@@ -34,6 +35,13 @@ const UnsubscribeEmail = ({
 
               {/* Logo */}
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                <Img
+                  src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
+                  width="48"
+                  height="48"
+                  alt="TrailVerse"
+                  style={{ display: 'block', margin: '0 auto 12px' }}
+                />
                 <span style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
                   TrailVerse
                 </span>
@@ -124,8 +132,8 @@ const UnsubscribeEmail = ({
                   This confirms you've been unsubscribed from our mailing list.
                 </Text>
                 <Text style={{ margin: 0, fontSize: '11px' }}>
-                  <Link href="https://nationalparksexplorerusa.com/blog" style={{ color: '#06B569', textDecoration: 'underline' }}>
-                    Visit blog
+                  <Link href="https://nationalparksexplorerusa.com/faq" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                    FAQ
                   </Link>
                   {' · '}
                   <Link href="mailto:trailverseteam@gmail.com" style={{ color: '#06B569', textDecoration: 'underline' }}>

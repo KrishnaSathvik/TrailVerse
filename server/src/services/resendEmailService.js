@@ -424,6 +424,35 @@ class ResendEmailService {
       throw error;
     }
   }
+
+  async sendNewsletterConfirmation(subscriber) {
+    try {
+      const html = await reactEmailRenderer.renderNewsletterConfirmEmail({
+        firstName: subscriber.firstName || 'there',
+        confirmUrl: subscriber.confirmUrl
+      });
+
+      const { data, error } = await resend.emails.send({
+        from: `${process.env.EMAIL_FROM_NAME || 'TrailVerse'} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com'}>`,
+        to: subscriber.email,
+        reply_to: 'trailverseteam@gmail.com',
+        subject: 'Confirm your TrailVerse newsletter subscription',
+        html,
+        tags: [
+          { name: 'category', value: 'newsletter-confirm' }
+        ]
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`✅ Newsletter confirmation sent to: ${subscriber.email}`, data);
+    } catch (error) {
+      console.error('❌ Error sending newsletter confirmation:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new ResendEmailService();

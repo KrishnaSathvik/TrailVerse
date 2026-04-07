@@ -15,6 +15,7 @@ const UnsubscribeEmail = require('../emails/UnsubscribeEmail.jsx').default;
 const AdminNotificationEmail = require('../emails/AdminNotificationEmail.jsx').default;
 const AccountDeletionEmail = require('../emails/AccountDeletionEmail.jsx').default;
 const FeatureAnnouncementEmail = require('../emails/FeatureAnnouncementEmail.jsx').default;
+const NewsletterConfirmEmail = require('../emails/NewsletterConfirmEmail.jsx').default;
 
 class ReactEmailRenderer {
   /**
@@ -204,6 +205,20 @@ class ReactEmailRenderer {
       planUrl: planUrl || 'https://nationalparksexplorerusa.com/plan-ai',
       exploreUrl: exploreUrl || 'https://nationalparksexplorerusa.com/explore',
       unsubscribeUrl: unsubscribeUrl || 'https://nationalparksexplorerusa.com/unsubscribe'
+    });
+
+    return await render(emailComponent);
+  }
+
+  /**
+   * Render newsletter confirmation email
+   */
+  async renderNewsletterConfirmEmail(data) {
+    const { firstName, confirmUrl } = data;
+
+    const emailComponent = React.createElement(NewsletterConfirmEmail, {
+      firstName: firstName || 'there',
+      confirmUrl: confirmUrl || 'https://nationalparksexplorerusa.com/api/subscribers/confirm/abc123'
     });
 
     return await render(emailComponent);

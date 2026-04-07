@@ -16,6 +16,7 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import BlogCard from '@/components/blog/BlogCard';
 import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
+import NewsletterWidget from '@/components/blog/NewsletterWidget';
 
 const BlogSkeleton = () => (
   <div className="space-y-10">
@@ -77,9 +78,37 @@ const BlogContent = ({ initialData }) => {
   const [totalPages, setTotalPages] = useState(initialData?.totalPages || 1);
   const [postsPerPage, setPostsPerPage] = useState(6);
   const [totalPosts, setTotalPosts] = useState(initialData?.totalPosts || 0);
+  const [toast, setToast] = useState(null);
   const resultsAnchorRef = useRef(null);
   const shouldScrollToResultsRef = useRef(false);
   const hasSkippedInitialFetch = useRef(Boolean(initialData));
+
+  // Handle subscription toast from query params (confirm/unsubscribe redirects)
+  useEffect(() => {
+    const subscribed = searchParams.get('subscribed');
+    const unsubscribed = searchParams.get('unsubscribed');
+    const subscribeError = searchParams.get('subscribe_error');
+
+    if (subscribed === 'true') {
+      setToast({ type: 'success', message: "You're subscribed! You'll receive new blog posts in your inbox." });
+    } else if (unsubscribed === 'true') {
+      setToast({ type: 'success', message: "You've been unsubscribed from the newsletter." });
+    } else if (subscribeError) {
+      setToast({ type: 'error', message: 'Subscription link is invalid or expired.' });
+    }
+
+    // Clean up query params
+    if (subscribed || unsubscribed || subscribeError) {
+      router.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, router, pathname]);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     const updatePostsPerPage = () => {
@@ -412,8 +441,29 @@ const BlogContent = ({ initialData }) => {
               )}
             </>
           )}
+          {/* Newsletter */}
+          <div className="mt-12 mb-8">
+            <NewsletterWidget source="blog-listing" />
+          </div>
         </div>
       </section>
+
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-medium shadow-lg flex items-center gap-3"
+          style={{
+            backgroundColor: toast.type === 'success' ? '#06B569' : '#ef4444',
+            color: '#fff',
+            maxWidth: '90vw'
+          }}
+        >
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="opacity-70 hover:opacity-100" style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '16px' }}>
+            &times;
+          </button>
+        </div>
+      )}
 
     </>
   );
