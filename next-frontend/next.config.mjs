@@ -76,18 +76,18 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    if (process.env.NODE_ENV === 'production') {
-      return [];
-    }
+    const backendOrigin = process.env.NODE_ENV === 'production'
+      ? 'https://trailverse.onrender.com'
+      : 'http://localhost:5001';
 
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5001/api/:path*',
+        destination: `${backendOrigin}/api/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:5001/uploads/:path*',
+        destination: `${backendOrigin}/uploads/:path*`,
       },
     ];
   },

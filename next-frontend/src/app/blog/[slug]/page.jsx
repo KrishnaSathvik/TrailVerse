@@ -7,10 +7,6 @@ function getApiBaseUrl() {
   return configuredUrl.endsWith('/api') ? configuredUrl : `${configuredUrl}/api`;
 }
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL
-  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '')
-  : (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com' : 'http://localhost:5001');
-
 function toAbsoluteImageUrl(imageUrl) {
   if (!imageUrl || imageUrl.trim() === '' || imageUrl.startsWith('data:')) {
     return `${SITE_URL}/og-image-trailverse.jpg`;
@@ -20,11 +16,8 @@ function toAbsoluteImageUrl(imageUrl) {
     return imageUrl;
   }
 
-  // /uploads/ paths are served by the Express backend, not Next.js
-  if (imageUrl.startsWith('/uploads/')) {
-    return `${API_ORIGIN}${imageUrl}`;
-  }
-
+  // /uploads/ paths are proxied to the Express backend via next.config.mjs rewrites
+  // Using the frontend domain ensures social crawlers can fetch via Vercel's always-warm edge
   return imageUrl.startsWith('/') ? `${SITE_URL}${imageUrl}` : `${SITE_URL}/${imageUrl}`;
 }
 
