@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 
 const KRISHNA = {
-  name: "Krishna Sathvik",
+  name: "Krishna",
   title: "Astrophotographer & National Parks Explorer",
   photo: "/authors/krishna.jpg",
-  bio: "17+ national parks, 67M+ Google Maps views, and thousands of miles on the road — sharing what actually helps.",
+  bio: "Creator of TrailVerse. Astrophotographer and national parks nerd.",
   socials: [
     { name: "Portfolio", href: "https://www.astrobykrishna.com/" },
     { name: "Instagram", href: "https://instagram.com/astrobykrishna" },
-    { name: "Google Maps", href: "https://www.google.com/maps/contrib/118219629305553937668" },
+    { name: "Pinterest", href: "https://pin.it/2N6K1Iz" },
   ],
 };
 
