@@ -32,7 +32,7 @@ exports.getAllPosts = async (req, res, next) => {
     }
 
     if (tag) {
-      query.tags = tag;
+      query.tags = { $regex: new RegExp(`^${tag}$`, 'i') };
     }
 
     if (search) {

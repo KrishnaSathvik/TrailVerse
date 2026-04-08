@@ -137,20 +137,35 @@ class BlogService {
       return null;
     };
 
+    // Step 3: Last resort — search by park name with NO category filter
+    const findBySearchAnyCategory = async () => {
+      if (!nameWords) return null;
+      try {
+        const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 1, page: 1 }, cacheOpts);
+        const post = result.data?.data?.[0];
+        if (post) return post;
+      } catch { /* continue */ }
+      return null;
+    };
+
     try {
-      // Try tags first, then fall back to search
+      // Try tags first, then fall back to search by category, then any category
       let [guide, astro] = await Promise.all([
         findByTags(guideCategories),
         findByTags(astroCategories)
       ]);
 
-      // Fallback search for guide if tag match failed
+      // Fallback: search with category filter
       if (!guide) {
         guide = await findBySearch(guideCategories);
       }
-      // Fallback search for astro if tag match failed
       if (!astro) {
         astro = await findBySearch(astroCategories);
+      }
+
+      // Last resort: search without any category filter
+      if (!guide) {
+        guide = await findBySearchAnyCategory();
       }
 
       return { guide, astro };
