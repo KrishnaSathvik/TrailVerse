@@ -40,7 +40,8 @@ const PlanAIContent = ({ tripId }) => {
     interests,
     toggleInterest,
     handleStartNewChat,
-    isAuthenticated
+    isAuthenticated,
+    fromChatHistory
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
 
@@ -202,6 +203,7 @@ const PlanAIContent = ({ tripId }) => {
             isPersonalized={isPersonalized}
             isNewChat={effectiveIsNewChat}
             suggestText={suggestText}
+            fromChatHistory={fromChatHistory}
             refreshTrips={refetchUserTrips}
             onOpenQuickFill={() => setQuickFillOpen(true)}
           />

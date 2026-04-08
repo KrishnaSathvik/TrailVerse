@@ -68,6 +68,7 @@ export default function usePlanAI(tripId) {
 
   const isPersonalized = searchParams.get('personalized') === 'true';
   const isNewChat = searchParams.get('newchat') === 'true';
+  const fromChatHistory = searchParams.get('chat') === 'true';
 
   // Load trip data - always from database (no more localStorage trips)
   const loadTripFromBackend = useCallback(async (tripId) => {
@@ -640,7 +641,7 @@ export default function usePlanAI(tripId) {
     showChat, chatFormData, selectedParkName, step, isRestoringState, loadingTrip,
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab, showLimitDialog, timeUntilReset,
-    formData, isPersonalized, isNewChat, isPublicAccess, suggestText,
+    formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory,
     allParks, parksLoading, parksError, user, isAuthenticated,
 
     // Setters

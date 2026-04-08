@@ -45,7 +45,8 @@ const TripPlannerChat = ({
   isNewChat = false,
   suggestText = '',
   refreshTrips = null,
-  onOpenQuickFill = null
+  onOpenQuickFill = null,
+  fromChatHistory = false
 }) => {
   const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
@@ -258,25 +259,25 @@ const TripPlannerChat = ({
             console.log('🔄 Loaded conversation:', conversation);
             const messagesToLoad = conversation.conversation || [];
             
-          // Add welcome back message at the end if there are existing messages
-          if (messagesToLoad.length > 0) {
+          // Add welcome back message only when coming from chat history page
+          if (messagesToLoad.length > 0 && fromChatHistory) {
             // Find the last welcome back message
-            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg => 
-              msg.role === 'assistant' && 
+            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg =>
+              msg.role === 'assistant' &&
               msg.content.includes('Welcome back') &&
               msg.content.includes('pick up where we left off')
             );
-            
+
             // Check if there are user messages after the last welcome back
-            const hasNewUserMessages = lastWelcomeBackIndex !== -1 && 
+            const hasNewUserMessages = lastWelcomeBackIndex !== -1 &&
               messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
-            
+
             // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
             if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
               const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
               setMessages([...messagesToLoad, welcomeBackMessage]);
               console.log('🔄 Added welcome back message to end of existing conversation (conversationId)');
-              
+
               // Auto-scroll to show the welcome back message
               setTimeout(() => {
                 if (messagesEndRef.current) {
@@ -304,25 +305,25 @@ const TripPlannerChat = ({
           console.log('🔄 Setting messages:', messagesToLoad.length, 'messages');
           console.log('🔄 Messages with feedback:', messagesToLoad.filter(m => m.userFeedback).map(m => ({ id: m.id, feedback: m.userFeedback })));
           
-          // Add welcome back message at the end if there are existing messages
-          if (messagesToLoad.length > 0) {
+          // Add welcome back message only when coming from chat history page
+          if (messagesToLoad.length > 0 && fromChatHistory) {
             // Find the last welcome back message
-            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg => 
-              msg.role === 'assistant' && 
+            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg =>
+              msg.role === 'assistant' &&
               msg.content.includes('Welcome back') &&
               msg.content.includes('pick up where we left off')
             );
-            
+
             // Check if there are user messages after the last welcome back
-            const hasNewUserMessages = lastWelcomeBackIndex !== -1 && 
+            const hasNewUserMessages = lastWelcomeBackIndex !== -1 &&
               messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
-            
+
             // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
             if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
               const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
               setMessages([...messagesToLoad, welcomeBackMessage]);
               console.log('🔄 Added welcome back message to end of existing conversation');
-              
+
               // Auto-scroll to show the welcome back message
               setTimeout(() => {
                 if (messagesEndRef.current) {
