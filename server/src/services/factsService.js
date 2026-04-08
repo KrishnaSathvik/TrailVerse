@@ -195,12 +195,34 @@ function buildSearchQuery(userMessage, parkName) {
 }
 
 /**
+ * Classify the user's query to pick the best search strategy
+ * @param {string} userMessage
+ * @returns {'local'|'planning'|'realtime'} Query category
+ */
+function classifyQuery(userMessage) {
+  const msg = userMessage.toLowerCase();
+
+  // Local businesses: restaurants, hotels, gas, stores → Google (Serper) is best
+  if (/(restaurant|food|eat|dine|dining|cafe|coffee|bar|hotel|motel|lodge|lodging|cabin|airbnb|stay|accommodation|gas station|grocery|store|shop|outfitter|gear|rent|shuttle|tour company|guide service)/i.test(msg)) {
+    return 'local';
+  }
+
+  // Real-time: road conditions, current closures, events, recent news → Brave (fresh index)
+  if (/(road condition|road closure|closed|current|latest|recent|update|news|2025|2026|event|festival|wildfire|flood|construction|status|open now|hour|schedule)/i.test(msg)) {
+    return 'realtime';
+  }
+
+  // Planning: itinerary, tips, best time, general travel → Tavily (AI summary)
+  return 'planning';
+}
+
+/**
  * Fetch web search results using Brave Search API
  */
-async function searchBrave(query) {
+async function searchBrave(query, count = 5) {
   const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
     headers: { 'X-Subscription-Token': BRAVE_API_KEY, 'Accept': 'application/json' },
-    params: { q: query, count: 5, freshness: 'py' },
+    params: { q: query, count, freshness: 'pm' },
     timeout: 5000
   });
 
@@ -208,105 +230,188 @@ async function searchBrave(query) {
   return results.map(r => ({
     title: r.title,
     snippet: r.description,
-    url: r.url
+    url: r.url,
+    source: 'brave'
   }));
 }
 
 /**
- * Fetch web search results using Serper API
+ * Fetch web search results using Serper API (Google)
  */
-async function searchSerper(query) {
+async function searchSerper(query, num = 5) {
   const response = await axios.post('https://google.serper.dev/search', {
     q: query,
-    num: 5
+    num
   }, {
     headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
     timeout: 5000
   });
 
-  const results = response.data?.organic || [];
-  return results.map(r => ({
+  const organic = response.data?.organic || [];
+  // Also grab Google's knowledge graph / places if present
+  const places = response.data?.places || [];
+
+  const results = organic.map(r => ({
     title: r.title,
     snippet: r.snippet,
-    url: r.link
+    url: r.link,
+    source: 'google'
   }));
+
+  // Add place results (restaurants, hotels, etc.) — these are gold for local queries
+  if (places.length > 0) {
+    const placeResults = places.slice(0, 3).map(p => ({
+      title: p.title,
+      snippet: [p.address, p.rating ? `Rating: ${p.rating}/5` : null, p.phone].filter(Boolean).join(' · '),
+      url: p.link || '',
+      source: 'google-places'
+    }));
+    results.unshift(...placeResults);
+  }
+
+  return results;
 }
 
 /**
  * Fetch web search results using Tavily API (optimized for AI/RAG)
  */
-async function searchTavily(query) {
+async function searchTavily(query, depth = 'basic') {
   const response = await axios.post('https://api.tavily.com/search', {
     api_key: TAVILY_API_KEY,
     query: query,
     max_results: 5,
-    search_depth: 'basic',
+    search_depth: depth,
     include_answer: true
   }, {
-    timeout: 5000
+    timeout: 7000
   });
 
   const answer = response.data?.answer || null;
   const results = (response.data?.results || []).map(r => ({
     title: r.title,
-    snippet: r.content?.substring(0, 200),
-    url: r.url
+    snippet: r.content?.substring(0, 250),
+    url: r.url,
+    source: 'tavily',
+    score: r.score || 0
   }));
 
   return { answer, results };
 }
 
 /**
- * Fetch live web search facts for a user query
- * Uses whichever search API key is configured (Brave > Serper > Tavily)
- * @param {Object} params - { userMessage, parkName, parkCode }
- * @returns {Promise<string|null>} Formatted web search results or null
+ * Deduplicate results by URL domain + path, keeping the one with more info
+ */
+function deduplicateResults(results) {
+  const seen = new Map();
+  for (const r of results) {
+    try {
+      const key = new URL(r.url).hostname + new URL(r.url).pathname;
+      const existing = seen.get(key);
+      if (!existing || (r.snippet && r.snippet.length > (existing.snippet || '').length)) {
+        seen.set(key, r);
+      }
+    } catch {
+      seen.set(r.title, r);
+    }
+  }
+  return Array.from(seen.values());
+}
+
+/**
+ * Fetch live web search facts using all available APIs intelligently
+ *
+ * Strategy with all 3 keys:
+ *   - LOCAL queries (restaurants, hotels): Serper (Google Places) primary + Brave backup
+ *   - REALTIME queries (closures, events): Brave (fresh index) primary + Serper backup
+ *   - PLANNING queries (tips, itineraries): Tavily (AI summary) primary + Serper backup
+ *
+ * Results are merged, deduplicated, and capped at 8 for a rich but focused context.
+ * If the primary fails, the backup is already running in parallel.
  */
 async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
-  // Check if any search API is configured
   if (!BRAVE_API_KEY && !SERPER_API_KEY && !TAVILY_API_KEY) {
-    console.log('[WebSearch] No search API key configured (set BRAVE_SEARCH_API_KEY, SERPER_API_KEY, or TAVILY_API_KEY)');
+    console.log('[WebSearch] No search API key configured');
     return null;
   }
 
   try {
     const query = buildSearchQuery(userMessage, parkName);
-    console.log(`[WebSearch] Searching: "${query}"`);
+    const queryType = classifyQuery(userMessage);
+    console.log(`[WebSearch] Query: "${query}" | Type: ${queryType}`);
 
-    let searchResults = [];
     let aiAnswer = null;
+    let allResults = [];
 
-    // Try providers in order of preference
-    if (TAVILY_API_KEY) {
-      const tavResult = await searchTavily(query);
-      searchResults = tavResult.results;
-      aiAnswer = tavResult.answer;
-    } else if (BRAVE_API_KEY) {
-      searchResults = await searchBrave(query);
-    } else if (SERPER_API_KEY) {
-      searchResults = await searchSerper(query);
+    // Build parallel search promises based on query type and available keys
+    const searches = [];
+
+    if (queryType === 'local') {
+      // Local businesses → Serper (Google Places) is primary
+      if (SERPER_API_KEY) searches.push(searchSerper(query, 5).catch(() => []));
+      if (BRAVE_API_KEY) searches.push(searchBrave(query, 3).catch(() => []));
+      // Tavily for AI summary as bonus if available
+      if (TAVILY_API_KEY) searches.push(
+        searchTavily(query).then(r => { aiAnswer = r.answer; return r.results; }).catch(() => [])
+      );
+    } else if (queryType === 'realtime') {
+      // Real-time/current → Brave (fresh index) is primary
+      if (BRAVE_API_KEY) searches.push(searchBrave(query, 5).catch(() => []));
+      if (SERPER_API_KEY) searches.push(searchSerper(query, 3).catch(() => []));
+      if (TAVILY_API_KEY) searches.push(
+        searchTavily(query).then(r => { aiAnswer = r.answer; return r.results; }).catch(() => [])
+      );
+    } else {
+      // Planning/general → Tavily (AI answer) is primary
+      if (TAVILY_API_KEY) searches.push(
+        searchTavily(query, 'advanced').then(r => { aiAnswer = r.answer; return r.results; }).catch(() => [])
+      );
+      if (SERPER_API_KEY) searches.push(searchSerper(query, 4).catch(() => []));
+      if (BRAVE_API_KEY) searches.push(searchBrave(query, 3).catch(() => []));
     }
 
-    if (searchResults.length === 0 && !aiAnswer) {
-      console.log('[WebSearch] No results found');
+    // Run all searches in parallel
+    const searchArrays = await Promise.all(searches);
+    allResults = searchArrays.flat();
+
+    // Deduplicate and cap results
+    const uniqueResults = deduplicateResults(allResults);
+    const finalResults = uniqueResults.slice(0, 8);
+
+    if (finalResults.length === 0 && !aiAnswer) {
+      console.log('[WebSearch] No results from any provider');
       return null;
     }
 
     // Format results for the AI system prompt
-    let formatted = 'Live Web Search Results:\n';
+    let formatted = 'Live Web Search Results';
+    const providers = [...new Set(finalResults.map(r => r.source))];
+    formatted += ` (via ${providers.join(' + ')}):\n`;
 
     if (aiAnswer) {
-      formatted += `Summary: ${aiAnswer}\n\n`;
+      formatted += `\nAI Summary: ${aiAnswer}\n`;
     }
 
-    formatted += searchResults
-      .filter(r => r.title && r.snippet)
-      .map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`)
-      .join('\n\n');
+    // Group Google Places results separately for better readability
+    const places = finalResults.filter(r => r.source === 'google-places');
+    const webResults = finalResults.filter(r => r.source !== 'google-places');
+
+    if (places.length > 0) {
+      formatted += '\nNearby Places:\n';
+      formatted += places.map(p => `- ${p.title}: ${p.snippet}`).join('\n');
+      formatted += '\n';
+    }
+
+    if (webResults.length > 0) {
+      formatted += '\nWeb Sources:\n';
+      formatted += webResults
+        .filter(r => r.title && r.snippet)
+        .map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`)
+        .join('\n\n');
+    }
 
     formatted += '\n(From live web search — verify details with official sources)';
 
-    console.log(`[WebSearch] Found ${searchResults.length} results`);
+    console.log(`[WebSearch] ${finalResults.length} results from ${providers.join(', ')} | AI answer: ${!!aiAnswer}`);
     return formatted;
   } catch (error) {
     console.error('[WebSearch] Search error:', error.message);
