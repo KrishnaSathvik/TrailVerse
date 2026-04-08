@@ -98,10 +98,7 @@ class BlogService {
   }
 
   async getParkGuides(parkCode, parkName = '') {
-    const nameLower = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().replace(/[^a-z]/g, '');
     const nameWords = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().trim();
-    const tags = [parkCode.toLowerCase(), nameLower, nameLower + 'nationalpark'].filter(Boolean);
-    const uniqueTags = [...new Set(tags)];
 
     const cacheOpts = { cacheType: 'blogPosts', ttl: 60 * 60 * 1000 };
 
@@ -111,53 +108,18 @@ class BlogService {
       const title = (post.title || '').toLowerCase();
       const excerpt = (post.excerpt || '').toLowerCase();
       const parkLower = nameWords.toLowerCase();
-      // Post title or excerpt should contain the park name to be considered park-specific
       return title.includes(parkLower) || excerpt.includes(parkLower);
     };
 
-    // Fast path: search by park name (single API call, no category filter)
-    const findBySearch = async () => {
-      if (!nameWords) return null;
-      try {
-        const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 5, page: 1 }, cacheOpts);
-        const posts = result.data?.data || [];
-        // Only return posts that are specifically about this park
-        return posts.filter(isParkSpecific);
-      } catch { return []; }
-    };
-
-    // Slow path: try each tag with specific category (only used as fallback)
-    const findByTag = async (categories) => {
-      for (const tag of uniqueTags) {
-        try {
-          const result = await enhancedApi.get('/blogs', { tag, limit: 1, page: 1 }, cacheOpts);
-          const post = result.data?.data?.[0];
-          // Only accept posts in the expected categories — no fallback to any category
-          if (post && categories.includes(post.category)) return post;
-        } catch { /* continue */ }
-      }
-      return null;
-    };
-
     try {
-      // Step 1: Fast search by park name (1 API call, filtered to park-specific posts)
-      const searchResults = await findBySearch();
+      // Single API call — search by park name, return up to 5 results
+      if (!nameWords) return { guide: null, astro: null };
 
-      let guide = null;
-      let astro = null;
+      const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 5, page: 1 }, cacheOpts);
+      const posts = (result.data?.data || []).filter(isParkSpecific);
 
-      if (searchResults && searchResults.length > 0) {
-        astro = searchResults.find(p => p.category === 'Astrophotography') || null;
-        guide = searchResults.find(p => p.category !== 'Astrophotography') || null;
-      }
-
-      // Step 2: If search didn't find results, try tag matching (strict category match only)
-      if (!guide) {
-        guide = await findByTag(['Park Guides', 'Travel Tips', 'Hiking', 'Camping', 'Travel Blogs', 'Seasonal Guides', 'National Parks']);
-      }
-      if (!astro) {
-        astro = await findByTag(['Astrophotography']);
-      }
+      const astro = posts.find(p => p.category === 'Astrophotography') || null;
+      const guide = posts.find(p => p.category !== 'Astrophotography') || null;
 
       return { guide, astro };
     } catch {
