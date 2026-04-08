@@ -2047,31 +2047,86 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                 </div>
               </div>
 
-              {/* Crowd Calendar CTA */}
-              <a
-                href={`/reports/when-to-go.html?park=${encodeURIComponent(park.parkCode?.toUpperCase())}`}
-                className="block rounded-2xl p-4 sm:p-6 transition hover:shadow-lg group"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
-                  Crowd Calendar
-                </span>
-                <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
-                  When to Visit {park.fullName?.replace(' National Park', '')}
-                </h4>
-                <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Month-by-month crowd levels, shoulder seasons, and permit info.
-                </p>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
-                  View Calendar <ChevronRight className="h-3.5 w-3.5" />
-                </span>
-              </a>
+              {/* Park Guides Section — all guides together */}
+              <div className="space-y-3">
+                {/* Crowd Calendar */}
+                <a
+                  href={`/reports/when-to-go.html?park=${encodeURIComponent(park.parkCode?.toUpperCase())}`}
+                  className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
+                    Crowd Calendar
+                  </span>
+                  <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
+                    When to Visit {park.fullName?.replace(' National Park', '')}
+                  </h4>
+                  <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Month-by-month crowd levels, shoulder seasons, and permit info.
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
+                    View Calendar <ChevronRight className="h-3.5 w-3.5" />
+                  </span>
+                </a>
 
-              {/* Plan Trip CTA */}
+                {/* Blog Guide */}
+                {parkGuides.guide && (
+                  <a
+                    href={`/blog/${parkGuides.guide.slug}`}
+                    className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
+                      Complete Guide
+                    </span>
+                    <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
+                      {parkGuides.guide.title}
+                    </h4>
+                    <p className="text-xs line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      {parkGuides.guide.excerpt}
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
+                      Read Full Guide <ChevronRight className="h-3.5 w-3.5" />
+                    </span>
+                  </a>
+                )}
+
+                {/* Astrophotography Guide */}
+                {parkGuides.astro && (
+                  <a
+                    href={`/blog/${parkGuides.astro.slug}`}
+                    className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
+                      Astrophotography
+                    </span>
+                    <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
+                      {parkGuides.astro.title}
+                    </h4>
+                    <p className="text-xs line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      {parkGuides.astro.excerpt}
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
+                      Read Astro Guide <ChevronRight className="h-3.5 w-3.5" />
+                    </span>
+                  </a>
+                )}
+              </div>
+
+              {/* Plan Trip CTA — below guides */}
               <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
@@ -2097,60 +2152,6 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                   Plan with AI
                 </Button>
               </div>
-
-              {/* Park Blog Guides — only render if at least one exists */}
-              {(parkGuides.guide || parkGuides.astro) && (
-                <div className="space-y-3">
-                  {parkGuides.guide && (
-                    <a
-                      href={`/blog/${parkGuides.guide.slug}`}
-                      className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
-                        Complete Guide
-                      </span>
-                      <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
-                        {parkGuides.guide.title}
-                      </h4>
-                      <p className="text-xs line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>
-                        {parkGuides.guide.excerpt}
-                      </p>
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
-                        Read Full Guide <ChevronRight className="h-3.5 w-3.5" />
-                      </span>
-                    </a>
-                  )}
-                  {parkGuides.astro && (
-                    <a
-                      href={`/blog/${parkGuides.astro.slug}`}
-                      className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)'
-                      }}
-                    >
-                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
-                        Astrophotography
-                      </span>
-                      <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
-                        {parkGuides.astro.title}
-                      </h4>
-                      <p className="text-xs line-clamp-2 mb-2" style={{ color: 'var(--text-secondary)' }}>
-                        {parkGuides.astro.excerpt}
-                      </p>
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
-                        Read Astro Guide <ChevronRight className="h-3.5 w-3.5" />
-                      </span>
-                    </a>
-                  )}
-                </div>
-              )}
             </aside>
           </div>
         </div>
