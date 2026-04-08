@@ -52,17 +52,59 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     throw Object.assign(new Error('Messages array is required'), { statusCode: 400 });
   }
 
-  // Smart context management — trim long conversations
+  // Smart context management — trim long conversations with structured summary
   const MAX_CONTEXT_MESSAGES = 20;
   if (messages.length > MAX_CONTEXT_MESSAGES) {
     const systemMsg = messages.find(m => m.role === 'system');
     const recentMessages = messages.filter(m => m.role !== 'system').slice(-15);
     const olderMessages = messages.filter(m => m.role !== 'system').slice(0, -15);
-    const summaryText = `[Previous conversation summary: The user and AI discussed ${olderMessages.length} earlier messages about trip planning. Key topics covered include the initial trip setup and early recommendations.]`;
+
+    // Extract key decisions from older messages instead of a generic summary
+    const olderText = olderMessages.map(m => m.content).join(' ');
+    const summaryParts = ['[CONVERSATION CONTEXT — extracted from earlier messages]'];
+
+    // Extract park name
+    const parkMatch = olderText.match(/(?:going to|visiting|trip to|plan for|heading to|explore)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+National\s+Park)?)/);
+    if (parkMatch) summaryParts.push(`Park: ${parkMatch[1]}`);
+
+    // Extract dates
+    const dateMatch = olderText.match(/(?:from|between|starting|arriving|dates?:?\s*)(\w+ \d{1,2}(?:\s*[-–to]+\s*\w+ \d{1,2})?(?:,?\s*\d{4})?)/i);
+    if (dateMatch) summaryParts.push(`Dates: ${dateMatch[1]}`);
+
+    // Extract group size
+    const groupMatch = olderText.match(/(\d+)\s*(?:people|person|adults?|of us|travelers?|in (?:our|the) group)/i);
+    if (groupMatch) summaryParts.push(`Group size: ${groupMatch[1]}`);
+
+    // Extract budget
+    const budgetMatch = olderText.match(/(?:budget|spend|spending|afford)\s*(?:is|of|around|about)?\s*\$?([\d,]+(?:\s*[-–to]+\s*\$?[\d,]+)?)/i);
+    if (budgetMatch) summaryParts.push(`Budget: $${budgetMatch[1]}`);
+
+    // Extract interests/activities
+    const interestPatterns = /(hiking|camping|photography|wildlife|stargazing|fishing|kayaking|rock climbing|backpacking|scenic drives?|waterfalls?|sunrise|sunset|family.friendly|kid.friendly|accessible|easy trails?|moderate|challenging|strenuous)/gi;
+    const interests = [...new Set((olderText.match(interestPatterns) || []).map(i => i.toLowerCase()))];
+    if (interests.length > 0) summaryParts.push(`Interests: ${interests.slice(0, 8).join(', ')}`);
+
+    // Extract fitness/difficulty preference
+    const fitnessMatch = olderText.match(/(?:fitness|difficulty|experience|skill)\s*(?:level|is)?\s*:?\s*(beginner|easy|moderate|advanced|experienced|hard|strenuous)/i);
+    if (fitnessMatch) summaryParts.push(`Fitness level: ${fitnessMatch[1]}`);
+
+    // Extract accommodation preference
+    const accomMatch = olderText.match(/(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb)/i);
+    if (accomMatch) summaryParts.push(`Accommodation: ${accomMatch[1]}`);
+
+    // Capture what was suggested and accepted/rejected
+    const aiMessages = olderMessages.filter(m => m.role === 'assistant').map(m => m.content);
+    const userMessages = olderMessages.filter(m => m.role === 'user').map(m => m.content);
+    const rejections = userMessages.filter(m => /(skip|don't|no|remove|instead|change|replace|not interested|too)/i.test(m));
+    if (rejections.length > 0) {
+      summaryParts.push(`User adjustments: ${rejections.slice(-3).map(r => r.substring(0, 80)).join('; ')}`);
+    }
+
+    summaryParts.push(`[${olderMessages.length} earlier messages summarized above — ${recentMessages.length} recent messages follow]`);
 
     messages = [
       ...(systemMsg ? [systemMsg] : []),
-      { role: 'system', content: summaryText },
+      { role: 'system', content: summaryParts.join('\n') },
       ...recentMessages
     ];
   }

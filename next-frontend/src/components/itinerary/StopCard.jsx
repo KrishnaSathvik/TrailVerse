@@ -10,6 +10,7 @@ const TYPE_ICONS = {
   campground: Tent,
   visitor_center: Info,
   lodging: Home,
+  restaurant: Utensils,
   food: Utensils,
   custom: MapPin,
 };
@@ -21,8 +22,16 @@ const TYPE_COLORS = {
   campground: '#8B6914',
   visitor_center: '#7C3AED',
   lodging: '#7C3AED',
+  restaurant: '#F59E0B',
   food: '#F59E0B',
   custom: 'var(--text-tertiary)',
+};
+
+const DIFFICULTY_COLORS = {
+  easy: { bg: 'rgba(34,197,94,0.12)', text: '#16a34a' },
+  moderate: { bg: 'rgba(234,179,8,0.12)', text: '#ca8a04' },
+  hard: { bg: 'rgba(249,115,22,0.12)', text: '#ea580c' },
+  strenuous: { bg: 'rgba(239,68,68,0.12)', text: '#dc2626' },
 };
 
 function formatTime12(timeStr) {
@@ -96,15 +105,47 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
             {stop.name}
           </p>
 
-          {/* Time display */}
+          {/* Time + driving time display */}
           {hasTime && (
-            <div className="flex items-center gap-1 mt-1">
-              <Clock className="h-2.5 w-2.5" style={{ color: 'var(--text-tertiary)' }} />
+            <div className="flex items-center gap-1 mt-1 flex-wrap">
+              <Clock className="h-2.5 w-2.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
               <p className="text-xs" style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>
                 {stop.startTime ? formatTime12(stop.startTime) : ''}
                 {stop.startTime && stop.duration ? ' · ' : ''}
                 {stop.duration ? formatDuration(stop.duration) : ''}
+                {stop.drivingTimeFromPreviousMin > 0 ? ` · ${stop.drivingTimeFromPreviousMin}min drive` : ''}
               </p>
+            </div>
+          )}
+
+          {/* Trail stats: difficulty, distance, elevation */}
+          {(stop.difficulty || stop.distanceMiles || stop.elevationGainFeet) && (
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {stop.difficulty && (
+                <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: DIFFICULTY_COLORS[stop.difficulty]?.bg || 'rgba(0,0,0,0.06)',
+                    color: DIFFICULTY_COLORS[stop.difficulty]?.text || 'var(--text-tertiary)'
+                  }}>
+                  {stop.difficulty}
+                </span>
+              )}
+              {stop.distanceMiles > 0 && (
+                <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                  {stop.distanceMiles}mi
+                </span>
+              )}
+              {stop.elevationGainFeet > 0 && (
+                <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                  ↑{stop.elevationGainFeet.toLocaleString()}ft
+                </span>
+              )}
+              {stop.permitRequired && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded"
+                  style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#dc2626' }}>
+                  Permit
+                </span>
+              )}
             </div>
           )}
 
@@ -142,6 +183,20 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
             >
               {stop.note || <span className="italic">Add a note...</span>}
             </p>
+          )}
+
+          {/* Booking link */}
+          {stop.bookingUrl && (
+            <a
+              href={stop.bookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[9px] font-medium mt-1 hover:underline"
+              style={{ color: 'var(--accent-green)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              Book / Reserve &rarr;
+            </a>
           )}
         </div>
 
