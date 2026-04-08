@@ -98,17 +98,38 @@ class BlogService {
   }
 
   async getParkGuides(parkCode, parkName = '') {
-    // Build tag variants: e.g. for "Grand Canyon" → ["grca", "grandcanyon", "grandcanyonnationalpark"]
+    // Build tag variants: e.g. for "Arches" → ["arch", "arches", "archesnationalpark"]
     const nameLower = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().replace(/[^a-z]/g, '');
+    const nameWords = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().trim();
     const tags = [parkCode.toLowerCase(), nameLower, nameLower + 'nationalpark'].filter(Boolean);
     const uniqueTags = [...new Set(tags)];
 
+    // Categories that qualify as park guides
+    const guideCategories = ['Park Guides', 'Travel Tips', 'Hiking', 'Camping', 'Travel Blogs', 'Seasonal Guides', 'National Parks'];
+    const astroCategories = ['Astrophotography'];
+
     const cacheOpts = { cacheType: 'blogPosts', ttl: 60 * 60 * 1000 };
 
-    const findFirst = async (category) => {
+    // Step 1: Try tag-based matching across multiple categories
+    const findByTags = async (categories) => {
       for (const tag of uniqueTags) {
+        for (const category of categories) {
+          try {
+            const result = await enhancedApi.get('/blogs', { tag, category, limit: 1, page: 1 }, cacheOpts);
+            const post = result.data?.data?.[0];
+            if (post) return post;
+          } catch { /* continue */ }
+        }
+      }
+      return null;
+    };
+
+    // Step 2: Fallback — search by park name in title/content
+    const findBySearch = async (categories) => {
+      if (!nameWords) return null;
+      for (const category of categories) {
         try {
-          const result = await enhancedApi.get('/blogs', { tag, category, limit: 1, page: 1 }, cacheOpts);
+          const result = await enhancedApi.get('/blogs', { search: nameWords, category, limit: 1, page: 1 }, cacheOpts);
           const post = result.data?.data?.[0];
           if (post) return post;
         } catch { /* continue */ }
@@ -117,10 +138,21 @@ class BlogService {
     };
 
     try {
-      const [guide, astro] = await Promise.all([
-        findFirst('Park Guides'),
-        findFirst('Astrophotography')
+      // Try tags first, then fall back to search
+      let [guide, astro] = await Promise.all([
+        findByTags(guideCategories),
+        findByTags(astroCategories)
       ]);
+
+      // Fallback search for guide if tag match failed
+      if (!guide) {
+        guide = await findBySearch(guideCategories);
+      }
+      // Fallback search for astro if tag match failed
+      if (!astro) {
+        astro = await findBySearch(astroCategories);
+      }
+
       return { guide, astro };
     } catch {
       return { guide: null, astro: null };

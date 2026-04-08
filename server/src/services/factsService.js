@@ -4,6 +4,11 @@ const OWM_KEY = process.env.OPENWEATHER_API_KEY; // server-side key ⚠️ not R
 const OWM_BASE = 'https://api.openweathermap.org/data/2.5/forecast';
 // NPS data is now served through npsService (with bulk caches) — no direct API calls needed
 
+// Web search configuration — supports Brave Search, Serper, or Tavily
+const BRAVE_API_KEY = process.env.BRAVE_SEARCH_API_KEY;
+const SERPER_API_KEY = process.env.SERPER_API_KEY;
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+
 /**
  * Fetch weather facts for a specific location
  * @param {Object} params - { lat, lon, units }
@@ -171,6 +176,158 @@ async function fetchNPSFacts({ parkCode }) {
 }
 
 /**
+ * Build a smart search query from user message and park context
+ * @param {string} userMessage - The user's message
+ * @param {string} parkName - Park name for context
+ * @returns {string} Optimized search query
+ */
+function buildSearchQuery(userMessage, parkName) {
+  // Strip common filler words and keep the intent
+  const cleaned = userMessage
+    .replace(/\b(can you|please|tell me|i want to|i'd like to|what are|where are|how do i|show me)\b/gi, '')
+    .trim();
+
+  // If parkName is already in the message, use it as-is
+  if (parkName && !cleaned.toLowerCase().includes(parkName.toLowerCase())) {
+    return `${cleaned} near ${parkName}`.substring(0, 200);
+  }
+  return cleaned.substring(0, 200);
+}
+
+/**
+ * Fetch web search results using Brave Search API
+ */
+async function searchBrave(query) {
+  const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
+    headers: { 'X-Subscription-Token': BRAVE_API_KEY, 'Accept': 'application/json' },
+    params: { q: query, count: 5, freshness: 'py' },
+    timeout: 5000
+  });
+
+  const results = response.data?.web?.results || [];
+  return results.map(r => ({
+    title: r.title,
+    snippet: r.description,
+    url: r.url
+  }));
+}
+
+/**
+ * Fetch web search results using Serper API
+ */
+async function searchSerper(query) {
+  const response = await axios.post('https://google.serper.dev/search', {
+    q: query,
+    num: 5
+  }, {
+    headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+    timeout: 5000
+  });
+
+  const results = response.data?.organic || [];
+  return results.map(r => ({
+    title: r.title,
+    snippet: r.snippet,
+    url: r.link
+  }));
+}
+
+/**
+ * Fetch web search results using Tavily API (optimized for AI/RAG)
+ */
+async function searchTavily(query) {
+  const response = await axios.post('https://api.tavily.com/search', {
+    api_key: TAVILY_API_KEY,
+    query: query,
+    max_results: 5,
+    search_depth: 'basic',
+    include_answer: true
+  }, {
+    timeout: 5000
+  });
+
+  const answer = response.data?.answer || null;
+  const results = (response.data?.results || []).map(r => ({
+    title: r.title,
+    snippet: r.content?.substring(0, 200),
+    url: r.url
+  }));
+
+  return { answer, results };
+}
+
+/**
+ * Fetch live web search facts for a user query
+ * Uses whichever search API key is configured (Brave > Serper > Tavily)
+ * @param {Object} params - { userMessage, parkName, parkCode }
+ * @returns {Promise<string|null>} Formatted web search results or null
+ */
+async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
+  // Check if any search API is configured
+  if (!BRAVE_API_KEY && !SERPER_API_KEY && !TAVILY_API_KEY) {
+    console.log('[WebSearch] No search API key configured (set BRAVE_SEARCH_API_KEY, SERPER_API_KEY, or TAVILY_API_KEY)');
+    return null;
+  }
+
+  try {
+    const query = buildSearchQuery(userMessage, parkName);
+    console.log(`[WebSearch] Searching: "${query}"`);
+
+    let searchResults = [];
+    let aiAnswer = null;
+
+    // Try providers in order of preference
+    if (TAVILY_API_KEY) {
+      const tavResult = await searchTavily(query);
+      searchResults = tavResult.results;
+      aiAnswer = tavResult.answer;
+    } else if (BRAVE_API_KEY) {
+      searchResults = await searchBrave(query);
+    } else if (SERPER_API_KEY) {
+      searchResults = await searchSerper(query);
+    }
+
+    if (searchResults.length === 0 && !aiAnswer) {
+      console.log('[WebSearch] No results found');
+      return null;
+    }
+
+    // Format results for the AI system prompt
+    let formatted = 'Live Web Search Results:\n';
+
+    if (aiAnswer) {
+      formatted += `Summary: ${aiAnswer}\n\n`;
+    }
+
+    formatted += searchResults
+      .filter(r => r.title && r.snippet)
+      .map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`)
+      .join('\n\n');
+
+    formatted += '\n(From live web search — verify details with official sources)';
+
+    console.log(`[WebSearch] Found ${searchResults.length} results`);
+    return formatted;
+  } catch (error) {
+    console.error('[WebSearch] Search error:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Determine if web search would benefit the user's question
+ * @param {string} userMessage - The user's message
+ * @returns {boolean} Whether web search should be performed
+ */
+function needsWebSearch(userMessage) {
+  if (!userMessage) return false;
+
+  // Topics where live web data is especially valuable
+  const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway)/i;
+  return webSearchKeywords.test(userMessage);
+}
+
+/**
  * Determine if weather facts are needed based on user message
  * @param {string} userMessage - The user's message
  * @returns {boolean} Whether weather facts should be fetched
@@ -194,21 +351,22 @@ function needsNPSFacts(userMessage) {
 /**
  * Main function to fetch all relevant facts
  * @param {Object} params - { userMessage, parkCode, lat, lon, parkName }
- * @returns {Promise<Object>} { weatherFacts, npsFacts }
+ * @returns {Promise<Object>} { weatherFacts, npsFacts, webSearchFacts }
  */
 async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName }) {
-  const results = { weatherFacts: null, npsFacts: null };
+  const results = { weatherFacts: null, npsFacts: null, webSearchFacts: null };
 
   try {
     // Determine what facts to fetch
     const shouldFetchWeather = needsWeatherFacts(userMessage) && lat && lon;
     const shouldFetchNPS = needsNPSFacts(userMessage) && parkCode;
+    const shouldFetchWeb = needsWebSearch(userMessage);
 
-    console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, userMessage: userMessage?.substring(0, 50) });
+    console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, shouldFetchWeb, userMessage: userMessage?.substring(0, 50) });
 
     // Fetch facts in parallel if needed
     const promises = [];
-    
+
     if (shouldFetchWeather) {
       promises.push(
         fetchWeatherFacts({ lat, lon }).then(facts => { results.weatherFacts = facts; }).catch(err => {
@@ -227,12 +385,21 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName })
       );
     }
 
+    if (shouldFetchWeb) {
+      promises.push(
+        fetchWebSearchFacts({ userMessage, parkName, parkCode }).then(facts => { results.webSearchFacts = facts; }).catch(err => {
+          console.error('[Facts] Web search error:', err.message);
+          results.webSearchFacts = null;
+        })
+      );
+    }
+
     // Wait for all fact fetching to complete
     if (promises.length > 0) {
       await Promise.allSettled(promises);
     }
 
-    console.log('[Facts] Results:', { hasWeather: !!results.weatherFacts, hasNPS: !!results.npsFacts });
+    console.log('[Facts] Results:', { hasWeather: !!results.weatherFacts, hasNPS: !!results.npsFacts, hasWebSearch: !!results.webSearchFacts });
     return results;
   } catch (error) {
     console.error('[Facts] fetchRelevantFacts error:', error.message);
@@ -243,7 +410,9 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName })
 module.exports = {
   fetchWeatherFacts,
   fetchNPSFacts,
+  fetchWebSearchFacts,
   fetchRelevantFacts,
   needsWeatherFacts,
-  needsNPSFacts
+  needsNPSFacts,
+  needsWebSearch
 };

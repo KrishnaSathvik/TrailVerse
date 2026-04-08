@@ -89,6 +89,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Fetch relevant facts based on user message and resolved metadata
   let weatherFacts = null;
   let npsFacts = null;
+  let webSearchFacts = null;
 
   try {
     const factsResult = await fetchRelevantFacts({
@@ -100,7 +101,8 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     });
     weatherFacts = factsResult.weatherFacts;
     npsFacts = factsResult.npsFacts;
-    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts });
+    webSearchFacts = factsResult.webSearchFacts;
+    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts });
   } catch (factsError) {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
@@ -108,7 +110,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Build enhanced system prompt with facts
   let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
 
-  if (npsFacts || weatherFacts) {
+  if (npsFacts || weatherFacts || webSearchFacts) {
     const parkLabel = resolvedMetadata.parkName || 'this park';
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -121,7 +123,10 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
       enhancedSystemPrompt += npsFacts + '\n\n';
     }
     if (weatherFacts) {
-      enhancedSystemPrompt += weatherFacts + '\n';
+      enhancedSystemPrompt += weatherFacts + '\n\n';
+    }
+    if (webSearchFacts) {
+      enhancedSystemPrompt += webSearchFacts + '\n';
     }
 
     enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
@@ -135,7 +140,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     provider
   });
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, resolvedMetadata };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata };
 }
 
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
