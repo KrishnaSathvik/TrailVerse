@@ -315,12 +315,32 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
 }
 
 /**
+ * Determine if a message is travel/park related
+ * @param {string} userMessage - The user's message
+ * @returns {boolean} Whether the message is about travel or parks
+ */
+function isTravelRelated(userMessage) {
+  if (!userMessage) return false;
+
+  // Non-travel topics to reject — don't waste search API calls
+  const offTopicPatterns = /(write me|code|program|script|debug|compile|math|equation|calculate|homework|essay|summarize this article|translate|recipe|cook|stock|invest|crypto|bitcoin|medical|diagnos|symptom|legal advice|lawsuit|politics|election|celebrity|gossip|joke|riddle|poem|story|fiction|game|minecraft|fortnite|anime|movie review|song lyric)/i;
+  if (offTopicPatterns.test(userMessage)) return false;
+
+  // Travel/outdoor/park related topics — green light
+  const travelPatterns = /(park|trail|hike|camp|visit|trip|travel|itinerary|road trip|drive|fly|airport|hotel|lodge|cabin|tent|backpack|scenic|viewpoint|overlook|canyon|mountain|lake|river|waterfall|beach|forest|desert|glacier|wildlife|bear|elk|sunrise|sunset|star|astrophotography|photograph|permit|reservation|entry|fee|ranger|visitor center|campground|trailhead|shuttle|gear|boot|pack|map|route|weather|season|crowd|busy|quiet|shoulder|gateway|town|nearby|restaurant|food|eat|dine|picnic|national|state park|wilderness|outdoor|adventure|explore|nature)/i;
+  return travelPatterns.test(userMessage);
+}
+
+/**
  * Determine if web search would benefit the user's question
  * @param {string} userMessage - The user's message
  * @returns {boolean} Whether web search should be performed
  */
 function needsWebSearch(userMessage) {
   if (!userMessage) return false;
+
+  // First check: must be travel-related to even consider web search
+  if (!isTravelRelated(userMessage)) return false;
 
   // Topics where live web data is especially valuable
   const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway)/i;
@@ -414,5 +434,6 @@ module.exports = {
   fetchRelevantFacts,
   needsWeatherFacts,
   needsNPSFacts,
-  needsWebSearch
+  needsWebSearch,
+  isTravelRelated
 };
