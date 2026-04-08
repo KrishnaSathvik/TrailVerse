@@ -83,17 +83,20 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
     return { data, loading };
   };
 
-  const { data: activities, loading: activitiesLoading } = useTabData(parkCode, 'activities', activeTab === 'activities');
-  const { data: campgrounds, loading: campgroundsLoading } = useTabData(parkCode, 'campgrounds', activeTab === 'camping');
-  const { data: places, loading: placesLoading } = useTabData(parkCode, 'places', activeTab === 'places');
-  const { data: tours, loading: toursLoading } = useTabData(parkCode, 'tours', activeTab === 'tours');
-  const { data: parkingLots, loading: parkingLoading } = useTabData(parkCode, 'parkinglots', activeTab === 'parking');
-  const { data: webcams, loading: webcamsLoading } = useTabData(parkCode, 'webcams', activeTab === 'webcams');
-  const { data: videos, loading: videosLoading } = useTabData(parkCode, 'videos', activeTab === 'videos');
-  const { data: galleryPhotos, loading: galleryLoading } = useTabData(parkCode, 'gallery', activeTab === 'photos');
-  const { data: facilities, loading: facilitiesLoading } = useTabData(parkCode, 'facilities', activeTab === 'facilities');
-  const { data: brochureData, loading: brochuresLoading } = useTabData(parkCode, 'brochures', activeTab === 'brochures');
-  const { data: permits, loading: permitsLoading } = useTabData(parkCode, 'permits', activeTab === 'permits');
+  // Use the NPS park code (e.g. "arch") for API calls, not the URL slug (e.g. "arches-national-park")
+  const npsParkCode = park?.parkCode || parkCode;
+
+  const { data: activities, loading: activitiesLoading } = useTabData(npsParkCode, 'activities', activeTab === 'activities');
+  const { data: campgrounds, loading: campgroundsLoading } = useTabData(npsParkCode, 'campgrounds', activeTab === 'camping');
+  const { data: places, loading: placesLoading } = useTabData(npsParkCode, 'places', activeTab === 'places');
+  const { data: tours, loading: toursLoading } = useTabData(npsParkCode, 'tours', activeTab === 'tours');
+  const { data: parkingLots, loading: parkingLoading } = useTabData(npsParkCode, 'parkinglots', activeTab === 'parking');
+  const { data: webcams, loading: webcamsLoading } = useTabData(npsParkCode, 'webcams', activeTab === 'webcams');
+  const { data: videos, loading: videosLoading } = useTabData(npsParkCode, 'videos', activeTab === 'videos');
+  const { data: galleryPhotos, loading: galleryLoading } = useTabData(npsParkCode, 'gallery', activeTab === 'photos');
+  const { data: facilities, loading: facilitiesLoading } = useTabData(npsParkCode, 'facilities', activeTab === 'facilities');
+  const { data: brochureData, loading: brochuresLoading } = useTabData(npsParkCode, 'brochures', activeTab === 'brochures');
+  const { data: permits, loading: permitsLoading } = useTabData(npsParkCode, 'permits', activeTab === 'permits');
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {

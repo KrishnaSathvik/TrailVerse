@@ -1345,6 +1345,51 @@ class NPSService {
     }
   }
 
+  // --- Per-park amenities/facilities ---
+
+  async getParkAmenities(parkCode) {
+    const cacheKey = `amenities_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/amenities/parksplaces', {
+        params: { parkCode, limit: 100 }
+      });
+
+      // NPS amenities/parksplaces returns nested data — flatten it
+      const rawData = response.data.data || [];
+      const amenities = [];
+
+      for (const item of rawData) {
+        // Each item has an array of parks/places with that amenity
+        const amenityName = item[0] || '';
+        const places = item[1] || [];
+
+        for (const place of places) {
+          amenities.push({
+            name: amenityName,
+            placeName: place.title || place.name || '',
+            placeType: place.parkFacilityType || 'General',
+            url: place.url || '',
+            isManagedByNPS: place.isManagedByNPS || false
+          });
+        }
+      }
+
+      console.log(`🏛️ Amenities for ${parkCode}: ${amenities.length} found`);
+      this._setEndpointCache(cacheKey, amenities);
+      return amenities;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on amenities for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkAmenities for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
   // Get all events from NPS API with caching — uses bulk paginated fetch
   async getAllEvents(options = {}) {
     const {
