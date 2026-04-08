@@ -105,13 +105,24 @@ class BlogService {
 
     const cacheOpts = { cacheType: 'blogPosts', ttl: 60 * 60 * 1000 };
 
+    // Check if a post is specifically about this park (not a generic multi-park article)
+    const isParkSpecific = (post) => {
+      if (!post) return false;
+      const title = (post.title || '').toLowerCase();
+      const excerpt = (post.excerpt || '').toLowerCase();
+      const parkLower = nameWords.toLowerCase();
+      // Post title or excerpt should contain the park name to be considered park-specific
+      return title.includes(parkLower) || excerpt.includes(parkLower);
+    };
+
     // Fast path: search by park name (single API call, no category filter)
     const findBySearch = async () => {
       if (!nameWords) return null;
       try {
-        const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 3, page: 1 }, cacheOpts);
+        const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 5, page: 1 }, cacheOpts);
         const posts = result.data?.data || [];
-        return posts;
+        // Only return posts that are specifically about this park
+        return posts.filter(isParkSpecific);
       } catch { return []; }
     };
 
@@ -121,27 +132,26 @@ class BlogService {
         try {
           const result = await enhancedApi.get('/blogs', { tag, limit: 1, page: 1 }, cacheOpts);
           const post = result.data?.data?.[0];
+          // Only accept posts in the expected categories — no fallback to any category
           if (post && categories.includes(post.category)) return post;
-          if (post) return post; // accept any category as fallback
         } catch { /* continue */ }
       }
       return null;
     };
 
     try {
-      // Step 1: Fast search by park name (1 API call returns up to 3 posts)
+      // Step 1: Fast search by park name (1 API call, filtered to park-specific posts)
       const searchResults = await findBySearch();
 
       let guide = null;
       let astro = null;
 
       if (searchResults && searchResults.length > 0) {
-        // Pick the best guide and astro from search results
         astro = searchResults.find(p => p.category === 'Astrophotography') || null;
         guide = searchResults.find(p => p.category !== 'Astrophotography') || null;
       }
 
-      // Step 2: If search didn't find a guide, try tag matching (slower but precise)
+      // Step 2: If search didn't find results, try tag matching (strict category match only)
       if (!guide) {
         guide = await findByTag(['Park Guides', 'Travel Tips', 'Hiking', 'Camping', 'Travel Blogs', 'Seasonal Guides', 'National Parks']);
       }
