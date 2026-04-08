@@ -52,17 +52,59 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     throw Object.assign(new Error('Messages array is required'), { statusCode: 400 });
   }
 
-  // Smart context management — trim long conversations
+  // Smart context management — trim long conversations with structured summary
   const MAX_CONTEXT_MESSAGES = 20;
   if (messages.length > MAX_CONTEXT_MESSAGES) {
     const systemMsg = messages.find(m => m.role === 'system');
     const recentMessages = messages.filter(m => m.role !== 'system').slice(-15);
     const olderMessages = messages.filter(m => m.role !== 'system').slice(0, -15);
-    const summaryText = `[Previous conversation summary: The user and AI discussed ${olderMessages.length} earlier messages about trip planning. Key topics covered include the initial trip setup and early recommendations.]`;
+
+    // Extract key decisions from older messages instead of a generic summary
+    const olderText = olderMessages.map(m => m.content).join(' ');
+    const summaryParts = ['[CONVERSATION CONTEXT — extracted from earlier messages]'];
+
+    // Extract park name
+    const parkMatch = olderText.match(/(?:going to|visiting|trip to|plan for|heading to|explore)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+National\s+Park)?)/);
+    if (parkMatch) summaryParts.push(`Park: ${parkMatch[1]}`);
+
+    // Extract dates
+    const dateMatch = olderText.match(/(?:from|between|starting|arriving|dates?:?\s*)(\w+ \d{1,2}(?:\s*[-–to]+\s*\w+ \d{1,2})?(?:,?\s*\d{4})?)/i);
+    if (dateMatch) summaryParts.push(`Dates: ${dateMatch[1]}`);
+
+    // Extract group size
+    const groupMatch = olderText.match(/(\d+)\s*(?:people|person|adults?|of us|travelers?|in (?:our|the) group)/i);
+    if (groupMatch) summaryParts.push(`Group size: ${groupMatch[1]}`);
+
+    // Extract budget
+    const budgetMatch = olderText.match(/(?:budget|spend|spending|afford)\s*(?:is|of|around|about)?\s*\$?([\d,]+(?:\s*[-–to]+\s*\$?[\d,]+)?)/i);
+    if (budgetMatch) summaryParts.push(`Budget: $${budgetMatch[1]}`);
+
+    // Extract interests/activities
+    const interestPatterns = /(hiking|camping|photography|wildlife|stargazing|fishing|kayaking|rock climbing|backpacking|scenic drives?|waterfalls?|sunrise|sunset|family.friendly|kid.friendly|accessible|easy trails?|moderate|challenging|strenuous)/gi;
+    const interests = [...new Set((olderText.match(interestPatterns) || []).map(i => i.toLowerCase()))];
+    if (interests.length > 0) summaryParts.push(`Interests: ${interests.slice(0, 8).join(', ')}`);
+
+    // Extract fitness/difficulty preference
+    const fitnessMatch = olderText.match(/(?:fitness|difficulty|experience|skill)\s*(?:level|is)?\s*:?\s*(beginner|easy|moderate|advanced|experienced|hard|strenuous)/i);
+    if (fitnessMatch) summaryParts.push(`Fitness level: ${fitnessMatch[1]}`);
+
+    // Extract accommodation preference
+    const accomMatch = olderText.match(/(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb)/i);
+    if (accomMatch) summaryParts.push(`Accommodation: ${accomMatch[1]}`);
+
+    // Capture what was suggested and accepted/rejected
+    const aiMessages = olderMessages.filter(m => m.role === 'assistant').map(m => m.content);
+    const userMessages = olderMessages.filter(m => m.role === 'user').map(m => m.content);
+    const rejections = userMessages.filter(m => /(skip|don't|no|remove|instead|change|replace|not interested|too)/i.test(m));
+    if (rejections.length > 0) {
+      summaryParts.push(`User adjustments: ${rejections.slice(-3).map(r => r.substring(0, 80)).join('; ')}`);
+    }
+
+    summaryParts.push(`[${olderMessages.length} earlier messages summarized above — ${recentMessages.length} recent messages follow]`);
 
     messages = [
       ...(systemMsg ? [systemMsg] : []),
-      { role: 'system', content: summaryText },
+      { role: 'system', content: summaryParts.join('\n') },
       ...recentMessages
     ];
   }
@@ -89,6 +131,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Fetch relevant facts based on user message and resolved metadata
   let weatherFacts = null;
   let npsFacts = null;
+  let webSearchFacts = null;
 
   try {
     const factsResult = await fetchRelevantFacts({
@@ -100,7 +143,8 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     });
     weatherFacts = factsResult.weatherFacts;
     npsFacts = factsResult.npsFacts;
-    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts });
+    webSearchFacts = factsResult.webSearchFacts;
+    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts });
   } catch (factsError) {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
@@ -108,7 +152,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Build enhanced system prompt with facts
   let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
 
-  if (npsFacts || weatherFacts) {
+  if (npsFacts || weatherFacts || webSearchFacts) {
     const parkLabel = resolvedMetadata.parkName || 'this park';
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -121,7 +165,10 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
       enhancedSystemPrompt += npsFacts + '\n\n';
     }
     if (weatherFacts) {
-      enhancedSystemPrompt += weatherFacts + '\n';
+      enhancedSystemPrompt += weatherFacts + '\n\n';
+    }
+    if (webSearchFacts) {
+      enhancedSystemPrompt += webSearchFacts + '\n';
     }
 
     enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
@@ -135,7 +182,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     provider
   });
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, resolvedMetadata };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata };
 }
 
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
@@ -368,13 +415,20 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata } = await prepareChatContext(req.body, '[AI Stream]');
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata } = await prepareChatContext(req.body, '[AI Stream]');
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
+
+    // Send thinking event so frontend can show what data sources are being used
+    const dataSources = [];
+    if (npsFacts) dataSources.push('nps');
+    if (weatherFacts) dataSources.push('weather');
+    if (webSearchFacts) dataSources.push('web');
+    res.write(`data: ${JSON.stringify({ type: 'thinking', sources: dataSources, parkName: resolvedMetadata.parkName || null })}\n\n`);
 
     try {
       if (provider === 'claude') {
@@ -400,7 +454,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
           }
           if (chunk.type === 'message_stop') {
             const { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
-            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, hasItinerary: !!itineraryData })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, hasItinerary: !!itineraryData })}\n\n`);
 
             if (itineraryData) {
               const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -452,7 +506,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
           }
         }
         const { cleanContent: openaiCleanContent, itineraryData: openaiItineraryData } = extractItineraryJSON(fullContent);
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, hasItinerary: !!openaiItineraryData })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, hasItinerary: !!openaiItineraryData })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;

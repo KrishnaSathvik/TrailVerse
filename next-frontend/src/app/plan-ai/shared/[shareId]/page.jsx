@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
@@ -249,7 +248,6 @@ export default async function SharedTripPage({ params }) {
         </section>
 
       </main>
-      <Footer />
     </div>
   );
 }

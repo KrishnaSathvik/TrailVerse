@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -409,7 +408,6 @@ export default function ChatHistoryPage() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }

@@ -24,7 +24,7 @@ import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
-import { getBestAvatar } from '../../utils/avatarGenerator';
+import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
 
 const VALUE_PROPS = [
   'Save this trip permanently',
@@ -45,7 +45,8 @@ const TripPlannerChat = ({
   isNewChat = false,
   suggestText = '',
   refreshTrips = null,
-  onOpenQuickFill = null
+  onOpenQuickFill = null,
+  fromChatHistory = false
 }) => {
   const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
@@ -69,12 +70,15 @@ const TripPlannerChat = ({
   const [providersLoaded, setProvidersLoaded] = useState(false);
   const [thinkingMessage, setThinkingMessage] = useState('Thinking...');
   const [thinkingStartTime, setThinkingStartTime] = useState(null);
+  const [thinkingSources, setThinkingSources] = useState(null);
   const [, setIsRestoredSession] = useState(false);
   const [tripHistory, setTripHistory] = useState([]);
   const [showParkInputModal, setShowParkInputModal] = useState(false);
   const [parkInput, setParkInput] = useState('');
   const [isStartingFresh, setIsStartingFresh] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
+  // Stable anonymous avatar — generated once per session so it stays consistent
+  const [anonymousAvatar] = useState(() => generateRandomAvatar(`anon-${Date.now()}`));
   const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
   const [anonymousId, setAnonymousId] = useState(null);
   const [messageCount, setMessageCount] = useState(0);
@@ -257,25 +261,25 @@ const TripPlannerChat = ({
             console.log('🔄 Loaded conversation:', conversation);
             const messagesToLoad = conversation.conversation || [];
             
-          // Add welcome back message at the end if there are existing messages
-          if (messagesToLoad.length > 0) {
+          // Add welcome back message only when coming from chat history page
+          if (messagesToLoad.length > 0 && fromChatHistory) {
             // Find the last welcome back message
-            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg => 
-              msg.role === 'assistant' && 
+            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg =>
+              msg.role === 'assistant' &&
               msg.content.includes('Welcome back') &&
               msg.content.includes('pick up where we left off')
             );
-            
+
             // Check if there are user messages after the last welcome back
-            const hasNewUserMessages = lastWelcomeBackIndex !== -1 && 
+            const hasNewUserMessages = lastWelcomeBackIndex !== -1 &&
               messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
-            
+
             // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
             if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
               const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
               setMessages([...messagesToLoad, welcomeBackMessage]);
               console.log('🔄 Added welcome back message to end of existing conversation (conversationId)');
-              
+
               // Auto-scroll to show the welcome back message
               setTimeout(() => {
                 if (messagesEndRef.current) {
@@ -303,25 +307,25 @@ const TripPlannerChat = ({
           console.log('🔄 Setting messages:', messagesToLoad.length, 'messages');
           console.log('🔄 Messages with feedback:', messagesToLoad.filter(m => m.userFeedback).map(m => ({ id: m.id, feedback: m.userFeedback })));
           
-          // Add welcome back message at the end if there are existing messages
-          if (messagesToLoad.length > 0) {
+          // Add welcome back message only when coming from chat history page
+          if (messagesToLoad.length > 0 && fromChatHistory) {
             // Find the last welcome back message
-            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg => 
-              msg.role === 'assistant' && 
+            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg =>
+              msg.role === 'assistant' &&
               msg.content.includes('Welcome back') &&
               msg.content.includes('pick up where we left off')
             );
-            
+
             // Check if there are user messages after the last welcome back
-            const hasNewUserMessages = lastWelcomeBackIndex !== -1 && 
+            const hasNewUserMessages = lastWelcomeBackIndex !== -1 &&
               messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
-            
+
             // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
             if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
               const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
               setMessages([...messagesToLoad, welcomeBackMessage]);
               console.log('🔄 Added welcome back message to end of existing conversation');
-              
+
               // Auto-scroll to show the welcome back message
               setTimeout(() => {
                 if (messagesEndRef.current) {
@@ -450,36 +454,61 @@ const TripPlannerChat = ({
     };
   }, [user, subscribe, unsubscribe, subscribeToProfile, subscribeToTrips, currentTripId, refreshTrips]);
 
-  // Update thinking message based on time elapsed
+  // Update thinking message based on time elapsed and data sources
   useEffect(() => {
     let interval;
     if (isGenerating && thinkingStartTime) {
       interval = setInterval(() => {
         const elapsed = Date.now() - thinkingStartTime;
         const seconds = Math.floor(elapsed / 1000);
-        
-        if (seconds < 5) {
-          setThinkingMessage('Thinking...');
-        } else if (seconds < 10) {
-          setThinkingMessage('Analyzing your request...');
-        } else if (seconds < 15) {
-          setThinkingMessage('Researching the best options...');
-        } else if (seconds < 20) {
-          setThinkingMessage('Creating your personalized plan...');
-        } else if (seconds < 30) {
-          setThinkingMessage('Adding detailed recommendations...');
-        } else if (seconds < 40) {
-          setThinkingMessage('Finalizing your travel itinerary...');
-        } else {
-          setThinkingMessage('Almost done! Generating comprehensive response...');
+        const hasWeb = thinkingSources?.includes('web');
+        const hasNps = thinkingSources?.includes('nps');
+        const hasWeather = thinkingSources?.includes('weather');
+        const hasAnySources = thinkingSources && thinkingSources.length > 0;
+
+        // If we have data source info from the backend, show source-aware messages
+        if (hasAnySources && seconds >= 5) {
+          if (seconds < 10) {
+            if (hasWeb) setThinkingMessage('Analyzing web search results...');
+            else if (hasNps) setThinkingMessage('Processing live park data...');
+            else setThinkingMessage('Analyzing your request...');
+          } else if (seconds < 15) {
+            if (hasWeb && hasNps) setThinkingMessage('Combining web results with NPS data...');
+            else setThinkingMessage('Researching the best options...');
+          } else if (seconds < 20) {
+            setThinkingMessage('Creating your personalized plan...');
+          } else if (seconds < 30) {
+            setThinkingMessage('Adding detailed recommendations...');
+          } else if (seconds < 40) {
+            setThinkingMessage('Finalizing your travel itinerary...');
+          } else {
+            setThinkingMessage('Almost done! Generating comprehensive response...');
+          }
+        } else if (!hasAnySources) {
+          // Fallback: no source info yet (before thinking event arrives)
+          if (seconds < 5) {
+            setThinkingMessage('Thinking...');
+          } else if (seconds < 10) {
+            setThinkingMessage('Analyzing your request...');
+          } else if (seconds < 15) {
+            setThinkingMessage('Researching the best options...');
+          } else if (seconds < 20) {
+            setThinkingMessage('Creating your personalized plan...');
+          } else if (seconds < 30) {
+            setThinkingMessage('Adding detailed recommendations...');
+          } else if (seconds < 40) {
+            setThinkingMessage('Finalizing your travel itinerary...');
+          } else {
+            setThinkingMessage('Almost done! Generating comprehensive response...');
+          }
         }
       }, 1000);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isGenerating, thinkingStartTime]);
+  }, [isGenerating, thinkingStartTime, thinkingSources]);
 
   const loadProviders = useCallback(async () => {
     try {
@@ -816,6 +845,7 @@ const TripPlannerChat = ({
     setIsGenerating(true);
     setThinkingStartTime(Date.now());
     setThinkingMessage('Thinking...');
+    setThinkingSources(null);
 
     try {
       // Build context for AI
@@ -898,6 +928,22 @@ const TripPlannerChat = ({
               lat: formData.coordinates?.lat,
               lon: formData.coordinates?.lon,
               userId: user?.id
+            },
+            onThinking: (thinkingData) => {
+              const { sources, parkName: sourcePark } = thinkingData;
+              setThinkingSources(sources || []);
+              const park = sourcePark || parkName || 'the park';
+              if (sources?.includes('web')) {
+                setThinkingMessage(`Searching the web for live info about ${park}...`);
+              } else if (sources?.includes('nps') && sources?.includes('weather')) {
+                setThinkingMessage(`Fetching live park data & weather for ${park}...`);
+              } else if (sources?.includes('nps')) {
+                setThinkingMessage(`Fetching live park data for ${park}...`);
+              } else if (sources?.includes('weather')) {
+                setThinkingMessage(`Checking weather forecast for ${park}...`);
+              } else {
+                setThinkingMessage('Preparing your response...');
+              }
             },
             onChunk: (chunk) => {
               streamedContent += chunk;
@@ -1969,22 +2015,24 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     index === 0
                   }
                   userAvatar={message.role === 'user' ? (() => {
-                    // Try multiple avatar properties in order of preference
-                    const userAvatar = user?.avatar || user?.profilePicture || user?.profile?.avatar;
-                    
-                    // If we have a valid avatar URL, return it
-                    if (userAvatar && typeof userAvatar === 'string' && userAvatar.trim() !== '') {
-                      return userAvatar;
+                    // Anonymous users: use the session-stable random avatar
+                    if (!user) {
+                      return anonymousAvatar;
                     }
-                    
-                    // Fallback to generated avatar
-                    const userForAvatar = {
-                      email: user?.email,
-                      firstName: user?.firstName,
-                      lastName: user?.lastName,
-                      name: user?.name
-                    };
-                    return getBestAvatar(userForAvatar, {}, 'travel');
+
+                    // Logged-in users: use their actual avatar from profile
+                    const savedAvatar = user.avatar || user.profilePicture || user.profile?.avatar;
+                    if (savedAvatar && typeof savedAvatar === 'string' && savedAvatar.trim() !== '') {
+                      return savedAvatar;
+                    }
+
+                    // Logged-in user without a saved avatar: generate deterministic one from their identity
+                    return getBestAvatar({
+                      email: user.email,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      name: user.name
+                    }, {}, 'travel');
                   })() : null}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,
@@ -2211,6 +2259,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
 
               {isGenerating && <TypingIndicator
                 text={thinkingMessage}
+                sources={thinkingSources}
               />}
 
               <div ref={messagesEndRef} />
@@ -2432,7 +2481,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     {isSharing ? 'Sharing...' : 'Share'}
                   </button>
                 )}
-                {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && (
+                {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && messages.some(m => m.hasItinerary) && (
                   <button
                     onClick={() => router.push(`/plan-ai/${currentTripId}/itinerary`)}
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 sm:px-3 sm:text-xs"

@@ -15,7 +15,6 @@ import { useVisitedParks } from '@/hooks/useVisitedParks';
 import { logParkView, logUserAction } from '@/utils/analytics';
 import { processHtmlContent, htmlToPlainText } from '@/utils/htmlUtils';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import WeatherWidget from '@/components/park-details/WeatherWidget';
 import ReviewSection from '@/components/park-details/ReviewSection';
@@ -2157,7 +2156,6 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
         </div>
       </section>
 
-      <Footer />
 
       {/* Photo Lightbox */}
       {lightboxOpen && allPhotos.length > 0 && (

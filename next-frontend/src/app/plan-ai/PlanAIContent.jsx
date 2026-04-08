@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Loader2, Clock, Sparkles, Mountain, Check, LogIn } from '@components/icons';
 import Header from '@components/common/Header';
-import Footer from '@components/common/Footer';
 import Button from '@components/common/Button';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
@@ -40,7 +39,8 @@ const PlanAIContent = ({ tripId }) => {
     interests,
     toggleInterest,
     handleStartNewChat,
-    isAuthenticated
+    isAuthenticated,
+    fromChatHistory
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
 
@@ -143,7 +143,6 @@ const PlanAIContent = ({ tripId }) => {
             </div>
           </div>
         </section>
-        <Footer />
       </div>
     );
   }
@@ -202,6 +201,7 @@ const PlanAIContent = ({ tripId }) => {
             isPersonalized={isPersonalized}
             isNewChat={effectiveIsNewChat}
             suggestText={suggestText}
+            fromChatHistory={fromChatHistory}
             refreshTrips={refetchUserTrips}
             onOpenQuickFill={() => setQuickFillOpen(true)}
           />
