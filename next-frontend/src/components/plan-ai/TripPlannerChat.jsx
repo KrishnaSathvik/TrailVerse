@@ -24,7 +24,7 @@ import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
-import { getBestAvatar } from '../../utils/avatarGenerator';
+import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
 
 const VALUE_PROPS = [
   'Save this trip permanently',
@@ -77,6 +77,8 @@ const TripPlannerChat = ({
   const [parkInput, setParkInput] = useState('');
   const [isStartingFresh, setIsStartingFresh] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
+  // Stable anonymous avatar — generated once per session so it stays consistent
+  const [anonymousAvatar] = useState(() => generateRandomAvatar(`anon-${Date.now()}`));
   const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
   const [anonymousId, setAnonymousId] = useState(null);
   const [messageCount, setMessageCount] = useState(0);
@@ -2013,22 +2015,24 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     index === 0
                   }
                   userAvatar={message.role === 'user' ? (() => {
-                    // Try multiple avatar properties in order of preference
-                    const userAvatar = user?.avatar || user?.profilePicture || user?.profile?.avatar;
-                    
-                    // If we have a valid avatar URL, return it
-                    if (userAvatar && typeof userAvatar === 'string' && userAvatar.trim() !== '') {
-                      return userAvatar;
+                    // Anonymous users: use the session-stable random avatar
+                    if (!user) {
+                      return anonymousAvatar;
                     }
-                    
-                    // Fallback to generated avatar
-                    const userForAvatar = {
-                      email: user?.email,
-                      firstName: user?.firstName,
-                      lastName: user?.lastName,
-                      name: user?.name
-                    };
-                    return getBestAvatar(userForAvatar, {}, 'travel');
+
+                    // Logged-in users: use their actual avatar from profile
+                    const savedAvatar = user.avatar || user.profilePicture || user.profile?.avatar;
+                    if (savedAvatar && typeof savedAvatar === 'string' && savedAvatar.trim() !== '') {
+                      return savedAvatar;
+                    }
+
+                    // Logged-in user without a saved avatar: generate deterministic one from their identity
+                    return getBestAvatar({
+                      email: user.email,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      name: user.name
+                    }, {}, 'travel');
                   })() : null}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,
