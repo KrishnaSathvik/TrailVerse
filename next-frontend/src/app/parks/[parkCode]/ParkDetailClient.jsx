@@ -997,42 +997,21 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                             style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
                         </div>
                       )}
-                      {!facilitiesLoading && facilities && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {[
-                            {
-                              icon: Wifi,
-                              label: 'Visitor Centers',
-                              available: facilities.visitorCenters?.available,
-                              details: facilities.visitorCenters?.count
-                                ? `${facilities.visitorCenters.count} location${facilities.visitorCenters.count === 1 ? '' : 's'}`
-                                : 'No visitor centers listed'
-                            },
-                            {
-                              icon: Tent,
-                              label: 'Camping',
-                              available: facilities.camping?.available,
-                              details: facilities.camping?.count
-                                ? `${facilities.camping.count} campground${facilities.camping.count === 1 ? '' : 's'}`
-                                : 'No campgrounds listed'
-                            },
-                            {
-                              icon: Utensils,
-                              label: 'Food Services',
-                              available: facilities.restaurants?.available,
-                              details: facilities.restaurants?.note || 'No food service details available'
-                            },
-                            {
-                              icon: Phone,
-                              label: 'Accessibility',
-                              available: facilities.accessibility?.wheelchairAccessible,
-                              details: facilities.accessibility?.accessibleTrails || 'Accessibility information unavailable'
-                            }
-                          ].map((facility, index) => {
-                            const Icon = facility.icon;
-                            return (
+                      {!facilitiesLoading && facilities && facilities.length > 0 && (() => {
+                        // Group amenities by name
+                        const grouped = {};
+                        facilities.forEach(item => {
+                          const key = item.name || 'Other';
+                          if (!grouped[key]) grouped[key] = [];
+                          grouped[key].push(item);
+                        });
+                        const amenityNames = Object.keys(grouped).sort();
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {amenityNames.map(name => (
                               <div
-                                key={index}
+                                key={name}
                                 className="p-4 rounded-xl"
                                 style={{
                                   backgroundColor: 'var(--surface-hover)',
@@ -1040,25 +1019,38 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
                                   borderColor: 'var(--border)'
                                 }}
                               >
-                                <div className="flex items-center gap-3">
-                                  <Icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
-                                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                                    {facility.label}
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
+                                    {name}
                                   </span>
-                                  <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
-                                    facility.available
-                                      ? 'bg-green-500/20 text-green-400'
-                                      : 'bg-red-500/20 text-red-400'
-                                  }`}>
-                                    {facility.available ? 'Available' : 'Limited'}
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full"
+                                    style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}>
+                                    {grouped[name].length} {grouped[name].length === 1 ? 'location' : 'locations'}
                                   </span>
                                 </div>
-                                <p className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                  {facility.details}
-                                </p>
+                                <div className="space-y-1">
+                                  {grouped[name].slice(0, 3).map((place, i) => (
+                                    <p key={i} className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                                      {place.placeName}
+                                    </p>
+                                  ))}
+                                  {grouped[name].length > 3 && (
+                                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                      +{grouped[name].length - 3} more
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                            );
-                          })}
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      {!facilitiesLoading && (!facilities || facilities.length === 0) && (
+                        <div className="text-center py-12">
+                          <Utensils className="h-8 w-8 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            No facility information available for this park.
+                          </p>
                         </div>
                       )}
                     </div>
