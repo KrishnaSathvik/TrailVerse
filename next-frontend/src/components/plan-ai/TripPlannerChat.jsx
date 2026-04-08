@@ -930,17 +930,17 @@ const TripPlannerChat = ({
               userId: user?.id
             },
             onThinking: (thinkingData) => {
-              const { sources, parkName: sourcePark } = thinkingData;
+              const { sources, parkName: sourcePark, parkNames: sourceParks } = thinkingData;
               setThinkingSources(sources || []);
-              const park = sourcePark || parkName || 'the park';
+              const parks = sourceParks?.length > 0 ? sourceParks.join(', ') : (sourcePark || parkName || 'the park');
               if (sources?.includes('web')) {
-                setThinkingMessage(`Searching the web for live info about ${park}...`);
+                setThinkingMessage(`Searching the web for live info about ${parks}...`);
               } else if (sources?.includes('nps') && sources?.includes('weather')) {
-                setThinkingMessage(`Fetching live park data & weather for ${park}...`);
+                setThinkingMessage(`Fetching live park data & weather for ${parks}...`);
               } else if (sources?.includes('nps')) {
-                setThinkingMessage(`Fetching live park data for ${park}...`);
+                setThinkingMessage(`Fetching live park data for ${parks}...`);
               } else if (sources?.includes('weather')) {
-                setThinkingMessage(`Checking weather forecast for ${park}...`);
+                setThinkingMessage(`Checking weather forecast for ${parks}...`);
               } else {
                 setThinkingMessage('Preparing your response...');
               }
@@ -975,11 +975,12 @@ const TripPlannerChat = ({
                 model: result.model,
                 hasLiveData: result.hasLiveData,
                 parkName: result.parkName,
+                parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
                 hasItinerary: result.hasItinerary || false
               };
               setMessages(prev => prev.map(m =>
                 m.id === streamAssistantId
-                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName, hasItinerary: result.hasItinerary || false }
+                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName, parkNames: result.parkNames || (result.parkName ? [result.parkName] : []), hasItinerary: result.hasItinerary || false }
                   : m
               ));
             },
@@ -2034,6 +2035,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                       name: user.name
                     }, {}, 'travel');
                   })() : null}
+                  hasLiveData={message.hasLiveData || false}
+                  liveDataParks={message.parkNames || (message.parkName ? [message.parkName] : [])}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,
                     userMessage: messages[messages.indexOf(message) - 1]?.content || '',
@@ -2177,15 +2180,6 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     }
                   } : undefined}
                 />
-                {message.role === 'assistant' && message.hasLiveData && (
-                  <div
-                    className="flex items-center gap-1.5 mt-1.5 text-xs px-1"
-                    style={{ color: 'var(--accent-green)' }}
-                  >
-                    <span style={{ fontSize: '8px' }}>●</span>
-                    <span>Live TrailVerse park data · {message.parkName || 'NPS'}</span>
-                  </div>
-                )}
                 {message.hasItinerary && message.role === 'assistant' && currentTripId && !currentTripId.startsWith('temp-') && (
                   <div className="mx-auto max-w-3xl px-3 sm:px-6 mt-1 mb-2 flex flex-wrap gap-2">
                     <button
