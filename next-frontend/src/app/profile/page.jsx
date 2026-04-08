@@ -19,7 +19,6 @@ import {
   Eye, EyeOff, CheckCircle, AlertCircle, Lock
 } from '@components/icons';
 import Header from '@components/common/Header';
-import Footer from '@components/common/Footer';
 import Button from '@components/common/Button';
 // import OptimizedImage from '@components/common/OptimizedImage';
 import SavedParks from '@components/profile/SavedParks';
@@ -2172,7 +2171,6 @@ const ProfilePage = () => {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 };

@@ -26,7 +26,6 @@ import {
   Thermometer, Wind, Droplets, Eye as EyeIcon, Check, CloudSnow, ArrowRight
 } from '@components/icons';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import Button from '@/components/common/Button';
 import dailyFeedService from '@/services/dailyFeedService';
@@ -361,7 +360,6 @@ const DailyFeedPage = () => {
             <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Loading your daily feed…</p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -379,7 +377,6 @@ const DailyFeedPage = () => {
             </Button>
           </Card>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -397,7 +394,6 @@ const DailyFeedPage = () => {
             </Button>
           </Card>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -691,8 +687,6 @@ const DailyFeedPage = () => {
           </Card>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

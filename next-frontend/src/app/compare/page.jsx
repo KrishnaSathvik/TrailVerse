@@ -8,7 +8,6 @@ import {
   TrendingUp, Mountain, Calendar
 } from '@components/icons';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { useAllParks } from '@/hooks/useParks';
 import { useParkComparison } from '@/hooks/useEnhancedParks';
@@ -914,7 +913,6 @@ const ComparePage = () => {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 };

@@ -1,5 +1,4 @@
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
 
@@ -26,7 +25,6 @@ export default async function ExplorePage() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <ExplorePageClient initialPaginatedData={initialPaginatedData} />
-      <Footer />
     </div>
   );
 }
