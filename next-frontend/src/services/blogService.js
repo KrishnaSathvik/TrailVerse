@@ -98,74 +98,55 @@ class BlogService {
   }
 
   async getParkGuides(parkCode, parkName = '') {
-    // Build tag variants: e.g. for "Arches" → ["arch", "arches", "archesnationalpark"]
     const nameLower = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().replace(/[^a-z]/g, '');
     const nameWords = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().trim();
     const tags = [parkCode.toLowerCase(), nameLower, nameLower + 'nationalpark'].filter(Boolean);
     const uniqueTags = [...new Set(tags)];
 
-    // Categories that qualify as park guides
-    const guideCategories = ['Park Guides', 'Travel Tips', 'Hiking', 'Camping', 'Travel Blogs', 'Seasonal Guides', 'National Parks'];
-    const astroCategories = ['Astrophotography'];
-
     const cacheOpts = { cacheType: 'blogPosts', ttl: 60 * 60 * 1000 };
 
-    // Step 1: Try tag-based matching across multiple categories
-    const findByTags = async (categories) => {
-      for (const tag of uniqueTags) {
-        for (const category of categories) {
-          try {
-            const result = await enhancedApi.get('/blogs', { tag, category, limit: 1, page: 1 }, cacheOpts);
-            const post = result.data?.data?.[0];
-            if (post) return post;
-          } catch { /* continue */ }
-        }
-      }
-      return null;
+    // Fast path: search by park name (single API call, no category filter)
+    const findBySearch = async () => {
+      if (!nameWords) return null;
+      try {
+        const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 3, page: 1 }, cacheOpts);
+        const posts = result.data?.data || [];
+        return posts;
+      } catch { return []; }
     };
 
-    // Step 2: Fallback — search by park name in title/content
-    const findBySearch = async (categories) => {
-      if (!nameWords) return null;
-      for (const category of categories) {
+    // Slow path: try each tag with specific category (only used as fallback)
+    const findByTag = async (categories) => {
+      for (const tag of uniqueTags) {
         try {
-          const result = await enhancedApi.get('/blogs', { search: nameWords, category, limit: 1, page: 1 }, cacheOpts);
+          const result = await enhancedApi.get('/blogs', { tag, limit: 1, page: 1 }, cacheOpts);
           const post = result.data?.data?.[0];
-          if (post) return post;
+          if (post && categories.includes(post.category)) return post;
+          if (post) return post; // accept any category as fallback
         } catch { /* continue */ }
       }
       return null;
     };
 
-    // Step 3: Last resort — search by park name with NO category filter
-    const findBySearchAnyCategory = async () => {
-      if (!nameWords) return null;
-      try {
-        const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 1, page: 1 }, cacheOpts);
-        const post = result.data?.data?.[0];
-        if (post) return post;
-      } catch { /* continue */ }
-      return null;
-    };
-
     try {
-      // Try tags first, then fall back to search by category, then any category
-      let [guide, astro] = await Promise.all([
-        findByTags(guideCategories),
-        findByTags(astroCategories)
-      ]);
+      // Step 1: Fast search by park name (1 API call returns up to 3 posts)
+      const searchResults = await findBySearch();
 
-      // Fallback: search with category filter
+      let guide = null;
+      let astro = null;
+
+      if (searchResults && searchResults.length > 0) {
+        // Pick the best guide and astro from search results
+        astro = searchResults.find(p => p.category === 'Astrophotography') || null;
+        guide = searchResults.find(p => p.category !== 'Astrophotography') || null;
+      }
+
+      // Step 2: If search didn't find a guide, try tag matching (slower but precise)
       if (!guide) {
-        guide = await findBySearch(guideCategories);
+        guide = await findByTag(['Park Guides', 'Travel Tips', 'Hiking', 'Camping', 'Travel Blogs', 'Seasonal Guides', 'National Parks']);
       }
       if (!astro) {
-        astro = await findBySearch(astroCategories);
-      }
-
-      // Last resort: search without any category filter
-      if (!guide) {
-        guide = await findBySearchAnyCategory();
+        astro = await findByTag(['Astrophotography']);
       }
 
       return { guide, astro };
