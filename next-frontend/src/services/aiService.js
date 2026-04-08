@@ -95,7 +95,8 @@ class AIService {
     metadata,
     onChunk,
     onDone,
-    onError
+    onError,
+    onThinking
   }) {
     const API_URL =
       process.env.NEXT_PUBLIC_API_URL ||
@@ -148,6 +149,7 @@ class AIService {
         if (!line.startsWith('data: ')) continue;
         try {
           const data = JSON.parse(line.slice(6));
+          if (data.type === 'thinking') onThinking?.(data);
           if (data.type === 'chunk') onChunk?.(data.content);
           if (data.type === 'done') onDone?.(data);
           if (data.type === 'error') onError?.(data.message);
@@ -161,6 +163,7 @@ class AIService {
     if (buffer.startsWith('data: ')) {
       try {
         const data = JSON.parse(buffer.slice(6));
+        if (data.type === 'thinking') onThinking?.(data);
         if (data.type === 'chunk') onChunk?.(data.content);
         if (data.type === 'done') onDone?.(data);
         if (data.type === 'error') onError?.(data.message);

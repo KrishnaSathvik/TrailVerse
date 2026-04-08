@@ -373,13 +373,20 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata } = await prepareChatContext(req.body, '[AI Stream]');
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata } = await prepareChatContext(req.body, '[AI Stream]');
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
+
+    // Send thinking event so frontend can show what data sources are being used
+    const dataSources = [];
+    if (npsFacts) dataSources.push('nps');
+    if (weatherFacts) dataSources.push('weather');
+    if (webSearchFacts) dataSources.push('web');
+    res.write(`data: ${JSON.stringify({ type: 'thinking', sources: dataSources, parkName: resolvedMetadata.parkName || null })}\n\n`);
 
     try {
       if (provider === 'claude') {
@@ -405,7 +412,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
           }
           if (chunk.type === 'message_stop') {
             const { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
-            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, hasItinerary: !!itineraryData })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, hasItinerary: !!itineraryData })}\n\n`);
 
             if (itineraryData) {
               const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -457,7 +464,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
           }
         }
         const { cleanContent: openaiCleanContent, itineraryData: openaiItineraryData } = extractItineraryJSON(fullContent);
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, hasItinerary: !!openaiItineraryData })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, hasItinerary: !!openaiItineraryData })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;

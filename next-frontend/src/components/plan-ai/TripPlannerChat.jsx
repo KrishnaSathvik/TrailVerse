@@ -69,6 +69,7 @@ const TripPlannerChat = ({
   const [providersLoaded, setProvidersLoaded] = useState(false);
   const [thinkingMessage, setThinkingMessage] = useState('Thinking...');
   const [thinkingStartTime, setThinkingStartTime] = useState(null);
+  const [thinkingSources, setThinkingSources] = useState(null);
   const [, setIsRestoredSession] = useState(false);
   const [tripHistory, setTripHistory] = useState([]);
   const [showParkInputModal, setShowParkInputModal] = useState(false);
@@ -450,36 +451,61 @@ const TripPlannerChat = ({
     };
   }, [user, subscribe, unsubscribe, subscribeToProfile, subscribeToTrips, currentTripId, refreshTrips]);
 
-  // Update thinking message based on time elapsed
+  // Update thinking message based on time elapsed and data sources
   useEffect(() => {
     let interval;
     if (isGenerating && thinkingStartTime) {
       interval = setInterval(() => {
         const elapsed = Date.now() - thinkingStartTime;
         const seconds = Math.floor(elapsed / 1000);
-        
-        if (seconds < 5) {
-          setThinkingMessage('Thinking...');
-        } else if (seconds < 10) {
-          setThinkingMessage('Analyzing your request...');
-        } else if (seconds < 15) {
-          setThinkingMessage('Researching the best options...');
-        } else if (seconds < 20) {
-          setThinkingMessage('Creating your personalized plan...');
-        } else if (seconds < 30) {
-          setThinkingMessage('Adding detailed recommendations...');
-        } else if (seconds < 40) {
-          setThinkingMessage('Finalizing your travel itinerary...');
-        } else {
-          setThinkingMessage('Almost done! Generating comprehensive response...');
+        const hasWeb = thinkingSources?.includes('web');
+        const hasNps = thinkingSources?.includes('nps');
+        const hasWeather = thinkingSources?.includes('weather');
+        const hasAnySources = thinkingSources && thinkingSources.length > 0;
+
+        // If we have data source info from the backend, show source-aware messages
+        if (hasAnySources && seconds >= 5) {
+          if (seconds < 10) {
+            if (hasWeb) setThinkingMessage('Analyzing web search results...');
+            else if (hasNps) setThinkingMessage('Processing live park data...');
+            else setThinkingMessage('Analyzing your request...');
+          } else if (seconds < 15) {
+            if (hasWeb && hasNps) setThinkingMessage('Combining web results with NPS data...');
+            else setThinkingMessage('Researching the best options...');
+          } else if (seconds < 20) {
+            setThinkingMessage('Creating your personalized plan...');
+          } else if (seconds < 30) {
+            setThinkingMessage('Adding detailed recommendations...');
+          } else if (seconds < 40) {
+            setThinkingMessage('Finalizing your travel itinerary...');
+          } else {
+            setThinkingMessage('Almost done! Generating comprehensive response...');
+          }
+        } else if (!hasAnySources) {
+          // Fallback: no source info yet (before thinking event arrives)
+          if (seconds < 5) {
+            setThinkingMessage('Thinking...');
+          } else if (seconds < 10) {
+            setThinkingMessage('Analyzing your request...');
+          } else if (seconds < 15) {
+            setThinkingMessage('Researching the best options...');
+          } else if (seconds < 20) {
+            setThinkingMessage('Creating your personalized plan...');
+          } else if (seconds < 30) {
+            setThinkingMessage('Adding detailed recommendations...');
+          } else if (seconds < 40) {
+            setThinkingMessage('Finalizing your travel itinerary...');
+          } else {
+            setThinkingMessage('Almost done! Generating comprehensive response...');
+          }
         }
       }, 1000);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isGenerating, thinkingStartTime]);
+  }, [isGenerating, thinkingStartTime, thinkingSources]);
 
   const loadProviders = useCallback(async () => {
     try {
@@ -816,6 +842,7 @@ const TripPlannerChat = ({
     setIsGenerating(true);
     setThinkingStartTime(Date.now());
     setThinkingMessage('Thinking...');
+    setThinkingSources(null);
 
     try {
       // Build context for AI
@@ -898,6 +925,22 @@ const TripPlannerChat = ({
               lat: formData.coordinates?.lat,
               lon: formData.coordinates?.lon,
               userId: user?.id
+            },
+            onThinking: (thinkingData) => {
+              const { sources, parkName: sourcePark } = thinkingData;
+              setThinkingSources(sources || []);
+              const park = sourcePark || parkName || 'the park';
+              if (sources?.includes('web')) {
+                setThinkingMessage(`Searching the web for live info about ${park}...`);
+              } else if (sources?.includes('nps') && sources?.includes('weather')) {
+                setThinkingMessage(`Fetching live park data & weather for ${park}...`);
+              } else if (sources?.includes('nps')) {
+                setThinkingMessage(`Fetching live park data for ${park}...`);
+              } else if (sources?.includes('weather')) {
+                setThinkingMessage(`Checking weather forecast for ${park}...`);
+              } else {
+                setThinkingMessage('Preparing your response...');
+              }
             },
             onChunk: (chunk) => {
               streamedContent += chunk;
@@ -2211,6 +2254,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
 
               {isGenerating && <TypingIndicator
                 text={thinkingMessage}
+                sources={thinkingSources}
               />}
 
               <div ref={messagesEndRef} />
