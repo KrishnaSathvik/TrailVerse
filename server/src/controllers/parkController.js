@@ -223,6 +223,7 @@ exports.getParkWebcams = makeTabHandler(npsService.getParkWebcams.bind(npsServic
 exports.getParkVideos = makeTabHandler(npsService.getParkVideos.bind(npsService), 'videos');
 exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bind(npsService), 'galleryPhotos');
 exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
+exports.getParkFacilities = makeTabHandler(npsService.getParkAmenities.bind(npsService), 'facilities');
 
 // In-memory cache for brochure URLs (30 days)
 const brochureCache = new Map();

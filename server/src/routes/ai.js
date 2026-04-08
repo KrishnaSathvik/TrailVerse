@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
-const { fetchRelevantFacts } = require('../services/factsService');
-const { extractParkFromMessage } = require('../utils/parkExtractor');
+const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, isTravelRelated } = require('../services/factsService');
+const { extractParkFromMessage, extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 const AnonymousSession = require('../models/AnonymousSession');
 const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerator');
@@ -115,18 +115,27 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Extract the last user message for fact fetching
   const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
-  // Auto-extract park from user message if not provided in metadata
+  // Auto-extract ALL parks from user message
   let resolvedMetadata = { ...metadata };
+  let allExtractedParks = [];
+
   if (!resolvedMetadata.parkCode && lastUserMessage) {
-    const extracted = extractParkFromMessage(lastUserMessage);
-    if (extracted) {
-      resolvedMetadata.parkCode = extracted.parkCode;
-      resolvedMetadata.parkName = resolvedMetadata.parkName || extracted.parkName;
-      resolvedMetadata.lat = resolvedMetadata.lat || extracted.lat;
-      resolvedMetadata.lon = resolvedMetadata.lon || extracted.lon;
-      console.log(`${logPrefix} Park auto-extracted from message: ${extracted.parkName} (${extracted.parkCode})`);
+    allExtractedParks = extractAllParksFromMessage(lastUserMessage);
+    if (allExtractedParks.length > 0) {
+      // Use first park for primary metadata (weather coordinates, etc.)
+      resolvedMetadata.parkCode = allExtractedParks[0].parkCode;
+      resolvedMetadata.parkName = resolvedMetadata.parkName || allExtractedParks[0].parkName;
+      resolvedMetadata.lat = resolvedMetadata.lat || allExtractedParks[0].lat;
+      resolvedMetadata.lon = resolvedMetadata.lon || allExtractedParks[0].lon;
+      console.log(`${logPrefix} Parks extracted from message: ${allExtractedParks.map(p => `${p.parkName} (${p.parkCode})`).join(', ')}`);
     }
+  } else if (resolvedMetadata.parkCode) {
+    // Single park from metadata
+    allExtractedParks = [{ parkCode: resolvedMetadata.parkCode, parkName: resolvedMetadata.parkName || '', lat: resolvedMetadata.lat, lon: resolvedMetadata.lon }];
   }
+
+  // Store all park names for frontend display
+  const parkNames = allExtractedParks.map(p => p.parkName).filter(Boolean);
 
   // Fetch relevant facts based on user message and resolved metadata
   let weatherFacts = null;
@@ -134,6 +143,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   let webSearchFacts = null;
 
   try {
+    // Fetch weather + web search using primary park
     const factsResult = await fetchRelevantFacts({
       userMessage: lastUserMessage,
       parkCode: resolvedMetadata.parkCode,
@@ -142,9 +152,22 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
       parkName: resolvedMetadata.parkName
     });
     weatherFacts = factsResult.weatherFacts;
-    npsFacts = factsResult.npsFacts;
     webSearchFacts = factsResult.webSearchFacts;
-    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts });
+
+    // Fetch NPS facts for ALL mentioned parks in parallel
+    if (allExtractedParks.length > 1) {
+      const allNpsResults = await Promise.all(
+        allExtractedParks.map(p => fetchNPSFacts({ parkCode: p.parkCode }).catch(() => null))
+      );
+      const labeledFacts = allExtractedParks
+        .map((p, i) => allNpsResults[i] ? `[${p.parkName}]\n${allNpsResults[i]}` : null)
+        .filter(Boolean);
+      npsFacts = labeledFacts.join('\n\n');
+    } else {
+      npsFacts = factsResult.npsFacts;
+    }
+
+    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, parks: parkNames });
   } catch (factsError) {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
@@ -153,7 +176,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
 
   if (npsFacts || weatherFacts || webSearchFacts) {
-    const parkLabel = resolvedMetadata.parkName || 'this park';
+    const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
     enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
@@ -177,12 +200,13 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   const augmentedMessages = filteredMessages;
 
   console.log(`${logPrefix} Augmented messages:`, {
-    hasSystemFacts: !!(npsFacts || weatherFacts),
+    hasSystemFacts: !!(npsFacts || weatherFacts || webSearchFacts),
     totalMessageCount: augmentedMessages.length,
-    provider
+    provider,
+    parks: parkNames
   });
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames };
 }
 
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
@@ -415,7 +439,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata } = await prepareChatContext(req.body, '[AI Stream]');
+    const { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames } = await prepareChatContext(req.body, '[AI Stream]');
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -428,7 +452,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
     if (npsFacts) dataSources.push('nps');
     if (weatherFacts) dataSources.push('weather');
     if (webSearchFacts) dataSources.push('web');
-    res.write(`data: ${JSON.stringify({ type: 'thinking', sources: dataSources, parkName: resolvedMetadata.parkName || null })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'thinking', sources: dataSources, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [] })}\n\n`);
 
     try {
       if (provider === 'claude') {
@@ -454,7 +478,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
           }
           if (chunk.type === 'message_stop') {
             const { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
-            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, hasItinerary: !!itineraryData })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: cleanContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData })}\n\n`);
 
             if (itineraryData) {
               const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -506,7 +530,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
           }
         }
         const { cleanContent: openaiCleanContent, itineraryData: openaiItineraryData } = extractItineraryJSON(fullContent);
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, hasItinerary: !!openaiItineraryData })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiCleanContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -676,20 +700,26 @@ Ready to continue planning? 🚀`,
     // Extract the last user message for fact fetching
     const lastUserMessageContent = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
-    // Auto-extract park from user message if not provided in metadata
+    // Auto-extract ALL parks from user message
     let resolvedMetadata = { ...metadata };
+    let anonExtractedParks = [];
+
     if (!resolvedMetadata.parkCode && lastUserMessageContent) {
-      const extracted = extractParkFromMessage(lastUserMessageContent);
-      if (extracted) {
-        resolvedMetadata.parkCode = extracted.parkCode;
-        resolvedMetadata.parkName = resolvedMetadata.parkName || extracted.parkName;
-        resolvedMetadata.lat = resolvedMetadata.lat || extracted.lat;
-        resolvedMetadata.lon = resolvedMetadata.lon || extracted.lon;
-        console.log(`[AI] Park auto-extracted from anonymous message: ${extracted.parkName} (${extracted.parkCode})`);
+      anonExtractedParks = extractAllParksFromMessage(lastUserMessageContent);
+      if (anonExtractedParks.length > 0) {
+        resolvedMetadata.parkCode = anonExtractedParks[0].parkCode;
+        resolvedMetadata.parkName = resolvedMetadata.parkName || anonExtractedParks[0].parkName;
+        resolvedMetadata.lat = resolvedMetadata.lat || anonExtractedParks[0].lat;
+        resolvedMetadata.lon = resolvedMetadata.lon || anonExtractedParks[0].lon;
+        console.log(`[AI] Parks extracted from anonymous message: ${anonExtractedParks.map(p => `${p.parkName} (${p.parkCode})`).join(', ')}`);
       }
+    } else if (resolvedMetadata.parkCode) {
+      anonExtractedParks = [{ parkCode: resolvedMetadata.parkCode, parkName: resolvedMetadata.parkName || '', lat: resolvedMetadata.lat, lon: resolvedMetadata.lon }];
     }
 
-    // Fetch relevant facts based on user message and resolved metadata
+    const anonParkNames = anonExtractedParks.map(p => p.parkName).filter(Boolean);
+
+    // Fetch relevant facts (web search skipped for anonymous users via isAnonymous flag)
     let weatherFacts = null;
     let npsFacts = null;
 
@@ -699,21 +729,34 @@ Ready to continue planning? 🚀`,
         parkCode: resolvedMetadata.parkCode,
         lat: resolvedMetadata.lat,
         lon: resolvedMetadata.lon,
-        parkName: resolvedMetadata.parkName
+        parkName: resolvedMetadata.parkName,
+        isAnonymous: true
       });
       weatherFacts = factsResult.weatherFacts;
-      npsFacts = factsResult.npsFacts;
-      console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts });
+
+      // Fetch NPS facts for ALL mentioned parks in parallel
+      if (anonExtractedParks.length > 1) {
+        const allNpsResults = await Promise.all(
+          anonExtractedParks.map(p => fetchNPSFacts({ parkCode: p.parkCode }).catch(() => null))
+        );
+        const labeledFacts = anonExtractedParks
+          .map((p, i) => allNpsResults[i] ? `[${p.parkName}]\n${allNpsResults[i]}` : null)
+          .filter(Boolean);
+        npsFacts = labeledFacts.join('\n\n');
+      } else {
+        npsFacts = factsResult.npsFacts;
+      }
+
+      console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, parks: anonParkNames });
     } catch (factsError) {
       console.error('[AI] Facts fetching error for anonymous user:', factsError.message);
-      // Continue without facts if fetching fails
     }
 
     // Build enhanced system prompt with facts
     let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
 
     if (npsFacts || weatherFacts) {
-      const parkLabel = resolvedMetadata.parkName || 'this park';
+      const parkLabel = anonParkNames.length > 1 ? anonParkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
       const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
       enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
@@ -872,6 +915,11 @@ Ready to continue planning? 🚀`,
     // Extract and strip itinerary JSON from response (strip but do NOT save for anonymous)
     const { cleanContent: anonCleanContent, itineraryData: anonItineraryData } = extractItineraryJSON(response.content);
     response.content = anonCleanContent;
+
+    // Add web search conversion message for anonymous users when their question would benefit from live search
+    if (needsWebSearch(lastUserMessageContent) && isTravelRelated(lastUserMessageContent)) {
+      response.content += '\n\n---\n\n🔍 **Want live search results?** Sign up free to unlock real-time hotel prices, restaurant ratings, and live web search powered answers in your trip plans.';
+    }
 
     // Add AI response to session
     await session.addMessage({

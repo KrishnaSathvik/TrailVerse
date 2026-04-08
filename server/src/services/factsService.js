@@ -475,17 +475,18 @@ function needsNPSFacts(userMessage) {
 
 /**
  * Main function to fetch all relevant facts
- * @param {Object} params - { userMessage, parkCode, lat, lon, parkName }
+ * @param {Object} params - { userMessage, parkCode, lat, lon, parkName, isAnonymous }
  * @returns {Promise<Object>} { weatherFacts, npsFacts, webSearchFacts }
  */
-async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName }) {
+async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, isAnonymous = false }) {
   const results = { weatherFacts: null, npsFacts: null, webSearchFacts: null };
 
   try {
     // Determine what facts to fetch
     const shouldFetchWeather = needsWeatherFacts(userMessage) && lat && lon;
     const shouldFetchNPS = needsNPSFacts(userMessage) && parkCode;
-    const shouldFetchWeb = needsWebSearch(userMessage);
+    // Skip web search for anonymous users — it's a signup incentive
+    const shouldFetchWeb = !isAnonymous && needsWebSearch(userMessage);
 
     console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, shouldFetchWeb, userMessage: userMessage?.substring(0, 50) });
 

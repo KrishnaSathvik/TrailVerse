@@ -152,4 +152,30 @@ function extractParkFromMessage(message) {
   return null;
 }
 
-module.exports = { extractParkFromMessage, PARK_NAME_TO_CODE };
+/**
+ * Extract ALL national park references from a user message.
+ * Returns an array of unique parks (deduplicated by parkCode).
+ * @param {string} message - The raw user message
+ * @returns {Array<{ parkCode: string, lat: number, lon: number, parkName: string }>}
+ */
+function extractAllParksFromMessage(message) {
+  if (!message) return [];
+  const lower = message.toLowerCase();
+  const found = [];
+  const usedCodes = new Set();
+
+  for (const key of SORTED_KEYS) {
+    if (lower.includes(key)) {
+      const entry = PARK_NAME_TO_CODE.get(key);
+      if (!usedCodes.has(entry.code)) {
+        usedCodes.add(entry.code);
+        const parkName = key.replace(/\b\w/g, c => c.toUpperCase());
+        found.push({ parkCode: entry.code, lat: entry.lat, lon: entry.lon, parkName });
+      }
+    }
+  }
+
+  return found;
+}
+
+module.exports = { extractParkFromMessage, extractAllParksFromMessage, PARK_NAME_TO_CODE };

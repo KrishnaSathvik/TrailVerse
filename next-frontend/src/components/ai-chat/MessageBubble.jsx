@@ -16,7 +16,9 @@ const MessageBubble = ({
   userAvatar = null,
   messageData = null, // Additional data for feedback
   initialFeedback = null, // Initial feedback state from database ('up' or 'down')
-  hideActions = false
+  hideActions = false,
+  hasLiveData = false,
+  liveDataParks = []
 }) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -121,6 +123,17 @@ const MessageBubble = ({
               hyphens: 'none'
             }}
           >
+
+          {/* Live data indicator — inside bubble */}
+          {!isUser && hasLiveData && liveDataParks.length > 0 && (
+            <div
+              className="flex items-center gap-1.5 mb-3 pb-2.5 border-b text-[11px] font-medium"
+              style={{ borderColor: 'var(--border)', color: 'var(--accent-green)' }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
+              <span>Live data · {liveDataParks.join(', ')}</span>
+            </div>
+          )}
 
           <div className="prose prose-sm max-w-none"
             style={{
