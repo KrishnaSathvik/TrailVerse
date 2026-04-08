@@ -26,11 +26,10 @@ export default function DayColumn({
 
   return (
     <div
-      className="flex-shrink-0 w-72 rounded-2xl flex flex-col"
+      className="w-full lg:w-80 lg:flex-shrink-0 rounded-2xl flex flex-col"
       style={{
         backgroundColor: 'var(--surface)',
         border: '1px solid var(--border)',
-        maxHeight: 'calc(100vh - 180px)',
       }}
     >
       {/* Day Header */}
@@ -103,8 +102,8 @@ export default function DayColumn({
         </button>
       </div>
 
-      {/* Stops list — scrollable */}
-      <div className="flex-1 overflow-y-auto p-2">
+      {/* Stops list — scrollable on desktop, natural flow on mobile */}
+      <div className="flex-1 overflow-y-auto p-2 lg:max-h-[calc(100vh-240px)]">
         <Droppable droppableId={day.id} type="STOP">
           {(provided, snapshot) => (
             <div

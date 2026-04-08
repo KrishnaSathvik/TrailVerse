@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, ArrowLeft, MessageSquare, Loader2 } from '@components/icons';
+import { Plus, ArrowLeft, MessageSquare, Loader2, Check, MapPin } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import tripService from '../../services/tripService';
@@ -222,84 +222,157 @@ export default function ItineraryBuilder({ tripId }) {
   }
 
   const tripTitle = trip?.title || trip?.parkName || 'Untitled Trip';
+  const totalStops = days.reduce((sum, d) => sum + (d.stops?.length || 0), 0);
+  const hasStops = totalStops > 0;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      {/* Toolbar */}
-      <div
-        className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b"
+      {/* Page Header — matches PlanAIContent pattern */}
+      <section
+        className="relative z-10 border-b px-4 py-2 sm:px-6 sm:py-4 lg:px-10 xl:px-12"
         style={{
-          backgroundColor: 'var(--surface)',
+          backgroundColor: 'var(--bg-primary)',
           borderColor: 'var(--border)',
-          marginTop: '64px'
         }}
       >
-        {/* Back */}
-        <button
-          onClick={() => router.push(`/plan-ai/${tripId}`)}
-          className="flex items-center gap-1.5 text-sm transition"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Back to Chat</span>
-        </button>
+        <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-3">
+          {/* Left: Label + Title */}
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-[11px] font-medium uppercase tracking-[0.18em] sm:text-xs sm:tracking-wider"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Itinerary Builder
+            </p>
+            <h1 className="mt-1 truncate text-base font-semibold sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
+              {tripTitle}
+            </h1>
+          </div>
 
-        <div className="w-px h-5" style={{ backgroundColor: 'var(--border)' }} />
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Save state badge */}
+            {saveState !== 'idle' && (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium sm:text-xs"
+                style={{
+                  backgroundColor: saveState === 'saved' ? 'rgba(34,197,94,0.1)' : 'var(--surface-hover)',
+                  color: saveState === 'saved' ? 'var(--accent-green)' : 'var(--text-tertiary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                {saveState === 'saving' && (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent-orange, #f97316)' }} />
+                    Saving...
+                  </>
+                )}
+                {saveState === 'saved' && (
+                  <>
+                    <Check className="h-3 w-3" />
+                    Saved
+                  </>
+                )}
+              </span>
+            )}
 
-        {/* Trip title */}
-        <h1 className="flex-1 text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-          {tripTitle}
-        </h1>
+            {/* View toggle pills — Chat / Itinerary */}
+            <div
+              className="inline-flex items-center rounded-full p-0.5"
+              style={{ backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+            >
+              <button
+                onClick={() => router.push(`/plan-ai/${tripId}`)}
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition sm:px-3 sm:text-xs"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Chat
+              </button>
+              <button
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-xs"
+                style={{
+                  backgroundColor: 'var(--accent-green)',
+                  color: '#fff',
+                }}
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                Itinerary
+              </button>
+            </div>
 
-        {/* View toggle */}
-        <div
-          className="hidden sm:flex items-center rounded-xl p-1 gap-1"
-          style={{ backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-        >
-          <button
-            onClick={() => router.push(`/plan-ai/${tripId}`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Chat
-          </button>
-          <button
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-            style={{
-              backgroundColor: 'var(--surface)',
-              color: 'var(--accent-green)',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}
-          >
-            <span style={{ fontSize: '12px' }}>📋</span>
-            Itinerary
-          </button>
+            {/* Add Day button */}
+            <Button variant="success" size="sm" icon={Plus} onClick={addDay}>
+              <span className="hidden sm:inline">Add Day</span>
+              <span className="sm:hidden">Day</span>
+            </Button>
+          </div>
         </div>
+      </section>
 
-        {/* Save state */}
-        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          {saveState === 'saving' && 'Saving...'}
-          {saveState === 'saved' && '✓ Saved'}
-        </span>
+      {/* Board — responsive: vertical on mobile, horizontal on desktop */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-4 sm:p-6 lg:px-10 xl:px-12">
 
-        {/* Add Day */}
-        <Button variant="success" size="sm" icon={Plus} onClick={addDay}>Add Day</Button>
-      </div>
+          {/* Empty state — when no stops exist yet */}
+          {!hasStops && (
+            <div
+              className="mx-auto max-w-lg rounded-2xl p-6 sm:p-8 text-center mb-6"
+              style={{
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div
+                className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                style={{ backgroundColor: 'rgba(34,197,94,0.1)' }}
+              >
+                <MapPin className="h-6 w-6" style={{ color: 'var(--accent-green)' }} />
+              </div>
+              <h3 className="text-base font-semibold sm:text-lg" style={{ color: 'var(--text-primary)' }}>
+                Build your itinerary
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                Drag and drop to organize your trip. Add stops from parks, trails, campgrounds, and more — or go back to chat and ask the AI to generate a full itinerary.
+              </p>
+              <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-2">
+                <button
+                  onClick={() => router.push(`/plan-ai/${tripId}`)}
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition hover:opacity-90"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Chat
+                </button>
+                <button
+                  onClick={addDay}
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition hover:opacity-90"
+                  style={{
+                    backgroundColor: 'var(--accent-green)',
+                    color: '#fff',
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Your First Stop
+                </button>
+              </div>
+            </div>
+          )}
 
-      {/* Board — horizontal scroll */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="min-h-full p-4 sm:p-6">
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="board" type="DAY" direction="horizontal">
+            <Droppable droppableId="board" type="DAY" direction="vertical">
               {(provided) => (
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className="flex gap-4 items-start"
-                  style={{ minHeight: '60vh' }}
+                  className="flex flex-col gap-4 lg:flex-row lg:items-start lg:overflow-x-auto"
+                  style={{ minHeight: hasStops ? '60vh' : 'auto' }}
                 >
                   {days.map((day, index) => (
                     <Draggable key={day.id} draggableId={day.id} index={index}>
@@ -307,6 +380,7 @@ export default function ItineraryBuilder({ tripId }) {
                         <div
                           ref={dragProvided.innerRef}
                           {...dragProvided.draggableProps}
+                          className="w-full lg:w-auto"
                           style={{
                             ...dragProvided.draggableProps.style,
                             opacity: dragSnapshot.isDragging ? 0.9 : 1,
@@ -330,11 +404,11 @@ export default function ItineraryBuilder({ tripId }) {
                   {/* Add Day card */}
                   <button
                     onClick={addDay}
-                    className="flex-shrink-0 w-72 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-12 transition hover:opacity-80"
+                    className="w-full lg:w-80 lg:flex-shrink-0 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 lg:py-12 transition hover:opacity-80"
                     style={{
                       borderColor: 'var(--border)',
                       color: 'var(--text-tertiary)',
-                      minHeight: '200px'
+                      minHeight: '120px'
                     }}
                   >
                     <Plus className="h-6 w-6" />

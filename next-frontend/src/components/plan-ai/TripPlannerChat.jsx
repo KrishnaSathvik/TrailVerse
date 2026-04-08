@@ -2481,7 +2481,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     {isSharing ? 'Sharing...' : 'Share'}
                   </button>
                 )}
-                {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && (
+                {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && messages.some(m => m.hasItinerary) && (
                   <button
                     onClick={() => router.push(`/plan-ai/${currentTripId}/itinerary`)}
                     className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 sm:px-3 sm:text-xs"
