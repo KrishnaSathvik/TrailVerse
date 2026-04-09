@@ -21,8 +21,10 @@ class WebSocketService {
     this.pendingChannels = new Set(); // Track channels to subscribe to after auth
     this.subscribedChannels = new Set(); // Track channels we're actually subscribed to
     
-    this.setupPageEventListeners();
-    this.setupGlobalErrorHandlers();
+    if (typeof window !== 'undefined') {
+      this.setupPageEventListeners();
+      this.setupGlobalErrorHandlers();
+    }
   }
 
   // Setup global error handlers

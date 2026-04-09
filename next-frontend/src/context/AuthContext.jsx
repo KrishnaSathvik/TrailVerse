@@ -319,7 +319,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
       <LoginModal 
         isOpen={authModal.isOpen} 
         onClose={closeLoginPrompt} 

@@ -81,7 +81,9 @@ class GlobalCacheManager {
       }
     };
     
-    this.initializeBackgroundRefresh();
+    if (typeof window !== 'undefined') {
+      this.initializeBackgroundRefresh();
+    }
   }
 
   /**

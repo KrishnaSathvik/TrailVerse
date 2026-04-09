@@ -1681,6 +1681,39 @@ const ProfilePage = () => {
                         );
                       })}
                     </div>
+
+                    {/* Unsubscribe from All Emails */}
+                    <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                            Unsubscribe from All Emails
+                          </h4>
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            Stop receiving all marketing and notification emails
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to unsubscribe from all TrailVerse emails?')) {
+                              setPreferences({ ...preferences, emailNotifications: false });
+                              saveEmailPreferences(false);
+                            }
+                          }}
+                          disabled={emailLoading || !preferences.emailNotifications}
+                          className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+                          style={{
+                            backgroundColor: !preferences.emailNotifications ? 'var(--surface-hover)' : 'rgba(239, 68, 68, 0.15)',
+                            color: !preferences.emailNotifications ? 'var(--text-secondary)' : '#ef4444',
+                            border: `1px solid ${!preferences.emailNotifications ? 'var(--border)' : '#ef4444'}`,
+                            cursor: !preferences.emailNotifications || emailLoading ? 'not-allowed' : 'pointer',
+                            opacity: emailLoading ? 0.6 : 1
+                          }}
+                        >
+                          {!preferences.emailNotifications ? 'Already Unsubscribed' : 'Unsubscribe All'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Privacy & Security */}

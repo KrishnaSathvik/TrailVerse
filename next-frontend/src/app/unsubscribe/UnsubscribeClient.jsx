@@ -13,9 +13,11 @@ const UnsubscribeContent = () => {
   const router = useRouter();
 
   // Get parameters from URL
-  const email = searchParams.get('email');
+  const emailParam = searchParams.get('email');
   const token = searchParams.get('token');
 
+  const [manualEmail, setManualEmail] = useState('');
+  const [emailInput, setEmailInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,20 +26,21 @@ const UnsubscribeContent = () => {
     blogNotifications: true
   });
 
+  const email = emailParam || manualEmail;
+
   useEffect(() => {
-    if (email) {
+    if (emailParam) {
       loadUserPreferences();
     } else {
       setLoading(false);
-      setMessage('No email address provided');
-      setMessageType('error');
     }
-  }, [email]);
+  }, [emailParam]);
 
-  const loadUserPreferences = async () => {
+  const loadUserPreferences = async (emailOverride) => {
+    const targetEmail = emailOverride || email;
     try {
       setLoading(true);
-      const response = await fetch(`/api/email/preferences?email=${encodeURIComponent(email)}`);
+      const response = await fetch(`/api/email/preferences?email=${encodeURIComponent(targetEmail)}`);
       const data = await response.json();
 
       if (data.success) {
@@ -178,6 +181,16 @@ const UnsubscribeContent = () => {
     }
   };
 
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    const trimmed = emailInput.trim();
+    if (!trimmed) return;
+    setManualEmail(trimmed);
+    setMessage('');
+    setMessageType('');
+    loadUserPreferences(trimmed);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
@@ -186,6 +199,92 @@ const UnsubscribeContent = () => {
           <p style={{ color: 'var(--text-secondary)' }}>Loading email preferences...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!email) {
+    return (
+      <section style={{ padding: '3rem 0 4rem' }}>
+        <div className="container mx-auto px-4">
+          <div style={{ maxWidth: '42rem', margin: '0 auto' }}>
+            <div className="text-center" style={{ marginBottom: '2.5rem' }}>
+              <div
+                className="inline-flex items-center justify-center rounded-full"
+                style={{ width: '4rem', height: '4rem', backgroundColor: 'var(--accent-green-light)', marginBottom: '1rem' }}
+              >
+                <Mail className="w-8 h-8" style={{ color: 'var(--accent-green)' }} />
+              </div>
+              <h1 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                Email Preferences
+              </h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
+                Enter your email address to manage your subscriptions
+              </p>
+            </div>
+
+            {message && (
+              <div
+                style={{
+                  borderRadius: '0.75rem',
+                  border: '1px solid',
+                  padding: '1rem',
+                  marginBottom: '1.5rem',
+                  backgroundColor: messageType === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'var(--surface-hover)',
+                  borderColor: messageType === 'error' ? 'var(--error)' : 'var(--border)',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                <div className="flex items-center">
+                  {getMessageIcon()}
+                  <p className="ml-2 font-medium">{message}</p>
+                </div>
+              </div>
+            )}
+
+            <div
+              style={{
+                borderRadius: '0.75rem',
+                padding: '1.5rem',
+                backgroundColor: 'var(--surface-hover)',
+                border: '1px solid var(--border)',
+                backdropFilter: 'blur(8px)'
+              }}
+            >
+              <form onSubmit={handleEmailSubmit}>
+                <label
+                  htmlFor="email-input"
+                  style={{ display: 'block', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}
+                >
+                  Email Address
+                </label>
+                <input
+                  id="email-input"
+                  type="email"
+                  required
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="you@example.com"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--surface)',
+                    color: 'var(--text-primary)',
+                    fontSize: '1rem',
+                    marginBottom: '1rem',
+                    outline: 'none'
+                  }}
+                />
+                <Button type="submit" className="w-full">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Manage Preferences
+                </Button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
     );
   }
 

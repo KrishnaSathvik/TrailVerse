@@ -63,18 +63,19 @@ const ShareButtons = ({ url, title, description, image, type = 'default', showPr
     }
     
     // If relative URL, make it absolute
-    const baseUrl = window.location.origin;
-    
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.nationalparksexplorerusa.com';
+
     // Handle protocol-relative URLs (//example.com/image.jpg)
     if (imgUrl.startsWith('//')) {
-      return `${window.location.protocol}${imgUrl}`;
+      const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+      return `${protocol}${imgUrl}`;
     }
-    
+
     // Handle relative URLs
     if (imgUrl.startsWith('/')) {
       return `${baseUrl}${imgUrl}`;
     }
-    
+
     // Handle relative paths without leading slash
     return `${baseUrl}/${imgUrl}`;
   };

@@ -19,8 +19,10 @@ class SmartPrefetchService {
     this.prefetchQueue = new Set();
     this.isPrefetching = false;
     
-    this.initializeBehaviorTracking();
-    this.startSmartPrefetching();
+    if (typeof window !== 'undefined') {
+      this.initializeBehaviorTracking();
+      this.startSmartPrefetching();
+    }
   }
 
   /**

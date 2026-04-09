@@ -38,8 +38,10 @@ class PerformanceMonitor {
     this.sessionStart = Date.now();
     this.requestTimes = new Map();
     
-    this.initializeMonitoring();
-    this.startPeriodicReporting();
+    if (typeof window !== 'undefined') {
+      this.initializeMonitoring();
+      this.startPeriodicReporting();
+    }
   }
 
   /**
