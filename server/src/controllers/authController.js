@@ -131,8 +131,11 @@ exports.login = async (req, res, next) => {
         id: user._id,
         _id: user._id,
         name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt
       },
@@ -156,8 +159,11 @@ exports.getMe = async (req, res, next) => {
         id: user._id,
         _id: user._id,
         name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt

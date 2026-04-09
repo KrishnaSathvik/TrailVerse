@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/common/Header';
+import SharedConversation from '@/components/ai-chat/SharedConversation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
@@ -196,29 +197,7 @@ export default async function SharedTripPage({ params }) {
               <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
                 Full Trip Plan
               </h2>
-              <div className="space-y-4">
-                {trip.conversation.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className="max-w-2xl rounded-2xl px-4 py-3 text-sm"
-                      style={{
-                        backgroundColor: msg.role === 'user'
-                          ? 'var(--accent-green)'
-                          : 'var(--surface)',
-                        color: msg.role === 'user' ? 'white' : 'var(--text-primary)',
-                        border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
-                        whiteSpace: 'pre-wrap',
-                        lineHeight: '1.6'
-                      }}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <SharedConversation conversation={trip.conversation} />
             </div>
           </section>
         )}
