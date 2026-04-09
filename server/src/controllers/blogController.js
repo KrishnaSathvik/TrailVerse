@@ -2,7 +2,6 @@ const BlogPost = require('../models/BlogPost');
 const User = require('../models/User');
 const Subscriber = require('../models/Subscriber');
 const emailService = require('../services/resendEmailService');
-const unsubscribeService = require('../services/unsubscribeService');
 const { getScheduledPostsInfo } = require('../services/schedulerService');
 const { clearCache } = require('../middleware/cache');
 
@@ -441,19 +440,15 @@ async function sendBlogNotifications(post) {
     // Collect all emails that will receive from registered users (to deduplicate)
     const sentEmails = new Set();
 
-    // Send emails using Resend service to registered users
+    // Send emails to all subscribed registered users
     let sentCount = 0;
     const emailPromises = users.map(async (user) => {
-      // Check if user should receive this email type
-      const shouldReceive = await unsubscribeService.shouldReceiveEmail(user.email, 'blog_notification');
-      if (shouldReceive) {
-        try {
-          sentEmails.add(user.email.toLowerCase());
-          await emailService.sendBlogNotification(user, post);
-          sentCount++;
-        } catch (error) {
-          console.error(`Failed to send blog notification to ${user.email}:`, error.message);
-        }
+      try {
+        sentEmails.add(user.email.toLowerCase());
+        await emailService.sendBlogNotification(user, post);
+        sentCount++;
+      } catch (error) {
+        console.error(`Failed to send blog notification to ${user.email}:`, error.message);
       }
     });
 
