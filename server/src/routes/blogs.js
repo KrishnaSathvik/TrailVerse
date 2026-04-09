@@ -168,7 +168,7 @@ const blogBodyParser = express.json({ limit: '10mb' });
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', cacheMiddleware(300), getAllPosts); // Cache for 5 minutes - reduced for faster updates
+router.get('/', cacheMiddleware(60), getAllPosts); // Cache for 1 minute
 
 /**
  * @swagger
@@ -581,6 +581,6 @@ router.delete('/:id', protect, admin, deletePost);
  *       500:
  *         description: Server error
  */
-router.get('/:slug', cacheMiddleware(300), getPostBySlug); // Cache for 5 minutes
+router.get('/:slug', cacheMiddleware(60), getPostBySlug); // Cache for 1 minute
 
 module.exports = router;

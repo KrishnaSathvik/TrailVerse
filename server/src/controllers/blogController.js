@@ -228,23 +228,24 @@ exports.updatePost = async (req, res, next) => {
     // Handle scheduling logic for updates
     const { scheduledAt, status } = req.body;
     
+    // Always apply field updates from req.body first
+    Object.keys(req.body).forEach(key => {
+      if (key !== 'scheduledAt' && key !== 'status') {
+        post[key] = req.body[key];
+      }
+    });
+
+    // Then handle status/scheduling logic
     if (scheduledAt && new Date(scheduledAt) > new Date()) {
-      // If scheduled for future, set status to scheduled
       post.status = 'scheduled';
       post.scheduledAt = new Date(scheduledAt);
       post.publishedAt = null;
     } else if (status === 'published' && post.status !== 'published') {
-      // If publishing now and wasn't published before
       post.status = 'published';
       post.publishedAt = new Date();
       post.scheduledAt = null;
-    } else {
-      // Update other fields normally
-      Object.keys(req.body).forEach(key => {
-        if (key !== 'scheduledAt') {
-          post[key] = req.body[key];
-        }
-      });
+    } else if (status) {
+      post.status = status;
     }
     
     await post.save();
