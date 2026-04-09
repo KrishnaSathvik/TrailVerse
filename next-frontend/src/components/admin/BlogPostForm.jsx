@@ -333,7 +333,8 @@ const BlogPostForm = ({ mode, postId }) => {
       const scheduledDate = new Date(formData.scheduledAt);
       if (scheduledDate > new Date()) {
         finalStatus = 'scheduled';
-        scheduledAt = formData.scheduledAt;
+        // Convert local datetime to UTC ISO string so the server stores the correct time
+        scheduledAt = scheduledDate.toISOString();
       }
     }
 
@@ -938,7 +939,7 @@ const BlogPostForm = ({ mode, postId }) => {
                     name="scheduledAt"
                     value={formData.scheduledAt}
                     onChange={handleChange}
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}T${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; })()}
                     className={validationErrors.scheduledAt ? 'error' : ''}
                   />
                   {validationErrors.scheduledAt && (

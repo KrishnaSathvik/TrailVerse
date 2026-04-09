@@ -202,8 +202,8 @@ function buildSearchQuery(userMessage, parkName) {
 function classifyQuery(userMessage) {
   const msg = userMessage.toLowerCase();
 
-  // Local businesses: restaurants, hotels, gas, stores → Google (Serper) is best
-  if (/(restaurant|food|eat|dine|dining|cafe|coffee|bar|hotel|motel|lodge|lodging|cabin|airbnb|stay|accommodation|gas station|grocery|store|shop|outfitter|gear|rent|shuttle|tour company|guide service)/i.test(msg)) {
+  // Local businesses, tours, activities → Google (Serper) is best
+  if (/(restaurant|food|eat|dine|dining|cafe|coffee|bar|hotel|motel|lodge|lodging|cabin|airbnb|stay|accommodation|gas station|grocery|store|shop|outfitter|gear|rent|shuttle|tour company|guide service|workshop|class|course|lesson|tour|guided|activit|excursion|experience|operator|forag|mushroom|fish|kayak|canoe|raft|climb|zipline|horseback|bike|bird|snorkel|dive|surf|ski|paddle)/i.test(msg)) {
     return 'local';
   }
 
@@ -432,7 +432,7 @@ function isTravelRelated(userMessage) {
   if (offTopicPatterns.test(userMessage)) return false;
 
   // Travel/outdoor/park related topics — green light
-  const travelPatterns = /(park|trail|hike|camp|visit|trip|travel|itinerary|road trip|drive|fly|airport|hotel|lodge|cabin|tent|backpack|scenic|viewpoint|overlook|canyon|mountain|lake|river|waterfall|beach|forest|desert|glacier|wildlife|bear|elk|sunrise|sunset|star|astrophotography|photograph|permit|reservation|entry|fee|ranger|visitor center|campground|trailhead|shuttle|gear|boot|pack|map|route|weather|season|crowd|busy|quiet|shoulder|gateway|town|nearby|restaurant|food|eat|dine|picnic|national|state park|wilderness|outdoor|adventure|explore|nature)/i;
+  const travelPatterns = /(park|trail|hike|camp|visit|trip|travel|itinerary|road trip|drive|fly|airport|hotel|lodge|cabin|tent|backpack|scenic|viewpoint|overlook|canyon|mountain|lake|river|waterfall|beach|forest|desert|glacier|wildlife|bear|elk|sunrise|sunset|star|astrophotography|photograph|permit|reservation|entry|fee|ranger|visitor center|campground|trailhead|shuttle|gear|boot|pack|map|route|weather|season|crowd|busy|quiet|shoulder|gateway|town|nearby|restaurant|food|eat|dine|picnic|national|state park|wilderness|outdoor|adventure|explore|nature|forag|mushroom|morel|workshop|class|course|lesson|tour|excursion|activit|experience|fish|kayak|canoe|raft|climb|rappel|zipline|horseback|bike|cycling|bird|birding|snorkel|dive|surf|ski|snowshoe|swim|paddle|guided|instruction)/i;
   return travelPatterns.test(userMessage);
 }
 
@@ -448,7 +448,7 @@ function needsWebSearch(userMessage) {
   if (!isTravelRelated(userMessage)) return false;
 
   // Topics where live web data is especially valuable
-  const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway)/i;
+  const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|2027|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway|workshop|class|classes|course|lesson|tour|excursion|activit|experience|guided|instruction|training|company|provider|operator|find|search|look for|check|suggest|where can|who offer|sign up|forag|mushroom|morel|fish|kayak|canoe|raft|climb|zipline|horseback|bike|bird|snorkel|dive|surf|ski|snowshoe|paddle)/i;
   return webSearchKeywords.test(userMessage);
 }
 
