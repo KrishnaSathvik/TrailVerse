@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   UserCircle as PhUserCircle,
@@ -2208,4 +2208,10 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage;
+export default function ProfilePageWrapper() {
+  return (
+    <Suspense>
+      <ProfilePage />
+    </Suspense>
+  );
+}
