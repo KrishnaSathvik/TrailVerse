@@ -171,7 +171,12 @@ class UnsubscribeService {
       }
 
       // For all other emails, check the single toggle
-      return user.emailNotifications === true;
+      // emailNotifications can be boolean true OR object { blogNotifications: true }
+      if (user.emailNotifications === true) return true;
+      if (typeof user.emailNotifications === 'object' && user.emailNotifications !== null) {
+        return !!user.emailNotifications.blogNotifications;
+      }
+      return false;
     } catch (error) {
       console.error('Error checking email preferences:', error);
       return false; // Default to not sending if there's an error

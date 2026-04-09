@@ -442,26 +442,24 @@ async function sendBlogNotifications(post) {
     const sentEmails = new Set();
 
     // Send emails using Resend service to registered users
+    let sentCount = 0;
     const emailPromises = users.map(async (user) => {
       // Check if user should receive this email type
       const shouldReceive = await unsubscribeService.shouldReceiveEmail(user.email, 'blog_notification');
       if (shouldReceive) {
         try {
           sentEmails.add(user.email.toLowerCase());
-          return await emailService.sendBlogNotification(user, post);
+          await emailService.sendBlogNotification(user, post);
+          sentCount++;
         } catch (error) {
           console.error(`Failed to send blog notification to ${user.email}:`, error.message);
-          return null;
         }
       }
-      return null;
     });
 
-    // Filter out null promises and wait for all
-    const validPromises = emailPromises.filter(promise => promise !== null);
-    await Promise.all(validPromises);
+    await Promise.all(emailPromises);
 
-    console.log(`✅ Blog notifications sent to ${validPromises.length} registered users`);
+    console.log(`✅ Blog notifications sent to ${sentCount} of ${users.length} registered users`);
 
     // Also notify confirmed newsletter subscribers (skip those already emailed as registered users)
     try {
