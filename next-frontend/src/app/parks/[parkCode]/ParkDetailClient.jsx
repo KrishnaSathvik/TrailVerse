@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
@@ -23,7 +23,7 @@ import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
 
-const ParkDetailClient = ({ initialData, parkCode }) => {
+const ParkDetailInner = ({ initialData, parkCode }) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2165,4 +2165,10 @@ const ParkDetailClient = ({ initialData, parkCode }) => {
   );
 };
 
-export default ParkDetailClient;
+export default function ParkDetailClient(props) {
+  return (
+    <Suspense>
+      <ParkDetailInner {...props} />
+    </Suspense>
+  );
+}
