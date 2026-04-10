@@ -48,6 +48,33 @@ class TTLCache {
 const webSearchCache = new TTLCache(WEB_SEARCH_CACHE_MAX_SIZE, WEB_SEARCH_CACHE_TTL_MS);
 
 /**
+ * Per-category search strategy. Categories with `skip: true` are answered
+ * from NPS/RIDB authoritative data — we don't run a web search at all.
+ *
+ * Freshness: 'pd' = past day, 'pw' = past week, 'pm' = past month, null = no filter
+ */
+const STRATEGY = {
+  // SKIP — handled by NPS/RIDB facts already in the prompt
+  'nps-covered':       { skip: true },
+  'history-facts':     { skip: true },
+
+  // LIVE — past-day freshness, authoritative domains
+  'road-conditions':   { primary: 'brave',  domains: ['nps.gov', 'weather.gov'],                   freshness: 'pd', n: 3 },
+  'wildfire-smoke':    { primary: 'brave',  domains: ['inciweb.nwcg.gov', 'nps.gov', 'airnow.gov'], freshness: 'pd', n: 3 },
+
+  // RECENT — past-week freshness
+  'trail-conditions':  { primary: 'brave',  domains: ['nps.gov', 'alltrails.com'],                 freshness: 'pw', n: 3 },
+  'wildlife-seasonal': { primary: 'tavily', domains: ['nps.gov', 'nationalparkstraveler.org'],     freshness: 'pw', n: 3 },
+  'events':            { primary: 'brave',  domains: [],                                            freshness: 'pw', n: 3 },
+
+  // LOCAL — Serper Places, no freshness filter
+  'local-business':    { primary: 'serper', domains: [],                                            freshness: null, n: 4 },
+
+  // GENERAL — monthly freshness, open web
+  'planning':          { primary: 'tavily', domains: [],                                            freshness: 'pm', n: 3 }
+};
+
+/**
  * Wrap a promise with a timeout. Returns { timedOut, value } — never rejects.
  * On timeout or error, value is null.
  */
@@ -277,34 +304,106 @@ function buildSearchQuery(userMessage, parkName) {
 }
 
 /**
- * Classify the user's query to pick the best search strategy
+ * Enrich a raw query with park context + category-specific augmentation.
+ *
+ * - Always prepends park name if missing (gives providers park context)
+ * - For road-conditions / wildfire-smoke: appends current year
+ * - For trail-conditions: appends "current conditions" if not already time-bound
+ * - Strips conversational filler
+ *
+ * @param {string} rawQuery
+ * @param {string} parkName
+ * @param {string} category - classifyQuery() return value
+ * @returns {string}
+ */
+function enrichQuery(rawQuery, parkName, category) {
+  let q = rawQuery
+    .replace(/\b(can you|please|tell me|i want to|i'd like to|what are|where are|how do i|show me|is there|are there)\b/gi, '')
+    .trim();
+
+  if (parkName && !q.toLowerCase().includes(parkName.toLowerCase())) {
+    q = `${parkName} ${q}`;
+  }
+
+  const year = new Date().getFullYear();
+  if (category === 'road-conditions' || category === 'wildfire-smoke') {
+    if (!q.includes(String(year))) q = `${q} ${year}`;
+  }
+  if (category === 'trail-conditions') {
+    if (!/current|latest|now|today/i.test(q)) q = `${q} current conditions`;
+  }
+
+  return q.substring(0, 250);
+}
+
+/**
+ * Classify the user's query into a search strategy category.
+ *
+ * Order matters: SKIP buckets (nps-covered, history-facts) are checked first
+ * so "permits" doesn't fall through to a broader category.
+ *
  * @param {string} userMessage
- * @returns {'local'|'planning'|'realtime'} Query category
+ * @returns {string} One of the keys in STRATEGY
  */
 function classifyQuery(userMessage) {
   const msg = userMessage.toLowerCase();
 
-  // Local businesses, tours, activities → Google (Serper) is best
-  if (/(restaurant|food|eat|dine|dining|cafe|coffee|bar|hotel|motel|lodge|lodging|cabin|airbnb|stay|accommodation|gas station|grocery|store|shop|outfitter|gear|rent|shuttle|tour company|guide service|workshop|class|course|lesson|tour|guided|activit|excursion|experience|operator|forag|mushroom|fish|kayak|canoe|raft|climb|zipline|horseback|bike|bird|snorkel|dive|surf|ski|paddle)/i.test(msg)) {
-    return 'local';
+  // SKIP buckets — NPS/RIDB already provides authoritative data for these.
+  // Checked first so specific topics don't leak into broader categories.
+  if (/(permit|reservation|timed entry|lottery|campsite|campground|visitor center)/i.test(msg)) {
+    return 'nps-covered';
+  }
+  if (/(history|founded|established|famous|known for|significance|when was)/i.test(msg)) {
+    return 'history-facts';
   }
 
-  // Real-time: road conditions, current closures, events, recent news → Brave (fresh index)
-  if (/(road condition|road closure|closed|current|latest|recent|update|news|2025|2026|event|festival|wildfire|flood|construction|status|open now|hour|schedule)/i.test(msg)) {
-    return 'realtime';
+  // LIVE buckets — past-day freshness
+  if (/(road condition|road closure|road open|road status|closed|open now|open today|open tomorrow|construction)/i.test(msg)) {
+    return 'road-conditions';
+  }
+  if (/(wildfire|fire|smoke|air quality|haze|flood)/i.test(msg)) {
+    return 'wildfire-smoke';
   }
 
-  // Planning: itinerary, tips, best time, general travel → Tavily (AI summary)
+  // RECENT buckets — past-week freshness
+  if (/(trail condition|trail report|muddy|snow|washout|snowpack|icy)/i.test(msg)) {
+    return 'trail-conditions';
+  }
+  if (/(wildflower|bloom|fall color|foliage|rut|migration|salmon run|northern lights|aurora|meteor|bird|fish|forag|mushroom)/i.test(msg)) {
+    return 'wildlife-seasonal';
+  }
+  if (/(event|festival|ranger program)/i.test(msg)) {
+    return 'events';
+  }
+
+  // LOCAL bucket — Serper Places, no freshness
+  if (/(restaurant|food|eat|dine|dining|cafe|coffee|bar|hotel|motel|lodge|lodging|cabin|airbnb|stay|accommodation|gas station|grocery|store|shop|outfitter|gear|rent|shuttle|tour company|guide service|workshop|class|course|lesson|tour|guided|excursion|experience|operator|kayak|canoe|raft|climb|zipline|horseback|bike|snorkel|dive|surf|ski|paddle)/i.test(msg)) {
+    return 'local-business';
+  }
+
+  // Default: general planning (monthly freshness, open web)
   return 'planning';
 }
 
 /**
- * Fetch web search results using Brave Search API
+ * Fetch web search results using Brave Search API.
+ * @param {string} query
+ * @param {Object} [options]
+ * @param {number} [options.count=5]
+ * @param {string|null} [options.freshness=null] - 'pd' | 'pw' | 'pm' | null
+ * @param {string[]} [options.domains=[]] - site: allowlist appended to query
  */
-async function searchBrave(query, count = 5) {
+async function searchBrave(query, { count = 5, freshness = null, domains = [] } = {}) {
+  let q = query;
+  if (domains.length) {
+    q = `${q} (${domains.map(d => `site:${d}`).join(' OR ')})`;
+  }
+  const params = { q, count };
+  if (freshness) params.freshness = freshness;
+
   const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
     headers: { 'X-Subscription-Token': BRAVE_API_KEY, 'Accept': 'application/json' },
-    params: { q: query, count, freshness: 'pm' },
+    params,
     timeout: 5000
   });
 
@@ -318,11 +417,19 @@ async function searchBrave(query, count = 5) {
 }
 
 /**
- * Fetch web search results using Serper API (Google)
+ * Fetch web search results using Serper API (Google).
+ * @param {string} query
+ * @param {Object} [options]
+ * @param {number} [options.num=5]
+ * @param {string[]} [options.domains=[]] - site: allowlist appended to query
  */
-async function searchSerper(query, num = 5) {
+async function searchSerper(query, { num = 5, domains = [] } = {}) {
+  let q = query;
+  if (domains.length) {
+    q = `${q} (${domains.map(d => `site:${d}`).join(' OR ')})`;
+  }
   const response = await axios.post('https://google.serper.dev/search', {
-    q: query,
+    q,
     num
   }, {
     headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
@@ -355,16 +462,24 @@ async function searchSerper(query, num = 5) {
 }
 
 /**
- * Fetch web search results using Tavily API (optimized for AI/RAG)
+ * Fetch web search results using Tavily API (optimized for AI/RAG).
+ * @param {string} query
+ * @param {Object} [options]
+ * @param {number} [options.count=5]
+ * @param {string} [options.depth='basic'] - 'basic' | 'advanced'
+ * @param {string[]} [options.domains=[]] - Tavily include_domains (native support)
  */
-async function searchTavily(query, depth = 'basic') {
-  const response = await axios.post('https://api.tavily.com/search', {
+async function searchTavily(query, { count = 5, depth = 'basic', domains = [] } = {}) {
+  const body = {
     api_key: TAVILY_API_KEY,
-    query: query,
-    max_results: 5,
+    query,
+    max_results: count,
     search_depth: depth,
     include_answer: true
-  }, {
+  };
+  if (domains.length) body.include_domains = domains;
+
+  const response = await axios.post('https://api.tavily.com/search', body, {
     timeout: 7000
   });
 
@@ -418,52 +533,69 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     return null;
   }
 
-  const query = buildSearchQuery(userMessage, parkName);
-  const queryType = classifyQuery(userMessage);
+  const category = classifyQuery(userMessage);
+  const strategy = STRATEGY[category];
 
-  // Cache lookup — key includes query type + parkCode so the same phrase
-  // for different parks doesn't collide.
-  const cacheKey = `${queryType}:${parkCode || 'none'}:${query.toLowerCase().substring(0, 200)}`;
+  // SKIP buckets — authoritative NPS/RIDB data already in the prompt.
+  if (strategy.skip) {
+    console.log(`[WebSearch] SKIP | category=${category} (covered by NPS/RIDB)`);
+    return null;
+  }
+
+  const query = enrichQuery(userMessage, parkName, category);
+  const { primary, domains, freshness, n } = strategy;
+
+  // Cache lookup — key includes category + parkCode so same phrase for
+  // different parks (or intents) doesn't collide.
+  const cacheKey = `${category}:${parkCode || 'none'}:${query.toLowerCase().substring(0, 200)}`;
   const cached = webSearchCache.get(cacheKey);
   if (cached !== undefined) {
-    console.log(`[WebSearch] cache HIT | type=${queryType} query="${query.substring(0, 60)}"`);
+    console.log(`[WebSearch] cache HIT | category=${category} query="${query.substring(0, 60)}"`);
     return cached;
   }
-  console.log(`[WebSearch] cache MISS | type=${queryType} query="${query.substring(0, 60)}"`);
+  console.log(`[WebSearch] cache MISS | category=${category} query="${query.substring(0, 60)}"`);
 
-  // Build prioritized provider list — primary first, backups after.
-  // Each entry exposes a uniform { results, aiAnswer } shape.
-  const runSerper = () => searchSerper(query, 5).then(r => ({ results: r, aiAnswer: null }));
-  const runBrave = () => searchBrave(query, 5).then(r => ({ results: r, aiAnswer: null }));
-  const runTavily = (depth) => searchTavily(query, depth).then(r => ({ results: r.results, aiAnswer: r.answer }));
+  // Build a runner for a named provider (null if key missing).
+  const makeRunner = (name) => {
+    if (name === 'brave' && BRAVE_API_KEY) {
+      return {
+        name: 'brave',
+        run: () => searchBrave(query, { count: n, freshness, domains }).then(r => ({ results: r, aiAnswer: null }))
+      };
+    }
+    if (name === 'serper' && SERPER_API_KEY) {
+      return {
+        name: 'serper',
+        run: () => searchSerper(query, { num: n, domains }).then(r => ({ results: r, aiAnswer: null }))
+      };
+    }
+    if (name === 'tavily' && TAVILY_API_KEY) {
+      return {
+        name: 'tavily',
+        run: () => searchTavily(query, { count: n, domains }).then(r => ({ results: r.results, aiAnswer: r.answer }))
+      };
+    }
+    return null;
+  };
 
-  const providers = [];
-  if (queryType === 'local') {
-    if (SERPER_API_KEY) providers.push({ name: 'serper', run: runSerper });
-    if (BRAVE_API_KEY) providers.push({ name: 'brave', run: runBrave });
-    if (TAVILY_API_KEY) providers.push({ name: 'tavily', run: () => runTavily('basic') });
-  } else if (queryType === 'realtime') {
-    if (BRAVE_API_KEY) providers.push({ name: 'brave', run: runBrave });
-    if (SERPER_API_KEY) providers.push({ name: 'serper', run: runSerper });
-    if (TAVILY_API_KEY) providers.push({ name: 'tavily', run: () => runTavily('basic') });
-  } else {
-    if (TAVILY_API_KEY) providers.push({ name: 'tavily', run: () => runTavily('advanced') });
-    if (SERPER_API_KEY) providers.push({ name: 'serper', run: runSerper });
-    if (BRAVE_API_KEY) providers.push({ name: 'brave', run: runBrave });
-  }
+  // Ordered provider list: primary first, then the rest as backups.
+  const ordered = [primary, 'tavily', 'brave', 'serper']
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .map(makeRunner)
+    .filter(Boolean);
 
-  if (providers.length === 0) return null;
+  if (ordered.length === 0) return null;
 
   let aiAnswer = null;
   const allResults = [];
   const telemetry = [];
 
   // Run primary first with a hard timeout.
-  const primary = providers[0];
+  const primaryRunner = ordered[0];
   const pStart = Date.now();
-  const pRes = await withTimeout(primary.run(), PROVIDER_TIMEOUT_MS, primary.name);
+  const pRes = await withTimeout(primaryRunner.run(), PROVIDER_TIMEOUT_MS, primaryRunner.name);
   telemetry.push({
-    provider: primary.name,
+    provider: primaryRunner.name,
     primary: true,
     timedOut: pRes.timedOut,
     ms: Date.now() - pStart,
@@ -475,9 +607,9 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
   }
 
   // Run backups only if the primary was too thin.
-  if (allResults.length < PRIMARY_MIN_RESULTS && providers.length > 1) {
-    console.log(`[WebSearch] primary ${primary.name} returned ${allResults.length} — running backups`);
-    const backupCalls = providers.slice(1).map(p => {
+  if (allResults.length < PRIMARY_MIN_RESULTS && ordered.length > 1) {
+    console.log(`[WebSearch] primary ${primaryRunner.name} returned ${allResults.length} — running backups`);
+    const backupCalls = ordered.slice(1).map(p => {
       const start = Date.now();
       return withTimeout(p.run(), PROVIDER_TIMEOUT_MS, p.name).then(r => ({
         provider: p.name,
@@ -503,12 +635,12 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     }
   }
 
-  // Dedup and cap.
+  // Dedup and cap. 4 top results is plenty for the system prompt.
   const uniqueResults = deduplicateResults(allResults);
-  const finalResults = uniqueResults.slice(0, 8);
+  const finalResults = uniqueResults.slice(0, 4);
 
   console.log(
-    `[WebSearch] done | type=${queryType} final=${finalResults.length} hasAnswer=${!!aiAnswer} ` +
+    `[WebSearch] done | category=${category} final=${finalResults.length} hasAnswer=${!!aiAnswer} ` +
     `providers=${telemetry.map(t => `${t.provider}${t.primary ? '*' : ''}:${t.timedOut ? 'TO' : t.n}@${t.ms}ms`).join(' ')}`
   );
 
@@ -517,16 +649,27 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     return null;
   }
 
-  // Format results for the AI system prompt.
-  let formatted = 'Live Web Search Results';
+  const formatted = formatWebResults(finalResults, aiAnswer, category);
+  webSearchCache.set(cacheKey, formatted);
+  return formatted;
+}
+
+/**
+ * Format web search results for injection into the AI system prompt.
+ * Groups Google Places separately for local-business readability.
+ */
+function formatWebResults(finalResults, aiAnswer, category) {
+  let formatted = `Live Web Search Results (category: ${category})`;
   const providerList = [...new Set(finalResults.map(r => r.source))];
-  formatted += ` (via ${providerList.join(' + ')}):\n`;
+  if (providerList.length) {
+    formatted += ` via ${providerList.join(' + ')}`;
+  }
+  formatted += ':\n';
 
   if (aiAnswer) {
     formatted += `\nAI Summary: ${aiAnswer}\n`;
   }
 
-  // Group Google Places results separately for better readability.
   const places = finalResults.filter(r => r.source === 'google-places');
   const webResults = finalResults.filter(r => r.source !== 'google-places');
 
@@ -545,8 +688,6 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
   }
 
   formatted += '\n(From live web search — verify details with official sources)';
-
-  webSearchCache.set(cacheKey, formatted);
   return formatted;
 }
 
