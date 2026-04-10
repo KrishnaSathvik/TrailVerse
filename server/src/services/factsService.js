@@ -9,6 +9,75 @@ const BRAVE_API_KEY = process.env.BRAVE_SEARCH_API_KEY;
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
+// Web search cache + timeout tuning
+const WEB_SEARCH_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const WEB_SEARCH_CACHE_MAX_SIZE = 200;
+const PROVIDER_TIMEOUT_MS = 2500;
+const PRIMARY_MIN_RESULTS = 3; // fall back to backups if primary returns fewer than this
+
+/**
+ * Simple LRU-ish TTL cache — evicts oldest when size exceeds max.
+ */
+class TTLCache {
+  constructor(maxSize, ttl) {
+    this.maxSize = maxSize;
+    this.ttl = ttl;
+    this.cache = new Map();
+  }
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    // Bump recency
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.value;
+  }
+  set(key, value) {
+    if (this.cache.has(key)) this.cache.delete(key);
+    this.cache.set(key, { value, timestamp: Date.now() });
+    while (this.cache.size > this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      this.cache.delete(oldestKey);
+    }
+  }
+}
+const webSearchCache = new TTLCache(WEB_SEARCH_CACHE_MAX_SIZE, WEB_SEARCH_CACHE_TTL_MS);
+
+/**
+ * Wrap a promise with a timeout. Returns { timedOut, value } — never rejects.
+ * On timeout or error, value is null.
+ */
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve) => {
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      console.warn(`[WebSearch] ${label} timed out after ${ms}ms`);
+      resolve({ timedOut: true, value: null });
+    }, ms);
+    promise.then(
+      (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({ timedOut: false, value });
+      },
+      (error) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        console.warn(`[WebSearch] ${label} failed: ${error.message}`);
+        resolve({ timedOut: false, value: null });
+      }
+    );
+  });
+}
+
 /**
  * Fetch weather facts for a specific location
  * @param {Object} params - { lat, lon, units }
@@ -92,19 +161,22 @@ async function fetchNPSFacts({ parkCode }) {
 
   try {
     const npsService = require('./npsService');
+    const ridbService = require('./ridbService');
 
-    // Fetch park details, alerts, campgrounds, and visitor centers in parallel
-    const [details, alerts, campgrounds, visitorCenters] = await Promise.allSettled([
+    // Fetch park details, alerts, campgrounds, visitor centers, and permits in parallel
+    const [details, alerts, campgrounds, visitorCenters, permits] = await Promise.allSettled([
       npsService.getParkByCode(parkCode),
       npsService.getParkAlerts(parkCode),
       npsService.getParkCampgrounds(parkCode),
-      npsService.getParkVisitorCenters(parkCode)
+      npsService.getParkVisitorCenters(parkCode),
+      ridbService.getPermitsForPark(parkCode)
     ]);
 
     const park = details.status === 'fulfilled' ? details.value : null;
     const parkAlerts = alerts.status === 'fulfilled' ? alerts.value : [];
     const parkCampgrounds = campgrounds.status === 'fulfilled' ? campgrounds.value : [];
     const parkVisitorCenters = visitorCenters.status === 'fulfilled' ? visitorCenters.value : [];
+    const parkPermits = permits.status === 'fulfilled' ? permits.value : [];
 
     if (!park) {
       console.log(`⚠️ No park details found for ${parkCode}`);
@@ -165,8 +237,18 @@ async function fetchNPSFacts({ parkCode }) {
       facts.push(vcText);
     }
 
-    // Permits — npsService.getParkPermits does not exist, skip gracefully
-    facts.push('Permits: No permit requirements in current data');
+    // Permits & reservations — live data from Recreation.gov (RIDB)
+    if (parkPermits.length > 0) {
+      const permitLines = parkPermits.slice(0, 8).map(p => {
+        const typeLabel = p.type ? ` [${p.type}]` : '';
+        return `- ${p.name}${typeLabel}: ${p.reservationUrl}`;
+      }).join('\n');
+      facts.push(
+        `Permits & Reservations Required (book directly on Recreation.gov — cite these URLs as markdown links when mentioning permits):\n${permitLines}`
+      );
+    } else {
+      facts.push('Permits: No permit requirements found on Recreation.gov for this park');
+    }
 
     return facts.filter(Boolean).join('\n\n');
   } catch (error) {
@@ -318,15 +400,17 @@ function deduplicateResults(results) {
 }
 
 /**
- * Fetch live web search facts using all available APIs intelligently
+ * Fetch live web search facts using the best provider for the query type.
  *
- * Strategy with all 3 keys:
- *   - LOCAL queries (restaurants, hotels): Serper (Google Places) primary + Brave backup
- *   - REALTIME queries (closures, events): Brave (fresh index) primary + Serper backup
- *   - PLANNING queries (tips, itineraries): Tavily (AI summary) primary + Serper backup
+ * Strategy:
+ *   - LOCAL queries (restaurants, hotels): Serper (Google Places) primary
+ *   - REALTIME queries (closures, events): Brave (fresh index) primary
+ *   - PLANNING queries (tips, itineraries): Tavily (AI summary) primary
  *
- * Results are merged, deduplicated, and capped at 8 for a rich but focused context.
- * If the primary fails, the backup is already running in parallel.
+ * Each provider call is wrapped in a timeout so a slow provider can't block.
+ * Backups only run if the primary returns fewer than PRIMARY_MIN_RESULTS — keeps
+ * cost down while preserving reliability. Successful responses are cached in-memory
+ * for WEB_SEARCH_CACHE_TTL_MS to cut repeat-query costs during busy sessions.
  */
 async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
   if (!BRAVE_API_KEY && !SERPER_API_KEY && !TAVILY_API_KEY) {
@@ -334,89 +418,136 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     return null;
   }
 
-  try {
-    const query = buildSearchQuery(userMessage, parkName);
-    const queryType = classifyQuery(userMessage);
-    console.log(`[WebSearch] Query: "${query}" | Type: ${queryType}`);
+  const query = buildSearchQuery(userMessage, parkName);
+  const queryType = classifyQuery(userMessage);
 
-    let aiAnswer = null;
-    let allResults = [];
+  // Cache lookup — key includes query type + parkCode so the same phrase
+  // for different parks doesn't collide.
+  const cacheKey = `${queryType}:${parkCode || 'none'}:${query.toLowerCase().substring(0, 200)}`;
+  const cached = webSearchCache.get(cacheKey);
+  if (cached !== undefined) {
+    console.log(`[WebSearch] cache HIT | type=${queryType} query="${query.substring(0, 60)}"`);
+    return cached;
+  }
+  console.log(`[WebSearch] cache MISS | type=${queryType} query="${query.substring(0, 60)}"`);
 
-    // Build parallel search promises based on query type and available keys
-    const searches = [];
+  // Build prioritized provider list — primary first, backups after.
+  // Each entry exposes a uniform { results, aiAnswer } shape.
+  const runSerper = () => searchSerper(query, 5).then(r => ({ results: r, aiAnswer: null }));
+  const runBrave = () => searchBrave(query, 5).then(r => ({ results: r, aiAnswer: null }));
+  const runTavily = (depth) => searchTavily(query, depth).then(r => ({ results: r.results, aiAnswer: r.answer }));
 
-    if (queryType === 'local') {
-      // Local businesses → Serper (Google Places) is primary
-      if (SERPER_API_KEY) searches.push(searchSerper(query, 5).catch(() => []));
-      if (BRAVE_API_KEY) searches.push(searchBrave(query, 3).catch(() => []));
-      // Tavily for AI summary as bonus if available
-      if (TAVILY_API_KEY) searches.push(
-        searchTavily(query).then(r => { aiAnswer = r.answer; return r.results; }).catch(() => [])
-      );
-    } else if (queryType === 'realtime') {
-      // Real-time/current → Brave (fresh index) is primary
-      if (BRAVE_API_KEY) searches.push(searchBrave(query, 5).catch(() => []));
-      if (SERPER_API_KEY) searches.push(searchSerper(query, 3).catch(() => []));
-      if (TAVILY_API_KEY) searches.push(
-        searchTavily(query).then(r => { aiAnswer = r.answer; return r.results; }).catch(() => [])
-      );
-    } else {
-      // Planning/general → Tavily (AI answer) is primary
-      if (TAVILY_API_KEY) searches.push(
-        searchTavily(query, 'advanced').then(r => { aiAnswer = r.answer; return r.results; }).catch(() => [])
-      );
-      if (SERPER_API_KEY) searches.push(searchSerper(query, 4).catch(() => []));
-      if (BRAVE_API_KEY) searches.push(searchBrave(query, 3).catch(() => []));
+  const providers = [];
+  if (queryType === 'local') {
+    if (SERPER_API_KEY) providers.push({ name: 'serper', run: runSerper });
+    if (BRAVE_API_KEY) providers.push({ name: 'brave', run: runBrave });
+    if (TAVILY_API_KEY) providers.push({ name: 'tavily', run: () => runTavily('basic') });
+  } else if (queryType === 'realtime') {
+    if (BRAVE_API_KEY) providers.push({ name: 'brave', run: runBrave });
+    if (SERPER_API_KEY) providers.push({ name: 'serper', run: runSerper });
+    if (TAVILY_API_KEY) providers.push({ name: 'tavily', run: () => runTavily('basic') });
+  } else {
+    if (TAVILY_API_KEY) providers.push({ name: 'tavily', run: () => runTavily('advanced') });
+    if (SERPER_API_KEY) providers.push({ name: 'serper', run: runSerper });
+    if (BRAVE_API_KEY) providers.push({ name: 'brave', run: runBrave });
+  }
+
+  if (providers.length === 0) return null;
+
+  let aiAnswer = null;
+  const allResults = [];
+  const telemetry = [];
+
+  // Run primary first with a hard timeout.
+  const primary = providers[0];
+  const pStart = Date.now();
+  const pRes = await withTimeout(primary.run(), PROVIDER_TIMEOUT_MS, primary.name);
+  telemetry.push({
+    provider: primary.name,
+    primary: true,
+    timedOut: pRes.timedOut,
+    ms: Date.now() - pStart,
+    n: pRes.value?.results?.length || 0
+  });
+  if (pRes.value) {
+    allResults.push(...pRes.value.results);
+    if (pRes.value.aiAnswer) aiAnswer = pRes.value.aiAnswer;
+  }
+
+  // Run backups only if the primary was too thin.
+  if (allResults.length < PRIMARY_MIN_RESULTS && providers.length > 1) {
+    console.log(`[WebSearch] primary ${primary.name} returned ${allResults.length} — running backups`);
+    const backupCalls = providers.slice(1).map(p => {
+      const start = Date.now();
+      return withTimeout(p.run(), PROVIDER_TIMEOUT_MS, p.name).then(r => ({
+        provider: p.name,
+        ms: Date.now() - start,
+        result: r
+      }));
+    });
+    const backupResults = await Promise.allSettled(backupCalls);
+    for (const br of backupResults) {
+      if (br.status !== 'fulfilled') continue;
+      const { provider, ms, result } = br.value;
+      telemetry.push({
+        provider,
+        primary: false,
+        timedOut: result.timedOut,
+        ms,
+        n: result.value?.results?.length || 0
+      });
+      if (result.value) {
+        allResults.push(...result.value.results);
+        if (!aiAnswer && result.value.aiAnswer) aiAnswer = result.value.aiAnswer;
+      }
     }
+  }
 
-    // Run all searches in parallel
-    const searchArrays = await Promise.all(searches);
-    allResults = searchArrays.flat();
+  // Dedup and cap.
+  const uniqueResults = deduplicateResults(allResults);
+  const finalResults = uniqueResults.slice(0, 8);
 
-    // Deduplicate and cap results
-    const uniqueResults = deduplicateResults(allResults);
-    const finalResults = uniqueResults.slice(0, 8);
+  console.log(
+    `[WebSearch] done | type=${queryType} final=${finalResults.length} hasAnswer=${!!aiAnswer} ` +
+    `providers=${telemetry.map(t => `${t.provider}${t.primary ? '*' : ''}:${t.timedOut ? 'TO' : t.n}@${t.ms}ms`).join(' ')}`
+  );
 
-    if (finalResults.length === 0 && !aiAnswer) {
-      console.log('[WebSearch] No results from any provider');
-      return null;
-    }
-
-    // Format results for the AI system prompt
-    let formatted = 'Live Web Search Results';
-    const providers = [...new Set(finalResults.map(r => r.source))];
-    formatted += ` (via ${providers.join(' + ')}):\n`;
-
-    if (aiAnswer) {
-      formatted += `\nAI Summary: ${aiAnswer}\n`;
-    }
-
-    // Group Google Places results separately for better readability
-    const places = finalResults.filter(r => r.source === 'google-places');
-    const webResults = finalResults.filter(r => r.source !== 'google-places');
-
-    if (places.length > 0) {
-      formatted += '\nNearby Places:\n';
-      formatted += places.map(p => `- ${p.title}: ${p.snippet}`).join('\n');
-      formatted += '\n';
-    }
-
-    if (webResults.length > 0) {
-      formatted += '\nWeb Sources:\n';
-      formatted += webResults
-        .filter(r => r.title && r.snippet)
-        .map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`)
-        .join('\n\n');
-    }
-
-    formatted += '\n(From live web search — verify details with official sources)';
-
-    console.log(`[WebSearch] ${finalResults.length} results from ${providers.join(', ')} | AI answer: ${!!aiAnswer}`);
-    return formatted;
-  } catch (error) {
-    console.error('[WebSearch] Search error:', error.message);
+  if (finalResults.length === 0 && !aiAnswer) {
+    // Don't cache total failures — let the next call retry.
     return null;
   }
+
+  // Format results for the AI system prompt.
+  let formatted = 'Live Web Search Results';
+  const providerList = [...new Set(finalResults.map(r => r.source))];
+  formatted += ` (via ${providerList.join(' + ')}):\n`;
+
+  if (aiAnswer) {
+    formatted += `\nAI Summary: ${aiAnswer}\n`;
+  }
+
+  // Group Google Places results separately for better readability.
+  const places = finalResults.filter(r => r.source === 'google-places');
+  const webResults = finalResults.filter(r => r.source !== 'google-places');
+
+  if (places.length > 0) {
+    formatted += '\nNearby Places:\n';
+    formatted += places.map(p => `- ${p.title}: ${p.snippet}`).join('\n');
+    formatted += '\n';
+  }
+
+  if (webResults.length > 0) {
+    formatted += '\nWeb Sources:\n';
+    formatted += webResults
+      .filter(r => r.title && r.snippet)
+      .map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`)
+      .join('\n\n');
+  }
+
+  formatted += '\n(From live web search — verify details with official sources)';
+
+  webSearchCache.set(cacheKey, formatted);
+  return formatted;
 }
 
 /**
