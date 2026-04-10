@@ -13,14 +13,17 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Get initial theme from localStorage or default to 'system'
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'system';
-    const saved = localStorage.getItem('theme');
-    return saved || 'system';
-  });
-
+  // Always start with 'system' to avoid hydration mismatch (server has no localStorage)
+  const [theme, setTheme] = useState('system');
   const [resolvedTheme, setResolvedTheme] = useState('dark');
+
+  // Read saved theme from localStorage after mount
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved && saved !== 'system') {
+      setTheme(saved);
+    }
+  }, []);
 
   // Apply theme to document
   useEffect(() => {

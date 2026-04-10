@@ -11,6 +11,9 @@
 <meta property="og:url" content="https://www.nationalparksexplorerusa.com/reports/when-to-go">
 <meta name="twitter:card" content="summary_large_image">
 <script src="park_data.js"></script>
+<script>
+(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark-mode')}catch(e){}})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -215,6 +218,40 @@ nav{
 .empty-state h3{font-family:'Playfair Display',serif;font-size:24px;margin-bottom:10px}
 .empty-state p{font-size:15px;color:var(--muted);line-height:1.6}
 
+/* DARK MODE */
+html.dark-mode {
+  --dark: #0A0E0F;
+  --surface: #131719;
+  --surface2: #1A1F21;
+  --border: rgba(255,255,255,0.1);
+  --cream: #ffffff;
+  --muted: rgba(255,255,255,0.55);
+  --dim: rgba(255,255,255,0.35);
+}
+html.dark-mode nav { background: rgba(10,14,15,0.95); }
+html.dark-mode .nav-back { border-color: rgba(255,255,255,0.15); }
+html.dark-mode .nav-back:hover { border-color: rgba(255,255,255,0.4); }
+html.dark-mode .hero-sub { color: rgba(255,255,255,0.65); }
+html.dark-mode .dropdown-item:hover, html.dark-mode .dropdown-item.active { background: rgba(255,255,255,0.05); }
+html.dark-mode .permit-banner { background: rgba(179,61,24,0.1); border-color: rgba(179,61,24,0.25); }
+html.dark-mode .pb-text { color: rgba(255,255,255,0.65); }
+html.dark-mode .best-time-box { background: linear-gradient(135deg, rgba(45,138,45,0.1), rgba(45,138,45,0.04)); border-color: rgba(45,138,45,0.25); }
+html.dark-mode .btb-body { color: rgba(255,255,255,0.7); }
+html.dark-mode .trailverse-cta:hover { background: rgba(184,146,46,0.08); }
+html.dark-mode .score-0 { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35); }
+html.dark-mode .score-1 { background: rgba(45,138,45,0.15); color: #8ecc6a; }
+html.dark-mode .score-2 { background: rgba(45,138,45,0.2); color: #8ecc6a; }
+html.dark-mode .score-3 { background: rgba(45,138,45,0.25); color: #b8dfb8; }
+html.dark-mode .score-4 { background: rgba(180,180,40,0.15); color: #d4e8a0; }
+html.dark-mode .score-5 { background: rgba(200,180,30,0.2); color: #f0e68c; }
+html.dark-mode .score-6 { background: rgba(200,130,30,0.2); color: #f5cba7; }
+html.dark-mode .score-7 { background: rgba(200,80,30,0.2); color: #f0a88c; }
+html.dark-mode .score-8 { background: rgba(200,50,30,0.2); color: #f5918a; }
+html.dark-mode .score-9 { background: rgba(180,30,30,0.25); color: #f08080; }
+html.dark-mode .score-10 { background: rgba(180,30,30,0.35); color: #fff; }
+html.dark-mode #md-context { color: rgba(255,255,255,0.65) !important; }
+html.dark-mode .empty-state h3 { color: #fff; }
+
 /* RESPONSIVE */
 @media(max-width:768px){
   nav{padding:14px 20px}
@@ -368,6 +405,7 @@ nav{
 </div>
 
 <script>
+const isDark = document.documentElement.classList.contains('dark-mode');
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -551,15 +589,15 @@ function renderBarChart(park) {
   park.raw.forEach((v,i)=>{
     const pct = maxRaw>0 ? (v/maxRaw*100) : 0;
     const sc = park.scores[i];
-    const bgColor = sc===0?'rgba(0,0,0,0.05)':
+    const bgColor = sc===0?(isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'):
       sc<=3?'#8ecc6a':sc<=5?'#e8d020':sc<=7?'#f0a88c':'#e06060';
     const isPerm = park.permitMonths[i]===1;
     html+=`
       <div style="display:grid;grid-template-columns:36px 1fr 72px;gap:8px;align-items:center;margin-bottom:5px">
         <div style="font-size:11px;color:var(--muted);text-align:right;font-weight:500">${MONTHS[i]}</div>
-        <div style="background:rgba(255,255,255,0.04);border-radius:4px;height:24px;overflow:hidden;position:relative">
+        <div style="background:${isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'};border-radius:4px;height:24px;overflow:hidden;position:relative">
           <div style="width:${pct}%;height:100%;background:${bgColor};border-radius:4px;transition:width 1s ease;display:flex;align-items:center;padding-right:6px;justify-content:flex-end">
-            <span style="font-size:9px;font-weight:700;color:rgba(30,30,30,0.7);white-space:nowrap">${v>0?fmt(v):''}</span>
+            <span style="font-size:9px;font-weight:700;color:${isDark?'rgba(255,255,255,0.7)':'rgba(30,30,30,0.7)'};white-space:nowrap">${v>0?fmt(v):''}</span>
           </div>
         </div>
         <div style="font-size:11px;color:${isPerm?'var(--rust)':'var(--dim)'}">
