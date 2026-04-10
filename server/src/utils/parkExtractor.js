@@ -126,6 +126,24 @@ const PARK_NAME_TO_CODE = new Map([
   ['lassen',                 { code: 'lavo', lat: 40.493, lon: -121.408 }],
   ['bryce',                  { code: 'brca', lat: 37.593, lon: -112.187 }],
   ['zion',                   { code: 'zion', lat: 37.298, lon: -113.026 }],
+
+  // ── Famous landmarks (map to their parent park) ───────────────────
+  ['going-to-the-sun road',  { code: 'glac', lat: 48.696, lon: -113.718 }],
+  ['going to the sun road',  { code: 'glac', lat: 48.696, lon: -113.718 }],
+  ['logan pass',             { code: 'glac', lat: 48.696, lon: -113.718 }],
+  ['angels landing',         { code: 'zion', lat: 37.298, lon: -113.026 }],
+  ['the narrows',            { code: 'zion', lat: 37.298, lon: -113.026 }],
+  ['half dome',              { code: 'yose', lat: 37.865, lon: -119.538 }],
+  ['mariposa grove',         { code: 'yose', lat: 37.865, lon: -119.538 }],
+  ['mist trail',             { code: 'yose', lat: 37.865, lon: -119.538 }],
+  ['delicate arch',          { code: 'arch', lat: 38.733, lon: -109.592 }],
+  ['old faithful',           { code: 'yell', lat: 44.428, lon: -110.588 }],
+  ['grand prismatic',        { code: 'yell', lat: 44.428, lon: -110.588 }],
+  ['artist point',           { code: 'yell', lat: 44.428, lon: -110.588 }],
+  ['cadillac mountain',      { code: 'acad', lat: 44.409, lon: -68.247  }],
+  ['wizard island',          { code: 'crla', lat: 42.944, lon: -122.109 }],
+  ['bright angel trail',     { code: 'grca', lat: 36.106, lon: -112.113 }],
+  ['skyline drive',          { code: 'shen', lat: 38.488, lon: -78.462  }],
 ]);
 
 // Pre-compute sorted keys (longest first) for greedy matching

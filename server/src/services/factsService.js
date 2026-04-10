@@ -716,7 +716,14 @@ function isTravelRelated(userMessage) {
 function needsWebSearch(userMessage) {
   if (!userMessage) return false;
 
-  // First check: must be travel-related to even consider web search
+  // Trust the classifier: if it identifies any specific category (road, wildfire,
+  // trail, wildlife, events, local-business, or the SKIP buckets), it's clearly a
+  // travel/park-related query. SKIP buckets still short-circuit inside
+  // fetchWebSearchFacts, so this just ensures we don't reject good queries at the gate.
+  const category = classifyQuery(userMessage);
+  if (category !== 'planning') return true;
+
+  // Generic "planning" default — apply the old safety gates to reject off-topic queries
   if (!isTravelRelated(userMessage)) return false;
 
   // Topics where live web data is especially valuable
