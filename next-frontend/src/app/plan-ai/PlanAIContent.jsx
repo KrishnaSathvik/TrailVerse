@@ -27,7 +27,9 @@ const PlanAIContent = ({ tripId }) => {
     showLimitDialog,
     timeUntilReset,
     chatFormData,
+    setChatFormData,
     selectedParkName,
+    setSelectedParkName,
     formData,
     setFormData,
     isPersonalized,
@@ -43,6 +45,8 @@ const PlanAIContent = ({ tripId }) => {
     fromChatHistory
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
+  const [quickFillMessage, setQuickFillMessage] = useState(null);
+  const [hasAppliedQuickFill, setHasAppliedQuickFill] = useState(!!tripId || !!fromChatHistory);
 
   if (isRestoringState || loadingTrip) {
     return (
@@ -154,6 +158,31 @@ const PlanAIContent = ({ tripId }) => {
   const handleQuickFillApply = (data) => {
     setFormData(data);
     setQuickFillOpen(false);
+
+    // Update chatFormData so TripPlannerChat picks up the Quick Fill data
+    setChatFormData(data);
+
+    // Find the park name for the header and AI context
+    const park = allParks?.find(p => p.parkCode === data.parkCode);
+    if (park) {
+      setSelectedParkName(park.fullName);
+    }
+
+    // Build a summary message to auto-send to the AI
+    const parts = [];
+    if (park) parts.push(`**Destination:** ${park.fullName}`);
+    if (data.startDate && data.endDate) parts.push(`**Dates:** ${data.startDate} to ${data.endDate}`);
+    if (data.groupSize) parts.push(`**Group size:** ${data.groupSize}`);
+    if (data.interests?.length) parts.push(`**Interests:** ${data.interests.join(', ')}`);
+    if (data.budget) parts.push(`**Budget:** ${data.budget}`);
+    if (data.fitnessLevel) parts.push(`**Fitness level:** ${data.fitnessLevel}`);
+    if (data.accommodation) parts.push(`**Accommodation:** ${data.accommodation}`);
+
+    const message = hasAppliedQuickFill
+      ? `I've updated my trip preferences:\n${parts.join('\n')}\n\nCan you adjust your suggestions based on these changes?`
+      : `Here are my trip details:\n${parts.join('\n')}\n\nCan you suggest an itinerary based on these preferences?`;
+    setQuickFillMessage(message);
+    setHasAppliedQuickFill(true);
   };
 
   return (
@@ -204,6 +233,8 @@ const PlanAIContent = ({ tripId }) => {
             fromChatHistory={fromChatHistory}
             refreshTrips={refetchUserTrips}
             onOpenQuickFill={() => setQuickFillOpen(true)}
+            quickFillMessage={quickFillMessage}
+            onQuickFillSent={() => setQuickFillMessage(null)}
           />
         </div>
       </main>

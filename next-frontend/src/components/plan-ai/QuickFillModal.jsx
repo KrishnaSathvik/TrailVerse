@@ -81,7 +81,7 @@ const QuickFillModal = ({
                 }}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                Quick Fill
+                Plan My Trip
               </div>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 Add trip details fast
@@ -302,19 +302,25 @@ const QuickFillModal = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {interests.map((interest) => {
                 const isSelected = formData.interests.includes(interest.id);
+                const Icon = interest.icon;
                 return (
-                  <Button
+                  <button
                     key={interest.id}
+                    type="button"
                     onClick={() => toggleInterest(interest.id)}
-                    variant={isSelected ? 'primary' : 'ghost'}
-                    size="md"
-                    className="p-4 text-center flex flex-col"
+                    className="flex flex-col items-center gap-2 rounded-xl px-3 py-4 text-sm font-medium transition-all duration-200"
+                    style={{
+                      backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',
+                      border: isSelected ? '2px solid var(--accent-green)' : '2px solid var(--border)',
+                      color: isSelected ? 'var(--accent-green)' : 'var(--text-secondary)',
+                      boxShadow: isSelected ? '0 0 0 1px rgba(67, 160, 106, 0.2)' : 'none'
+                    }}
                   >
-                    <div className="h-8 w-8 mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-3xl">{interest.icon}</span>
+                    <div className="h-8 w-8 flex items-center justify-center">
+                      {Icon ? <Icon className="h-6 w-6" /> : null}
                     </div>
-                    <div className="text-sm">{interest.label}</div>
-                  </Button>
+                    <span>{interest.label}</span>
+                  </button>
                 );
               })}
             </div>
@@ -340,17 +346,25 @@ const QuickFillModal = ({
                 Budget Level
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {['budget', 'moderate', 'luxury'].map((level) => (
-                  <Button
-                    key={level}
-                    onClick={() => setFormData({ ...formData, budget: level })}
-                    variant={formData.budget === level ? 'primary' : 'ghost'}
-                    size="md"
-                    className="p-4 text-center"
-                  >
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                  </Button>
-                ))}
+                {['budget', 'moderate', 'luxury'].map((level) => {
+                  const isSelected = formData.budget === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, budget: level })}
+                      className="rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200"
+                      style={{
+                        backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',
+                        border: isSelected ? '2px solid var(--accent-green)' : '2px solid var(--border)',
+                        color: isSelected ? 'var(--accent-green)' : 'var(--text-secondary)',
+                        boxShadow: isSelected ? '0 0 0 1px rgba(67, 160, 106, 0.2)' : 'none'
+                      }}
+                    >
+                      {level.charAt(0).toUpperCase() + level.slice(1)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -361,17 +375,25 @@ const QuickFillModal = ({
                 Fitness Level
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {['easy', 'moderate', 'strenuous'].map((level) => (
-                  <Button
-                    key={level}
-                    onClick={() => setFormData({ ...formData, fitnessLevel: level })}
-                    variant={formData.fitnessLevel === level ? 'primary' : 'ghost'}
-                    size="md"
-                    className="p-4 text-center"
-                  >
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                  </Button>
-                ))}
+                {['easy', 'moderate', 'strenuous'].map((level) => {
+                  const isSelected = formData.fitnessLevel === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, fitnessLevel: level })}
+                      className="rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200"
+                      style={{
+                        backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',
+                        border: isSelected ? '2px solid var(--accent-green)' : '2px solid var(--border)',
+                        color: isSelected ? 'var(--accent-green)' : 'var(--text-secondary)',
+                        boxShadow: isSelected ? '0 0 0 1px rgba(67, 160, 106, 0.2)' : 'none'
+                      }}
+                    >
+                      {level.charAt(0).toUpperCase() + level.slice(1)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -382,18 +404,27 @@ const QuickFillModal = ({
                 Accommodation
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {['camping', 'lodging'].map((type) => (
-                  <Button
-                    key={type}
-                    onClick={() => setFormData({ ...formData, accommodation: type })}
-                    variant={formData.accommodation === type ? 'primary' : 'ghost'}
-                    size="md"
-                    icon={type === 'camping' ? Tent : Utensils}
-                    className="p-4 text-center flex flex-col"
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Button>
-                ))}
+                {['camping', 'lodging'].map((type) => {
+                  const isSelected = formData.accommodation === type;
+                  const AccomIcon = type === 'camping' ? Tent : Utensils;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, accommodation: type })}
+                      className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200"
+                      style={{
+                        backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',
+                        border: isSelected ? '2px solid var(--accent-green)' : '2px solid var(--border)',
+                        color: isSelected ? 'var(--accent-green)' : 'var(--text-secondary)',
+                        boxShadow: isSelected ? '0 0 0 1px rgba(67, 160, 106, 0.2)' : 'none'
+                      }}
+                    >
+                      <AccomIcon className="h-4 w-4" />
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

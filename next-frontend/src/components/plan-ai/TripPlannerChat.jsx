@@ -46,7 +46,9 @@ const TripPlannerChat = ({
   suggestText = '',
   refreshTrips = null,
   onOpenQuickFill = null,
-  fromChatHistory = false
+  fromChatHistory = false,
+  quickFillMessage = null,
+  onQuickFillSent = null
 }) => {
   const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
@@ -795,6 +797,14 @@ const TripPlannerChat = ({
       }
     }
   }, [providersLoaded, existingTripId, isStartingFresh, isNewChat, isPersonalized]);
+
+  // Auto-send Quick Fill summary when applied
+  useEffect(() => {
+    if (quickFillMessage && providersLoaded && providers.length > 0 && !isGenerating) {
+      handleSendMessage(quickFillMessage);
+      onQuickFillSent?.();
+    }
+  }, [quickFillMessage, providersLoaded, providers.length]);
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || isGenerating) return;
@@ -2420,8 +2430,11 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                       border: '1px solid var(--border)'
                     }}
                   >
-                    <Edit2 className="h-3.5 w-3.5" />
-                    Quick Fill
+                    {isWelcomeState ? (
+                      <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
+                    ) : (
+                      <><Edit2 className="h-3.5 w-3.5" />Edit Trip Details</>
+                    )}
                   </button>
                 )}
                 {providersLoaded && providers.length > 1 && (
@@ -2500,7 +2513,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
 
             {isWelcomeState && onOpenQuickFill && (
               <p className="mb-2 text-[11px] leading-4 sm:mb-3 sm:text-sm sm:leading-6" style={{ color: 'var(--text-secondary)' }}>
-                Use Quick Fill to add your destination, dates, budget, and interests before you ask for an itinerary.
+                Use Plan My Trip to add your destination, dates, budget, and interests before you ask for an itinerary.
               </p>
             )}
 
