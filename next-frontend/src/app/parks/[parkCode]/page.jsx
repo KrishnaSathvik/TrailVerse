@@ -37,12 +37,12 @@ export async function generateMetadata({ params }) {
   const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
-    title: `${park.fullName} - Complete Guide & Travel Information | TrailVerse`,
+    title: `${park.fullName} – Live Alerts, Crowd Calendar & AI Trip Planner | TrailVerse`,
     description,
     keywords: `${park.fullName}, ${park.states} national park, visit ${park.fullName}, ${park.fullName} guide, ${park.fullName} hiking, ${park.fullName} camping`,
     alternates: { canonical: url },
     openGraph: {
-      title: `${park.fullName} - Complete Guide & Travel Information`,
+      title: `${park.fullName} – Alerts, Crowds & AI Trip Planner`,
       description,
       url,
       siteName: 'TrailVerse',
@@ -70,7 +70,11 @@ export default async function ParkPage({ params }) {
     notFound();
   }
 
-  // Structured data is built from our own server API data (trusted source)
+  const parkSlug = park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+  const parkUrl = `https://www.nationalparksexplorerusa.com/parks/${parkSlug}`;
+
+  // All structured data below is built from our own server API data (trusted NPS source).
+  // Values are server-rendered strings from the NPS API — not user input.
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'TouristAttraction',
@@ -88,9 +92,62 @@ export default async function ParkPage({ params }) {
       latitude: park.latitude,
       longitude: park.longitude,
     },
-    url: `https://www.nationalparksexplorerusa.com/parks/${park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}`,
+    url: parkUrl,
     sameAs: park.url,
   };
+
+  // FAQ schema — dynamic answers from NPS data (trusted source, not user input)
+  const faqItems = [];
+  if (park.states) {
+    faqItems.push({
+      '@type': 'Question',
+      name: `What state is ${park.fullName} in?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${park.fullName} is located in ${park.states}.${park.addresses?.[0]?.city ? ` The nearest city is ${park.addresses[0].city}, ${park.addresses[0].stateCode}.` : ''}`,
+      },
+    });
+  }
+  if (park.latitude && park.longitude) {
+    faqItems.push({
+      '@type': 'Question',
+      name: `Where is ${park.fullName} located?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `${park.fullName} is located at coordinates ${park.latitude}, ${park.longitude} in ${park.states}.${park.directionsInfo ? ` ${park.directionsInfo.substring(0, 200)}` : ''}`,
+      },
+    });
+  }
+  if (park.weatherInfo) {
+    faqItems.push({
+      '@type': 'Question',
+      name: `What is the weather like at ${park.fullName}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: park.weatherInfo.substring(0, 300),
+      },
+    });
+  }
+  if (park.entranceFees?.length > 0) {
+    const fee = park.entranceFees[0];
+    const feeText = fee.cost && fee.cost !== '0.00' && fee.cost !== '0'
+      ? `The ${fee.title || 'standard entrance fee'} for ${park.fullName} is $${fee.cost}.${fee.description ? ` ${fee.description.substring(0, 200)}` : ''}`
+      : `Entrance to ${park.fullName} is free.`;
+    faqItems.push({
+      '@type': 'Question',
+      name: `How much does it cost to visit ${park.fullName}?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: feeText,
+      },
+    });
+  }
+
+  const faqSchema = faqItems.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems,
+  } : null;
 
   return (
     <>
@@ -98,6 +155,12 @@ export default async function ParkPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
       <ParkDetailClient initialData={data} parkCode={parkCode} />
     </>
   );

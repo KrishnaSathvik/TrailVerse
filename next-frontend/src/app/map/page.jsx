@@ -33,5 +33,10 @@ export default function MapPage() {
     );
   }
 
-  return isMobile ? <MobileMapContent /> : <MapContent />;
+  return (
+    <>
+      <h1 className="sr-only">Interactive National Parks Map</h1>
+      {isMobile ? <MobileMapContent /> : <MapContent />}
+    </>
+  );
 }

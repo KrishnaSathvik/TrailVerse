@@ -346,6 +346,32 @@ const ComparePage = () => {
         </div>
       </section>
 
+      {/* Explainer — targets "compare entrance fees parking amenities" queries */}
+      <section className="pb-6 sm:pb-10">
+        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Entrance Fees &amp; Parking</h2>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                See entrance fees, parking costs, and pass options for each park before you buy. Compare included amenities across up to 4 parks at once.
+              </p>
+            </div>
+            <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Crowds &amp; Best Times</h2>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                Compare visitor crowd levels by season, peak hours, and holiday weekends so you can pick the quietest window for your trip.
+              </p>
+            </div>
+            <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Activities &amp; Facilities</h2>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                Compare hiking trails, campgrounds, lodging, visitor centers, and accessibility features side by side for every national park.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
       <section className="pb-24">
         <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">

@@ -6,7 +6,7 @@ import {
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
   Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight,
-  BookOpen, Download, FileText, Ticket
+  BookOpen, Download, FileText, Ticket, TrendingUp
 } from '@components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
@@ -2145,6 +2145,15 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
                   icon={Calendar}
                 >
                   Plan with AI
+                </Button>
+                <Button
+                  onClick={() => router.push(`/compare?park=${encodeURIComponent(park.parkCode)}`)}
+                  variant="ghost"
+                  size="md"
+                  icon={TrendingUp}
+                  className="mt-3"
+                >
+                  Compare with other parks
                 </Button>
               </div>
             </aside>

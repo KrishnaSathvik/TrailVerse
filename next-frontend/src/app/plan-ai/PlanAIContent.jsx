@@ -199,7 +199,7 @@ const PlanAIContent = ({ tripId }) => {
                 Plan AI
               </p>
               <h1 className="mt-1 truncate text-base font-semibold sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
-                {effectiveParkName || 'Trip planner chat'}
+                {effectiveParkName || 'AI National Park Trip Planner'}
               </h1>
             </div>
 
