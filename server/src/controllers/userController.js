@@ -45,8 +45,16 @@ exports.updateProfile = async (req, res, next) => {
     if (firstName !== undefined || lastName !== undefined) {
       user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     }
-    
+
     await user.save();
+
+    // Sync userName on all reviews when name changes
+    if (firstName !== undefined || lastName !== undefined) {
+      await Review.updateMany(
+        { userId: user._id },
+        { $set: { userName: user.name } }
+      );
+    }
     
     console.log('Backend: Profile updated successfully:', { 
       id: user._id, 
