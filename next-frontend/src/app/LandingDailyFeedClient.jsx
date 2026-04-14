@@ -9,30 +9,20 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import dailyFeedService from '@/services/dailyFeedService';
 
 export default function LandingDailyFeedClient() {
+  const today = new Date().toISOString().split('T')[0];
+
   const { data: dailyFeed, isLoading } = useQuery({
-    queryKey: ['landingDailyFeed'],
+    queryKey: ['landingDailyFeed', today],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const cacheKey = `trailverse_landing_feed_${today}`;
-
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) return JSON.parse(cached);
-      } catch {}
-
       const parkData = await dailyFeedService.getParkOfDay().catch(() => null);
       if (!parkData) return null;
 
       const natureFact = await dailyFeedService.getNatureFact(parkData.parkCode, parkData.name).catch(() => null);
-      const result = { parkOfDay: parkData, natureFact };
-
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(result));
-      } catch {}
-
-      return result;
+      return { parkOfDay: parkData, natureFact };
     },
-    staleTime: 24 * 60 * 60 * 1000,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+    refetchOnMount: true,
   });
 
   if (!isLoading && !(dailyFeed?.parkOfDay && dailyFeed?.natureFact)) {
