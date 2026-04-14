@@ -31,6 +31,13 @@ exports.protect = async (req, res, next) => {
       });
     }
 
+    // Fire-and-forget: update lastActiveAt throttled to 5-min intervals
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    User.updateOne(
+      { _id: req.user._id, $or: [{ lastActiveAt: null }, { lastActiveAt: { $lt: fiveMinAgo } }] },
+      { lastActiveAt: new Date() }
+    ).then(() => {}).catch(() => {});
+
     next();
   } catch (error) {
     return res.status(401).json({

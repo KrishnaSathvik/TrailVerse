@@ -4,6 +4,8 @@ const TripPlan = require('../models/TripPlan');
 const Conversation = require('../models/Conversation');
 const Feedback = require('../models/Feedback');
 const AnonymousSession = require('../models/AnonymousSession');
+const SiteSettings = require('../models/SiteSettings');
+const Analytics = require('../models/Analytics');
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
@@ -105,26 +107,58 @@ exports.getAIStats = async (req, res, next) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [totalConversations, recentConversations, totalFeedback, positiveFeedback, topParks] = await Promise.all([
+    const [
+      chatConversations, recentChatConversations,
+      tripPlanConversations, recentTripPlanConversations,
+      totalFeedback, positiveFeedback,
+      chatTopParks, tripTopParks,
+      totalTokensAgg
+    ] = await Promise.all([
+      Conversation.countDocuments(),
+      Conversation.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
       TripPlan.countDocuments(),
       TripPlan.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
       Feedback.countDocuments(),
       Feedback.countDocuments({ feedback: 'up' }),
+      Conversation.aggregate([
+        { $match: { parkCode: { $nin: [null, ''] } } },
+        { $group: { _id: '$parkCode', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 }
+      ]),
       TripPlan.aggregate([
         { $match: { parkCode: { $nin: [null, ''] } } },
         { $group: { _id: '$parkCode', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 5 }
+        { $limit: 10 }
+      ]),
+      Conversation.aggregate([
+        { $group: { _id: null, total: { $sum: '$totalTokens' } } }
       ])
     ]);
 
-    // Average messages per conversation
-    const avgMessages = await TripPlan.aggregate([
-      { $match: { 'conversation.0': { $exists: true } } },
-      { $project: { msgCount: { $size: '$conversation' } } },
+    // Average messages per conversation (from Conversation model which has messages[])
+    const avgMessages = await Conversation.aggregate([
+      { $match: { 'messages.0': { $exists: true } } },
+      { $project: { msgCount: { $size: '$messages' } } },
       { $group: { _id: null, avg: { $avg: '$msgCount' } } }
     ]);
 
+    // Merge top parks from both models
+    const parkMap = {};
+    for (const p of chatTopParks) {
+      parkMap[p._id] = (parkMap[p._id] || 0) + p.count;
+    }
+    for (const p of tripTopParks) {
+      parkMap[p._id] = (parkMap[p._id] || 0) + p.count;
+    }
+    const topParks = Object.entries(parkMap)
+      .map(([parkCode, count]) => ({ parkCode, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const totalConversations = chatConversations + tripPlanConversations;
+    const recentConversations = recentChatConversations + recentTripPlanConversations;
     const satisfactionRate = totalFeedback > 0
       ? Math.round((positiveFeedback / totalFeedback) * 100)
       : null;
@@ -134,10 +168,13 @@ exports.getAIStats = async (req, res, next) => {
       data: {
         totalConversations,
         recentConversations,
+        chatConversations,
+        tripPlanConversations,
         avgMessagesPerChat: avgMessages[0]?.avg ? Math.round(avgMessages[0].avg * 10) / 10 : 0,
         satisfactionRate,
         totalFeedback,
-        topParks: topParks.map(p => ({ parkCode: p._id, count: p.count }))
+        totalTokensUsed: totalTokensAgg[0]?.total || 0,
+        topParks
       }
     });
   } catch (error) {
@@ -517,36 +554,8 @@ exports.bulkActionUsers = async (req, res, next) => {
 // @access  Admin only
 exports.getSettings = async (req, res, next) => {
   try {
-    // For now, return default settings
-    // In a real application, these would be stored in a database
-    const settings = {
-      siteName: 'TrailVerse',
-      siteDescription: 'National Parks Explorer',
-      contactEmail: 'trailverseteam@gmail.com',
-      supportEmail: 'trailverseteam@gmail.com',
-      emailProvider: 'gmail',
-      emailFromName: 'TrailVerse',
-      emailFromAddress: 'trailverseteam@gmail.com',
-      sessionTimeout: 24,
-      maxLoginAttempts: 5,
-      requireEmailVerification: true,
-      enableTwoFactor: false,
-      enableBlog: true,
-      enableEvents: true,
-      enableReviews: true,
-      enableAI: true,
-      enableAnalytics: true,
-      npsApiKey: '',
-      openWeatherApiKey: '',
-      googleAnalyticsId: '',
-      maintenanceMode: false,
-      maintenanceMessage: 'We are currently performing maintenance. Please check back soon.'
-    };
-
-    res.status(200).json({
-      success: true,
-      data: settings
-    });
+    const settings = await SiteSettings.getSettings();
+    res.status(200).json({ success: true, data: settings });
   } catch (error) {
     next(error);
   }
@@ -557,12 +566,11 @@ exports.getSettings = async (req, res, next) => {
 // @access  Admin only
 exports.updateSettings = async (req, res, next) => {
   try {
-    // For now, just return success
-    // In a real application, these would be saved to a database
+    const settings = await SiteSettings.updateSettings(req.body);
     res.status(200).json({
       success: true,
       message: 'Settings updated successfully',
-      data: req.body
+      data: settings
     });
   } catch (error) {
     next(error);
@@ -574,11 +582,11 @@ exports.updateSettings = async (req, res, next) => {
 // @access  Admin only
 exports.resetSettings = async (req, res, next) => {
   try {
-    // For now, just return success
-    // In a real application, these would be reset in the database
+    const settings = await SiteSettings.resetToDefaults();
     res.status(200).json({
       success: true,
-      message: 'Settings reset to defaults'
+      message: 'Settings reset to defaults',
+      data: settings
     });
   } catch (error) {
     next(error);
@@ -590,33 +598,12 @@ exports.resetSettings = async (req, res, next) => {
 // @access  Admin only
 exports.exportSettings = async (req, res, next) => {
   try {
-    const settings = {
-      siteName: 'TrailVerse',
-      siteDescription: 'National Parks Explorer',
-      contactEmail: 'trailverseteam@gmail.com',
-      supportEmail: 'trailverseteam@gmail.com',
-      emailProvider: 'gmail',
-      emailFromName: 'TrailVerse',
-      emailFromAddress: 'trailverseteam@gmail.com',
-      sessionTimeout: 24,
-      maxLoginAttempts: 5,
-      requireEmailVerification: true,
-      enableTwoFactor: false,
-      enableBlog: true,
-      enableEvents: true,
-      enableReviews: true,
-      enableAI: true,
-      enableAnalytics: true,
-      npsApiKey: '',
-      openWeatherApiKey: '',
-      googleAnalyticsId: '',
-      maintenanceMode: false,
-      maintenanceMessage: 'We are currently performing maintenance. Please check back soon.'
-    };
+    const settings = await SiteSettings.getSettings();
+    const { _id, __v, createdAt, updatedAt, ...exportData } = settings;
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename=settings-backup-${new Date().toISOString().split('T')[0]}.json`);
-    res.status(200).json(settings);
+    res.status(200).json(exportData);
   } catch (error) {
     next(error);
   }
@@ -743,6 +730,115 @@ exports.userAction = async (req, res, next) => {
           error: 'Invalid action'
         });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get traffic analytics
+// @route   GET /api/admin/analytics/traffic
+// @access  Admin only
+exports.getTrafficAnalytics = async (req, res, next) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const endDate = new Date();
+
+    const [eventCounts, dailyViews] = await Promise.all([
+      Analytics.getEventCounts(startDate, endDate),
+      Analytics.aggregate([
+        { $match: { eventType: 'page_view', timestamp: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ])
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: { eventCounts, dailyViews }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get popular parks
+// @route   GET /api/admin/analytics/popular-parks
+// @access  Admin only
+exports.getPopularParks = async (req, res, next) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const endDate = new Date();
+
+    const popularParks = await Analytics.getPopularContent(startDate, endDate, 'parks');
+
+    res.status(200).json({
+      success: true,
+      data: popularParks
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get search analytics
+// @route   GET /api/admin/analytics/search
+// @access  Admin only
+exports.getSearchAnalytics = async (req, res, next) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const endDate = new Date();
+
+    const searchAnalytics = await Analytics.getSearchAnalytics(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: searchAnalytics
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get error analytics
+// @route   GET /api/admin/analytics/errors
+// @access  Admin only
+exports.getErrorAnalytics = async (req, res, next) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const endDate = new Date();
+
+    const errorAnalytics = await Analytics.getErrorAnalytics(startDate, endDate);
+
+    res.status(200).json({
+      success: true,
+      data: errorAnalytics
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get AI satisfaction analytics
+// @route   GET /api/admin/analytics/ai-satisfaction
+// @access  Admin only
+exports.getAISatisfaction = async (req, res, next) => {
+  try {
+    const [feedbackAnalytics, poorPerforming] = await Promise.all([
+      Feedback.getFeedbackAnalytics(),
+      Feedback.getPoorPerformingResponses()
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...feedbackAnalytics,
+        poorPerforming
+      }
+    });
   } catch (error) {
     next(error);
   }

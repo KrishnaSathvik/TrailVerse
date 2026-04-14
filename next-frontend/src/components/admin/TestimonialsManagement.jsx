@@ -1,8 +1,10 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useToast } from '../../context/ToastContext';
-import api from '../../services/api';
+import { useToast } from '@/context/ToastContext';
+import api from '@/services/api';
 import {
-  MessageSquare, CheckCircle, XCircle, Star, 
+  MessageSquare, CheckCircle, XCircle, Star,
   Eye, EyeOff, Search, Calendar,
   MapPin, Clock
 } from '@components/icons';
@@ -11,24 +13,21 @@ const TestimonialsManagement = () => {
   const { showToast } = useToast();
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
+  const [filter, setFilter] = useState('all'); // all, pending, approved, featured
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTestimonial, setSelectedTestimonial] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetchTestimonials();
-  }, [filter]);
+  }, []);
 
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      // Fetch all testimonials (including unapproved ones)
-      const response = await api.get('/testimonials?approved=false&limit=100');
-      const approvedResponse = await api.get('/testimonials?approved=true&limit=100');
-      
-      const allTestimonials = [...response.data.data, ...approvedResponse.data.data];
-      setTestimonials(allTestimonials);
+      // Single fetch with no approved filter — gets ALL testimonials
+      const response = await api.get('/testimonials?approved=&limit=200');
+      setTestimonials(response.data.data || []);
     } catch (error) {
       console.error('Error fetching testimonials:', error);
       showToast('Failed to load testimonials', 'error');
@@ -71,40 +70,49 @@ const TestimonialsManagement = () => {
   };
 
   const filteredTestimonials = testimonials.filter(testimonial => {
-    const matchesFilter = 
-      filter === 'all' || 
+    const matchesFilter =
+      filter === 'all' ||
       (filter === 'pending' && !testimonial.approved) ||
       (filter === 'approved' && testimonial.approved) ||
       (filter === 'featured' && testimonial.featured);
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       testimonial.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       testimonial.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (testimonial.parkName && testimonial.parkName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     return matchesFilter && matchesSearch;
   });
 
   const getStatusBadge = (testimonial) => {
     if (testimonial.featured) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Star className="h-3 w-3" />
+        <span
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+          style={{ backgroundColor: 'rgba(234, 179, 8, 0.15)', color: 'var(--text-primary)' }}
+        >
+          <Star className="h-3 w-3" style={{ color: '#eab308' }} />
           Featured
         </span>
       );
     }
     if (testimonial.approved) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3" />
+        <span
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+          style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: 'var(--text-primary)' }}
+        >
+          <CheckCircle className="h-3 w-3" style={{ color: '#22c55e' }} />
           Approved
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-        <Clock className="h-3 w-3" />
+      <span
+        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
+        style={{ backgroundColor: 'rgba(249, 115, 22, 0.15)', color: 'var(--text-primary)' }}
+      >
+        <Clock className="h-3 w-3" style={{ color: '#f97316' }} />
         Pending
       </span>
     );
@@ -114,7 +122,8 @@ const TestimonialsManagement = () => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+        className="h-4 w-4"
+        style={{ color: i < rating ? '#facc15' : 'var(--text-tertiary)' }}
       />
     ));
   };
@@ -171,11 +180,11 @@ const TestimonialsManagement = () => {
             <button
               key={filterType}
               onClick={() => setFilter(filterType)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                filter === filterType
-                  ? 'bg-forest-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition"
+              style={filter === filterType
+                ? { backgroundColor: 'var(--accent-green, #22c55e)', color: 'white' }
+                : { backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+              }
             >
               {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
             </button>
@@ -252,14 +261,16 @@ const TestimonialsManagement = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleApprove(testimonial._id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
+                        style={{ backgroundColor: '#22c55e', color: 'white' }}
                       >
                         <CheckCircle className="h-4 w-4" />
                         Approve
                       </button>
                       <button
                         onClick={() => handleReject(testimonial._id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
+                        style={{ backgroundColor: '#ef4444', color: 'white' }}
                       >
                         <XCircle className="h-4 w-4" />
                         Reject
@@ -269,11 +280,12 @@ const TestimonialsManagement = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleFeature(testimonial._id, testimonial.featured)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium ${
-                          testimonial.featured
-                            ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                            : 'bg-gray-500 text-white hover:bg-gray-600'
-                        }`}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
+                        style={{
+                          backgroundColor: testimonial.featured ? '#eab308' : 'var(--surface-hover)',
+                          color: testimonial.featured ? 'white' : 'var(--text-primary)',
+                          border: testimonial.featured ? 'none' : '1px solid var(--border)'
+                        }}
                       >
                         {testimonial.featured ? (
                           <>
@@ -289,16 +301,17 @@ const TestimonialsManagement = () => {
                       </button>
                     </div>
                   )}
-                  
+
                   <button
                     onClick={() => {
                       setSelectedTestimonial(testimonial);
                       setShowModal(true);
                     }}
-                    className="w-full px-3 py-2 border rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                    className="w-full px-3 py-2 border rounded-lg transition text-sm font-medium"
                     style={{
                       borderColor: 'var(--border)',
-                      color: 'var(--text-primary)'
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--surface)'
                     }}
                   >
                     View Details
@@ -314,7 +327,7 @@ const TestimonialsManagement = () => {
       {showModal && selectedTestimonial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div
-            className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto"
+            className="rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto"
             style={{ backgroundColor: 'var(--surface)' }}
           >
             <div className="p-4 sm:p-6">
@@ -324,9 +337,10 @@ const TestimonialsManagement = () => {
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  className="p-2 rounded-lg transition"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
-                  <XCircle className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+                  <XCircle className="h-5 w-5" />
                 </button>
               </div>
 
@@ -364,7 +378,7 @@ const TestimonialsManagement = () => {
                   <h5 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                     Testimonial Content:
                   </h5>
-                  <p className="text-sm leading-relaxed p-4 rounded-lg" style={{ 
+                  <p className="text-sm leading-relaxed p-4 rounded-lg" style={{
                     backgroundColor: 'var(--bg-primary)',
                     color: 'var(--text-primary)'
                   }}>
@@ -397,7 +411,8 @@ const TestimonialsManagement = () => {
                           handleApprove(selectedTestimonial._id);
                           setShowModal(false);
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition font-medium"
+                        style={{ backgroundColor: '#22c55e', color: 'white' }}
                       >
                         <CheckCircle className="h-4 w-4" />
                         Approve
@@ -407,7 +422,8 @@ const TestimonialsManagement = () => {
                           handleReject(selectedTestimonial._id);
                           setShowModal(false);
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition font-medium"
+                        style={{ backgroundColor: '#ef4444', color: 'white' }}
                       >
                         <XCircle className="h-4 w-4" />
                         Reject
@@ -419,11 +435,12 @@ const TestimonialsManagement = () => {
                         handleFeature(selectedTestimonial._id, selectedTestimonial.featured);
                         setShowModal(false);
                       }}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition font-medium ${
-                        selectedTestimonial.featured
-                          ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                          : 'bg-gray-500 text-white hover:bg-gray-600'
-                      }`}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition font-medium"
+                      style={{
+                        backgroundColor: selectedTestimonial.featured ? '#eab308' : 'var(--surface-hover)',
+                        color: selectedTestimonial.featured ? 'white' : 'var(--text-primary)',
+                        border: selectedTestimonial.featured ? 'none' : '1px solid var(--border)'
+                      }}
                     >
                       {selectedTestimonial.featured ? (
                         <>

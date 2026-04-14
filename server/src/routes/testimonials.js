@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  getTestimonials, 
-  createTestimonial, 
-  updateTestimonial, 
+const {
+  getTestimonials,
+  createTestimonial,
+  updateTestimonial,
   deleteTestimonial,
   approveTestimonial,
-  featureTestimonial
+  featureTestimonial,
+  getTestimonialStats
 } = require('../controllers/testimonialController');
 const { protect, admin } = require('../middleware/auth');
+
+// Admin stats route (must be before /:id routes)
+router.get('/stats', protect, admin, getTestimonialStats);
 
 // Public routes
 router.get('/', getTestimonials);

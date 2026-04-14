@@ -24,9 +24,13 @@ import {
   LogOut,
   Zap,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Sparkle,
+  TrendUp,
+  ThumbsUp,
+  Search,
+  AlertTriangle
 } from '@components/icons';
-import { Sparkle, TrendUp, ThumbsUp } from '@phosphor-icons/react';
 
 const initialStats = {
   totalUsers: 0,
@@ -98,6 +102,10 @@ const AdminDashboard = () => {
   const [userGrowth, setUserGrowth] = useState([]);
   const [aiStats, setAIStats] = useState(null);
   const [anonymousStats, setAnonymousStats] = useState(null);
+  const [trafficData, setTrafficData] = useState(null);
+  const [searchData, setSearchData] = useState(null);
+  const [errorData, setErrorData] = useState(null);
+  const [satisfactionData, setSatisfactionData] = useState(null);
   const postsPerPage = 5;
 
   const fetchData = useCallback(async () => {
@@ -109,7 +117,7 @@ const AdminDashboard = () => {
     let allPosts = [];
 
     try {
-      const [publishedData, draftData, scheduledData, archivedData, testimonialsStats, statsResponse, activityResponse, growthResponse, aiStatsResponse, anonStatsResponse] = await Promise.all([
+      const [publishedData, draftData, scheduledData, archivedData, testimonialsStats, statsResponse, activityResponse, growthResponse, aiStatsResponse, anonStatsResponse, trafficResponse, searchResponse, errorResponse, satisfactionResponse] = await Promise.all([
         blogService.getAllPosts({ status: 'published', limit: 1000 }),
         blogService.getAllPosts({ status: 'draft', limit: 1000 }),
         blogService.getAllPosts({ status: 'scheduled', limit: 1000 }),
@@ -119,7 +127,11 @@ const AdminDashboard = () => {
         api.get('/admin/recent-activity').catch(() => ({ data: { data: [] } })),
         api.get('/admin/user-growth').catch(() => ({ data: { data: [] } })),
         api.get('/admin/ai-stats').catch(() => ({ data: { data: null } })),
-        api.get('/admin/anonymous-stats').catch(() => ({ data: { data: null } }))
+        api.get('/admin/anonymous-stats').catch(() => ({ data: { data: null } })),
+        api.get('/admin/analytics/traffic').catch(() => ({ data: { data: null } })),
+        api.get('/admin/analytics/search').catch(() => ({ data: { data: null } })),
+        api.get('/admin/analytics/errors').catch(() => ({ data: { data: null } })),
+        api.get('/admin/analytics/ai-satisfaction').catch(() => ({ data: { data: null } }))
       ]);
 
       allPosts = [
@@ -154,6 +166,10 @@ const AdminDashboard = () => {
       setUserGrowth(Array.isArray(growthResponse.data?.data) ? growthResponse.data.data : []);
       setAIStats(aiStatsResponse.data?.data || null);
       setAnonymousStats(anonStatsResponse.data?.data || null);
+      setTrafficData(trafficResponse.data?.data || null);
+      setSearchData(searchResponse.data?.data || null);
+      setErrorData(errorResponse.data?.data || null);
+      setSatisfactionData(satisfactionResponse.data?.data || null);
     } catch (error) {
       setPosts(allPosts);
       setStats((previous) => ({
@@ -545,6 +561,195 @@ const AdminDashboard = () => {
                         </span>
                       ))}
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Platform Analytics */}
+            {(trafficData || searchData || errorData || satisfactionData) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {/* Traffic Overview */}
+                {trafficData && (
+                  <div
+                    className="rounded-2xl p-5 backdrop-blur"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)',
+                      boxShadow: 'var(--shadow)'
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-11 w-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <Activity className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Traffic Overview</h3>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Page views &amp; events</p>
+                      </div>
+                    </div>
+                    {trafficData.dailyViews?.length > 0 ? (
+                      <>
+                        <Sparkline data={trafficData.dailyViews} height={48} color="#3b82f6" />
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                            <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                              {trafficData.dailyViews.reduce((s, d) => s + d.count, 0)}
+                            </div>
+                            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Page Views</div>
+                          </div>
+                          <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                            <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                              {trafficData.eventCounts?.length || 0}
+                            </div>
+                            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Event Types</div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No traffic data yet</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Top Searches */}
+                {searchData && (
+                  <div
+                    className="rounded-2xl p-5 backdrop-blur"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)',
+                      boxShadow: 'var(--shadow)'
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-11 w-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <Search className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Top Searches</h3>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>What users search for</p>
+                      </div>
+                    </div>
+                    {Array.isArray(searchData) && searchData.length > 0 ? (
+                      <div className="space-y-2">
+                        {searchData.slice(0, 5).map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                            <span className="text-sm truncate mr-2" style={{ color: 'var(--text-primary)' }}>
+                              {item.searchTerm}
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)' }}>
+                              {item.count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No search data yet</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Error Tracking */}
+                {errorData && (
+                  <div
+                    className="rounded-2xl p-5 backdrop-blur"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)',
+                      boxShadow: 'var(--shadow)'
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-11 w-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <AlertTriangle className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Error Tracking</h3>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Recent errors</p>
+                      </div>
+                    </div>
+                    {Array.isArray(errorData) && errorData.length > 0 ? (
+                      <div className="space-y-2">
+                        {errorData.slice(0, 5).map((item, idx) => (
+                          <div key={idx} className="p-2 rounded-lg" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium truncate mr-2" style={{ color: 'var(--text-primary)' }}>
+                                {item.errorCode || 'Unknown'}
+                              </span>
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
+                                {item.count}x
+                              </span>
+                            </div>
+                            <p className="text-xs mt-1 truncate" style={{ color: 'var(--text-secondary)' }}>
+                              {item.errorMessage || 'No message'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-center py-4" style={{ color: 'var(--text-secondary)' }}>No errors tracked</p>
+                    )}
+                  </div>
+                )}
+
+                {/* AI Satisfaction */}
+                {satisfactionData && (
+                  <div
+                    className="rounded-2xl p-5 backdrop-blur"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)',
+                      boxShadow: 'var(--shadow)'
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-11 w-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <ThumbsUp className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>AI Satisfaction</h3>
+                        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Feedback breakdown</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div className="p-2 rounded-lg text-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{satisfactionData.totalFeedback || 0}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Total</div>
+                      </div>
+                      <div className="p-2 rounded-lg text-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold text-green-400">{satisfactionData.positiveFeedback || 0}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Positive</div>
+                      </div>
+                      <div className="p-2 rounded-lg text-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-lg font-bold text-red-400">{satisfactionData.negativeFeedback || 0}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Negative</div>
+                      </div>
+                    </div>
+                    {satisfactionData.satisfactionRate != null && (
+                      <div className="p-3 rounded-lg text-center" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                        <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {Math.round(satisfactionData.satisfactionRate * 100)}%
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Satisfaction Rate</div>
+                      </div>
+                    )}
+                    {satisfactionData.poorPerforming?.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Low-Performing Contexts</p>
+                        <div className="flex flex-wrap gap-1">
+                          {satisfactionData.poorPerforming.slice(0, 3).map((p, idx) => (
+                            <span key={idx} className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+                              {p._id?.parkCode || p._id?.aiProvider || 'unknown'} ({Math.round(p.satisfactionRate * 100)}%)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

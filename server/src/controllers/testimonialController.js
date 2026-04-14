@@ -121,6 +121,27 @@ exports.deleteTestimonial = async (req, res, next) => {
   }
 };
 
+// @desc    Get testimonial stats
+// @route   GET /api/testimonials/stats
+// @access  Private/Admin
+exports.getTestimonialStats = async (req, res, next) => {
+  try {
+    const [total, pending, approved, featured] = await Promise.all([
+      Testimonial.countDocuments(),
+      Testimonial.countDocuments({ approved: false }),
+      Testimonial.countDocuments({ approved: true }),
+      Testimonial.countDocuments({ featured: true })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: { total, pending, approved, featured }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Approve testimonial
 // @route   PUT /api/testimonials/:id/approve
 // @access  Private/Admin

@@ -145,6 +145,10 @@ const userSchema = new mongoose.Schema({
       default: 0
     }
   },
+  lastActiveAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -158,6 +162,7 @@ userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
 // Note: email index is already created by unique: true in schema
 userSchema.index({ 'savedParks.parkCode': 1 });
+userSchema.index({ lastActiveAt: -1 });
 
 // Encrypt password before saving
 userSchema.pre('save', async function(next) {

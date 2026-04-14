@@ -250,7 +250,8 @@ const BlogPostForm = ({ mode, postId }) => {
           featured: post.featured || false,
           status: post.status || 'draft',
           scheduledAt: post.scheduledAt ? new Date(post.scheduledAt).toISOString().slice(0, 16) : '',
-          isScheduled: Boolean(post.scheduledAt)
+          isScheduled: Boolean(post.scheduledAt),
+          seoSchema: post.seoSchema || ''
         };
 
         setFormData(nextValue);

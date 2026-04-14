@@ -14,7 +14,12 @@ const {
   getSettings,
   updateSettings,
   resetSettings,
-  exportSettings
+  exportSettings,
+  getTrafficAnalytics,
+  getPopularParks,
+  getSearchAnalytics,
+  getErrorAnalytics,
+  getAISatisfaction
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -97,5 +102,12 @@ router.post('/settings/reset', resetSettings);
 // @desc    Export admin settings
 // @access  Admin only
 router.get('/settings/export', exportSettings);
+
+// Analytics routes
+router.get('/analytics/traffic', getTrafficAnalytics);
+router.get('/analytics/popular-parks', getPopularParks);
+router.get('/analytics/search', getSearchAnalytics);
+router.get('/analytics/errors', getErrorAnalytics);
+router.get('/analytics/ai-satisfaction', getAISatisfaction);
 
 module.exports = router;

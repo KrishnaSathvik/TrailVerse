@@ -125,6 +125,10 @@ exports.login = async (req, res, next) => {
     // Generate token with remember me option
     const token = generateToken(user._id, rememberMe);
 
+    // Update last active timestamp on login
+    user.lastActiveAt = new Date();
+    await user.save();
+
     res.status(200).json({
       success: true,
       data: {

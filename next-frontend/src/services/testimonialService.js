@@ -125,26 +125,28 @@ class TestimonialService {
    */
   async getTestimonialsStats() {
     try {
-      const [pending, approved, featured] = await Promise.all([
-        this.getPendingTestimonials({ limit: 1 }),
-        this.getApprovedTestimonials({ limit: 1 }),
-        this.getFeaturedTestimonials({ limit: 1 })
-      ]);
-
-      return {
-        total: (pending.count || 0) + (approved.count || 0),
-        pending: pending.count || 0,
-        approved: approved.count || 0,
-        featured: featured.count || 0
-      };
+      const result = await enhancedApi.get('/testimonials/stats', {}, {
+        cacheType: 'testimonialStats',
+        ttl: 2 * 60 * 1000
+      });
+      return result.data || { total: 0, pending: 0, approved: 0, featured: 0 };
     } catch (error) {
-      console.error('Error fetching testimonials stats:', error);
-      return {
-        total: 0,
-        pending: 0,
-        approved: 0,
-        featured: 0
-      };
+      // Fallback to old logic if endpoint unavailable
+      try {
+        const [pending, approved, featured] = await Promise.all([
+          this.getPendingTestimonials({ limit: 1 }),
+          this.getApprovedTestimonials({ limit: 1 }),
+          this.getFeaturedTestimonials({ limit: 1 })
+        ]);
+        return {
+          total: (pending.count || 0) + (approved.count || 0),
+          pending: pending.count || 0,
+          approved: approved.count || 0,
+          featured: featured.count || 0
+        };
+      } catch {
+        return { total: 0, pending: 0, approved: 0, featured: 0 };
+      }
     }
   }
 

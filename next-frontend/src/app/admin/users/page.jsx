@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, Users, Search,
@@ -17,6 +17,8 @@ const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimerRef = useRef(null);
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -31,9 +33,16 @@ const AdminUsersPage = () => {
 
   const usersPerPage = 20;
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, searchTerm, filterRole, filterStatus]);
+  }, [currentPage, debouncedSearch, filterRole, filterStatus]);
 
   const fetchUsers = async () => {
     try {
@@ -41,7 +50,7 @@ const AdminUsersPage = () => {
       const params = new URLSearchParams({
         page: currentPage,
         limit: usersPerPage,
-        search: searchTerm,
+        search: debouncedSearch,
         role: filterRole !== 'all' ? filterRole : '',
         status: filterStatus !== 'all' ? filterStatus : ''
       });
@@ -60,8 +69,14 @@ const AdminUsersPage = () => {
   };
 
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value); // Update UI immediately
     setCurrentPage(1);
+    // Debounce the actual fetch
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+    }, 300);
   };
 
   const handleFilterChange = (type, value) => {
