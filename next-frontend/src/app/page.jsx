@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import LandingSearchClient from './LandingSearchClient';
@@ -36,18 +37,16 @@ export default async function LandingPage() {
 
       <main>
         <section className="relative z-30 w-full overflow-x-hidden overflow-y-visible" style={{ minHeight: 'calc(100dvh - 64px)' }}>
-          <div
-            className="absolute inset-0 w-full bg-cover bg-no-repeat"
-            style={{
-              backgroundImage: 'url(/background23.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center 40%',
-              width: '100vw',
-              left: '50%',
-              marginLeft: '-50vw',
-            }}
+          <Image
+            src="/background23.png"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+            style={{ objectPosition: 'center 25%' }}
+            sizes="100vw"
           />
-          <div className="absolute inset-0 w-full bg-black/50" style={{ width: '100vw', left: '50%', marginLeft: '-50vw' }} />
+          <div className="absolute inset-0 z-[1] bg-black/50" />
 
           <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-10 xl:px-12 pt-[2.75rem] sm:pt-32 lg:pt-40 pb-20 sm:pb-32 lg:pb-40">
             <div className="w-full max-w-6xl mx-auto text-center">
