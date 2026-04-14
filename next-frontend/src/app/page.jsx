@@ -47,7 +47,7 @@ export default async function LandingPage() {
               marginLeft: '-50vw',
             }}
           />
-          <div className="absolute inset-0 w-full" style={{ width: '100vw', left: '50%', marginLeft: '-50vw', background: 'transparent' }} />
+          <div className="absolute inset-0 w-full bg-black/50" style={{ width: '100vw', left: '50%', marginLeft: '-50vw' }} />
 
           <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-10 xl:px-12 pt-[2.75rem] sm:pt-32 lg:pt-40 pb-20 sm:pb-32 lg:pb-40">
             <div className="w-full max-w-6xl mx-auto text-center">
