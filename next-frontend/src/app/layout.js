@@ -3,6 +3,13 @@ import "./globals.css";
 import Script from "next/script";
 import Providers from "../components/Providers";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata = {
   title: "TrailVerse — Explore America's 470+ National Parks & Sites",
   applicationName: "TrailVerse",

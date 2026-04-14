@@ -5,9 +5,9 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, X, LogOut, Sparkles } from '@components/icons';
+import { Menu, X, LogOut } from '@components/icons';
 import ThemeSwitcher from './ThemeSwitcher';
-import Button from './Button';
+
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -249,39 +249,7 @@ const Header = () => {
                     <span>Logout</span>
                   </button>
                 </div>
-              ) : (
-                <div
-                  className="grid gap-2 rounded-2xl border p-2"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderColor: 'var(--border)'
-                  }}
-                >
-                  <Button
-                    onClick={() => {
-                      closeMobileMenu();
-                      router.push('/login');
-                    }}
-                    variant="ghost"
-                    size="md"
-                    className="w-full justify-center"
-                  >
-                    Sign in
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      closeMobileMenu();
-                      router.push('/signup');
-                    }}
-                    variant="primary"
-                    size="md"
-                    icon={Sparkles}
-                    className="w-full justify-center"
-                  >
-                    Get started
-                  </Button>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         </aside>
@@ -393,27 +361,7 @@ const Header = () => {
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-sm font-medium transition"
-                  style={{ color: 'var(--text-secondary)' }}
-                  onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
-                  onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
-                >
-                  Sign in
-                </Link>
-                <Button
-                  onClick={() => router.push('/signup')}
-                  variant="secondary"
-                  size="sm"
-                  icon={Sparkles}
-                >
-                  Get started
-                </Button>
-              </>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile menu button */}

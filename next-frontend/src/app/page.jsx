@@ -41,36 +41,36 @@ export default async function LandingPage() {
             style={{
               backgroundImage: 'url(/background23.png)',
               backgroundSize: 'cover',
-              backgroundPosition: 'center 25%',
+              backgroundPosition: 'center 40%',
               width: '100vw',
               left: '50%',
               marginLeft: '-50vw',
             }}
           />
-          <div className="absolute inset-0 w-full bg-black/50" style={{ width: '100vw', left: '50%', marginLeft: '-50vw' }} />
+          <div className="absolute inset-0 w-full" style={{ width: '100vw', left: '50%', marginLeft: '-50vw', background: 'transparent' }} />
 
           <div className="relative z-10 w-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-10 xl:px-12 pt-[2.75rem] sm:pt-32 lg:pt-40 pb-20 sm:pb-32 lg:pb-40">
             <div className="w-full max-w-6xl mx-auto text-center">
               <div className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 backdrop-blur-md mb-8 sm:mb-10 shadow-lg bg-black/30 border border-white/10">
                 <IconGlyph name="Route" className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
-                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90">470+ Parks. One Platform.</span>
+                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>470+ Parks. One Platform.</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 text-white w-full text-center drop-shadow-xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '0.95' }}>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '0.95', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
                 Discover America&apos;s <br className="hidden sm:block" />
-                <span style={{ color: 'var(--accent-green)', textShadow: '0 0 30px rgba(16, 185, 129, 0.3)' }}>National Parks.</span>
+                <span style={{ color: 'var(--accent-green)', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>National Parks.</span>
               </h1>
 
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-white/90 max-w-3xl mx-auto mb-2">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-white max-w-3xl mx-auto mb-2" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
                 Explore 470+ parks and sites with real-time weather, interactive maps, community reviews, and smart trip planning.
               </p>
-              <p className="text-base sm:text-lg lg:text-xl font-medium text-white/70 max-w-3xl mx-auto mb-10 sm:mb-12">
+              <p className="text-base sm:text-lg lg:text-xl font-medium text-white/90 max-w-3xl mx-auto mb-10 sm:mb-12" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
                 Your next adventure starts here.
               </p>
 
               <LandingSearchClient parks={allParks} />
 
-              <p className="text-sm sm:text-base text-white/70 font-medium mb-4">
+              <p className="text-sm sm:text-base text-white/90 font-medium mb-4" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
                 Start exploring now — browse every park, check live weather, compare destinations, and plan your next trip.
               </p>
 
