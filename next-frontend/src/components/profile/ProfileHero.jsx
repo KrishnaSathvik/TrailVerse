@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, MapPin, User } from '@components/icons';
+import { Mail, MapPin, Globe, User } from '@components/icons';
 import Button from '../common/Button';
 import UnifiedAvatarSelector from './UnifiedAvatarSelector';
 
@@ -63,8 +63,8 @@ const ProfileHero = ({
               )}
             </div>
 
-            {!isChangingAvatar && (
-              <div className="hidden lg:flex">
+            <div className="hidden lg:flex lg:flex-col lg:items-center lg:gap-4">
+              {!isChangingAvatar ? (
                 <Button
                   onClick={onChangeAvatarStart}
                   variant="secondary"
@@ -73,8 +73,20 @@ const ProfileHero = ({
                 >
                   Change Avatar
                 </Button>
-              </div>
-            )}
+              ) : (
+                <div className="w-[26rem] space-y-4">
+                  <UnifiedAvatarSelector
+                    user={user}
+                    currentAvatar={profileData.avatar}
+                    onAvatarChange={onAvatarChange}
+                    onSave={onSaveAvatar}
+                    onCancel={onCancelAvatarChange}
+                    showGenerated={true}
+                    showUpload={true}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="min-w-0 flex-1">
@@ -118,6 +130,24 @@ const ProfileHero = ({
                   <MapPin className="h-4 w-4 flex-shrink-0" />
                   <span>{profileData.location}</span>
                 </div>
+              )}
+              {profileData.website && (
+                <a
+                  href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  <Globe className="h-4 w-4 flex-shrink-0" />
+                  <span className="break-all sm:break-normal">
+                    {profileData.website.replace(/^https?:\/\//, '')}
+                  </span>
+                </a>
               )}
             </div>
 

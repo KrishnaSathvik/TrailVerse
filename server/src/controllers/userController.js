@@ -29,9 +29,9 @@ exports.updateProfile = async (req, res, next) => {
     
     const user = await User.findById(req.user._id);
     
-    // Update basic fields
-    if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
+    // Update basic fields (use !== undefined so empty strings are accepted)
+    if (firstName !== undefined) user.firstName = firstName;
+    if (lastName !== undefined) user.lastName = lastName;
     if (email) user.email = email;
     
     // Update additional profile fields
@@ -42,7 +42,7 @@ exports.updateProfile = async (req, res, next) => {
     if (avatar !== undefined) user.avatar = avatar;
     
     // Update the combined name field for backward compatibility
-    if (firstName || lastName) {
+    if (firstName !== undefined || lastName !== undefined) {
       user.name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     }
     

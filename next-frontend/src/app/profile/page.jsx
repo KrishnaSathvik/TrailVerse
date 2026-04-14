@@ -367,10 +367,13 @@ const ProfilePage = () => {
 
 
 
-  const loadProfileData = useCallback(async () => {
+  const loadProfileData = useCallback(async (force = false) => {
+    // Never overwrite user edits while they're typing
+    if (isEditing && !force) return;
+
     // Debounce: Don't make API calls more than once every 5 seconds
     const now = Date.now();
-    if (now - lastLoadTime < 5000) {
+    if (!force && now - lastLoadTime < 5000) {
       return;
     }
 
@@ -428,7 +431,7 @@ const ProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [lastLoadTime, profileData.avatar, showToast, user, userStats]);
+  }, [isEditing, lastLoadTime, profileData.avatar, showToast, user, userStats]);
 
   useEffect(() => {
     // Wait for auth to finish validating before deciding to redirect
@@ -899,8 +902,9 @@ const ProfilePage = () => {
 
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
-    // Reset form data here if needed
-  }, []);
+    // Reload profile data from server to discard unsaved edits
+    loadProfileData(true);
+  }, [loadProfileData]);
 
   const handleTabChange = useCallback((tabId) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -1137,7 +1141,7 @@ const ProfilePage = () => {
                           <input
                             type="text"
                             value={profileData.firstName}
-                            onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
                             disabled={!isEditing}
                             placeholder="Enter your first name"
                             className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-green-500/50"
@@ -1158,7 +1162,7 @@ const ProfilePage = () => {
                           <input
                             type="text"
                             value={profileData.lastName}
-                            onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                            onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
                             disabled={!isEditing}
                             placeholder="Enter your last name"
                             className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-green-500/50"
@@ -1194,7 +1198,7 @@ const ProfilePage = () => {
                         <input
                           type="email"
                           value={profileData.email}
-                          onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                           disabled={!isEditing}
                           className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
                           style={{
@@ -1216,7 +1220,7 @@ const ProfilePage = () => {
                         <input
                           type="tel"
                           value={profileData.phone}
-                          onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
                           disabled={!isEditing}
                           placeholder="Enter your phone number"
                           className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
@@ -1239,7 +1243,7 @@ const ProfilePage = () => {
                         <input
                           type="text"
                           value={profileData.location}
-                          onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
                           disabled={!isEditing}
                           placeholder="Enter your location (e.g., New York, NY)"
                           className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-blue-500/50"
@@ -1274,7 +1278,7 @@ const ProfilePage = () => {
                         <input
                           type="url"
                           value={profileData.website}
-                          onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, website: e.target.value }))}
                           disabled={!isEditing}
                           placeholder="Enter your website URL"
                           className="w-full px-4 py-4 rounded-xl outline-none transition-all duration-200 disabled:opacity-60 focus:ring-2 focus:ring-orange-500/50"
@@ -1296,7 +1300,7 @@ const ProfilePage = () => {
                         </label>
                         <textarea
                           value={profileData.bio}
-                          onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
                           disabled={!isEditing}
                           placeholder="Tell us about yourself and your love for national parks..."
                           rows={5}
