@@ -78,7 +78,7 @@ const ReviewSection = ({ parkCode, parkName, reviews = [] }) => {
             </h3>
             <div className="flex items-center mt-1">
               <div className="flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                <Star className="h-4 w-4 text-yellow-400" weight="fill" />
                 <span className="ml-1 text-sm font-medium text-gray-900">
                   {averageRating}
                 </span>
@@ -164,9 +164,10 @@ const ReviewSection = ({ parkCode, parkName, reviews = [] }) => {
                               key={star}
                               className={`h-4 w-4 ${
                                 star <= review.rating
-                                  ? 'text-yellow-400 fill-current'
+                                  ? 'text-yellow-400'
                                   : 'text-gray-300'
                               }`}
+                              weight={star <= review.rating ? 'fill' : 'regular'}
                             />
                           ))}
                         </div>

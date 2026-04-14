@@ -213,9 +213,10 @@ const ReviewFormWithImages = ({
                 <Star
                   className={`h-8 w-8 ${
                     star <= rating
-                      ? 'text-yellow-400 fill-current'
+                      ? 'text-yellow-400'
                       : 'text-gray-300 hover:text-yellow-300'
                   }`}
+                  weight={star <= rating ? 'fill' : 'regular'}
                 />
               </button>
             ))}

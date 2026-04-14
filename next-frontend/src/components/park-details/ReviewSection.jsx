@@ -410,8 +410,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
             <Star
               key={i}
               className="h-6 w-6"
+              weight={i < Math.floor(averageRating) ? 'fill' : 'regular'}
               style={{
-                fill: i < Math.floor(averageRating) ? '#facc15' : '#9ca3af',
                 color: i < Math.floor(averageRating) ? '#facc15' : '#9ca3af'
               }}
             />
@@ -463,8 +463,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
                     >
                       <Star
                         className="h-8 w-8 transition-all drop-shadow-sm"
+                        weight={isActive ? 'fill' : 'regular'}
                         style={{
-                          fill: isActive ? '#facc15' : '#9ca3af',
                           color: isActive ? '#facc15' : '#9ca3af'
                         }}
                       />
@@ -727,8 +727,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
                           >
                             <Star
                               className="h-8 w-8 transition-all drop-shadow-sm"
+                              weight={isActive ? 'fill' : 'regular'}
                               style={{
-                                fill: isActive ? '#facc15' : '#9ca3af',
                                 color: isActive ? '#facc15' : '#9ca3af'
                               }}
                             />
@@ -943,8 +943,8 @@ const ReviewSection = ({ parkCode, parkName }) => {
                               <Star
                                 key={i}
                                 className="h-4 w-4"
+                                weight={i < review.rating ? 'fill' : 'regular'}
                                 style={{
-                                  fill: i < review.rating ? '#facc15' : '#9ca3af',
                                   color: i < review.rating ? '#facc15' : '#9ca3af'
                                 }}
                               />

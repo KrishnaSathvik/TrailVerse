@@ -1991,10 +1991,15 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
                   <MapPinCheck className="h-5 w-5" />
                   Around This Park
                 </h3>
-                <p className="text-sm mb-4"
+                <p className="text-sm mb-2"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   Open nearby essentials in Google Maps without leaving your planning flow.
+                </p>
+                <p className="text-xs mb-4"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  Results are from Google Maps and may not be up to date — especially in remote areas. Always verify hours, availability, and road conditions before heading out.
                 </p>
 
                 <div className="space-y-3">
