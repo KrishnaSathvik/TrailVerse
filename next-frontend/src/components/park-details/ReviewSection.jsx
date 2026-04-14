@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Star, ThumbsUp, MoreVertical, Plus, MessageSquare, 
+import {
+  Star, ThumbsUp, MoreVertical, Plus, MessageSquare,
   Camera, X, Upload, AlertCircle, Loader2, Edit, Trash2
 } from '@components/icons';
 import { useQueryClient } from '@tanstack/react-query';
+import PhotoLightbox from '../common/PhotoLightbox';
 import reviewService from '../../services/reviewService';
 import imageUploadService from '../../services/imageUploadService';
 import { useAuth } from '../../context/AuthContext';
@@ -49,6 +50,21 @@ const ReviewSection = ({ parkCode, parkName }) => {
   const [imageErrors, setImageErrors] = useState([]);
   const maxImages = 5;
   const maxFileSize = 10 * 1024 * 1024; // 10MB
+
+  // Lightbox state for review images
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = (images, index) => {
+    const formatted = images.map((img, i) => ({
+      url: typeof img === 'string' ? img : (img.url || img),
+      altText: typeof img === 'string' ? `Review image ${i + 1}` : (img.caption || `Review image ${i + 1}`)
+    }));
+    setLightboxImages(formatted);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   useEffect(() => {
     fetchReviews();
@@ -1017,19 +1033,23 @@ const ReviewSection = ({ parkCode, parkName }) => {
               {/* Review Images - only show when not editing */}
               {editingReviewId !== review._id && review.photos && review.photos.length > 0 && (
                 <div className="mb-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {review.photos.slice(0, 6).map((photo, index) => (
-                      <div key={index} className="relative group cursor-pointer">
+                      <div
+                        key={index}
+                        className="relative group cursor-pointer overflow-hidden rounded-lg border"
+                        style={{ borderColor: 'var(--border)' }}
+                        onClick={() => openLightbox(review.photos, index)}
+                      >
                         <img
                           src={photo.url || photo}
                           alt={photo.caption || `Review image ${index + 1}`}
-                          className="w-full h-20 object-cover rounded-lg border"
-                          style={{ borderColor: 'var(--border)' }}
+                          className="w-full aspect-square object-cover transition-transform duration-200 group-hover:scale-105"
                           loading="lazy"
                         />
                         {index === 5 && review.photos.length > 6 && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                            <span className="text-white text-xs font-medium">
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
                               +{review.photos.length - 6} more
                             </span>
                           </div>
@@ -1041,19 +1061,23 @@ const ReviewSection = ({ parkCode, parkName }) => {
               )}
               {editingReviewId !== review._id && review.images && review.images.length > 0 && !review.photos && (
                 <div className="mb-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                     {review.images.slice(0, 6).map((imageUrl, index) => (
-                      <div key={index} className="relative group cursor-pointer">
+                      <div
+                        key={index}
+                        className="relative group cursor-pointer overflow-hidden rounded-lg border"
+                        style={{ borderColor: 'var(--border)' }}
+                        onClick={() => openLightbox(review.images, index)}
+                      >
                         <img
                           src={imageUrl}
                           alt={`Review image ${index + 1}`}
-                          className="w-full h-20 object-cover rounded-lg border"
-                          style={{ borderColor: 'var(--border)' }}
+                          className="w-full aspect-square object-cover transition-transform duration-200 group-hover:scale-105"
                           loading="lazy"
                         />
                         {index === 5 && review.images.length > 6 && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                            <span className="text-white text-xs font-medium">
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
                               +{review.images.length - 6} more
                             </span>
                           </div>
@@ -1107,6 +1131,15 @@ const ReviewSection = ({ parkCode, parkName }) => {
             Be the first to share your experience!
           </p>
         </div>
+      )}
+
+      {/* Review Image Lightbox */}
+      {lightboxOpen && lightboxImages.length > 0 && (
+        <PhotoLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </div>
   );

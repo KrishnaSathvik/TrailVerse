@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   UserCircle as PhUserCircle,
@@ -49,6 +49,8 @@ const ProfilePage = () => {
   const { user, isAuthenticated, userDataLoaded, updateUser } = useAuth();
   const { showToast } = useToast();
   const { subscribe, unsubscribe, subscribeToProfile } = useWebSocket();
+  // Track when a save is in-progress to suppress the WebSocket echo toast
+  const isSavingRef = useRef(false);
   const { favorites, removeFavorite, loading: favoritesLoading } = useFavorites();
   const { visitedParks, removeVisited, loading: visitedParksLoading } = useVisitedParks();
   const {
@@ -87,6 +89,10 @@ const ProfilePage = () => {
     const handleProfileUpdated = (data) => {
       console.log('[Real-Time] Profile updated:', data);
       if (data.userId === user._id || data.userId === user.id) {
+        // If this session triggered the save, skip — the save handler
+        // already updates state and shows a success toast.
+        if (isSavingRef.current) return;
+
         // Update local state with new avatar
         updateUser({
           avatar: data.avatar,
@@ -847,6 +853,7 @@ const ProfilePage = () => {
   const handleSaveProfile = useCallback(async () => {
     try {
       setLoading(true);
+      isSavingRef.current = true;
 
       // Prepare profile data for API
     const updateData = {
@@ -884,6 +891,9 @@ const ProfilePage = () => {
       showToast('Failed to update profile. Please try again.', 'error');
     } finally {
       setLoading(false);
+      // Delay clearing the flag so the WebSocket echo (which arrives async)
+      // is still suppressed even if it arrives slightly after the response.
+      setTimeout(() => { isSavingRef.current = false; }, 2000);
     }
   }, [profileData, updateUser, showToast]);
 

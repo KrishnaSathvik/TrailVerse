@@ -486,6 +486,9 @@ async function sendBlogNotifications(post) {
   }
 }
 
+// Export for use by schedulerService
+exports.sendBlogNotifications = sendBlogNotifications;
+
 // @desc    Like/Unlike a blog post
 // @route   POST /api/blogs/:id/like
 // @access  Public (optional auth)

@@ -31,9 +31,8 @@ export default function useParkMapState(allParks) {
         setSearchQuery(parsedState.searchQuery);
       }
 
-      if (parsedState.selectedParkCode) {
-        setSelectedParkCode(parsedState.selectedParkCode);
-      }
+      // Don't restore selectedParkCode — the info card should not persist
+      // across navigation. Map position and search are fine to restore.
 
       if (parsedState.mapCenter?.lat && parsedState.mapCenter?.lng) {
         setMapCenter(parsedState.mapCenter);
@@ -55,14 +54,13 @@ export default function useParkMapState(allParks) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
         searchQuery,
-        selectedParkCode,
         mapCenter,
         mapZoom,
       }));
     } catch (error) {
       console.error('Failed to persist map state:', error);
     }
-  }, [hasRestored, mapCenter, mapZoom, searchQuery, selectedParkCode]);
+  }, [hasRestored, mapCenter, mapZoom, searchQuery]);
 
   useEffect(() => {
     if (!hasRestored || !Array.isArray(allParks) || allParks.length === 0) return;
@@ -70,7 +68,7 @@ export default function useParkMapState(allParks) {
     const requestedParkCode = searchParams.get('park');
     if (!requestedParkCode) return;
 
-    const matchingPark = allParks.find((park) => park.parkCode === requestedParkCode);
+    const matchingPark = allParks.find((park) => park.parkCode?.toLowerCase() === requestedParkCode.toLowerCase());
     if (!matchingPark) return;
 
     setSelectedParkCode(matchingPark.parkCode);
@@ -118,7 +116,7 @@ export default function useParkMapState(allParks) {
   });
 
   const suggestions = normalizedQuery ? results.slice(0, 8) : [];
-  const selectedPark = (allParks || []).find((park) => park.parkCode === selectedParkCode) || null;
+  const selectedPark = (allParks || []).find((park) => park.parkCode?.toLowerCase() === selectedParkCode?.toLowerCase()) || null;
 
   const selectPark = (park) => {
     if (!park) return;
@@ -130,7 +128,11 @@ export default function useParkMapState(allParks) {
         lat: Number.parseFloat(park.latitude),
         lng: Number.parseFloat(park.longitude),
       });
-      setMapZoom(10);
+      // Only zoom in if the user is very zoomed out — avoids the jarring
+      // snap when clicking markers at a reasonable zoom level.
+      if (mapZoom < 6) {
+        setMapZoom(6);
+      }
     }
   };
 
