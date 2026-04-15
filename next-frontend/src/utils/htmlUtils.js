@@ -21,6 +21,8 @@ export const processHtmlContent = (htmlContent) => {
     .replace(/&gt;/g, '>')    // Convert &gt; to >
     .replace(/&quot;/g, '"')  // Convert &quot; to "
     .replace(/&#39;/g, "'")   // Convert &#39; to '
+    .replace(/\*{2,}/g, ' ')  // Replace markdown bold (** or ***) with space
+    .replace(/^\*\s+/gm, '')    // Strip markdown bullet points
     .trim();  // Remove leading/trailing whitespace
 };
 
@@ -62,6 +64,8 @@ export const htmlToPlainText = (htmlContent) => {
     .replace(/&gt;/g, '>')          // Convert &gt; to >
     .replace(/&quot;/g, '"')        // Convert &quot; to "
     .replace(/&#39;/g, "'")         // Convert &#39; to '
+    .replace(/\*{2,}/g, ' ')         // Replace markdown bold (** or ***) with space
+    .replace(/^\*\s+/gm, '')         // Strip markdown bullet points
     .replace(/\n\s*\n/g, '\n\n')    // Clean up multiple newlines
     .trim();  // Remove leading/trailing whitespace
 };

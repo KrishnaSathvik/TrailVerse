@@ -33,7 +33,7 @@ export async function generateMetadata({ params }) {
 
   const description = `Explore ${park.fullName} in ${park.states}. ${park.description?.substring(0, 150)}... Find activities, camping, weather, and plan your visit.`;
   const image = park.images?.[0]?.url;
-  const slug = park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+  const slug = park.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
   const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
@@ -70,7 +70,7 @@ export default async function ParkPage({ params }) {
     notFound();
   }
 
-  const parkSlug = park.fullName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+  const parkSlug = park.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
   const parkUrl = `https://www.nationalparksexplorerusa.com/parks/${parkSlug}`;
 
   // All structured data below is built from our own server API data (trusted NPS source).

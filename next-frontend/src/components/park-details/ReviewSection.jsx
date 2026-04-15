@@ -1027,7 +1027,7 @@ const ReviewSection = ({ parkCode, parkName }) => {
                   >
                     {review.title}
                   </h5>
-                  <p className="text-sm mb-4"
+                  <p className="text-sm mb-4 whitespace-pre-line"
                     style={{ color: 'var(--text-secondary)' }}
                   >
                     {review.comment || review.content}

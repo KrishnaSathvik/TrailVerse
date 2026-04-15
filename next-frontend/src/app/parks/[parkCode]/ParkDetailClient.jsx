@@ -443,7 +443,7 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
                   <p className="text-sm font-medium"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    {park.operatingHours?.[0]?.description || 'Open year-round, 24 hours'}
+                    {htmlToPlainText(park.operatingHours?.[0]?.description) || 'Open year-round, 24 hours'}
                   </p>
                 </div>
 

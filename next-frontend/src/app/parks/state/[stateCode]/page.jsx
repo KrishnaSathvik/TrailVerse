@@ -59,6 +59,7 @@ async function getParksForState(stateCode) {
 
 function parkToSlug(fullName) {
   return fullName.toLowerCase()
+    .replace(/&/g, 'and')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
