@@ -70,10 +70,8 @@ export default function RootLayout({ children }) {
             />
           </>
         )}
-        <Script
-          id="website-schema"
+        <script
           type="application/ld+json"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
@@ -92,9 +90,7 @@ export default function RootLayout({ children }) {
             })
           }}
         />
-        <Script
-          id="disable-prod-console-noise"
-          strategy="beforeInteractive"
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
