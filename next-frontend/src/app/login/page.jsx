@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
 import AuthShell from '@/components/auth/AuthShell';
 import { Lock, Mail, Eye, EyeOff, CheckCircle, AlertCircle, Check } from '@components/icons';
+import { logEvent } from '@/utils/analytics';
 
 const LoginContent = () => {
   const router = useRouter();
@@ -76,6 +77,7 @@ const LoginContent = () => {
     try {
       console.log('Login attempt with rememberMe:', rememberMe);
       const result = await login(formData.email, formData.password, rememberMe);
+      logEvent('Auth', 'login_success', 'email');
       if (result?.redirectedToChat) {
         return;
       }
@@ -83,7 +85,8 @@ const LoginContent = () => {
       router.push('/home');
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Login failed';
-      
+      logEvent('Auth', 'login_failed', errorMessage.substring(0, 50));
+
       // Check if error is due to unverified email
       if (errorMessage.includes('verify') || errorMessage.includes('verification')) {
         showToast('Please verify your email before logging in. Check your inbox!', 'warning', 6000);

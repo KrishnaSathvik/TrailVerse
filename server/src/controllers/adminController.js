@@ -137,12 +137,29 @@ exports.getAIStats = async (req, res, next) => {
       ])
     ]);
 
-    // Average messages per conversation (from Conversation model which has messages[])
-    const avgMessages = await Conversation.aggregate([
-      { $match: { 'messages.0': { $exists: true } } },
-      { $project: { msgCount: { $size: '$messages' } } },
-      { $group: { _id: null, avg: { $avg: '$msgCount' } } }
+    // Average messages per conversation (from both Conversation.messages[] and TripPlan.conversation[])
+    const [avgChatMessages, avgTripMessages] = await Promise.all([
+      Conversation.aggregate([
+        { $match: { 'messages.0': { $exists: true } } },
+        { $project: { msgCount: { $size: '$messages' } } },
+        { $group: { _id: null, avg: { $avg: '$msgCount' }, count: { $sum: 1 } } }
+      ]),
+      TripPlan.aggregate([
+        { $match: { 'conversation.0': { $exists: true } } },
+        { $project: { msgCount: { $size: '$conversation' } } },
+        { $group: { _id: null, avg: { $avg: '$msgCount' }, count: { $sum: 1 } } }
+      ])
     ]);
+
+    // Weighted average across both models
+    const chatAvg = avgChatMessages[0]?.avg || 0;
+    const chatCount = avgChatMessages[0]?.count || 0;
+    const tripAvg = avgTripMessages[0]?.avg || 0;
+    const tripCount = avgTripMessages[0]?.count || 0;
+    const totalCount = chatCount + tripCount;
+    const combinedAvg = totalCount > 0
+      ? (chatAvg * chatCount + tripAvg * tripCount) / totalCount
+      : 0;
 
     // Merge top parks from both models
     const parkMap = {};
@@ -170,7 +187,7 @@ exports.getAIStats = async (req, res, next) => {
         recentConversations,
         chatConversations,
         tripPlanConversations,
-        avgMessagesPerChat: avgMessages[0]?.avg ? Math.round(avgMessages[0].avg * 10) / 10 : 0,
+        avgMessagesPerChat: combinedAvg ? Math.round(combinedAvg * 10) / 10 : 0,
         satisfactionRate,
         totalFeedback,
         totalTokensUsed: totalTokensAgg[0]?.total || 0,

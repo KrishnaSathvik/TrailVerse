@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
 import { invalidateCache } from '../utils/cacheUtils';
+import { logEvent } from '../utils/analytics';
 import LoginModal from '../components/auth/LoginModal';
 
 const AuthContext = createContext();
@@ -260,6 +261,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    logEvent('Auth', 'logout', 'manual');
     authService.logout();
     setUser(null);
   };

@@ -108,18 +108,20 @@ export default async function LandingPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {featuredParks.map((park) => (
+              {featuredParks.map((park, index) => (
                 <Link
                   key={park.parkCode}
                   href={`/parks/${park.parkCode}`}
                   className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                   style={{ aspectRatio: '16/11', boxShadow: 'var(--shadow-lg)' }}
                 >
-                  <img
+                  <Image
                     src={park.images?.[0]?.url || '/og-image-trailverse.jpg'}
                     alt={park.fullName}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    priority={index < 2}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">

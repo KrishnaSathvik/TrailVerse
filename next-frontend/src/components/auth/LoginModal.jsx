@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import Button from '../common/Button';
 import { Lock, Mail, Eye, EyeOff, X } from '@components/icons';
+import { logEvent } from '../../utils/analytics';
 
 const LoginModal = ({ isOpen, onClose, message }) => {
   const { login } = useAuth();
@@ -42,10 +43,12 @@ const LoginModal = ({ isOpen, onClose, message }) => {
     
     try {
       await login(formData.email, formData.password, true); // remember me = true by default
+      logEvent('Auth', 'modal_login_success', 'email');
       showToast('Welcome back!', 'success');
       onClose();
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Login failed';
+      logEvent('Auth', 'modal_login_failed', errorMessage.substring(0, 50));
       showToast(errorMessage, 'error');
     } finally {
       setLoading(false);

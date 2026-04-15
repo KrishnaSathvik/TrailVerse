@@ -16,6 +16,7 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import BlogCard from '@/components/blog/BlogCard';
 import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
+import { logSearch, logEvent } from '@/utils/analytics';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
 
 const BlogSkeleton = () => (
@@ -160,8 +161,14 @@ const BlogContent = ({ initialData }) => {
           page: currentPage,
           limit: shouldDeduplicateCollections ? postsPerPage + hiddenIds.size : postsPerPage
         };
-        if (selectedCategory !== 'all') params.category = selectedCategory;
-        if (searchTerm) params.search = searchTerm;
+        if (selectedCategory !== 'all') {
+          params.category = selectedCategory;
+          logEvent('Blog', 'category_filter', selectedCategory);
+        }
+        if (searchTerm) {
+          params.search = searchTerm;
+          logSearch(searchTerm, 0, 'blog');
+        }
         if (selectedTag) params.tag = selectedTag;
 
         const data = await blogService.getAllPosts(params);

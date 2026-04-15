@@ -6,6 +6,7 @@ import authService from '@/services/authService';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 import { CheckCircle, XCircle, Loader2, Sparkles, ArrowRight } from '@components/icons';
+import { logEvent } from '@/utils/analytics';
 
 const VerifyEmailPage = () => {
   const { token } = useParams();
@@ -41,7 +42,8 @@ const VerifyEmailPage = () => {
         const response = await authService.verifyEmail(token);
         setStatus('success');
         setMessage(response.message);
-        
+        logEvent('Auth', 'email_verification_success', 'auto');
+
         // If verification includes a token, auto-login the user
         if (response.token && response.data) {
           // Update AuthContext immediately with user data and token
@@ -61,6 +63,7 @@ const VerifyEmailPage = () => {
       } catch (error) {
         setStatus('error');
         setMessage(error.response?.data?.error || 'Verification failed');
+        logEvent('Auth', 'email_verification_failed', error.response?.data?.error || 'unknown');
       }
     };
 

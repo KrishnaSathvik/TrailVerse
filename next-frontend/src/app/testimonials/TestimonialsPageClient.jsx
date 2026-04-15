@@ -7,6 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import TestimonialsSection from '@/components/testimonials/TestimonialsSection';
 import TestimonialForm from '@/components/testimonials/TestimonialForm';
 import { Plus, Search, Award, Star, Clock } from '@components/icons';
+import { logEvent } from '@/utils/analytics';
 
 const TestimonialsPage = () => {
   const router = useRouter();
@@ -23,6 +24,7 @@ const TestimonialsPage = () => {
   ];
 
   const handleSubmitSuccess = () => {
+    logEvent('Testimonial', 'submit_success', 'form');
     setShowForm(false);
     showToast('Testimonial submitted successfully! It will be reviewed before being published.', 'success');
   };

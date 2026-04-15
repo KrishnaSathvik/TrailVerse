@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
@@ -23,7 +25,7 @@ import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
 
-const ParkDetailInner = ({ initialData, parkCode }) => {
+const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -219,6 +221,7 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
     try {
       if (isVisited) {
         await removeVisited(parkCode);
+        logUserAction('visited_removed', park?.fullName);
       } else {
         await markAsVisited(
           parkCode,
@@ -228,6 +231,7 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
           park?.images?.[0]?.url || '',
           null
         );
+        logUserAction('visited_added', park?.fullName);
       }
     } catch (error) {
       console.error('Error toggling visited status:', error);
@@ -2167,6 +2171,71 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
       </section>
 
 
+      {/* Related Parks */}
+      {relatedParks.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 lg:px-10" style={{ backgroundColor: 'var(--bg-primary)' }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-3 ring-1" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <Mountain className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
+                  <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>More in {park.states}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>You Might Also Like</h2>
+              </div>
+              <Link
+                href={`/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
+                className="hidden sm:flex items-center gap-1.5 font-semibold text-sm hover:underline"
+                style={{ color: 'var(--accent-green)' }}
+              >
+                View All
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {relatedParks.map((rp, index) => {
+                const slug = rp.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+                return (
+                  <Link
+                    key={rp.parkCode}
+                    href={`/parks/${slug}`}
+                    className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                    style={{ aspectRatio: '4/3', boxShadow: 'var(--shadow-lg)' }}
+                  >
+                    <Image
+                      src={rp.images?.[0]?.url || '/og-image-trailverse.jpg'}
+                      alt={rp.fullName}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <MapPin className="h-3 w-3 text-white/70" />
+                        <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{rp.states}</span>
+                      </div>
+                      <h3 className="text-base font-semibold text-white leading-tight">{rp.fullName}</h3>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 sm:hidden">
+              <Link
+                href={`/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
+                className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
+                style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              >
+                View All Parks in {park.states?.split(',')[0]?.trim()}
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Photo Lightbox */}
       {lightboxOpen && allPhotos.length > 0 && (
         <PhotoLightbox
@@ -2179,10 +2248,10 @@ const ParkDetailInner = ({ initialData, parkCode }) => {
   );
 };
 
-export default function ParkDetailClient(props) {
+export default function ParkDetailClient({ relatedParks, ...props }) {
   return (
     <Suspense>
-      <ParkDetailInner {...props} />
+      <ParkDetailInner {...props} relatedParks={relatedParks} />
     </Suspense>
   );
 }

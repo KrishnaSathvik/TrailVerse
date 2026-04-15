@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef, memo, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Search, X, MapPin, Star, ArrowRight,
@@ -15,6 +16,7 @@ import { useParks, useAllParks } from '@/hooks/useParks';
 import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchPrefetch } from '@/hooks/useSmartPrefetch';
+import { logSearch, logEvent } from '@/utils/analytics';
 import STATE_NAMES from '@/utils/stateNames';
 
 const ExploreContent = ({ initialPaginatedData }) => {
@@ -139,6 +141,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
   useEffect(() => {
     if (debouncedSearchTerm && debouncedSearchTerm.length > 2) {
       handleSearch(debouncedSearchTerm);
+      logSearch(debouncedSearchTerm, 0, 'parks');
     }
   }, [debouncedSearchTerm, handleSearch]);
 
@@ -726,6 +729,29 @@ const ExploreContent = ({ initialPaginatedData }) => {
         </div>
       </section>
 
+      {/* Plan CTA — mobile only (desktop users see it in the header nav) */}
+      <section className="pb-16 px-4 sm:px-6 lg:hidden">
+        <div className="max-w-3xl mx-auto text-center rounded-2xl p-8 backdrop-blur"
+          style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}
+        >
+          <Compass className="h-10 w-10 mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
+          <h2 className="text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+            Ready to plan your adventure?
+          </h2>
+          <p className="text-base mb-6 max-w-lg mx-auto" style={{ color: 'var(--text-secondary)' }}>
+            Let AI build a personalized itinerary based on your interests, travel dates, and preferred parks.
+          </p>
+          <Link
+            href="/plan-ai"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
+            style={{ backgroundColor: 'var(--accent-green)' }}
+          >
+            Plan with AI
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
       {/* Mobile Filters Modal */}
       {showFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -822,8 +848,8 @@ const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
         className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
         style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
       >
-        <div className="w-48 h-32 flex-shrink-0 rounded-xl overflow-hidden">
-          <OptimizedImage src={park.images[0]?.url} alt={park.fullName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        <div className="relative w-48 h-32 flex-shrink-0 rounded-xl overflow-hidden">
+          <Image src={park.images[0]?.url || '/og-image-trailverse.jpg'} alt={park.fullName} fill sizes="192px" className="object-cover group-hover:scale-110 transition-transform duration-500" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-2">
@@ -854,7 +880,7 @@ const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
       style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
     >
       <div className="relative h-56 overflow-hidden">
-        <OptimizedImage src={park.images[0]?.url} alt={park.fullName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        <Image src={park.images[0]?.url || '/og-image-trailverse.jpg'} alt={park.fullName} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-110 transition-transform duration-500" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur"
           style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}

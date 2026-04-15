@@ -5,6 +5,7 @@ import authService from '@/services/authService';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
 import { Mail, ArrowLeft, CheckCircle } from '@components/icons';
+import { logEvent } from '@/utils/analytics';
 
 const ForgotPasswordPage = () => {
   const { showToast } = useToast();
@@ -18,9 +19,11 @@ const ForgotPasswordPage = () => {
 
     try {
       await authService.forgotPassword(email);
+      logEvent('Auth', 'forgot_password_sent', 'email');
       setSuccess(true);
       showToast('Password reset link sent! Check your email.', 'success', 5000);
     } catch (err) {
+      logEvent('Auth', 'forgot_password_failed', err.response?.data?.error || 'unknown');
       showToast(err.response?.data?.error || 'Failed to send reset email', 'error');
     } finally {
       setLoading(false);

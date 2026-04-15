@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Sun, Moon, Monitor, ChevronDown, Check } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
+import { logEvent } from '../../utils/analytics';
 
 const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme: rawSetTheme, isDark } = useTheme();
+  const setTheme = (newTheme) => { logEvent('Theme', 'toggle', newTheme); rawSetTheme(newTheme); };
   const [showMenu, setShowMenu] = useState(false);
 
   const themes = [

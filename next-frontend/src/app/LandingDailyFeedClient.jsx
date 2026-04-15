@@ -71,10 +71,12 @@ export default function LandingDailyFeedClient() {
                 <ArrowRight className="h-4 w-4 text-white" />
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="h-3.5 w-3.5 text-white/70" />
-                  <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{dailyFeed.parkOfDay.states}</span>
-                </div>
+                {dailyFeed.parkOfDay.states && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="h-3.5 w-3.5 text-white/70" />
+                    <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{dailyFeed.parkOfDay.states}</span>
+                  </div>
+                )}
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white leading-tight mb-3">
                   {dailyFeed.parkOfDay.name}
                 </h3>

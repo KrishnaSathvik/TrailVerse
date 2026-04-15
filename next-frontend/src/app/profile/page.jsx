@@ -41,6 +41,7 @@ import { useWebSocket } from '@hooks/useWebSocket';
 import userService from '@/services/userService';
 import { getStoredToken } from '@/services/authService';
 import { getBestAvatar, generateRandomAvatar } from '@utils/avatarGenerator';
+import { logEvent } from '@/utils/analytics';
 
 const ProfilePage = () => {
   const router = useRouter();
@@ -732,6 +733,7 @@ const ProfilePage = () => {
       const data = await response.json();
 
       if (data.success) {
+        logEvent('Profile', 'change_password', 'success');
         setPrivacyMessage('Password changed successfully!');
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
         setPasswordErrors({});
@@ -838,6 +840,7 @@ const ProfilePage = () => {
       const data = await response.json();
 
       if (data.success) {
+        logEvent('Profile', 'delete_account', 'confirmed');
         showToast('Account deleted successfully', 'success');
         // Clear local storage and redirect to home
         localStorage.clear();
@@ -888,9 +891,11 @@ const ProfilePage = () => {
       // No need to call loadUserStats() here
 
       setIsEditing(false);
+      logEvent('Profile', 'save_changes', 'success');
       showToast('Profile updated successfully!', 'success');
     } catch (error) {
       console.error('Error updating profile:', error);
+      logEvent('Profile', 'save_changes', 'failed');
       showToast('Failed to update profile. Please try again.', 'error');
     } finally {
       setLoading(false);

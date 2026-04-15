@@ -7,6 +7,7 @@ import {
   ArrowLeft, Settings, Bell, BellOff, Loader2
 } from '@components/icons';
 import Button from '@/components/common/Button';
+import { logEvent } from '@/utils/analytics';
 
 const UnsubscribeContent = () => {
   const searchParams = useSearchParams();
@@ -79,6 +80,7 @@ const UnsubscribeContent = () => {
       const data = await response.json();
 
       if (data.success) {
+        logEvent('Email', 'unsubscribe_success', unsubscribeType);
         setMessage(data.message || 'Successfully unsubscribed from TrailVerse emails');
         setMessageType('success');
         if (unsubscribeType === 'all') {

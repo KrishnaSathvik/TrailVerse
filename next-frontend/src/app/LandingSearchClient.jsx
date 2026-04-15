@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchBar from '@/components/explore/SearchBar';
 import { ChevronRight, Mountain } from '@components/icons';
+import { logSearch } from '@/utils/analytics';
 
 export default function LandingSearchClient({ parks }) {
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function LandingSearchClient({ parks }) {
                 <button
                   key={park.parkCode}
                   onClick={() => {
+                    logSearch(searchQuery, searchResults.length, 'landing');
                     router.push(`/parks/${park.parkCode}`);
                     setSearchFocused(false);
                   }}

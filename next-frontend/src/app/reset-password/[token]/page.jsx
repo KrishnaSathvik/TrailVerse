@@ -6,6 +6,7 @@ import authService from '@/services/authService';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from '@components/icons';
+import { logEvent } from '@/utils/analytics';
 
 const ResetPasswordPage = ({ params }) => {
   const { token } = use(params);
@@ -63,9 +64,11 @@ const ResetPasswordPage = ({ params }) => {
 
     try {
       await authService.resetPassword(token, formData.password);
+      logEvent('Auth', 'password_reset_success', 'token');
       showToast('Password reset successful! Please login with your new password.', 'success', 5000);
       router.push('/login');
     } catch (err) {
+      logEvent('Auth', 'password_reset_failed', err.response?.data?.error || 'unknown');
       showToast(err.response?.data?.error || 'Failed to reset password. The link may be expired.', 'error');
     } finally {
       setLoading(false);

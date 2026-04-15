@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, Sparkles, Mountain, Heart, Users, Shield } from '@components/icons';
+import { logEvent } from '@/utils/analytics';
 
 const faqCategories = [
   {
@@ -126,6 +127,8 @@ export default function FAQAccordionClient() {
   const [openFaqItems, setOpenFaqItems] = useState([]);
 
   const toggleFaqItem = (id) => {
+    const isOpening = !openFaqItems.includes(id);
+    if (isOpening) logEvent('FAQ', 'accordion_opened', id);
     setOpenFaqItems((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );

@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { getBestAvatar } from '../../utils/avatarGenerator';
+import { logEvent } from '../../utils/analytics';
 
 const ReviewSection = ({ parkCode, parkName }) => {
   const { isAuthenticated, user, showLoginPrompt } = useAuth();
@@ -291,8 +292,10 @@ const ReviewSection = ({ parkCode, parkName }) => {
       console.log('[ReviewSection] Vote result:', result);
       
       if (result.action === 'added') {
+        logEvent('Review', 'mark_helpful', parkCode);
         showToast('Marked as helpful!', 'success');
       } else if (result.action === 'removed') {
+        logEvent('Review', 'unmark_helpful', parkCode);
         showToast('Vote removed', 'success');
       }
       
@@ -363,6 +366,7 @@ const ReviewSection = ({ parkCode, parkName }) => {
 
     try {
       await reviewService.deleteReview(reviewId);
+      logEvent('Review', 'delete', parkCode);
       showToast('Review deleted successfully!', 'success');
       setOpenMenuId(null);
       fetchReviews();

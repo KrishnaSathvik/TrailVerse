@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
 import AuthShell from '@/components/auth/AuthShell';
+import { logEvent } from '@/utils/analytics';
 
 const SignupPage = () => {
   const router = useRouter();
@@ -93,7 +94,8 @@ const SignupPage = () => {
       );
       
       console.log('✅ SignupPage: Signup successful, response:', response);
-      
+      logEvent('Auth', 'signup_success', 'email');
+
       // Show appropriate message based on email status
       if (response.emailSent) {
         showToast(response.message || 'Account created successfully! Check your email to verify your account.', 'success', 5000);
@@ -117,6 +119,7 @@ const SignupPage = () => {
     } catch (error) {
       console.error('❌ SignupPage: Signup error:', error);
       const errorMessage = error.response?.data?.error || 'Failed to create account. Please try again.';
+      logEvent('Auth', 'signup_failed', errorMessage.substring(0, 50));
       showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);

@@ -11,6 +11,7 @@ import Header from '@/components/common/Header';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { useAllParks } from '@/hooks/useParks';
 import { useParkComparison } from '@/hooks/useEnhancedParks';
+import { logEvent } from '@/utils/analytics';
 
 const ComparePage = () => {
   const { data: allParksData, isLoading } = useAllParks();
@@ -82,6 +83,7 @@ const ComparePage = () => {
   const handleAddPark = (park) => {
     if (selectedParks.length < maxParks) {
       setSelectedParks([...selectedParks, park]);
+      logEvent('Compare', 'add_park', park.fullName);
       setSearchTerm('');
       if (selectedParks.length + 1 >= maxParks) {
         setShowSelector(false);
@@ -90,6 +92,8 @@ const ComparePage = () => {
   };
 
   const handleRemovePark = (parkCode) => {
+    const park = selectedParks.find(p => p.parkCode === parkCode);
+    logEvent('Compare', 'remove_park', park?.fullName || parkCode);
     setSelectedParks(selectedParks.filter(p => p.parkCode !== parkCode));
   };
 

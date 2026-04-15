@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import ParkDetailClient from './ParkDetailClient';
 
 export const revalidate = 300; // 5 minutes — park data includes dynamic NPS content
@@ -149,6 +150,34 @@ export default async function ParkPage({ params }) {
     mainEntity: faqItems,
   } : null;
 
+  // Fetch related parks (same state, different park) — cached 24h
+  let relatedParks = [];
+  if (park.states) {
+    try {
+      const allRes = await fetch(`${getApiBaseUrl()}/parks?all=true&nationalParksOnly=true`, {
+        next: { revalidate: 86400 },
+      });
+      if (allRes.ok) {
+        const allJson = await allRes.json();
+        const allParks = allJson.data || [];
+        const parkStates = park.states.split(',').map((s) => s.trim());
+        const candidates = allParks.filter(
+          (p) =>
+            p.parkCode !== park.parkCode &&
+            parkStates.some((st) => p.states?.includes(st))
+        );
+        // Shuffle and pick up to 4
+        for (let i = candidates.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        }
+        relatedParks = candidates.slice(0, 4);
+      }
+    } catch {
+      // Non-critical — just skip related parks
+    }
+  }
+
   return (
     <>
       <script
@@ -161,7 +190,7 @@ export default async function ParkPage({ params }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       )}
-      <ParkDetailClient initialData={data} parkCode={parkCode} />
+      <ParkDetailClient initialData={data} parkCode={parkCode} relatedParks={relatedParks} />
     </>
   );
 }

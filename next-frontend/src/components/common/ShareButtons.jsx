@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Facebook, Twitter, Instagram, Link2, Mail, Share2, Printer, X } from '@components/icons';
 import { useToast } from '../../context/ToastContext';
+import { logShare } from '../../utils/analytics';
 import Button from './Button';
 
 const ShareButtons = ({ url, title, description, image, type = 'default', showPrint = null }) => {
@@ -108,6 +109,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default', showPr
     const currentUrl = generatePublicUrl();
     // Only copy the link, not title
     navigator.clipboard.writeText(currentUrl);
+    logShare('copy_link', title || currentUrl, type);
     showToast('Link copied to clipboard!', 'success');
   };
 
@@ -139,6 +141,7 @@ const ShareButtons = ({ url, title, description, image, type = 'default', showPr
         // The SEO component already sets up proper og:image, og:title, og:description tags
 
         await navigator.share(shareData);
+        logShare('native_share', title || currentUrl, type);
         showToast('Shared successfully!', 'success');
       } catch (error) {
         // User cancelled or error occurred
@@ -947,7 +950,8 @@ const ShareButtons = ({ url, title, description, image, type = 'default', showPr
     const currentUrl = generatePublicUrl();
     const currentTitle = title || '';
     const shortenedUrl = shortenUrl(currentUrl);
-    
+    logShare(platform.toLowerCase(), currentTitle || currentUrl, type);
+
     switch (platform) {
       case 'Facebook':
         return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;

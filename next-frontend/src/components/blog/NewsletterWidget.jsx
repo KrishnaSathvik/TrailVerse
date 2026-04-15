@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { logEvent } from '@/utils/analytics';
 
 export default function NewsletterWidget({ source = 'blog-listing', category = null }) {
   const [email, setEmail] = useState('');
@@ -30,6 +31,7 @@ export default function NewsletterWidget({ source = 'blog-listing', category = n
       const data = await res.json();
 
       if (data.success) {
+        logEvent('Newsletter', 'subscribe_success', source);
         setStatus('success');
         setMessage('Check your inbox to confirm your subscription!');
         setEmail('');

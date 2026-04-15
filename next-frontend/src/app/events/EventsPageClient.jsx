@@ -14,7 +14,7 @@ import { useAllParks } from '@/hooks/useParks';
 import { useSavedEvents } from '@/hooks/useSavedEvents';
 import EventCard from '@/components/events/EventCard';
 import EventListItem from '@/components/events/EventListItem';
-
+import { logEvent } from '@/utils/analytics';
 import STATE_NAMES from '@/utils/stateNames';
 
 const EventsPage = () => {
@@ -75,7 +75,9 @@ const EventsPage = () => {
   const { data: futureSummary } = useEventSummary({ upcoming: 'true' });
   const { data: allParksData } = useAllParks();
   const allParks = allParksData?.data || [];
-  const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
+  const { saveEvent: rawSaveEvent, unsaveEvent: rawUnsaveEvent, isEventSaved } = useSavedEvents();
+  const saveEvent = (event) => { logEvent('Event', 'save', event.title || event.id); rawSaveEvent(event); };
+  const unsaveEvent = (eventId) => { logEvent('Event', 'unsave', eventId); rawUnsaveEvent(eventId); };
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

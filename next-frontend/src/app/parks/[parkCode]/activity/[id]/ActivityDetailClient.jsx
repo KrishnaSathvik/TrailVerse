@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, MapPin, Clock, Calendar, ExternalLink, Tag, Dog, Accessibility, Mountain
@@ -11,6 +11,7 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import Button from '@/components/common/Button';
 import ShareButtons from '@/components/common/ShareButtons';
 import { processHtmlContent } from '@/utils/htmlUtils';
+import { logEvent } from '@/utils/analytics';
 
 const ActivityDetailClient = ({ activity, parkCode, activityId }) => {
   const router = useRouter();
@@ -24,6 +25,10 @@ const ActivityDetailClient = ({ activity, parkCode, activityId }) => {
 
     router.replace(`/parks/${parkCode}?tab=activities`);
   };
+
+  useEffect(() => {
+    logEvent('Activity', 'view', activity.title || activityId);
+  }, [activity.title, activityId]);
 
   const activityImages = activity.images || [];
   const hasImages = activityImages.length > 0;
