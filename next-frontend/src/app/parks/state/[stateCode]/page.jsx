@@ -72,7 +72,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { stateCode } = await params;
   const state = STATE_MAP[stateCode];
-  if (!state) return { title: 'Not Found' };
+  if (!state) return { title: '404 - Page Not Found | TrailVerse' };
 
   const parks = await getParksForState(state.code);
   const parkCount = parks.length;

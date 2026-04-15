@@ -366,7 +366,8 @@ const ExploreContent = ({ initialPaginatedData }) => {
     const parksToCount = allParksData?.data || [];
     if (!Array.isArray(parksToCount)) return 0;
     return parksToCount.filter(park =>
-      park.designation && park.designation.toLowerCase().includes('national park')
+      (park.designation && park.designation.toLowerCase().includes('national park')) ||
+      (park.fullName && park.fullName.toLowerCase().includes('national park'))
     ).length;
   }, [allParksData]);
 

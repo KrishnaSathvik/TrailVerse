@@ -42,7 +42,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { category } = await params;
   const cat = CATEGORIES[category];
-  if (!cat) return { title: 'Not Found' };
+  if (!cat) return { title: '404 - Page Not Found | TrailVerse' };
 
   return {
     title: `${cat.name} — National Park Articles | TrailVerse Blog`,

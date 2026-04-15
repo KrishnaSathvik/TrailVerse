@@ -24,7 +24,7 @@ async function getSharedTrip(shareId) {
 export async function generateMetadata({ params }) {
   const { shareId } = await params;
   const trip = await getSharedTrip(shareId);
-  if (!trip) return { title: 'Trip Not Found | TrailVerse' };
+  if (!trip) return { title: '404 - Page Not Found | TrailVerse' };
 
   return {
     title: `${trip.title || 'Trip Plan'} | TrailVerse`,
