@@ -14,11 +14,9 @@ export default function LandingDailyFeedClient() {
   const { data: dailyFeed, isLoading } = useQuery({
     queryKey: ['landingDailyFeed', today],
     queryFn: async () => {
-      const parkData = await dailyFeedService.getParkOfDay().catch(() => null);
-      if (!parkData) return null;
-
-      const natureFact = await dailyFeedService.getNatureFact(parkData.parkCode, parkData.name).catch(() => null);
-      return { parkOfDay: parkData, natureFact };
+      const feed = await dailyFeedService.getDailyFeed().catch(() => null);
+      if (!feed?.parkOfDay) return null;
+      return { parkOfDay: feed.parkOfDay, natureFact: feed.natureFact };
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour

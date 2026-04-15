@@ -22,9 +22,9 @@ const ReviewFormWithImages = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rating, setRating] = useState(existingReview?.rating || 0);
   const [title, setTitle] = useState(existingReview?.title || '');
-  const [content, setContent] = useState(existingReview?.content || '');
-  const [visitDate, setVisitDate] = useState(
-    existingReview?.visitDate ? new Date(existingReview.visitDate).toISOString().split('T')[0] : ''
+  const [comment, setComment] = useState(existingReview?.comment || existingReview?.content || '');
+  const [visitYear, setVisitYear] = useState(
+    existingReview?.visitYear || new Date().getFullYear()
   );
   
   // Image states
@@ -113,7 +113,7 @@ const ReviewFormWithImages = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!rating || !title || !content) {
+    if (!rating || !title || !comment) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
@@ -123,9 +123,9 @@ const ReviewFormWithImages = ({
     try {
       const reviewData = {
         title,
-        content,
+        comment,
         rating,
-        visitDate: visitDate || new Date().toISOString().split('T')[0]
+        visitYear: visitYear
       };
 
       let result;
@@ -248,29 +248,37 @@ const ReviewFormWithImages = ({
             Your Review <span className="text-red-500">*</span>
           </label>
           <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
             placeholder="Tell others about your experience..."
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            maxLength={1000}
+            maxLength={2000}
+            minLength={10}
             required
           />
-          <p className="text-xs text-gray-500 mt-1">{content.length}/1000 characters</p>
+          <p className="text-xs text-gray-500 mt-1">{comment.length}/2000 characters</p>
         </div>
 
-        {/* Visit Date */}
+        {/* Visit Year */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Visit Date
+            Visit Year
           </label>
-          <input
-            type="date"
-            value={visitDate}
-            onChange={(e) => setVisitDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
+          <select
+            value={visitYear}
+            onChange={(e) => setVisitYear(parseInt(e.target.value))}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          >
+            {Array.from({ length: 10 }, (_, i) => {
+              const year = new Date().getFullYear() - i;
+              return (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              );
+            })}
+          </select>
         </div>
 
         {/* Image Upload */}
@@ -359,7 +367,7 @@ const ReviewFormWithImages = ({
           )}
           <button
             type="submit"
-            disabled={isSubmitting || !rating || !title || !content}
+            disabled={isSubmitting || !rating || !title || !comment}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
             {isSubmitting ? (

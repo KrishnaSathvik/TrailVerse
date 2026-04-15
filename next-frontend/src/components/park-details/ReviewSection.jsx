@@ -237,8 +237,9 @@ const ReviewSection = ({ parkCode, parkName }) => {
       queryClient.refetchQueries(['parkRatings']);
     } catch (error) {
       console.error('Error submitting review:', error);
+      const serverMessage = error.response?.data?.error || error.response?.data?.details;
       showToast(
-        error.message || 'Failed to submit review',
+        serverMessage || error.message || 'Failed to submit review',
         'error'
       );
     } finally {

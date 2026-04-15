@@ -26,6 +26,14 @@ const dailyFeedSchema = new mongoose.Schema({
       type: String,
       required: true
     },
+    states: {
+      type: String,
+      default: ''
+    },
+    designation: {
+      type: String,
+      default: ''
+    },
     description: {
       type: String,
       required: true

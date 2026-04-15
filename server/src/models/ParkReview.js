@@ -100,7 +100,11 @@ const parkReviewSchema = new mongoose.Schema({
 });
 
 // Compound index to prevent duplicate reviews from same user for same park
-parkReviewSchema.index({ parkCode: 1, userId: 1 }, { unique: true });
+// Use partialFilterExpression so guest reviews (userId: null) don't conflict
+parkReviewSchema.index(
+  { parkCode: 1, userId: 1 },
+  { unique: true, partialFilterExpression: { userId: { $type: 'objectId' } } }
+);
 
 // Index for efficient querying
 parkReviewSchema.index({ parkCode: 1, rating: 1, createdAt: -1 });

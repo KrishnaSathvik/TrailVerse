@@ -177,6 +177,23 @@ exports.createParkReview = async (req, res, next) => {
     });
 
   } catch (error) {
+    console.error('[createParkReview] Error:', error.name, error.message, error.code);
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'You have already reviewed this park'
+      });
+    }
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: messages
+      });
+    }
     next(error);
   }
 };
