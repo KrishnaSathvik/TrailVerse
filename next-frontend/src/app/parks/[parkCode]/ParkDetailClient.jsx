@@ -17,7 +17,6 @@ import { useVisitedParks } from '@/hooks/useVisitedParks';
 import { logParkView, logUserAction } from '@/utils/analytics';
 import { processHtmlContent, htmlToPlainText } from '@/utils/htmlUtils';
 import Header from '@/components/common/Header';
-import OptimizedImage from '@/components/common/OptimizedImage';
 import WeatherWidget from '@/components/park-details/WeatherWidget';
 import ReviewSection from '@/components/park-details/ReviewSection';
 import ShareButtons from '@/components/common/ShareButtons';
@@ -302,10 +301,13 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
       {/* Hero Image */}
       <section className="relative h-[60vh] md:h-[70vh] overflow-hidden">
-        <OptimizedImage
-          src={park.images?.[selectedImageIndex]?.url}
+        <Image
+          src={park.images?.[selectedImageIndex]?.url || '/background1.png'}
           alt={park.fullName}
-          className="w-full h-full object-cover"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/90" />
 
@@ -1087,12 +1089,14 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                 setSelectedImageIndex(index);
                                 setLightboxOpen(true);
                               }}
-                              className="aspect-video rounded-xl overflow-hidden group"
+                              className="relative aspect-video rounded-xl overflow-hidden group"
                             >
-                              <img
+                              <Image
                                 src={image.url}
                                 alt={image.altText || park.fullName}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-cover group-hover:scale-110 transition-transform duration-500"
                                 onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                               />
                             </button>
@@ -1222,11 +1226,13 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                               }}
                             >
                               {place.images?.[0]?.url && (
-                                <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                                  <img
+                                <div className="relative aspect-video rounded-lg overflow-hidden mb-4">
+                                  <Image
                                     src={place.images[0].url}
                                     alt={place.images[0].altText || place.title}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                    className="object-cover"
                                     onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                   />
                                 </div>
@@ -1468,11 +1474,13 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                               }}
                             >
                               {cam.images?.[0]?.url && (
-                                <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                                  <img
+                                <div className="relative aspect-video rounded-lg overflow-hidden mb-4">
+                                  <Image
                                     src={cam.images[0].url}
                                     alt={cam.images[0].altText || cam.title}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                    className="object-cover"
                                     onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                   />
                                 </div>
