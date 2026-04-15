@@ -13,8 +13,8 @@ const {
 
 // @route   GET /api/feed/daily
 // @desc    Get pre-generated daily feed from DB
-// @access  Private
-router.get('/daily', protect, getDailyFeed);
+// @access  Public (optionalAuth)
+router.get('/daily', optionalAuth, getDailyFeed);
 
 // @route   GET /api/feed/park-of-day
 // @desc    Get park of the day (generic for anonymous, personalized for authenticated)

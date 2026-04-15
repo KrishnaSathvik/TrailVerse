@@ -102,9 +102,11 @@ exports.getAllParks = async (req, res, next) => {
     let filteredParks = allParks;
     
     if (nationalParksOnly) {
-      // Include parks with "National Park" in their designation (61 parks)
-      filteredParks = allParks.filter(park => 
-        park.designation && park.designation.toLowerCase().includes('national park')
+      // Include parks with "National Park" in their designation or fullName
+      // (some parks like National Park of American Samoa have an empty designation)
+      filteredParks = allParks.filter(park =>
+        (park.designation && park.designation.toLowerCase().includes('national park')) ||
+        (park.fullName && park.fullName.toLowerCase().includes('national park'))
       );
     }
 
