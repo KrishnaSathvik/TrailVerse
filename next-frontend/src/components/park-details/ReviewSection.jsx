@@ -986,28 +986,32 @@ const ReviewSection = ({ parkCode, parkName }) => {
                         
                         {/* Dropdown Menu */}
                         {openMenuId === review._id && (
-                          <div 
-                            className="absolute right-0 mt-2 w-48 rounded-xl shadow-2xl z-10 overflow-hidden backdrop-blur-sm border-2"
+                          <div
+                            className="absolute right-0 mt-2 w-48 rounded-xl shadow-2xl z-50 overflow-hidden border"
                             style={{
-                              backgroundColor: 'var(--surface)',
+                              backgroundColor: 'var(--bg-tertiary)',
                               borderColor: 'var(--border-hover)',
-                              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2)'
                             }}
                           >
                             <button
                               onClick={() => handleEditClick(review)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-all duration-200 group"
-                              style={{ 
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 group"
+                              style={{
                                 color: 'var(--text-primary)',
                                 borderBottom: '1px solid var(--border)'
                               }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
                             >
                               <Edit className="h-4 w-4 group-hover:text-forest-500 transition-colors" />
                               <span className="font-medium group-hover:text-forest-500 transition-colors">Edit Review</span>
                             </button>
                             <button
                               onClick={() => handleDeleteReview(review._id)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group"
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 group"
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
                             >
                               <Trash2 className="h-4 w-4 text-red-500 group-hover:text-red-600 transition-colors" />
                               <span className="font-medium text-red-500 group-hover:text-red-600 transition-colors">Delete Review</span>
@@ -1034,56 +1038,40 @@ const ReviewSection = ({ parkCode, parkName }) => {
               {/* Review Images - only show when not editing */}
               {editingReviewId !== review._id && review.photos && review.photos.length > 0 && (
                 <div className="mb-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {review.photos.slice(0, 6).map((photo, index) => (
-                      <div
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {review.photos.map((photo, index) => (
+                      <button
                         key={index}
-                        className="relative group cursor-pointer overflow-hidden rounded-lg border"
-                        style={{ borderColor: 'var(--border)' }}
+                        className="aspect-video rounded-xl overflow-hidden group"
                         onClick={() => openLightbox(review.photos, index)}
                       >
                         <img
                           src={photo.url || photo}
                           alt={photo.caption || `Review image ${index + 1}`}
-                          className="w-full aspect-square object-cover transition-transform duration-200 group-hover:scale-105"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           loading="lazy"
                         />
-                        {index === 5 && review.photos.length > 6 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">
-                              +{review.photos.length - 6} more
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
               {editingReviewId !== review._id && review.images && review.images.length > 0 && !review.photos && (
                 <div className="mb-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {review.images.slice(0, 6).map((imageUrl, index) => (
-                      <div
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {review.images.map((imageUrl, index) => (
+                      <button
                         key={index}
-                        className="relative group cursor-pointer overflow-hidden rounded-lg border"
-                        style={{ borderColor: 'var(--border)' }}
+                        className="aspect-video rounded-xl overflow-hidden group"
                         onClick={() => openLightbox(review.images, index)}
                       >
                         <img
                           src={imageUrl}
                           alt={`Review image ${index + 1}`}
-                          className="w-full aspect-square object-cover transition-transform duration-200 group-hover:scale-105"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           loading="lazy"
                         />
-                        {index === 5 && review.images.length > 6 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">
-                              +{review.images.length - 6} more
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>

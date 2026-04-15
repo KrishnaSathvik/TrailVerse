@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Download } from '@components/icons';
 
 const PhotoLightbox = ({ images, initialIndex = 0, onClose }) => {
@@ -66,7 +67,7 @@ const PhotoLightbox = ({ images, initialIndex = 0, onClose }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}
@@ -144,7 +145,8 @@ const PhotoLightbox = ({ images, initialIndex = 0, onClose }) => {
           )}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 
