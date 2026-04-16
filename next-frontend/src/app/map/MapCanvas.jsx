@@ -7,12 +7,46 @@ import { loadMaps } from '@/lib/loadMaps';
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
 
 const darkMapStyles = [
-  { elementType: 'geometry', stylers: [{ color: '#111827' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#d1d5db' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#111827' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  // Base
+  { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#c9d1d9' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0d1117' }] },
+
+  // Administrative boundaries
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#4b5563' }, { weight: 1.5 }] },
+  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#374151' }, { weight: 0.8 }] },
+  { featureType: 'administrative.land_parcel', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+
+  // Landscape
+  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+  { featureType: 'landscape.natural.terrain', elementType: 'geometry', stylers: [{ color: '#1e2a3a' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#16213e' }] },
+
+  // Water
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a1628' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4a6fa5' }] },
+
+  // Roads
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2d3a4a' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#3b4d63' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
+  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#242e3e' }] },
+  { featureType: 'road.local', elementType: 'geometry', stylers: [{ color: '#1e2738' }] },
+  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+
+  // Parks & green spaces
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#13301a' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#4ade80' }] },
+
+  // Hide other POIs
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.medical', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.school', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.sports_complex', stylers: [{ visibility: 'off' }] },
+
+  // Transit
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
 export default function MapCanvas({

@@ -65,7 +65,7 @@ const PrivacyPage = () => {
             <li>Provide smart trip planning with personalized recommendations</li>
             <li>Save and sync favorites, reviews, and trip history across all your devices</li>
             <li>Display real-time weather, park alerts, and NPS events</li>
-            <li>Enable interactive maps, nearby places search, and route planning</li>
+            <li>Enable interactive maps and park exploration</li>
             <li>Process and optimize review images (resize, compress, convert to WebP)</li>
             <li>Send important emails (verification, password resets, blog notifications)</li>
             <li>Enable PWA functionality with offline cached content</li>
@@ -171,7 +171,7 @@ const PrivacyPage = () => {
           <div className="grid gap-3 mb-4">
             <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1">Google Services</p>
-              <p className="text-sm">Maps, Places, Directions APIs • Analytics 4</p>
+              <p className="text-sm">Maps JavaScript API • Analytics 4</p>
             </div>
             <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1">AI Providers</p>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin, Heart, Calendar } from '@components/icons';
-import OptimizedImage from '../common/OptimizedImage';
 import { useAllParks } from '../../hooks/useParks';
 import { htmlToPlainText } from '../../utils/htmlUtils';
 
@@ -67,15 +67,12 @@ const SavedParks = ({ savedParks, onRemove }) => {
             }}
           >
             <div className="relative h-56 overflow-hidden">
-              <OptimizedImage
-                src={park.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&fit=crop&crop=center'}
+              <Image
+                src={park.imageUrl || '/og-image-trailverse.jpg'}
                 alt={park.parkName}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                onError={(e) => {
-                  if (e.target.src !== 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center') {
-                    e.target.src = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center';
-                  }
-                }}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 

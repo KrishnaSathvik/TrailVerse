@@ -441,19 +441,19 @@ async function sendBlogNotifications(post) {
     // Collect all emails that will receive from registered users (to deduplicate)
     const sentEmails = new Set();
 
-    // Send emails to all subscribed registered users
+    // Send emails sequentially with delay to respect Resend rate limit (2/sec)
     let sentCount = 0;
-    const emailPromises = users.map(async (user) => {
+    for (const user of users) {
       try {
         sentEmails.add(user.email.toLowerCase());
         await emailService.sendBlogNotification(user, post);
         sentCount++;
+        // 600ms delay between sends to stay under 2/sec rate limit
+        if (sentCount < users.length) await new Promise(r => setTimeout(r, 600));
       } catch (error) {
         console.error(`Failed to send blog notification to ${user.email}:`, error.message);
       }
-    });
-
-    await Promise.all(emailPromises);
+    }
 
     console.log(`✅ Blog notifications sent to ${sentCount} of ${users.length} registered users`);
 

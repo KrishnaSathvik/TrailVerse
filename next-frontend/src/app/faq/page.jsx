@@ -96,7 +96,7 @@ const faqStructuredData = {
       name: 'How do Google Maps features work?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'All devices get interactive maps with park markers and search. On desktop, you also get Google Places to find nearby restaurants, lodging, and gas stations, plus route planning with turn-by-turn directions. Mobile users enjoy smooth map browsing with park details.'
+        text: 'All devices get interactive maps with park markers and search. Browse all 470+ parks on the map, filter by state or activity, and click any park to see details, alerts, and weather. Mobile users enjoy smooth map browsing with park details.'
       }
     },
     {

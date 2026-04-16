@@ -389,7 +389,7 @@ exports.getTopRatedParks = async (req, res, next) => {
 exports.getUserReviews = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 50 } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 

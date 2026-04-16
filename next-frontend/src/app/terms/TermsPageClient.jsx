@@ -140,7 +140,7 @@ const TermsPage = () => {
           <p className="mb-4">TrailVerse integrates with third-party services:</p>
           <div className="grid gap-3 mb-4">
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <strong>Google:</strong> Maps JavaScript API, Places API, Directions API, Analytics 4 (subject to Google's Terms & Privacy)
+              <strong>Google:</strong> Maps JavaScript API, Analytics 4 (subject to Google's Terms & Privacy)
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <strong>AI:</strong> OpenAI GPT-4, Anthropic Claude (anonymized queries, subject to their Terms & Privacy)

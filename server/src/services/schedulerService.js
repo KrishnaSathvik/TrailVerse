@@ -1,5 +1,4 @@
 const BlogPost = require('../models/BlogPost');
-const { sendBlogNotifications } = require('../controllers/blogController');
 
 /**
  * Scheduler Service for Blog Posts
@@ -47,8 +46,9 @@ const publishScheduledPosts = async () => {
           publishedAt: post.publishedAt
         });
         
-        // Send email notifications
-        sendBlogNotifications(post).catch(err => 
+        // Send email notifications (lazy require to avoid circular dependency)
+        const { sendBlogNotifications } = require('../controllers/blogController');
+        sendBlogNotifications(post).catch(err =>
           console.error(`Failed to send notifications for post ${post._id}:`, err)
         );
         

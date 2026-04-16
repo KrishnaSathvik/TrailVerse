@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import ParkDetailClient from './ParkDetailClient';
@@ -8,12 +8,9 @@ export const revalidate = 300; // 5 minutes — park data includes dynamic NPS c
 export async function generateStaticParams() {
   try {
     const parkSlugs = await getAllParkSlugs();
-    // Return both slug and code so both /parks/yellowstone-national-park
-    // and /parks/yell generate during build (needed until redirects fully propagate)
-    return parkSlugs.flatMap(({ code, slug }) => [
-      { parkCode: slug },
-      { parkCode: code },
-    ]);
+    // Only generate slug URLs — code-based URLs (e.g. /parks/yell) are
+    // handled dynamically and redirect to the canonical slug URL
+    return parkSlugs.map(({ slug }) => ({ parkCode: slug }));
   } catch {
     return [];
   }
@@ -72,12 +69,17 @@ export default async function ParkPage({ params }) {
   }
 
   const parkSlug = park.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+
+  // Redirect short code URLs (e.g. /parks/yell) to canonical slug URL
+  if (parkCode !== parkSlug) {
+    redirect(`/parks/${parkSlug}`);
+  }
+
   const parkUrl = `https://www.nationalparksexplorerusa.com/parks/${parkSlug}`;
 
   // All structured data below is built from our own server API data (trusted NPS source).
   // Values are server-rendered strings from the NPS API — not user input.
-  const structuredData = {
-    '@context': 'https://schema.org',
+  const touristAttraction = {
     '@type': 'TouristAttraction',
     name: park.fullName,
     description: park.description,
@@ -144,11 +146,12 @@ export default async function ParkPage({ params }) {
     });
   }
 
-  const faqSchema = faqItems.length > 0 ? {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqItems,
-  } : null;
+  // Combine all schemas into a single @graph to avoid duplicate structured data warnings
+  const graphItems = [touristAttraction];
+  if (faqItems.length > 0) {
+    graphItems.push({ '@type': 'FAQPage', mainEntity: faqItems });
+  }
+  const structuredData = { '@context': 'https://schema.org', '@graph': graphItems };
 
   // Fetch related parks (same state, different park) — cached 24h
   let relatedParks = [];
@@ -184,12 +187,6 @@ export default async function ParkPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      {faqSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-        />
-      )}
       <ParkDetailClient initialData={data} parkCode={parkCode} relatedParks={relatedParks} />
     </>
   );

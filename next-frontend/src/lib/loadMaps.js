@@ -5,10 +5,10 @@ let mapsLoaded = false;
 /**
  * Load Google Maps JavaScript API (singleton)
  * @param {string} key - Google Maps API key (referrer-restricted)
- * @param {Array<string>} libraries - Libraries to load (e.g., ['places'])
+ * @param {Array<string>} libraries - Libraries to load
  * @returns {Promise<void>}
  */
-export function loadMaps(key, libraries = ['places']) {
+export function loadMaps(key, libraries = []) {
   // Return existing promise if already loading
   if (mapsLoadingPromise) {
     return mapsLoadingPromise;

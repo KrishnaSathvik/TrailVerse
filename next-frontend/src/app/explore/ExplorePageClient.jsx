@@ -863,7 +863,7 @@ const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
             </div>
             {rating && rating.totalReviews > 0 ? (
               <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <Star className="h-4 w-4 text-yellow-400" weight="fill" />
                 <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{rating.averageRating.toFixed(1)}</span>
                 <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>({rating.totalReviews})</span>
               </div>
@@ -895,7 +895,7 @@ const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
           </div>
           {rating && rating.totalReviews > 0 ? (
             <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <Star className="h-4 w-4 text-yellow-400" weight="fill" />
               <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{rating.averageRating.toFixed(1)}</span>
               <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>({rating.totalReviews})</span>
             </div>

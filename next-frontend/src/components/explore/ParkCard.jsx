@@ -74,7 +74,7 @@ const ParkCard = memo(({ park, onSave, isSaved = false }) => {
           <div className="flex items-center gap-1 text-sm"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <Star className="h-4 w-4 text-yellow-400" weight="fill" />
             <span className="font-semibold">
               {parkRating?.averageRating ? parkRating.averageRating.toFixed(1) : 'N/A'}
             </span>

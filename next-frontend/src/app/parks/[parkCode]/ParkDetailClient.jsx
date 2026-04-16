@@ -170,8 +170,8 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
     });
   }, [activeTab]);
 
-  const isSaved = isParkFavorited(parkCode);
-  const isVisited = isParkVisited(parkCode);
+  const isSaved = isParkFavorited(npsParkCode);
+  const isVisited = isParkVisited(npsParkCode);
 
   const handleSavePark = async () => {
     if (!isAuthenticated) {
@@ -182,7 +182,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
     try {
       setSavingPark(true);
       if (isSaved) {
-        await removeFavorite(parkCode);
+        await removeFavorite(npsParkCode);
         showToast('Removed from favorites', 'success');
         logUserAction('favorite_removed', `Park: ${park.fullName}`, isAuthenticated?.user?.id);
       } else {
@@ -191,7 +191,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
           return;
         }
         await addFavorite({
-          parkCode,
+          parkCode: npsParkCode,
           parkName: park.fullName,
           imageUrl: park.images?.[0]?.url || ''
         });
@@ -219,11 +219,11 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
     try {
       if (isVisited) {
-        await removeVisited(parkCode);
+        await removeVisited(npsParkCode);
         logUserAction('visited_removed', park?.fullName);
       } else {
         await markAsVisited(
-          parkCode,
+          npsParkCode,
           null,
           null,
           park?.fullName,
@@ -1916,7 +1916,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
                   {activeTab === 'reviews' && (
                     <div>
-                      <ReviewSection parkCode={parkCode} parkName={park.fullName} />
+                      <ReviewSection parkCode={npsParkCode} parkName={park.fullName} />
                     </div>
                   )}
                 </div>

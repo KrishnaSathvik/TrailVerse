@@ -124,9 +124,10 @@ const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
                     key={i}
                     className={`h-4 w-4 ${
                       i < review.rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'fill-gray-400 text-gray-400'
+                        ? 'text-yellow-400'
+                        : 'text-gray-400'
                     }`}
+                    weight={i < review.rating ? 'fill' : 'regular'}
                   />
                 ))}
               </div>

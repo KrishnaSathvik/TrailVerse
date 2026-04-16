@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import testimonialService from '../../services/testimonialService';
 import TestimonialForm from '../testimonials/TestimonialForm';
-import { 
-  Star, Edit, Trash2, Award, MapPin, 
+import {
+  Star, Edit, Trash2, Award, MapPin,
   Clock, CheckCircle, RefreshCw
 } from '@components/icons';
 
@@ -122,9 +123,10 @@ const UserTestimonials = () => {
             key={star}
             className={`h-4 w-4 ${
               star <= rating
-                ? 'text-yellow-400 fill-yellow-400'
+                ? 'text-yellow-400'
                 : 'text-gray-300'
             }`}
+            weight={star <= rating ? 'fill' : 'regular'}
           />
         ))}
       </div>
@@ -248,10 +250,13 @@ const UserTestimonials = () => {
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                     {testimonial.avatar ? (
-                      <img
+                      <Image
                         src={testimonial.avatar}
                         alt={testimonial.name}
+                        width={40}
+                        height={40}
                         className="h-full w-full object-cover"
+                        unoptimized
                       />
                     ) : (
                       <span className="text-white font-semibold text-sm">

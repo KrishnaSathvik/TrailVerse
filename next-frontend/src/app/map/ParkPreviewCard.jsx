@@ -80,7 +80,7 @@ export default function ParkPreviewCard({
             className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm"
             style={{ backgroundColor: 'var(--surface-hover)' }}
           >
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <Star className="h-4 w-4 text-yellow-400" weight="fill" />
             <span className="font-semibold">{rating.averageRating.toFixed(1)}</span>
             <span style={{ color: 'var(--text-secondary)' }}>
               ({rating.totalReviews} {rating.totalReviews === 1 ? 'review' : 'reviews'})

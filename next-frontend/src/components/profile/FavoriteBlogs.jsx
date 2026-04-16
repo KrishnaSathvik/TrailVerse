@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BookOpen, Heart, Calendar, Clock, User } from '@components/icons';
 import blogService from '../../services/blogService';
 import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import cacheService from '../../services/cacheService';
-import OptimizedImage from '../common/OptimizedImage';
 
 const FavoriteBlogs = ({ onCountChange }) => {
   const { showToast } = useToast();
@@ -166,12 +166,14 @@ const FavoriteBlogs = ({ onCountChange }) => {
           <div className="flex flex-col lg:flex-row gap-5">
             {/* Blog Image */}
             {blog.featuredImage && (
-              <div className="lg:w-56 lg:flex-shrink-0">
+              <div className="relative lg:w-56 lg:flex-shrink-0 h-48 lg:h-auto overflow-hidden">
                 <Link href={`/blog/${blog.slug}`}>
-                  <OptimizedImage
+                  <Image
                     src={blog.featuredImage}
                     alt={blog.title}
-                    className="w-full h-48 lg:h-full object-cover rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 224px"
+                    className="object-cover rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl group-hover:scale-105 transition-transform duration-300"
                   />
                 </Link>
               </div>

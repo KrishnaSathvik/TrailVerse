@@ -79,9 +79,9 @@ const FeaturesPage = () => {
         },
         {
           icon: Globe,
-          title: "Interactive Map & Nearby Places",
-          description: "Interactive map of all 470+ parks with search and filtering. On each park page: nearby restaurants, lodging, and gas stations with directions — powered by Google Places.",
-          benefits: ["470+ park markers", "Nearby places on park pages", "Directions to nearby spots", "Search & filter parks"]
+          title: "Interactive Map & Park Explorer",
+          description: "Interactive map of all 470+ parks with search and filtering. Click any park to see details, alerts, weather, and plan your visit with the AI trip planner.",
+          benefits: ["470+ park markers", "Search & filter parks", "Click for park details", "Directions via Google Maps"]
         },
         {
           icon: Cloud,

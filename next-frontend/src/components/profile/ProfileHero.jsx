@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Mail, MapPin, Globe, User } from '@components/icons';
 import Button from '../common/Button';
 import UnifiedAvatarSelector from './UnifiedAvatarSelector';
@@ -49,16 +50,15 @@ const ProfileHero = ({
                   {profileData.avatar}
                 </div>
               ) : (
-                <img
+                <Image
                   key={`${profileData.avatar}-${profileData.avatarVersion}`}
                   src={`${profileData.avatar}${profileData.avatar.includes('?') ? '&' : '?'}v=${profileData.avatarVersion}`}
                   alt={`${profileData.firstName} ${profileData.lastName}`}
+                  width={128}
+                  height={128}
                   className="h-28 w-28 rounded-full border object-cover lg:h-32 lg:w-32"
                   style={{ borderColor: 'var(--border)' }}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.target.src = 'https://api.dicebear.com/9.x/avataaars/svg?seed=fallback&backgroundColor=6366f1,8b5cf6,a855f7&size=200';
-                  }}
+                  unoptimized
                 />
               )}
             </div>

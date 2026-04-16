@@ -25,7 +25,7 @@ const ParkHero = ({ park, isSaved, onSave, onShare }) => {
               {park.designation}
             </span>
             <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur text-white text-sm">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <Star className="h-4 w-4 text-yellow-400" weight="fill" />
               <span className="font-semibold">4.8</span>
             </div>
           </div>

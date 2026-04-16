@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CheckCircle, Calendar, Star, Trash2, ChevronRight } from '@components/icons';
-import OptimizedImage from '../common/OptimizedImage';
 import { useAllParks } from '../../hooks/useParks';
+import { useParkRatings } from '../../hooks/useParkRatings';
 
 const VisitedParks = ({ visitedParks, onRemove }) => {
   const { data: allParksData } = useAllParks();
   const parksData = allParksData?.data;
+  const { data: parkRatings } = useParkRatings();
 
   // Map parkCode → NPS park data for enrichment
   const parkDataMap = useMemo(() => {
@@ -71,15 +73,12 @@ const VisitedParks = ({ visitedParks, onRemove }) => {
             }}
           >
             <div className="relative h-56 overflow-hidden">
-              <OptimizedImage
-                src={park.imageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80&fit=crop&crop=center'}
+              <Image
+                src={park.imageUrl || '/og-image-trailverse.jpg'}
                 alt={park.parkName}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                onError={(e) => {
-                  if (e.target.src !== 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center') {
-                    e.target.src = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80&fit=crop&crop=center';
-                  }
-                }}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
@@ -120,13 +119,14 @@ const VisitedParks = ({ visitedParks, onRemove }) => {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {park.rating ? (
+                  {parkRatings?.[park.parkCode]?.totalReviews > 0 ? (
                     <>
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{park.rating}/5</span>
+                      <Star className="h-4 w-4 text-yellow-400" weight="fill" />
+                      <span className="font-semibold">{parkRatings[park.parkCode].averageRating.toFixed(1)}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>({parkRatings[park.parkCode].totalReviews})</span>
                     </>
                   ) : (
-                    <span className="text-xs">No rating</span>
+                    <span className="text-xs">No reviews</span>
                   )}
                 </div>
                 <span className="flex items-center gap-1 text-forest-400 text-sm font-medium">
