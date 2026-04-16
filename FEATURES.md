@@ -349,7 +349,6 @@ Community-driven park reviews, surfaced on park detail pages.
 
 - 🌐 **Review listing** per park with pagination and summary statistics
   (average rating, rating distribution).
-- 🌐 **Ranger responses** to reviews appear inline.
 - 🌐 **Top-rated parks** lists power featured selections and sort options.
 - 🌐 **Reviewer avatars** displayed on every review.
 - 🔒 **Helpful voting** — mark reviews helpful or not helpful.

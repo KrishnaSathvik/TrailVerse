@@ -428,44 +428,6 @@ exports.getUserReviews = async (req, res, next) => {
   }
 };
 
-// @desc    Respond to a review (admin/ranger only)
-// @route   POST /api/reviews/:reviewId/respond
-// @access  Private (Admin/Ranger)
-exports.respondToReview = async (req, res, next) => {
-  try {
-    const { reviewId } = req.params;
-    const { text } = req.body;
-    const userId = req.user.id;
-
-    // Check if user is admin or ranger
-    if (!['admin', 'ranger'].includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Not authorized to respond to reviews'
-      });
-    }
-
-    const review = await ParkReview.findById(reviewId);
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        error: 'Review not found'
-      });
-    }
-
-    await review.addResponse(text, userId);
-    await review.populate('userId', 'name avatar');
-
-    res.status(200).json({
-      success: true,
-      data: review
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
 // @desc    Moderate review (approve/reject)
 // @route   PUT /api/reviews/:reviewId/moderate
 // @access  Private (Admin only)

@@ -87,14 +87,6 @@ const parkReviewSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'approved'
   },
-  response: {
-    text: String,
-    respondedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    respondedAt: Date
-  }
 }, {
   timestamps: true
 });
@@ -124,15 +116,6 @@ parkReviewSchema.methods.vote = async function(userId, isHelpful) {
   } else {
     this.notHelpfulVotes += 1;
   }
-  return this.save();
-};
-
-parkReviewSchema.methods.addResponse = async function(responseText, responderId) {
-  this.response = {
-    text: responseText,
-    respondedBy: responderId,
-    respondedAt: new Date()
-  };
   return this.save();
 };
 

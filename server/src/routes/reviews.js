@@ -9,7 +9,6 @@ const {
   voteOnReview,
   getTopRatedParks,
   getUserReviews,
-  respondToReview,
   moderateReview,
   getAllParkRatings
 } = require('../controllers/reviewController');
@@ -61,8 +60,7 @@ router.put('/:reviewId', updateParkReview);
 router.delete('/:reviewId', deleteParkReview);
 router.post('/:reviewId/vote', voteOnReview);
 
-// Admin/Ranger routes
-router.post('/:reviewId/respond', respondToReview);
+// Admin routes
 router.put('/:reviewId/moderate', moderateReview);
 
 module.exports = router;

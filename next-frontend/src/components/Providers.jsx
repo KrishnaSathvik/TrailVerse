@@ -24,6 +24,10 @@ export default function Providers({ children }) {
 
   useEffect(() => {
     initGA();
+    // Register the serwist service worker for offline/PWA support
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/serwist/sw.js", { scope: "/" });
+    }
   }, []);
 
   return (
