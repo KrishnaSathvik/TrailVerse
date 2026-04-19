@@ -41,8 +41,11 @@ const PlanAIContent = ({ tripId }) => {
     interests,
     toggleInterest,
     handleStartNewChat,
+    handlePersonalizedRecommendations,
+    uniqueParksCount,
     isAuthenticated,
-    fromChatHistory
+    fromChatHistory,
+    newChatKey
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
   const [quickFillMessage, setQuickFillMessage] = useState(null);
@@ -153,7 +156,7 @@ const PlanAIContent = ({ tripId }) => {
 
   const effectiveFormData = chatFormData || defaultFormData;
   const effectiveParkName = selectedParkName || '';
-  const effectiveIsNewChat = tripId ? false : (isNewChat || !chatFormData?.parkCode);
+  const effectiveIsNewChat = tripId ? false : isNewChat;
 
   const handleQuickFillApply = (data) => {
     setFormData(data);
@@ -204,26 +207,49 @@ const PlanAIContent = ({ tripId }) => {
             </div>
 
             {isAuthenticated && (
-              <button
-                type="button"
-                onClick={handleStartNewChat}
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-xs font-semibold transition sm:h-10 sm:rounded-xl sm:px-4 sm:text-sm"
-                style={{
-                  backgroundColor: 'var(--button-filled-bg)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  boxShadow: 'var(--shadow)'
-                }}
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>New Chat</span>
-              </button>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {uniqueParksCount >= 3 && (
+                  <button
+                    type="button"
+                    onClick={handlePersonalizedRecommendations}
+                    title="My Recommendations"
+                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
+                    style={{
+                      backgroundColor: 'var(--button-filled-bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                      boxShadow: 'var(--shadow)'
+                    }}
+                  >
+                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">My Recommendations</span>
+                    <span className="sm:hidden">For Me</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleStartNewChat}
+                  title="New Chat"
+                  className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
+                  style={{
+                    backgroundColor: 'var(--button-filled-bg)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow)'
+                  }}
+                >
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">New Chat</span>
+                  <span className="sm:hidden">New</span>
+                </button>
+              </div>
             )}
           </div>
         </section>
 
         <div className="relative z-10 flex flex-1 min-h-0 flex-col overflow-hidden">
           <TripPlannerChat
+            key={`chat-${newChatKey || tripId || 'default'}`}
             formData={effectiveFormData}
             parkName={effectiveParkName}
             existingTripId={tripId}

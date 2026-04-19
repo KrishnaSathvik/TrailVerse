@@ -101,6 +101,7 @@ const TripPlannerChat = ({
   const previousExistingTripIdRef = useRef(existingTripId);
   const lastMessageCountRef = useRef(0);
   const userSentMessageRef = useRef(false);
+  const personalizedSentRef = useRef(false);
 
   const chatStatus = isAnonymous
     ? null
@@ -207,10 +208,11 @@ const TripPlannerChat = ({
 
     // Road trip suggestion (from compare page)
     if (suggestText) {
+      const roadTripGreeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
       const roadTripWelcome = {
         id: Date.now(),
         role: 'assistant',
-        content: `Hey! Great choice — a road trip hitting ${suggestText} is one of the best ways to experience the area.\n\nI'll build you a full multi-park itinerary. Tell me:\n- How many days do you have?\n- What's your starting city?\n- Group size and any must-haves (camping, hiking, budget)?`,
+        content: `${roadTripGreeting} Great choice — a road trip hitting ${suggestText} is one of the best ways to experience the area.\n\nI'll build you a full multi-park itinerary. Tell me:\n- How many days do you have?\n- What's your starting city?\n- Group size and any must-haves (camping, hiking, budget)?`,
         timestamp: new Date()
       };
 
@@ -220,10 +222,11 @@ const TripPlannerChat = ({
 
     // Check for new chat (generic welcome)
     if (isNewChat) {
+      const greeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
       const newChatWelcome = {
         id: Date.now(),
         role: 'assistant',
-        content: `Hey! I'm TrailVerse AI — your personal trip planning buddy. Where in America are you thinking of heading? I can help with any park, city, beach, or road trip.\n\nJust tell me what you're dreaming about and I'll start planning.`,
+        content: `${greeting} I'm TrailVerse AI — your personal trip planning buddy. Where in America are you thinking of heading? I can help with any park, city, beach, or road trip.\n\nJust tell me what you're dreaming about and I'll start planning.`,
         timestamp: new Date()
       };
 
@@ -231,10 +234,11 @@ const TripPlannerChat = ({
       return;
     }
 
+    const greeting = userName !== 'there' ? `Hey ${userName}! Let's` : `Let's`;
     const welcomeMessage = {
       id: Date.now(),
       role: 'assistant',
-      content: `Let's plan your ${parkName} trip! I'll put together a general itinerary to get us started.\n\nWant me to customize it? Tell me your dates, group size, and what you're most excited about.`,
+      content: `${greeting} plan your ${parkName} trip! I'll put together a general itinerary to get us started.\n\nWant me to customize it? Tell me your dates, group size, and what you're most excited about.`,
       timestamp: new Date()
     };
 
@@ -806,6 +810,25 @@ const TripPlannerChat = ({
     }
   }, [quickFillMessage, providersLoaded, providers.length]);
 
+  // Auto-send first message in personalized mode to trigger immediate AI recommendations
+  useEffect(() => {
+    if (
+      isPersonalized &&
+      providersLoaded &&
+      providers.length > 0 &&
+      !isGenerating &&
+      messages.length === 1 &&
+      !personalizedSentRef.current
+    ) {
+      personalizedSentRef.current = true;
+      const hasTrips = tripHistory.length > 0;
+      const autoMessage = hasTrips
+        ? 'Based on my travel history, what are your top recommendations for my next trip? Consider the current season and parks I haven\'t explored yet.'
+        : 'I\'m new here — help me discover my ideal destinations. Ask me a few quick questions about my travel style.';
+      handleSendMessage(autoMessage);
+    }
+  }, [isPersonalized, providersLoaded, providers.length, isGenerating, messages.length, tripHistory.length]);
+
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || isGenerating) return;
 
@@ -862,7 +885,7 @@ const TripPlannerChat = ({
       const userContext = user ? await tripHistoryService.getAIContext(user.id) : null;
       
       // Build system prompt
-      const systemPrompt = buildSystemPrompt(userContext);
+      const systemPrompt = buildSystemPrompt(userContext, isPersonalized);
       
       // Build conversation history
       const conversationHistory = messages
@@ -937,7 +960,8 @@ const TripPlannerChat = ({
               parkName,
               lat: formData.coordinates?.lat,
               lon: formData.coordinates?.lon,
-              userId: user?.id
+              userId: user?.id,
+              formData: formData
             },
             onThinking: (thinkingData) => {
               const { sources, parkName: sourcePark, parkNames: sourceParks } = thinkingData;
@@ -1021,7 +1045,8 @@ const TripPlannerChat = ({
               parkName,
               lat: formData.coordinates?.lat,
               lon: formData.coordinates?.lon,
-              userId: user?.id
+              userId: user?.id,
+              formData: formData
             }
           });
         }
@@ -1207,7 +1232,7 @@ const TripPlannerChat = ({
     }
   };
 
-  const buildSystemPrompt = (userContext) => {
+  const buildSystemPrompt = (userContext, isPersonalizedMode = false) => {
     const days = calculateDays();
     
     const currentDate = new Date();
@@ -1299,6 +1324,26 @@ TRIP DETAILS:
 
       if (userContext.recentParks.length > 0) {
         prompt += `\n- Recently visited: ${userContext.recentParks.map(p => p.name).join(', ')}`;
+      }
+    }
+
+    if (isPersonalizedMode) {
+      if (userContext && userContext.totalTrips > 0) {
+        prompt += `\n\nPERSONALIZATION MODE — ACTIVE:
+You are in personalized recommendation mode. The user clicked "My Recommendations" expecting tailored suggestions. Follow these rules:
+- Proactively recommend 2-3 destinations the user hasn't visited yet, explaining why each matches their travel pattern and interests
+- Reference their past trips explicitly (e.g., "Since you enjoyed hiking at ${userContext.recentParks?.[0]?.name || 'your recent parks'}...")
+- Consider the current season (${getCurrentSeason(new Date().getMonth() + 1)}) when making recommendations — suggest destinations that are ideal right now
+- Suggest parks or destinations that complement or are near ones they've already visited
+- Skip generic intros — jump straight into personalized suggestions
+- Ask targeted follow-up questions based on their history instead of generic ones (e.g., "Would you prefer something more remote like last time, or closer to a city?")
+- Prioritize variety — if they've done mostly hiking, suggest a scenic drive or water-based trip as a contrast option`;
+      } else {
+        prompt += `\n\nPERSONALIZATION MODE — NEW USER:
+You are in personalized recommendation mode, but this user has no trip history yet. Help them build a travel profile:
+- Ask 2-3 quick, engaging questions to understand their travel style (e.g., "Do you prefer rugged backcountry or scenic drives with easy access?")
+- Suggest a few diverse starter destinations based on their answers
+- Keep it conversational and low-pressure — help them discover what they like`;
       }
     }
 
@@ -2512,22 +2557,28 @@ What kind of adventure are you dreaming of? Let's make it happen.`
             </div>
 
             {isWelcomeState && onOpenQuickFill && (
-              <p className="mb-2 text-[11px] leading-4 sm:mb-3 sm:text-sm sm:leading-6" style={{ color: 'var(--text-secondary)' }}>
+              <p className="mb-1.5 text-[11px] leading-4 sm:mb-3 sm:text-sm sm:leading-6" style={{ color: 'var(--text-secondary)' }}>
                 Use Plan My Trip to add your destination, dates, budget, and interests before you ask for an itinerary.
+                {isAuthenticated && <span className="sm:hidden"> Tap <strong>For Me</strong> for personalized recommendations based on your travel history.</span>}
               </p>
             )}
 
             {isWelcomeState && (
-              <div className="mb-3">
+              <div className="mb-2 sm:mb-3">
                 <SuggestedPrompts
-                  prompts={[
+                  prompts={isPersonalized ? [
+                    { icon: Sparkles, text: "What should I explore this season based on my interests?", color: "text-green-400" },
+                    { icon: MapPin, text: "Suggest a park I haven't visited yet that matches my style", color: "text-blue-400" },
+                    { icon: Calendar, text: "Plan a weekend trip based on what I usually enjoy", color: "text-yellow-400" },
+                    { icon: Edit2, text: "What's trending near parks I've already visited?", color: "text-purple-400" },
+                  ] : [
                     { icon: Sparkles, text: "Plan a 5-day trip to Yellowstone for a family", color: "text-green-400" },
                     { icon: MapPin, text: "Best national parks for stargazing in the Southwest", color: "text-blue-400" },
                     { icon: Calendar, text: "Weekend hiking trip from Denver under $500", color: "text-yellow-400" },
                     { icon: Edit2, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
                   ]}
                   onSelect={(text) => handleSendMessage(text)}
-                  title="Try asking..."
+                  title={isPersonalized ? "Suggestions for you" : "Try asking..."}
                 />
               </div>
             )}

@@ -67,7 +67,7 @@ export default function usePlanAI(tripId) {
   });
 
   const isPersonalized = searchParams.get('personalized') === 'true';
-  const isNewChat = searchParams.get('newchat') === 'true';
+  const isNewChat = !!searchParams.get('newchat'); // Truthy for any value (timestamp used for uniqueness)
   const fromChatHistory = searchParams.get('chat') === 'true';
 
   // Load trip data - always from database (no more localStorage trips)
@@ -102,7 +102,7 @@ export default function usePlanAI(tripId) {
     const parkName = searchParams.get('name');
     const showChatDirectly = searchParams.get('chat') === 'true';
     const isPersonalized = searchParams.get('personalized') === 'true';
-    const isNewChat = searchParams.get('newchat') === 'true';
+    const isNewChat = !!searchParams.get('newchat');
 
     // Handle personalized recommendations
     if (isPersonalized) {
@@ -295,7 +295,14 @@ export default function usePlanAI(tripId) {
 
   // Load trip history and check if user is returning
   useEffect(() => {
-    // Skip this check if we're loading a specific trip or have URL parameters
+    // Always compute uniqueParksCount for authenticated users
+    if (user && userTrips) {
+      const activeTrips = userTrips.filter(t => t.status === 'active');
+      const uniqueParks = new Set(activeTrips.map(trip => trip.parkCode).filter(Boolean));
+      setUniqueParksCount(uniqueParks.size);
+    }
+
+    // Skip the rest if we're loading a specific trip or have URL parameters
     if (tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
       setIsRestoringState(false);
       return;
@@ -312,10 +319,6 @@ export default function usePlanAI(tripId) {
 
         setTripHistory(activeTrips.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
         setArchivedTrips(archivedTripsList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
-
-        // Calculate unique parks for personalized recommendations
-        const uniqueParks = new Set(activeTrips.map(trip => trip.parkCode).filter(Boolean));
-        setUniqueParksCount(uniqueParks.size);
 
         const hasUsedPlanAI = activeTrips.length > 0;
 
@@ -539,8 +542,10 @@ export default function usePlanAI(tripId) {
     setChatFormData(defaultFormData);
     setSelectedParkName('');
     setShowChat(true);
-    // Add newchat flag to show proper welcome message
-    router.push('/plan-ai?newchat=true');
+    // Clear saved session so restoration doesn't override the new chat
+    localStorage.removeItem('planai-chat-state');
+    // Use unique timestamp to force URL change even if already on ?newchat=true
+    router.push('/plan-ai?newchat=' + Date.now());
   };
 
   const handlePersonalizedRecommendations = () => {
@@ -642,6 +647,7 @@ export default function usePlanAI(tripId) {
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab, showLimitDialog, timeUntilReset,
     formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory,
+    newChatKey: searchParams.get('newchat') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,
 
     // Setters

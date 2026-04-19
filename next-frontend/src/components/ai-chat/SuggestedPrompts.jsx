@@ -32,36 +32,35 @@ const SuggestedPrompts = ({ prompts, onSelect, title = "Suggested prompts" }) =>
   return (
     <div>
       {title && (
-        <p className="text-xs font-semibold uppercase tracking-wider mb-3"
+        <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5 sm:text-xs sm:mb-3"
           style={{ color: 'var(--text-tertiary)' }}
         >
           {title}
         </p>
       )}
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 w-full">
+
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 w-full">
         {promptsToShow.map((prompt, index) => {
           const Icon = typeof prompt === 'object' ? prompt.icon : null;
           const text = typeof prompt === 'object' ? prompt.text : prompt;
-          
+
           return (
             <button
               key={index}
               onClick={() => onSelect(text)}
               aria-label={`Use prompt: ${text}`}
-              className="group flex items-center gap-2.5 px-3.5 sm:px-4 py-3 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 text-left"
+              className="group flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[11px] leading-tight sm:gap-2.5 sm:px-4 sm:py-3 sm:rounded-xl sm:text-sm sm:leading-snug font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 text-left"
               style={{
                 backgroundColor: 'var(--surface)',
                 borderWidth: '1px',
                 borderColor: 'var(--border)',
                 color: 'var(--text-primary)',
-                minHeight: '48px'
               }}
             >
               {Icon && (
-                <Icon className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
+                <Icon className="h-3 w-3 flex-shrink-0 sm:h-4 sm:w-4" style={{ color: 'var(--accent-green)' }} />
               )}
-              <span className="flex-1 leading-snug line-clamp-2">
+              <span className="flex-1 line-clamp-2">
                 {text}
               </span>
             </button>
