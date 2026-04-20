@@ -93,14 +93,40 @@ class WebSocketService {
       // Handle disconnection
       socket.on('disconnect', () => {
         console.log('[WebSocket] Client disconnected:', socket.id);
-        
+
         if (socket.userId) {
           this.connectedUsers.delete(socket.userId);
-          this.userSockets.delete(socket.id);
           this.userChannels.delete(socket.userId);
         }
+        // Always clean up by socket.id, even if userId was never set
+        this.userSockets.delete(socket.id);
       });
     });
+
+    // Periodic cleanup: sweep stale entries every 5 minutes
+    this._cleanupInterval = setInterval(() => {
+      this._sweepStaleEntries();
+    }, 5 * 60 * 1000);
+  }
+
+  _sweepStaleEntries() {
+    const activeSockets = this.io.sockets.sockets;
+    let swept = 0;
+
+    for (const [socketId, userId] of this.userSockets) {
+      if (!activeSockets.has(socketId)) {
+        this.userSockets.delete(socketId);
+        if (userId && this.connectedUsers.get(userId) === socketId) {
+          this.connectedUsers.delete(userId);
+          this.userChannels.delete(userId);
+        }
+        swept++;
+      }
+    }
+
+    if (swept > 0) {
+      console.log(`[WebSocket] Swept ${swept} stale socket entries`);
+    }
   }
 
   // Send message to specific user

@@ -1,4 +1,5 @@
 const axios = require('axios');
+const NodeCache = require('node-cache');
 const ParkSnapshot = require('../models/ParkSnapshot');
 const NpsSnapshot = require('../models/NpsSnapshot');
 
@@ -90,8 +91,8 @@ class NPSService {
       ttl: 24 * 60 * 60 * 1000 // 24 hours — parking lots rarely change
     };
 
-    // Per-endpoint caches for individual park data
-    this.endpointCache = new Map();
+    // Per-endpoint caches for individual park data (bounded with auto-eviction)
+    this.endpointCache = new NodeCache({ maxKeys: 500, checkperiod: 120 });
     this.endpointCacheTTLs = {
       alerts: 30 * 60 * 1000,           // 30 min — safety-critical, can change anytime
       eventsQuery: 24 * 60 * 60 * 1000,  // 1 day — event lists rarely change daily
@@ -160,18 +161,14 @@ class NPSService {
   // --- Per-endpoint cache helpers ---
 
   _getEndpointCache(key, type) {
-    const entry = this.endpointCache.get(key);
-    if (!entry) return null;
-    const ttl = this.endpointCacheTTLs[type] || 30 * 60 * 1000;
-    if (Date.now() - entry.timestamp > ttl) {
-      this.endpointCache.delete(key);
-      return null;
-    }
-    return entry.data;
+    const data = this.endpointCache.get(key);
+    return data !== undefined ? data : null;
   }
 
-  _setEndpointCache(key, data) {
-    this.endpointCache.set(key, { data, timestamp: Date.now() });
+  _setEndpointCache(key, data, type) {
+    const ttlMs = this.endpointCacheTTLs[type] || 30 * 60 * 1000;
+    const ttlSeconds = Math.round(ttlMs / 1000);
+    this.endpointCache.set(key, data, ttlSeconds);
   }
 
   _buildQueryCacheKey(prefix, params = {}) {
@@ -516,7 +513,7 @@ class NPSService {
         params: { stateCode, limit: 100 }
       });
       const data = response.data.data;
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'parksByState');
       return data;
     } catch (error) {
       console.error('NPS API Error:', error.message);
@@ -536,7 +533,7 @@ class NPSService {
       });
       const data = response.data.data;
       console.log(`✅ Activities for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'activities');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -650,7 +647,7 @@ class NPSService {
       });
       const data = response.data.data;
       console.log(`✅ Alerts for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'alerts');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -754,7 +751,7 @@ class NPSService {
       });
       const data = response.data.data;
       console.log(`✅ Campgrounds for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'campgrounds');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -858,7 +855,7 @@ class NPSService {
       });
       const data = response.data.data;
       console.log(`✅ Visitor Centers for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'visitorcenters');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -961,7 +958,7 @@ class NPSService {
         params: { parkCode, limit: 50 }
       });
       const data = response.data.data;
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'places');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1064,7 +1061,7 @@ class NPSService {
         params: { parkCode, limit: 50 }
       });
       const data = response.data.data;
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'tours');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1168,7 +1165,7 @@ class NPSService {
       });
       const data = response.data.data;
 
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'webcams');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1272,7 +1269,7 @@ class NPSService {
       });
       const data = response.data.data;
       console.log(`✅ Parking lots for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'parkinglots');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1297,7 +1294,7 @@ class NPSService {
       });
       const data = response.data.data || [];
       console.log(`🎬 Videos for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'activities');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1333,7 +1330,7 @@ class NPSService {
       })).filter(p => p.url);
 
       console.log(`🖼️ Gallery photos for ${parkCode}: ${photos.length} found`);
-      this._setEndpointCache(cacheKey, photos);
+      this._setEndpointCache(cacheKey, photos, 'activities');
       return photos;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1378,7 +1375,7 @@ class NPSService {
       }
 
       console.log(`🏛️ Amenities for ${parkCode}: ${amenities.length} found`);
-      this._setEndpointCache(cacheKey, amenities);
+      this._setEndpointCache(cacheKey, amenities, 'activities');
       return amenities;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1454,7 +1451,7 @@ class NPSService {
       const querySnapshot = await this._loadSnapshot(queryCacheKey, this.endpointCacheTTLs.eventsQuery);
       if (querySnapshot?.data && !querySnapshot.stale) {
         const dedupedSnapshot = this._dedupeNpsEvents(querySnapshot.data);
-        this._setEndpointCache(queryCacheKey, dedupedSnapshot);
+        this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery');
         console.log(`🗄️ Returning cached filtered events snapshot for ${queryCacheKey}`);
         return dedupedSnapshot.slice(0, normalizedLimit);
       }
@@ -1523,7 +1520,7 @@ class NPSService {
         this.setEventsCache(allEvents);
         await this._saveSnapshot('bulk-events', allEvents);
       } else if (queryCacheKey) {
-        this._setEndpointCache(queryCacheKey, allEvents);
+        this._setEndpointCache(queryCacheKey, allEvents, 'eventsQuery');
         await this._saveSnapshot(queryCacheKey, allEvents);
       }
 
@@ -1545,7 +1542,7 @@ class NPSService {
           if (querySnapshot?.data) {
             console.warn(`⚠️ NPS 429 on filtered events — returning snapshot for ${queryCacheKey}`);
             const dedupedSnapshot = this._dedupeNpsEvents(querySnapshot.data);
-            this._setEndpointCache(queryCacheKey, dedupedSnapshot);
+            this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery');
             return dedupedSnapshot.slice(0, normalizedLimit);
           }
         }
@@ -1599,7 +1596,7 @@ class NPSService {
 
     const summarySnapshot = await this._loadSnapshot(summaryCacheKey, this.endpointCacheTTLs.eventsSummary);
     if (summarySnapshot?.data !== undefined && !summarySnapshot.stale) {
-      this._setEndpointCache(summaryCacheKey, summarySnapshot.data);
+      this._setEndpointCache(summaryCacheKey, summarySnapshot.data, 'eventsSummary');
       console.log(`🗄️ Returning cached event summary snapshot for ${summaryCacheKey}`);
       return summarySnapshot.data;
     }
@@ -1619,7 +1616,7 @@ class NPSService {
         }
       });
       const total = Number(response.data?.total || 0);
-      this._setEndpointCache(summaryCacheKey, total);
+      this._setEndpointCache(summaryCacheKey, total, 'eventsSummary');
       await this._saveSnapshot(summaryCacheKey, total);
       return total;
     } catch (error) {
@@ -1640,7 +1637,7 @@ class NPSService {
     try {
       const data = await this.getAllEvents({ parkCode, pageSize: 100, limit: 100 });
       console.log(`Events for ${parkCode}: ${data.length}`);
-      this._setEndpointCache(cacheKey, data);
+      this._setEndpointCache(cacheKey, data, 'alerts');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {

@@ -1,4 +1,5 @@
 const axios = require('axios');
+const NodeCache = require('node-cache');
 const npsService = require('./npsService');
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
@@ -6,24 +7,16 @@ const OPENWEATHER_BASE = 'https://api.openweathermap.org/data/2.5';
 
 class EnhancedParkService {
   constructor() {
-    this.cache = new Map();
-    this.cacheTimeout = 30 * 60 * 1000; // 30 minutes
+    this.cache = new NodeCache({ stdTTL: 1800, maxKeys: 300, checkperiod: 120 });
   }
 
   // Get cached data or fetch new data
   getCachedData(key) {
-    const cached = this.cache.get(key);
-    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      return cached.data;
-    }
-    return null;
+    return this.cache.get(key) || null;
   }
 
   setCachedData(key, data) {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now()
-    });
+    this.cache.set(key, data);
   }
 
   // Enhanced weather data with seasonal averages

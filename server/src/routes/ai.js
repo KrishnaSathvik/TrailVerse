@@ -12,6 +12,8 @@ const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerato
 const { extractItineraryJSON, validateItineraryFeasibility } = require('../utils/extractItineraryJSON');
 const { parseConstraints, preflightCheck, buildConstraintBlock, validateItineraryConstraints, detectHypothetical, detectConflicts, detectIntent } = require('../utils/constraintEngine');
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
+const claudeService = require('../services/claudeService');
+const openaiService = require('../services/openaiService');
 
 // Initialize AI clients
 let anthropic = null;
@@ -177,7 +179,11 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   }
 
   // Build enhanced system prompt with facts
-  let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
+  // Use the full persona prompt from the appropriate service when no custom prompt is provided
+  const defaultPrompt = provider === 'openai'
+    ? openaiService.systemPrompt
+    : claudeService.defaultSystemPrompt;
+  let enhancedSystemPrompt = systemPrompt || defaultPrompt;
 
   if (npsFacts || weatherFacts || webSearchFacts) {
     const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
@@ -1359,7 +1365,11 @@ Ready to continue planning? 🚀`,
     }
 
     // Build enhanced system prompt with facts
-    let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.';
+    // Use the full persona prompt from the appropriate service when no custom prompt is provided
+    const defaultPrompt = provider === 'openai'
+      ? openaiService.systemPrompt
+      : claudeService.defaultSystemPrompt;
+    let enhancedSystemPrompt = systemPrompt || defaultPrompt;
 
     if (npsFacts || weatherFacts) {
       const parkLabel = anonParkNames.length > 1 ? anonParkNames.join(', ') : (resolvedMetadata.parkName || 'this park');

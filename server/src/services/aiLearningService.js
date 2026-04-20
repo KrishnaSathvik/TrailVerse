@@ -1,10 +1,10 @@
+const NodeCache = require('node-cache');
 const Feedback = require('../models/Feedback');
 const TripPlan = require('../models/TripPlan');
 
 class AILearningService {
   constructor() {
-    this.learningCache = new Map();
-    this.cacheExpiry = 30 * 60 * 1000; // 30 minutes
+    this.learningCache = new NodeCache({ stdTTL: 1800, maxKeys: 100, checkperiod: 120 });
   }
 
   // Get personalized system prompt based on user feedback patterns
@@ -13,13 +13,13 @@ class AILearningService {
       // Check cache first
       const cacheKey = `prompt_${userId}_${JSON.stringify(context)}`;
       const cached = this.learningCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
-        return cached.prompt;
+      if (cached) {
+        return cached;
       }
 
       // Get user's feedback patterns
       const feedbackPatterns = await Feedback.getFeedbackPatterns(userId, 100);
-      
+
       if (feedbackPatterns.length < 5) {
         // Not enough feedback data, return base prompt
         return basePrompt;
@@ -27,15 +27,12 @@ class AILearningService {
 
       // Analyze feedback patterns
       const analysis = this.analyzeFeedbackPatterns(feedbackPatterns);
-      
+
       // Generate personalized prompt
       const personalizedPrompt = this.generatePersonalizedPrompt(basePrompt, analysis, context);
-      
+
       // Cache the result
-      this.learningCache.set(cacheKey, {
-        prompt: personalizedPrompt,
-        timestamp: Date.now()
-      });
+      this.learningCache.set(cacheKey, personalizedPrompt);
 
       return personalizedPrompt;
 
@@ -257,7 +254,7 @@ class AILearningService {
 
   // Clear cache (useful for testing or when user preferences change)
   clearCache() {
-    this.learningCache.clear();
+    this.learningCache.flushAll();
   }
 }
 

@@ -3,7 +3,8 @@ const NodeCache = require('node-cache');
 // Create cache instance
 const cache = new NodeCache({
   stdTTL: 300, // 5 minutes default
-  checkperiod: 60 // Check for expired keys every 60 seconds
+  checkperiod: 60, // Check for expired keys every 60 seconds
+  maxKeys: 500 // Prevent unbounded growth
 });
 
 // Cache middleware
