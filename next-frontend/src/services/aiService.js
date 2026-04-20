@@ -34,7 +34,8 @@ class AIService {
       body,
       {
         skipCache: true,
-        signal // pass through to Axios/fetch in your enhancedApi
+        signal, // pass through to Axios/fetch in your enhancedApi
+        timeout: 120000 // 2 min — AI requests need more time (fact fetching + generation)
       }
     );
 
@@ -73,7 +74,8 @@ class AIService {
       body,
       {
         skipCache: true,
-        signal // pass through to Axios/fetch in your enhancedApi
+        signal, // pass through to Axios/fetch in your enhancedApi
+        timeout: 120000 // 2 min — AI requests need more time (fact fetching + generation)
       }
     );
 

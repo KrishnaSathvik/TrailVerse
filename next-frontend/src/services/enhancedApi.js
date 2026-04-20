@@ -137,10 +137,13 @@ class EnhancedApiService {
    * Check if request should be retried
    */
   shouldRetry(error) {
+    // Don't retry timeouts — the server is likely still processing the
+    // original request, and retrying just creates duplicate work + longer waits.
+    if (error.code === 'ECONNABORTED') return false;
+
     return (
       !error.response || // Network error
-      error.response.status >= 500 || // Server error
-      error.code === 'ECONNABORTED' // Timeout
+      error.response.status >= 500 // Server error
     );
   }
 
