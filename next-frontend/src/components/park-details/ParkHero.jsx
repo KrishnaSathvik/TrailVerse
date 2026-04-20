@@ -5,7 +5,7 @@ import ShareButtons from '../common/ShareButtons';
 
 const ParkHero = ({ park, isSaved, onSave, onShare }) => {
   return (
-    <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
+    <div className="relative h-[70dvh] min-h-[500px] overflow-hidden">
       {/* Background Image */}
       <OptimizedImage
         src={park.images?.[0]?.url}

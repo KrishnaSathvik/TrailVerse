@@ -27,7 +27,7 @@
    ==================================== */
 
 .modern-blog-editor {
-  min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at top left, var(--accent-green-light, rgba(5, 150, 105, 0.12)), transparent 30%),
     linear-gradient(180deg, var(--surface-hover), transparent 18%),
@@ -808,7 +808,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .loading-spinner {

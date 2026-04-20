@@ -38,7 +38,7 @@ const FilterSidebar = ({
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:sticky top-0 left-0 h-screen lg:h-auto
+        fixed lg:sticky top-0 left-0 h-dvh lg:h-auto
         w-80 lg:w-full flex-shrink-0
         transition-transform duration-300 z-50 lg:z-0
         ${show ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}

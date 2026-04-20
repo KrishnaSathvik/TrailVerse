@@ -189,7 +189,7 @@ const PlanAIContent = ({ tripId }) => {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="h-dvh flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
         <section className="relative z-10 overflow-hidden border-b px-4 py-2 sm:px-6 sm:py-4 lg:px-10 xl:px-12" style={{ borderColor: 'var(--border)' }}>

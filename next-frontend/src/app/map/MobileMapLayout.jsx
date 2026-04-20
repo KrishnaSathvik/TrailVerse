@@ -28,7 +28,7 @@ export default function MobileMapLayout() {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Header />
-        <div className="flex h-[calc(100vh-72px)] items-center justify-center">
+        <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
           <div className="text-center">
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-emerald-600" />
             <p style={{ color: 'var(--text-secondary)' }}>Loading parks...</p>
@@ -42,7 +42,7 @@ export default function MobileMapLayout() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Header />
 
-      <div className="relative h-[calc(100vh-72px)] overflow-hidden">
+      <div className="relative h-[calc(100dvh-72px)] overflow-hidden">
         <MapCanvas
           parks={allParks}
           selectedPark={mapState.selectedPark}

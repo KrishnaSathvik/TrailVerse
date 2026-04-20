@@ -9,7 +9,7 @@
 .table-of-contents-sticky {
   position: sticky;
   top: 104px;
-  max-height: calc(100vh - 8rem);
+  max-height: calc(100dvh - 8rem);
   overflow: auto;
   scrollbar-width: thin;
 }

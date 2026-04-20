@@ -717,12 +717,12 @@
   inset: 0;
   z-index: 9999;
   border-radius: 0;
-  max-height: 100vh;
+  max-height: 100dvh;
   margin: 0;
 }
 
 .modern-rich-text-editor.fullscreen .editor-content {
-  max-height: calc(100vh - 180px);
+  max-height: calc(100dvh - 180px);
 }
 
 
