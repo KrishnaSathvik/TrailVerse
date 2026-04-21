@@ -830,12 +830,18 @@ const BlogPostForm = ({ mode, postId }) => {
               {imagePreview ? (
                 <div className="image-preview">
                   <OptimizedImage src={imagePreview} alt="Featured" />
-                  <button type="button" onClick={() => {
-                    setFormData((previous) => ({ ...previous, featuredImage: '' }));
-                    setImagePreview(null);
-                  }} className="btn-remove-image" title="Remove image">
-                    <X size={16} />
-                  </button>
+                  <div className="image-preview-actions">
+                    <label className="btn-change-image" title="Change image">
+                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                      <Upload size={16} />
+                    </label>
+                    <button type="button" onClick={() => {
+                      setFormData((previous) => ({ ...previous, featuredImage: '' }));
+                      setImagePreview(null);
+                    }} className="btn-remove-image" title="Remove image">
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <label className="image-upload-area">

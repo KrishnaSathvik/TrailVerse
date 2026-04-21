@@ -224,6 +224,18 @@ class WebSocketService {
   getUserChannels(userId) {
     return Array.from(this.userChannels.get(userId) || []);
   }
+
+  // Clean up on shutdown
+  shutdown() {
+    if (this._cleanupInterval) {
+      clearInterval(this._cleanupInterval);
+      this._cleanupInterval = null;
+    }
+    this.connectedUsers.clear();
+    this.userSockets.clear();
+    this.userChannels.clear();
+    console.log('[WebSocket] Service shut down');
+  }
 }
 
 module.exports = WebSocketService;

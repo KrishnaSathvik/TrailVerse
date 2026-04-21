@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
 
 // Load env vars (only in development)
 if (process.env.NODE_ENV !== 'production') {
@@ -20,8 +21,8 @@ const { app, server, wsService } = require('./src/app');
 const connectDB = require('./src/config/database');
 
 // Scheduler services
-const { startScheduler } = require('./src/services/schedulerService');
-const { startDailyFeedScheduler } = require('./src/services/dailyFeedScheduler');
+const { startScheduler, stopScheduler } = require('./src/services/schedulerService');
+const { startDailyFeedScheduler, stopDailyFeedScheduler } = require('./src/services/dailyFeedScheduler');
 const npsService = require('./src/services/npsService');
 
 // Connect to database
@@ -55,6 +56,42 @@ server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
   console.log(`📡 WebSocket server ready for real-time updates`);
 });
+
+// Graceful shutdown handler
+const gracefulShutdown = (signal) => {
+  console.log(`\n🛑 ${signal} received — shutting down gracefully...`);
+
+  // Stop accepting new connections
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+
+    // Stop schedulers
+    stopScheduler();
+    stopDailyFeedScheduler();
+
+    // Stop WebSocket service
+    if (wsService) {
+      wsService.shutdown();
+    }
+
+    // Close database connection
+    mongoose.connection.close(false).then(() => {
+      console.log('✅ MongoDB connection closed');
+      process.exit(0);
+    }).catch(() => {
+      process.exit(0);
+    });
+  });
+
+  // Force exit after 10s if graceful shutdown stalls
+  setTimeout(() => {
+    console.error('⚠️ Graceful shutdown timed out — forcing exit');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {

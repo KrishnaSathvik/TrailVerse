@@ -227,9 +227,28 @@ exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bi
 exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
 exports.getParkFacilities = makeTabHandler(npsService.getParkAmenities.bind(npsService), 'facilities');
 
-// In-memory cache for brochure URLs (30 days)
+// In-memory cache for brochure URLs (30 days, max 200 parks)
 const brochureCache = new Map();
 const BROCHURE_CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+const BROCHURE_CACHE_MAX = 200;
+
+// Periodically evict expired brochure cache entries (every 6 hours)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of brochureCache) {
+    if (now - val.timestamp >= BROCHURE_CACHE_TTL) {
+      brochureCache.delete(key);
+    }
+  }
+  // If still over limit, evict oldest entries
+  if (brochureCache.size > BROCHURE_CACHE_MAX) {
+    const sorted = [...brochureCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const excess = brochureCache.size - BROCHURE_CACHE_MAX;
+    for (let i = 0; i < excess; i++) {
+      brochureCache.delete(sorted[i][0]);
+    }
+  }
+}, 6 * 60 * 60 * 1000);
 
 // @desc    Get park brochure/PDF links by scraping NPS brochure pages
 // @route   GET /api/parks/:parkCode/brochures

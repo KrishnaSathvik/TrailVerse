@@ -1,6 +1,7 @@
 const { generateAndSaveDailyFeed } = require('../controllers/dailyFeedController');
 
 let generating = false;
+let _intervalId = null;
 
 /**
  * Attempt to generate today's daily feed if it doesn't already exist.
@@ -37,11 +38,19 @@ const startDailyFeedScheduler = () => {
   }, 5000);
 
   // Re-check every minute (catches midnight day transitions quickly)
-  setInterval(() => {
+  _intervalId = setInterval(() => {
     ensureTodaysFeed();
   }, 60 * 1000);
 
   console.log('✅ Daily feed scheduler started (checks every minute)');
 };
 
-module.exports = { startDailyFeedScheduler, ensureTodaysFeed };
+const stopDailyFeedScheduler = () => {
+  if (_intervalId) {
+    clearInterval(_intervalId);
+    _intervalId = null;
+    console.log('🛑 Daily feed scheduler stopped');
+  }
+};
+
+module.exports = { startDailyFeedScheduler, stopDailyFeedScheduler, ensureTodaysFeed };

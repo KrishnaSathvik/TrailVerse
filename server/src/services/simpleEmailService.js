@@ -13,8 +13,19 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Simple email tracking (in-memory for now, can be moved to database later)
+// Simple email tracking (in-memory, capped to prevent unbounded growth)
+const EMAIL_TRACKING_MAX = 500;
 const emailTracking = new Map();
+
+// Evict oldest entries when the map exceeds the cap
+const evictOldTracking = () => {
+  if (emailTracking.size <= EMAIL_TRACKING_MAX) return;
+  const excess = emailTracking.size - EMAIL_TRACKING_MAX;
+  const iter = emailTracking.keys();
+  for (let i = 0; i < excess; i++) {
+    emailTracking.delete(iter.next().value);
+  }
+};
 
 // Helper to generate tracking ID
 const generateTrackingId = () => uuidv4();
@@ -31,6 +42,7 @@ const trackEmailDelivery = async (trackingId, status, metadata = {}) => {
     metadata,
     timestamp: new Date()
   });
+  evictOldTracking();
   console.log(`📧 Email tracking: ${trackingId} - ${status}`, metadata);
 };
 

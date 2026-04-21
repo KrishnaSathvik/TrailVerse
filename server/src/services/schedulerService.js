@@ -122,26 +122,37 @@ const getScheduledPostsInfo = async () => {
   }
 };
 
+let _intervalId = null;
+
 /**
  * Start the scheduler (for manual setup or testing)
  * Runs every 5 minutes to check for scheduled posts
  */
 const startScheduler = () => {
   console.log('🚀 Starting blog post scheduler...');
-  
+
   // Run immediately
   publishScheduledPosts();
-  
+
   // Then run every 1 minute to catch posts more quickly
-  setInterval(() => {
+  _intervalId = setInterval(() => {
     publishScheduledPosts();
   }, 1 * 60 * 1000); // 1 minute
-  
+
   console.log('✅ Blog post scheduler started (checking every 1 minute)');
+};
+
+const stopScheduler = () => {
+  if (_intervalId) {
+    clearInterval(_intervalId);
+    _intervalId = null;
+    console.log('🛑 Blog post scheduler stopped');
+  }
 };
 
 module.exports = {
   publishScheduledPosts,
   getScheduledPostsInfo,
-  startScheduler
+  startScheduler,
+  stopScheduler
 };
