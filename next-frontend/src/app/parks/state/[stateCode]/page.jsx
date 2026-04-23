@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { parkToSlug } from '@/utils/parkSlug';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
@@ -55,15 +56,6 @@ async function getParksForState(stateCode) {
   } catch {
     return [];
   }
-}
-
-function parkToSlug(fullName) {
-  return fullName.toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
 }
 
 export async function generateStaticParams() {

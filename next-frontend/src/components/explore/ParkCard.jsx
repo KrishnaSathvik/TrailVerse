@@ -4,6 +4,7 @@ import { MapPin, Star, Heart, ExternalLink } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
 import { useParkRatings } from '../../hooks/useParkRatings';
 import { htmlToPlainText } from '../../utils/htmlUtils';
+import { parkToSlug } from '../../utils/parkSlug';
 
 const ParkCard = memo(({ park, onSave, isSaved = false }) => {
   const { data: parkRatings } = useParkRatings();
@@ -16,7 +17,7 @@ const ParkCard = memo(({ park, onSave, isSaved = false }) => {
 
   return (
     <Link
-      href={`/parks/${park.parkCode}`}
+      href={`/parks/${parkToSlug(park.fullName)}`}
       className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300 block"
       style={{
         backgroundColor: 'var(--surface)',

@@ -1,0 +1,47 @@
+# Render blueprint for the TrailVerse MCP server.
+# Deploy with: https://render.com/deploy from a fork of this repo,
+# or click "New +" → "Blueprint" in your Render dashboard.
+
+services:
+  - type: web
+    name: trailverse-mcp
+    runtime: python
+    plan: starter  # ~$7/mo; use "free" if you're ok with cold starts
+    region: oregon  # keep close to your main trailverse backend
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m server.main
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: TRAILVERSE_API_BASE
+        value: https://trailverse.onrender.com
+      - key: MCP_SERVER_BASE
+        value: https://trailverse-mcp.onrender.com
+      - key: TRAILVERSE_WEB_BASE
+        value: https://www.nationalparksexplorerusa.com
+      - key: PORT
+        value: 8000
+      - key: BACKEND_TIMEOUT
+        value: 45
+      - key: BACKEND_USER_AGENT
+        value: TrailVerse-MCP/1.0
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # Secret: set the SAME value on the TrailVerse Express backend's env.
+      # The Express backend checks the X-TrailVerse-MCP-Key header to bypass
+      # the anonymous 60 req/15min rate limit for all MCP traffic. Without
+      # this, the app self-DOSes almost immediately once it gets any users.
+      - key: MCP_BYPASS_KEY
+        sync: false  # sync:false = set manually in Render dashboard, never committed
+      # In-MCP rate limits (defense-in-depth against a leaked bypass key)
+      - key: MCP_PLAN_TRIP_LIMIT
+        value: 120
+      - key: MCP_PLAN_TRIP_WINDOW
+        value: 60
+      - key: MCP_READ_LIMIT
+        value: 300
+      - key: MCP_READ_WINDOW
+        value: 60

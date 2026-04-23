@@ -5,6 +5,7 @@ import Header from '@components/common/Header';
 import { useTheme } from '@/context/ThemeContext';
 import { useAllParks } from '@hooks/useParks';
 import { useParkRatings } from '@hooks/useParkRatings';
+import { parkToSlug } from '@/utils/parkSlug';
 import { Loader2 } from '@components/icons';
 import MapCanvas from './MapCanvas';
 import ParkPreviewCard from './ParkPreviewCard';
@@ -56,6 +57,17 @@ export default function MobileMapLayout() {
 
         <div className="absolute inset-x-4 top-4 z-20">
           <div className="mx-auto w-full max-w-sm">
+            <div
+              className="flex items-center justify-center gap-3 mb-1.5 rounded-full px-3 py-1 mx-auto w-fit text-[11px] backdrop-blur-md border"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--surface) 88%, transparent)',
+                borderColor: 'var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: '#15803d' }} />National Parks</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: '#2563eb' }} />Other NPS Sites</span>
+            </div>
             <ParkSearch
               query={mapState.searchQuery}
               suggestions={mapState.suggestions}
@@ -75,7 +87,8 @@ export default function MobileMapLayout() {
               park={mapState.selectedPark}
               rating={getRating(mapState.selectedPark.parkCode)}
               onClose={mapState.clearSelection}
-              onViewDetails={(parkCode) => router.push(`/parks/${parkCode}`)}
+              onViewDetails={() => router.push(`/parks/${parkToSlug(mapState.selectedPark.fullName)}`)}
+              onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
               isDark={isDark}
             />
           </div>

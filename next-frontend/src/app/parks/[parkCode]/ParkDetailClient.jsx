@@ -10,6 +10,7 @@ import {
   Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight,
   BookOpen, Download, FileText, Ticket, TrendingUp
 } from '@components/icons';
+import { parkToSlug } from '@/utils/parkSlug';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -2203,7 +2204,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
               {relatedParks.map((rp, index) => {
-                const slug = rp.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+                const slug = parkToSlug(rp.fullName);
                 return (
                   <Link
                     key={rp.parkCode}

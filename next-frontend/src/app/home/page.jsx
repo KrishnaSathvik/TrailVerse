@@ -29,6 +29,7 @@ import Header from '@/components/common/Header';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import Button from '@/components/common/Button';
 import dailyFeedService from '@/services/dailyFeedService';
+import { parkToSlug } from '@/utils/parkSlug';
 import { useAuth } from '@/context/AuthContext';
 
 // ---------- Small, reusable UI atoms ----------
@@ -485,7 +486,7 @@ const DailyFeedPage = () => {
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button
-                  onClick={() => router.push(`/parks/${park?.parkCode || 'unknown'}`)}
+                  onClick={() => router.push(`/parks/${parkToSlug(park?.name) || park?.parkCode || 'unknown'}`)}
                   variant="primary"
                   size="lg"
                   icon={ExternalLink}

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Search, X, Plus, ChevronDown, ChevronUp, Check,
   MapPin, Star, RefreshCw, Sparkles,
@@ -12,8 +13,10 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import { useAllParks } from '@/hooks/useParks';
 import { useParkComparison } from '@/hooks/useEnhancedParks';
 import { logEvent } from '@/utils/analytics';
+import { parkToSlug } from '@/utils/parkSlug';
 
-const ComparePage = () => {
+const ComparePageInner = () => {
+  const searchParams = useSearchParams();
   const { data: allParksData, isLoading } = useAllParks();
   const allParks = allParksData?.data;
   const [selectedParks, setSelectedParks] = useState([]);
@@ -90,6 +93,23 @@ const ComparePage = () => {
       }
     }
   };
+
+  // Auto-add park from ?park= URL param (e.g. from map "Compare Park" button)
+  const autoAddedRef = React.useRef(false);
+  useEffect(() => {
+    const parkCode = searchParams.get('park');
+    if (!parkCode || !allParks?.length || autoAddedRef.current) return;
+    const park = allParks.find(p => p.parkCode === parkCode);
+    if (park) {
+      autoAddedRef.current = true;
+      setSelectedParks(prev => {
+        if (prev.some(p => p.parkCode === parkCode)) return prev;
+        if (prev.length >= maxParks) return prev;
+        return [...prev, park];
+      });
+      setShowSelector(true);
+    }
+  }, [searchParams, allParks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRemovePark = (parkCode) => {
     const park = selectedParks.find(p => p.parkCode === parkCode);
@@ -701,9 +721,10 @@ const ComparePage = () => {
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
+                                  weight={star <= (park.reviews?.averageRating || 0) ? 'fill' : 'regular'}
                                   className={`h-3 w-3 ${
                                     star <= (park.reviews?.averageRating || 0)
-                                      ? 'text-yellow-400 fill-current'
+                                      ? 'text-yellow-400'
                                       : 'text-slate-400'
                                   }`}
                                 />
@@ -870,7 +891,7 @@ const ComparePage = () => {
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col items-center gap-2">
                         <Link
-                          href={`/parks/${park.parkCode}`}
+                          href={`/parks/${parkToSlug(park.fullName)}`}
                           className="px-3 py-2 rounded-lg text-sm font-medium transition-colors border"
                           style={{
                             color: 'var(--accent-green)',
@@ -1026,4 +1047,10 @@ const ComparisonRow = ({ label, children, desktopAlign = 'center' }) => {
   );
 };
 
-export default ComparePage;
+export default function ComparePage() {
+  return (
+    <Suspense>
+      <ComparePageInner />
+    </Suspense>
+  );
+}

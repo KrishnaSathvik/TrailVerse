@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
+import { parkToSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import ParkDetailClient from './ParkDetailClient';
 
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }) {
 
   const description = `Explore ${park.fullName} in ${park.states}. ${park.description?.substring(0, 150)}... Find activities, camping, weather, and plan your visit.`;
   const image = park.images?.[0]?.url;
-  const slug = park.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+  const slug = parkToSlug(park.fullName);
   const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
@@ -68,7 +69,7 @@ export default async function ParkPage({ params }) {
     notFound();
   }
 
-  const parkSlug = park.fullName.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+  const parkSlug = parkToSlug(park.fullName);
 
   // Redirect short code URLs (e.g. /parks/yell) to canonical slug URL
   if (parkCode !== parkSlug) {

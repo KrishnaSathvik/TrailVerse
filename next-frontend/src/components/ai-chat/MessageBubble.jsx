@@ -1,8 +1,124 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw } from '@components/icons';
+import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
 import { linkifyParkNames } from '@/utils/parkLinkifier';
+
+
+const ImageLightbox = ({ images, initialIndex, onClose }) => {
+  const [index, setIndex] = useState(initialIndex);
+
+  const goPrev = useCallback(() => {
+    setIndex(i => (i - 1 + images.length) % images.length);
+  }, [images.length]);
+
+  const goNext = useCallback(() => {
+    setIndex(i => (i + 1) % images.length);
+  }, [images.length]);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'ArrowRight') goNext();
+    };
+    window.addEventListener('keydown', handleKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = '';
+    };
+  }, [onClose, goPrev, goNext]);
+
+  const handleDownload = async () => {
+    const img = images[index];
+    try {
+      const response = await fetch(img.url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (img.title || 'park-photo').replace(/[^a-z0-9]/gi, '-') + '.jpg';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(img.url, '_blank');
+    }
+  };
+
+  const current = images[index];
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.92)' }}
+      onClick={onClose}
+    >
+      {/* Top bar */}
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 z-10">
+        <span className="text-white/70 text-sm font-medium">
+          {index + 1} / {images.length}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+            className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition"
+            title="Download"
+          >
+            <Download className="h-5 w-5" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition"
+            title="Close (Esc)"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Nav arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition z-10"
+            title="Previous"
+          >
+            <ChevronLeft className="h-7 w-7" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); goNext(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition z-10"
+            title="Next"
+          >
+            <ChevronRight className="h-7 w-7" />
+          </button>
+        </>
+      )}
+
+      {/* Image */}
+      <img
+        src={current.url}
+        alt={current.altText || current.title || 'Park photo'}
+        className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg select-none"
+        onClick={(e) => e.stopPropagation()}
+        draggable={false}
+      />
+
+      {/* Caption */}
+      {(current.altText || current.title) && (
+        <div className="absolute bottom-0 left-0 right-0 text-center px-6 py-4 z-10">
+          <p className="text-white/80 text-sm leading-relaxed max-w-2xl mx-auto">
+            {current.altText || current.title}
+          </p>
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+};
 
 
 const MessageBubble = ({
@@ -18,11 +134,15 @@ const MessageBubble = ({
   initialFeedback = null, // Initial feedback state from database ('up' or 'down')
   hideActions = false,
   hasLiveData = false,
-  liveDataParks = []
+  liveDataParks = [],
+  parkImages = []
 }) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
-  const [feedbackState, setFeedbackState] = useState(initialFeedback); // Track feedback state
+  const [feedbackState, setFeedbackState] = useState(initialFeedback);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [avatarError, setAvatarError] = useState(false);
 
 
   // Update feedback state when initialFeedback prop changes
@@ -84,16 +204,12 @@ const MessageBubble = ({
         }}
       >
         {isUser ? (
-          userAvatar ? (
-            <img 
-              src={userAvatar} 
-              alt="User avatar" 
+          userAvatar && !avatarError ? (
+            <img
+              src={userAvatar}
+              alt="User avatar"
               className="w-full h-full object-cover rounded-full"
-              onError={(e) => {
-                // Fallback to icon if image fails to load
-                e.target.style.display = 'none';
-                e.target.parentNode.innerHTML = '<svg class="h-5 w-5" style="color: var(--text-secondary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
-              }}
+              onError={() => setAvatarError(true)}
             />
           ) : (
             <User className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
@@ -133,6 +249,43 @@ const MessageBubble = ({
               <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
               <span>Live data · {liveDataParks.join(', ')}</span>
             </div>
+          )}
+
+          {/* Park photo gallery — 2×2 grid */}
+          {!isUser && parkImages?.length > 0 && (
+            <>
+              <div className="grid grid-cols-2 gap-1.5 mb-2 rounded-xl overflow-hidden">
+                {parkImages.slice(0, 4).map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-[4/3] overflow-hidden group/img cursor-pointer"
+                    style={{ backgroundColor: 'var(--surface-hover)' }}
+                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View photo: ${img.altText || img.title || 'Park photo'}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { setLightboxIndex(idx); setLightboxOpen(true); } }}
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.altText || img.title || 'Park photo'}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
+                      loading="lazy"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                ))}
+              </div>
+              {parkImages.length > 4 && (
+                <button
+                  onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
+                  className="text-xs font-medium mb-2 transition-colors"
+                  style={{ color: 'var(--accent-green)' }}
+                >
+                  View all {parkImages.length} photos
+                </button>
+              )}
+            </>
           )}
 
           <div className="prose prose-sm max-w-none"
@@ -394,6 +547,14 @@ const MessageBubble = ({
           )}
         </div>
       </div>
+      {/* Image lightbox */}
+      {lightboxOpen && parkImages?.length > 0 && (
+        <ImageLightbox
+          images={parkImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 };

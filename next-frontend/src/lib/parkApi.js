@@ -1,3 +1,5 @@
+import { parkToSlug } from '@/utils/parkSlug';
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
@@ -25,13 +27,7 @@ export async function getAllParkSlugs() {
   const json = await res.json();
   return json.data.map((park) => ({
     code: park.parkCode,
-    slug: park.fullName
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim(),
+    slug: parkToSlug(park.fullName),
     fullName: park.fullName,
   }));
 }

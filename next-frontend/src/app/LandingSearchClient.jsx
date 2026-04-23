@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import SearchBar from '@/components/explore/SearchBar';
 import { ChevronRight, Mountain } from '@components/icons';
 import { logSearch } from '@/utils/analytics';
+import { parkToSlug } from '@/utils/parkSlug';
 
 export default function LandingSearchClient({ parks }) {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function LandingSearchClient({ parks }) {
                   key={park.parkCode}
                   onClick={() => {
                     logSearch(searchQuery, searchResults.length, 'landing');
-                    router.push(`/parks/${park.parkCode}`);
+                    router.push(`/parks/${parkToSlug(park.fullName)}`);
                     setSearchFocused(false);
                   }}
                   className="w-full flex items-center gap-4 px-4 sm:px-6 py-4 text-left transition-colors"

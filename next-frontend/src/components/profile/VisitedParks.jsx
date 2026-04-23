@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { CheckCircle, Calendar, Star, Trash2, ChevronRight } from '@components/icons';
 import { useAllParks } from '../../hooks/useParks';
+import { parkToSlug } from '../../utils/parkSlug';
 import { useParkRatings } from '../../hooks/useParkRatings';
 
 const VisitedParks = ({ visitedParks, onRemove }) => {
@@ -64,7 +65,7 @@ const VisitedParks = ({ visitedParks, onRemove }) => {
         return (
           <Link
             key={park.parkCode}
-            href={`/parks/${park.parkCode}`}
+            href={`/parks/${parkToSlug(npsData?.fullName) || park.parkCode}`}
             className="group rounded-2xl overflow-hidden hover:-translate-y-1 transition-all duration-300"
             style={{
               backgroundColor: 'var(--surface)',

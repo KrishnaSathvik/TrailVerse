@@ -887,13 +887,20 @@ const TripPlannerChat = ({
       // Build system prompt
       const systemPrompt = buildSystemPrompt(userContext, isPersonalized);
       
-      // Build conversation history
+      // Build conversation history — include image context so AI can
+      // answer follow-up questions about the photos it shared
       const conversationHistory = messages
         .filter(msg => msg.role !== 'system')
-        .map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }));
+        .map(msg => {
+          let content = msg.content;
+          if (msg.role === 'assistant' && msg.parkImages?.length > 0) {
+            const imageDesc = msg.parkImages
+              .map((img, i) => `[Photo ${i + 1}: ${img.altText || img.title || 'Park photo'}]`)
+              .join(' ');
+            content += `\n\n(Photos shown to user: ${imageDesc})`;
+          }
+          return { role: msg.role, content };
+        });
 
       // Build messages array with system prompt first
       const msgs = [
@@ -1010,11 +1017,12 @@ const TripPlannerChat = ({
                 hasLiveData: result.hasLiveData,
                 parkName: result.parkName,
                 parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
-                hasItinerary: result.hasItinerary || false
+                hasItinerary: result.hasItinerary || false,
+                parkImages: result.parkImages || []
               };
               setMessages(prev => prev.map(m =>
                 m.id === streamAssistantId
-                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName, parkNames: result.parkNames || (result.parkName ? [result.parkName] : []), hasItinerary: result.hasItinerary || false }
+                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName, parkNames: result.parkNames || (result.parkName ? [result.parkName] : []), hasItinerary: result.hasItinerary || false, parkImages: result.parkImages || [] }
                   : m
               ));
             },
@@ -1099,12 +1107,13 @@ const TripPlannerChat = ({
                 responseTime,
                 hasLiveData: data.hasLiveData,
                 parkName: data.parkName,
-                hasItinerary: data.hasItinerary || false
+                hasItinerary: data.hasItinerary || false,
+                parkImages: data.parkImages || []
               }
             ]
           : prev.map(msg =>
               msg.id === streamAssistantId
-                ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName }
+                ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName, parkImages: data.parkImages || [] }
                 : msg
             );
         
@@ -2092,6 +2101,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   })() : null}
                   hasLiveData={message.hasLiveData || false}
                   liveDataParks={message.parkNames || (message.parkName ? [message.parkName] : [])}
+                  parkImages={message.parkImages || []}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,
                     userMessage: messages[messages.indexOf(message) - 1]?.content || '',
@@ -2475,10 +2485,10 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                       border: '1px solid var(--border)'
                     }}
                   >
-                    {isWelcomeState ? (
-                      <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
-                    ) : (
+                    {currentPlan ? (
                       <><Edit2 className="h-3.5 w-3.5" />Edit Trip Details</>
+                    ) : (
+                      <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
                     )}
                   </button>
                 )}

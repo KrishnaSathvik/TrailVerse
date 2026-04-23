@@ -17,6 +17,7 @@ import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchPrefetch } from '@/hooks/useSmartPrefetch';
 import { logSearch, logEvent } from '@/utils/analytics';
+import { parkToSlug } from '@/utils/parkSlug';
 import STATE_NAMES from '@/utils/stateNames';
 
 const ExploreContent = ({ initialPaginatedData }) => {
@@ -844,7 +845,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
 const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
   if (viewMode === 'list') {
     return (
-      <Link href={`/parks/${park.parkCode}`}
+      <Link href={`/parks/${parkToSlug(park.fullName)}`}
         className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
         style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
       >
@@ -875,7 +876,7 @@ const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
   }
 
   return (
-    <Link href={`/parks/${park.parkCode}`}
+    <Link href={`/parks/${parkToSlug(park.fullName)}`}
       className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300"
       style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
     >

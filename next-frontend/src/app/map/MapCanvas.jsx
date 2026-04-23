@@ -171,6 +171,9 @@ export default function MapCanvas({
 
         const isSelected = selectedPark?.parkCode === park.parkCode;
 
+        // When a park is selected, only show the selected marker
+        if (selectedPark && !isSelected) return;
+
         const marker = new window.google.maps.Marker({
           position: { lat, lng },
           map: mapRef.current,
@@ -178,7 +181,7 @@ export default function MapCanvas({
           zIndex: isSelected ? 10 : 1,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
-            scale: isSelected ? 10 : 7,
+            scale: isSelected ? 13 : 9,
             fillColor: park.designation === 'National Park' ? '#15803d' : '#2563eb',
             fillOpacity: isSelected ? 1 : 0.9,
             strokeColor: '#ffffff',

@@ -15,52 +15,11 @@ export default function useParkMapState(allParks) {
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   const [hasRestored, setHasRestored] = useState(false);
 
+  // Always start with the default US overview — no localStorage restore.
+  // This ensures returning from park details / compare always shows all parks.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const rawState = window.localStorage.getItem(STORAGE_KEY);
-      if (!rawState) {
-        setHasRestored(true);
-        return;
-      }
-
-      const parsedState = JSON.parse(rawState);
-
-      if (parsedState.searchQuery) {
-        setSearchQuery(parsedState.searchQuery);
-      }
-
-      // Don't restore selectedParkCode — the info card should not persist
-      // across navigation. Map position and search are fine to restore.
-
-      if (parsedState.mapCenter?.lat && parsedState.mapCenter?.lng) {
-        setMapCenter(parsedState.mapCenter);
-      }
-
-      if (typeof parsedState.mapZoom === 'number') {
-        setMapZoom(parsedState.mapZoom);
-      }
-    } catch (error) {
-      console.error('Failed to restore map state:', error);
-    } finally {
-      setHasRestored(true);
-    }
+    setHasRestored(true);
   }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !hasRestored) return;
-
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        searchQuery,
-        mapCenter,
-        mapZoom,
-      }));
-    } catch (error) {
-      console.error('Failed to persist map state:', error);
-    }
-  }, [hasRestored, mapCenter, mapZoom, searchQuery]);
 
   useEffect(() => {
     if (!hasRestored || !Array.isArray(allParks) || allParks.length === 0) return;

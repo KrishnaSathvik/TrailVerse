@@ -5,6 +5,7 @@ import Header from '@components/common/Header';
 import { useTheme } from '@/context/ThemeContext';
 import { useAllParks } from '@hooks/useParks';
 import { useParkRatings } from '@hooks/useParkRatings';
+import { parkToSlug } from '@/utils/parkSlug';
 import { Loader2 } from '@components/icons';
 import MapCanvas from './MapCanvas';
 import ParkPreviewCard from './ParkPreviewCard';
@@ -55,6 +56,17 @@ export default function DesktopMapLayout() {
 
         <div className="pointer-events-none absolute inset-x-10 top-8 z-20">
           <div className="mx-auto w-full max-w-2xl pointer-events-auto">
+            <div
+              className="flex items-center justify-center gap-4 mb-2 rounded-full px-4 py-1.5 mx-auto w-fit text-xs backdrop-blur-md border"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--surface) 88%, transparent)',
+                borderColor: 'var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#15803d' }} />National Parks</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#2563eb' }} />Other NPS Sites</span>
+            </div>
             <ParkSearch
               query={mapState.searchQuery}
               suggestions={mapState.suggestions}
@@ -73,7 +85,8 @@ export default function DesktopMapLayout() {
               park={mapState.selectedPark}
               rating={getRating(mapState.selectedPark.parkCode)}
               onClose={mapState.clearSelection}
-              onViewDetails={(parkCode) => router.push(`/parks/${parkCode}`)}
+              onViewDetails={() => router.push(`/parks/${parkToSlug(mapState.selectedPark.fullName)}`)}
+              onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
               isDark={isDark}
               className="pointer-events-auto"
             />

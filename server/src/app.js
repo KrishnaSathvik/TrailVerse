@@ -158,6 +158,10 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// MCP bypass — lets the trusted ChatGPT MCP server skip anonymous rate limits
+const mcpBypass = require('./middleware/mcpBypass');
+app.use(mcpBypass);
+
 // Rate limiting - Tiered model for public/authenticated access
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 minutes
 const jwt = require('jsonwebtoken');
@@ -194,9 +198,10 @@ const tieredLimiter = rateLimit({
   message: 'Too many requests, please try again later. Sign in for higher rate limits.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting for localhost in development
+  // Skip rate limiting for trusted MCP server and localhost in development
   skip: (req) => {
-    return process.env.NODE_ENV === 'development' && 
+    if (req.skipAnonymousRateLimit) return true;
+    return process.env.NODE_ENV === 'development' &&
            (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1');
   }
 });

@@ -7,6 +7,7 @@ import { ArrowRight, MapPin, Mountain, Sparkles } from '@components/icons';
 import Button from '@/components/common/Button';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import dailyFeedService from '@/services/dailyFeedService';
+import { parkToSlug } from '@/utils/parkSlug';
 
 export default function LandingDailyFeedClient() {
   const today = new Date().toISOString().split('T')[0];
@@ -53,7 +54,7 @@ export default function LandingDailyFeedClient() {
         {dailyFeed?.parkOfDay && dailyFeed?.natureFact ? (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch">
             <Link
-              href={`/parks/${dailyFeed.parkOfDay.parkCode}`}
+              href={`/parks/${parkToSlug(dailyFeed.parkOfDay.name)}`}
               className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
               style={{ minHeight: '28rem', boxShadow: 'var(--shadow-lg)' }}
             >
@@ -107,7 +108,7 @@ export default function LandingDailyFeedClient() {
                 &ldquo;{dailyFeed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
               </p>
               <Button
-                href={`/parks/${dailyFeed.parkOfDay.parkCode}`}
+                href={`/parks/${parkToSlug(dailyFeed.parkOfDay.name)}`}
                 variant="primary"
                 size="lg"
                 icon={ArrowRight}

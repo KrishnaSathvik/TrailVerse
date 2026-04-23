@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>TrailVerse — Compare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg-primary: #0A0E0F;
+  --bg-secondary: #131719;
+  --bg-tertiary: #1A1F21;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.10);
+  --surface-active: rgba(255, 255, 255, 0.15);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(255, 255, 255, 0.20);
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-tertiary: rgba(255, 255, 255, 0.60);
+  --accent-green: #22c55e;
+  --accent-green-dark: #16a34a;
+  --accent-green-light: rgba(34, 197, 94, 0.15);
+  --accent-blue: #0ea5e9;
+  --accent-orange: #f97316;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.5);
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);
+  --font-sans: "Geist", "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Geist", sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-primary: #FEFCF9;
+    --bg-secondary: #F9F7F4;
+    --bg-tertiary: #F4F1EC;
+    --surface: rgba(255, 255, 255, 0.8);
+    --surface-hover: rgba(255, 255, 255, 0.9);
+    --surface-active: rgba(255, 255, 255, 0.95);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(0, 0, 0, 0.12);
+    --text-primary: #2D2B28;
+    --text-secondary: rgba(45, 43, 40, 0.85);
+    --text-tertiary: rgba(45, 43, 40, 0.65);
+    --accent-green: #059669;
+    --accent-green-dark: #047857;
+    --accent-green-light: rgba(5, 150, 105, 0.15);
+    --accent-blue: #0369A1;
+    --accent-orange: #EA580C;
+    --error: #dc2626;
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08);
+  }
+}
+
+/* Reset */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; color-scheme: light dark; }
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Shared components */
+.tv-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  max-width: 680px;
+  margin: 0 auto;
+  overflow: hidden;
+  animation: tv-fade-in 0.5s ease-out;
+}
+@keyframes tv-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Button styles — match .btn-primary / .btn-outline from globals.css */
+.tv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tv-btn-primary {
+  background: var(--accent-green);
+  color: #ffffff;
+  border: 1px solid var(--accent-green);
+}
+.tv-btn-primary:hover {
+  background: var(--accent-green-dark);
+  border-color: var(--accent-green-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+.tv-btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.tv-btn-secondary:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+.tv-btn-outline {
+  background: transparent;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+}
+.tv-btn-outline:hover {
+  background: var(--accent-green);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+.tv-btn-arrow {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+.tv-btn:hover .tv-btn-arrow { transform: translateX(2px); }
+
+/* Typography primitives */
+.tv-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.tv-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-green);
+}
+.tv-meta {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Badge / pill */
+.tv-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.tv-badge--green { background: var(--accent-green-light); color: var(--accent-green); border-color: transparent; }
+.tv-badge--orange { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border-color: transparent; }
+.tv-badge--blue { background: rgba(14, 165, 233, 0.15); color: var(--accent-blue); border-color: transparent; }
+.tv-badge--red { background: rgba(239, 68, 68, 0.15); color: var(--error); border-color: transparent; }
+
+.tv-fallback {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+
+/* ---------- Component-specific ---------- */
+
+.cmp-head {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.cmp-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-green);
+  margin-bottom: 8px;
+  display: block;
+}
+.cmp-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--text-primary);
+}
+.cmp-title .vs { color: var(--text-tertiary); font-weight: 500; font-size: 0.75em; margin: 0 8px; }
+
+.cmp-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 28px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.cmp-highlight {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  font-size: 13px;
+  align-items: baseline;
+}
+.cmp-highlight-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-green);
+}
+.cmp-highlight-value { color: var(--text-secondary); }
+.cmp-highlight-value strong { color: var(--text-primary); font-weight: 600; }
+
+.cmp-cols {
+  display: grid;
+  border-bottom: 1px solid var(--border);
+}
+.cmp-col {
+  padding: 16px;
+  border-right: 1px solid var(--border);
+}
+.cmp-col:last-child { border-right: none; }
+.cmp-thumb {
+  width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.cmp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cmp-col-code {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-green);
+  margin-bottom: 4px;
+}
+.cmp-col-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 3px;
+  line-height: 1.2;
+}
+.cmp-col-sub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.cmp-grid {
+  display: grid;
+  font-size: 13px;
+}
+.cmp-grid-label {
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+.cmp-grid-cell {
+  padding: 12px 14px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+.cmp-grid-cell:last-child,
+.cmp-grid-label:last-child { border-right: none; }
+.cmp-grid-cell strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+.cmp-stars { color: var(--accent-green); letter-spacing: 2px; }
+.cmp-footer {
+  padding: 16px 28px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--bg-secondary);
+}
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+let rpcId = 0;
+const pending = new Map();
+const rpc = (method, params) => new Promise((resolve, reject) => {
+  const id = ++rpcId; pending.set(id, { resolve, reject });
+  window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+});
+const notify = (method, params) =>
+  window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+let toolOutput = null;
+window.addEventListener("message", (event) => {
+  if (event.source !== window.parent) return;
+  const msg = event.data; if (!msg || msg.jsonrpc !== "2.0") return;
+  if (typeof msg.id === "number") {
+    const p = pending.get(msg.id); if (!p) return;
+    pending.delete(msg.id);
+    msg.error ? p.reject(msg.error) : p.resolve(msg.result);
+    return;
+  }
+  if (msg.method === "ui/notifications/tool-result") {
+    toolOutput = msg.params?.structuredContent || null; render();
+  }
+});
+async function init(appName) {
+  try {
+    const result = await rpc("ui/initialize", {
+      appInfo: { name: appName, version: "1.0.0" },
+      appCapabilities: {}, protocolVersion: "2026-01-26",
+    });
+    notify("ui/notifications/initialized", {});
+    if (result?.toolOutput?.structuredContent) toolOutput = result.toolOutput.structuredContent;
+    else if (result?.structuredContent) toolOutput = result.structuredContent;
+    render();
+  } catch (e) { console.error("MCP init failed:", e); render(); }
+}
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* Minimal markdown: headings, bold/italic, lists, paragraphs, links, code */
+function md(s) {
+  if (!s) return "";
+  const lines = String(s).split(/\r?\n/);
+  const out = []; let inList = false; let inOrdered = false;
+  const close = () => { if (inList) { out.push(inOrdered ? "</ol>" : "</ul>"); inList = false; inOrdered = false; } };
+  const inline = (t) => esc(t)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent-green);text-decoration:underline">$1</a>');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { close(); out.push(""); continue; }
+    const h = line.match(/^(#{1,3})\s+(.+)$/);
+    if (h) { close(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); continue; }
+    const ul = line.match(/^[-*]\s+(.+)$/);
+    if (ul) { if (!inList || inOrdered) { close(); out.push("<ul>"); inList = true; inOrdered = false; } out.push(`<li>${inline(ul[1])}</li>`); continue; }
+    const ol = line.match(/^\d+\.\s+(.+)$/);
+    if (ol) { if (!inList || !inOrdered) { close(); out.push("<ol>"); inList = true; inOrdered = true; } out.push(`<li>${inline(ol[1])}</li>`); continue; }
+    close(); out.push(`<p>${inline(line)}</p>`);
+  }
+  close(); return out.join("");
+}
+
+const fmtDuration = (min) => {
+  if (!min) return "";
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60); const m = min % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+};
+const fmtDate = (iso) => {
+  if (!iso) return { month: "—", day: "—", weekday: "" };
+  const d = new Date(iso);
+  if (isNaN(d)) return { month: "—", day: "—", weekday: "" };
+  return {
+    month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+    day: String(d.getDate()),
+    weekday: d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
+  };
+};
+
+
+
+function render() {
+  const root = document.getElementById("root");
+  const d = toolOutput;
+  if (!d) { root.innerHTML = `<div class="tv-card"><div class="tv-fallback">Loading comparison…</div></div>`; return; }
+  if (d.kind === "error") { root.innerHTML = `<div class="tv-card"><div class="tv-fallback">${esc(d.message)}</div></div>`; return; }
+
+  const parks = d.parks || [];
+  const h = d.highlights || {};
+  const n = parks.length;
+  if (!n) { root.innerHTML = `<div class="tv-card"><div class="tv-fallback">No parks to compare.</div></div>`; return; }
+
+  const stars = (r) => {
+    if (r == null) return "—";
+    const full = Math.round(r);
+    return "★".repeat(Math.min(5, full)) + "<span style=\"color:var(--text-tertiary)\">" + "★".repeat(Math.max(0, 5 - full)) + "</span>";
+  };
+
+  const names = parks.map(p => p.name).filter(Boolean);
+  let html = `<div class="tv-card">
+    <div class="cmp-head">
+      <span class="cmp-eyebrow">Side by side</span>
+      <h1 class="cmp-title">${names.map(esc).join('<span class="vs">vs</span>')}</h1>
+    </div>`;
+
+  // Highlights
+  const hItems = [];
+  if (h.bestOverall) hItems.push(["Best overall", `<strong>${esc(h.bestOverall)}</strong>`]);
+  if (h.warmest) hItems.push(["Warmest", `<strong>${esc(h.warmest)}</strong>`]);
+  if (h.lowerCrowd) hItems.push(["Fewer crowds", `<strong>${esc(h.lowerCrowd)}</strong>`]);
+  if (h.sharedHighlights?.length) hItems.push(["Both offer", esc(h.sharedHighlights.slice(0, 3).join(", "))]);
+  if (hItems.length) {
+    html += `<div class="cmp-highlights">`;
+    for (const [label, value] of hItems) {
+      html += `<div class="cmp-highlight"><span class="cmp-highlight-label">${esc(label)}</span><span class="cmp-highlight-value">${value}</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Park columns
+  html += `<div class="cmp-cols" style="grid-template-columns:repeat(${n}, 1fr)">`;
+  for (const p of parks) {
+    html += `<div class="cmp-col">
+      <div class="cmp-thumb">${p.heroImage ? `<img src="${esc(p.heroImage)}" alt="" loading="lazy" />` : ""}</div>
+      ${p.parkCode ? `<div class="cmp-col-code">${esc(p.parkCode)}</div>` : ""}
+      <h3 class="cmp-col-name">${esc(p.name || "")}</h3>
+      <div class="cmp-col-sub">${esc(p.designation || "")}${p.states ? ` · ${esc(p.states)}` : ""}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Facts grid
+  const gridCols = `140px repeat(${n}, 1fr)`;
+  html += `<div class="cmp-grid" style="grid-template-columns:${gridCols}">`;
+  const rows = [
+    ["Rating", (p) => p.rating != null ? `<span class="cmp-stars">${stars(p.rating)}</span> <span style="color:var(--text-tertiary);font-size:11px;margin-left:4px">${p.reviewCount || 0}</span>` : "—"],
+    ["Current temp", (p) => p.currentTempF != null ? `<strong>${Math.round(p.currentTempF)}°F</strong>` : "—"],
+    ["Crowd level", (p) => esc(p.crowdLevel || "—")],
+    ["Entrance fee", (p) => esc(p.entranceFee || "—")],
+    ["Top activities", (p) => esc((p.topActivities || []).slice(0, 3).join(", ") || "—")],
+  ];
+  for (const [label, fn] of rows) {
+    html += `<div class="cmp-grid-label">${esc(label)}</div>`;
+    for (const p of parks) {
+      const content = fn(p);
+      const plainTitle = String(content).replace(/<[^>]+>/g, "");
+      html += `<div class="cmp-grid-cell" title="${esc(plainTitle)}">${content}</div>`;
+    }
+  }
+  html += `</div>`;
+
+  // Footer
+  const allLink = d.links?.continueOnWebsite || "https://www.nationalparksexplorerusa.com/compare";
+  const tripLink = d.links?.planRoadTrip;
+  html += `<div class="cmp-footer">
+    <a class="tv-btn tv-btn-primary" href="${esc(allLink)}" target="_blank" rel="noopener">Open full comparison</a>
+    ${tripLink ? `<a class="tv-btn tv-btn-outline" href="${esc(tripLink)}" target="_blank" rel="noopener">Plan a road trip <span class="tv-btn-arrow">→</span></a>` : ""}
+  </div></div>`;
+
+  root.innerHTML = html;
+}
+
+
+render(); init("trailverse-compare");
+</script>
+</body>
+</html>

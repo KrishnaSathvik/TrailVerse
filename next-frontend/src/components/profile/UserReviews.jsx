@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, Calendar, Trash2, MessageSquare } from '@components/icons';
 import { useAllParks } from '../../hooks/useParks';
+import { parkToSlug } from '../../utils/parkSlug';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
@@ -108,7 +109,7 @@ const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 min-w-0">
               <Link
-                href={`/parks/${review.parkCode}`}
+                href={`/parks/${parkToSlug(parkNameMap[review.parkCode]) || review.parkCode}`}
                 className="text-lg font-semibold hover:text-forest-400 transition block"
                 style={{ color: 'var(--text-primary)' }}
               >

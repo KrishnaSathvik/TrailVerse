@@ -8,6 +8,7 @@ export default function ParkPreviewCard({
   rating,
   onClose,
   onViewDetails,
+  onCompare,
   className = '',
 }) {
   if (!park) return null;
@@ -100,6 +101,21 @@ export default function ParkPreviewCard({
           View Park Details
           <ArrowRight className="h-4 w-4" />
         </button>
+
+        {onCompare && (
+          <button
+            type="button"
+            onClick={() => onCompare(park.parkCode)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] px-4 py-3 text-sm font-semibold transition border"
+            style={{
+              color: 'var(--accent-green)',
+              borderColor: 'color-mix(in srgb, var(--accent-green) 40%, var(--border) 60%)',
+              backgroundColor: 'transparent',
+            }}
+          >
+            Compare Park
+          </button>
+        )}
       </div>
     </div>
   );

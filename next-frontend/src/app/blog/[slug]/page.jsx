@@ -12,13 +12,12 @@ function toAbsoluteImageUrl(imageUrl) {
     return `${SITE_URL}/og-image-trailverse.jpg`;
   }
 
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    return imageUrl;
-  }
-
-  // /uploads/ paths are proxied to the Express backend via next.config.mjs rewrites
-  // Using the frontend domain ensures social crawlers can fetch via Vercel's always-warm edge
-  return imageUrl.startsWith('/') ? `${SITE_URL}${imageUrl}` : `${SITE_URL}/${imageUrl}`;
+  // Route through Next.js image optimization so social crawlers get a compressed,
+  // edge-cached ~150KB JPEG instead of the raw 4MB+ upload via the Render proxy.
+  const raw = imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
+    ? imageUrl
+    : imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  return `${SITE_URL}/_next/image?url=${encodeURIComponent(raw)}&w=1200&q=75`;
 }
 
 async function getPostBySlug(slug) {

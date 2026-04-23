@@ -1,0 +1,1 @@
+"""TrailVerse MCP server package."""

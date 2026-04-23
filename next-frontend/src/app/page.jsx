@@ -6,6 +6,7 @@ import LandingSearchClient from './LandingSearchClient';
 import LandingDailyFeedClient from './LandingDailyFeedClient';
 import TestimonialsSection from '@/components/testimonials/TestimonialsSection';
 import IconGlyph from '@/components/common/IconGlyph';
+import { parkToSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
 
 async function getAllParks() {
@@ -111,7 +112,7 @@ export default async function LandingPage() {
               {featuredParks.map((park, index) => (
                 <Link
                   key={park.parkCode}
-                  href={`/parks/${park.parkCode}`}
+                  href={`/parks/${parkToSlug(park.fullName)}`}
                   className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
                   style={{ aspectRatio: '16/11', boxShadow: 'var(--shadow-lg)' }}
                 >

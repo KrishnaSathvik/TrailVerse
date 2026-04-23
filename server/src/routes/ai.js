@@ -14,6 +14,7 @@ const { parseConstraints, preflightCheck, buildConstraintBlock, validateItinerar
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const claudeService = require('../services/claudeService');
 const openaiService = require('../services/openaiService');
+const npsService = require('../services/npsService');
 
 // Initialize AI clients
 let anthropic = null;
@@ -178,6 +179,29 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
 
+  // Fetch park images for the primary park
+  // Prefer curated park hero images (from /parks endpoint) over raw gallery assets
+  let parkImages = [];
+  if (resolvedMetadata.parkCode) {
+    try {
+      const parkData = await npsService.getParkByCode(resolvedMetadata.parkCode);
+      const heroImages = parkData?.images || [];
+      if (heroImages.length > 0) {
+        parkImages = heroImages.map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
+      }
+      // Fallback: gallery assets if no hero images
+      if (parkImages.length === 0) {
+        const galleryPhotos = await npsService.getParkGalleryPhotos(resolvedMetadata.parkCode);
+        if (galleryPhotos && galleryPhotos.length > 0) {
+          parkImages = galleryPhotos.slice(0, 12).map(p => ({ url: p.url, altText: p.altText, title: p.title }));
+        }
+      }
+      console.log(`${logPrefix} Park images: ${parkImages.length} for ${resolvedMetadata.parkCode}`);
+    } catch (imgErr) {
+      console.error(`${logPrefix} Park images fetch error:`, imgErr.message);
+    }
+  }
+
   // Build enhanced system prompt with facts
   // Use the full persona prompt from the appropriate service when no custom prompt is provided
   const defaultPrompt = provider === 'openai'
@@ -308,7 +332,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
     enhancedSystemPrompt += `\n\n--- CRITICAL REMINDER ---\nThis is a planning request. You MUST include the [ITINERARY_JSON] block at the end of your response with the structured itinerary data. Even if there are conflicts or warnings, include your recommended safe plan in the JSON block. Do NOT skip the JSON block for planning requests.\n--- END REMINDER ---\n`;
   }
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages };
 }
 
 // Helper: build user context block for personalized AI responses
@@ -444,7 +468,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent } = await prepareChatContext(req.body);
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages } = await prepareChatContext(req.body);
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -819,7 +843,7 @@ ${cleanContent.substring(0, 6000)}`;
       }
     }
 
-    res.json({ data: { ...response, hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, confidence, planScore, intent: intent?.primaryIntent || null } });
+    res.json({ data: { ...response, hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] } });
 
   } catch (error) {
     // Log detailed error information
@@ -880,7 +904,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent } = await prepareChatContext(req.body, '[AI Stream]');
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent, parkImages } = await prepareChatContext(req.body, '[AI Stream]');
 
     // Pre-flight BLOCKER — stop before SSE
     if (preflightResult.blockers.length > 0) {
@@ -1011,7 +1035,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             let planScore = null;
             if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
 
-            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, confidence, planScore, intent: intent?.primaryIntent || null })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
 
             if (itineraryData) {
               const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -1142,7 +1166,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         let openaiPlanScore = null;
         if (openaiItineraryData) openaiPlanScore = scoreItinerary(openaiItineraryData, constraints);
 
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -1326,6 +1350,16 @@ Ready to continue planning? 🚀`,
         console.log(`[AI] Parks extracted from anonymous message: ${anonExtractedParks.map(p => `${p.parkName} (${p.parkCode})`).join(', ')}`);
       }
     } else if (resolvedMetadata.parkCode) {
+      // If parkCode is provided but parkName is missing, try extracting from the message
+      if (!resolvedMetadata.parkName && lastUserMessageContent) {
+        const fromMsg = extractAllParksFromMessage(lastUserMessageContent);
+        const match = fromMsg.find(p => p.parkCode === resolvedMetadata.parkCode);
+        if (match) {
+          resolvedMetadata.parkName = match.parkName;
+          resolvedMetadata.lat = resolvedMetadata.lat || match.lat;
+          resolvedMetadata.lon = resolvedMetadata.lon || match.lon;
+        }
+      }
       anonExtractedParks = [{ parkCode: resolvedMetadata.parkCode, parkName: resolvedMetadata.parkName || '', lat: resolvedMetadata.lat, lon: resolvedMetadata.lon }];
     }
 
@@ -1362,6 +1396,28 @@ Ready to continue planning? 🚀`,
       console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, parks: anonParkNames });
     } catch (factsError) {
       console.error('[AI] Facts fetching error for anonymous user:', factsError.message);
+    }
+
+    // Fetch park images for anonymous users
+    // Prefer curated park hero images over raw gallery assets
+    let parkImages = [];
+    if (resolvedMetadata.parkCode) {
+      try {
+        const parkData = await npsService.getParkByCode(resolvedMetadata.parkCode);
+        const heroImages = parkData?.images || [];
+        if (heroImages.length > 0) {
+          parkImages = heroImages.map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
+        }
+        if (parkImages.length === 0) {
+          const galleryPhotos = await npsService.getParkGalleryPhotos(resolvedMetadata.parkCode);
+          if (galleryPhotos && galleryPhotos.length > 0) {
+            parkImages = galleryPhotos.slice(0, 12).map(p => ({ url: p.url, altText: p.altText, title: p.title }));
+          }
+        }
+        console.log(`[AI] Park images: ${parkImages.length} for ${resolvedMetadata.parkCode}`);
+      } catch (imgErr) {
+        console.error('[AI] Park images fetch error:', imgErr.message);
+      }
     }
 
     // Build enhanced system prompt with facts
@@ -1736,9 +1792,11 @@ ${anonCleanContent.substring(0, 6000)}`;
         hasLiveData: !!(npsFacts || weatherFacts),
         parkName: resolvedMetadata.parkName || null,
         hasItinerary: !!anonItineraryData,
+        itinerary: anonItineraryData || null,
         confidence: anonConfidence,
         planScore: anonPlanScore,
-        intent: anonIntent?.primaryIntent || null
+        intent: anonIntent?.primaryIntent || null,
+        parkImages: parkImages || []
       }
     });
 

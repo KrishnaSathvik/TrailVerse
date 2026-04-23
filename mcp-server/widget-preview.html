@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>TrailVerse MCP Widget Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap"
+    rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Geist", system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 24px;
+    }
+
+    h1 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #22c55e;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+
+    .theme-toggle {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .theme-toggle button {
+      padding: 8px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      margin: 0 4px;
+      transition: all 0.2s;
+    }
+
+    .theme-toggle button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .theme-toggle button.active {
+      background: #22c55e;
+      color: #000;
+      border-color: #22c55e;
+    }
+
+    .widget-section {
+      max-width: 800px;
+      margin: 0 auto 40px;
+    }
+
+    .widget-label {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .widget-label .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      font-weight: 500;
+    }
+
+    iframe {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: #0a0e0f;
+    }
+
+    .light-mode body,
+    body.light {
+      background: #f0ede8;
+      color: #333;
+    }
+
+    body.light iframe {
+      background: #fefcf9;
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    body.light .widget-label {
+      color: #333;
+    }
+
+    body.light .subtitle {
+      color: rgba(0, 0, 0, 0.5);
+    }
+
+    body.light .theme-toggle button {
+      border-color: rgba(0, 0, 0, 0.15);
+      background: rgba(0, 0, 0, 0.03);
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>TrailVerse MCP Widgets</h1>
+  <p class="subtitle">Preview of all 5 ChatGPT App Store widgets with live data</p>
+
+  <div class="theme-toggle">
+    <button class="active" onclick="setTheme('dark')">Dark Mode</button>
+    <button onclick="setTheme('light')">Light Mode</button>
+  </div>
+
+  <div class="widget-section">
+    <div class="widget-label">Itinerary Widget <span class="badge">plan_trip</span></div>
+    <iframe id="frame-itinerary" src="widgets/itinerary.html" height="700"></iframe>
+  </div>
+
+  <div class="widget-section">
+    <div class="widget-label">Park Details Widget <span class="badge">get_park_details</span></div>
+    <iframe id="frame-park-details" src="widgets/park-details.html" height="600"></iframe>
+  </div>
+
+  <div class="widget-section">
+    <div class="widget-label">Compare Widget <span class="badge">compare_parks</span></div>
+    <iframe id="frame-compare" src="widgets/compare.html" height="500"></iframe>
+  </div>
+
+  <div class="widget-section">
+    <div class="widget-label">Park List Widget <span class="badge">search_parks</span></div>
+    <iframe id="frame-park-list" src="widgets/park-list.html" height="500"></iframe>
+  </div>
+
+  <div class="widget-section">
+    <div class="widget-label">Events Widget <span class="badge">find_events</span></div>
+    <iframe id="frame-events" src="widgets/events.html" height="500"></iframe>
+  </div>
+
+  <script>
+    // ── Sample data (from real MCP server responses) ──
+
+    const ITINERARY_DATA = {
+      "kind": "itinerary",
+      "parkName": "Zion National Park",
+      "parkCode": "zion",
+      "persona": "planner",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "hasItinerary": true,
+      "intent": "family",
+      "confidence": { "level": "high", "score": 1 },
+      "planScore": {
+        "overall": 0.98,
+        "label": "Excellent",
+        "dimensions": { "compliance": 1, "diversity": 0.88, "pacing": 1, "interestMatch": 1, "geoEfficiency": 1 }
+      },
+      "narrative": "**Logistics Summary (Family, June, 2 Days, Kid-Friendly):**\n- **Park Entry:** $35/vehicle (valid 7 days)\n- **Shuttle/Timed-Entry:** REQUIRED in June — book on [recreation.gov](https://www.recreation.gov/)\n- **Campground Reservations:** Strongly recommended; book Watchman or South Campground ASAP\n- **Driving:** Las Vegas to Zion ~2.5 hours; St. George to Zion ~1 hour\n- **Parking:** Park at Zion Canyon Visitor Center; shuttle required for main canyon\n- **Max 4 stops/day, no strenuous trails, all activities must be kid-friendly**\n\n---\n\n# Day 1 — Welcome & Canyon Highlights\n\n### Morning (7:30 AM – 11:00 AM)\n- **Arrive early at Zion Canyon Visitor Center**\n  - Parking fills by 8 AM in June\n  - Pick up shuttle passes (timed-entry reservation required)\n- **Stop 1: Zion Human History Museum** — 8:00 AM – 9:00 AM\n  - Indoor exhibits, 22-min orientation film, dramatic canyon views outside\n  - Restrooms, water, bookstore\n\n### Late Morning (9:15 AM – 12:00 PM)\n- **Stop 2: Riverside Walk** — 9:30 AM shuttle to Temple of Sinawava\n  - 2.2 miles round trip, flat, paved, ~1.5 hours, Easy\n  - Shady, follows Virgin River, lots of wildlife — perfect for kids\n\n### Afternoon (1:30 PM – 4:00 PM)\n- **Stop 3: Lower Emerald Pool Trail** — Shuttle to Zion Lodge\n  - 1.2 miles round trip, minimal elevation, ~1 hour, Easy\n  - Waterfall, shaded, paved sections, very family-friendly\n\n### Evening\n- **Stop 4: Canyon Overlook Trail** (if energy allows)\n  - Short drive to East Entrance, 1.0 mile round trip, Moderate\n  - Stunning sunset views over the canyon\n\n---\n\n# Day 2 — Nature, History & Scenic Views\n\n### Morning (8:00 AM – 11:00 AM)\n- **Stop 1: Pa'rus Trail** — Start at Visitor Center\n  - 3.5 miles round trip, flat, paved, bikes & strollers allowed\n  - River views, wildlife, perfect for morning exercise\n\n### Late Morning\n- **Stop 2: Weeping Rock Trail** — Shuttle to Weeping Rock\n  - 0.5 miles round trip, moderate grade, ~30 min\n  - Hanging garden waterfall, unique geology\n\n### Afternoon\n- **Stop 3: Junior Ranger Program** — Visitor Center\n  - Free activity booklet for kids, ranger-guided\n  - Educational and fun for the whole family\n\n### Late Afternoon\n- **Stop 4: Scenic Drive along Zion-Mt. Carmel Highway**\n  - Drive through the 1.1-mile tunnel\n  - Checkerboard Mesa, Canyon Overlook viewpoint",
+      "itinerary": {
+        "days": [
+          {
+            "id": "day-1",
+            "dayNumber": 1,
+            "label": "Zion Canyon Family Highlights",
+            "stops": [
+              { "id": "s1-1", "order": 0, "type": "visitor_center", "name": "Zion Canyon Visitor Center", "note": "Pick up maps, shuttle passes, and Junior Ranger booklets. Watch the orientation film.", "startTime": "07:30", "duration": 60, "latitude": 37.2003, "longitude": -112.9876, "difficulty": null, "why": "Essential first stop for orientation and shuttle access" },
+              { "id": "s1-2", "order": 1, "type": "trail", "name": "Riverside Walk", "note": "Flat, paved, shady trail along the Virgin River. Perfect for kids.", "startTime": "09:30", "duration": 90, "latitude": 37.2856, "longitude": -112.9478, "difficulty": "easy", "why": "Family-friendly trail with beautiful canyon views" },
+              { "id": "s1-3", "order": 2, "type": "trail", "name": "Lower Emerald Pool Trail", "note": "Short trail to a waterfall. Paved sections, very kid-friendly.", "startTime": "13:30", "duration": 60, "latitude": 37.259, "longitude": -112.951, "difficulty": "easy", "why": "Waterfall payoff with minimal effort" },
+              { "id": "s1-4", "order": 3, "type": "landmark", "name": "Canyon Overlook Trail", "note": "Optional sunset hike with stunning views over the canyon.", "startTime": "16:30", "duration": 60, "latitude": 37.213, "longitude": -112.941, "difficulty": "moderate", "why": "Best sunset viewpoint in Zion" }
+            ]
+          },
+          {
+            "id": "day-2",
+            "dayNumber": 2,
+            "label": "Nature, History & Scenic Views",
+            "stops": [
+              { "id": "s2-1", "order": 0, "type": "trail", "name": "Pa'rus Trail", "note": "Flat paved trail along river. Bikes and strollers welcome.", "startTime": "08:00", "duration": 90, "latitude": 37.2017, "longitude": -112.9831, "difficulty": "easy", "why": "Perfect morning walk for families" },
+              { "id": "s2-2", "order": 1, "type": "trail", "name": "Weeping Rock Trail", "note": "Short trail to hanging garden waterfall.", "startTime": "10:30", "duration": 30, "latitude": 37.272, "longitude": -112.946, "difficulty": "moderate", "why": "Unique geological feature" },
+              { "id": "s2-3", "order": 2, "type": "custom", "name": "Junior Ranger Program", "note": "Free ranger-guided educational activity for kids.", "startTime": "13:00", "duration": 90, "latitude": 37.2003, "longitude": -112.9876, "difficulty": null, "why": "Educational and fun for the whole family" },
+              { "id": "s2-4", "order": 3, "type": "landmark", "name": "Zion-Mt. Carmel Highway Scenic Drive", "note": "Drive through the tunnel and see Checkerboard Mesa.", "startTime": "15:30", "duration": 90, "latitude": 37.225, "longitude": -112.905, "difficulty": null, "why": "Iconic scenic drive with unique rock formations" }
+            ]
+          }
+        ]
+      },
+      "links": {
+        "continueOnWebsite": "https://www.nationalparksexplorerusa.com/plan-ai",
+        "parkDetail": "https://www.nationalparksexplorerusa.com/parks/zion"
+      }
+    };
+
+    const PARK_DETAILS_DATA = { "kind": "park_details", "parkCode": "zion", "name": "Zion National Park", "designation": "National Park", "states": "UT", "description": "Follow the paths where people have walked for thousands of years. Gaze up at massive sandstone cliffs of cream, pink, and red that soar into a brilliant blue sky. Experience the tall, stretching walls of a narrow slot canyon. Zion\u2019s unique array of plants and animals will enchant you as you absorb the rich history of the past and enjoy the excitement of present-day adventures.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/68BFC1AC-BF96-629F-89D261D78F181C64.jpg", "activities": ["Arts and Culture", "Astronomy", "Stargazing", "Biking", "Camping", "Canyoneering", "Climbing", "Rock Climbing", "Hiking", "Horseback Riding", "Swimming", "Wildlife Watching"], "entranceFees": [{ "cost": "35.00", "description": "Admits private, non-commercial vehicle (15 passenger capacity or less) and all occupants. Valid for 7 days.", "title": "Entrance - Private Vehicle" }, { "cost": "30.00", "description": "Valid for 7 days. Admits up to 2 private motorcycles with up to 4 total passengers.", "title": "Entrance - Motorcycle" }, { "cost": "20.00", "description": "Admits one individual. Youth 15 and under are admitted free. Valid for 7 days.", "title": "Entrance - Per Person" }], "operatingHours": [{ "description": "Zion National Park is open every day of the year.", "standardHours": { "wednesday": "All Day", "monday": "All Day", "thursday": "All Day", "sunday": "All Day", "tuesday": "All Day", "friday": "All Day", "saturday": "All Day" }, "name": "Zion National Park" }], "addresses": [{ "postalCode": "84767", "city": "Springdale", "stateCode": "UT", "line1": "Zion National Park", "type": "Physical", "line2": "1 Zion Park Blvd." }], "weather": { "current": { "tempF": 72, "description": "Sunny and warm", "humidity": 25, "windMph": 8 }, "forecast": [{ "date": "2026-04-23", "highF": 78, "lowF": 52, "description": "Sunny" }, { "date": "2026-04-24", "highF": 75, "lowF": 50, "description": "Partly cloudy" }, { "date": "2026-04-25", "highF": 70, "lowF": 48, "description": "Chance of rain" }] }, "alerts": [{ "title": "Angels Landing closed April 20 - 23", "category": "Park Closure", "description": "Angels Landing will be closed for trail maintenance April 20 - 23, 2026.", "url": "" }, { "title": "Large vehicle restrictions June 7, 2026", "category": "Information", "description": "Beginning June 7, 2026, the park will enforce existing size and weight limits on the Zion-Mt. Carmel Highway.", "url": "https://www.nps.gov/zion/planyourvisit/large-vehicles.htm" }, { "title": "Angels Landing Permit Program", "category": "Information", "description": "Everyone who hikes Angels Landing needs to have a permit.", "url": "https://www.nps.gov/zion/planyourvisit/angels-landing-hiking-permits.htm" }, { "title": "Toxic Cyanobacteria in the Virgin River", "category": "Caution", "description": "Do not submerge your head in or filter drinking water from still or moving water.", "url": "https://www.nps.gov/zion/planyourvisit/toxic-cyanobacteria-bloom-in-the-virgin-river-and-the-streams-of-zion-national-park.htm" }], "editorial": { "leadInsight": "Zion's towering sandstone cliffs glow in warm spring light, making April an ideal time to visit before summer crowds arrive.", "weatherInsight": "Expect warm days in the 70s with cool nights — perfect hiking weather.", "skyInsight": null, "atAGlance": null }, "links": { "trailverse": "https://www.nationalparksexplorerusa.com/parks/zion", "planTrip": "https://www.nationalparksexplorerusa.com/plan-ai?parkCode=zion" } };
+
+    const COMPARE_DATA = { "kind": "compare", "parks": [{ "parkCode": "zion", "name": "Zion National Park", "designation": "National Park", "states": "UT", "rating": 4.8, "reviewCount": 12450, "currentTempF": 72, "crowdLevel": { "level": "Moderate", "confidence": 0.9 }, "entranceFee": "$35/vehicle", "topActivities": ["Hiking", "Canyoneering", "Camping", "Rock Climbing", "Wildlife Watching"], "heroImage": "https://www.nps.gov/common/uploads/structured_data/68BFC1AC-BF96-629F-89D261D78F181C64.jpg", "link": "https://www.nationalparksexplorerusa.com/parks/zion" }, { "parkCode": "yose", "name": "Yosemite National Park", "designation": "National Park", "states": "CA", "rating": 4.9, "reviewCount": 18200, "currentTempF": 65, "crowdLevel": { "level": "Moderate", "confidence": 0.9 }, "entranceFee": "$35/vehicle", "topActivities": ["Hiking", "Rock Climbing", "Photography", "Camping", "Waterfall Viewing"], "heroImage": "https://www.nps.gov/common/uploads/structured_data/3C84CC4C-1DD8-B71B-0BE967E5E5D93F25.jpg", "link": "https://www.nationalparksexplorerusa.com/parks/yose" }, { "parkCode": "grca", "name": "Grand Canyon National Park", "designation": "National Park", "states": "AZ", "rating": 4.9, "reviewCount": 22300, "currentTempF": 68, "crowdLevel": { "level": "Moderate", "confidence": 0.9 }, "entranceFee": "$35/vehicle", "topActivities": ["Hiking", "Mule Rides", "Rafting", "Photography", "Stargazing"], "heroImage": "https://www.nps.gov/common/uploads/structured_data/3C7B12D1-1DD8-B71B-0BCE0712F9CEA155.jpg", "link": "https://www.nationalparksexplorerusa.com/parks/grca" }], "highlights": { "bestOverall": { "parkCode": "grca", "parkName": "Grand Canyon National Park", "score": 4.9 }, "warmest": { "parkCode": "zion", "parkName": "Zion National Park", "tempF": 72 }, "lowerCrowd": null, "sharedHighlights": ["Hiking", "Photography", "Camping"] }, "links": { "continueOnWebsite": "https://www.nationalparksexplorerusa.com/compare?parks=zion,yose,grca", "planRoadTrip": "https://www.nationalparksexplorerusa.com/plan-ai?parks=zion,yose,grca" } };
+
+    const PARK_LIST_DATA = { "kind": "park_list", "parks": [{ "parkCode": "yose", "name": "Yosemite National Park", "designation": "National Park", "states": "CA", "summary": "Not just a great valley, but a shrine to human foresight, the strength of granite, the power of glaciers, the persistence of life, and the tranquility of the High Sierra.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/3C84CC4C-1DD8-B71B-0BE967E5E5D93F25.jpg", "rating": 4.9, "link": "https://www.nationalparksexplorerusa.com/parks/yose" }, { "parkCode": "jotr", "name": "Joshua Tree National Park", "designation": "National Park", "states": "CA", "summary": "Two distinct desert ecosystems, the Mojave and the Colorado, come together in Joshua Tree National Park. A fascinating variety of plants and animals make their homes in a land sculpted by strong winds and occasional torrents of rain.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/306D0D08-1DD8-B71B-0B0ED12A16790C7A.jpg", "rating": 4.7, "link": "https://www.nationalparksexplorerusa.com/parks/jotr" }, { "parkCode": "chis", "name": "Channel Islands National Park", "designation": "National Park", "states": "CA", "summary": "Channel Islands National Park encompasses five remarkable islands and their ocean environment, preserving a wealth of natural and cultural resources.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/8DE774D1-CB22-37F2-D826E3F0A73D303A.jpg", "rating": 4.8, "link": "https://www.nationalparksexplorerusa.com/parks/chis" }, { "parkCode": "depo", "name": "Devils Postpile National Monument", "designation": "National Monument", "states": "CA", "summary": "Established in 1911 by presidential proclamation, Devils Postpile National Monument protects and preserves the Devils Postpile formation, the 101-foot Rainbow Falls, and pristine mountain scenery.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/3C7D873E-1DD8-B71B-0BF8E731254A9D7E.jpg", "rating": 4.5, "link": "https://www.nationalparksexplorerusa.com/parks/depo" }, { "parkCode": "seki", "name": "Sequoia & Kings Canyon National Parks", "designation": "National Parks", "states": "CA", "summary": "This dramatic landscape testifies to nature's size, beauty, and diversity—huge mountains, rugged foothills, deep canyons, vast caverns, and the world's largest trees.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/3C7A250B-1DD8-B71B-0BCF61A89A8B2970.jpg", "rating": 4.8, "link": "https://www.nationalparksexplorerusa.com/parks/seki" }, { "parkCode": "pinn", "name": "Pinnacles National Park", "designation": "National Park", "states": "CA", "summary": "Some 23 million years ago multiple volcanoes erupted, flowed, and slid to form what we now know as Pinnacles National Park. What remains is a unique landscape of towering rock spires and talus caves.", "heroImage": "https://www.nps.gov/common/uploads/structured_data/3C86A8CB-1DD8-B71B-0BAE8F7141CCBB1B.jpg", "rating": 4.6, "link": "https://www.nationalparksexplorerusa.com/parks/pinn" }], "count": 6, "links": { "exploreAll": "https://www.nationalparksexplorerusa.com/explore" } };
+
+    const EVENTS_DATA = { "kind": "events_list", "events": [{ "id": "ev1", "title": "Family Ranger Talk", "parkCode": "yose", "parkName": "Yosemite National Park", "date": "2026-04-22", "time": "10:00 AM", "duration": "1 hour", "category": "Regular Event", "description": "Topics vary. Meet in front of the Yosemite Valley Welcome Center (shuttle stop 2). Program hosted by the National Park Service.", "location": "Yosemite Valley Welcome Center", "registrationUrl": null }, { "id": "ev2", "title": "Historic Ahwahnee Hotel Tour", "parkCode": "yose", "parkName": "Yosemite National Park", "date": "2026-04-22", "time": "1:30 PM", "duration": "1 hour", "category": "Regular Event", "description": "Learn about the history behind Yosemite's famous luxury hotel on this complimentary one-hour tour. Meet on the hotel's back lawn.", "location": "The Ahwahnee Hotel, back lawn", "registrationUrl": null }, { "id": "ev3", "title": "Creative Smartphone Photography", "parkCode": "yose", "parkName": "Yosemite National Park", "date": "2026-04-22", "time": "2:00 PM", "duration": "2 hours", "category": "Regular Event", "description": "Join a staff photographer to learn how to make better photographs with the camera you always carry. Classes hosted by The Ansel Adams Gallery.", "location": "The Ansel Adams Gallery, Yosemite Village", "registrationUrl": null }, { "id": "ev4", "title": "Discovery Walk", "parkCode": "yose", "parkName": "Yosemite National Park", "date": "2026-04-23", "time": "9:00 AM", "duration": "1.5 hours", "category": "Regular Event", "description": "Join a ranger for an easy walk and learn more about what makes Yosemite special. Meet in front of the museum in Yosemite Village.", "location": "Yosemite Museum, Yosemite Village", "registrationUrl": null }, { "id": "ev5", "title": "Guided Nature Walk", "parkCode": "yose", "parkName": "Yosemite National Park", "date": "2026-04-23", "time": "10:30 AM", "duration": "1 hour", "category": "Regular Event", "description": "Join a naturalist for an easy guided walk of Yosemite's natural areas. Meet at The Ahwahnee Hotel on the back lawn.", "location": "The Ahwahnee Hotel, back lawn", "registrationUrl": null }], "count": 5, "links": { "browseAll": "https://www.nationalparksexplorerusa.com/events" } };
+
+    // ── MCP Apps Bridge Simulator ──
+    // Responds to iframe initialize requests with structuredContent data
+
+    const widgetData = {
+      "frame-itinerary": ITINERARY_DATA,
+      "frame-park-details": PARK_DETAILS_DATA,
+      "frame-compare": COMPARE_DATA,
+      "frame-park-list": PARK_LIST_DATA,
+      "frame-events": EVENTS_DATA,
+    };
+
+    window.addEventListener("message", (event) => {
+      const msg = event.data;
+      if (!msg || msg.jsonrpc !== "2.0") return;
+
+      // Find which iframe sent this message
+      let sourceFrameId = null;
+      for (const [id, _] of Object.entries(widgetData)) {
+        const frame = document.getElementById(id);
+        if (frame && event.source === frame.contentWindow) {
+          sourceFrameId = id;
+          break;
+        }
+      }
+      if (!sourceFrameId) return;
+
+      // Handle ui/initialize RPC
+      if (msg.method === "ui/initialize" && typeof msg.id === "number") {
+        const data = widgetData[sourceFrameId];
+        const frame = document.getElementById(sourceFrameId);
+        // Respond with the tool output
+        frame.contentWindow.postMessage({
+          jsonrpc: "2.0",
+          id: msg.id,
+          result: {
+            toolOutput: {
+              structuredContent: data
+            }
+          }
+        }, "*");
+      }
+    });
+
+    // ── Theme Toggle ──
+    function setTheme(theme) {
+      document.body.className = theme === 'light' ? 'light' : '';
+      document.querySelectorAll('.theme-toggle button').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase().includes(theme));
+      });
+      // Reload iframes to pick up prefers-color-scheme change
+      // (widgets use @media prefers-color-scheme)
+      if (theme === 'light') {
+        document.querySelectorAll('iframe').forEach(f => {
+          f.style.colorScheme = 'light';
+        });
+      } else {
+        document.querySelectorAll('iframe').forEach(f => {
+          f.style.colorScheme = 'dark';
+        });
+      }
+    }
+  </script>
+
+</body>
+
+</html>
