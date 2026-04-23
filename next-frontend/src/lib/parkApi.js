@@ -1,4 +1,5 @@
 import { parkToSlug } from '@/utils/parkSlug';
+import parkSlugsData from '@/data/park-slugs.json';
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -7,25 +8,17 @@ const BASE_URL =
     : 'http://localhost:5001/api');
 
 export async function getAllParkCodes() {
-  const res = await fetch(`${BASE_URL}/parks?all=true&nationalParksOnly=true&fields=parkCode`, {
-    next: { revalidate: 86400 },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch park codes: ${res.status}`);
-  }
-
-  const json = await res.json();
-  return json.data.map((park) => park.parkCode);
+  // National parks only (subset of the prebuild slug list)
+  return parkSlugsData
+    .filter((p) =>
+      (p.designation && p.designation.toLowerCase().includes('national park')) ||
+      (p.fullName && p.fullName.toLowerCase().includes('national park'))
+    )
+    .map((p) => p.parkCode);
 }
 
 export async function getAllParkSlugs() {
-  const res = await fetch(`${BASE_URL}/parks?all=true&fields=parkCode,fullName`, {
-    next: { revalidate: 86400 },
-  });
-  if (!res.ok) throw new Error(`Failed to fetch park slugs: ${res.status}`);
-  const json = await res.json();
-  return json.data.map((park) => ({
+  return parkSlugsData.map((park) => ({
     code: park.parkCode,
     slug: parkToSlug(park.fullName),
     fullName: park.fullName,

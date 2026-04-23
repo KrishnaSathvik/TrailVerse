@@ -477,7 +477,7 @@ async def health(_request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok", "service": "trailverse-mcp"})
 
 
-@mcp.custom_route("/.well-known/openai-verification.txt", methods=["GET"])
+@mcp.custom_route("/.well-known/openai-apps-challenge", methods=["GET"])
 async def openai_verification(_request: Request) -> PlainTextResponse:
     return PlainTextResponse(os.getenv("OPENAI_VERIFICATION_TOKEN", ""))
 
