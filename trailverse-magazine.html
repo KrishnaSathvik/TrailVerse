@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailVerse — Issue 01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --paper: #f5f1e8;
+    --rule: rgba(26, 26, 24, 0.22);
+    --wash: rgba(26, 26, 24, 0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100vw; height: 100vh; height: 100dvh; overflow: hidden;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .magazine { width: 100vw; height: 100vh; height: 100dvh; position: relative; overflow: hidden; }
+  .track {
+    display: flex; height: 100vh; height: 100dvh; width: 1600vw;
+    transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1);
+    will-change: transform;
+  }
+  .page {
+    width: 100vw; height: 100vh; height: 100dvh; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+    background: var(--paper); color: var(--ink);
+  }
+
+  .page .rule-top, .page .rule-bottom {
+    position: absolute; left: 4vw; right: 4vw; height: 1px; background: var(--rule);
+  }
+  .page .rule-top { top: 3.2vh; }
+  .page .rule-bottom { bottom: 3.2vh; }
+
+  .masthead {
+    position: absolute; top: 3.2vh; left: 4vw; right: 4vw;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 1.4vh;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.78vw); letter-spacing: 0.18em;
+    text-transform: uppercase; font-weight: 400; opacity: 0.72;
+  }
+  .masthead .m-center { letter-spacing: 0.32em; }
+
+  .folio {
+    position: absolute; bottom: 3.2vh; left: 4vw; right: 4vw;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 1.4vh;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.78vw); letter-spacing: 0.22em;
+    text-transform: uppercase; opacity: 0.72;
+  }
+  .folio > div:last-child { text-align: right; }
+
+  .cover { padding: 6vh 5vw 10vh; justify-content: space-between; background: var(--paper); }
+  .cover-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(11px, 0.85vw); letter-spacing: 0.24em;
+    text-transform: uppercase; opacity: 0.82;
+  }
+  .cover-top .issue { text-align: right; line-height: 1.8; }
+  .cover-top .issue span { display: block; }
+  .cover-wordmark {
+    font-family: 'Playfair Display', serif; font-weight: 900;
+    font-size: 13vw; line-height: 0.88; letter-spacing: -0.04em;
+    margin-top: 2vh; margin-bottom: 4vh;
+  }
+  .cover-wordmark em {
+    font-style: italic; font-weight: 400; font-size: 0.4em;
+    display: block; margin-top: 1.2vh; letter-spacing: -0.01em; opacity: 0.72;
+  }
+  .cover-tagline {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400;
+    font-size: 3.4vw; line-height: 1.18; max-width: 62vw;
+    opacity: 0.9; margin-bottom: 8vh;
+  }
+  .cover-bottom {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.8vw); letter-spacing: 0.22em;
+    text-transform: uppercase; opacity: 0.82;
+  }
+  .cover-bottom .features { max-width: 38vw; line-height: 2.1; letter-spacing: 0.28em; }
+  .cover-bottom .features span { display: block; }
+  .cover-mark {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400;
+    font-size: 1.4vw; letter-spacing: 0.04em; text-transform: none;
+    opacity: 0.72; margin-top: 2vh;
+  }
+  .cover-link {
+    color: inherit; text-decoration: none;
+    border-bottom: 1px solid rgba(26, 26, 24, 0.4);
+    padding-bottom: 2px; transition: border-color 0.2s ease;
+  }
+  .cover-link:hover { border-bottom-color: var(--ink); }
+
+  .spread {
+    flex: 1; display: grid; grid-template-columns: 55fr 45fr;
+    padding: 9vh 4vw 8vh; gap: 4vw; align-items: stretch;
+    overflow: hidden;
+  }
+  .spread-left {
+    position: relative; display: flex; flex-direction: column;
+    justify-content: flex-start; padding-right: 2vw;
+  }
+  .ghost-number {
+    position: absolute; top: -4vh; left: -1vw;
+    font-family: 'Playfair Display', serif; font-weight: 900;
+    font-size: 32vw; line-height: 0.82; letter-spacing: -0.05em;
+    pointer-events: none; z-index: 0; user-select: none;
+    color: rgba(26, 26, 24, 0.055);
+  }
+  .cat-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(11px, 0.88vw); letter-spacing: 0.32em;
+    text-transform: uppercase; font-weight: 500;
+    position: relative; z-index: 2; margin-bottom: 3.2vh;
+    display: flex; align-items: center; gap: 1vw;
+  }
+  .cat-tag::before {
+    content: ''; width: 2.4vw; height: 1px; background: var(--ink);
+  }
+  .headline {
+    font-family: 'Playfair Display', serif; font-weight: 500;
+    font-size: 5.4vw; line-height: 0.96; letter-spacing: -0.025em;
+    margin-bottom: 4.2vh; position: relative; z-index: 2; max-width: 46vw;
+  }
+  .headline em { font-style: italic; font-weight: 400; }
+  .route {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(13px, 1.05vw); letter-spacing: 0.08em;
+    margin-bottom: 4vh; position: relative; z-index: 2; opacity: 0.78;
+  }
+  .route::before { content: '→  '; opacity: 0.6; }
+  .description {
+    font-family: 'Source Serif 4', serif;
+    font-size: max(15px, 1.3vw); line-height: 1.42;
+    max-width: 44vw; font-weight: 400;
+    position: relative; z-index: 2; margin-bottom: 2vh; opacity: 0.88;
+  }
+  .description .dropcap {
+    font-family: 'Playfair Display', serif; float: left;
+    font-size: 5em; line-height: 0.82; font-weight: 700;
+    margin-right: 0.18em; margin-top: 0.08em; margin-bottom: -0.06em;
+  }
+  .spread-right {
+    display: flex; flex-direction: column; justify-content: center;
+    border-left: 1px solid var(--rule); padding-left: 3vw;
+  }
+  .metric-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.78vw); letter-spacing: 0.3em;
+    text-transform: uppercase; margin-bottom: 2.6vh; opacity: 0.62;
+  }
+  .metric {
+    font-family: 'Playfair Display', serif; font-weight: 600;
+    font-size: 7vw; line-height: 0.88; letter-spacing: -0.03em;
+    margin-bottom: 2.4vh;
+  }
+  .metric em {
+    font-style: italic; font-weight: 400; font-size: 0.42em;
+    display: block; margin-top: 0.6vh; letter-spacing: -0.01em; opacity: 0.72;
+  }
+  .metric .small {
+    display: block; font-family: 'IBM Plex Mono', monospace;
+    font-weight: 400; font-size: 0.16em; letter-spacing: 0.3em;
+    text-transform: uppercase; margin-top: 1.4vh; opacity: 0.6;
+  }
+  .context-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(11px, 0.88vw); letter-spacing: 0.3em;
+    text-transform: uppercase; padding-bottom: 2vh; margin-bottom: 4vh;
+    border-bottom: 1px solid var(--rule);
+    display: inline-block; align-self: flex-start;
+  }
+  .callout {
+    border-left: 4px solid var(--ink); background: var(--wash);
+    padding: 3vh 2.4vw 3vh 2.4vw;
+  }
+  .callout .callout-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.76vw); letter-spacing: 0.3em;
+    text-transform: uppercase; margin-bottom: 2vh; opacity: 0.7;
+    display: flex; align-items: center; gap: 0.7vw;
+  }
+  .callout .callout-label::before {
+    content: '§'; font-family: 'Playfair Display', serif;
+    font-size: 1.6em; opacity: 0.7;
+  }
+  .callout p {
+    font-family: 'Source Serif 4', serif; font-style: italic;
+    font-size: max(16px, 1.45vw); line-height: 1.45; font-weight: 400;
+    letter-spacing: -0.005em; opacity: 0.82;
+  }
+
+  .back { padding: 6vh 5vw 10vh; justify-content: space-between; background: var(--paper); }
+  .back-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(11px, 0.85vw); letter-spacing: 0.24em;
+    text-transform: uppercase; opacity: 0.82;
+  }
+  .back-end {
+    font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400;
+    font-size: 11vw; line-height: 0.92; letter-spacing: -0.025em;
+    margin-top: 5vh; margin-bottom: 2vh;
+  }
+  .back-url {
+    font-family: 'Playfair Display', serif; font-weight: 500;
+    font-size: 3.6vw; line-height: 1.1; letter-spacing: -0.02em;
+    margin-bottom: 2vh; opacity: 0.94;
+  }
+  .back-url a {
+    color: inherit; text-decoration: none;
+    border-bottom: 1px solid rgba(26, 26, 24, 0.3);
+    padding-bottom: 4px; transition: border-color 0.2s ease;
+  }
+  .back-url a:hover { border-bottom-color: var(--ink); }
+  .back-contact {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(12px, 0.95vw); letter-spacing: 0.2em;
+    text-transform: uppercase; opacity: 0.78; margin-bottom: 8vh;
+  }
+  .back-bottom {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 3vw;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.78vw); letter-spacing: 0.22em;
+    text-transform: uppercase; opacity: 0.82; line-height: 2.1;
+  }
+  .back-bottom .col b {
+    font-weight: 500; opacity: 1; display: block;
+    margin-bottom: 1.2vh; letter-spacing: 0.32em;
+  }
+  .back-bottom .col span { display: block; opacity: 0.72; }
+  .asterism {
+    font-family: 'Playfair Display', serif; font-size: 1.8vw;
+    letter-spacing: 0.6em; text-align: center; opacity: 0.35; margin: 2vh 0;
+  }
+
+  .nav-dots {
+    position: fixed; bottom: 2.2vh; left: 50%;
+    transform: translateX(-50%); display: flex; gap: 0.6vw;
+    z-index: 100; padding: 0.8vh 1.4vw; border-radius: 999px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: rgba(26, 26, 24, 0.04);
+    border: 1px solid rgba(26, 26, 24, 0.15);
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    border: 1px solid var(--ink); background: transparent;
+    cursor: pointer; padding: 0; transition: all 0.3s ease; opacity: 0.5;
+  }
+  .dot.active { background: var(--ink); opacity: 1; transform: scale(1.25); }
+  .dot:hover { opacity: 0.9; }
+  .nav-counter {
+    position: fixed; top: 2.4vh; right: 2.4vw;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(11px, 0.82vw); letter-spacing: 0.24em;
+    text-transform: uppercase; z-index: 100; opacity: 0.78; color: var(--ink);
+  }
+  .nav-hint {
+    position: fixed; top: 2.4vh; left: 2.4vw;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.72vw); letter-spacing: 0.24em;
+    text-transform: uppercase; z-index: 100; opacity: 0.55; color: var(--ink);
+    transition: opacity 0.6s ease;
+  }
+  body.has-navigated .nav-hint { opacity: 0; pointer-events: none; }
+  .nav-back {
+    position: fixed; top: 6.5vh; right: 2.4vw;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: max(10px, 0.78vw); letter-spacing: 0.18em;
+    text-transform: uppercase; z-index: 101;
+    color: var(--ink); opacity: 0.6; text-decoration: none;
+    padding: 5px 12px; border: 1px solid var(--rule); border-radius: 4px;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+  }
+  .nav-back:hover { opacity: 1; border-color: var(--ink); }
+
+  /* =========================================================
+     MOBILE (≤768px) — stack spread, shrink type, tighten padding
+     ========================================================= */
+  @media (max-width: 768px) {
+    /* Allow vertical scroll on each page when content overflows */
+    .page {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* COVER */
+    .cover { padding: 4vh 6vw 5vh; }
+    .cover-top {
+      font-size: 10px; letter-spacing: 0.2em;
+    }
+    .cover-wordmark {
+      font-size: 18vw; margin-top: 2vh; margin-bottom: 2vh;
+    }
+    .cover-wordmark em { font-size: 0.32em; margin-top: 0.5vh; }
+    .cover-tagline {
+      font-size: 5.5vw; line-height: 1.22; max-width: 100%; margin-bottom: 3vh;
+    }
+    .cover-bottom {
+      flex-direction: column; align-items: flex-start; gap: 2.5vh;
+    }
+    .cover-bottom .features {
+      max-width: 100%; line-height: 1.8; letter-spacing: 0.22em;
+      font-size: 10px;
+    }
+    .cover-bottom > div:last-child {
+      text-align: left !important; line-height: 1.8;
+    }
+    .cover-mark {
+      font-size: 4vw; letter-spacing: 0.02em; margin-top: 0.5vh;
+    }
+
+    /* SPREAD — stack 55/45 into one column */
+    .spread {
+      grid-template-columns: 1fr;
+      padding: 9vh 6vw 12vh; gap: 5vh;
+    }
+    .spread-left { padding-right: 0; }
+    .spread-right {
+      border-left: none; padding-left: 0;
+      border-top: 1px solid var(--rule); padding-top: 4vh;
+      justify-content: flex-start;
+    }
+
+    /* HIDE oversized ghost numbers on mobile — too noisy */
+    .ghost-number { display: none; }
+
+    .cat-tag {
+      font-size: 11px; letter-spacing: 0.26em; margin-bottom: 2.4vh;
+    }
+    .cat-tag::before { width: 6vw; }
+
+    .headline {
+      font-size: 9vw; line-height: 1.02; margin-bottom: 3vh;
+      max-width: 100%;
+    }
+
+    .route {
+      font-size: 12px; margin-bottom: 3vh;
+    }
+
+    .description {
+      font-size: 16px; line-height: 1.5; max-width: 100%;
+    }
+    .description .dropcap {
+      font-size: 3.4em; line-height: 0.82;
+      margin-right: 0.14em; margin-top: 0.06em;
+    }
+
+    .callout {
+      padding: 2.6vh 5vw;
+    }
+    .callout .callout-label {
+      font-size: 10px; letter-spacing: 0.24em;
+    }
+    .callout p {
+      font-size: 15px; line-height: 1.45;
+    }
+
+    /* MASTHEAD + FOLIO */
+    .masthead, .folio {
+      font-size: 9px; letter-spacing: 0.14em;
+      left: 6vw; right: 6vw;
+    }
+    .masthead .m-center { letter-spacing: 0.18em; }
+    /* Hide center label on mobile — masthead is cramped */
+    .masthead .m-center { display: none; }
+
+    /* RULES */
+    .page .rule-top, .page .rule-bottom {
+      left: 6vw; right: 6vw;
+    }
+
+    /* BACK COVER */
+    .back { padding: 5vh 6vw 8vh; }
+    .back-top {
+      font-size: 10px; letter-spacing: 0.2em;
+    }
+    .back-end {
+      font-size: 18vw; margin-top: 4vh; margin-bottom: 1vh;
+    }
+    .back-url { font-size: 6.8vw; margin-bottom: 2vh; }
+    .back-contact {
+      font-size: 15px !important; margin-bottom: 5vh !important;
+      line-height: 1.4 !important;
+    }
+    .back-bottom {
+      grid-template-columns: 1fr !important; gap: 4vh !important;
+      font-size: 11px; letter-spacing: 0.18em; line-height: 2;
+    }
+    .back-bottom .col:last-child { text-align: left !important; }
+    .back-bottom .col b { letter-spacing: 0.22em; }
+    .asterism { font-size: 5vw; }
+
+    /* NAV */
+    .nav-counter {
+      top: 1.8vh; right: 4vw;
+      font-size: 10px; letter-spacing: 0.18em;
+    }
+    .nav-hint {
+      top: 1.8vh; left: 4vw;
+      font-size: 9px; letter-spacing: 0.16em;
+    }
+    .nav-back {
+      top: 5vh; right: 4vw;
+      font-size: 9px; letter-spacing: 0.14em;
+      padding: 4px 10px;
+    }
+    .nav-dots {
+      bottom: 1.4vh; padding: 6px 10px; gap: 6px;
+    }
+    .dot { width: 6px; height: 6px; }
+  }
+
+  /* Small phones — squeeze further */
+  @media (max-width: 420px) {
+    .cover-wordmark { font-size: 24vw; }
+    .cover-tagline { font-size: 6.5vw; }
+    .headline { font-size: 10vw; }
+    .back-end { font-size: 20vw; }
+    .back-url { font-size: 7.5vw; }
+  }
+</style>
+</head>
+<body>
+
+<a href="/" class="nav-back" target="_top">← Back to TrailVerse</a>
+<div class="nav-hint">← / → · swipe · scroll</div>
+<div class="nav-counter" id="navCounter">01 / 16</div>
+
+<div class="magazine">
+  <div class="track" id="track">
+
+    <!-- PAGE 1 — COVER -->
+    <section class="page cover">
+      <div class="rule-top"></div>
+      <div class="cover-top">
+        <div>Spring 2026 · Issue 01</div>
+      </div>
+      <div>
+        <div class="cover-wordmark">TrailVerse<em>— plan your next park.</em></div>
+        <div class="cover-tagline">"Your Universe of<br>National Parks Exploration."</div>
+      </div>
+      <div class="cover-bottom">
+        <div class="features">
+          <span>— AI That Checks Its Own Work</span>
+          <span>— Interactive Map · 470+ Parks</span>
+          <span>— Itinerary Builder · PDF Export</span>
+          <span>— Daily Nature Feed · Compare Parks</span>
+          <span>— Reviews · Events · Blog</span>
+        </div>
+        <div style="text-align:right; line-height:2.1">
+          <div class="cover-mark">Plan your next park at</div>
+          <div><a class="cover-link" href="https://nationalparksexplorerusa.com" target="_blank" rel="noopener">nationalparksexplorerusa.com</a></div>
+        </div>
+      </div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 2 — WHY TRAILVERSE -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Why TrailVerse ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">01</div>
+          <div class="cat-tag">Why TrailVerse</div>
+          <h1 class="headline">17 parks. 23 states. <em>67 million views.</em></h1>
+          <div class="route">/about</div>
+          <p class="description"><span class="dropcap">T</span>railVerse was built by Krishna — a Nikon Z6II astrophotographer who has visited 17 national parks across 23 states, and a Google Maps Level 8 contributor with 379 park reviews and 67 million review views. The platform came out of his own planning frustration: too many tabs, too much scattered data, too many generic roundup articles. TrailVerse is the all-in-one tool he wished existed while planning his own trips.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>When a generic app tells you to "visit Utah," it has never actually been there. TrailVerse has — 17 times, camera in hand, writing it all down. Every feature was stress-tested by someone who wanted the answer themselves.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>01</div><div>Why TrailVerse</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 3 — EXPLORE -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Explore ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">02</div>
+          <div class="cat-tag">Explore</div>
+          <h1 class="headline">470+ parks, <em>not just the famous ones.</em></h1>
+          <div class="route">/explore</div>
+          <p class="description"><span class="dropcap">E</span>veryone knows the headline 63 — Yosemite, Yellowstone, Zion. TrailVerse covers the other 400+ too: monuments, seashores, historic sites, recreation areas, battlefields, parkways, preserves. Filter by state or by activity — Hiking, Camping, Wildlife Watching, Photography, Fishing, Boating, Biking, Climbing, Stargazing. Browse by state — tap any state to see every NPS site within its borders. Sort by name or state. Switch between grid and list view. Live search as you type. The full National Park Service inventory in one place.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>The hidden gems live in the other 400. Craters of the Moon. Canyon de Chelly. Apostle Islands. A complete index is permission to go somewhere you've never even heard of.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>02</div><div>Explore</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 4 — AI TRIP PLANNER -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· AI Trip Planner ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">03</div>
+          <div class="cat-tag">AI Trip Planner</div>
+          <h1 class="headline">It catches contradictions <em>before you do.</em></h1>
+          <div class="route">/plan-ai</div>
+          <p class="description"><span class="dropcap">T</span>he planner actually listens. Ask for "an easy but adventurous trip" and it hands you two distinct options instead of a middle-ground plan. Mention kids and it caps the day at four stops and skips pre-dawn starts. Every response comes with park photos — right in the chat. Two voices: The Local (Claude) talks like a friend who's been there. The Planner (GPT-4.1) builds hour-by-hour itineraries with drive times. Switch mid-chat.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Most AI trip planners blend contradictions into a mushy compromise. This one notices what you asked for — and treats your fitness level, your kids, and your budget as non-negotiable, not flavor text.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>03</div><div>AI Trip Planner</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 5 — SAFETY NET -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Safety Net ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">04</div>
+          <div class="cat-tag">Safety Net</div>
+          <h1 class="headline">It checks its own work <em>before you see it.</em></h1>
+          <div class="route">/plan-ai</div>
+          <p class="description"><span class="dropcap">M</span>ost AI trip planners write a plan and hand it over. This one reads it back before you see it. It pulls live data first — park closures, permit rules, weather — and trusts that over training data. Then it reviews its own answer: strenuous trail on a beginner's plan? Swapped. Fifteen-hour hiking day? Rebalanced. Too compromised to fix? Starts over. When it doesn't know something, it says so.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Most AI travel apps generate once and ship it — confident, polished, and occasionally wrong. TrailVerse assumes the AI made mistakes and fixes them before you show up at the trailhead. Honest "I don't know" beats a plausible lie every time.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>04</div><div>Safety Net</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 6 — INTERACTIVE MAP -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Interactive Map ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">05</div>
+          <div class="cat-tag">Interactive Map</div>
+          <h1 class="headline">Every park, <em>pinned and searchable.</em></h1>
+          <div class="route">/map</div>
+          <p class="description"><span class="dropcap">A</span>ll 400+ parks on one interactive map with custom dark styling. Circle markers — green for National Parks, blue for monuments, seashores and the rest — scale up when selected. Search with autocomplete across park name, state, designation and park code. Desktop floats a search pill top-center and a preview card bottom-right. Mobile goes full-bleed. Your search, map center and zoom are remembered between sessions, so the next visit opens right where you left off.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>The best trip ideas happen when you see that two parks you thought were unrelated are actually a four-hour drive apart. The map shows you what's next to what.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>05</div><div>Interactive Map</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 7 — PARK PAGES -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Park Pages ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">06</div>
+          <div class="cat-tag">Park Pages</div>
+          <h1 class="headline">Fourteen tabs of <em>everything you need.</em></h1>
+          <div class="route">/parks/[code]</div>
+          <p class="description"><span class="dropcap">E</span>very park gets a dedicated page with a hero image, live alerts, weather, entrance fees, and fourteen tabs: Overview, Alerts, Activities, Camping, Places, Tours, Parking, Facilities, Brochures, Permits, Photos, Videos, Webcams, and Reviews. A sidebar surfaces nearby lodging, food and gas, park guides, and related parks. Full-screen photo lightbox with swipe. The official NPS data — cleanly laid out.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Park pages on most travel sites give you three photos and a paragraph. TrailVerse gives you the entrance fee, the active alerts, the brochure download, the webcam feed, and the current weather — in one place.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>06</div><div>Park Pages</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 8 — COMPARE PARKS -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Compare Parks ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">07</div>
+          <div class="cat-tag">Compare Parks</div>
+          <h1 class="headline">Four parks. One page. <em>A decision.</em></h1>
+          <div class="route">/compare</div>
+          <p class="description"><span class="dropcap">T</span>he shortlist is where most trips stall. TrailVerse fixes it with a side-by-side for up to four parks — ratings, weather, seasonal averages, campgrounds, lodging, accessibility, entrance fees, crowd levels with confidence percentages, top activities and best months to visit. Four auto-computed highlight cards call out the best overall bet, the warmest right now, the lower-crowd option, and shared activities. A road-trip banner sends the whole shortlist straight into the AI planner.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Flipping between six browser tabs isn't a comparison — it's a memory test. A single grid, properly lined up, is how a shortlist actually becomes a trip.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>07</div><div>Compare Parks</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 9 — ITINERARY BUILDER -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Itinerary Builder ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">08</div>
+          <div class="cat-tag">Itinerary Builder</div>
+          <h1 class="headline">The chat becomes <em>a draggable timeline.</em></h1>
+          <div class="route">/plan-ai/[tripId]/itinerary</div>
+          <p class="description"><span class="dropcap">Y</span>our AI plan doesn't get stuck in a chat log. One click turns it into a horizontal-scroll day planner — a column per day, draggable days, draggable stops within and between days. Six stop types with color-coded borders: Park, Trail, Camp, Lodging, Food, Custom. Trail stops carry difficulty badges — easy, moderate, hard, strenuous — with distance, elevation gain, driving time to the next stop, and permit flags. Every edit saves automatically. Share the result with a public link, or export to a clean PDF.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>AI is a good first draft, not a final answer. Every itinerary needs your hand on it before it's real. The builder is where the plan actually becomes yours.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>08</div><div>Itinerary Builder</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 10 — DAILY NATURE FEED -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Daily Nature Feed ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">09</div>
+          <div class="cat-tag">Daily Nature Feed</div>
+          <h1 class="headline">A new park, <em>every morning.</em></h1>
+          <div class="route">/home</div>
+          <p class="description"><span class="dropcap">S</span>ign in and your homepage becomes a park-of-the-day brief. A full-height hero of today's featured park, then three quick-info cards — current weather, sun and sky timing with a "best darkness" hint 90 minutes after sunset, and a conditions snapshot with moon phase. Park insights on habitat, wildlife and geology. Three analysis cards for Weather, Sky and At-a-Glance. Then a personalized list of time-targeted "do this now" recommendations. The first thing you read over coffee, before the inbox.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Most travel apps go dormant between trips. A daily feed keeps the parks in your peripheral vision — so the next trip starts forming weeks before you book it.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>09</div><div>Daily Nature Feed</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 11 — REVIEWS -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Reviews ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">10</div>
+          <div class="cat-tag">Reviews</div>
+          <h1 class="headline">Real reviews, <em>with real photos.</em></h1>
+          <div class="route">/parks/[code]?tab=reviews</div>
+          <p class="description"><span class="dropcap">E</span>very park page carries a reviews tab — a rating summary card with average stars and review count, then individual review cards with user avatars, visit year, and up to five photos per review. Signed-in users edit and delete their own reviews inline. Anyone, signed-in or guest, can vote reviews helpful. New reviews, edits, and vote counts appear live for everyone reading the page — no refresh required. Photos open in a full-screen lightbox with keyboard navigation and download.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Official park info tells you what a park is. Reviews tell you what it's like on a Tuesday in October with a four-year-old. That's the difference between a brochure and a useful answer.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>10</div><div>Reviews</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 12 — EVENTS -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Events ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">11</div>
+          <div class="cat-tag">Events</div>
+          <h1 class="headline">Live ranger programs, <em>by the month.</em></h1>
+          <div class="route">/events</div>
+          <p class="description"><span class="dropcap">E</span>vents pulls live from the National Park Service — ranger programs, guided tours, workshops, festivals, lectures, volunteer days. Search by park, state or title. Filter by one of nine color-coded categories. Pick any of the next twelve months. Toggle between grid and calendar views. Save any event to a cross-tab bookmarked list that works without an account. A quick-stats bar counts upcoming events, events this month, categories available, and parks with events.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>The best part of a park is often the ranger standing on the boardwalk at 9 a.m. An events calendar surfaces those moments before you've even planned a trip — and lets you build the trip around them.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>11</div><div>Events</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 13 — BLOG -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Blog ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">12</div>
+          <div class="cat-tag">Blog</div>
+          <h1 class="headline">Stories, guides, <em>and gear reviews.</em></h1>
+          <div class="route">/blog</div>
+          <p class="description"><span class="dropcap">L</span>ong-form posts across six categories — Trip Planning, Park Guides, Gear &amp; Packing, Seasonal, Astrophotography, Budget Travel. Every post has a scroll-based reading progress bar, a sticky table of contents that tracks the heading you're reading, park names auto-linked to their pages, a Krishna author bio, related posts, and a nested comment section. Readers like, favorite, and share without leaving the page. A newsletter widget runs inline at the foot of every post.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>An AI can plan your trip, but it can't tell you about the 4 a.m. moose at Many Glacier. That's what the blog is for — the stories that live between the data. Writing from someone who actually went.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>12</div><div>Blog</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 14 — YOUR PROFILE -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Your Profile ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">13</div>
+          <div class="cat-tag">Your Profile</div>
+          <h1 class="headline">Six tabs. <em>One personal archive.</em></h1>
+          <div class="route">/profile</div>
+          <p class="description"><span class="dropcap">S</span>ix tabs organize the whole account — Profile, Favorites, Visited Parks, My Reviews, Testimonials, Settings. A stats bar tracks parks visited, total favorites, reviews written, and days since signup. Favorites splits into saved parks, saved events and favorite blog posts. Pick an avatar from a generated grid, or upload your own. Everything syncs in real time across every device you use. Not a leaderboard — a quiet personal archive.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>A park you visit without a record is a park you slowly forget. The profile isn't gamification — it's a memory keeper. A small, private museum of your own miles.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>13</div><div>Your Profile</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 15 — PLATFORM -->
+    <section class="page">
+      <div class="rule-top"></div>
+      <div class="masthead"><div>TrailVerse · Issue 01</div><div class="m-center">· Platform ·</div><div></div></div>
+      <div class="spread">
+        <div class="spread-left">
+          <div class="ghost-number">14</div>
+          <div class="cat-tag">Platform</div>
+          <h1 class="headline">Free to start. Installable. <em>Built for the backcountry.</em></h1>
+          <div class="route">/features</div>
+          <p class="description"><span class="dropcap">N</span>o account needed to explore — browse every park, compare, map, and get 5 free AI messages per session. Install TrailVerse to your home screen and it opens like a regular app. Parks you've opened before are cached for offline use — browse them at home, reach them again in a no-signal canyon. Light, dark, or system theme — synced across devices when signed in. Rich link previews on every share. Works on phones, tablets, desktops. Works when your carrier doesn't.</p>
+        </div>
+        <div class="spread-right">
+          <div class="callout"><div class="callout-label">Why this matters</div><p>Cell service ends at the trailhead. A trip tool that dies there isn't a trip tool. Offline-first isn't a bonus feature — for national parks, it's the whole job.</p></div>
+        </div>
+      </div>
+      <div class="folio"><div>14</div><div>Platform</div></div>
+      <div class="rule-bottom"></div>
+    </section>
+
+    <!-- PAGE 16 — BACK COVER -->
+    <section class="page back">
+      <div class="rule-top"></div>
+      <div class="back-top">
+        <div>Spring 2026 · Issue 01</div>
+      </div>
+      <div>
+        <div class="back-end">Go outside.</div>
+        <div class="asterism">* * *</div>
+        <div class="back-url"><a href="https://nationalparksexplorerusa.com" target="_blank" rel="noopener">nationalparksexplorerusa.com</a></div>
+        <div class="back-contact" style="opacity:0.62; text-transform:none; letter-spacing:0.04em; font-family:'Playfair Display', serif; font-style:italic; font-size:max(15px, 1.2vw);">Plan a trip. Compare four parks. Read what the map is trying to tell you.</div>
+      </div>
+      <div class="back-bottom" style="grid-template-columns: 1fr 1fr; gap: 5vw;">
+        <div class="col"><b>Made By</b><span>Krishna</span><span>Nikon Z6II · Google Maps Level 8</span><span>17 parks · 23 states · 67M+ views</span></div>
+        <div class="col" style="text-align:right"><b>Say Hello</b><span><a href="mailto:trailverseteam@gmail.com" style="color:inherit; text-decoration:none; border-bottom:1px solid rgba(26,26,24,0.25); padding-bottom:1px;">trailverseteam@gmail.com</a></span><span><a href="https://instagram.com/travelswithkrishna" target="_blank" rel="noopener" style="color:inherit; text-decoration:none; border-bottom:1px solid rgba(26,26,24,0.25); padding-bottom:1px;">@travelswithkrishna</a></span><span><a href="https://www.astrobykrishna.com" target="_blank" rel="noopener" style="color:inherit; text-decoration:none; border-bottom:1px solid rgba(26,26,24,0.25); padding-bottom:1px;">astrobykrishna.com</a></span></div>
+      </div>
+      <div class="rule-bottom"></div>
+    </section>
+
+  </div>
+</div>
+
+<nav class="nav-dots" id="navDots"></nav>
+
+<script>
+(function() {
+  const track = document.getElementById('track');
+  const counter = document.getElementById('navCounter');
+  const dotsContainer = document.getElementById('navDots');
+  const pages = document.querySelectorAll('.page');
+  const TOTAL = pages.length;
+  let current = 0;
+  let busy = false;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('button');
+    d.className = 'dot';
+    d.setAttribute('aria-label', 'Go to page ' + (i+1));
+    d.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(d);
+  }
+  const dots = dotsContainer.querySelectorAll('.dot');
+
+  function update() {
+    track.style.transform = `translateX(-${current * 100}vw)`;
+    counter.textContent = String(current+1).padStart(2,'0') + ' / ' + String(TOTAL).padStart(2,'0');
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+  }
+  function goTo(idx) {
+    if (busy) return;
+    idx = Math.max(0, Math.min(TOTAL - 1, idx));
+    if (idx === current) return;
+    busy = true;
+    current = idx;
+    document.body.classList.add('has-navigated');
+    update();
+    setTimeout(() => { busy = false; }, 880);
+  }
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    else if (e.key === 'End') { e.preventDefault(); goTo(TOTAL - 1); }
+  });
+
+  let wheelLock = false;
+  window.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (wheelLock || busy) return;
+    const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (Math.abs(dx) < 8) return;
+    wheelLock = true;
+    if (dx > 0) next(); else prev();
+    setTimeout(() => { wheelLock = false; }, 900);
+  }, { passive: false });
+
+  let touchStartX = 0, touchStartY = 0, touchActive = false, swipeDirection = null;
+  window.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchActive = true;
+    swipeDirection = null;
+  }, { passive: true });
+  window.addEventListener('touchmove', (e) => {
+    if (!touchActive) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (!swipeDirection && (dx > 10 || dy > 10)) {
+      swipeDirection = dx > dy ? 'horizontal' : 'vertical';
+    }
+    if (swipeDirection === 'horizontal') e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchend', (e) => {
+    if (!touchActive) return;
+    touchActive = false;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) next(); else prev();
+    }
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

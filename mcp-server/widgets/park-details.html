@@ -454,14 +454,16 @@ body {
 
 .pd-gallery {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
   padding: 12px 28px 0;
+  border-radius: 16px;
+  overflow: hidden;
 }
 .pd-gallery-item {
   position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: 12px;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
   overflow: hidden;
   background: var(--bg-tertiary);
 }
@@ -610,21 +612,20 @@ function render() {
     </div>
   </div></div>`;
 
-  // Photo gallery
+  // Photo gallery — 2×2 grid matching app AI response
   const images = d.images || [];
   if (images.length > 0) {
-    const visible = images.slice(0, 3);
-    const totalCount = images.length;
+    const visible = images.slice(0, 4);
     html += `<div class="pd-gallery">`;
-    visible.forEach((img, idx) => {
+    visible.forEach((img) => {
       html += `<div class="pd-gallery-item">`;
       html += `<img src="${esc(img.url)}" alt="${esc(img.altText || img.title || "")}" loading="lazy" />`;
-      if (idx === 2 && totalCount > 3) {
-        html += `<div class="pd-gallery-more">+${totalCount - 3}</div>`;
-      }
       html += `</div>`;
     });
     html += `</div>`;
+    if (images.length > 4) {
+      html += `<div style="padding:4px 28px 0;"><a href="${esc(d.links?.trailverse || "#")}" target="_blank" rel="noopener" style="color:var(--accent-green);font-size:12px;font-weight:600;text-decoration:none;">View all ${images.length} photos</a></div>`;
+    }
   }
 
   // Weather

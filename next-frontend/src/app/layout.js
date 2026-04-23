@@ -70,8 +70,10 @@ export default function RootLayout({ children }) {
             />
           </>
         )}
-        <script
+        <Script
+          id="json-ld"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
@@ -90,7 +92,9 @@ export default function RootLayout({ children }) {
             })
           }}
         />
-        <script
+        <Script
+          id="suppress-console"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {

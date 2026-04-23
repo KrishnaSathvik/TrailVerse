@@ -2069,7 +2069,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
             <div className={isWelcomeState ? 'flex min-h-full items-start justify-center sm:items-center' : ''}>
             <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-4xl' : ''}`}>
               {messages.map((message, index) => (
-                <React.Fragment key={`${message.id}-${user?.id || 'anonymous'}-${avatarVersion}`}>
+                <React.Fragment key={`${message.id || message._id || index}-${user?.id || 'anonymous'}-${avatarVersion}`}>
                 <MessageBubble
                   message={message.content}
                   isUser={message.role === 'user'}

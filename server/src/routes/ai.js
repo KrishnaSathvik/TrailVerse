@@ -180,16 +180,15 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   }
 
   // Fetch park images for the primary park
-  // Prefer curated park hero images (from /parks endpoint) over raw gallery assets
+  // Use dedicated getParkImages (calls /parks?fields=images) for curated NPS images
   let parkImages = [];
   if (resolvedMetadata.parkCode) {
     try {
-      const parkData = await npsService.getParkByCode(resolvedMetadata.parkCode);
-      const heroImages = parkData?.images || [];
-      if (heroImages.length > 0) {
-        parkImages = heroImages.map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
+      const images = await npsService.getParkImages(resolvedMetadata.parkCode);
+      if (images && images.length > 0) {
+        parkImages = images.slice(0, 12).map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
       }
-      // Fallback: gallery assets if no hero images
+      // Fallback: gallery assets if /parks endpoint had no images
       if (parkImages.length === 0) {
         const galleryPhotos = await npsService.getParkGalleryPhotos(resolvedMetadata.parkCode);
         if (galleryPhotos && galleryPhotos.length > 0) {
@@ -1399,14 +1398,13 @@ Ready to continue planning? 🚀`,
     }
 
     // Fetch park images for anonymous users
-    // Prefer curated park hero images over raw gallery assets
+    // Use dedicated getParkImages (calls /parks?fields=images) for curated NPS images
     let parkImages = [];
     if (resolvedMetadata.parkCode) {
       try {
-        const parkData = await npsService.getParkByCode(resolvedMetadata.parkCode);
-        const heroImages = parkData?.images || [];
-        if (heroImages.length > 0) {
-          parkImages = heroImages.map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
+        const images = await npsService.getParkImages(resolvedMetadata.parkCode);
+        if (images && images.length > 0) {
+          parkImages = images.slice(0, 12).map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
         }
         if (parkImages.length === 0) {
           const galleryPhotos = await npsService.getParkGalleryPhotos(resolvedMetadata.parkCode);

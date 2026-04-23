@@ -471,8 +471,9 @@ function render() {
   // Facts grid
   const gridCols = `140px repeat(${n}, 1fr)`;
   html += `<div class="cmp-grid" style="grid-template-columns:${gridCols}">`;
+  const hasAnyReviews = parks.some(p => p.reviewCount > 0);
   const rows = [
-    ["Rating", (p) => p.rating != null ? `<span class="cmp-stars">${stars(p.rating)}</span> <span style="color:var(--text-tertiary);font-size:11px;margin-left:4px">${p.reviewCount || 0}</span>` : "—"],
+    ...(hasAnyReviews ? [["Rating", (p) => p.reviewCount > 0 ? `<span class="cmp-stars">${stars(p.rating)}</span> <span style="color:var(--text-tertiary);font-size:11px;margin-left:4px">${p.reviewCount}</span>` : "—"]] : []),
     ["Current temp", (p) => p.currentTempF != null ? `<strong>${Math.round(p.currentTempF)}°F</strong>` : "—"],
     ["Crowd level", (p) => esc(p.crowdLevel || "—")],
     ["Entrance fee", (p) => esc(p.entranceFee || "—")],

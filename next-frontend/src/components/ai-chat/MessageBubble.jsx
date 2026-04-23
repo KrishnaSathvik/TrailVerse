@@ -310,8 +310,12 @@ const MessageBubble = ({
                 strong: ({ children }) => <strong className="font-semibold break-words">{children}</strong>,
                 em: ({ children }) => <em className="italic break-words">{children}</em>,
                 
-                // Paragraphs and spacing
-                p: ({ children }) => <p className="mb-2 leading-relaxed text-sm sm:text-base break-words" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</p>,
+                // Paragraphs — use div when children contain block elements (images)
+                p: ({ children, node }) => {
+                  const hasImage = node?.children?.some(c => c.tagName === 'img');
+                  const Tag = hasImage ? 'div' : 'p';
+                  return <Tag className="mb-2 leading-relaxed text-sm sm:text-base break-words" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</Tag>;
+                },
                 br: () => <br />,
                 
                 // Lists
@@ -403,6 +407,22 @@ const MessageBubble = ({
                   );
                 },
                 
+                // Inline images — render as styled cards instead of raw inline
+                img: ({ src, alt }) => {
+                  // Skip if this image is already shown in the parkImages grid above
+                  if (parkImages?.length > 0 && parkImages.some(pi => pi.url === src)) return null;
+                  return (
+                    <img
+                      src={src}
+                      alt={alt || 'Photo'}
+                      className="rounded-xl my-3 w-full max-w-sm object-cover"
+                      style={{ aspectRatio: '4/3', backgroundColor: 'var(--surface-hover)' }}
+                      loading="lazy"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  );
+                },
+
                 // Horizontal rule
                 hr: () => <hr className="my-4" style={{ borderColor: 'var(--border)' }} />,
                 

@@ -9,6 +9,7 @@ Apps bridge. The text is what ChatGPT's model reads.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 from .client import extract_itinerary, strip_itinerary_block
@@ -16,6 +17,12 @@ from .client import extract_itinerary, strip_itinerary_block
 WEB_BASE = os.getenv(
     "TRAILVERSE_WEB_BASE", "https://www.nationalparksexplorerusa.com"
 ).rstrip("/")
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+def _strip_html(text: str) -> str:
+    """Remove HTML tags and collapse whitespace."""
+    return " ".join(_TAG_RE.sub("", text).split())
 
 
 # ---------- plan_trip ----------
@@ -34,10 +41,19 @@ def format_plan_trip(resp: dict[str, Any], *, user_message: str, park_code_hint:
     park_name = data.get("parkName") or (itinerary.get("parkName") if itinerary else None)
     park_code = (itinerary.get("parkCode") if itinerary else None) or park_code_hint or ""
 
+    # Park images for visual richness (backend returns up to 12)
+    raw_images = data.get("parkImages") or []
+    park_images = [
+        {"url": img.get("url"), "altText": img.get("altText") or img.get("title")}
+        for img in raw_images[:4]
+        if isinstance(img, dict) and img.get("url")
+    ]
+
     structured = {
         "kind": "itinerary",
         "parkName": park_name,
         "parkCode": park_code,
+        "parkImages": park_images,
         "persona": "planner" if data.get("provider") == "openai" else "local",
         "provider": data.get("provider"),
         "model": data.get("model"),
@@ -109,16 +125,18 @@ def format_park_details(
                     "url": a.get("url"),
                 })
 
-    # Normalize weather
+    # Normalize weather — backend nests current conditions inside data.current
     current = {}
     forecast = []
     if weather:
         w = weather.get("data") or weather
+        # Current conditions may be at top level or nested in a "current" key
+        cur = w.get("current") or w
         current = {
-            "tempF": w.get("tempF") or w.get("temperature"),
-            "description": w.get("description") or w.get("condition"),
-            "humidity": w.get("humidity"),
-            "windMph": w.get("windMph") or w.get("wind"),
+            "tempF": cur.get("tempF") or cur.get("temperature") or cur.get("temp"),
+            "description": cur.get("description") or cur.get("condition"),
+            "humidity": cur.get("humidity"),
+            "windMph": cur.get("windMph") or cur.get("windSpeed") or cur.get("wind"),
         }
         fc = w.get("forecast") or []
         if isinstance(fc, list):
@@ -231,17 +249,55 @@ def format_compare(
     parks: list[dict[str, Any]] = []
     for p in parks_raw if isinstance(parks_raw, list) else []:
         code = p.get("parkCode") or p.get("code")
+
+        # crowdLevel: nested object → string
+        crowd = p.get("crowdLevel")
+        if isinstance(crowd, dict):
+            crowd = crowd.get("level") or crowd.get("crowdLevel") or "Unknown"
+
+        # rating: nested in reviews object
+        reviews = p.get("reviews") or {}
+        rating = p.get("rating") or (reviews.get("averageRating") if isinstance(reviews, dict) else None)
+        review_count = p.get("reviewCount") or (reviews.get("totalReviews") if isinstance(reviews, dict) else None)
+
+        # temperature: nested in weather.current
+        weather = p.get("weather") or {}
+        current_wx = weather.get("current") or {} if isinstance(weather, dict) else {}
+        temp = p.get("currentTempF") or current_wx.get("temperature")
+
+        # entrance fee: nested in entranceFees array
+        fee = p.get("entranceFee")
+        if not fee:
+            fees_arr = p.get("entranceFees") or []
+            if isinstance(fees_arr, list) and fees_arr:
+                cost = fees_arr[0].get("cost") if isinstance(fees_arr[0], dict) else None
+                if cost is not None:
+                    try:
+                        fee = f"${float(cost):.2f}"
+                    except (ValueError, TypeError):
+                        fee = str(cost)
+
+        # activities: nested in activities array or topActivities
+        top_acts = p.get("topActivities") or []
+        if not top_acts:
+            acts_arr = p.get("activities") or []
+            if isinstance(acts_arr, list):
+                for a in acts_arr[:5]:
+                    name = a.get("name") if isinstance(a, dict) else str(a)
+                    if name:
+                        top_acts.append(name)
+
         parks.append({
             "parkCode": code,
             "name": p.get("fullName") or p.get("name"),
             "designation": p.get("designation"),
             "states": p.get("states"),
-            "rating": p.get("rating"),
-            "reviewCount": p.get("reviewCount"),
-            "currentTempF": p.get("currentTempF"),
-            "crowdLevel": p.get("crowdLevel"),
-            "entranceFee": p.get("entranceFee"),
-            "topActivities": (p.get("topActivities") or [])[:5],
+            "rating": rating,
+            "reviewCount": review_count,
+            "currentTempF": temp,
+            "crowdLevel": crowd,
+            "entranceFee": fee,
+            "topActivities": top_acts[:5],
             "heroImage": _pick_image(p),
             "link": f"{WEB_BASE}/parks/{code}" if code else None,
         })
@@ -249,11 +305,36 @@ def format_compare(
     highlights = {}
     if summary:
         s = summary.get("data") or summary
+
+        # bestOverall may be an object — flatten to park name
+        best = s.get("bestOverall")
+        if isinstance(best, dict):
+            best = best.get("parkName") or best.get("name")
+
+        # warmest: may be nested in weatherComparison
+        warmest = s.get("warmest")
+        if not warmest:
+            wx_cmp = s.get("weatherComparison") or {}
+            w_obj = wx_cmp.get("warmest")
+            if isinstance(w_obj, dict):
+                warmest = w_obj.get("parkName")
+
+        # lowerCrowd: may be nested in crowdComparison
+        lower_crowd = s.get("lowerCrowd")
+        if not lower_crowd:
+            crowd_cmp = s.get("crowdComparison") or {}
+            lc_obj = crowd_cmp.get("leastCrowded")
+            if isinstance(lc_obj, dict):
+                lower_crowd = lc_obj.get("parkName")
+
+        # sharedHighlights: may be in commonActivities
+        shared = s.get("sharedHighlights") or s.get("commonActivities") or []
+
         highlights = {
-            "bestOverall": s.get("bestOverall"),
-            "warmest": s.get("warmest"),
-            "lowerCrowd": s.get("lowerCrowd"),
-            "sharedHighlights": s.get("sharedHighlights") or [],
+            "bestOverall": best,
+            "warmest": warmest,
+            "lowerCrowd": lower_crowd,
+            "sharedHighlights": shared if isinstance(shared, list) else [],
         }
 
     codes = [p["parkCode"] for p in parks if p.get("parkCode")]
@@ -325,7 +406,7 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             "time": e.get("time") or e.get("startTime"),
             "duration": e.get("duration"),
             "category": e.get("category") or e.get("type"),
-            "description": (e.get("description") or "")[:240],
+            "description": _strip_html((e.get("description") or ""))[:240],
             "location": e.get("location"),
             "registrationUrl": e.get("registrationUrl") or e.get("url"),
         })

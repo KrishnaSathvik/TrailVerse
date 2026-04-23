@@ -21,6 +21,22 @@ const formatDate = (dateString) => {
   });
 };
 
+const getTripTitle = (trip) => {
+  // Prefer an explicit title that isn't the default
+  if (trip.title && trip.title !== 'New Trip Plan' && trip.title !== 'General Planning Session') {
+    return trip.title;
+  }
+  // Generate from first user message
+  const firstUserMsg = (trip.conversation || []).find(m => m.role === 'user');
+  if (firstUserMsg?.content) {
+    const text = firstUserMsg.content.trim();
+    // Truncate at 60 chars on a word boundary
+    if (text.length <= 60) return text;
+    return text.substring(0, 57).replace(/\s+\S*$/, '') + '...';
+  }
+  return trip.parkName || 'Untitled Chat';
+};
+
 const getPreviewText = (trip) => {
   if (trip.summary?.planPreview) return trip.summary.planPreview;
 
@@ -76,7 +92,7 @@ const ChatHistoryCard = ({
             {isArchived ? 'Archived Chat' : 'Active Chat'}
           </div>
           <h2 className="mt-4 text-xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            {trip.parkName || trip.title || 'Untitled Chat'}
+            {getTripTitle(trip)}
           </h2>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <span className="inline-flex items-center gap-1.5">

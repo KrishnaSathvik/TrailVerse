@@ -313,6 +313,7 @@ export default function AboutPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <CTAButton href="/plan-ai"><span className="inline-flex items-center gap-2"><IconGlyph name="Sparkles" className="h-4 w-4" />Try the AI Trip Planner</span></CTAButton>
                   <CTAButton href="/explore" secondary><span className="inline-flex items-center gap-2"><IconGlyph name="Compass" className="h-4 w-4" />Start Exploring Parks</span></CTAButton>
+                  <CTAButton href="/magazine" secondary><span className="inline-flex items-center gap-2"><IconGlyph name="Mountain" className="h-4 w-4" />Read the Magazine</span></CTAButton>
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -24,9 +24,14 @@ export default function Providers({ children }) {
 
   useEffect(() => {
     initGA();
-    // Register the serwist service worker for offline/PWA support
-    if ("serviceWorker" in navigator) {
+    // Register the serwist service worker for offline/PWA support (production only)
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register("/serwist/sw.js", { scope: "/" });
+    } else if ("serviceWorker" in navigator) {
+      // Unregister stale service workers in development
+      navigator.serviceWorker.getRegistrations().then(regs =>
+        regs.forEach(r => r.unregister())
+      );
     }
   }, []);
 
@@ -40,7 +45,7 @@ export default function Providers({ children }) {
             <PWAInstallButton />
             <Analytics />
             <SpeedInsights />
-            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

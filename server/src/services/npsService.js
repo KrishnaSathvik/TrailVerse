@@ -1306,6 +1306,39 @@ class NPSService {
     }
   }
 
+  // --- Per-park curated images from /parks endpoint ---
+
+  async getParkImages(parkCode) {
+    const cacheKey = `park_images_${parkCode}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/parks', {
+        params: { parkCode, fields: 'images' }
+      });
+      const park = response.data.data?.[0];
+      const images = (park?.images || []).map(img => ({
+        url: img.url,
+        altText: img.altText || img.title,
+        title: img.title,
+        caption: img.caption,
+        credit: img.credit
+      })).filter(p => p.url);
+
+      console.log(`🖼️ Park images for ${parkCode}: ${images.length} found`);
+      this._setEndpointCache(cacheKey, images, 'activities');
+      return images;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on park images for ${parkCode}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (getParkImages for ${parkCode}):`, error.message);
+      return [];
+    }
+  }
+
   // --- Per-park gallery photos (no bulk fetch — large dataset) ---
 
   async getParkGalleryPhotos(parkCode) {
