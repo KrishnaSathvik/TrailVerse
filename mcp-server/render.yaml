@@ -8,7 +8,8 @@ services:
     runtime: python
     plan: starter  # ~$7/mo; use "free" if you're ok with cold starts
     region: oregon  # keep close to your main trailverse backend
-    branch: main
+    branch: master
+    rootDir: mcp-server
     buildCommand: pip install -r requirements.txt
     startCommand: python -m server.main
     healthCheckPath: /health
