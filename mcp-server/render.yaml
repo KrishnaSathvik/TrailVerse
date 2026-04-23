@@ -24,7 +24,7 @@ services:
       - key: PORT
         value: 8000
       - key: BACKEND_TIMEOUT
-        value: 45
+        value: 120
       - key: BACKEND_USER_AGENT
         value: TrailVerse-MCP/1.0
       - key: LOG_LEVEL
