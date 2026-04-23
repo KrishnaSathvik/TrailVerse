@@ -70,7 +70,7 @@ const FeatureAnnouncementEmail = ({
                 ✨ For Me — Personalized Recommendations
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                If you've visited 3 or more parks, you'll see a "For Me" button on the AI planner page. Tap it and the AI suggests your next trip based on parks you've already been to — places that match your style but you haven't explored yet.
+                If you've planned trips to 3 or more parks, you'll see a "For Me" button on the AI planner page. Tap it and the AI analyzes your past conversations and trip details to suggest your next adventure — places that match your style but you haven't explored yet.
               </Text>
 
               {/* Feature 3: Park Photos in Chat */}
@@ -86,7 +86,7 @@ const FeatureAnnouncementEmail = ({
                 📖 TrailVerse Magazine
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                A 16-page interactive digital magazine showcasing every feature of TrailVerse. Swipe through it like a real magazine — works on desktop and mobile.
+                A 16-page digital magazine covering everything TrailVerse offers — the AI planner, interactive map, park pages, compare tool, itinerary builder, daily nature feed, events, blog, and more. One place to see what the platform can do.
               </Text>
 
               {/* Feature 6: Map Upgrades */}

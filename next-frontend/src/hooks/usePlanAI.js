@@ -295,10 +295,11 @@ export default function usePlanAI(tripId) {
 
   // Load trip history and check if user is returning
   useEffect(() => {
-    // Always compute uniqueParksCount for authenticated users
+    // Compute uniqueParksCount — union of all parks the user has engaged with
     if (user && userTrips) {
-      const activeTrips = userTrips.filter(t => t.status === 'active');
-      const uniqueParks = new Set(activeTrips.map(trip => trip.parkCode).filter(Boolean));
+      const uniqueParks = new Set(
+        userTrips.filter(t => t.status !== 'deleted').map(t => t.parkCode).filter(Boolean)
+      );
       setUniqueParksCount(uniqueParks.size);
     }
 
