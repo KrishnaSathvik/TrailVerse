@@ -20,7 +20,7 @@ export async function getAllParkCodes() {
 }
 
 export async function getAllParkSlugs() {
-  const res = await fetch(`${BASE_URL}/parks?all=true&nationalParksOnly=true`, {
+  const res = await fetch(`${BASE_URL}/parks?all=true`, {
     next: { revalidate: 86400 },
   });
   if (!res.ok) throw new Error(`Failed to fetch park slugs: ${res.status}`);
