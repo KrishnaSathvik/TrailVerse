@@ -121,6 +121,19 @@ exports.getAllParks = async (req, res, next) => {
       }));
     }
 
+    // Project only requested fields (e.g. ?fields=parkCode,fullName)
+    const fieldsParam = req.query.fields;
+    if (fieldsParam) {
+      const allowed = fieldsParam.split(',').map(f => f.trim()).filter(Boolean);
+      filteredParks = filteredParks.map(park => {
+        const proj = {};
+        for (const key of allowed) {
+          if (park[key] !== undefined) proj[key] = park[key];
+        }
+        return proj;
+      });
+    }
+
     // If client wants all parks (for filtering/searching), return everything
     if (skipPagination) {
       return res.status(200).json({
@@ -132,13 +145,13 @@ exports.getAllParks = async (req, res, next) => {
         data: filteredParks
       });
     }
-    
+
     // Apply pagination to filtered results
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     const paginatedParks = filteredParks.slice(startIndex, endIndex);
     const totalPages = Math.ceil(filteredParks.length / limit);
-    
+
     res.status(200).json({
       success: true,
       count: paginatedParks.length,
