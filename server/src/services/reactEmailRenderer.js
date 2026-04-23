@@ -196,6 +196,7 @@ class ReactEmailRenderer {
       userEmail,
       planUrl,
       exploreUrl,
+      magazineUrl,
       unsubscribeUrl
     } = data;
 
@@ -204,6 +205,7 @@ class ReactEmailRenderer {
       userEmail: userEmail || 'user@example.com',
       planUrl: planUrl || 'https://nationalparksexplorerusa.com/plan-ai',
       exploreUrl: exploreUrl || 'https://nationalparksexplorerusa.com/explore',
+      magazineUrl: magazineUrl || 'https://nationalparksexplorerusa.com/magazine',
       unsubscribeUrl: unsubscribeUrl || 'https://nationalparksexplorerusa.com/unsubscribe'
     });
 

@@ -276,6 +276,7 @@ class ResendEmailService {
         userEmail: user.email,
         planUrl: `${baseUrl}/plan-ai`,
         exploreUrl: `${baseUrl}/explore`,
+        magazineUrl: `${baseUrl}/magazine`,
         unsubscribeUrl: `${baseUrl}/unsubscribe?email=${user.email || ''}`
       });
 
@@ -286,7 +287,7 @@ class ResendEmailService {
         from: `${fromName} <${fromAddress}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
-        subject: 'New in TrailVerse: AI Itinerary Builder, PDF Export & Trip Sharing',
+        subject: 'New in TrailVerse: Plan My Trip, For Me Recommendations & More',
         html,
         tags: [
           { name: 'category', value: 'feature-announcement' },

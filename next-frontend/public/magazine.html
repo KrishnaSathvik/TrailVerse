@@ -51,15 +51,7 @@
   }
   .masthead .m-center { letter-spacing: 0.32em; }
 
-  .folio {
-    position: absolute; bottom: 3.2vh; left: 4vw; right: 4vw;
-    display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 1.4vh;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: max(10px, 0.78vw); letter-spacing: 0.22em;
-    text-transform: uppercase; opacity: 0.72;
-  }
-  .folio > div:last-child { text-align: right; }
+  .folio { display: none; }
 
   .cover { padding: 6vh 5vw 10vh; justify-content: space-between; background: var(--paper); }
   .cover-top {
@@ -113,13 +105,7 @@
     position: relative; display: flex; flex-direction: column;
     justify-content: flex-start; padding-right: 2vw;
   }
-  .ghost-number {
-    position: absolute; top: -4vh; left: -1vw;
-    font-family: 'Playfair Display', serif; font-weight: 900;
-    font-size: 32vw; line-height: 0.82; letter-spacing: -0.05em;
-    pointer-events: none; z-index: 0; user-select: none;
-    color: rgba(26, 26, 24, 0.055);
-  }
+  .ghost-number { display: none; }
   .cat-tag {
     font-family: 'IBM Plex Mono', monospace;
     font-size: max(11px, 0.88vw); letter-spacing: 0.32em;
@@ -334,9 +320,6 @@
       border-top: 1px solid var(--rule); padding-top: 4vh;
       justify-content: flex-start;
     }
-
-    /* HIDE oversized ghost numbers on mobile — too noisy */
-    .ghost-number { display: none; }
 
     .cat-tag {
       font-size: 11px; letter-spacing: 0.26em; margin-bottom: 2.4vh;

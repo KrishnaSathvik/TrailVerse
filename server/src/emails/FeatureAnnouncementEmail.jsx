@@ -20,9 +20,10 @@ const FeatureAnnouncementEmail = ({
   userEmail = 'user@example.com',
   planUrl = 'https://nationalparksexplorerusa.com/plan-ai',
   exploreUrl = 'https://nationalparksexplorerusa.com/explore',
+  magazineUrl = 'https://nationalparksexplorerusa.com/magazine',
   unsubscribeUrl = 'https://nationalparksexplorerusa.com/unsubscribe',
 }) => {
-  const previewText = `New in TrailVerse: drag-and-drop itinerary builder, PDF export, trip sharing, live NPS data in AI, and more.`;
+  const previewText = `New in TrailVerse: Plan My Trip, personalized For Me recommendations, park photos in chat, interactive magazine, and more.`;
 
   return (
     <Html>
@@ -53,91 +54,56 @@ const FeatureAnnouncementEmail = ({
               </Text>
 
               <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                We shipped a bunch of updates to <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> this week. Here's what's new.
+                We've been busy. Here's everything new in <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> over the last couple of weeks.
               </Text>
 
-              {/* Feature 1: Itinerary Builder */}
+              {/* Feature 1: Plan My Trip */}
               <h3 style={{ margin: '32px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🗓️ Drag-and-Drop Itinerary Builder
+                🗺️ Plan My Trip
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                After the AI generates your trip plan, it now converts into a visual itinerary. Drag stops between days, reorder activities, add custom stops, and edit notes — all before you go.
+                Hit "Plan My Trip" in the AI chat, pick your park, dates, group size, interests, budget, and fitness level — and it sends everything straight to the AI. No more typing out all your preferences. Change your mind later? Open it again and update — the AI adjusts your plan on the fly.
               </Text>
 
-              {/* Feature 2: PDF Export */}
+              {/* Feature 2: For Me */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📄 PDF Export
+                ✨ For Me — Personalized Recommendations
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                One-click export any trip plan as a printable PDF — day-by-day itinerary, stop details, and trip info. Great for when you're in the park with no signal.
+                If you've visited 3 or more parks, you'll see a "For Me" button on the AI planner page. Tap it and the AI suggests your next trip based on parks you've already been to — places that match your style but you haven't explored yet.
               </Text>
 
-              {/* Feature 3: Trip Sharing */}
+              {/* Feature 3: Park Photos in Chat */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🔗 Trip Sharing
+                📸 Park Photos in AI Chat
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Share any saved trip with a public link. Your friends can view the full plan — no account needed.
+                When you ask about a park, the AI now includes official park photos in its response. Get a visual preview of where you're headed, right in the conversation.
               </Text>
 
-              {/* Feature 4: Live NPS Data */}
+              {/* Feature 4: Magazine */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📡 Live NPS Data in AI Responses
+                📖 TrailVerse Magazine
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                When you ask about a park, the AI now pulls real-time alerts, closures, campground status, and visitor center hours directly from the National Park Service.
+                A 16-page interactive digital magazine showcasing every feature of TrailVerse. Swipe through it like a real magazine — works on desktop and mobile.
               </Text>
 
-              {/* Feature 5: Provider Switcher */}
+              {/* Feature 6: Map Upgrades */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🤖 Switch Between Claude & GPT-4
+                🗺️ Interactive Map — All 470+ Parks
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                You can now switch AI providers mid-conversation. Try both and use whichever works best for your trip.
+                The map now renders all 470+ parks reliably — no more "park not found" errors. Larger markers, a color legend, and a new "Compare Park" button right on the map card so you can send any park straight to comparison.
               </Text>
 
-              {/* Feature 6: Webcams */}
+              {/* Feature 7: Chat History */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📹 Live Webcams & Videos
+                💬 Better Chat History
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Watch live webcam feeds and videos right from the park detail page. See real conditions before you visit.
+                Your saved conversations now show descriptive titles based on what you actually asked about, instead of generic labels. Find your past trips faster.
               </Text>
-
-              {/* Feature 7: Around This Park */}
-              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📍 Around This Park
-              </h3>
-              <Text style={{ margin: '0 0 8px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Find nearby essentials in Google Maps without leaving your planning flow:
-              </Text>
-              <ul style={{ margin: '0 0 20px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <li style={{ marginBottom: '4px' }}>
-                  <strong>Lodging</strong> — hotels, lodges, and stays near the park
-                </li>
-                <li style={{ marginBottom: '4px' }}>
-                  <strong>Food</strong> — restaurants and quick stops nearby
-                </li>
-                <li style={{ marginBottom: '4px' }}>
-                  <strong>Gas</strong> — fuel stops before or after your visit
-                </li>
-                <li style={{ marginBottom: '4px' }}>
-                  <strong>Attractions</strong> — nearby points of interest and landmarks
-                </li>
-              </ul>
-
-              {/* More updates */}
-              <h3 style={{ margin: '32px 0 12px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                Also new:
-              </h3>
-              <ul style={{ margin: '0 0 24px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <li style={{ marginBottom: '6px' }}>
-                  <strong>Permits info</strong> — RIDB permit data added to park details
-                </li>
-                <li style={{ marginBottom: '6px' }}>
-                  <strong>Better park pages</strong> — operating hours, directions, fees, passes, and brochures reorganized
-                </li>
-              </ul>
 
               {/* CTA */}
               <div style={{ textAlign: 'center', margin: '40px 0 16px' }}>
@@ -148,10 +114,18 @@ const FeatureAnnouncementEmail = ({
                   Try the AI Planner
                 </Button>
               </div>
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <Button
+                  href={magazineUrl}
+                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#111827', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
+                >
+                  Read the Magazine
+                </Button>
+              </div>
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                 <Button
                   href={exploreUrl}
-                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#111827', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
+                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#ffffff', color: '#111827', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 >
                   Explore Parks
                 </Button>
@@ -167,7 +141,7 @@ const FeatureAnnouncementEmail = ({
 
               {/* Sign off */}
               <Text style={{ margin: '0 0 16px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Thanks for choosing <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> to plan your national park adventures. If you're enjoying it, share it with your friends and family — the more, the merrier on the trails!
+                Thanks for being part of <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span>. If you're enjoying it, share it with your friends and family — the more, the merrier on the trails!
               </Text>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
                 Happy trails
