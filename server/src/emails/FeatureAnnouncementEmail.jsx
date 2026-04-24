@@ -23,7 +23,7 @@ const FeatureAnnouncementEmail = ({
   magazineUrl = 'https://nationalparksexplorerusa.com/magazine',
   unsubscribeUrl = 'https://nationalparksexplorerusa.com/unsubscribe',
 }) => {
-  const previewText = `New in TrailVerse: Plan My Trip, personalized For Me recommendations, park photos in chat, interactive magazine, and more.`;
+  const previewText = `New in TrailVerse: Plan My Trip, For Me recommendations, drag-and-drop Itinerary Builder with AI sync, park photos in chat, and more.`;
 
   return (
     <Html>
@@ -103,6 +103,19 @@ const FeatureAnnouncementEmail = ({
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
                 Your saved conversations now show descriptive titles based on what you actually asked about, instead of generic labels. Find your past trips faster.
+              </Text>
+
+              {/* Feature 8: Itinerary Builder + AI Sync */}
+              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
+                🧩 Itinerary Builder + AI Sync
+              </h3>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Build your trip visually — drag-and-drop stops across days, add trails, campgrounds, food spots, and more. Switch back to the AI chat and it knows exactly what's in your itinerary, so you can ask things like "what should I add after lunch on Day 2?" and get suggestions that fit your plan.
+              </Text>
+
+              {/* Improvements */}
+              <Text style={{ margin: '24px 0 20px', fontSize: '14px', lineHeight: '1.6', color: '#6b7280' }}>
+                + A bunch of small improvements and fixes based on your feedback — things should feel snappier and smoother overall.
               </Text>
 
               {/* CTA */}

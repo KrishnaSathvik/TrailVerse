@@ -74,7 +74,11 @@ const blogPostSchema = new mongoose.Schema({
   favorites: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  notificationSentAt: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 });

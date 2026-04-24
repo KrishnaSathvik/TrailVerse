@@ -77,7 +77,7 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
 
   return (
     <div
-      className="rounded-xl p-3 group"
+      className="rounded-xl p-3 lg:p-3.5 group transition-shadow hover:shadow-sm"
       style={{
         backgroundColor: 'var(--bg-primary)',
         border: '1px solid var(--border)',
@@ -95,34 +95,41 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
         </div>
 
         {/* Type icon */}
-        <div className="mt-0.5 flex-shrink-0">
-          <Icon className="h-3.5 w-3.5" style={{ color: typeColor }} />
+        <div
+          className="mt-0.5 flex-shrink-0 flex items-center justify-center h-5 w-5 rounded-md"
+          style={{ backgroundColor: `${typeColor}15` }}
+        >
+          <Icon className="h-3 w-3" style={{ color: typeColor }} />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-[13px] font-semibold leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
             {stop.name}
           </p>
 
           {/* Time + driving time display */}
           {hasTime && (
-            <div className="flex items-center gap-1 mt-1 flex-wrap">
-              <Clock className="h-2.5 w-2.5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
-              <p className="text-xs" style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <Clock className="h-3 w-3 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+              <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
                 {stop.startTime ? formatTime12(stop.startTime) : ''}
                 {stop.startTime && stop.duration ? ' · ' : ''}
                 {stop.duration ? formatDuration(stop.duration) : ''}
-                {stop.drivingTimeFromPreviousMin > 0 ? ` · ${stop.drivingTimeFromPreviousMin}min drive` : ''}
               </p>
+              {stop.drivingTimeFromPreviousMin > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}>
+                  {stop.drivingTimeFromPreviousMin}min drive
+                </span>
+              )}
             </div>
           )}
 
           {/* Trail stats: difficulty, distance, elevation */}
           {(stop.difficulty || stop.distanceMiles || stop.elevationGainFeet) && (
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
               {stop.difficulty && (
-                <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded"
+                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded"
                   style={{
                     backgroundColor: DIFFICULTY_COLORS[stop.difficulty]?.bg || 'rgba(0,0,0,0.06)',
                     color: DIFFICULTY_COLORS[stop.difficulty]?.text || 'var(--text-tertiary)'
@@ -131,17 +138,17 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
                 </span>
               )}
               {stop.distanceMiles > 0 && (
-                <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
                   {stop.distanceMiles}mi
                 </span>
               )}
               {stop.elevationGainFeet > 0 && (
-                <span className="text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
                   ↑{stop.elevationGainFeet.toLocaleString()}ft
                 </span>
               )}
               {stop.permitRequired && (
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded"
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                   style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#dc2626' }}>
                   Permit
                 </span>
@@ -151,7 +158,7 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
 
           {/* Note — expandable */}
           {isEditing ? (
-            <div className="mt-1.5">
+            <div className="mt-2">
               <textarea
                 ref={textareaRef}
                 value={noteValue}
@@ -166,24 +173,24 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
                 }}
                 placeholder="Add a note..."
                 rows={2}
-                className="w-full text-xs bg-transparent outline-none border rounded-lg p-1.5 resize-none"
+                className="w-full text-xs bg-transparent outline-none border rounded-lg p-2 resize-none"
                 style={{ color: 'var(--text-secondary)', borderColor: 'var(--accent-green)' }}
               />
               <div className="flex justify-end mt-1">
                 <button onClick={handleNoteSave} style={{ color: 'var(--accent-green)' }}>
-                  <Check className="h-3 w-3" />
+                  <Check className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
-          ) : (
+          ) : stop.note ? (
             <p
-              className="text-xs mt-1 cursor-pointer hover:opacity-80 line-clamp-2"
+              className="text-[11px] mt-1.5 cursor-pointer hover:opacity-80 leading-relaxed"
               style={{ color: 'var(--text-tertiary)' }}
               onClick={() => setIsEditing(true)}
             >
-              {stop.note || <span className="italic">Add a note...</span>}
+              {stop.note}
             </p>
-          )}
+          ) : null}
 
           {/* Booking link */}
           {stop.bookingUrl && (
@@ -191,7 +198,7 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
               href={stop.bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[9px] font-medium mt-1 hover:underline"
+              className="inline-flex items-center gap-1 text-[10px] font-medium mt-1.5 hover:underline"
               style={{ color: 'var(--accent-green)' }}
               onClick={e => e.stopPropagation()}
             >
@@ -204,15 +211,17 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
           <button
             onClick={() => setIsEditing(true)}
-            className="p-1 rounded"
+            className="p-1 rounded hover:bg-[var(--surface-hover)]"
             style={{ color: 'var(--text-tertiary)' }}
+            title="Edit note"
           >
             <Edit2 className="h-3 w-3" />
           </button>
           <button
             onClick={() => onRemove(dayId, stop.id)}
-            className="p-1 rounded"
+            className="p-1 rounded hover:bg-[var(--surface-hover)]"
             style={{ color: 'var(--text-tertiary)' }}
+            title="Remove stop"
           >
             <X className="h-3 w-3" />
           </button>

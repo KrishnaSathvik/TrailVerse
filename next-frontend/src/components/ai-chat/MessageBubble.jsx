@@ -157,6 +157,7 @@ const MessageBubble = ({
     
     // Strip markdown formatting for cleaner copy
     const cleanText = message
+      .replace(/\[ITINERARY_JSON\][\s\S]*$/, '') // Remove itinerary JSON block
       .replace(/#{1,6}\s+/g, '') // Remove headers
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
       .replace(/\*(.*?)\*/g, '$1') // Remove italic
@@ -271,7 +272,7 @@ const MessageBubble = ({
                       alt={img.altText || img.title || 'Park photo'}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
                       loading="lazy"
-                      onError={(e) => { e.target.style.display = 'none'; }}
+                      onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                     />
                   </div>
                 ))}
@@ -299,7 +300,7 @@ const MessageBubble = ({
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              children={!isUser ? linkifyParkNames(message) : message}
+              children={!isUser ? linkifyParkNames((message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd()) : message}
               components={{
                 // Headings
                 h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold mb-3 mt-2 break-words">{children}</h1>,

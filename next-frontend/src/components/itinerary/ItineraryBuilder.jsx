@@ -8,8 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import tripService from '../../services/tripService';
 import Header from '../common/Header';
-import Button from '../common/Button';
 import DayColumn from './DayColumn';
+import AddStopSearch from './AddStopSearch';
 
 // Generate a simple unique id
 function uid() {
@@ -33,6 +33,7 @@ export default function ItineraryBuilder({ tripId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saving' | 'saved'
   const [isDirty, setIsDirty] = useState(false);
+  const [addStopForDayId, setAddStopForDayId] = useState(null); // day ID for AddStopSearch modal
   const saveTimerRef = useRef(null);
 
   // Load trip on mount
@@ -302,12 +303,6 @@ export default function ItineraryBuilder({ tripId }) {
                 Itinerary
               </button>
             </div>
-
-            {/* Add Day button */}
-            <Button variant="success" size="sm" icon={Plus} onClick={addDay}>
-              <span className="hidden sm:inline">Add Day</span>
-              <span className="sm:hidden">Day</span>
-            </Button>
           </div>
         </div>
       </section>
@@ -371,7 +366,7 @@ export default function ItineraryBuilder({ tripId }) {
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className="flex flex-col gap-4 lg:flex-row lg:items-start lg:overflow-x-auto"
+                  className="flex flex-col gap-4 lg:flex-row lg:items-start lg:overflow-x-auto pb-4"
                   style={{ minHeight: hasStops ? '60vh' : 'auto' }}
                 >
                   {days.map((day, index) => (
@@ -380,7 +375,7 @@ export default function ItineraryBuilder({ tripId }) {
                         <div
                           ref={dragProvided.innerRef}
                           {...dragProvided.draggableProps}
-                          className="w-full lg:w-auto"
+                          className="w-full lg:min-w-[320px] lg:max-w-[420px] lg:flex-1"
                           style={{
                             ...dragProvided.draggableProps.style,
                             opacity: dragSnapshot.isDragging ? 0.9 : 1,
@@ -391,7 +386,7 @@ export default function ItineraryBuilder({ tripId }) {
                             dragHandleProps={dragProvided.dragHandleProps}
                             onRemoveDay={removeDay}
                             onUpdateLabel={updateDayLabel}
-                            onAddStop={addStop}
+                            onRequestAddStop={() => setAddStopForDayId(day.id)}
                             onRemoveStop={removeStop}
                             onUpdateStop={updateStop}
                           />
@@ -404,14 +399,13 @@ export default function ItineraryBuilder({ tripId }) {
                   {/* Add Day card */}
                   <button
                     onClick={addDay}
-                    className="w-full lg:w-80 lg:flex-shrink-0 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 lg:py-12 transition hover:opacity-80"
+                    className="w-full lg:min-w-[200px] lg:max-w-[240px] lg:flex-shrink-0 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 lg:py-16 transition hover:border-[var(--accent-green)] hover:text-[var(--accent-green)]"
                     style={{
                       borderColor: 'var(--border)',
                       color: 'var(--text-tertiary)',
-                      minHeight: '120px'
                     }}
                   >
-                    <Plus className="h-6 w-6" />
+                    <Plus className="h-7 w-7" />
                     <span className="text-sm font-medium">Add Day</span>
                   </button>
                 </div>
@@ -420,6 +414,17 @@ export default function ItineraryBuilder({ tripId }) {
           </DragDropContext>
         </div>
       </div>
+
+      {/* Add Stop modal — rendered at root level so position:fixed works */}
+      {addStopForDayId && (
+        <AddStopSearch
+          onSelect={(stop) => {
+            addStop(addStopForDayId, stop);
+            setAddStopForDayId(null);
+          }}
+          onClose={() => setAddStopForDayId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -18,10 +18,10 @@
  *   --dry-run         Show what would be sent without actually sending
  */
 
+require('dotenv').config();
 const mongoose = require('mongoose');
 const resendEmailService = require('../src/services/resendEmailService');
 const User = require('../src/models/User');
-require('dotenv').config();
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -105,15 +105,18 @@ async function sendToAllUsers() {
     const totalUsers = await User.countDocuments();
     const verifiedUsers = await User.countDocuments({ isEmailVerified: true });
     const adminUsers = await User.countDocuments({ role: 'admin' });
-    const eligibleUsers = await User.countDocuments({ 
-      isEmailVerified: true, 
-      role: { $ne: 'admin' } 
+    const unsubscribed = await User.countDocuments({ emailNotifications: false });
+    const eligibleUsers = await User.countDocuments({
+      isEmailVerified: true,
+      role: { $ne: 'admin' },
+      emailNotifications: { $ne: false }
     });
 
     console.log('📈 User Statistics:');
     console.log(`   Total users: ${totalUsers}`);
     console.log(`   Verified users: ${verifiedUsers}`);
     console.log(`   Admin users: ${adminUsers}`);
+    console.log(`   Unsubscribed: ${unsubscribed}`);
     console.log(`   Eligible for announcement: ${eligibleUsers}\n`);
 
     if (eligibleUsers === 0) {
@@ -124,7 +127,8 @@ async function sendToAllUsers() {
     // Get users to send to
     const users = await User.find({
       isEmailVerified: true,
-      role: { $ne: 'admin' }
+      role: { $ne: 'admin' },
+      emailNotifications: { $ne: false }
     })
     .select('_id email firstName name isEmailVerified role')
     .limit(options.limit)

@@ -108,15 +108,22 @@ exports.updateTrip = async (req, res, next) => {
       });
     }
 
-    // Update allowed fields
+    // Update allowed fields using findByIdAndUpdate to avoid version conflicts
+    // (the AI route may save itinerary data concurrently, bumping __v)
     const allowedFields = ['title', 'formData', 'plan', 'status', 'conversation', 'summary', 'provider'];
+    const updateData = {};
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        trip[field] = req.body[field];
+        updateData[field] = req.body[field];
       }
     });
 
-    await trip.save();
+    const updatedTrip = await TripPlan.findByIdAndUpdate(
+      req.params.tripId,
+      { $set: updateData },
+      { new: true }
+    );
+    Object.assign(trip, updatedTrip.toObject());
 
     // Notify via WebSocket
     const wsService = req.app.get('wsService');

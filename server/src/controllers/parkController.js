@@ -400,10 +400,10 @@ exports.getParkPermits = async (req, res, next) => {
 // @access  Public
 exports.searchParks = async (req, res, next) => {
   try {
-    const { q, state } = req.query;
-    
+    const { q, state, activity, limit } = req.query;
+
     let parks;
-    
+
     if (state) {
       parks = await npsService.getParksByState(state);
     } else {
@@ -413,11 +413,28 @@ exports.searchParks = async (req, res, next) => {
     // Filter by search query if provided
     if (q) {
       const query = q.toLowerCase();
-      parks = parks.filter(park => 
+      parks = parks.filter(park =>
         park.fullName.toLowerCase().includes(query) ||
         park.description.toLowerCase().includes(query) ||
         park.states.toLowerCase().includes(query)
       );
+    }
+
+    // Filter by activity if provided
+    if (activity) {
+      const activityQuery = activity.toLowerCase();
+      parks = parks.filter(park => {
+        const activities = park.activities || [];
+        return activities.some(a => {
+          const name = (typeof a === 'string' ? a : a.name || '').toLowerCase();
+          return name.includes(activityQuery);
+        });
+      });
+    }
+
+    // Apply limit if provided
+    if (limit) {
+      parks = parks.slice(0, parseInt(limit, 10));
     }
 
     res.status(200).json({

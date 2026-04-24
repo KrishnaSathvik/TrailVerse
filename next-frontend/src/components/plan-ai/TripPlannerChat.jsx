@@ -98,6 +98,7 @@ const TripPlannerChat = ({
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
+  const savingInProgressRef = useRef(false);
   const previousExistingTripIdRef = useRef(existingTripId);
   const lastMessageCountRef = useRef(0);
   const userSentMessageRef = useRef(false);
@@ -1018,6 +1019,7 @@ const TripPlannerChat = ({
                 parkName: result.parkName,
                 parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
                 hasItinerary: result.hasItinerary || false,
+                itineraryData: result.itineraryData || null,
                 parkImages: result.parkImages || []
               };
               setMessages(prev => prev.map(m =>
@@ -1093,12 +1095,35 @@ const TripPlannerChat = ({
       // Add AI response
       const responseTime = Date.now() - thinkingStartTime;
 
+      // Build the assistant message for saving DIRECTLY (not inside setMessages callback,
+      // because React 18 batching may defer the updater function when other updates are pending,
+      // which would leave updatedMessagesForSave as null).
+      const assistantMessageForSave = {
+        id: isAnonymous ? Date.now() + 1 : streamAssistantId,
+        role: 'assistant',
+        content: data.content,
+        timestamp: new Date(),
+        provider: data.provider,
+        model: data.model,
+        responseTime,
+        isStreaming: false,
+        hasLiveData: data.hasLiveData,
+        parkName: data.parkName,
+        parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
+        hasItinerary: data.hasItinerary || false,
+        parkImages: data.parkImages || []
+      };
+
+      // `messages` from closure = pre-send messages; userMessage was defined above
+      const updatedMessagesForSave = [...messages, userMessage, assistantMessageForSave];
+
+      // Still update React state for the UI (adds responseTime, clears isStreaming)
       setMessages(prev => {
-        const updatedMessages = isAnonymous
+        return isAnonymous
           ? [
               ...prev,
               {
-                id: Date.now() + 1,
+                id: assistantMessageForSave.id,
                 role: 'assistant',
                 content: data.content,
                 timestamp: new Date(),
@@ -1113,48 +1138,42 @@ const TripPlannerChat = ({
             ]
           : prev.map(msg =>
               msg.id === streamAssistantId
-                ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName, parkImages: data.parkImages || [] }
+                ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName, hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [] }
                 : msg
             );
-        
-        // Auto-save conversation to history after AI response
-        console.log('🔄 About to call autoSaveConversation with:', {
-          messagesCount: updatedMessages.length,
-          currentTripId,
-          user: user?.id
-        });
-        autoSaveConversation(updatedMessages);
-        
-        return updatedMessages;
       });
-      
-      // Track AI chat interaction
-      logAIChat(messageText.trim(), responseTime, true);
-      
-      // Check if response contains a complete trip plan
-      const looksLikePlan =
-        /(^|\n)\s*(Day\s*\d+[:\-\s]|Itinerary|Schedule|Plan)\b/i.test(data.content);
-      if (looksLikePlan) {
-        setCurrentPlan({
-          parkName,
-          content: data.content,
-          formData
-        });
 
-        // Fetch structured plan data (with days) from the server if trip is saved
-        if (currentTripId && !currentTripId.startsWith('temp-')) {
-          try {
-            const updatedTrip = await tripService.getTrip(currentTripId);
-            if (updatedTrip?.plan?.days) {
-              setCurrentPlan(updatedTrip.plan);
-            }
-          } catch (e) {
-            // Non-fatal — PDF export will use text-based plan as fallback
-          }
+      // Check if response contains a complete trip plan and build the plan object
+      const looksLikePlan = data.hasItinerary ||
+        /(^|\n)\s*(Day\s*\d+[:\-\s]|Itinerary|Schedule|Plan)\b/i.test(data.content);
+      let planForSave = currentPlan;
+      if (looksLikePlan) {
+        // Build plan with structured itinerary data (days) if available from backend
+        if (data.itineraryData?.days) {
+          planForSave = {
+            type: 'itinerary',
+            version: 1,
+            generatedAt: new Date().toISOString(),
+            createdFrom: 'ai',
+            parkName,
+            parkCode: formData.parkCode || null,
+            content: data.content,
+            formData,
+            ...data.itineraryData
+          };
+        } else {
+          planForSave = { parkName, content: data.content, formData };
         }
+        setCurrentPlan(planForSave);
       }
 
-      // Note: Auto-save removed - users must manually save trips
+      // Auto-save conversation to history
+      if (updatedMessagesForSave.length >= 2) {
+        autoSaveConversation(updatedMessagesForSave, planForSave);
+      }
+
+      // Track AI chat interaction
+      logAIChat(messageText.trim(), responseTime, true);
 
       setIsGenerating(false);
       setThinkingStartTime(null);
@@ -1241,6 +1260,46 @@ const TripPlannerChat = ({
     }
   };
 
+  const formatItineraryForPrompt = (plan) => {
+    if (!plan?.days?.length) return '';
+
+    let text = '\n\nCURRENT ITINERARY (user-built in Itinerary Builder):';
+    for (const day of plan.days) {
+      const stopCount = day.stops?.length || 0;
+      text += `\n${day.label} (${stopCount} stop${stopCount !== 1 ? 's' : ''}):`;
+
+      if (day.stops?.length) {
+        day.stops.forEach((stop, i) => {
+          let line = `\n  ${i + 1}. ${stop.name}`;
+          if (stop.type) line += ` (${stop.type})`;
+
+          const timeParts = [];
+          if (stop.startTime) timeParts.push(stop.startTime);
+          if (stop.duration) timeParts.push(`${stop.duration}min`);
+          if (timeParts.length) line += ` — ${timeParts.join(', ')}`;
+
+          const trailParts = [];
+          if (stop.difficulty) trailParts.push(stop.difficulty);
+          if (stop.distanceMiles) trailParts.push(`${stop.distanceMiles}mi`);
+          if (stop.elevationGainFeet) trailParts.push(`↑${stop.elevationGainFeet}ft`);
+          if (trailParts.length) line += ` | ${trailParts.join(' | ')}`;
+
+          if (stop.note) line += ` — Note: ${stop.note}`;
+          text += line;
+        });
+      } else {
+        text += '\n  (no stops yet)';
+      }
+    }
+
+    text += `\n\nITINERARY INTERACTION RULES:
+- When the user asks about their itinerary, reference the structure above.
+- If they ask to add, remove, or modify stops, describe the changes in plain language (e.g., "I'd add a lunch stop at Yosemite Lodge between stops 2 and 3 on Day 1"). Do NOT regenerate the entire itinerary unless the user explicitly asks for a full replan.
+- The user can make these changes themselves in the Itinerary Builder — your job is to advise, not to produce a replacement plan.
+- NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON". Speak naturally about the itinerary as a travel plan.`;
+    return text;
+  };
+
   const buildSystemPrompt = (userContext, isPersonalizedMode = false) => {
     const days = calculateDays();
     
@@ -1306,7 +1365,10 @@ const TripPlannerChat = ({
 
 Remember: You're not just providing information - you're inspiring and enabling amazing travel experiences across America! Help users discover everything from National Parks to local farms, from big cities to small towns, and all the incredible destinations in between.
 
-You are helping plan a trip to ${parkName}. You have extensive knowledge about all aspects of travel, national parks, weather, activities, logistics, and trip planning.
+You are helping plan ${suggestText ? `a multi-park road trip to ${suggestText}` : `a trip to ${parkName}`}. You have extensive knowledge about all aspects of travel, national parks, weather, activities, logistics, and trip planning.${suggestText ? `
+
+ROAD TRIP CONTEXT:
+This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. All your responses should be focused on planning a multi-park road trip covering these specific destinations. When the user asks about "the road trip" or "planning", they mean this specific multi-park itinerary.` : ''}
 
 CURRENT CONTEXT:
 - Today's date: ${currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1315,7 +1377,7 @@ CURRENT CONTEXT:
 - Current year: ${currentYear}
 
 TRIP DETAILS:
-- Park: ${parkName}
+- ${suggestText ? `Destinations: ${suggestText}` : `Park: ${parkName}`}
 - Duration: ${days} days
 - Dates: ${formData.startDate} to ${formData.endDate}
 - Group: ${formData.groupSize} people
@@ -1379,8 +1441,8 @@ You are a comprehensive travel expert with deep knowledge in:
 
 INSTRUCTIONS:
 - Be intelligent, confident, and comprehensive in your responses
-When the request lacks key constraints (dates, group ability, interests),
-ask up to 1–2 concise clarifying questions **before** drafting long plans.
+- When the user provides trip details (dates, interests, budget, group size) and asks for an itinerary or plan, **generate a complete day-by-day itinerary immediately** — do NOT ask clarifying questions or list concerns first. Include any warnings/tips within the plan itself.
+- Only ask 1–2 concise clarifying questions if the request genuinely lacks key info (no dates, no destination, or very vague).
 For clearly scoped questions, answer directly and concisely.
 - Be conversational, helpful, and match the user's question style
 - For simple questions, give direct, concise answers
@@ -1436,6 +1498,8 @@ WEATHER & LIVE INFO RESPONSES:
 - Always reference the current date and season when providing weather information
 - Always be helpful and provide useful weather information for trip planning
 - Be accurate about current dates and seasons - don't make up incorrect dates`;
+
+    prompt += formatItineraryForPrompt(currentPlan);
 
     return prompt;
   };
@@ -1737,8 +1801,16 @@ What kind of adventure are you dreaming of? Let's make it happen.`
     }
   };
 
-  const autoSaveConversation = async (messagesToSave) => {
-    if (!user || !messagesToSave || messagesToSave.length < 2 || isAnonymous) return;
+  const autoSaveConversation = async (messagesToSave, planOverride = null) => {
+    if (!user || !isAuthenticated || !messagesToSave || messagesToSave.length < 2) return;
+
+    const planToSave = planOverride || currentPlan;
+
+    // Prevent duplicate trip creation from concurrent calls
+    if (savingInProgressRef.current && (!currentTripId || currentTripId.startsWith('temp-'))) {
+      console.log('⏳ Auto-save already in progress for new trip, skipping duplicate');
+      return;
+    }
 
     console.log('🔄 Auto-saving conversation:', {
       currentTripId,
@@ -1750,6 +1822,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
     // Auto-save ALL conversations to database (no manual save needed)
     try {
       setSaveState('saving');
+      savingInProgressRef.current = true;
       const tripSummary = createTripSummary(messagesToSave);
 
       if (currentTripId && !currentTripId.startsWith('temp-')) {
@@ -1758,12 +1831,12 @@ What kind of adventure are you dreaming of? Let's make it happen.`
         const updateResponse = await tripService.updateTrip(currentTripId, {
           conversation: messagesToSave,
           summary: tripSummary,
-          plan: currentPlan,
+          plan: planToSave,
           provider: selectedProvider,
           status: 'active'
         });
         console.log('✅ Trip updated successfully:', updateResponse);
-        
+
         // Force refresh of trips list to update message count
         if (refreshTrips) {
           console.log('🔄 Refreshing trips list to update message count');
@@ -1783,11 +1856,11 @@ What kind of adventure are you dreaming of? Let's make it happen.`
           formData: formData || {},
           conversation: messagesToSave,
           summary: tripSummary,
-          plan: currentPlan,
+          plan: planToSave,
           provider: selectedProvider,
           status: 'active'
         });
-        
+
         // Update currentTripId with the database ID
         const newTripId = response.data?._id || response._id;
         console.log('✅ NEW trip created with ID:', newTripId);
@@ -1798,7 +1871,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
       tripHistoryService.saveTempChatState({
         currentTripId,
         messages: messagesToSave,
-        plan: currentPlan,
+        plan: planToSave,
         provider: selectedProvider
       });
       setSaveState('saved');
@@ -1808,10 +1881,12 @@ What kind of adventure are you dreaming of? Let's make it happen.`
       tripHistoryService.saveTempChatState({
         currentTripId,
         messages: messagesToSave,
-        plan: currentPlan,
+        plan: planToSave,
         provider: selectedProvider
       });
       setSaveState('idle');
+    } finally {
+      savingInProgressRef.current = false;
     }
   };
 
@@ -1959,8 +2034,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
     );
   }
 
-  // Show warning message if user has exhausted their 5 messages
-  if (isAnonymous && !canSendMore && messageCount >= 5) {
+  // Show warning message if user has exhausted their 5 messages (never for authenticated users)
+  if (isAnonymous && !isAuthenticated && !canSendMore && messageCount >= 5) {
     return (
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="flex flex-1 items-center justify-center p-4 sm:p-8">
@@ -2355,7 +2430,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
       )}
 
       {/* Conversion Message for Anonymous Users */}
-      {isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
+      {isAnonymous && !isAuthenticated && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
         <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div
             className="rounded-2xl overflow-hidden"
@@ -2599,7 +2674,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
               onAttach={(file) => showToast(`Attached: ${file.name}`, 'success')}
               disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
               placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in or create an account to save this chat and continue..." : "Ask me about your trip..."}
-              initialValue={suggestText ? `Plan a road trip to ${suggestText}` : ''}
+              initialValue=""
             />
             </div>
           </div>

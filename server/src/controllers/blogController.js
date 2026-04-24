@@ -186,13 +186,13 @@ exports.createPost = async (req, res, next) => {
     // Clear server cache for blog posts
     clearCache('blogs');
     
-    // Send email notifications if published
-    if (status === 'published') {
-      sendBlogNotifications(post).catch(err => 
+    // Send email notifications if published (only once per post)
+    if (status === 'published' && !post.notificationSentAt) {
+      sendBlogNotifications(post).catch(err =>
         console.error('Failed to send blog notifications:', err)
       );
     }
-    
+
     res.status(201).json({
       success: true,
       data: post
@@ -216,8 +216,6 @@ exports.updatePost = async (req, res, next) => {
         error: 'Blog post not found'
       });
     }
-    
-    const wasPublished = post.status === 'published';
     
     console.log('📝 Updating blog post with data:', {
       postId: req.params.id,
@@ -253,9 +251,9 @@ exports.updatePost = async (req, res, next) => {
     // Clear server cache for blog posts
     clearCache('blogs');
     
-    // Send notifications if newly published
-    if (!wasPublished && post.status === 'published') {
-      sendBlogNotifications(post).catch(err => 
+    // Send notifications if newly published (only once per post)
+    if (post.status === 'published' && !post.notificationSentAt) {
+      sendBlogNotifications(post).catch(err =>
         console.error('Failed to send blog notifications:', err)
       );
     }
@@ -344,10 +342,12 @@ exports.publishScheduledPosts = async (req, res, next) => {
       
       publishedPosts.push(post);
       
-      // Send email notifications
-      sendBlogNotifications(post).catch(err => 
-        console.error(`Failed to send notifications for post ${post._id}:`, err)
-      );
+      // Send email notifications (only once per post)
+      if (!post.notificationSentAt) {
+        sendBlogNotifications(post).catch(err =>
+          console.error(`Failed to send notifications for post ${post._id}:`, err)
+        );
+      }
       
       console.log(`✅ Published scheduled post: ${post.title}`);
     }
@@ -412,17 +412,27 @@ exports.getBlogTags = async (req, res, next) => {
 // Helper function to send blog notifications
 async function sendBlogNotifications(post) {
   try {
+    // Mark notification as sent atomically to prevent duplicate sends
+    const result = await BlogPost.updateOne(
+      { _id: post._id, notificationSentAt: null },
+      { notificationSentAt: new Date() }
+    );
+    if (result.modifiedCount === 0) {
+      console.log('⚠️ Blog notification already sent for this post, skipping');
+      return;
+    }
+
     // Check if Resend is properly configured
     if (!process.env.RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY not found in environment variables');
       return;
     }
-    
+
     if (!process.env.EMAIL_FROM_ADDRESS) {
       console.error('❌ EMAIL_FROM_ADDRESS not found in environment variables');
       return;
     }
-    
+
     // Get all subscribed users (emailNotifications can be boolean true or object with blogNotifications: true)
     const users = await User.find({
       $or: [

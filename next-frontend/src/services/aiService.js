@@ -149,27 +149,31 @@ class AIService {
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
+        let parsed;
         try {
-          const data = JSON.parse(line.slice(6));
-          if (data.type === 'thinking') onThinking?.(data);
-          if (data.type === 'chunk') onChunk?.(data.content);
-          if (data.type === 'done') onDone?.(data);
-          if (data.type === 'error') onError?.(data.message);
+          parsed = JSON.parse(line.slice(6));
         } catch (e) {
-          /* skip parse errors on partial chunks */
+          continue; // skip parse errors on partial chunks
         }
+        if (parsed.type === 'thinking') onThinking?.(parsed);
+        if (parsed.type === 'chunk') onChunk?.(parsed.content);
+        if (parsed.type === 'done') onDone?.(parsed);
+        if (parsed.type === 'error') onError?.(parsed.message);
       }
     }
 
     // Process any remaining buffer
     if (buffer.startsWith('data: ')) {
+      let parsed;
       try {
-        const data = JSON.parse(buffer.slice(6));
-        if (data.type === 'thinking') onThinking?.(data);
-        if (data.type === 'chunk') onChunk?.(data.content);
-        if (data.type === 'done') onDone?.(data);
-        if (data.type === 'error') onError?.(data.message);
-      } catch (e) { /* skip */ }
+        parsed = JSON.parse(buffer.slice(6));
+      } catch (e) { /* skip incomplete */ }
+      if (parsed) {
+        if (parsed.type === 'thinking') onThinking?.(parsed);
+        if (parsed.type === 'chunk') onChunk?.(parsed.content);
+        if (parsed.type === 'done') onDone?.(parsed);
+        if (parsed.type === 'error') onError?.(parsed.message);
+      }
     }
   }
 

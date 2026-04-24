@@ -42,6 +42,61 @@ try {
   console.warn('OpenAI SDK not available:', error.message);
 }
 
+// Helper: fetch images for multiple parks with smart distribution (always 4 total)
+// 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
+async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
+  if (!parks || parks.length === 0) return [];
+
+  // Calculate distribution: always 4 images total
+  const total = 4;
+  const parkCount = parks.length;
+  const distribution = [];
+
+  if (parkCount === 1) {
+    distribution.push(total);
+  } else if (parkCount === 2) {
+    distribution.push(2, 2);
+  } else if (parkCount === 3) {
+    distribution.push(2, 1, 1);
+  } else {
+    // 4+ parks: 1 each, max 4 parks
+    for (let i = 0; i < Math.min(parkCount, total); i++) {
+      distribution.push(1);
+    }
+  }
+
+  const allImages = [];
+  const parksToFetch = parks.slice(0, distribution.length);
+
+  await Promise.all(parksToFetch.map(async (park, idx) => {
+    const count = distribution[idx];
+    try {
+      let images = await npsService.getParkImages(park.parkCode);
+      if (!images || images.length === 0) {
+        images = await npsService.getParkGalleryPhotos(park.parkCode);
+      }
+      if (images && images.length > 0) {
+        const selected = images.slice(0, count).map(img => ({
+          url: img.url,
+          altText: img.altText || img.title,
+          title: img.title,
+          parkCode: park.parkCode,
+          parkName: park.parkName
+        }));
+        allImages.push({ idx, images: selected });
+      }
+    } catch (err) {
+      console.error(`${logPrefix} Image fetch error for ${park.parkCode}:`, err.message);
+    }
+  }));
+
+  // Sort by original order and flatten
+  allImages.sort((a, b) => a.idx - b.idx);
+  const result = allImages.flatMap(item => item.images);
+  console.log(`${logPrefix} Multi-park images: ${result.length} total for ${parksToFetch.map(p => p.parkCode).join(', ')}`);
+  return result;
+}
+
 // Helper: parse request body and prepare messages, facts, and system prompt
 async function prepareChatContext(body, logPrefix = '[AI]') {
   let {
@@ -179,26 +234,17 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
 
-  // Fetch park images for the primary park
-  // Use dedicated getParkImages (calls /parks?fields=images) for curated NPS images
+  // Fetch park images (only once per chat, distributed across all mentioned parks)
+  // The frontend appends "(Photos shown to user: ...)" to assistant messages,
+  // so we can check conversation history to avoid sending images again.
   let parkImages = [];
-  if (resolvedMetadata.parkCode) {
-    try {
-      const images = await npsService.getParkImages(resolvedMetadata.parkCode);
-      if (images && images.length > 0) {
-        parkImages = images.slice(0, 12).map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
-      }
-      // Fallback: gallery assets if /parks endpoint had no images
-      if (parkImages.length === 0) {
-        const galleryPhotos = await npsService.getParkGalleryPhotos(resolvedMetadata.parkCode);
-        if (galleryPhotos && galleryPhotos.length > 0) {
-          parkImages = galleryPhotos.slice(0, 12).map(p => ({ url: p.url, altText: p.altText, title: p.title }));
-        }
-      }
-      console.log(`${logPrefix} Park images: ${parkImages.length} for ${resolvedMetadata.parkCode}`);
-    } catch (imgErr) {
-      console.error(`${logPrefix} Park images fetch error:`, imgErr.message);
-    }
+  const alreadyShownImages = messages.some(m =>
+    m.role === 'assistant' && m.content?.includes('(Photos shown to user:')
+  );
+  if (allExtractedParks.length > 0 && !alreadyShownImages) {
+    parkImages = await fetchMultiParkImages(allExtractedParks, logPrefix);
+  } else if (alreadyShownImages) {
+    console.log(`${logPrefix} Skipping park images — already shown in this conversation`);
   }
 
   // Build enhanced system prompt with facts
@@ -331,7 +377,10 @@ CRITICAL ISOLATION RULES — follow these exactly:
     enhancedSystemPrompt += `\n\n--- CRITICAL REMINDER ---\nThis is a planning request. You MUST include the [ITINERARY_JSON] block at the end of your response with the structured itinerary data. Even if there are conflicts or warnings, include your recommended safe plan in the JSON block. Do NOT skip the JSON block for planning requests.\n--- END REMINDER ---\n`;
   }
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages };
+  // Prevent AI from leaking internal JSON mechanism to the user
+  enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
+
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg };
 }
 
 // Helper: build user context block for personalized AI responses
@@ -467,7 +516,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages } = await prepareChatContext(req.body);
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body);
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -813,6 +862,7 @@ ${cleanContent.substring(0, 6000)}`;
 
     response.content = cleanContent;
     response.hasItinerary = !!itineraryData;
+    response.itineraryData = itineraryData || null;
 
     // Score the itinerary
     let planScore = null;
@@ -839,6 +889,14 @@ ${cleanContent.substring(0, 6000)}`;
         } catch (saveErr) {
           console.error('[AI] Failed to save itinerary:', saveErr.message);
         }
+      }
+    }
+
+    // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
+    if (parkImages.length === 0 && !alreadyShownImages && response.content) {
+      const responseParks = extractAllParksFromMessage(response.content);
+      if (responseParks.length > 0) {
+        parkImages = await fetchMultiParkImages(responseParks, '[AI Post]');
       }
     }
 
@@ -903,7 +961,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent, parkImages } = await prepareChatContext(req.body, '[AI Stream]');
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI Stream]');
 
     // Pre-flight BLOCKER — stop before SSE
     if (preflightResult.blockers.length > 0) {
@@ -947,13 +1005,41 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         });
 
         let fullContent = '';
+        let doneEventSent = false;
         for await (const chunk of stream) {
           if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
             fullContent += chunk.delta.text;
             res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk.delta.text })}\n\n`);
           }
           if (chunk.type === 'message_stop') {
+            console.log('[AI Stream] message_stop received, fullContent length:', fullContent.length);
+            doneEventSent = true;
             let { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
+
+            // Fallback: if this looks like a planning response but no JSON block, extract it
+            if (!itineraryData && /\b(plan|itinerary|trip)\b/i.test(lastMsg) && /day\s*[1-9]|day\s*one|day\s*two|morning.*afternoon|## .*day\b/i.test(cleanContent)) {
+              try {
+                console.log('[AI Stream] Planning response missing JSON block — running fallback extraction');
+                const extractionPrompt = `Extract the structured itinerary from this trip plan text. Return ONLY a valid JSON object (no markdown, no explanation) in this format:
+{"days":[{"id":"day-1","dayNumber":1,"label":"Day 1 — label","stops":[{"id":"s1-1","order":0,"type":"trail|landmark|campground|visitor_center|restaurant|lodging|custom","name":"Stop Name","note":"brief note","startTime":"08:00","duration":60,"latitude":0.0,"longitude":0.0,"difficulty":"easy|moderate|strenuous","why":"why this stop fits","drivingTimeFromPreviousMin":0}]}]}
+
+Include latitude/longitude (estimate if needed), duration in minutes, and difficulty for trails. Here is the plan text:
+
+${cleanContent.substring(0, 6000)}`;
+
+                const extractedJSON = await claudeService.chat([{ role: 'user', content: extractionPrompt }], 'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.');
+                const jsonMatch = extractedJSON.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                  const parsed = JSON.parse(jsonMatch[0]);
+                  if (parsed.days && Array.isArray(parsed.days) && parsed.days.length > 0) {
+                    itineraryData = parsed;
+                    console.log(`[AI Stream] Fallback extraction successful: ${parsed.days.length} days, ${parsed.days.reduce((s, d) => s + (d.stops?.length || 0), 0)} stops`);
+                  }
+                }
+              } catch (extractErr) {
+                console.log('[AI Stream] Fallback extraction failed:', extractErr.message);
+              }
+            }
 
             // Hard gate: strip itinerary if no park was detected
             if (noParkDetected && itineraryData) {
@@ -1034,7 +1120,16 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             let planScore = null;
             if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
 
-            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+            // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
+            if (parkImages.length === 0 && !alreadyShownImages && validatedContent) {
+              const responseParks = extractAllParksFromMessage(validatedContent);
+              if (responseParks.length > 0) {
+                parkImages = await fetchMultiParkImages(responseParks, '[AI Stream Post]');
+              }
+            }
+
+            console.log('[AI Stream] Sending done event:', { hasItinerary: !!itineraryData, itineraryDays: itineraryData?.days?.length || 0, contentLen: validatedContent?.length || 0 });
+            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
 
             if (itineraryData) {
               const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -1056,6 +1151,75 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
                 } catch (saveErr) {
                   console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
                 }
+              }
+            }
+          }
+        }
+
+        // Fallback: if message_stop was never emitted, process after loop ends
+        if (!doneEventSent && fullContent) {
+          console.log('[AI Stream] message_stop not received — processing after loop');
+          let { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
+
+          // Fallback itinerary extraction
+          if (!itineraryData && /\b(plan|itinerary|trip)\b/i.test(lastMsg) && /day\s*[1-9]|day\s*one|day\s*two|morning.*afternoon|## .*day\b/i.test(cleanContent)) {
+            try {
+              console.log('[AI Stream] Planning response missing JSON block — running fallback extraction');
+              const extractionPrompt = `Extract the structured itinerary from this trip plan text. Return ONLY a valid JSON object (no markdown, no explanation) in this format:
+{"days":[{"id":"day-1","dayNumber":1,"label":"Day 1 — label","stops":[{"id":"s1-1","order":0,"type":"trail|landmark|campground|visitor_center|restaurant|lodging|custom","name":"Stop Name","note":"brief note","startTime":"08:00","duration":60,"latitude":0.0,"longitude":0.0,"difficulty":"easy|moderate|strenuous","why":"why this stop fits","drivingTimeFromPreviousMin":0}]}]}
+
+Include latitude/longitude (estimate if needed), duration in minutes, and difficulty for trails. Here is the plan text:
+
+${cleanContent.substring(0, 6000)}`;
+
+              const extractedJSON = await claudeService.chat([{ role: 'user', content: extractionPrompt }], 'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.');
+              const jsonMatch = extractedJSON.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.days && Array.isArray(parsed.days) && parsed.days.length > 0) {
+                  itineraryData = parsed;
+                  console.log(`[AI Stream] Fallback extraction successful: ${parsed.days.length} days, ${parsed.days.reduce((s, d) => s + (d.stops?.length || 0), 0)} stops`);
+                }
+              }
+            } catch (extractErr) {
+              console.log('[AI Stream] Fallback extraction failed:', extractErr.message);
+            }
+          }
+
+          let validatedContent = cleanContent;
+          let confidence = { level: 'high', score: 1.0 };
+          let planScore = null;
+          if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
+
+          // Post-fetch images if needed
+          if (parkImages.length === 0 && !alreadyShownImages && validatedContent) {
+            const responseParks = extractAllParksFromMessage(validatedContent);
+            if (responseParks.length > 0) {
+              parkImages = await fetchMultiParkImages(responseParks, '[AI Stream Post]');
+            }
+          }
+
+          res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+
+          if (itineraryData) {
+            const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
+            if (tripId) {
+              try {
+                const TripPlan = require('../models/TripPlan');
+                await TripPlan.findByIdAndUpdate(tripId, {
+                  plan: {
+                    type: 'itinerary',
+                    version: 1,
+                    generatedAt: new Date().toISOString(),
+                    createdFrom: 'ai',
+                    parkName: req.body.metadata?.parkName || null,
+                    parkCode: req.body.metadata?.parkCode || null,
+                    ...itineraryData
+                  }
+                });
+                console.log(`[AI Stream] Corrected itinerary saved to TripPlan ${tripId}`);
+              } catch (saveErr) {
+                console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
               }
             }
           }
@@ -1165,7 +1329,15 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         let openaiPlanScore = null;
         if (openaiItineraryData) openaiPlanScore = scoreItinerary(openaiItineraryData, constraints);
 
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+        // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
+        if (parkImages.length === 0 && !alreadyShownImages && openaiValidatedContent) {
+          const responseParks = extractAllParksFromMessage(openaiValidatedContent);
+          if (responseParks.length > 0) {
+            parkImages = await fetchMultiParkImages(responseParks, '[AI Stream OpenAI Post]');
+          }
+        }
+
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, itineraryData: openaiItineraryData || null, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -1397,25 +1569,15 @@ Ready to continue planning? 🚀`,
       console.error('[AI] Facts fetching error for anonymous user:', factsError.message);
     }
 
-    // Fetch park images for anonymous users
-    // Use dedicated getParkImages (calls /parks?fields=images) for curated NPS images
+    // Fetch park images for anonymous users (only once per chat, distributed across parks)
     let parkImages = [];
-    if (resolvedMetadata.parkCode) {
-      try {
-        const images = await npsService.getParkImages(resolvedMetadata.parkCode);
-        if (images && images.length > 0) {
-          parkImages = images.slice(0, 12).map(img => ({ url: img.url, altText: img.altText || img.title, title: img.title }));
-        }
-        if (parkImages.length === 0) {
-          const galleryPhotos = await npsService.getParkGalleryPhotos(resolvedMetadata.parkCode);
-          if (galleryPhotos && galleryPhotos.length > 0) {
-            parkImages = galleryPhotos.slice(0, 12).map(p => ({ url: p.url, altText: p.altText, title: p.title }));
-          }
-        }
-        console.log(`[AI] Park images: ${parkImages.length} for ${resolvedMetadata.parkCode}`);
-      } catch (imgErr) {
-        console.error('[AI] Park images fetch error:', imgErr.message);
-      }
+    const anonAlreadyShownImages = messages.some(m =>
+      m.role === 'assistant' && m.content?.includes('(Photos shown to user:')
+    );
+    if (anonExtractedParks.length > 0 && !anonAlreadyShownImages) {
+      parkImages = await fetchMultiParkImages(anonExtractedParks, '[AI Anon]');
+    } else if (anonAlreadyShownImages) {
+      console.log('[AI] Skipping park images — already shown in this conversation');
     }
 
     // Build enhanced system prompt with facts
@@ -1524,6 +1686,9 @@ CRITICAL ISOLATION RULES — follow these exactly:
 6. Do NOT pad with unrelated real-world details, closure lists, or weather data that contradicts the scenario.
 --- END SCENARIO MODE ---\n`;
     }
+
+    // Prevent AI from leaking internal JSON mechanism to the user
+    enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan.\n--- END OUTPUT RULES ---\n`;
 
     // Use the filtered conversation messages without system role messages
     const augmentedMessages = filteredMessages;
@@ -1777,6 +1942,14 @@ ${anonCleanContent.substring(0, 6000)}`;
     });
 
     const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
+
+    // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
+    if (parkImages.length === 0 && !anonAlreadyShownImages && response.content) {
+      const responseParks = extractAllParksFromMessage(response.content);
+      if (responseParks.length > 0) {
+        parkImages = await fetchMultiParkImages(responseParks, '[AI Anon Post]');
+      }
+    }
 
     res.json({
       data: {
