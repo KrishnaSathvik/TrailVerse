@@ -7,6 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: [
         '/api/',
+        '/_next/',
         '/login',
         '/signup',
         '/forgot-password',
@@ -15,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         '/dashboard',
         '/settings',
         '/admin',
+        '/unsubscribe',
       ],
     },
     sitemap: 'https://www.nationalparksexplorerusa.com/sitemap.xml',

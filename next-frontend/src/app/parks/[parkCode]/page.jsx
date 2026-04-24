@@ -100,59 +100,7 @@ export default async function ParkPage({ params }) {
     sameAs: park.url,
   };
 
-  // FAQ schema — dynamic answers from NPS data (trusted source, not user input)
-  const faqItems = [];
-  if (park.states) {
-    faqItems.push({
-      '@type': 'Question',
-      name: `What state is ${park.fullName} in?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `${park.fullName} is located in ${park.states}.${park.addresses?.[0]?.city ? ` The nearest city is ${park.addresses[0].city}, ${park.addresses[0].stateCode}.` : ''}`,
-      },
-    });
-  }
-  if (park.latitude && park.longitude) {
-    faqItems.push({
-      '@type': 'Question',
-      name: `Where is ${park.fullName} located?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `${park.fullName} is located at coordinates ${park.latitude}, ${park.longitude} in ${park.states}.${park.directionsInfo ? ` ${park.directionsInfo.substring(0, 200)}` : ''}`,
-      },
-    });
-  }
-  if (park.weatherInfo) {
-    faqItems.push({
-      '@type': 'Question',
-      name: `What is the weather like at ${park.fullName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: park.weatherInfo.substring(0, 300),
-      },
-    });
-  }
-  if (park.entranceFees?.length > 0) {
-    const fee = park.entranceFees[0];
-    const feeText = fee.cost && fee.cost !== '0.00' && fee.cost !== '0'
-      ? `The ${fee.title || 'standard entrance fee'} for ${park.fullName} is $${fee.cost}.${fee.description ? ` ${fee.description.substring(0, 200)}` : ''}`
-      : `Entrance to ${park.fullName} is free.`;
-    faqItems.push({
-      '@type': 'Question',
-      name: `How much does it cost to visit ${park.fullName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: feeText,
-      },
-    });
-  }
-
-  // Combine all schemas into a single @graph to avoid duplicate structured data warnings
-  const graphItems = [touristAttraction];
-  if (faqItems.length > 0) {
-    graphItems.push({ '@type': 'FAQPage', mainEntity: faqItems });
-  }
-  const structuredData = { '@context': 'https://schema.org', '@graph': graphItems };
+  const structuredData = { '@context': 'https://schema.org', ...touristAttraction };
 
   // Fetch related parks (same state, different park) — cached 24h
   let relatedParks = [];
