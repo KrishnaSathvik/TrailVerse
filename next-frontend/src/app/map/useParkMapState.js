@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
@@ -77,7 +77,7 @@ export default function useParkMapState(allParks) {
   const suggestions = normalizedQuery ? results.slice(0, 8) : [];
   const selectedPark = (allParks || []).find((park) => park.parkCode?.toLowerCase() === selectedParkCode?.toLowerCase()) || null;
 
-  const selectPark = (park) => {
+  const selectPark = useCallback((park) => {
     if (!park) return;
 
     setSelectedParkCode(park.parkCode);
@@ -89,29 +89,27 @@ export default function useParkMapState(allParks) {
       });
       // Only zoom in if the user is very zoomed out — avoids the jarring
       // snap when clicking markers at a reasonable zoom level.
-      if (mapZoom < 6) {
-        setMapZoom(6);
-      }
+      setMapZoom((prev) => (prev < 6 ? 6 : prev));
     }
-  };
+  }, []);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedParkCode(null);
     setMapCenter(DEFAULT_CENTER);
     setMapZoom(DEFAULT_ZOOM);
-  };
+  }, []);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('');
     setSelectedParkCode(null);
     setMapCenter(DEFAULT_CENTER);
     setMapZoom(DEFAULT_ZOOM);
-  };
+  }, []);
 
-  const updateViewport = ({ center, zoom }) => {
+  const updateViewport = useCallback(({ center, zoom }) => {
     if (center) setMapCenter(center);
     if (typeof zoom === 'number') setMapZoom(zoom);
-  };
+  }, []);
 
   return {
     hasRestored,

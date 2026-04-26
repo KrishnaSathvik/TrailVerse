@@ -64,8 +64,17 @@ export default function MapCanvas({
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const listenersRef = useRef([]);
+  const onViewportChangeRef = useRef(onViewportChange);
+  const onSelectParkRef = useRef(onSelectPark);
+  const skipSyncRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mapError, setMapError] = useState(null);
+
+  // Keep callback refs current without triggering effects
+  useEffect(() => {
+    onViewportChangeRef.current = onViewportChange;
+    onSelectParkRef.current = onSelectPark;
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +109,8 @@ export default function MapCanvas({
             if (!mapRef.current) return;
 
             const center = mapRef.current.getCenter();
-            onViewportChange?.({
+            skipSyncRef.current = true;
+            onViewportChangeRef.current?.({
               center: center ? { lat: center.lat(), lng: center.lng() } : DEFAULT_CENTER,
               zoom: mapRef.current.getZoom(),
             });
@@ -127,7 +137,8 @@ export default function MapCanvas({
       listenersRef.current.forEach((listener) => listener?.remove?.());
       listenersRef.current = [];
     };
-  }, [isDark, mapCenter, mapZoom, onViewportChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- init once; callbacks via refs
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -139,6 +150,12 @@ export default function MapCanvas({
 
   useEffect(() => {
     if (!mapRef.current) return;
+
+    // Skip pushing state back to the map when it originated from the map itself
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
 
     const currentCenter = mapRef.current.getCenter();
     const currentZoom = mapRef.current.getZoom();
@@ -189,7 +206,7 @@ export default function MapCanvas({
           },
         });
 
-        marker.addListener('click', () => onSelectPark?.(park));
+        marker.addListener('click', () => onSelectParkRef.current?.(park));
         markersRef.current.push(marker);
       });
 
@@ -197,7 +214,8 @@ export default function MapCanvas({
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
     };
-  }, [onSelectPark, parks, selectedPark]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onSelectPark via ref
+  }, [parks, selectedPark]);
 
   return (
     <div
