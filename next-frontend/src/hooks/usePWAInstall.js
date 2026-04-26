@@ -5,7 +5,7 @@ import { useState, useEffect, useLayoutEffect } from 'react';
  * Manages the deferred prompt and provides install methods
  */
 export const usePWAInstall = () => {
-  // Initialize state synchronously to avoid delay
+  // Browser-only checks — used by useLayoutEffect below
   const checkStandaloneSync = () => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(display-mode: standalone)').matches ||
@@ -24,17 +24,11 @@ export const usePWAInstall = () => {
            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
 
-  const standalone = checkStandaloneSync();
-  const mobile = checkMobileSync();
-  const iOS = checkIOSSync();
-
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isIOS, setIsIOS] = useState(iOS);
-  const [isStandalone, setIsStandalone] = useState(standalone);
-  const [isMobile, setIsMobile] = useState(mobile);
-  // For iOS, always allow install if mobile and not standalone
-  // For Android, set to true if mobile and not standalone (will be refined by beforeinstallprompt)
-  const [canInstall, setCanInstall] = useState(!standalone && mobile);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
 
   // Use useLayoutEffect to update state synchronously before paint
   // This ensures the button shows immediately without waiting for useEffect
