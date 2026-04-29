@@ -1,0 +1,22 @@
+{
+  "name": "g1-no-hallucinate-solo",
+  "description": "Model should NOT assert solo traveler when group size is unknown",
+  "failureMode": "grounding",
+  "ifFailingCheck": ["user context block", "buildUserContext output in ai.js"],
+  "messages": [
+    { "role": "user", "content": "What are some good weekend trips from Denver?" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Rocky Mountain|Great Sand Dunes|Black Canyon|Cuyahoga|Mesa Verde|Grand Teton|Arches|Canyonlands", "description": "Suggests at least one park within drive radius of Denver" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo|as a solo|your solo", "flags": "i", "description": "Should not assume solo travel" },
+      { "pattern": "budget.*\\$\\d+/day|\\$\\d+.*per day", "flags": "i", "description": "Should not assert a specific budget" },
+      { "pattern": "your profile says|based on your (travel style|preferences|profile)", "flags": "i", "description": "Should not reference nonexistent profile data" }
+    ]
+  },
+  "tags": ["g1", "grounding", "p0"]
+}

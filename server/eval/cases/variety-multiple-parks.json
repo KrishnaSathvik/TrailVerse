@@ -1,0 +1,17 @@
+{
+  "name": "variety-multiple-parks",
+  "description": "Open-ended query should mention multiple distinct parks, not fixate on one",
+  "failureMode": "prompt-attention",
+  "ifFailingCheck": ["candidate parks block", "system prompt variety instructions"],
+  "messages": [
+    { "role": "user", "content": "What are the best national parks to visit in September?" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "(?:Yellowstone|Glacier|Zion|Grand Canyon|Acadia|Rocky Mountain|Great Smoky|Yosemite|Grand Teton|Olympic|Shenandoah|Bryce Canyon|Arches).*(?:Yellowstone|Glacier|Zion|Grand Canyon|Acadia|Rocky Mountain|Great Smoky|Yosemite|Grand Teton|Olympic|Shenandoah|Bryce Canyon|Arches)", "flags": "is", "description": "Mentions at least 2 distinct parks" }
+    ]
+  },
+  "tags": ["variety", "prompt-attention", "p1"]
+}

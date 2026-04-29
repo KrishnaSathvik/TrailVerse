@@ -23,3 +23,9 @@ output/playwright/
 
 # Runtime user uploads (blog images, etc.)
 server/uploads/
+
+# AI request logs and eval artifacts
+logs/
+server/logs/
+server/eval/results/
+server/eval/.auth-token

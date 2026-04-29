@@ -1,0 +1,23 @@
+{
+  "name": "hypothetical-scenario",
+  "description": "Hypothetical 'what if Old Faithful closed' should engage with the scenario, not contradict it",
+  "failureMode": "prompt-attention",
+  "ifFailingCheck": ["detectHypothetical in constraintEngine", "scenario mode injection"],
+  "messages": [
+    { "role": "user", "content": "What if Old Faithful and the Upper Geyser Basin were closed for maintenance? What would a 2-day Yellowstone trip look like?" }
+  ],
+  "metadata": {
+    "parkCode": "yell",
+    "parkName": "Yellowstone National Park"
+  },
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Grand Canyon of the Yellowstone|Lamar Valley|Mammoth|Norris|Tower|Hayden|Canyon|Lake", "description": "Suggests alternative Yellowstone areas that aren't Upper Geyser Basin" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "actually.*Old Faithful.*(is |are )open|Old Faithful is (currently )?open|not actually closed", "flags": "i", "description": "Should not contradict the hypothetical scenario" }
+    ]
+  },
+  "tags": ["hypothetical", "prompt-attention", "p1"]
+}

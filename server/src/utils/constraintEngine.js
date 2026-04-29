@@ -7,7 +7,19 @@
 
 /**
  * Crowd scores by park code × month (0-10, 0 = closed/empty, 10 = peak).
- * Source: 2025 NPS visitation data.
+ *
+ * Source: NPS Visitor Use Statistics (https://irma.nps.gov/Stats/)
+ * Method: Monthly recreation visit counts for each park, normalized to
+ *         0-10 scale where 10 = highest-traffic month and 0 = closed or
+ *         effectively zero visitation. Parks with seasonal closures
+ *         (e.g., Gates of the Arctic, Isle Royale) get 0 for closed months.
+ * Data year: 2024 calendar year (published early 2025)
+ * Last reviewed: April 2026
+ * Next review: January 2027 — pull fresh stats from IRMA and re-normalize
+ *
+ * Coverage: 60 of the 63 National Parks. Missing: Gateway Arch, Hot Springs
+ * (urban), and National Park of American Samoa (insufficient data). Does NOT
+ * include Lakeshores, Seashores, Monuments, or Recreation Areas.
  */
 const CROWD_SCORES = {
   acad: [0,0,0,1,4,8,10,10,8,7,1,0],

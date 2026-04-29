@@ -1,0 +1,22 @@
+{
+  "name": "g1-no-hallucinate-luxury",
+  "description": "Model should NOT assert solo/budget/profile when asking about Yellowstone with no metadata",
+  "failureMode": "grounding",
+  "ifFailingCheck": ["user context block", "buildUserContext output in ai.js"],
+  "messages": [
+    { "role": "user", "content": "Tell me about Yellowstone National Park" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Yellowstone|Old Faithful|geyser|Grand Prismatic|Mammoth", "description": "Responds with Yellowstone-specific content" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo|as a solo|your solo", "flags": "i", "description": "Should not assume solo travel" },
+      { "pattern": "budget.*\\$\\d+/day|\\$\\d+.*per day|luxury.*budget", "flags": "i", "description": "Should not assert a specific budget" },
+      { "pattern": "your profile says|based on your (travel style|preferences|profile)", "flags": "i", "description": "Should not reference nonexistent profile data" }
+    ]
+  },
+  "tags": ["g1", "grounding", "p0"]
+}

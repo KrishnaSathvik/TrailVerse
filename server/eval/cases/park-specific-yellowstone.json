@@ -1,0 +1,23 @@
+{
+  "name": "park-specific-yellowstone",
+  "description": "Yellowstone-specific query should return Yellowstone content, not leak candidate parks list",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["park extraction", "candidate parks injection gating"],
+  "messages": [
+    { "role": "user", "content": "Plan a 3-day trip to Yellowstone in July" }
+  ],
+  "metadata": {
+    "parkCode": "yell",
+    "parkName": "Yellowstone National Park"
+  },
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Old Faithful|Grand Prismatic|Mammoth|Lamar|Canyon Village|Yellowstone Lake|Tower|Norris", "description": "Includes Yellowstone-specific landmarks or areas" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "CANDIDATE PARKS|Here are some parks near|parks within driving distance", "flags": "i", "description": "Should not leak candidate parks block for a specific park query" }
+    ]
+  },
+  "tags": ["specific-park", "data-architecture", "p0"]
+}

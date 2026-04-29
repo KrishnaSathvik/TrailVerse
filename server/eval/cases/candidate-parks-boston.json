@@ -1,0 +1,20 @@
+{
+  "name": "candidate-parks-boston",
+  "description": "Boston-based query should suggest nearby Northeast parks",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["getCandidateParks in factsService", "candidate parks block injection"],
+  "messages": [
+    { "role": "user", "content": "What national parks are closest to Boston? Planning a family trip." }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Acadia|Cape Cod|White Mountain|Shenandoah|New River Gorge|Cuyahoga", "description": "Suggests at least one park accessible from Boston" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo", "flags": "i", "description": "Should not assume solo travel for family query" }
+    ]
+  },
+  "tags": ["candidates", "data-architecture", "p0"]
+}

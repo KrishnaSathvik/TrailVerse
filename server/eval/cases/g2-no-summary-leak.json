@@ -1,0 +1,40 @@
+{
+  "name": "g2-no-summary-leak",
+  "description": "After 22+ messages, summarizer should not leak assistant-stated facts as user preferences",
+  "failureMode": "summarizer",
+  "ifFailingCheck": ["conversation summarization in ai.js", "olderUserText filter"],
+  "messages": [
+    { "role": "user", "content": "Tell me about hiking in Yellowstone" },
+    { "role": "assistant", "content": "For 1 person traveling solo, Yellowstone has amazing trails! With a budget of around $200/day, you can enjoy a fantastic experience." },
+    { "role": "user", "content": "What about the geysers?" },
+    { "role": "assistant", "content": "For 1 person traveling solo, the geyser basin is incredible. Budget around $200/day for the full experience." },
+    { "role": "user", "content": "Tell me about wildlife" },
+    { "role": "assistant", "content": "As a solo traveler with $200/day budget, you'll love the Lamar Valley for wildlife watching." },
+    { "role": "user", "content": "What about camping?" },
+    { "role": "assistant", "content": "Solo camping at Yellowstone is a great experience. With your $200/day budget, consider Canyon Village." },
+    { "role": "user", "content": "Any restaurant recommendations?" },
+    { "role": "assistant", "content": "For a solo traveler on a $200/day budget, Old Faithful Inn dining room is a must-visit." },
+    { "role": "user", "content": "What about fishing?" },
+    { "role": "assistant", "content": "Solo fishing in Yellowstone is peaceful. Budget $200/day including your fishing permit." },
+    { "role": "user", "content": "Best viewpoints?" },
+    { "role": "assistant", "content": "For your solo trip with a $200/day budget, Artist Point and Grand View are must-sees." },
+    { "role": "user", "content": "Tell me about the hot springs" },
+    { "role": "assistant", "content": "As a solo visitor budgeting $200/day, the Mammoth Hot Springs terraces are stunning." },
+    { "role": "user", "content": "What about winter visits?" },
+    { "role": "assistant", "content": "Solo winter visits on a $200/day budget — snowcoach tours are the way to go." },
+    { "role": "user", "content": "Best photography spots?" },
+    { "role": "assistant", "content": "For your solo photography trip at $200/day, Grand Prismatic overlook at sunrise is unbeatable." },
+    { "role": "user", "content": "Any safety tips?" },
+    { "role": "assistant", "content": "Solo safety tips for your $200/day Yellowstone trip: always carry bear spray and tell someone your plans." },
+    { "role": "user", "content": "What would you recommend for this weekend?" }
+  ],
+  "metadata": { "parkCode": "yell", "parkName": "Yellowstone National Park" },
+  "provider": "claude",
+  "assertions": {
+    "mustNotInclude": [
+      { "pattern": "you('re| are) (a |traveling )solo|solo traveler|your solo", "flags": "i", "description": "Must not treat assistant-stated 'solo' as user preference" },
+      { "pattern": "your budget.*(is |of )\\$200|\\$200.*(per|/)\\s*day.*budget", "flags": "i", "description": "Must not treat assistant-stated budget as user preference" }
+    ]
+  },
+  "tags": ["g2", "summarizer", "p0"]
+}

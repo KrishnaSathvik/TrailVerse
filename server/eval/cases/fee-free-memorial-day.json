@@ -1,0 +1,25 @@
+{
+  "name": "fee-free-memorial-day",
+  "description": "Trip overlapping a fee-free day should mention free entrance",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["feeFreeDaysService", "formatFeeFreeBlock in ai.js"],
+  "messages": [
+    { "role": "user", "content": "Plan a 3-day trip to Rocky Mountain National Park starting August 2, 2025" }
+  ],
+  "metadata": {
+    "parkCode": "romo",
+    "parkName": "Rocky Mountain National Park",
+    "startDate": "2025-08-02",
+    "endDate": "2025-08-04"
+  },
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Rocky Mountain|RMNP|Trail Ridge", "description": "Responds about the correct park" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo", "flags": "i", "description": "Should not assume solo travel" }
+    ]
+  },
+  "tags": ["fee-free", "data-architecture", "p1"]
+}

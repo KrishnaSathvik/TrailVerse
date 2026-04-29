@@ -1,0 +1,25 @@
+{
+  "name": "fee-free-july4",
+  "description": "Trip over July 4th weekend should mention fee-free entrance if applicable",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["feeFreeDaysService", "formatFeeFreeBlock in ai.js"],
+  "messages": [
+    { "role": "user", "content": "I'm visiting Shenandoah National Park July 3-6, 2025. Can you plan my trip?" }
+  ],
+  "metadata": {
+    "parkCode": "shen",
+    "parkName": "Shenandoah National Park",
+    "startDate": "2025-07-03",
+    "endDate": "2025-07-06"
+  },
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Shenandoah|Skyline Drive|Blue Ridge", "description": "Responds about the correct park" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo", "flags": "i", "description": "Should not assume solo travel" }
+    ]
+  },
+  "tags": ["fee-free", "data-architecture", "p1"]
+}

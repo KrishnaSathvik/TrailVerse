@@ -13,6 +13,8 @@ const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerato
 const { extractItineraryJSON, validateItineraryFeasibility } = require('../utils/extractItineraryJSON');
 const { parseConstraints, preflightCheck, buildConstraintBlock, validateItineraryConstraints, detectHypothetical, detectConflicts, detectIntent } = require('../utils/constraintEngine');
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
+const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
+const crypto = require('crypto');
 const claudeService = require('../services/claudeService');
 const openaiService = require('../services/openaiService');
 const npsService = require('../services/npsService');
@@ -122,37 +124,40 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     const recentMessages = messages.filter(m => m.role !== 'system').slice(-15);
     const olderMessages = messages.filter(m => m.role !== 'system').slice(0, -15);
 
-    // Extract key decisions from older messages instead of a generic summary
-    const olderText = olderMessages.map(m => m.content).join(' ');
+    // Extract key decisions from USER messages only — including assistant
+    // messages causes a self-reinforcing hallucination loop where the model's
+    // own suggestions (e.g., "for 1 person", "budget $200/day") get extracted
+    // as user-stated facts and fed back as grounded context on later turns.
+    const olderUserText = olderMessages.filter(m => m.role === 'user').map(m => m.content).join(' ');
     const summaryParts = ['[CONVERSATION CONTEXT — extracted from earlier messages]'];
 
     // Extract park name
-    const parkMatch = olderText.match(/(?:going to|visiting|trip to|plan for|heading to|explore)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+National\s+Park)?)/);
+    const parkMatch = olderUserText.match(/(?:going to|visiting|trip to|plan for|heading to|explore)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*(?:\s+National\s+Park)?)/);
     if (parkMatch) summaryParts.push(`Park: ${parkMatch[1]}`);
 
     // Extract dates
-    const dateMatch = olderText.match(/(?:from|between|starting|arriving|dates?:?\s*)(\w+ \d{1,2}(?:\s*[-–to]+\s*\w+ \d{1,2})?(?:,?\s*\d{4})?)/i);
+    const dateMatch = olderUserText.match(/(?:from|between|starting|arriving|dates?:?\s*)(\w+ \d{1,2}(?:\s*[-–to]+\s*\w+ \d{1,2})?(?:,?\s*\d{4})?)/i);
     if (dateMatch) summaryParts.push(`Dates: ${dateMatch[1]}`);
 
     // Extract group size
-    const groupMatch = olderText.match(/(\d+)\s*(?:people|person|adults?|of us|travelers?|in (?:our|the) group)/i);
+    const groupMatch = olderUserText.match(/(\d+)\s*(?:people|person|adults?|of us|travelers?|in (?:our|the) group)/i);
     if (groupMatch) summaryParts.push(`Group size: ${groupMatch[1]}`);
 
     // Extract budget
-    const budgetMatch = olderText.match(/(?:budget|spend|spending|afford)\s*(?:is|of|around|about)?\s*\$?([\d,]+(?:\s*[-–to]+\s*\$?[\d,]+)?)/i);
+    const budgetMatch = olderUserText.match(/(?:budget|spend|spending|afford)\s*(?:is|of|around|about)?\s*\$?([\d,]+(?:\s*[-–to]+\s*\$?[\d,]+)?)/i);
     if (budgetMatch) summaryParts.push(`Budget: $${budgetMatch[1]}`);
 
     // Extract interests/activities
     const interestPatterns = /(hiking|camping|photography|wildlife|stargazing|fishing|kayaking|rock climbing|backpacking|scenic drives?|waterfalls?|sunrise|sunset|family.friendly|kid.friendly|accessible|easy trails?|moderate|challenging|strenuous)/gi;
-    const interests = [...new Set((olderText.match(interestPatterns) || []).map(i => i.toLowerCase()))];
+    const interests = [...new Set((olderUserText.match(interestPatterns) || []).map(i => i.toLowerCase()))];
     if (interests.length > 0) summaryParts.push(`Interests: ${interests.slice(0, 8).join(', ')}`);
 
     // Extract fitness/difficulty preference
-    const fitnessMatch = olderText.match(/(?:fitness|difficulty|experience|skill)\s*(?:level|is)?\s*:?\s*(beginner|easy|moderate|advanced|experienced|hard|strenuous)/i);
+    const fitnessMatch = olderUserText.match(/(?:fitness|difficulty|experience|skill)\s*(?:level|is)?\s*:?\s*(beginner|easy|moderate|advanced|experienced|hard|strenuous)/i);
     if (fitnessMatch) summaryParts.push(`Fitness level: ${fitnessMatch[1]}`);
 
     // Extract accommodation preference
-    const accomMatch = olderText.match(/(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb)/i);
+    const accomMatch = olderUserText.match(/(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb)/i);
     if (accomMatch) summaryParts.push(`Accommodation: ${accomMatch[1]}`);
 
     // Capture what was suggested and accepted/rejected
@@ -250,6 +255,10 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     console.log(`${logPrefix} Skipping park images — already shown in this conversation`);
   }
 
+  // Logging-related variables hoisted for return
+  let userCity = null;
+  let candidateParksBlock = false;
+
   // Build enhanced system prompt with facts
   // Use the full persona prompt from the appropriate service when no custom prompt is provided
   const defaultPrompt = provider === 'openai'
@@ -317,9 +326,10 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
 
     // Inject candidate parks list so the model has real NPS data to recommend from
     try {
-      const userCity = extractUserCity(lastUserMessage);
+      userCity = extractUserCity(lastUserMessage);
       const candidateResult = await getCandidateParks(userCity);
       const candidateBlock = formatCandidateParksBlock(candidateResult);
+      candidateParksBlock = !!candidateBlock;
       if (candidateBlock) {
         enhancedSystemPrompt += candidateBlock;
         console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
@@ -400,13 +410,23 @@ CRITICAL ISOLATION RULES — follow these exactly:
     enhancedSystemPrompt += `\n\n--- CRITICAL REMINDER ---\nThis is a planning request. You MUST include the [ITINERARY_JSON] block at the end of your response with the structured itinerary data. Even if there are conflicts or warnings, include your recommended safe plan in the JSON block. Do NOT skip the JSON block for planning requests.\n--- END REMINDER ---\n`;
   }
 
+  // Bookend: repeat fee-free reminder at the end of the prompt (models attend
+  // most to the start and end — the full block is at the top, this short nudge
+  // ensures it isn't lost in the middle of long prompts)
+  if (feeFreeFacts && feeFreeFacts.hasOverlap) {
+    const dayNames = feeFreeFacts.days.map(d => d.label).join(', ');
+    enhancedSystemPrompt += `\n\n⚠️ REMINDER: The user's trip overlaps fee-free entrance day(s): ${dayNames}. You MUST mention this in your first paragraph.\n`;
+  }
+
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, userCity, candidateParksBlock, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg };
 }
 
 // Helper: build user context block for personalized AI responses
+// Uses explicit Known/Unknown framing to prevent the model from
+// hallucinating ungrounded user attributes (e.g., "solo traveler").
 async function buildUserContext(user) {
   if (!user || !user.id) return '';
 
@@ -420,11 +440,12 @@ async function buildUserContext(user) {
     ]);
 
     const parts = [`\n\n--- USER CONTEXT ---`];
-    parts.push(`User's name: ${firstName}`);
+    parts.push(`Known facts about this user (from their profile and confirmed history):`);
+    parts.push(`- Name: ${firstName}`);
 
     if (favorites.length > 0) {
       const favNames = favorites.map(f => f.parkName);
-      parts.push(`Favorite parks: ${favNames.join(', ')}`);
+      parts.push(`- Favorite parks: ${favNames.join(', ')}`);
     }
 
     if (visitedParks.length > 0) {
@@ -437,11 +458,22 @@ async function buildUserContext(user) {
         }
         return v.parkName;
       });
-      parts.push(`Visited parks: ${visitedEntries.join(', ')}`);
+      parts.push(`- Visited parks: ${visitedEntries.join(', ')}`);
     }
 
-    parts.push(`---`);
+    parts.push(``);
+    parts.push(`Unknown (DO NOT ASSUME OR INFER):`);
+    parts.push(`- Group size and composition (solo, couple, family, group)`);
+    parts.push(`- Travel style or pace preference`);
+    parts.push(`- Budget`);
+    parts.push(`- Fitness level`);
+    parts.push(`- Home location`);
+    parts.push(``);
+    parts.push(`If your recommendation depends on an unknown attribute, ask one clarifying question instead of assuming.`);
+    parts.push(`NEVER say "your profile says...", "based on your travel style...", or "as a solo traveler..." for any unknown attribute.`);
+    parts.push(`Only reference Known facts listed above.`);
     parts.push(`Address the user by their first name in your first response.`);
+    parts.push(`--- END USER CONTEXT ---`);
 
     return parts.join('\n');
   } catch (err) {
@@ -531,6 +563,7 @@ function validateCriticalAlerts(responseContent, npsFacts) {
 
 // Chat endpoint — no token limit for logged-in users, trackTokenUsage kept for analytics
 router.post('/chat', protect, trackTokenUsage, async (req, res) => {
+  const requestStartTime = Date.now();
   try {
     console.log('[AI] Chat request received:', {
       provider: req.body.provider,
@@ -539,7 +572,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body);
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, userCity, candidateParksBlock, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body);
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -923,9 +956,56 @@ ${cleanContent.substring(0, 6000)}`;
       }
     }
 
+    // Structured logging — fire and forget
+    const requestEndTime = Date.now();
+    const parksMentioned = await extractParksMentioned(response.content || '');
+    logAIRequest({
+      endpoint: 'chat',
+      userId: req.user?.id || null,
+      provider: response.provider,
+      model: response.model,
+      durationMs: requestEndTime - requestStartTime,
+      promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
+      blocks: {
+        npsFacts: !!npsFacts,
+        weatherFacts: !!weatherFacts,
+        webSearch: !!webSearchFacts,
+        feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
+        candidateParks: !!candidateParksBlock,
+        constraints: constraints.hasConstraints,
+        preflight: { blockers: preflightResult.blockers.length, warnings: preflightResult.warnings.length },
+        conflicts: conflicts.length,
+        hypothetical: hypothetical.isHypothetical,
+        intent: intent?.primaryIntent || null,
+        userContext: !!req.user,
+      },
+      park: resolvedMetadata.parkCode ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName } : null,
+      cityDetected: userCity?.name || null,
+      messageCount: augmentedMessages.length,
+      promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
+      tokens: response.usage || null,
+      response: {
+        length: response.content?.length || 0,
+        hasItinerary: !!itineraryData,
+        mentionsFeeFree: /fee.free|free\s+entrance/i.test(response.content || ''),
+        parksMentioned,
+      },
+      error: null,
+    });
+
     res.json({ data: { ...response, hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] } });
 
   } catch (error) {
+    // Structured error logging
+    logAIRequest({
+      endpoint: 'chat',
+      userId: req.user?.id || null,
+      provider: req.body.provider || 'unknown',
+      model: req.body.model || null,
+      durationMs: Date.now() - requestStartTime,
+      error: error.message,
+    });
+
     // Log detailed error information
     console.error('AI API Error:', {
       message: error.message,
@@ -1407,6 +1487,7 @@ ${cleanContent.substring(0, 6000)}`;
 // Anonymous chat endpoint (no auth required)
 router.post('/chat-anonymous', async (req, res) => {
   let anonymousId; // Declared outside try so catch block can access it
+  const requestStartTime = Date.now();
   try {
     console.log('[AI] Anonymous chat request received:', {
       provider: req.body.provider,
@@ -1559,6 +1640,10 @@ Ready to continue planning? 🚀`,
 
     const anonParkNames = anonExtractedParks.map(p => p.parkName).filter(Boolean);
 
+    // Logging-related variables hoisted for structured logging
+    let anonUserCity = null;
+    let anonCandidateParksBlock = false;
+
     // Fetch relevant facts (web search skipped for anonymous users via isAnonymous flag)
     let weatherFacts = null;
     let npsFacts = null;
@@ -1667,12 +1752,13 @@ Ready to continue planning? 🚀`,
 
       // Inject candidate parks list so the model has real NPS data to recommend from
       try {
-        const userCity = extractUserCity(lastUserMessageContent);
-        const candidateResult = await getCandidateParks(userCity);
+        anonUserCity = extractUserCity(lastUserMessageContent);
+        const candidateResult = await getCandidateParks(anonUserCity);
         const candidateBlock = formatCandidateParksBlock(candidateResult);
+        anonCandidateParksBlock = !!candidateBlock;
         if (candidateBlock) {
           enhancedSystemPrompt += candidateBlock;
-          console.log(`[AI Anon] Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
+          console.log(`[AI Anon] Candidate parks injected:`, { userCity: anonUserCity?.name || 'none', tiered: !!candidateResult.userCity });
         }
       } catch (candidateErr) {
         console.error(`[AI Anon] Candidate parks error:`, candidateErr.message);
@@ -1728,6 +1814,12 @@ CRITICAL ISOLATION RULES — follow these exactly:
 5. You may briefly note at the END: "Note: This plan assumes [scenario condition]. Check nps.gov for current real-world conditions." — ONE sentence, nothing more.
 6. Do NOT pad with unrelated real-world details, closure lists, or weather data that contradicts the scenario.
 --- END SCENARIO MODE ---\n`;
+    }
+
+    // Bookend: repeat fee-free reminder at end of prompt (same as authenticated)
+    if (feeFreeFacts && feeFreeFacts.hasOverlap) {
+      const dayNames = feeFreeFacts.days.map(d => d.label).join(', ');
+      enhancedSystemPrompt += `\n\n⚠️ REMINDER: The user's trip overlaps fee-free entrance day(s): ${dayNames}. You MUST mention this in your first paragraph.\n`;
     }
 
     // Prevent AI from leaking internal JSON mechanism to the user
@@ -1994,6 +2086,43 @@ ${anonCleanContent.substring(0, 6000)}`;
       }
     }
 
+    // Structured logging — fire and forget
+    const anonRequestEndTime = Date.now();
+    const anonParksMentioned = await extractParksMentioned(response.content || '');
+    logAIRequest({
+      endpoint: 'chat-anonymous',
+      userId: null,
+      provider: response.provider,
+      model: response.model,
+      durationMs: anonRequestEndTime - requestStartTime,
+      promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
+      blocks: {
+        npsFacts: !!npsFacts,
+        weatherFacts: !!weatherFacts,
+        webSearch: false,
+        feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
+        candidateParks: anonCandidateParksBlock,
+        constraints: anonConstraints.hasConstraints,
+        preflight: { blockers: anonPreflightResult.blockers.length, warnings: anonPreflightResult.warnings.length },
+        conflicts: anonConflicts.length,
+        hypothetical: anonHypothetical.isHypothetical,
+        intent: anonIntent?.primaryIntent || null,
+        userContext: false,
+      },
+      park: resolvedMetadata.parkCode ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName } : null,
+      cityDetected: anonUserCity?.name || null,
+      messageCount: augmentedMessages.length,
+      promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
+      tokens: response.usage || null,
+      response: {
+        length: response.content?.length || 0,
+        hasItinerary: !!anonItineraryData,
+        mentionsFeeFree: /fee.free|free\s+entrance/i.test(response.content || ''),
+        parksMentioned: anonParksMentioned,
+      },
+      error: null,
+    });
+
     res.json({
       data: {
         content: response.content,
@@ -2015,6 +2144,16 @@ ${anonCleanContent.substring(0, 6000)}`;
     });
 
   } catch (error) {
+    // Structured error logging
+    logAIRequest({
+      endpoint: 'chat-anonymous',
+      userId: null,
+      provider: req.body.provider || 'unknown',
+      model: req.body.model || null,
+      durationMs: Date.now() - requestStartTime,
+      error: error.message,
+    });
+
     // Log detailed error information
     console.error('Anonymous AI API Error:', {
       message: error.message,

@@ -1,0 +1,20 @@
+{
+  "name": "candidate-parks-chicago",
+  "description": "Chicago-based query should suggest nearby parks from candidate list",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["getCandidateParks in factsService", "candidate parks block injection"],
+  "messages": [
+    { "role": "user", "content": "I live in Chicago and want to visit a national park this summer. What do you recommend?" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Indiana Dunes|Sleeping Bear|Pictured Rocks|Cuyahoga|Apostle Islands|Isle Royale|Voyageurs", "description": "Suggests at least one park near Chicago" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo", "flags": "i", "description": "Should not assume solo travel" }
+    ]
+  },
+  "tags": ["candidates", "data-architecture", "p0"]
+}

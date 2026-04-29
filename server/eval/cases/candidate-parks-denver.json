@@ -1,0 +1,20 @@
+{
+  "name": "candidate-parks-denver",
+  "description": "Denver-based query should suggest nearby Colorado/regional parks",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["getCandidateParks in factsService", "candidate parks block injection"],
+  "messages": [
+    { "role": "user", "content": "I'm based in Denver. Which national parks can I do as a weekend trip?" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Rocky Mountain|Great Sand Dunes|Black Canyon|Mesa Verde|Grand Teton|Arches|Canyonlands", "description": "Suggests at least one park near Denver" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo", "flags": "i", "description": "Should not assume solo travel" }
+    ]
+  },
+  "tags": ["candidates", "data-architecture", "p0"]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "candidate-parks-no-city",
+  "description": "Query with no city should suggest variety including non-National-Park NPS units",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["getCandidateParks in factsService", "candidate parks block injection"],
+  "messages": [
+    { "role": "user", "content": "What are some underrated NPS sites I should visit?" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Seashore|Lakeshore|Monument|Recreation Area|Preserve|Historic|Memorial|Battlefield|Scenic", "description": "Mentions at least one non-National-Park NPS designation" }
+    ]
+  },
+  "tags": ["candidates", "variety", "p1"]
+}

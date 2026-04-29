@@ -1,0 +1,28 @@
+{
+  "name": "multi-turn-denver",
+  "description": "4-turn Denver conversation should not hallucinate assertions on turn 4",
+  "failureMode": "grounding",
+  "ifFailingCheck": ["buildUserContext", "conversation context summarization"],
+  "messages": [
+    { "role": "user", "content": "I'm visiting Colorado next month. What parks do you recommend?" },
+    { "role": "assistant", "content": "Colorado has some amazing national parks! Rocky Mountain National Park is the most popular, with Trail Ridge Road offering stunning alpine views. Great Sand Dunes is unique with its massive dune field. Black Canyon of the Gunnison has dramatic canyon walls. Mesa Verde offers incredible cliff dwellings. Which interests you most?" },
+    { "role": "user", "content": "Tell me more about Rocky Mountain" },
+    { "role": "assistant", "content": "Rocky Mountain National Park is fantastic! Trail Ridge Road reaches over 12,000 feet. Popular trails include Emerald Lake, Sky Pond, and Bear Lake. The park has abundant wildlife including elk, bighorn sheep, and marmots. July through September offers the best weather for hiking." },
+    { "role": "user", "content": "What about Great Sand Dunes?" },
+    { "role": "assistant", "content": "Great Sand Dunes National Park features the tallest dunes in North America! Star Dune reaches 750 feet. Medano Creek is great for splashing in late May to early June. You can also hike, sandboard, and camp. The Sangre de Cristo mountains provide a stunning backdrop." },
+    { "role": "user", "content": "Help me plan a weekend trip to both parks" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Rocky Mountain|RMNP|Trail Ridge", "description": "References Rocky Mountain National Park" },
+      { "pattern": "Great Sand Dunes|Sand Dunes|dune", "flags": "i", "description": "References Great Sand Dunes" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo|as a solo", "flags": "i", "description": "Should not assume solo travel" },
+      { "pattern": "your budget.*(is |of )\\$|budget.*\\$\\d+.*per day", "flags": "i", "description": "Should not assert a specific budget" }
+    ]
+  },
+  "tags": ["multi-turn", "grounding", "p0"]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "international-visitor",
+  "description": "International visitor for July 4th should receive relevant park recommendations",
+  "failureMode": "data-architecture",
+  "ifFailingCheck": ["fee-free day handling", "international visitor context"],
+  "messages": [
+    { "role": "user", "content": "I'm visiting from London for July 4th week. Which national park should I visit? I'll be flying into New York." }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Acadia|Shenandoah|Great Smoky|New River Gorge|Cuyahoga|Cape Cod|Catskills", "description": "Suggests parks accessible from the East Coast" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "solo traveler|traveling solo", "flags": "i", "description": "Should not assume solo travel" }
+    ]
+  },
+  "tags": ["international", "data-architecture", "p1"]
+}
