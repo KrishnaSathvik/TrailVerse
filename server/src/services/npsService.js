@@ -1543,9 +1543,14 @@ class NPSService {
 
       allEvents = this._dedupeNpsEvents(allEvents);
 
+      // Sort by effective date: ongoing/past-start events sort as "today"
+      // so they appear alongside current events, not buried at the top
+      const now = new Date();
       allEvents.sort((a, b) => {
-        const dateA = new Date(a.date || a.datestart || a.dates?.[0]);
-        const dateB = new Date(b.date || b.datestart || b.dates?.[0]);
+        const rawA = new Date(a.date || a.datestart || a.dates?.[0]);
+        const rawB = new Date(b.date || b.datestart || b.dates?.[0]);
+        const dateA = rawA < now ? now : rawA;
+        const dateB = rawB < now ? now : rawB;
         return dateA - dateB;
       });
 

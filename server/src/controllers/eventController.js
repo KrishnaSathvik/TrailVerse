@@ -91,10 +91,13 @@ exports.getAllEvents = async (req, res, next) => {
       // Continue without NPS events if API fails
     }
 
-    // Combine and sort events
+    // Combine and sort — ongoing events (start in the past) sort as "today"
+    const now = new Date();
     const allEvents = [...customEvents, ...npsEvents].sort((a, b) => {
-      const dateA = new Date(a.date || a.eventDate);
-      const dateB = new Date(b.date || b.eventDate);
+      const rawA = new Date(a.date || a.eventDate);
+      const rawB = new Date(b.date || b.eventDate);
+      const dateA = rawA < now ? now : rawA;
+      const dateB = rawB < now ? now : rawB;
       return dateA - dateB;
     });
 

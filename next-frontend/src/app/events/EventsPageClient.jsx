@@ -275,17 +275,18 @@ const EventsPage = () => {
       return true;
     });
 
-    // Sort events by date (earliest first), then by title for events on the same date
+    // Sort events: ongoing events (start in past) sort as today, then ascending
+    const now = new Date();
     return filtered.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      const rawA = new Date(a.date);
+      const rawB = new Date(b.date);
+      const dateA = rawA < now ? now : rawA;
+      const dateB = rawB < now ? now : rawB;
 
-      // Primary sort: by date (earliest first)
       if (dateA.getTime() !== dateB.getTime()) {
         return dateA - dateB;
       }
 
-      // Secondary sort: by title (alphabetical) for events on the same date
       return a.title.localeCompare(b.title);
     });
   }, [events, searchTerm, filters, selectedMonth]);
