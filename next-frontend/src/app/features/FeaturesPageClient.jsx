@@ -17,8 +17,8 @@ const FeaturesPage = () => {
       items: [
         {
           icon: Bot,
-          title: "Dual AI Chat — Claude Sonnet 4.6 & GPT-4.1",
-          description: "Switch between Anthropic Claude Sonnet 4.6 and OpenAI GPT-4.1 mid-conversation. Each provider brings a different style — use both to get the best plan.",
+          title: "Dual AI Chat — Claude Sonnet 4.6 & GPT-5.4 Mini",
+          description: "Switch between Anthropic Claude Sonnet 4.6 and OpenAI GPT-5.4 Mini mid-conversation. Each provider brings a different style — use both to get the best plan.",
           benefits: ["Switch providers anytime", "Streaming responses", "Context-aware follow-ups", "Persistent chat history"]
         },
         {

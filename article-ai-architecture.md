@@ -82,13 +82,11 @@ User Input
 [Prompt Assembly] — system prompt + live data + constraints + intent + conflicts
     |
     v
-[LLM Generation] — Claude or GPT-4.1, with model fallback chain
+[LLM Generation] — Claude or GPT-5.4 Mini, with model fallback chain
     |
     v
-[Structured Output Extraction] — parse the [ITINERARY_JSON] block
-    |
-    v
-[Fallback Extraction] — if no JSON block, use a second AI call to extract structure
+[Structured Output Extraction] — parse the [ITINERARY_JSON] block;
+                                 if missing, fallback AI call extracts structure from text
     |
     v
 [Constraint Validation] — does the itinerary actually respect the user's constraints?
@@ -133,7 +131,7 @@ The Local's system prompt includes instructions like: *"Talk like you're texting
 
 Responses are short — 150-300 words for casual questions. No headers, no sections. Just talk.
 
-### "The Planner" — Powered by GPT-4.1
+### "The Planner" — Powered by GPT-5.4 Mini
 
 The Planner is the detail-obsessed trip architect. It builds comprehensive, time-blocked itineraries with specific start times, driving distances, parking tips, reservation deadlines, and gear lists. When The Planner gives you a 3-day Zion itinerary, it includes things like "6:30 AM — Arrive at the trailhead (parking fills by 8 AM)" and a "Don't Forget" section with permits, gear, and preparation items.
 
@@ -202,7 +200,7 @@ This is one of the more nuanced parts. Users regularly ask for contradictory thi
 
 Instead of silently merging contradictions into a mediocre compromise, our conflict detector identifies them and forces the AI to address them head-on. It injects specific instructions: *"The user wants both 'easy/relaxing' AND 'adventurous/thrilling' — these pull in opposite directions. You MUST present TWO distinct plans: Option A (Easy + Scenic) and Option B (Adventure-Forward). Do NOT blend them into a generic middle-ground plan."*
 
-If the AI ignores this and merges anyway (which LLMs love to do — they're people-pleasers), we detect it in post-processing and regenerate with an even stronger instruction.
+LLMs love to people-please — they'll merge contradictions into a mushy middle ground rather than presenting distinct options. To counter this, our conflict instructions are reinforced through the regeneration loop: if the resulting itinerary triggers enough constraint violations (which blended plans often do), the system regenerates with even stronger instructions and explicit feedback about what went wrong.
 
 ### Intent Detection
 
@@ -309,6 +307,70 @@ The raw scores are never exposed to users. The AI is explicitly instructed: *"NE
 
 ---
 
+## Multi-Park Trip Planning
+
+Users don't always visit one park. "We have 10 days — Yellowstone, Grand Teton, and Glacier" is a common request. Our park extraction system handles this automatically.
+
+When a message mentions multiple parks, the pipeline fans out: NPS facts, weather, and web search run **in parallel** for each park. All results get labeled and injected into the system prompt as separate data blocks so the AI can distinguish between parks — Glacier's closures don't bleed into Grand Teton's recommendations.
+
+Even the park images adapt. We distribute photos based on how many parks are in play: one park gets 4 images, two parks get 2 each, three parks get a 2-1-1 split, four or more get 1 each. Images are fetched **once per conversation** — we check for a "(Photos shown to user:" marker in message history to avoid redundant API calls on follow-up messages.
+
+---
+
+## Recreation.gov Integration
+
+I mentioned permits and reservations as a data source earlier, but the implementation goes deeper than NPS data alone. We integrate directly with the **Recreation Information Database (RIDB)** — the API behind Recreation.gov — to pull permit and reservation data that NPS alerts don't always surface.
+
+The challenge is that NPS and RIDB use different identifiers. NPS uses short park codes like `yose` or `grte`. RIDB uses numeric RecAreaIDs. We bridge this with fuzzy name matching — stripping suffixes like "National Park" and "National Recreation Area" to find the right RIDB record for each NPS park.
+
+Once matched, we search RIDB facilities for permit-like types: timed-entry tickets, backcountry permits, boating inspections. Each result includes a deep link to the Recreation.gov booking page, which the AI surfaces directly in its responses — not just "you need a permit" but "book your Half Dome permit here: [recreation.gov link]."
+
+Results are cached aggressively — 30 days for RecAreaID resolution, 7 days for permit data — because this information changes slowly and the RIDB API has tight rate limits.
+
+---
+
+## The AI Knows Who You Are
+
+Beyond the constraints parsed from the current message, the AI has context about **you**. For logged-in users, we inject a USER CONTEXT block into the system prompt that includes:
+
+- **Favorite parks** — your last 10 saved parks
+- **Visited parks** — your last 10 trips with dates (e.g., "Yellowstone, Jun 2024")
+- **Your first name** — the AI addresses you by name in its first response
+
+This changes the AI's behavior in subtle but meaningful ways. If you've already visited Zion and ask "where should I go next?", the AI won't suggest Zion. If your favorites lean toward desert parks, it'll weight recommendations accordingly. If you visited Glacier last June, it won't repeat the same trip — it'll suggest a different season or a neighboring park like Waterton Lakes.
+
+This context is additive — it never overrides explicit constraints. If you ask for Zion recommendations despite having visited, you'll get them. But the AI might mention: "Since you've been before, here are some less-known spots you might have missed."
+
+---
+
+## Real-Time Streaming
+
+The pipeline I've described so far produces a complete response, but users don't see a loading spinner for 15 seconds while all of that runs. Responses stream to the browser in real-time via **Server-Sent Events (SSE)**.
+
+As the AI generates tokens, they're pushed to the frontend character-by-character. The user sees text appear as it's written — the same feel as watching someone type. On the frontend, a typing indicator shows dynamic status messages based on elapsed time and data sources: "Thinking..." becomes "Analyzing your request..." becomes "Researching the best options..." and finally "Creating your personalized plan..." When web search data is being fetched, source badges appear: "NPS Data," "Weather," "Web Search" — so the user knows their plan is being grounded in real information, not just generated from memory.
+
+The structured JSON block and post-generation validation still run after streaming completes. The visual itinerary builder populates once the full response is available, but the text response is already readable by then.
+
+---
+
+## Access Control: Free Taste, Then Convert
+
+AI API calls aren't free, and we needed a strategy that lets people experience the product without burning through our API budget.
+
+### Anonymous Sessions
+
+Unauthenticated users get **5 free messages** within a 48-hour window. Sessions are tracked via browser fingerprint, IP, and user agent, with a MongoDB TTL index that auto-expires them after 48 hours. Anonymous sessions don't get web search results — only NPS data and weather — which keeps costs lower while still demonstrating the core value.
+
+After 5 messages, users see a conversion prompt: create an account to continue, or wait 48 hours for a new session. If they sign up, their anonymous chat history **migrates to their new account** — no lost context, no "start over" frustration.
+
+### Rate Limiting
+
+Authenticated users get 200 requests per 15 minutes. Anonymous users get 60. This is standard `express-rate-limit` middleware, but the thresholds were tuned based on actual usage patterns — a typical planning session involves 8-15 messages, well within limits for normal use.
+
+We also support an MCP bypass for trusted external services. A ChatGPT MCP integration, for example, can authenticate with a special header to skip anonymous rate limits — letting our data be consumed by other AI tools while maintaining control over direct traffic.
+
+---
+
 ## Version History: From V1 to V2
 
 ### V1: The "Smart Chatbot" Phase
@@ -355,7 +417,7 @@ The transition from V1 to V2 wasn't a single rewrite — it was iterative. We'd 
 
 14. **AI learning service** — Built feedback-based personalization. Users who consistently prefer shorter responses get shorter responses. Users who like detail get detail.
 
-15. **Decision enforcement verification** — Discovered through systematic testing that the route handler was bypassing our persona system prompts entirely, falling back to a generic "You are a helpful travel assistant" one-liner. Fixed prompt routing and built a 10-test enforcement suite covering comparison queries, conflict scenarios, and direct recommendations to verify decision-first behavior. Went from 1/10 passing to 10/10.
+15. **Decision enforcement verification** — Discovered through systematic testing that the route handler was bypassing our persona system prompts entirely, falling back to a generic "You are a helpful travel assistant" one-liner. Fixed prompt routing and built a 12-check enforcement suite covering comparison queries, conflict scenarios, and direct recommendations to verify decision-first behavior. Went from 1/12 passing to 12/12.
 
 16. **Memory-safe caching** — Replaced all unbounded `Map` caches (NPS endpoint cache with 18 endpoint types, enhanced park data cache, AI learning cache, response body cache) with `NodeCache` instances with `maxKeys` limits and automatic TTL-based eviction via `checkperiod`. The original Maps grew without bounds and caused OOM crashes on our hosting platform — which ironically surfaced as CORS errors on the frontend because a crashed server sends no headers at all. Also fixed WebSocket connection tracking to sweep stale entries every 5 minutes.
 
@@ -403,7 +465,7 @@ LLMs are pattern matchers, not constraint solvers. Telling an AI "max difficulty
 
 AI APIs go down. Models get deprecated. Rate limits hit. New models change behavior in subtle ways.
 
-**Solution:** Model fallback chains. For Claude, we try claude-sonnet-4-6 first, then fall back to claude-haiku-4-5. For OpenAI, we use gpt-4.1. If the primary model returns a 404 or auth error, we automatically try the next model in the chain.
+**Solution:** Model fallback chains. For Claude, we try claude-sonnet-4-6 first, then fall back to claude-haiku-4-5. For OpenAI, we try gpt-5.4-mini first, then fall back to gpt-4.1. If the primary model returns a 404 or auth error, we automatically try the next model in the chain.
 
 ### Challenge 7: The Prompt That Never Loaded
 
@@ -411,7 +473,7 @@ This one was humbling. We spent weeks perfecting The Local and The Planner's sys
 
 The bug was a single line: `let enhancedSystemPrompt = systemPrompt || 'You are a helpful travel assistant.'` When the frontend didn't send a custom system prompt (which was most of the time), the fallback was a generic one-liner with zero decision rules, zero persona, zero constraint awareness. Our carefully crafted system prompts were sitting in their service files, completely unused.
 
-**Solution:** Import the actual service prompts and use them as the default fallback based on the active provider. We built a 10-test enforcement suite — comparison queries ("Zion vs Bryce for beginners"), conflict scenarios ("easy but adventurous"), multi-park recommendations, and direct questions — and went from 1/10 passing to 10/10 after the fix.
+**Solution:** Import the actual service prompts and use them as the default fallback based on the active provider. We built a 12-check enforcement suite — comparison queries ("Zion vs Bryce for beginners"), conflict scenarios ("easy but adventurous"), multi-park recommendations, and direct questions — and went from 1/12 passing to 12/12 after the fix.
 
 The lesson: test the full pipeline end-to-end, not just the components. Unit testing your prompt doesn't help if the route never loads it. And "it reads well in the service file" is not the same as "it's being used in production."
 
@@ -441,7 +503,7 @@ If I had to distill it into a few key differentiators:
 
 6. **Multi-dimensional quality scoring** — Every itinerary is scored across compliance, diversity, pacing, interest match, and geographic efficiency. Not "does it read well?" but "will it actually work for this specific person?"
 
-7. **End-to-end enforcement testing** — We don't just test the prompts — we test the full route, the way a real user would hit it. Our 10-test decision enforcement suite sends actual API requests and verifies that comparison queries produce decisions, not neutral pros-and-cons lists. If the AI says "both are great!" instead of picking one, the test fails.
+7. **End-to-end enforcement testing** — We don't just test the prompts — we test the full route, the way a real user would hit it. Our 12-check decision enforcement suite sends actual API requests and verifies that comparison queries produce decisions, not neutral pros-and-cons lists. If the AI says "both are great!" instead of picking one, the test fails.
 
 ---
 
@@ -460,4 +522,4 @@ Build the pipeline, not just the prompt.
 
 ---
 
-*TrailVerse is a platform for exploring America's national parks. The AI trip planner is available at [nationalparksexplorerusa.com/plan-ai](https://www.nationalparksexplorerusa.com/plan-ai). Built with Claude, GPT-4.1, NPS API, OpenWeatherMap, NodeCache, and a healthy distrust of AI-generated itineraries.*
+*TrailVerse is a platform for exploring America's national parks. The AI trip planner is available at [nationalparksexplorerusa.com/plan-ai](https://www.nationalparksexplorerusa.com/plan-ai). Built with Claude, GPT-5.4 Mini, NPS API, OpenWeatherMap, NodeCache, and a healthy distrust of AI-generated itineraries.*

@@ -83,7 +83,7 @@ async function sendTestEmail() {
 
     if (options.dryRun) {
       console.log('🔍 DRY RUN: Would send feature announcement email to:', testUser.email);
-      console.log('📧 Subject: 🎉 New Features: Google Maps & Enhanced Experience - TrailVerse');
+      console.log('📧 Subject: New in TrailVerse: Plan My Trip, For Me Recommendations & More');
       return;
     }
 

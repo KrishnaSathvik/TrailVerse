@@ -11,7 +11,7 @@ identifier in anonymous tool calls, and we deliberately do not track users.
 This is a global fuse for the whole MCP → TrailVerse pipe.
 
 Separate buckets for:
-  - plan_trip (expensive: hits Claude/GPT-4.1): default 120/min
+  - plan_trip (expensive: hits Claude/GPT-5.4 Mini): default 120/min
   - all other read tools (cheap: cached NPS data): default 300/min
 """
 from __future__ import annotations

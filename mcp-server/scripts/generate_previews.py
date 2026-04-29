@@ -15,7 +15,7 @@ MOCK_DATA = {
         "parkCode": "zion",
         "persona": "planner",
         "provider": "openai",
-        "model": "gpt-4.1",
+        "model": "gpt-5.4-mini",
         "hasItinerary": True,
         "intent": "photographer",
         "confidence": {"level": "high", "score": 0.92},

@@ -143,7 +143,7 @@ exports.chat = async (req, res, next) => {
         conversationId: tripPlan._id,
         content: aiResponse,
         provider: aiProvider,
-        model: aiProvider === 'claude' ? 'claude-sonnet-4-6' : 'gpt-4.1'
+        model: aiProvider === 'claude' ? 'claude-sonnet-4-6' : 'gpt-5.4-mini'
       }
     });
   } catch (error) {
@@ -169,7 +169,7 @@ exports.getProviders = async (req, res, next) => {
         id: 'openai',
         name: 'The Planner',
         description: 'Detailed itineraries, full logistics, comprehensive plans',
-        model: 'gpt-4.1',
+        model: 'gpt-5.4-mini',
         available: !!process.env.OPENAI_API_KEY
       }
     ];

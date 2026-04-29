@@ -2577,7 +2577,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                   >
                     {providers.map((provider) => {
                       const id = (provider.id || provider.name || '').toLowerCase();
-                      const label = id.includes('openai') || id.includes('gpt') ? 'GPT-4'
+                      const label = id.includes('openai') || id.includes('gpt') ? 'GPT'
                         : id.includes('claude') || id.includes('anthropic') ? 'Claude'
                         : provider.name;
                       const subtitle = id.includes('openai') || id.includes('gpt') ? 'Detailed planner'

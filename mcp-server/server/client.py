@@ -184,7 +184,7 @@ class TrailVerseClient:
         """
         Call the anonymous AI planner. Limited to 5 messages per 48h per IP.
 
-        persona: "planner" (GPT-4.1, structured) or "local" (Claude, casual).
+        persona: "planner" (GPT-5.4 Mini, structured) or "local" (Claude, casual).
         form_data: optional structured constraints (dates, groupSize, budget, etc.).
         """
         provider = "openai" if persona == "planner" else "claude"

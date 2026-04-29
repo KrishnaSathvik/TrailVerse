@@ -846,7 +846,7 @@ function extractUserCity(userMessage) {
 
   // Patterns that indicate a departure/home city
   const cityPatterns = [
-    /\b(?:from|near|around|leaving|departing|starting\s+(?:from|in)|live\s+in|based\s+in|located\s+in|currently\s+in|coming\s+from|driving\s+from|flying\s+from)\s+(.+?)(?:\s+area)?(?:[.,!?]|$)/gi,
+    /\b(?:from|near|around|leaving|departing|starting\s+(?:from|in)|live\s+in|based\s+in|located\s+in|currently\s+in|coming\s+from|driving\s+from|flying\s+from|i'?m\s+in|i\s+am\s+in)\s+(.+?)(?:\s+area)?(?:[.,!?]|$)/gi,
     /\b(?:in\s+the)\s+(.+?)\s+area\b/gi,
   ];
 
@@ -949,7 +949,8 @@ function formatCandidateParksBlock(candidateResult) {
     if (close.length === 0 && medium.length === 0 && far.length === 0) return '';
 
     let block = `\n--- CANDIDATE PARKS NEAR ${userCity.toUpperCase()} ---`;
-    block += `\nChoose from these NPS sites when suggesting parks. Includes National Parks, Seashores, Lakeshores, Recreation Areas, and Monuments — NOT just the 63 National Parks. Sorted by approximate distance from user's location.\n`;
+    block += `\nChoose from these NPS sites when suggesting parks. Includes National Parks, Seashores, Lakeshores, Recreation Areas, and Monuments — NOT just the 63 National Parks. Sorted by approximate distance from user's location.`;
+    block += `\nIMPORTANT: You MUST suggest at least 2-3 parks from this list, not just one. Include variety — different designations (NP, NL, NS, NRA) and different distance tiers when possible. Even if one park is the top pick, briefly mention 1-2 alternatives so the user has options.\n`;
 
     // Cap per tier to keep prompt under ~500 tokens
     if (close.length > 0) {
@@ -992,7 +993,8 @@ function formatCandidateParksBlock(candidateResult) {
   const regionOrder = ['NORTHEAST', 'SOUTHEAST', 'MIDWEST', 'SOUTHWEST', 'MOUNTAIN WEST', 'PACIFIC', 'ALASKA', 'HAWAII'];
   let block = `\n--- CANDIDATE PARKS (from NPS database) ---`;
   block += `\nWhen suggesting parks, choose from this representative list of NPS sites.`;
-  block += `\nThis includes National Parks, Seashores, Lakeshores, Recreation Areas, and Monuments — do NOT limit recommendations to just the 63 National Parks.\n`;
+  block += `\nThis includes National Parks, Seashores, Lakeshores, Recreation Areas, and Monuments — do NOT limit recommendations to just the 63 National Parks.`;
+  block += `\nIMPORTANT: Suggest at least 2-3 parks from this list with variety in designations and regions. Even if one is the top pick, mention 1-2 alternatives.\n`;
 
   for (const region of regionOrder) {
     const parks = regionGroups[region];

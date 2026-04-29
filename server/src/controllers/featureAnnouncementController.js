@@ -222,6 +222,7 @@ class FeatureAnnouncementController {
         userEmail: user.email,
         planUrl: `${baseUrl}/plan-ai`,
         exploreUrl: `${baseUrl}/explore`,
+        magazineUrl: `${baseUrl}/magazine`,
         unsubscribeUrl: `${baseUrl}/unsubscribe?email=${user.email || ''}`
       });
 

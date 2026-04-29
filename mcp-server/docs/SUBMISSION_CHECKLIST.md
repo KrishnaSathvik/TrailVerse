@@ -224,7 +224,7 @@ Data accessed from the user:
 Data sent to third parties:
 - User prompts are sent to the TrailVerse backend
   (trailverse.onrender.com) for AI trip planning
-- TrailVerse forwards the prompt to OpenAI (GPT-4.1) or Anthropic
+- TrailVerse forwards the prompt to OpenAI (GPT-5.4 Mini) or Anthropic
   (Claude) depending on the persona
 - No data is stored server-side for anonymous users
 
