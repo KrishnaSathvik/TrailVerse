@@ -57,20 +57,8 @@ const TableOfContents = ({
   containerRef = null
 }) => {
   const [activeId, setActiveId] = useState(null);
-  const [isDesktop, setIsDesktop] = useState(() => {
-    if (typeof window === 'undefined') {
-      return true;
-    }
-
-    return window.innerWidth >= 1024;
-  });
-  const [isOpen, setIsOpen] = useState(() => {
-    if (typeof window === 'undefined') {
-      return true;
-    }
-
-    return window.innerWidth >= 1024;
-  });
+  const [isDesktop, setIsDesktop] = useState(true);
+  const [isOpen, setIsOpen] = useState(true);
   const headings = useMemo(() => {
     if (providedHeadings?.length) {
       return providedHeadings;

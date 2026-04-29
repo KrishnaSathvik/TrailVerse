@@ -25,31 +25,29 @@ const parseLegacyHeadingCandidate = (element, index) => {
 };
 
 export const parseBlogHeadingsFromHtml = (html = '') => {
-  if (typeof document === 'undefined' || !html) {
-    return [];
+  if (!html) return [];
+
+  // Regex-based parser — works on both server (no document) and client
+  const headingRegex = /<(h[1-4])([^>]*)>([\s\S]*?)<\/\1>/gi;
+  const headings = [];
+  let match;
+  let index = 0;
+
+  while ((match = headingRegex.exec(html)) !== null) {
+    const tag = match[1].toLowerCase();
+    const attrs = match[2];
+    const inner = match[3];
+    const text = inner.replace(/<[^>]+>/g, '').trim();
+    if (!text) continue;
+
+    const idMatch = attrs.match(/id\s*=\s*["']([^"']+)["']/);
+    const id = idMatch ? idMatch[1] : `heading-${index}-${sanitizeHeadingText(text) || index}`;
+
+    headings.push({ id, text, level: Number(tag[1]) });
+    index++;
   }
 
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-
-  const headings = Array.from(tempDiv.querySelectorAll('h1, h2, h3, h4')).map((heading, index) => {
-    const text = (heading.textContent || '').trim();
-    return text
-      ? {
-          id: heading.id || `heading-${index}-${sanitizeHeadingText(text) || index}`,
-          text,
-          level: Number(heading.tagName.slice(1))
-        }
-      : null;
-  }).filter(Boolean);
-
-  if (headings.length > 0) {
-    return headings;
-  }
-
-  return Array.from(tempDiv.querySelectorAll('p, div, strong'))
-    .map((element, index) => parseLegacyHeadingCandidate(element, index))
-    .filter(Boolean);
+  return headings;
 };
 
 export const applyHeadingIdsToElement = (container, headings = []) => {
@@ -85,40 +83,20 @@ export const applyHeadingIdsToElement = (container, headings = []) => {
 };
 
 export const injectHeadingIdsIntoHtml = (html = '', headings = []) => {
-  if (typeof document === 'undefined' || !html || headings.length === 0) {
-    return html;
-  }
+  if (!html || headings.length === 0) return html;
 
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
-
-  const targetHeadings = Array.from(tempDiv.querySelectorAll('h1, h2, h3, h4'));
-  if (targetHeadings.length > 0) {
-    targetHeadings.forEach((heading, index) => {
-      const item = headings[index];
-      if (item) {
-        heading.id = item.id;
-      }
-    });
-    return tempDiv.innerHTML;
-  }
-
-  const legacyBlocks = Array.from(tempDiv.querySelectorAll('p, div, strong'));
+  // Regex-based injection — works on both server and client
   let headingIndex = 0;
-
-  legacyBlocks.forEach((element) => {
-    if (headingIndex >= headings.length) {
-      return;
+  return html.replace(/<(h[1-4])(\s[^>]*)?\s*>/gi, (match, tag, attrs) => {
+    if (headingIndex >= headings.length) return match;
+    const item = headings[headingIndex];
+    headingIndex++;
+    // If already has an id attribute, replace it; otherwise add one
+    if (attrs && /id\s*=\s*["'][^"']*["']/i.test(attrs)) {
+      return `<${tag}${attrs.replace(/id\s*=\s*["'][^"']*["']/i, `id="${item.id}"`)}>`;
     }
-
-    const text = (element.textContent || '').trim();
-    if (text === headings[headingIndex].text) {
-      element.id = headings[headingIndex].id;
-      headingIndex += 1;
-    }
+    return `<${tag}${attrs || ''} id="${item.id}">`;
   });
-
-  return tempDiv.innerHTML;
 };
 
 export const collectHeadingsFromElement = (container) => {

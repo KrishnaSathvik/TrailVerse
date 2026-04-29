@@ -258,8 +258,11 @@
 
 /* Tables */
 .blog-prose table {
+  --table-border: rgba(150, 150, 150, 0.35);
+  --table-border-strong: rgba(150, 150, 150, 0.5);
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin: 2rem 0;
   background: var(--surface);
   border-radius: 12px;
@@ -268,26 +271,48 @@
   display: block;
   overflow-x: auto;
   min-width: 100%;
+  border: 1.5px solid var(--table-border-strong) !important;
 }
 
 .blog-prose th {
   background: var(--surface-hover);
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   text-align: left;
   font-weight: 700;
-  color: var(--text-primary);
-  border-bottom: 2px solid var(--border);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--table-border-strong) !important;
+  border-right: 1px solid var(--table-border) !important;
   white-space: nowrap;
 }
 
+.blog-prose th:last-child {
+  border-right: none !important;
+}
+
 .blog-prose td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--table-border) !important;
+  border-right: 1px solid var(--table-border) !important;
   color: var(--text-primary);
 }
 
+.blog-prose td:last-child {
+  border-right: none !important;
+}
+
 .blog-prose tr:last-child td {
-  border-bottom: none;
+  border-bottom: none !important;
+}
+
+.blog-prose tbody tr:nth-child(even) {
+  background: var(--surface-hover);
+}
+
+.blog-prose tbody tr:hover {
+  background: var(--surface-hover);
 }
 
 .blog-prose > *:first-child {
@@ -403,22 +428,30 @@
     font-size: 1.125rem;
   }
 
-  /* Responsive tables - make horizontally scrollable on mobile */
+  /* Responsive tables — same as desktop, horizontally scrollable */
   .blog-prose table {
     display: block;
-    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    border-radius: 12px;
-    margin: 2rem -1rem;
-    padding: 0 1rem;
+    margin: 1.5rem 0;
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
   }
 
   .blog-prose table thead,
   .blog-prose table tbody {
     display: table;
     width: 100%;
-    table-layout: auto;
+    min-width: 600px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--table-border-strong) !important;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
   }
 
   .blog-prose table tr {
@@ -427,17 +460,25 @@
 
   .blog-prose table th,
   .blog-prose table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.875rem;
+    padding: 0.6rem 0.65rem;
+    font-size: 0.8rem;
     white-space: normal;
     word-wrap: break-word;
-    min-width: 100px;
+    min-width: 80px;
   }
 
   .blog-prose table th {
-    font-size: 0.8125rem;
-    padding: 0.75rem 0.5rem;
-    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 0.6rem 0.65rem;
+    background: var(--surface-hover);
+  }
+
+  .blog-prose table td p,
+  .blog-prose table th p {
+    margin: 0;
+    font-size: inherit;
+    color: inherit;
+    line-height: inherit;
   }
 }
 

@@ -137,17 +137,27 @@ export function linkifyParkNames(content, currentSlug = '') {
     parts.push({ text: content.slice(lastIndex), process: true });
   }
 
+  // Track which slugs have been linked — only link first occurrence
+  const linkedSlugs = new Set();
+
   return parts.map(part => {
     if (!part.process) return part.text;
 
     let text = part.text;
     for (const parkName of sortedParks) {
       const slug = PARK_NAME_TO_SLUG[parkName];
-      // Don't self-link
       if (currentSlug && currentSlug === slug) continue;
-      // Match whole word occurrences not already inside a link
-      const regex = new RegExp(`(?<!\\[)\\b(${parkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b(?![^[]*\\])`, 'g');
-      text = text.replace(regex, `[$1](/parks/${slug})`);
+      if (linkedSlugs.has(slug)) continue;
+      const escaped = parkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(?<!\\[)\\b(${escaped})\\b(?![^[]*\\])`, 'g');
+      if (regex.test(text)) {
+        regex.lastIndex = 0;
+        text = text.replace(regex, (m) => {
+          if (linkedSlugs.has(slug)) return m;
+          linkedSlugs.add(slug);
+          return `[${m}](/parks/${slug})`;
+        });
+      }
     }
     return text;
   }).join('');
@@ -178,6 +188,9 @@ export function linkifyParkNamesHtml(content, currentSlug = '') {
     parts.push({ text: content.slice(lastIndex), process: true });
   }
 
+  // Track which slugs have been linked — only link first occurrence
+  const linkedSlugs = new Set();
+
   return parts.map(part => {
     if (!part.process) return part.text;
 
@@ -185,8 +198,17 @@ export function linkifyParkNamesHtml(content, currentSlug = '') {
     for (const parkName of sortedParks) {
       const slug = PARK_NAME_TO_SLUG[parkName];
       if (currentSlug && currentSlug === slug) continue;
-      const regex = new RegExp(`\\b(${parkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
-      text = text.replace(regex, `<a href="/parks/${slug}" style="color:var(--accent-green);text-decoration:underline">$1</a>`);
+      if (linkedSlugs.has(slug)) continue;
+      const escaped = parkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b(${escaped})\\b`, 'g');
+      if (regex.test(text)) {
+        regex.lastIndex = 0;
+        text = text.replace(regex, (m) => {
+          if (linkedSlugs.has(slug)) return m;
+          linkedSlugs.add(slug);
+          return `<a href="/parks/${slug}" style="color:var(--accent-green);text-decoration:underline">${m}</a>`;
+        });
+      }
     }
     return text;
   }).join('');
