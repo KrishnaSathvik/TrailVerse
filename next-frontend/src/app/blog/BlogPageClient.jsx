@@ -238,30 +238,8 @@ const BlogContent = ({ initialData }) => {
               Expert guides, travel tips, and inspiring stories from America&apos;s national parks.
             </p>
 
-            {/* Category filters */}
-            <div className="flex flex-wrap gap-2 mt-4 mb-8 justify-center">
-              {[
-                { slug: 'trip-planning', name: 'Trip Planning' },
-                { slug: 'park-guides', name: 'Park Guides' },
-                { slug: 'gear-packing', name: 'Gear & Packing' },
-                { slug: 'seasonal', name: 'Seasonal' },
-                { slug: 'astrophotography', name: 'Astrophotography' },
-                { slug: 'budget-travel', name: 'Budget Travel' },
-              ].map(cat => (
-                <Link
-                  key={cat.slug}
-                  href={`/blog/category/${cat.slug}`}
-                  className="px-4 py-2 rounded-full text-sm font-medium transition hover:shadow-sm"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            </div>
+
+
           </div>
 
           <div className="mt-8 max-w-3xl">

@@ -1,5 +1,7 @@
 const axios = require('axios');
 
+const { getFeeFreeInfo } = require('./feeFreeDaysService');
+
 const OWM_KEY = process.env.OPENWEATHER_API_KEY; // server-side key ⚠️ not REACT_APP_*
 const OWM_BASE = 'https://api.openweathermap.org/data/2.5/forecast';
 // NPS data is now served through npsService (with bulk caches) — no direct API calls needed
@@ -727,7 +729,7 @@ function needsWebSearch(userMessage) {
   if (!isTravelRelated(userMessage)) return false;
 
   // Topics where live web data is especially valuable
-  const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|2027|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway|workshop|class|classes|course|lesson|tour|excursion|activit|experience|guided|instruction|training|company|provider|operator|find|search|look for|check|suggest|where can|who offer|sign up|forag|mushroom|morel|fish|kayak|canoe|raft|climb|zipline|horseback|bike|bird|snorkel|dive|surf|ski|snowshoe|paddle)/i;
+  const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|2027|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway|workshop|class|classes|course|lesson|tour|excursion|activit|experience|guided|instruction|training|company|provider|operator|find|search|look for|check|suggest|where can|who offer|sign up|forag|mushroom|morel|fish|kayak|canoe|raft|climb|zipline|horseback|bike|bird|snorkel|dive|surf|ski|snowshoe|paddle|memorial day|labor day|independence day|july 4|4th of july|fourth of july|veterans day|holiday weekend|long weekend|weekend trip|when to visit|when to go|fee.free|entrance fee|free entrance|spring break|summer vacation|fall foliage|winter trip|shoulder season|family vacation|road trip|which park|what park|compare park)/i;
   return webSearchKeywords.test(userMessage);
 }
 
@@ -758,16 +760,19 @@ function needsNPSFacts(userMessage) {
  * @returns {Promise<Object>} { weatherFacts, npsFacts, webSearchFacts }
  */
 async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, isAnonymous = false }) {
-  const results = { weatherFacts: null, npsFacts: null, webSearchFacts: null };
+  const results = { weatherFacts: null, npsFacts: null, webSearchFacts: null, feeFreeFacts: null };
 
   try {
+    // Check for fee-free day overlap (sync, no API call)
+    results.feeFreeFacts = getFeeFreeInfo(userMessage);
+
     // Determine what facts to fetch
     const shouldFetchWeather = needsWeatherFacts(userMessage) && lat && lon;
     const shouldFetchNPS = needsNPSFacts(userMessage) && parkCode;
     // Skip web search for anonymous users — it's a signup incentive
     const shouldFetchWeb = !isAnonymous && needsWebSearch(userMessage);
 
-    console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, shouldFetchWeb, userMessage: userMessage?.substring(0, 50) });
+    console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, shouldFetchWeb, hasFeeFree: !!results.feeFreeFacts, userMessage: userMessage?.substring(0, 50) });
 
     // Fetch facts in parallel if needed
     const promises = [];
@@ -804,12 +809,205 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
       await Promise.allSettled(promises);
     }
 
-    console.log('[Facts] Results:', { hasWeather: !!results.weatherFacts, hasNPS: !!results.npsFacts, hasWebSearch: !!results.webSearchFacts });
+    console.log('[Facts] Results:', { hasWeather: !!results.weatherFacts, hasNPS: !!results.npsFacts, hasWebSearch: !!results.webSearchFacts, hasFeeFree: !!results.feeFreeFacts });
     return results;
   } catch (error) {
     console.error('[Facts] fetchRelevantFacts error:', error.message);
     return results; // Return empty results on error
   }
+}
+
+// ── Candidate Parks (Fix A) ──
+
+const { CITIES } = require('../utils/cityCoordinates');
+
+/**
+ * Haversine distance in miles between two lat/lon points
+ */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 3959; // Earth radius in miles
+  const toRad = deg => deg * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Extract a US city from the user's message.
+ * Looks for patterns like "from Chicago", "near Denver", "live in Boston", etc.
+ * Multi-word city names are checked first (longest match wins).
+ * Returns { name, lat, lon } or null.
+ */
+function extractUserCity(userMessage) {
+  if (!userMessage) return null;
+  const msg = userMessage.toLowerCase();
+
+  // Patterns that indicate a departure/home city
+  const cityPatterns = [
+    /\b(?:from|near|around|leaving|departing|starting\s+(?:from|in)|live\s+in|based\s+in|located\s+in|currently\s+in|coming\s+from|driving\s+from|flying\s+from)\s+(.+?)(?:\s+area)?(?:[.,!?]|$)/gi,
+    /\b(?:in\s+the)\s+(.+?)\s+area\b/gi,
+  ];
+
+  // Collect all candidate strings from regex matches
+  const candidates = [];
+  for (const pattern of cityPatterns) {
+    let match;
+    while ((match = pattern.exec(msg)) !== null) {
+      candidates.push(match[1].trim());
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Sort city dictionary keys by length descending (longest match first)
+  const sortedCityKeys = Object.keys(CITIES).sort((a, b) => b.length - a.length);
+
+  for (const candidate of candidates) {
+    // Try to match against known cities — longest match first
+    for (const cityKey of sortedCityKeys) {
+      if (candidate.startsWith(cityKey) || candidate === cityKey) {
+        const city = CITIES[cityKey];
+        // Capitalize for display
+        const displayName = cityKey.replace(/\b\w/g, c => c.toUpperCase());
+        return { name: displayName, lat: city.lat, lon: city.lon, state: city.state };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get candidate NPS parks, optionally filtered by distance from a user city.
+ * Returns tiered results (close/medium/far) when a city is detected,
+ * or all candidates when no city is detected.
+ */
+async function getCandidateParks(userCity) {
+  const npsService = require('./npsService');
+  const allParks = await npsService.getAllParks();
+
+  const relevantDesignations = [
+    'National Park', 'National Park & Preserve',
+    'National Seashore', 'National Lakeshore',
+    'National Recreation Area', 'National Monument',
+    'National Monument & Preserve',
+  ];
+
+  let candidates = allParks
+    .filter(p => relevantDesignations.some(d =>
+      (p.designation || '').toLowerCase() === d.toLowerCase()
+    ))
+    .map(p => ({
+      name: p.fullName, code: p.parkCode, state: p.states,
+      designation: p.designation,
+      lat: parseFloat(p.latitude), lon: parseFloat(p.longitude),
+    }))
+    .filter(p => !isNaN(p.lat) && !isNaN(p.lon));
+
+  if (userCity) {
+    // Haversine distance, sorted by proximity
+    candidates = candidates.map(p => ({
+      ...p,
+      distMi: Math.round(haversine(userCity.lat, userCity.lon, p.lat, p.lon)),
+    }));
+    candidates.sort((a, b) => a.distMi - b.distMi);
+
+    const close = candidates.filter(p => p.distMi < 250);   // ~4hr drive
+    const medium = candidates.filter(p => p.distMi >= 250 && p.distMi < 450); // ~7hr
+    const far = candidates.filter(p => p.distMi >= 450 && p.distMi < 650);    // ~10hr
+    return { close, medium, far, userCity: userCity.name };
+  }
+
+  // No city detected — return all candidates (ai.js will curate for prompt)
+  return { all: candidates, userCity: null };
+}
+
+/**
+ * Format candidate parks into a prompt block.
+ * With a city: tiered by drive time. Without: grouped by region.
+ */
+function formatCandidateParksBlock(candidateResult) {
+  if (!candidateResult) return '';
+
+  const formatPark = (p) => {
+    const shortDesig = (p.designation || '')
+      .replace('National Park & Preserve', 'NP&P')
+      .replace('National Park', 'NP')
+      .replace('National Seashore', 'NS')
+      .replace('National Lakeshore', 'NL')
+      .replace('National Recreation Area', 'NRA')
+      .replace('National Monument & Preserve', 'NM&P')
+      .replace('National Monument', 'NM');
+    const dist = p.distMi ? ` (~${p.distMi}mi)` : '';
+    return `- ${p.name} [${shortDesig}] (${p.state}) — ${p.code}${dist}`;
+  };
+
+  if (candidateResult.userCity) {
+    const { close, medium, far, userCity } = candidateResult;
+    if (close.length === 0 && medium.length === 0 && far.length === 0) return '';
+
+    let block = `\n--- CANDIDATE PARKS NEAR ${userCity.toUpperCase()} ---`;
+    block += `\nChoose from these NPS sites when suggesting parks. Includes National Parks, Seashores, Lakeshores, Recreation Areas, and Monuments — NOT just the 63 National Parks. Sorted by approximate distance from user's location.\n`;
+
+    // Cap per tier to keep prompt under ~500 tokens
+    if (close.length > 0) {
+      block += `\nWITHIN ~4 HOURS:\n${close.slice(0, 8).map(formatPark).join('\n')}\n`;
+    }
+    if (medium.length > 0) {
+      block += `\n~4-7 HOURS:\n${medium.slice(0, 6).map(formatPark).join('\n')}\n`;
+    }
+    if (far.length > 0) {
+      block += `\n~7-10 HOURS:\n${far.slice(0, 4).map(formatPark).join('\n')}\n`;
+    }
+    block += `--- END CANDIDATE PARKS ---\n`;
+    return block;
+  }
+
+  // No city — curate a representative list grouped by region
+  const all = candidateResult.all || [];
+  if (all.length === 0) return '';
+
+  // Assign regions based on longitude/latitude
+  const regionize = (p) => {
+    if (p.state?.includes('AK')) return 'ALASKA';
+    if (p.state?.includes('HI')) return 'HAWAII';
+    if (p.lon < -115) return 'PACIFIC';
+    if (p.lon < -104) return 'MOUNTAIN WEST';
+    if (p.lon < -95 && p.lat > 40) return 'MIDWEST';
+    if (p.lon < -95 && p.lat <= 40) return 'SOUTHWEST';
+    if (p.lat > 39) return 'NORTHEAST';
+    return 'SOUTHEAST';
+  };
+
+  const regionGroups = {};
+  for (const p of all) {
+    const region = regionize(p);
+    if (!regionGroups[region]) regionGroups[region] = [];
+    regionGroups[region].push(p);
+  }
+
+  // Curate: up to 6 per region, ensuring designation diversity
+  const regionOrder = ['NORTHEAST', 'SOUTHEAST', 'MIDWEST', 'SOUTHWEST', 'MOUNTAIN WEST', 'PACIFIC', 'ALASKA', 'HAWAII'];
+  let block = `\n--- CANDIDATE PARKS (from NPS database) ---`;
+  block += `\nWhen suggesting parks, choose from this representative list of NPS sites.`;
+  block += `\nThis includes National Parks, Seashores, Lakeshores, Recreation Areas, and Monuments — do NOT limit recommendations to just the 63 National Parks.\n`;
+
+  for (const region of regionOrder) {
+    const parks = regionGroups[region];
+    if (!parks || parks.length === 0) continue;
+
+    // Ensure designation diversity: pick NPs first, then non-NP designations
+    const nps = parks.filter(p => (p.designation || '').includes('National Park'));
+    const nonNps = parks.filter(p => !(p.designation || '').includes('National Park'));
+    const curated = [...nps.slice(0, 3), ...nonNps.slice(0, 3)].slice(0, 6);
+
+    block += `\n${region}:\n${curated.map(formatPark).join('\n')}\n`;
+  }
+
+  block += `--- END CANDIDATE PARKS ---\n`;
+  return block;
 }
 
 module.exports = {
@@ -820,5 +1018,8 @@ module.exports = {
   needsWeatherFacts,
   needsNPSFacts,
   needsWebSearch,
-  isTravelRelated
+  isTravelRelated,
+  extractUserCity,
+  getCandidateParks,
+  formatCandidateParksBlock,
 };

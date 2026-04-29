@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
-const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, isTravelRelated } = require('../services/factsService');
+const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
+const { formatFeeFreeBlock } = require('../services/feeFreeDaysService');
 const { extractParkFromMessage, extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 const AnonymousSession = require('../models/AnonymousSession');
@@ -203,6 +204,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   let weatherFacts = null;
   let npsFacts = null;
   let webSearchFacts = null;
+  let feeFreeFacts = null;
 
   try {
     // Fetch weather + web search using primary park
@@ -215,6 +217,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     });
     weatherFacts = factsResult.weatherFacts;
     webSearchFacts = factsResult.webSearchFacts;
+    feeFreeFacts = factsResult.feeFreeFacts;
 
     // Fetch NPS facts for ALL mentioned parks in parallel
     if (allExtractedParks.length > 1) {
@@ -229,7 +232,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
       npsFacts = factsResult.npsFacts;
     }
 
-    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, parks: parkNames });
+    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, hasFeeFree: !!feeFreeFacts, parks: parkNames });
   } catch (factsError) {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
@@ -253,6 +256,13 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     ? openaiService.systemPrompt
     : claudeService.defaultSystemPrompt;
   let enhancedSystemPrompt = systemPrompt || defaultPrompt;
+
+  // Fee-free block hoisted to top of assembled prompt — models attend most to
+  // the start and end of long prompts (lost-in-the-middle effect). Placing this
+  // before live data / candidate parks ensures it doesn't get buried.
+  if (feeFreeFacts) {
+    enhancedSystemPrompt += formatFeeFreeBlock(feeFreeFacts);
+  }
 
   if (npsFacts || weatherFacts || webSearchFacts) {
     const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
@@ -304,6 +314,19 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which park they're considering — or suggest 2-3 specific parks based on what they described.`;
     enhancedSystemPrompt += `\n- Qualify all answers as general knowledge: "Generally..." / "Most years..."`;
     enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
+
+    // Inject candidate parks list so the model has real NPS data to recommend from
+    try {
+      const userCity = extractUserCity(lastUserMessage);
+      const candidateResult = await getCandidateParks(userCity);
+      const candidateBlock = formatCandidateParksBlock(candidateResult);
+      if (candidateBlock) {
+        enhancedSystemPrompt += candidateBlock;
+        console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
+      }
+    } catch (candidateErr) {
+      console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
+    }
   }
 
   // Track whether a park was detected for downstream itinerary gating
@@ -637,9 +660,9 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
 
       const openaiResponse = await openai.chat.completions.create({
-        model: model || 'gpt-4.1',
+        model: model || 'gpt-5.4-mini',
         messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,
         temperature: temperature,
         top_p: top_p,
       });
@@ -647,7 +670,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       response = {
         content: openaiResponse.choices[0].message.content,
         provider: 'openai',
-        model: 'gpt-4.1',
+        model: 'gpt-5.4-mini',
         usage: {
           inputTokens: openaiResponse.usage.prompt_tokens,
           outputTokens: openaiResponse.usage.completion_tokens,
@@ -678,8 +701,8 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
           } else if (provider === 'openai' && openai) {
             const openaiMsgs = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
             const retryResult = await openai.chat.completions.create({
-              model: model || 'gpt-4.1', messages: [{ role: 'system', content: conflictRetryPrompt }, ...openaiMsgs],
-              max_tokens: maxTokens, temperature: temperature,
+              model: model || 'gpt-5.4-mini', messages: [{ role: 'system', content: conflictRetryPrompt }, ...openaiMsgs],
+              max_completion_tokens: maxTokens, temperature: temperature,
             });
             retryContent = retryResult.choices[0].message.content;
           }
@@ -817,9 +840,9 @@ ${cleanContent.substring(0, 6000)}`;
         } else if (provider === 'openai' && openai) {
           const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
           const regenResult = await openai.chat.completions.create({
-            model: model || 'gpt-4.1',
+            model: model || 'gpt-5.4-mini',
             messages: [{ role: 'system', content: regenPrompt }, ...openaiMessages],
-            max_tokens: maxTokens,
+            max_completion_tokens: maxTokens,
             temperature: temperature,
           });
           regenResponse = regenResult.choices[0].message.content;
@@ -1233,10 +1256,10 @@ ${cleanContent.substring(0, 6000)}`;
         const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
 
         const stream = await openai.chat.completions.create({
-          model: model || 'gpt-4.1',
+          model: model || 'gpt-5.4-mini',
           messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
           temperature: temperature,
-          max_tokens: maxTokens,
+          max_completion_tokens: maxTokens,
           stream: true
         });
 
@@ -1337,7 +1360,7 @@ ${cleanContent.substring(0, 6000)}`;
           }
         }
 
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-4.1', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, itineraryData: openaiItineraryData || null, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-5.4-mini', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, itineraryData: openaiItineraryData || null, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -1539,6 +1562,7 @@ Ready to continue planning? 🚀`,
     // Fetch relevant facts (web search skipped for anonymous users via isAnonymous flag)
     let weatherFacts = null;
     let npsFacts = null;
+    let feeFreeFacts = null;
 
     try {
       const factsResult = await fetchRelevantFacts({
@@ -1550,6 +1574,7 @@ Ready to continue planning? 🚀`,
         isAnonymous: true
       });
       weatherFacts = factsResult.weatherFacts;
+      feeFreeFacts = factsResult.feeFreeFacts;
 
       // Fetch NPS facts for ALL mentioned parks in parallel
       if (anonExtractedParks.length > 1) {
@@ -1564,7 +1589,7 @@ Ready to continue planning? 🚀`,
         npsFacts = factsResult.npsFacts;
       }
 
-      console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, parks: anonParkNames });
+      console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasFeeFree: !!feeFreeFacts, parks: anonParkNames });
     } catch (factsError) {
       console.error('[AI] Facts fetching error for anonymous user:', factsError.message);
     }
@@ -1586,6 +1611,11 @@ Ready to continue planning? 🚀`,
       ? openaiService.systemPrompt
       : claudeService.defaultSystemPrompt;
     let enhancedSystemPrompt = systemPrompt || defaultPrompt;
+
+    // Fee-free block hoisted to top (same as authenticated endpoint)
+    if (feeFreeFacts) {
+      enhancedSystemPrompt += formatFeeFreeBlock(feeFreeFacts);
+    }
 
     if (npsFacts || weatherFacts) {
       const parkLabel = anonParkNames.length > 1 ? anonParkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
@@ -1634,6 +1664,19 @@ Ready to continue planning? 🚀`,
       enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which park they're considering — or suggest 2-3 specific parks based on what they described.`;
       enhancedSystemPrompt += `\n- Qualify all answers as general knowledge: "Generally..." / "Most years..."`;
       enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
+
+      // Inject candidate parks list so the model has real NPS data to recommend from
+      try {
+        const userCity = extractUserCity(lastUserMessageContent);
+        const candidateResult = await getCandidateParks(userCity);
+        const candidateBlock = formatCandidateParksBlock(candidateResult);
+        if (candidateBlock) {
+          enhancedSystemPrompt += candidateBlock;
+          console.log(`[AI Anon] Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
+        }
+      } catch (candidateErr) {
+        console.error(`[AI Anon] Candidate parks error:`, candidateErr.message);
+      }
     }
 
     const anonNoParkDetected = !resolvedMetadata.parkCode;
@@ -1808,9 +1851,9 @@ CRITICAL ISOLATION RULES — follow these exactly:
       const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
 
       const openaiResponse = await openai.chat.completions.create({
-        model: model || 'gpt-4.1',
+        model: model || 'gpt-5.4-mini',
         messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,
         temperature: temperature,
         top_p: top_p,
       });
@@ -1818,7 +1861,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
       response = {
         content: openaiResponse.choices[0].message.content,
         provider: 'openai',
-        model: 'gpt-4.1',
+        model: 'gpt-5.4-mini',
         usage: {
           inputTokens: openaiResponse.usage.prompt_tokens,
           outputTokens: openaiResponse.usage.completion_tokens,
@@ -2072,7 +2115,7 @@ router.get('/providers-anonymous', (req, res) => {
     providers.push({
       id: 'openai',
       name: 'The Planner',
-      model: 'GPT-4.1',
+      model: 'GPT-5.4 Mini',
       description: 'Detailed itineraries, full logistics, comprehensive plans',
       available: true
     });
@@ -2106,7 +2149,7 @@ router.get('/providers', protect, (req, res) => {
     providers.push({
       id: 'openai',
       name: 'The Planner',
-      model: 'GPT-4.1',
+      model: 'GPT-5.4 Mini',
       description: 'Detailed itineraries, full logistics, comprehensive plans',
       available: true
     });
