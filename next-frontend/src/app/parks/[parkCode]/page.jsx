@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
 import { parkToSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
@@ -73,7 +73,7 @@ export default async function ParkPage({ params }) {
 
   // Redirect short code URLs (e.g. /parks/yell) to canonical slug URL
   if (parkCode !== parkSlug) {
-    redirect(`/parks/${parkSlug}`);
+    permanentRedirect(`/parks/${parkSlug}`);
   }
 
   const parkUrl = `https://www.nationalparksexplorerusa.com/parks/${parkSlug}`;

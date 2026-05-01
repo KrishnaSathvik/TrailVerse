@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import BlogPostClient from './BlogPostClient';
 
 const SITE_URL = 'https://www.nationalparksexplorerusa.com';
@@ -77,6 +78,10 @@ export async function generateMetadata({ params }) {
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
+
+  if (!post) {
+    notFound();
+  }
 
   const blogStructuredData = post
     ? {
