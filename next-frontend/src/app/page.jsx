@@ -52,7 +52,7 @@ export default async function LandingPage() {
             <div className="w-full max-w-6xl mx-auto text-center">
               <div className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 backdrop-blur-md mb-8 sm:mb-10 shadow-lg bg-black/30 border border-white/10">
                 <IconGlyph name="Route" className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
-                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>470+ Parks. One Platform.</span>
+                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>470+ Parks & Sites. One Platform.</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '0.95', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
@@ -60,23 +60,16 @@ export default async function LandingPage() {
                 <span style={{ color: 'var(--accent-green)', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>National Parks.</span>
               </h1>
 
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-white max-w-3xl mx-auto mb-2" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
-                Explore 470+ parks and sites with real-time weather, interactive maps, community reviews, and smart trip planning.
-              </p>
-              <p className="text-base sm:text-lg lg:text-xl font-medium text-white/90 max-w-3xl mx-auto mb-10 sm:mb-12" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
-                Your next adventure starts here.
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium leading-relaxed text-white max-w-3xl mx-auto mb-10 sm:mb-12" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+                Real-time weather, interactive maps, community reviews, and AI-powered trip planning — for every park and site in the country.
               </p>
 
               <LandingSearchClient parks={allParks} />
 
-              <p className="text-sm sm:text-base text-white/90 font-medium mb-4" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
-                Start exploring now — browse every park, check live weather, compare destinations, and plan your next trip.
-              </p>
-
               <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
                 <Link href="/plan-ai" className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 backdrop-blur-md" style={{ backgroundColor: 'var(--accent-green)' }}>
                   <IconGlyph name="Sparkles" className="h-4 w-4" style={{ color: '#fff' }} />
-                  Plan with AI
+                  Plan My Trip
                 </Link>
                 <Link href="/explore" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-white/90 transition-all hover:bg-black/60 bg-black/40 border border-white/10 backdrop-blur-md">
                   <IconGlyph name="Compass" className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
@@ -143,7 +136,7 @@ export default async function LandingPage() {
                 className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
                 style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
-                View All 470+ Parks
+                View All 470+ Parks & Sites
               </Link>
             </div>
           </div>

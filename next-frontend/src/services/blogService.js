@@ -127,6 +127,10 @@ class BlogService {
     }
   }
 
+  async trackView(slug) {
+    await enhancedApi.post(`/blogs/${slug}/view`);
+  }
+
   async toggleLike(postId) {
     const response = await enhancedApi.post(`/blogs/${postId}/like`, {}, {
       invalidateCache: ['blogPosts']

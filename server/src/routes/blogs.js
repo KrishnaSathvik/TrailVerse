@@ -13,7 +13,8 @@ const {
   toggleFavorite,
   getFavoritedPosts,
   publishScheduledPosts,
-  getScheduledPosts
+  getScheduledPosts,
+  trackView
 } = require('../controllers/blogController');
 const { protect, admin, optionalAuth } = require('../middleware/auth');
 const { cacheMiddleware } = require('../middleware/cache');
@@ -317,6 +318,7 @@ router.get('/favorites', protect, getFavoritedPosts);
  *       404:
  *         description: Blog post not found
  */
+router.post('/:slug/view', trackView);
 router.post('/:id/like', optionalAuth, toggleLike);
 
 /**

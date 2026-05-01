@@ -82,22 +82,38 @@ exports.getAllPosts = async (req, res, next) => {
 exports.getPostBySlug = async (req, res, next) => {
   try {
     const post = await BlogPost.findOne({ slug: req.params.slug });
-    
+
     if (!post) {
       return res.status(404).json({
         success: false,
         error: 'Blog post not found'
       });
     }
-    
-    // Increment views
-    post.views += 1;
-    await post.save();
-    
+
     res.status(200).json({
       success: true,
       data: post
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// @desc    Track a blog post view
+// @route   POST /api/blogs/:slug/view
+// @access  Public
+exports.trackView = async (req, res, next) => {
+  try {
+    const result = await BlogPost.updateOne(
+      { slug: req.params.slug },
+      { $inc: { views: 1 } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ success: false, error: 'Blog post not found' });
+    }
+
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }

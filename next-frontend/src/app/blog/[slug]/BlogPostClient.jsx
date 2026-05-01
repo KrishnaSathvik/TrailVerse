@@ -113,6 +113,7 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
   useEffect(() => {
     if (post) {
       logBlogView(post.title, post._id, post.category || 'general');
+      blogService.trackView(post.slug).catch(() => {});
     }
   }, [post]);
 
