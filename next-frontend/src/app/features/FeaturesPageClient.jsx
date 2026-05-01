@@ -11,15 +11,15 @@ import {
 const FeaturesPage = () => {
   const features = [
     {
-      category: "AI Trip Planning",
+      category: "Trailie \u2014 AI Trip Planning",
       icon: Sparkles,
-      description: "Plan smarter with dual AI providers, live park data, and persistent conversations",
+      description: "Plan smarter with smart AI routing, live park data, and persistent conversations",
       items: [
         {
           icon: Bot,
-          title: "Dual AI Chat — Claude Sonnet 4.6 & GPT-5.4 Mini",
-          description: "Switch between Anthropic Claude Sonnet 4.6 and OpenAI GPT-5.4 Mini mid-conversation. Each provider brings a different style — use both to get the best plan.",
-          benefits: ["Switch providers anytime", "Streaming responses", "Context-aware follow-ups", "Persistent chat history"]
+          title: "Smart AI Routing",
+          description: "Trailie automatically picks the best AI for each message \u2014 Claude for quick questions and insider tips, OpenAI for structured itineraries and logistics. No toggles, no thinking required.",
+          benefits: ["Automatic provider selection", "Streaming responses", "Context-aware follow-ups", "Persistent chat history"]
         },
         {
           icon: Route,
@@ -80,7 +80,7 @@ const FeaturesPage = () => {
         {
           icon: Globe,
           title: "Interactive Map & Park Explorer",
-          description: "Interactive map of all 470+ parks with search and filtering. Click any park to see details, alerts, weather, and plan your visit with the AI trip planner.",
+          description: "Interactive map of all 470+ parks with search and filtering. Click any park to see details, alerts, weather, and plan your visit with Trailie.",
           benefits: ["470+ park markers", "Search & filter parks", "Click for park details", "Directions via Google Maps"]
         },
         {
@@ -177,9 +177,9 @@ const FeaturesPage = () => {
   const competitiveAdvantages = [
     {
       icon: Sparkles,
-      title: "Dual AI + Live Data",
-      description: "Choose between Claude and GPT-4, mid-conversation. Both are enriched with real-time NPS data — not just training data.",
-      comparison: "Other apps: single AI, static data. TrailVerse: dual AI, live NPS."
+      title: "Smart AI + Live Data",
+      description: "Trailie auto-routes each message to Claude or OpenAI based on what you're asking. Both are enriched with real-time NPS data \u2014 not just training data.",
+      comparison: "Other apps: single AI, static data. TrailVerse: smart routing, live NPS."
     },
     {
       icon: GripVertical,
@@ -231,7 +231,7 @@ const FeaturesPage = () => {
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            AI trip planning with Claude & GPT-4, drag-and-drop itinerary builder, PDF export, interactive maps, real-time weather, and community reviews — all in one platform for 470+ parks.
+            AI trip planning with smart provider routing, drag-and-drop itinerary builder, PDF export, interactive maps, real-time weather, and community reviews — all in one platform for 470+ parks.
           </p>
         </div>
       </section>
@@ -366,7 +366,7 @@ const FeaturesPage = () => {
               Ready to plan your next trip?
             </h2>
             <p className="text-base mb-8 max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-              Start with the AI trip planner or browse 470+ parks. Free account, no credit card.
+              Start with Trailie or browse 470+ parks. Free account, no credit card.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -375,7 +375,7 @@ const FeaturesPage = () => {
                 style={{ backgroundColor: 'var(--accent-green)' }}
               >
                 <Sparkles className="h-4 w-4" />
-                Try the AI Trip Planner
+                Try Trailie
               </Link>
               <Link
                 href="/explore"

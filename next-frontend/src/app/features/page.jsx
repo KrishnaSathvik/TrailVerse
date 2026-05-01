@@ -4,7 +4,7 @@ import FeaturesPageClient from './FeaturesPageClient';
 
 export const metadata = {
   title: 'Features — AI Trip Planning, Maps, Weather & More | TrailVerse',
-  description: 'Explore TrailVerse features: AI trip planning with Claude & GPT-4, drag-and-drop itinerary builder, PDF export, interactive maps, real-time weather, community reviews, and 470+ parks.',
+  description: 'Explore TrailVerse features: Trailie smart AI trip planning, drag-and-drop itinerary builder, PDF export, interactive maps, real-time weather, community reviews, and 470+ parks.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/features',
   },

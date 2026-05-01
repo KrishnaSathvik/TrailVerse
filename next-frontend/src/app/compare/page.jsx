@@ -930,7 +930,7 @@ const ComparePageInner = () => {
                       Can&apos;t decide? Visit both.
                     </p>
                     <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
-                      Let AI plan a multi-park road trip itinerary for you.
+                      Let Trailie plan a multi-park road trip itinerary for you.
                     </p>
                     <Link
                       href={`/plan-ai?suggest=${encodeURIComponent(selectedParks.map(p => p.fullName).join(' and '))}`}
@@ -938,7 +938,7 @@ const ComparePageInner = () => {
                       style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
                     >
                       <Sparkles className="h-4 w-4" />
-                      Plan a Road Trip with AI →
+                      Plan a Road Trip with Trailie →
                     </Link>
                   </div>
                 )}

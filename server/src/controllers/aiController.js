@@ -160,15 +160,15 @@ exports.getProviders = async (req, res, next) => {
     const providers = [
       {
         id: 'claude',
-        name: 'The Local',
-        description: 'Quick insider tips, opinionated picks, casual travel buddy',
+        name: 'Trailie',
+        description: 'Opinionated picks & insider tips',
         model: 'claude-sonnet-4-6',
         available: !!process.env.ANTHROPIC_API_KEY && !!claudeService
       },
       {
         id: 'openai',
-        name: 'The Planner',
-        description: 'Detailed itineraries, full logistics, comprehensive plans',
+        name: 'Trailie',
+        description: 'Structured plans with times & logistics',
         model: 'gpt-5.4-mini',
         available: !!process.env.OPENAI_API_KEY
       }

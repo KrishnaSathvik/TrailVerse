@@ -45,6 +45,34 @@ try {
   console.warn('OpenAI SDK not available:', error.message);
 }
 
+// Helper: fetch relevant blog posts for park context
+async function fetchBlogContext(parkNames) {
+  try {
+    const BlogPost = require('../models/BlogPost');
+    const searchQuery = parkNames.join(' ');
+    const posts = await BlogPost.find(
+      { status: 'published', $text: { $search: searchQuery } },
+      { title: 1, excerpt: 1, slug: 1, score: { $meta: 'textScore' } }
+    )
+      .sort({ score: { $meta: 'textScore' } })
+      .limit(3)
+      .lean();
+
+    if (!posts.length) return null;
+
+    let block = '\n\n--- TRAILVERSE BLOG KNOWLEDGE ---';
+    block += '\nThe following excerpts are from published TrailVerse blog posts. Use this information to enrich your answers.';
+    block += '\nDo NOT link to, mention, or reference these blog posts in your response. Users can find them on the site. Just use the knowledge.\n';
+    for (const post of posts) {
+      block += `\n• "${post.title}" — ${post.excerpt}`;
+    }
+    return block;
+  } catch (err) {
+    console.error('[BlogContext] Error fetching blog posts:', err.message);
+    return null;
+  }
+}
+
 // Helper: fetch images for multiple parks with smart distribution (always 4 total)
 // 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
 async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
@@ -100,11 +128,18 @@ async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   return result;
 }
 
+// Helper: auto-route provider based on last user message content
+function autoRouteProvider(messages) {
+  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+  const planningPattern = /\b(plan|itinerary|schedule|day.by.day|morning.*afternoon|hour.by.hour|logistics|detailed\s+(trip|plan|itinerary)|build\s+(me\s+)?(a\s+)?(trip|plan|itinerary))\b/i;
+  return planningPattern.test(lastUserMsg) ? 'openai' : 'claude';
+}
+
 // Helper: parse request body and prepare messages, facts, and system prompt
 async function prepareChatContext(body, logPrefix = '[AI]') {
   let {
     messages = [],
-    provider = 'claude',
+    provider = 'auto',
     model,
     temperature = 0.4,
     top_p = 0.9,
@@ -115,6 +150,12 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
 
   if (!messages || !Array.isArray(messages)) {
     throw Object.assign(new Error('Messages array is required'), { statusCode: 400 });
+  }
+
+  // Auto-route provider if not explicitly set
+  if (!provider || provider === 'auto') {
+    provider = autoRouteProvider(messages);
+    console.log(`${logPrefix} Auto-routed to provider: ${provider}`);
   }
 
   // Smart context management — trim long conversations with structured summary
@@ -290,7 +331,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     if (missing.length > 0) {
       enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and direct users to nps.gov.`;
     }
-    enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Cite as "📍 Current NPS data shows..." or "📍 As of today..." so users can distinguish live data from general knowledge.`;
+    enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
     enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
 
     if (npsFacts) {
@@ -336,6 +377,16 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
       }
     } catch (candidateErr) {
       console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
+    }
+  }
+
+  // Inject relevant blog posts when a park is detected
+  if (allExtractedParks.length > 0) {
+    const parkNamesForBlog = allExtractedParks.map(p => p.parkName).filter(Boolean);
+    const blogContext = await fetchBlogContext(parkNamesForBlog);
+    if (blogContext) {
+      enhancedSystemPrompt += blogContext;
+      console.log(`${logPrefix} Blog context found for: ${parkNamesForBlog.join(', ')}`);
     }
   }
 
@@ -395,7 +446,7 @@ The user is asking a hypothetical/what-if question ("${hypothetical.scenarioDesc
 
 CRITICAL ISOLATION RULES — follow these exactly:
 1. The user's scenario assumptions OVERRIDE all real-world data above. If the scenario says "canyon is closed", it IS closed for this plan — even if live NPS data says otherwise.
-2. Do NOT include any "📍 Current NPS data shows..." or live data citations in your scenario plan. The live data block above is REFERENCE ONLY — do not surface it to the user.
+2. Do NOT include any live data citations in your scenario plan. The live data block above is REFERENCE ONLY — do not surface it to the user.
 3. Structure your response as a SINGLE scenario plan under the user's assumed conditions. Do NOT show a "real conditions" section followed by a "scenario" section — that causes confusion. Just plan for the scenario.
 4. If the scenario makes certain permits/reservations irrelevant (e.g., area is closed), do NOT mention them.
 5. You may briefly note at the END: "Note: This plan assumes [scenario condition]. Check nps.gov for current real-world conditions." — ONE sentence, nothing more.
@@ -1497,9 +1548,9 @@ router.post('/chat-anonymous', async (req, res) => {
       hasClientAnonymousId: !!req.body.anonymousId
     });
 
-    const {
+    let {
       messages = [],
-      provider = 'claude',
+      provider = 'auto',
       model,
       temperature = 0.4,
       top_p = 0.9,
@@ -1508,6 +1559,12 @@ router.post('/chat-anonymous', async (req, res) => {
       metadata = {}, // { parkCode, parkName, lat, lon }
       anonymousId: clientAnonymousId // Use client-provided anonymousId if available
     } = req.body;
+
+    // Auto-route provider if not explicitly set
+    if (!provider || provider === 'auto') {
+      provider = autoRouteProvider(messages);
+      console.log(`[AI] Anonymous auto-routed to provider: ${provider}`);
+    }
 
     // Use client-provided anonymousId if available, otherwise generate new one
     // This ensures session persistence across requests
@@ -1719,7 +1776,7 @@ Ready to continue planning? 🚀`,
       if (missing.length > 0) {
         enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and direct users to nps.gov.`;
       }
-      enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Cite as "📍 Current NPS data shows..." or "📍 As of today..." so users can distinguish live data from general knowledge.`;
+      enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
       enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
 
       if (npsFacts) {
@@ -1762,6 +1819,16 @@ Ready to continue planning? 🚀`,
         }
       } catch (candidateErr) {
         console.error(`[AI Anon] Candidate parks error:`, candidateErr.message);
+      }
+    }
+
+    // Inject relevant blog posts when a park is detected
+    if (anonExtractedParks.length > 0) {
+      const parkNamesForBlog = anonExtractedParks.map(p => p.parkName).filter(Boolean);
+      const blogContext = await fetchBlogContext(parkNamesForBlog);
+      if (blogContext) {
+        enhancedSystemPrompt += blogContext;
+        console.log(`[AI Anon] Blog context found for: ${parkNamesForBlog.join(', ')}`);
       }
     }
 
@@ -1808,7 +1875,7 @@ The user is asking a hypothetical/what-if question ("${anonHypothetical.scenario
 
 CRITICAL ISOLATION RULES — follow these exactly:
 1. The user's scenario assumptions OVERRIDE all real-world data above. If the scenario says "canyon is closed", it IS closed for this plan — even if live NPS data says otherwise.
-2. Do NOT include any "📍 Current NPS data shows..." or live data citations in your scenario plan. The live data block above is REFERENCE ONLY — do not surface it to the user.
+2. Do NOT include any live data citations in your scenario plan. The live data block above is REFERENCE ONLY — do not surface it to the user.
 3. Structure your response as a SINGLE scenario plan under the user's assumed conditions. Do NOT show a "real conditions" section followed by a "scenario" section — that causes confusion. Just plan for the scenario.
 4. If the scenario makes certain permits/reservations irrelevant (e.g., area is closed), do NOT mention them.
 5. You may briefly note at the END: "Note: This plan assumes [scenario condition]. Check nps.gov for current real-world conditions." — ONE sentence, nothing more.
@@ -2243,9 +2310,9 @@ router.get('/providers-anonymous', (req, res) => {
   if (anthropic && process.env.ANTHROPIC_API_KEY) {
     providers.push({
       id: 'claude',
-      name: 'The Local',
+      name: 'Trailie',
       model: 'Claude Sonnet 4.6',
-      description: 'Quick insider tips, opinionated picks, casual travel buddy',
+      description: 'Opinionated picks & insider tips',
       available: true
     });
   }
@@ -2253,9 +2320,9 @@ router.get('/providers-anonymous', (req, res) => {
   if (openai && process.env.OPENAI_API_KEY) {
     providers.push({
       id: 'openai',
-      name: 'The Planner',
+      name: 'Trailie',
       model: 'GPT-5.4 Mini',
-      description: 'Detailed itineraries, full logistics, comprehensive plans',
+      description: 'Structured plans with times & logistics',
       available: true
     });
   }
@@ -2277,9 +2344,9 @@ router.get('/providers', protect, (req, res) => {
   if (anthropic && process.env.ANTHROPIC_API_KEY) {
     providers.push({
       id: 'claude',
-      name: 'The Local',
+      name: 'Trailie',
       model: 'Claude Sonnet 4.6',
-      description: 'Quick insider tips, opinionated picks, casual travel buddy',
+      description: 'Opinionated picks & insider tips',
       available: true
     });
   }
@@ -2287,9 +2354,9 @@ router.get('/providers', protect, (req, res) => {
   if (openai && process.env.OPENAI_API_KEY) {
     providers.push({
       id: 'openai',
-      name: 'The Planner',
+      name: 'Trailie',
       model: 'GPT-5.4 Mini',
-      description: 'Detailed itineraries, full logistics, comprehensive plans',
+      description: 'Structured plans with times & logistics',
       available: true
     });
   }

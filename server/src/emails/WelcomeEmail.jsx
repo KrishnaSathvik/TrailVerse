@@ -67,7 +67,7 @@ const WelcomeEmail = ({
                   <strong>Explore 470+ Parks & Sites</strong> — Browse by state, filter by activities, and view parks on an interactive map.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
-                  <strong>Dual AI Trip Planning</strong> — Build personalized itineraries with Claude or ChatGPT based on your dates, pace, and interests. Your chat history is saved so you can keep refining.
+                  <strong>Trailie Trip Planner</strong> — Build personalized itineraries based on your dates, pace, and interests. Trailie auto-picks the best AI for each message. Your chat history is saved so you can keep refining.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
                   <strong>Compare Parks Side-by-Side</strong> — Compare up to 4 parks with detailed metrics to pick the right destination.
@@ -89,7 +89,7 @@ const WelcomeEmail = ({
                   Head to <strong>Explore</strong> and browse parks by state or activity.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
-                  Open <strong>Plan with AI</strong> and tell it where and when you want to go.
+                  Open <strong>Trailie</strong> and tell it where and when you want to go.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
                   Save your favorites and start building your National Park bucket list.

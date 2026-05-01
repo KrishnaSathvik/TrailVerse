@@ -5,7 +5,7 @@ export const metadata = {
   openGraph: {
     title: 'TrailVerse Magazine — Issue 01',
     description:
-      'Your universe of national parks exploration. AI trip planner, interactive map, compare parks, itinerary builder, and more.',
+      'Your universe of national parks exploration. Trailie trip planner, interactive map, compare parks, itinerary builder, and more.',
     type: 'website',
   },
 };

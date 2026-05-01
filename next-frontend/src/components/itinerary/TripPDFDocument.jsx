@@ -350,7 +350,7 @@ export function TripPDFDocument({ trip }) {
       title={trip.title || 'Trip Plan'}
       author="TrailVerse"
       subject={`${trip.parkName || 'National Park'} Trip Plan`}
-      creator="TrailVerse AI Trip Planner"
+      creator="Trailie by TrailVerse"
     >
       {/* ── COVER PAGE ── */}
       <Page size="A4" style={styles.coverPage}>
@@ -542,9 +542,9 @@ export function TripPDFDocument({ trip }) {
 
           {/* CTA */}
           <View style={styles.ctaBox}>
-            <Text style={styles.ctaTitle}>Plan more trips with TrailVerse AI</Text>
+            <Text style={styles.ctaTitle}>Plan more trips with Trailie</Text>
             <Text style={styles.ctaSubtitle}>
-              Free AI trip planner for 470+ US national parks — real-time weather, live alerts, and personalized itineraries.
+              Free trip planner for 470+ US national parks — real-time weather, live alerts, and personalized itineraries.
             </Text>
             <Link src="https://www.nationalparksexplorerusa.com/plan-ai" style={styles.ctaLink}>
               nationalparksexplorerusa.com/plan-ai

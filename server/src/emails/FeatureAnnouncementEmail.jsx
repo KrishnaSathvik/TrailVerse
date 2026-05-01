@@ -124,7 +124,7 @@ const FeatureAnnouncementEmail = ({
                   href={planUrl}
                   style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  Try the AI Planner
+                  Try Trailie
                 </Button>
               </div>
               <div style={{ textAlign: 'center', marginBottom: '16px' }}>

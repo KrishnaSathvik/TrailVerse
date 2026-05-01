@@ -2162,7 +2162,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                   size="lg"
                   icon={Calendar}
                 >
-                  Plan with AI
+                  Plan with Trailie
                 </Button>
                 <Button
                   onClick={() => router.push(`/compare?park=${encodeURIComponent(park.parkCode)}`)}

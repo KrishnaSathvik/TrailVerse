@@ -69,7 +69,7 @@ export default async function LandingPage() {
               <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
                 <Link href="/plan-ai" className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 backdrop-blur-md" style={{ backgroundColor: 'var(--accent-green)' }}>
                   <IconGlyph name="Sparkles" className="h-4 w-4" style={{ color: '#fff' }} />
-                  Plan My Trip
+                  Ask Trailie
                 </Link>
                 <Link href="/explore" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-white/90 transition-all hover:bg-black/60 bg-black/40 border border-white/10 backdrop-blur-md">
                   <IconGlyph name="Compass" className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />

@@ -28,7 +28,7 @@ export async function generateMetadata({ params }) {
 
   return {
     title: `${trip.title || 'Trip Plan'} | TrailVerse`,
-    description: `Check out this ${trip.parkName || 'national park'} trip plan created with TrailVerse AI trip planner.`,
+    description: `Check out this ${trip.parkName || 'national park'} trip plan created with Trailie on TrailVerse.`,
     openGraph: {
       title: trip.title || 'Shared Trip Plan',
       description: `A ${trip.parkName || 'national park'} trip plan made with TrailVerse AI`,
@@ -210,10 +210,10 @@ export default async function SharedTripPage({ params }) {
               style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
             >
               <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-                Plan your own trip with TrailVerse AI
+                Plan your own trip with Trailie
               </h2>
               <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                Free AI trip planner for all 470+ US national parks — real-time weather, live park alerts, and personalized itineraries.
+                Trailie is a free AI trip planner for all 470+ US national parks — real-time weather, live park alerts, and personalized itineraries.
               </p>
               <Link
                 href="/plan-ai"

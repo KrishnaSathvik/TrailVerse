@@ -89,7 +89,7 @@ const VerificationEmail = ({
               </h3>
               <ol style={{ margin: '0 0 24px', paddingLeft: '20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
                 <li style={{ marginBottom: '8px' }}>
-                  <strong>Unlock AI Trip Planning</strong> — Build personalized itineraries with our dual AI assistants.
+                  <strong>Unlock Trailie</strong> — Build personalized itineraries with smart AI-powered trip planning.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
                   <strong>Save & Review</strong> — Favorite parks, track visits, and write reviews with photos.

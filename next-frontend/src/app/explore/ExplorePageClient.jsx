@@ -747,7 +747,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
             style={{ backgroundColor: 'var(--accent-green)' }}
           >
-            Plan with AI
+            Plan with Trailie
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

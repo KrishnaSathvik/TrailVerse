@@ -69,7 +69,7 @@ const socialLinks = [
 ];
 
 const productHighlights = [
-  ['Sparkles', 'Dual AI Trip Planning', 'Build itineraries around your dates, pace, interests, and travel style. Your saved chat history lets you return to a plan and keep refining it instead of starting over.'],
+  ['Sparkles', 'Trailie Trip Planning', 'Build itineraries around your dates, pace, interests, and travel style. Your saved chat history lets you return to a plan and keep refining it instead of starting over.'],
   ['MapPin', 'Interactive Maps', 'Explore parks visually, compare destinations, and find nearby essentials without bouncing between separate map tools and park pages.'],
   ['Calendar', 'Live Events & Weather', 'See real-time NPS events, current conditions, forecasts, alerts, and closures so your plan reflects what is actually happening on the ground.'],
   ['Mountain', 'Community Reviews & Blog', 'Read practical guides, browse real reviews, and learn from actual visits instead of relying only on generic roundup articles.'],
@@ -137,7 +137,7 @@ export default function AboutPage() {
                     I&apos;m Krishna, a Nikon Z6ii astrophotographer and Google Maps Level 8 contributor who has explored 17 National Parks across 23 states. TrailVerse is the all-in-one trip planning tool I always wished existed while planning my own park adventures.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <CTAButton href="/plan-ai"><span className="inline-flex items-center gap-2"><IconGlyph name="Sparkles" className="h-4 w-4" />Try the AI Trip Planner</span></CTAButton>
+                    <CTAButton href="/plan-ai"><span className="inline-flex items-center gap-2"><IconGlyph name="Sparkles" className="h-4 w-4" />Try Trailie</span></CTAButton>
                     <CTAButton href="/explore" secondary><span className="inline-flex items-center gap-2"><IconGlyph name="Compass" className="h-4 w-4" />Explore Parks</span></CTAButton>
                     <CTAButton href="https://www.instagram.com/travelswithkrishna/" secondary external><span className="inline-flex items-center gap-2"><IconGlyph name="Instagram" className="h-4 w-4" />Follow Me</span></CTAButton>
                   </div>
@@ -311,7 +311,7 @@ export default function AboutPage() {
                   Start with TrailVerse AI if you want help shaping an itinerary, or jump into Explore if you want to compare parks first.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <CTAButton href="/plan-ai"><span className="inline-flex items-center gap-2"><IconGlyph name="Sparkles" className="h-4 w-4" />Try the AI Trip Planner</span></CTAButton>
+                  <CTAButton href="/plan-ai"><span className="inline-flex items-center gap-2"><IconGlyph name="Sparkles" className="h-4 w-4" />Try Trailie</span></CTAButton>
                   <CTAButton href="/explore" secondary><span className="inline-flex items-center gap-2"><IconGlyph name="Compass" className="h-4 w-4" />Start Exploring Parks</span></CTAButton>
                   <CTAButton href="/magazine" secondary><span className="inline-flex items-center gap-2"><IconGlyph name="Mountain" className="h-4 w-4" />Read the Magazine</span></CTAButton>
                 </div>

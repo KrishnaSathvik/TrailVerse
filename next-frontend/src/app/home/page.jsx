@@ -507,7 +507,7 @@ const DailyFeedPage = () => {
                     color: 'white'
                   }}
                 >
-                  Plan with AI
+                  Plan with Trailie
                 </Button>
                 <Button
                   onClick={() => router.push('/explore')}

@@ -199,10 +199,10 @@ const PlanAIContent = ({ tripId }) => {
                 className="text-[11px] font-medium uppercase tracking-[0.18em] sm:text-xs sm:tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Plan AI
+                Trailie
               </p>
               <h1 className="mt-1 truncate text-base font-semibold sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
-                {effectiveParkName || 'AI National Park Trip Planner'}
+                {effectiveParkName || 'Plan Your Trip'}
               </h1>
             </div>
 

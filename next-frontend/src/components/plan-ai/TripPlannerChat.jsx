@@ -67,7 +67,6 @@ const TripPlannerChat = ({
   const [currentPlan, setCurrentPlan] = useState(null);
   const [currentTripId, setCurrentTripId] = useState(existingTripId);
   const [providers, setProviders] = useState([]);
-  const [selectedProvider, setSelectedProvider] = useState('');
   const abortControllerRef = useRef(null);
   const [providersLoaded, setProvidersLoaded] = useState(false);
   const [thinkingMessage, setThinkingMessage] = useState('Thinking...');
@@ -160,7 +159,7 @@ const TripPlannerChat = ({
       const context = await tripHistoryService.getAIContext(user.id);
       
       if (context.totalTrips === 0) {
-        return 'This is your first trip with TrailVerse. I can help you shape it from scratch.';
+        return 'This is your first trip with Trailie. I can help you shape it from scratch.';
       }
 
       let contextMsg = `**Based on your ${context.totalTrips} previous ${context.totalTrips === 1 ? 'trip' : 'trips'}:**\n`;
@@ -176,7 +175,7 @@ const TripPlannerChat = ({
       return contextMsg;
     } catch (error) {
       console.error('Error getting user context:', error);
-      return "Let's plan an amazing trip together.";
+      return "I'm Trailie \u2014 let's plan your trip.";
     }
   };
 
@@ -199,7 +198,7 @@ const TripPlannerChat = ({
       const personalizedWelcome = {
         id: Date.now(),
         role: 'assistant',
-        content: `Hey ${userName}! Based on your previous trips, I have some ideas for your next adventure. What are you in the mood for — another national park, a road trip, or something completely different?`,
+        content: `Hey ${userName}! I'm Trailie. I've looked at your past trips and have some ideas for what's next.\n\nWhat are you in the mood for — another national park, a road trip, or something completely different?`,
         timestamp: new Date()
       };
 
@@ -213,7 +212,7 @@ const TripPlannerChat = ({
       const roadTripWelcome = {
         id: Date.now(),
         role: 'assistant',
-        content: `${roadTripGreeting} Great choice — a road trip hitting ${suggestText} is one of the best ways to experience the area.\n\nI'll build you a full multi-park itinerary. Tell me:\n- How many days do you have?\n- What's your starting city?\n- Group size and any must-haves (camping, hiking, budget)?`,
+        content: `${roadTripGreeting} I'm Trailie. A road trip hitting ${suggestText} — great call, that's one of the best ways to experience the area.\n\nI'll build you a full multi-park itinerary. Just tell me:\n- **When** — how many days do you have?\n- **Where from** — what's your starting city?\n- **Who & what** — group size and must-haves (camping, hiking, budget)?`,
         timestamp: new Date()
       };
 
@@ -221,13 +220,13 @@ const TripPlannerChat = ({
       return;
     }
 
-    // Check for new chat (generic welcome)
-    if (isNewChat) {
+    // Check for new chat or no park selected (generic welcome)
+    if (isNewChat || !parkName) {
       const greeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
       const newChatWelcome = {
         id: Date.now(),
         role: 'assistant',
-        content: `${greeting} I'm TrailVerse AI — your personal trip planning buddy. Where in America are you thinking of heading? I can help with any park, city, beach, or road trip.\n\nJust tell me what you're dreaming about and I'll start planning.`,
+        content: `${greeting} I'm Trailie — your AI guide to every national park in America.\n\nTell me where you're headed (or let me help you pick) and I'll build your trip from scratch — trails, timing, lodging, the works.`,
         timestamp: new Date()
       };
 
@@ -235,11 +234,11 @@ const TripPlannerChat = ({
       return;
     }
 
-    const greeting = userName !== 'there' ? `Hey ${userName}! Let's` : `Let's`;
+    const greeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
     const welcomeMessage = {
       id: Date.now(),
       role: 'assistant',
-      content: `${greeting} plan your ${parkName} trip! I'll put together a general itinerary to get us started.\n\nWant me to customize it? Tell me your dates, group size, and what you're most excited about.`,
+      content: `${greeting} I'm Trailie — let's plan your **${parkName}** trip.\n\nI'll start building an itinerary right away. To make it yours, share:\n- **When** you're going\n- **Who's** coming (solo, couple, family, group)\n- **What** gets you excited (hikes, views, wildlife, chill vibes)\n\nOr just say **"plan it"** and I'll pick my best recommendations.`,
       timestamp: new Date()
     };
 
@@ -351,9 +350,6 @@ const TripPlannerChat = ({
         setCurrentPlan(trip.plan);
         setCurrentTripId(tripId); // Set the current trip ID for this conversation
         console.log('🔄 Set currentTripId to:', tripId);
-        if (trip.provider) {
-          setSelectedProvider(trip.provider);
-        }
         console.log('✅ Trip loaded successfully');
         // Trip loading runs silently in background - no toast notification
       }
@@ -523,10 +519,9 @@ const TripPlannerChat = ({
       const endpoint = isAnonymous ? '/ai/providers-anonymous' : '/ai/providers';
       const response = await api.get(endpoint);
       const data = response.data;
-      
+
       if (data.providers && data.providers.length > 0) {
         setProviders(data.providers);
-        setSelectedProvider(data.providers[0].id);
       } else {
         showToast('No AI providers configured. Please add API keys.', 'error');
       }
@@ -536,7 +531,7 @@ const TripPlannerChat = ({
       showToast('Failed to load AI providers', 'error');
       setProvidersLoaded(true);
     }
-  }, [isAnonymous]); // Added isAnonymous dependency
+  }, [isAnonymous]);
 
   const getCurrentSeason = (month) => {
     if (month >= 3 && month <= 5) return 'Spring';
@@ -728,13 +723,6 @@ const TripPlannerChat = ({
     loadProviders();
   }, [loadProviders, isAnonymous]);
 
-  // Set default provider when providers are loaded
-  useEffect(() => {
-    if (providersLoaded && providers.length > 0 && !selectedProvider) {
-      setSelectedProvider(providers[0].id);
-    }
-  }, [providersLoaded, providers, selectedProvider]);
-
   // Reset currentTripId when explicitly starting a new chat
   // (Component stays mounted when using "Start New Chat" or "Personalized Recommendations")
   useEffect(() => {
@@ -836,8 +824,7 @@ const TripPlannerChat = ({
     console.log('🔄 handleSendMessage called:', {
       messageText: messageText.trim(),
       currentTripId,
-      isGenerating,
-      providersCount: providers.length
+      isGenerating
     });
 
     // Check if providers are available
@@ -916,7 +903,7 @@ const TripPlannerChat = ({
       if (isAnonymous) {
         data = await aiService.chatAnonymous({
           messages: msgs,
-          provider: selectedProvider,
+          provider: 'auto',
           temperature: 0.4,
           top_p: 0.9,
           max_tokens: 8000,
@@ -957,7 +944,7 @@ const TripPlannerChat = ({
         try {
           await aiService.chatStream({
             messages: msgs,
-            provider: selectedProvider,
+            provider: 'auto',
             temperature: 0.4,
             top_p: 0.9,
             max_tokens: 8000,
@@ -999,7 +986,7 @@ const TripPlannerChat = ({
                   role: 'assistant',
                   content: currentContent,
                   timestamp: new Date(),
-                  provider: selectedProvider,
+                  provider: 'auto',
                   isStreaming: true
                 }]);
               } else {
@@ -1044,7 +1031,7 @@ const TripPlannerChat = ({
           setIsGenerating(true);
           data = await aiService.chat({
             messages: msgs,
-            provider: selectedProvider,
+            provider: 'auto',
             temperature: 0.4,
             top_p: 0.9,
             max_tokens: 8000,
@@ -1187,7 +1174,7 @@ const TripPlannerChat = ({
         statusText: error.response?.statusText,
         code: error.code,
         name: error.name,
-        provider: selectedProvider,
+        provider: 'auto',
         isAnonymous
       });
       
@@ -1206,7 +1193,7 @@ const TripPlannerChat = ({
       
       // Check if it's a token limit error
       let errorMessage = 'Failed to get AI response';
-      let assistantMessage = 'I couldn\'t reach the AI provider. Please try again or switch providers.';
+      let assistantMessage = 'I couldn\'t reach the AI provider. Please try again.';
       
       if (errorStatus === 429) {
         if (errorDetails?.error === 'Daily token limit exceeded') {
@@ -1220,7 +1207,7 @@ const TripPlannerChat = ({
         // API configuration error
         const details = errorDetails?.details || errorDetails?.error || error.message;
         errorMessage = 'AI provider configuration error';
-        assistantMessage = `**Configuration Error**\n\n${details}\n\nPlease check your API configuration or try switching providers.`;
+        assistantMessage = `**Configuration Error**\n\n${details}\n\nPlease check your API configuration.`;
       } else if (errorStatus === 401 || errorStatus === 403) {
         // Authentication error - check if it's a session expiration vs AI provider issue
         const errMsg = errorDetails?.error || error.message || '';
@@ -1235,7 +1222,7 @@ const TripPlannerChat = ({
         // Server/provider error
         const details = errorDetails?.error || errorDetails?.details || 'The AI provider is temporarily unavailable';
         errorMessage = 'AI provider error';
-        assistantMessage = `**Provider Error**\n\n${details}\n\nPlease try again in a moment or switch providers.`;
+        assistantMessage = `**Provider Error**\n\n${details}\n\nPlease try again in a moment.`;
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         // Timeout error
         errorMessage = 'Request timed out';
@@ -1595,13 +1582,7 @@ WEATHER & LIVE INFO RESPONSES:
     
     // Clear any saved session state
     localStorage.removeItem('planai-chat-state');
-    
-    // Set provider to Claude by default
-    const claudeProvider = providers.find(p => p.id === 'claude');
-    if (claudeProvider) {
-      setSelectedProvider('claude');
-    }
-    
+
     // If custom message provided, show welcome first, then send message
     if (customMessage) {
       // Show welcome message first
@@ -1616,28 +1597,7 @@ WEATHER & LIVE INFO RESPONSES:
       const parkWelcomeMessage = {
         id: Date.now(),
         role: 'assistant',
-        content: `# Welcome to ${parkName}, ${userName}
-
-I'm **TrailVerse AI**, and I'm excited to help you explore **${parkName}**! This is an incredible destination with so much to discover.
-
-## What I Can Help You With
-
-- **Park Highlights**: Must-see attractions and hidden gems
-- **Trail Recommendations**: Hiking options for all skill levels
-- **Photography Spots**: Best locations and timing for stunning photos
-- **Weather & Seasons**: When to visit and what to expect
-- **Planning Tips**: Permits, lodging, dining, and essential gear
-- **Wildlife & Nature**: What to look for and safety tips
-
-## Ready to Explore?
-
-Ask me anything about ${parkName}:
-- "What are the best trails for beginners?"
-- "When is the best time to visit?"
-- "What should I not miss?"
-- "Help me plan a 3-day trip"
-
-Let's make your ${parkName} adventure unforgettable.`
+        content: `Hey ${userName}! I'm Trailie — let's plan your **${parkName}** trip.\n\nI'll start building an itinerary right away. To make it yours, share:\n- **When** you're going\n- **Who's** coming (solo, couple, family, group)\n- **What** gets you excited (hikes, views, wildlife, chill vibes)\n\nOr just say **"plan it"** and I'll pick my best recommendations.`
       };
       
       setMessages([parkWelcomeMessage]);
@@ -1647,26 +1607,7 @@ Let's make your ${parkName} adventure unforgettable.`
       const freshWelcomeMessage = {
         id: Date.now(),
         role: 'assistant',
-        content: `# Welcome to TrailVerse AI, ${userName}
-
-I'm **TrailVerse AI**, your expert guide to America's 63 National Parks! I'm absolutely thrilled to help you plan your next incredible adventure.
-
-## What I Can Help You With
-
-- **Park Recommendations**: Find the perfect park for your interests and travel style
-- **Trip Planning**: Create detailed itineraries with activities, lodging, and dining
-- **Trail & Activity Suggestions**: Discover hiking, scenic drives, wildlife viewing, and photography spots
-- **Weather & Timing**: Get advice on the best times to visit and what to expect
-- **Preparation Tips**: Essential gear, permits, and safety considerations
-
-## Ready to Start Planning?
-
-You can:
-1. **Share your trip details** - I'll create a custom itinerary
-2. **Ask specific questions** - "Best trails for beginners?" "When's peak season?"
-3. **Explore a park** - Learn about highlights and hidden gems
-
-What kind of adventure are you dreaming of? Let's make it happen.`
+        content: `Hey ${userName}! I'm Trailie — your AI guide to every national park in America.\n\nTell me where you're headed (or let me help you pick) and I'll build your trip from scratch — trails, timing, lodging, the works.`
       };
       
       setMessages([freshWelcomeMessage]);
@@ -1832,7 +1773,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
           conversation: messagesToSave,
           summary: tripSummary,
           plan: planToSave,
-          provider: selectedProvider,
+          provider: 'auto',
           status: 'active'
         });
         console.log('✅ Trip updated successfully:', updateResponse);
@@ -1857,7 +1798,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
           conversation: messagesToSave,
           summary: tripSummary,
           plan: planToSave,
-          provider: selectedProvider,
+          provider: 'auto',
           status: 'active'
         });
 
@@ -1872,7 +1813,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
         currentTripId,
         messages: messagesToSave,
         plan: planToSave,
-        provider: selectedProvider
+        provider: 'auto'
       });
       setSaveState('saved');
     } catch (error) {
@@ -1882,7 +1823,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
         currentTripId,
         messages: messagesToSave,
         plan: planToSave,
-        provider: selectedProvider
+        provider: 'auto'
       });
       setSaveState('idle');
     } finally {
@@ -1904,7 +1845,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
         // Update existing trip
         await tripService.updateTrip(currentTripId, {
           plan: currentPlan,
-          provider: selectedProvider,
+          provider: 'auto',
           status: 'active'
         });
       } else {
@@ -1916,7 +1857,7 @@ What kind of adventure are you dreaming of? Let's make it happen.`
           title: parkName ? `${parkName} Trip Plan` : 'General Planning Session',
           formData: formData || {},
           plan: currentPlan,
-          provider: selectedProvider,
+          provider: 'auto',
           conversation: messagesToSave.map(msg => ({
             role: msg.role,
             content: msg.content,
@@ -2299,17 +2240,8 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                     const msgIndex = messages.indexOf(message);
                     const userMsg = messages.slice(0, msgIndex).reverse().find(m => m.role === 'user');
                     if (userMsg) {
-                      // Auto-alternate: switch to the other AI provider
-                      const otherProvider = providers.find(p => p.id !== selectedProvider);
-                      if (otherProvider) {
-                        setSelectedProvider(otherProvider.id);
-                        showToast(`Regenerating with ${otherProvider.name}...`, 'info');
-                      } else {
-                        showToast('Regenerating...', 'info');
-                      }
+                      showToast('Regenerating...', 'info');
                       setMessages(prev => prev.filter(m => m.id !== message.id));
-                      // Small delay to let provider switch take effect
-                      await new Promise(r => setTimeout(r, 100));
                       await handleSendMessage(userMsg.content);
                     }
                   } : undefined}
@@ -2566,41 +2498,6 @@ What kind of adventure are you dreaming of? Let's make it happen.`
                       <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
                     )}
                   </button>
-                )}
-                {providersLoaded && providers.length > 1 && (
-                  <div
-                    className="inline-flex items-center rounded-full p-0.5"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    {providers.map((provider) => {
-                      const id = (provider.id || provider.name || '').toLowerCase();
-                      const label = id.includes('openai') || id.includes('gpt') ? 'GPT'
-                        : id.includes('claude') || id.includes('anthropic') ? 'Claude'
-                        : provider.name;
-                      const subtitle = id.includes('openai') || id.includes('gpt') ? 'Detailed planner'
-                        : id.includes('claude') || id.includes('anthropic') ? 'Insider tips'
-                        : '';
-                      const isActive = selectedProvider === provider.id;
-                      return (
-                        <button
-                          key={provider.id}
-                          type="button"
-                          onClick={() => setSelectedProvider(provider.id)}
-                          className="rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition-all duration-150 sm:px-3 sm:text-xs"
-                          style={{
-                            backgroundColor: isActive ? 'var(--accent-green)' : 'transparent',
-                            color: isActive ? '#fff' : 'var(--text-secondary)',
-                          }}
-                          title={subtitle}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
                 )}
                 {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && messages.some(m => m.role === 'assistant') && (
                   <button

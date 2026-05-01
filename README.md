@@ -23,7 +23,7 @@ TrailVerse was built from real travel experience — years of visiting parks, wr
 - **Discover** parks that match what you're looking for
 - **Research** what's there — trails, camping, tours, alerts, photos, webcams
 - **Compare** parks side by side
-- **Plan** a trip with AI that knows real-time park conditions
+- **Plan** a trip with Trailie AI using real-time park data and curated blog guides
 - **Build** a visual day-by-day itinerary
 - **Save** your favorites, track your visits, and come back later
 
@@ -34,12 +34,10 @@ TrailVerse was built from real travel experience — years of visiting parks, wr
 ### Explore 470+ Parks
 Browse every U.S. national park and NPS site with search, filtering, and an interactive map. Each park page gives you 14 tabs of information — activities, camping, places, tours, parking, photos, videos, webcams, alerts, facilities, brochures, permits, reviews, and visitor centers — all pulled from official NPS data.
 
-### Plan Trips with AI
-Chat with two AI trip planners and switch between them:
-- **"The Planner"** — detailed, structured, comprehensive itineraries
-- **"The Local"** — casual, opinionated, insider-style recommendations
+### Plan Trips with Trailie AI
+Chat with Trailie, your AI trip planner that knows national parks inside and out. Trailie uses live park data — current closures, campground availability, visitor center hours, permits, and real-time weather — so your plan reflects what's actually happening at the park right now. Just mention a park name in your message and Trailie picks it up automatically.
 
-Both use live park data — current closures, campground availability, visitor center hours, permits, and real-time weather — so your plan reflects what's actually happening at the park right now. Just mention a park name in your message and the AI picks it up automatically.
+Trailie also draws from TrailVerse's own published blog guides — visitor tips, seasonal recommendations, astrophotography spots, and park-specific advice written from real experience — so answers go beyond generic travel info.
 
 Try it free with 5 messages, no account needed.
 
@@ -56,7 +54,7 @@ After chatting with the AI, switch to the drag-and-drop itinerary builder to cus
 Put parks side by side to decide between options. Each comparison includes a direct link to start planning a trip with AI.
 
 ### Read the Blog
-Travel guides, park recommendations, gear and packing tips, seasonal planning, astrophotography, and budget travel — with 6 category pages and full comment threads.
+Travel guides, park recommendations, gear and packing tips, seasonal planning, astrophotography, and budget travel — with category filtering and full comment threads. Blog content also feeds into Trailie's knowledge, so the more guides we publish, the smarter your trip plans get.
 
 ### Browse Events
 See what's happening at parks this month — ranger programs, guided tours, festivals, and seasonal events.

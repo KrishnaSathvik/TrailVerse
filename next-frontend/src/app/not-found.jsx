@@ -154,7 +154,7 @@ const NotFound = () => {
                   icon: Mountain
                 },
                 {
-                  title: 'AI Trip Planner',
+                  title: 'Trailie',
                   description: 'Get personalized recommendations',
                   link: '/plan-ai',
                   icon: Compass

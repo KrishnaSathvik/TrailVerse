@@ -36,7 +36,7 @@ const PrivacyPage = () => {
 
           <h3 className="text-lg font-semibold mb-3 mt-4">Usage & Activity Data</h3>
           <p className="mb-4">
-            We collect: favorite parks/blogs/events, visited parks with dates, AI trip conversations (GPT-4 & Claude), reviews with up to 5 photos per review, 
+            We collect: favorite parks/blogs/events, visited parks with dates, Trailie AI trip conversations, reviews with up to 5 photos per review, 
             blog comments and likes, saved events, trip history (active & archived), search queries, map interactions, and filter preferences.
           </p>
 
@@ -175,7 +175,7 @@ const PrivacyPage = () => {
             </div>
             <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1">AI Providers</p>
-              <p className="text-sm">OpenAI GPT-4 • Anthropic Claude (queries are anonymized)</p>
+              <p className="text-sm">OpenAI • Anthropic Claude (queries are anonymized)</p>
             </div>
             <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1">Infrastructure</p>

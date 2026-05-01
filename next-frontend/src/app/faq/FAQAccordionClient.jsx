@@ -19,7 +19,7 @@ const faqCategories = [
       },
       {
         question: "What makes TrailVerse different?",
-        answer: "TrailVerse uniquely combines smart trip planning (Claude + ChatGPT), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations."
+        answer: "TrailVerse uniquely combines Trailie (smart AI trip planning), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations."
       }
     ]
   },
@@ -32,8 +32,8 @@ const faqCategories = [
         answer: "Our AI analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It considers weather, seasonal attractions, trail difficulty, and optimal routes. Simply provide your preferences, and let our AI craft a detailed plan for you."
       },
       {
-        question: "Which AI providers do you offer?",
-        answer: "We offer two AI providers: OpenAI's GPT-4 (ChatGPT) and Anthropic's Claude. Both provide excellent recommendations. GPT-4 offers detailed itineraries, while Claude provides conversational responses. You can switch between providers mid-conversation, and your trip history is saved regardless of which AI you use."
+        question: "How does Trailie pick which AI to use?",
+        answer: "Trailie automatically routes each message to the best AI for the job. Quick questions and casual asks go to Claude for insider-style tips, while planning and itinerary requests go to OpenAI for structured day-by-day plans. You don't need to choose \u2014 Trailie handles it seamlessly, and your trip history is always saved."
       },
       {
         question: "How does trip history and archiving work?",

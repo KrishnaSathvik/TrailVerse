@@ -36,12 +36,12 @@ export async function generateMetadata({ params }) {
   const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
-    title: `${park.fullName} – Live Alerts, Crowd Calendar & AI Trip Planner | TrailVerse`,
+    title: `${park.fullName} – Live Alerts, Crowd Calendar & Trailie | TrailVerse`,
     description,
     keywords: `${park.fullName}, ${park.states} national park, visit ${park.fullName}, ${park.fullName} guide, ${park.fullName} hiking, ${park.fullName} camping`,
     alternates: { canonical: url },
     openGraph: {
-      title: `${park.fullName} – Alerts, Crowds & AI Trip Planner`,
+      title: `${park.fullName} – Alerts, Crowds & Trailie`,
       description,
       url,
       siteName: 'TrailVerse',

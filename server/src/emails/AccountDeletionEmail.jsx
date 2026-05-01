@@ -81,7 +81,7 @@ const AccountDeletionEmail = ({
                   <strong>Saved Parks & Visits</strong> — All your favorite parks, wish lists, and visited park history.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
-                  <strong>AI Trip Plans</strong> — Your saved AI chat conversations and itineraries.
+                  <strong>Trailie Trip Plans</strong> — Your saved AI chat conversations and itineraries.
                 </li>
                 <li style={{ marginBottom: '8px' }}>
                   <strong>Reviews & Photos</strong> — Your park reviews and uploaded photos.
