@@ -26,7 +26,21 @@ const { startDailyFeedScheduler, stopDailyFeedScheduler } = require('./src/servi
 const npsService = require('./src/services/npsService');
 
 // Connect to database
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Migrate legacy emailNotifications: boolean → { blogNotifications: Boolean }
+  try {
+    const { db } = require('mongoose').connection;
+    const result = await db.collection('users').updateMany(
+      { emailNotifications: { $type: 'bool' } },
+      [{ $set: { emailNotifications: { blogNotifications: '$emailNotifications' } } }]
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`✅ Migrated emailNotifications for ${result.modifiedCount} user(s)`);
+    }
+  } catch (err) {
+    console.warn('⚠️ emailNotifications migration skipped:', err.message);
+  }
+
   // Start schedulers after database connection is established
   startScheduler();
   startDailyFeedScheduler();

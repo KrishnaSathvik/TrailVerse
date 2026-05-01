@@ -125,9 +125,9 @@ exports.login = async (req, res, next) => {
     // Generate token with remember me option
     const token = generateToken(user._id, rememberMe);
 
-    // Update last active timestamp on login
-    user.lastActiveAt = new Date();
-    await user.save();
+    // Update last active timestamp on login (use updateOne to avoid
+    // triggering schema conflicts on legacy emailNotifications field)
+    await User.updateOne({ _id: user._id }, { $set: { lastActiveAt: new Date() } });
 
     res.status(200).json({
       success: true,
