@@ -20,10 +20,9 @@ const FeatureAnnouncementEmail = ({
   userEmail = 'user@example.com',
   planUrl = 'https://nationalparksexplorerusa.com/plan-ai',
   exploreUrl = 'https://nationalparksexplorerusa.com/explore',
-  magazineUrl = 'https://nationalparksexplorerusa.com/magazine',
   unsubscribeUrl = 'https://nationalparksexplorerusa.com/unsubscribe',
 }) => {
-  const previewText = `New in TrailVerse: Plan My Trip, For Me recommendations, drag-and-drop Itinerary Builder with AI sync, park photos in chat, and more.`;
+  const previewText = `Meet Trailie — your new AI trip planner in TrailVerse. Smarter answers, blog-powered knowledge, and one simple conversation to plan any park trip.`;
 
   return (
     <Html>
@@ -54,68 +53,48 @@ const FeatureAnnouncementEmail = ({
               </Text>
 
               <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                We've been busy. Here's everything new in <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span> over the last couple of weeks.
+                Big update — your AI trip planner just got a major upgrade. Say hello to <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px', fontWeight: 700 }}>Trailie</span>.
               </Text>
 
-              {/* Feature 1: Plan My Trip */}
+              {/* Feature 1: Meet Trailie */}
               <h3 style={{ margin: '32px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🗺️ Plan My Trip
+                🤖 Meet Trailie
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Hit "Plan My Trip" in the AI chat, pick your park, dates, group size, interests, budget, and fitness level — and it sends everything straight to the AI. No more typing out all your preferences. Change your mind later? Open it again and update — the AI adjusts your plan on the fly.
+                No more choosing between two AI planners. Trailie is one smart assistant that automatically adapts — ask a quick question and get insider tips, ask for a full trip plan and get a detailed day-by-day itinerary with times and logistics. Just talk naturally, Trailie figures out what you need.
               </Text>
 
-              {/* Feature 2: For Me */}
+              {/* Feature 2: Blog-Powered Answers */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                ✨ For Me — Personalized Recommendations
+                📚 Blog-Powered Answers
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                If you've planned trips to 3 or more parks, you'll see a "For Me" button on the AI planner page. Tap it and the AI analyzes your past conversations and trip details to suggest your next adventure — places that match your style but you haven't explored yet.
+                Trailie now draws from our published park guides when answering your questions. That means real visitor tips, seasonal advice, astrophotography spots, and on-the-ground details written from first-hand experience — not just generic travel info.
               </Text>
 
-              {/* Feature 3: Park Photos in Chat */}
+              {/* What You Can Do With Trailie */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📸 Park Photos in AI Chat
+                💬 Things You Can Ask Trailie
               </h3>
+              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <span style={{ fontWeight: 700 }}>"Plan a 3-day trip to Yellowstone for a family with kids"</span> — get a full itinerary with kid-friendly trails, campgrounds, and timing.
+              </Text>
+              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <span style={{ fontWeight: 700 }}>"Bryce Canyon or Zion for a beginner?"</span> — get an honest recommendation based on current conditions, not a wishy-washy "both are great!"
+              </Text>
+              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <span style={{ fontWeight: 700 }}>"Best time to visit Grand Teton?"</span> — get seasonal advice with real closure info and crowd levels.
+              </Text>
+              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                <span style={{ fontWeight: 700 }}>"What should I pack for Death Valley in March?"</span> — get gear advice tailored to the specific park and season.
+              </Text>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                When you ask about a park, the AI now includes official park photos in its response. Get a visual preview of where you're headed, right in the conversation.
+                <span style={{ fontWeight: 700 }}>"I have a bad knee — what hikes can I still do at Arches?"</span> — Trailie adjusts for your fitness level and flags accessibility info.
               </Text>
 
-              {/* Feature 4: Magazine */}
-              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📖 TrailVerse Magazine
-              </h3>
-              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                A 16-page digital magazine covering everything TrailVerse offers — the AI planner, interactive map, park pages, compare tool, itinerary builder, daily nature feed, events, blog, and more. One place to see what the platform can do.
-              </Text>
-
-              {/* Feature 6: Map Upgrades */}
-              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🗺️ Interactive Map — All 470+ Parks
-              </h3>
-              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                The map now renders all 470+ parks reliably — no more "park not found" errors. Larger markers, a color legend, and a new "Compare Park" button right on the map card so you can send any park straight to comparison.
-              </Text>
-
-              {/* Feature 7: Chat History */}
-              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                💬 Better Chat History
-              </h3>
-              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Your saved conversations now show descriptive titles based on what you actually asked about, instead of generic labels. Find your past trips faster.
-              </Text>
-
-              {/* Feature 8: Itinerary Builder + AI Sync */}
-              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🧩 Itinerary Builder + AI Sync
-              </h3>
-              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Build your trip visually — drag-and-drop stops across days, add trails, campgrounds, food spots, and more. Switch back to the AI chat and it knows exactly what's in your itinerary, so you can ask things like "what should I add after lunch on Day 2?" and get suggestions that fit your plan.
-              </Text>
-
-              {/* Improvements */}
+              {/* Still Has */}
               <Text style={{ margin: '24px 0 20px', fontSize: '14px', lineHeight: '1.6', color: '#6b7280' }}>
-                + A bunch of small improvements and fixes based on your feedback — things should feel snappier and smoother overall.
+                Trailie still uses real-time NPS closures, campground availability, weather forecasts, and permit info — so every answer reflects what's actually happening at the park right now.
               </Text>
 
               {/* CTA */}
@@ -124,15 +103,7 @@ const FeatureAnnouncementEmail = ({
                   href={planUrl}
                   style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  Try Trailie
-                </Button>
-              </div>
-              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                <Button
-                  href={magazineUrl}
-                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#111827', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
-                >
-                  Read the Magazine
+                  Chat with Trailie
                 </Button>
               </div>
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -154,7 +125,7 @@ const FeatureAnnouncementEmail = ({
 
               {/* Sign off */}
               <Text style={{ margin: '0 0 16px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Thanks for being part of <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span>. If you're enjoying it, share it with your friends and family — the more, the merrier on the trails!
+                Thanks for being part of <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span>. Give Trailie a try and let us know what you think — and if you're enjoying it, share it with someone planning their next park trip.
               </Text>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
                 Happy trails
