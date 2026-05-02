@@ -639,6 +639,11 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
 
     let response;
 
+    // Fallback: resolve 'auto' or unknown providers to claude
+    if (provider !== 'claude' && provider !== 'openai') {
+      provider = anthropic ? 'claude' : 'openai';
+    }
+
     if (provider === 'claude') {
       // Claude API
       if (!anthropic) {
@@ -1141,6 +1146,11 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
     if (weatherFacts) dataSources.push('weather');
     if (webSearchFacts) dataSources.push('web');
     res.write(`data: ${JSON.stringify({ type: 'thinking', sources: dataSources, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [] })}\n\n`);
+
+    // Fallback: resolve 'auto' or unknown providers to claude
+    if (provider !== 'claude' && provider !== 'openai') {
+      provider = anthropic ? 'claude' : 'openai';
+    }
 
     try {
       if (provider === 'claude') {
@@ -1904,6 +1914,11 @@ CRITICAL ISOLATION RULES — follow these exactly:
     });
 
     let response;
+
+    // Fallback: resolve 'auto' or unknown providers to claude
+    if (provider !== 'claude' && provider !== 'openai') {
+      provider = anthropic ? 'claude' : 'openai';
+    }
 
     if (provider === 'claude') {
       // Claude API
