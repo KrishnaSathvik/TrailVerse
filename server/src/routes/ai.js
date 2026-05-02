@@ -73,6 +73,64 @@ async function fetchBlogContext(parkNames) {
   }
 }
 
+// Helper: fetch driving times between consecutive points via Google Maps Distance Matrix API
+const drivingTimesCache = new Map(); // key: "lat1,lon1→lat2,lon2" → { text, distText }
+
+async function fetchDrivingTimes(points, logPrefix = '[AI]') {
+  if (!points || points.length < 2) return null;
+  const apiKey = process.env.GMAPS_SERVER_KEY;
+  if (!apiKey) {
+    console.warn(`${logPrefix} GMAPS_SERVER_KEY not set — skipping driving times`);
+    return null;
+  }
+
+  try {
+    const fetch = require('node-fetch');
+    const lines = [];
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const origin = points[i];
+      const dest = points[i + 1];
+      const cacheKey = `${origin.lat},${origin.lon}→${dest.lat},${dest.lon}`;
+
+      let result = drivingTimesCache.get(cacheKey);
+      if (!result) {
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lon}&destinations=${dest.lat},${dest.lon}&units=imperial&key=${apiKey}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status !== 'OK' || !data.rows?.[0]?.elements?.[0]) {
+          console.warn(`${logPrefix} Distance Matrix API error for ${origin.name}→${dest.name}:`, data.status);
+          continue;
+        }
+
+        const element = data.rows[0].elements[0];
+        if (element.status !== 'OK') {
+          console.warn(`${logPrefix} No route for ${origin.name}→${dest.name}:`, element.status);
+          continue;
+        }
+
+        result = { text: element.duration.text, distText: element.distance.text };
+        drivingTimesCache.set(cacheKey, result);
+        console.log(`${logPrefix} Driving time fetched: ${origin.name}→${dest.name} = ${result.distText}, ${result.text}`);
+      }
+
+      lines.push(`• ${origin.name} → ${dest.name}: ${result.distText}, ~${result.text}`);
+    }
+
+    if (lines.length === 0) return null;
+
+    let block = '\n\n--- DRIVING DISTANCES (Google Maps) ---';
+    block += '\nThese are real driving times. Use them instead of estimating.';
+    block += '\n' + lines.join('\n');
+    block += '\n--- END DRIVING DISTANCES ---\n';
+    return block;
+  } catch (err) {
+    console.error(`${logPrefix} fetchDrivingTimes error:`, err.message);
+    return null;
+  }
+}
+
 // Helper: fetch images for multiple parks with smart distribution (always 4 total)
 // 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
 async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
@@ -297,7 +355,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   }
 
   // Logging-related variables hoisted for return
-  let userCity = null;
+  let userCity = extractUserCity(lastUserMessage);
   let candidateParksBlock = false;
 
   // Build enhanced system prompt with facts
@@ -367,7 +425,6 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
 
     // Inject candidate parks list so the model has real NPS data to recommend from
     try {
-      userCity = extractUserCity(lastUserMessage);
       const candidateResult = await getCandidateParks(userCity);
       const candidateBlock = formatCandidateParksBlock(candidateResult);
       candidateParksBlock = !!candidateBlock;
@@ -387,6 +444,24 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     if (blogContext) {
       enhancedSystemPrompt += blogContext;
       console.log(`${logPrefix} Blog context found for: ${parkNamesForBlog.join(', ')}`);
+    }
+  }
+
+  // Inject driving times when multiple parks or a starting city is detected
+  if (allExtractedParks.length > 1 || userCity) {
+    const points = [];
+    if (userCity) {
+      points.push({ name: userCity.name, lat: userCity.lat, lon: userCity.lon });
+    }
+    for (const p of allExtractedParks) {
+      points.push({ name: p.parkName, lat: p.lat, lon: p.lon });
+    }
+    if (points.length >= 2) {
+      const drivingBlock = await fetchDrivingTimes(points, logPrefix);
+      if (drivingBlock) {
+        enhancedSystemPrompt += drivingBlock;
+        console.log(`${logPrefix} Driving times injected for: ${points.map(p => p.name).join(' → ')}`);
+      }
     }
   }
 
@@ -1708,7 +1783,7 @@ Ready to continue planning? 🚀`,
     const anonParkNames = anonExtractedParks.map(p => p.parkName).filter(Boolean);
 
     // Logging-related variables hoisted for structured logging
-    let anonUserCity = null;
+    let anonUserCity = extractUserCity(lastUserMessageContent);
     let anonCandidateParksBlock = false;
 
     // Fetch relevant facts (web search skipped for anonymous users via isAnonymous flag)
@@ -1819,7 +1894,6 @@ Ready to continue planning? 🚀`,
 
       // Inject candidate parks list so the model has real NPS data to recommend from
       try {
-        anonUserCity = extractUserCity(lastUserMessageContent);
         const candidateResult = await getCandidateParks(anonUserCity);
         const candidateBlock = formatCandidateParksBlock(candidateResult);
         anonCandidateParksBlock = !!candidateBlock;
@@ -1839,6 +1913,24 @@ Ready to continue planning? 🚀`,
       if (blogContext) {
         enhancedSystemPrompt += blogContext;
         console.log(`[AI Anon] Blog context found for: ${parkNamesForBlog.join(', ')}`);
+      }
+    }
+
+    // Inject driving times when multiple parks or a starting city is detected
+    if (anonExtractedParks.length > 1 || anonUserCity) {
+      const points = [];
+      if (anonUserCity) {
+        points.push({ name: anonUserCity.name, lat: anonUserCity.lat, lon: anonUserCity.lon });
+      }
+      for (const p of anonExtractedParks) {
+        points.push({ name: p.parkName, lat: p.lat, lon: p.lon });
+      }
+      if (points.length >= 2) {
+        const drivingBlock = await fetchDrivingTimes(points, '[AI Anon]');
+        if (drivingBlock) {
+          enhancedSystemPrompt += drivingBlock;
+          console.log(`[AI Anon] Driving times injected for: ${points.map(p => p.name).join(' → ')}`);
+        }
       }
     }
 
