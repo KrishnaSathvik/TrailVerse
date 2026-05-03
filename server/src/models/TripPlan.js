@@ -24,15 +24,8 @@ const tripPlanSchema = new mongoose.Schema({
     required: false
   },
   formData: {
-    startDate: Date,
-    endDate: Date,
-    groupSize: Number,
-    budget: String,
-    fitnessLevel: String,
-    interests: [String],
-    accommodation: String,
-    activities: [String],
-    transportation: String
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
   conversation: [{
     id: Number,
@@ -51,11 +44,16 @@ const tripPlanSchema = new mongoose.Schema({
     },
     provider: {
       type: String,
-      enum: ['claude', 'openai'],
+      enum: ['claude', 'openai', 'auto'],
       default: 'claude'
     },
     model: String,
     responseTime: Number,
+    hasLiveData: Boolean,
+    hasItinerary: Boolean,
+    parkName: String,
+    parkNames: [String],
+    parkImages: [mongoose.Schema.Types.Mixed],
     userFeedback: {
       type: String,
       default: null,
@@ -77,8 +75,8 @@ const tripPlanSchema = new mongoose.Schema({
   },
   provider: {
     type: String,
-    enum: ['claude', 'openai'],
-    default: 'claude'
+    enum: ['claude', 'openai', 'auto'],
+    default: 'auto'
   },
   summary: {
     totalMessages: Number,

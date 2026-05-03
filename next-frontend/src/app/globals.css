@@ -24,6 +24,11 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Hide Google's default Places Autocomplete dropdown — we render our own */
+.pac-container {
+  display: none !important;
+}
+
 /* Tailwind CSS v4 Theme Configuration */
 @theme {
   /* Custom Colors */

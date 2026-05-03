@@ -372,8 +372,11 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     enhancedSystemPrompt += formatFeeFreeBlock(feeFreeFacts);
   }
 
+  // Determine if this is a non-NPS destination query with web search context
+  const isNonNpsWithWebSearch = !resolvedMetadata.parkCode && webSearchFacts && isTravelRelated(lastUserMessage);
+
   if (npsFacts || weatherFacts || webSearchFacts) {
-    const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
+    const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || 'this destination');
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
     // Build data availability manifest so the model knows what's present and what's missing
@@ -387,10 +390,18 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     enhancedSystemPrompt += `\nThis is AUTHORITATIVE real-time data as of ${today}. This OVERRIDES your training data where they conflict.`;
     enhancedSystemPrompt += `\nDATA AVAILABLE: ${available.join(', ')}`;
     if (missing.length > 0) {
-      enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and direct users to nps.gov.`;
+      if (isNonNpsWithWebSearch) {
+        enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')}`;
+      } else {
+        enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and direct users to nps.gov.`;
+      }
     }
     enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
-    enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
+    if (isNonNpsWithWebSearch) {
+      enhancedSystemPrompt += `\nYou CAN generate an [ITINERARY_JSON] block for this destination. Use web search data for logistics, activities, and recommendations. Answer naturally as you would for any travel destination — do NOT mention "NPS" or "National Park Service" unless the user brought it up.\n\n`;
+    } else {
+      enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
+    }
 
     if (npsFacts) {
       enhancedSystemPrompt += npsFacts + '\n\n';
@@ -414,14 +425,25 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     enhancedSystemPrompt += `\nDo NOT present training-data knowledge as current facts. Qualify everything as "typically" or "generally."`;
     enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
   } else if (!resolvedMetadata.parkCode) {
-    // No park detected at all — no live data available
-    enhancedSystemPrompt += `\n\n--- NO PARK DETECTED ---`;
-    enhancedSystemPrompt += `\nNo specific park was identified in the user's message, so you have NO live data.`;
-    enhancedSystemPrompt += `\nDo NOT generate a detailed itinerary for a vague request. NEVER output an [ITINERARY_JSON] block without a specific park. Instead:`;
-    enhancedSystemPrompt += `\n- If the user's question is answerable without park-specific data (e.g., "what parks have the best stargazing?"), answer it using your training knowledge and the crowd calendar data.`;
-    enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which park they're considering — or suggest 2-3 specific parks based on what they described.`;
-    enhancedSystemPrompt += `\n- Qualify all answers as general knowledge: "Generally..." / "Most years..."`;
-    enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
+    // No park detected — check if it's a travel query about a non-NPS destination
+    const isNonNpsTravelQuery = isTravelRelated(lastUserMessage);
+
+    if (isNonNpsTravelQuery) {
+      // User is asking about a non-NPS destination — help naturally
+      enhancedSystemPrompt += `\n\n--- DESTINATION GUIDANCE ---`;
+      enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
+      enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block if the user asks for an itinerary to a specific destination.`;
+      enhancedSystemPrompt += `\nDo NOT say things like "I don't have live data" or "this isn't a national park" — just help them like a knowledgeable travel friend would.`;
+      enhancedSystemPrompt += `\nIf the query is vague (no specific destination), ask what place they want to visit.`;
+      enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
+    } else {
+      // Truly off-topic or vague request
+      enhancedSystemPrompt += `\n\n--- GUIDANCE ---`;
+      enhancedSystemPrompt += `\nNo specific destination was identified. Do NOT generate a detailed itinerary for a vague request.`;
+      enhancedSystemPrompt += `\n- If the user's question is answerable from general knowledge (e.g., "what parks have the best stargazing?"), answer it helpfully.`;
+      enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which destination they're considering — or suggest 2-3 options based on what they described.`;
+      enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
+    }
 
     // Inject candidate parks list so the model has real NPS data to recommend from
     try {
@@ -913,9 +935,15 @@ ${cleanContent.substring(0, 6000)}`;
 
     // Hard gate: strip itinerary if no park was detected (model shouldn't have generated one)
     if (noParkDetected && itineraryData) {
-      console.log('[AI] Itinerary stripped — no park was detected in the request');
-      itineraryData = null;
-      cleanContent += '\n\n---\n📍 **To get a detailed itinerary, please specify which national park you\'re planning to visit.** I can then pull live NPS data and build a day-by-day plan.';
+      // Allow itinerary for non-NPS destinations when web search provided context or query is travel-related
+      const allowNonNpsItinerary = webSearchFacts || isTravelRelated(lastMsg);
+      if (!allowNonNpsItinerary) {
+        console.log('[AI] Itinerary stripped — no park or travel destination detected');
+        itineraryData = null;
+        cleanContent += '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
+      } else {
+        console.log('[AI] Non-NPS itinerary allowed — travel query with web search context');
+      }
     }
 
     // ── Post-response: Validate + Correct + Loop + Confidence ──
@@ -1280,13 +1308,18 @@ ${cleanContent.substring(0, 6000)}`;
               }
             }
 
-            // Hard gate: strip itinerary if no park was detected
+            // Hard gate: strip itinerary if no park/destination was detected
             if (noParkDetected && itineraryData) {
-              console.log('[AI Stream] Itinerary stripped — no park was detected');
-              itineraryData = null;
-              const gateNotice = '\n\n---\n📍 **To get a detailed itinerary, please specify which national park you\'re planning to visit.** I can then pull live NPS data and build a day-by-day plan.';
-              cleanContent += gateNotice;
-              res.write(`data: ${JSON.stringify({ type: 'chunk', content: gateNotice })}\n\n`);
+              const allowNonNpsItinerary = webSearchFacts || isTravelRelated(lastMsg);
+              if (!allowNonNpsItinerary) {
+                console.log('[AI Stream] Itinerary stripped — no park or travel destination detected');
+                itineraryData = null;
+                const gateNotice = '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
+                cleanContent += gateNotice;
+                res.write(`data: ${JSON.stringify({ type: 'chunk', content: gateNotice })}\n\n`);
+              } else {
+                console.log('[AI Stream] Non-NPS itinerary allowed — travel query with web search context');
+              }
             }
 
             // ── Validate + Correct + Confidence (no regeneration for streaming) ──
@@ -1489,13 +1522,18 @@ ${cleanContent.substring(0, 6000)}`;
         }
         let { cleanContent: openaiCleanContent, itineraryData: openaiItineraryData } = extractItineraryJSON(fullContent);
 
-        // Hard gate: strip itinerary if no park was detected
+        // Hard gate: strip itinerary if no park/destination was detected
         if (noParkDetected && openaiItineraryData) {
-          console.log('[AI Stream] Itinerary stripped — no park was detected (OpenAI)');
-          openaiItineraryData = null;
-          const gateNotice = '\n\n---\n📍 **To get a detailed itinerary, please specify which national park you\'re planning to visit.** I can then pull live NPS data and build a day-by-day plan.';
-          openaiCleanContent += gateNotice;
-          res.write(`data: ${JSON.stringify({ type: 'chunk', content: gateNotice })}\n\n`);
+          const allowNonNpsItinerary = webSearchFacts || isTravelRelated(lastMsg);
+          if (!allowNonNpsItinerary) {
+            console.log('[AI Stream] Itinerary stripped — no park or travel destination detected (OpenAI)');
+            openaiItineraryData = null;
+            const gateNotice = '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
+            openaiCleanContent += gateNotice;
+            res.write(`data: ${JSON.stringify({ type: 'chunk', content: gateNotice })}\n\n`);
+          } else {
+            console.log('[AI Stream] Non-NPS itinerary allowed — travel query with web search context (OpenAI)');
+          }
         }
 
         // ── Validate + Correct + Confidence (no regeneration for streaming) ──
@@ -1883,14 +1921,25 @@ Ready to continue planning? 🚀`,
       enhancedSystemPrompt += `\nDo NOT present training-data knowledge as current facts. Qualify everything as "typically" or "generally."`;
       enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
     } else if (!resolvedMetadata.parkCode) {
-      // No park detected at all — no live data available
-      enhancedSystemPrompt += `\n\n--- NO PARK DETECTED ---`;
-      enhancedSystemPrompt += `\nNo specific park was identified in the user's message, so you have NO live data.`;
-      enhancedSystemPrompt += `\nDo NOT generate a detailed itinerary for a vague request. NEVER output an [ITINERARY_JSON] block without a specific park. Instead:`;
-      enhancedSystemPrompt += `\n- If the user's question is answerable without park-specific data, answer using your training knowledge and the crowd calendar data.`;
-      enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which park they're considering — or suggest 2-3 specific parks based on what they described.`;
-      enhancedSystemPrompt += `\n- Qualify all answers as general knowledge: "Generally..." / "Most years..."`;
-      enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
+      // No park detected — check if it's a travel query about a non-NPS destination
+      const isNonNpsTravelQuery = isTravelRelated(lastUserMessageContent);
+
+      if (isNonNpsTravelQuery) {
+        // User is asking about a non-NPS destination — help naturally
+        enhancedSystemPrompt += `\n\n--- DESTINATION GUIDANCE ---`;
+        enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
+        enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block if the user asks for an itinerary to a specific destination.`;
+        enhancedSystemPrompt += `\nDo NOT say things like "I don't have live data" or "this isn't a national park" — just help them like a knowledgeable travel friend would.`;
+        enhancedSystemPrompt += `\nIf the query is vague (no specific destination), ask what place they want to visit.`;
+        enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
+      } else {
+        // Truly off-topic or vague request
+        enhancedSystemPrompt += `\n\n--- GUIDANCE ---`;
+        enhancedSystemPrompt += `\nNo specific destination was identified. Do NOT generate a detailed itinerary for a vague request.`;
+        enhancedSystemPrompt += `\n- If the user's question is answerable from general knowledge (e.g., "what parks have the best stargazing?"), answer it helpfully.`;
+        enhancedSystemPrompt += `\n- If the user needs a trip plan, ask which destination they're considering — or suggest 2-3 options based on what they described.`;
+        enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
+      }
 
       // Inject candidate parks list so the model has real NPS data to recommend from
       try {
@@ -2167,11 +2216,17 @@ ${anonCleanContent.substring(0, 6000)}`;
       }
     }
 
-    // Hard gate: strip itinerary if no park was detected
+    // Hard gate: strip itinerary if no park/destination was detected
     if (anonNoParkDetected && anonItineraryData) {
-      console.log('[AI] Itinerary stripped from anonymous response — no park detected');
-      anonItineraryData = null;
-      anonCleanContent += '\n\n---\n📍 **To get a detailed itinerary, please specify which national park you\'re planning to visit.** I can then pull live NPS data and build a day-by-day plan.';
+      // For anonymous users, web search is disabled — use isTravelRelated as the signal
+      const allowNonNpsItinerary = isTravelRelated(lastUserMessageContent);
+      if (!allowNonNpsItinerary) {
+        console.log('[AI] Itinerary stripped from anonymous response — no park or travel destination detected');
+        anonItineraryData = null;
+        anonCleanContent += '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
+      } else {
+        console.log('[AI] Non-NPS itinerary allowed for anonymous user — travel query detected');
+      }
     }
 
     // ── Validate + Correct + Confidence (anonymous — no regeneration) ──

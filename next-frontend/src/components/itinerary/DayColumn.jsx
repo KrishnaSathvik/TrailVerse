@@ -13,6 +13,8 @@ export default function DayColumn({
   onRequestAddStop,
   onRemoveStop,
   onUpdateStop,
+  highlightedStopId,
+  onStopClick,
 }) {
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelValue, setLabelValue] = useState(day.label);
@@ -140,6 +142,8 @@ export default function DayColumn({
                         dragHandleProps={dragProvided.dragHandleProps}
                         onRemove={onRemoveStop}
                         onUpdate={onUpdateStop}
+                        isHighlighted={stop.id === highlightedStopId}
+                        onClick={onStopClick}
                       />
                     </div>
                   )}

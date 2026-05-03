@@ -5,6 +5,12 @@ const enhancedParkService = require('../services/enhancedParkService');
 // Debug helper for development-only logging
 const dbg = (...args) => process.env.NODE_ENV === 'development' && console.log(...args);
 
+// System prompt for daily feed content generation — NOT the Trailie chat persona.
+// The default Trailie prompt rejects non-travel questions, which blocks astronomy,
+// weather, and nature-fact generation.  This lightweight prompt focuses on accurate,
+// concise content without persona or scope restrictions.
+const FEED_SYSTEM_PROMPT = `You are a knowledgeable content writer for a US national parks app. Generate accurate, concise, engaging content about national parks — including weather, astronomy, stargazing, nature facts, wildlife, and park-specific insights. Never refuse a request. Do not add disclaimers or caveats.`;
+
 // Safety check for AI content
 function sanityCheck(ai) {
   const jsonStr = JSON.stringify(ai).toLowerCase();
@@ -766,7 +772,7 @@ async function getDailyNatureFact(parkCode, parkName) {
 
   const response = await openaiService.chat([
     { role: 'user', content: prompt }
-  ]);
+  ], FEED_SYSTEM_PROMPT);
   
   const fact = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
   console.log(`🌿 AI Generated nature fact for park ${parkCode}:`, fact);
@@ -833,8 +839,8 @@ async function getAstroData(location, parkName) {
       Keep it under 150 words and make it specific to this location, season, and current astronomical conditions.`;
 
       const response = await openaiService.chat([
-        { role: 'user', content: prompt }
-      ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
       
       skyInsights = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
       console.log(`🌙 AI Generated precise sky insights for ${parkName}:`, skyInsights);
@@ -924,8 +930,8 @@ async function getAstroDataFallback(location, parkName) {
     Keep it under 150 words and make it specific to this location and season.`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     skyInsights = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
     console.log(`🌙 AI Generated sky insights for ${parkName}:`, skyInsights);
@@ -1234,8 +1240,8 @@ async function getPersonalizedRecommendations(user, park, weatherData, astroData
     Format as a JSON array of strings.`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     // Try to parse JSON response
     const recommendations = parseAiJsonStringArray(response);
@@ -1290,8 +1296,8 @@ async function getWeatherInsights(weatherData, parkName) {
     Focus on park-specific weather considerations.`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     const insights = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
     console.log(`🌤️ AI Generated weather insights for ${parkName}:`, insights);
@@ -1332,8 +1338,8 @@ async function getSkyInsights(astroData, parkName) {
     Keep under 120 words and be stargazing-specific only.`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     const insights = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
     console.log(`🌙 AI Generated sky insights for ${parkName}:`, insights);
@@ -1387,8 +1393,8 @@ async function getStargazingGuide(astroData, parkName, weatherData) {
     Focus on practical, specific advice for stargazing at this park.`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     const guide = response.trim().replace(/\*\*(.*?)\*\*/g, '$1');
     console.log(`⭐ AI Generated stargazing guide for ${parkName}:`, guide.substring(0, 100) + '...');
@@ -1627,8 +1633,8 @@ async function getAIQuickStatsInsights(park, weatherData, astroData) {
     Format as a JSON array of strings with bold labels like "**Elevation Impact:**" or "**Crowd Analysis:**".`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     const insights = parseAiJsonStringArray(response);
     if (insights?.length) {
@@ -1687,8 +1693,8 @@ async function getAISkyDataInsights(park, astroData, weatherData) {
     IMPORTANT: Return ONLY a valid JSON array of strings. Each string should contain the full insight with bold markdown formatting. Do not include any other text or formatting outside the JSON array.`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     const insights = parseAiJsonStringArray(response);
     if (insights?.length) {
@@ -1740,8 +1746,8 @@ async function getAIParkInfoInsights(park, weatherData, astroData) {
     Format as a JSON array of strings with bold labels like "**Park Highlights:**" or "**Weather Impact:**".`;
 
     const response = await openaiService.chat([
-      { role: 'user', content: prompt }
-    ]);
+    { role: 'user', content: prompt }
+  ], FEED_SYSTEM_PROMPT);
     
     const insights = parseAiJsonStringArray(response);
     if (insights?.length) {

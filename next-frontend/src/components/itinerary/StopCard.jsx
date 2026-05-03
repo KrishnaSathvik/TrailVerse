@@ -51,7 +51,7 @@ function formatDuration(minutes) {
   return `${h}h${m}m`;
 }
 
-export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpdate }) {
+export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpdate, isHighlighted, onClick }) {
   const [isEditing, setIsEditing] = useState(false);
   const [noteValue, setNoteValue] = useState(stop.note || '');
   const textareaRef = useRef(null);
@@ -77,7 +77,9 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
 
   return (
     <div
-      className="rounded-xl p-3 lg:p-3.5 group transition-shadow hover:shadow-sm"
+      data-stop-id={stop.id}
+      onClick={() => onClick?.(stop.id)}
+      className={`rounded-xl p-3 lg:p-3.5 group transition-shadow hover:shadow-sm cursor-pointer ${isHighlighted ? 'ring-2 ring-[var(--accent-green)] animate-pulse' : ''}`}
       style={{
         backgroundColor: 'var(--bg-primary)',
         border: '1px solid var(--border)',

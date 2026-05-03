@@ -475,7 +475,7 @@ export function TripPDFDocument({ trip }) {
                   {highlights.map((h, i) => (
                     <View key={i} style={styles.highlightRow}>
                       <Text style={styles.highlightCheck}>✓</Text>
-                      <Text style={styles.highlightText}>{h}</Text>
+                      <Text style={styles.highlightText}>{typeof h === 'string' ? h : (h.name || h.label || String(h))}</Text>
                     </View>
                   ))}
                 </View>
@@ -484,12 +484,15 @@ export function TripPDFDocument({ trip }) {
               {permits.length > 0 && (
                 <View style={{ marginTop: 16 }}>
                   <Text style={styles.subSectionTitle}>Permits & Reservations</Text>
-                  {permits.map((p, i) => (
-                    <View key={i} style={styles.bulletRow}>
-                      <View style={styles.bulletBox} />
-                      <Text style={styles.bulletText}>{p}</Text>
-                    </View>
-                  ))}
+                  {permits.map((p, i) => {
+                    const label = typeof p === 'string' ? p : (p.name || p.notes || 'Permit');
+                    return (
+                      <View key={i} style={styles.bulletRow}>
+                        <View style={styles.bulletBox} />
+                        <Text style={styles.bulletText}>{label}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -502,7 +505,7 @@ export function TripPDFDocument({ trip }) {
                   {packingList.map((item, i) => (
                     <View key={i} style={styles.bulletRow}>
                       <View style={styles.bulletBox} />
-                      <Text style={styles.bulletText}>{item}</Text>
+                      <Text style={styles.bulletText}>{typeof item === 'string' ? item : (item.name || item.label || String(item))}</Text>
                     </View>
                   ))}
                 </View>

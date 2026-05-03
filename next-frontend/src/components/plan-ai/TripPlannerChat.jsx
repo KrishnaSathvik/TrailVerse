@@ -65,6 +65,7 @@ const TripPlannerChat = ({
   const [messages, setMessages] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPlan, setCurrentPlan] = useState(null);
+  const [hasUsedQuickFill, setHasUsedQuickFill] = useState(false);
   const [currentTripId, setCurrentTripId] = useState(existingTripId);
   const [providers, setProviders] = useState([]);
   const abortControllerRef = useRef(null);
@@ -794,6 +795,7 @@ const TripPlannerChat = ({
   // Auto-send Quick Fill summary when applied
   useEffect(() => {
     if (quickFillMessage && providersLoaded && providers.length > 0 && !isGenerating) {
+      setHasUsedQuickFill(true);
       handleSendMessage(quickFillMessage);
       onQuickFillSent?.();
     }
@@ -2252,41 +2254,6 @@ WEATHER & LIVE INFO RESPONSES:
                     }
                   } : undefined}
                 />
-                {message.hasItinerary && message.role === 'assistant' && currentTripId && !currentTripId.startsWith('temp-') && (
-                  <div className="mx-auto max-w-3xl px-3 sm:px-6 mt-1 mb-2 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          window.location.href = `/plan-ai/${currentTripId}/itinerary`;
-                        }
-                      }}
-                      className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition hover:opacity-90"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        border: '1px solid var(--accent-green)',
-                        color: 'var(--accent-green)',
-                        fontSize: '13px'
-                      }}
-                    >
-                      <span>📋</span>
-                      <span>Open in Visual Itinerary Builder →</span>
-                    </button>
-                    <button
-                      onClick={handleExportPDF}
-                      disabled={isExportingPDF}
-                      className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl transition hover:opacity-90 disabled:opacity-50"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-secondary)',
-                        fontSize: '13px'
-                      }}
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>{isExportingPDF ? 'Exporting...' : 'Export PDF'}</span>
-                    </button>
-                  </div>
-                )}
                 </React.Fragment>
               ))}
 
@@ -2492,7 +2459,7 @@ WEATHER & LIVE INFO RESPONSES:
                       border: '1px solid var(--border)'
                     }}
                   >
-                    {currentPlan ? (
+                    {hasUsedQuickFill ? (
                       <><Edit2 className="h-3.5 w-3.5" />Edit Trip Details</>
                     ) : (
                       <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
@@ -2516,19 +2483,35 @@ WEATHER & LIVE INFO RESPONSES:
                   </button>
                 )}
                 {isAuthenticated && currentTripId && !currentTripId.startsWith('temp-') && currentPlan?.days?.length > 0 && (
-                  <button
-                    onClick={() => router.push(`/plan-ai/${currentTripId}/itinerary`)}
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 sm:px-3 sm:text-xs"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-secondary)'
-                    }}
-                    title="Switch to visual itinerary builder"
-                  >
-                    <span style={{ fontSize: '12px' }}>📋</span>
-                    Itinerary
-                  </button>
+                  <>
+                    <button
+                      onClick={() => router.push(`/plan-ai/${currentTripId}/plan`)}
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 sm:px-3 sm:text-xs"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)'
+                      }}
+                      title="Open plan workspace"
+                    >
+                      <span style={{ fontSize: '12px' }}>📋</span>
+                      Plan
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      disabled={isExportingPDF}
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition hover:opacity-90 disabled:opacity-50 sm:px-3 sm:text-xs"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)'
+                      }}
+                      title="Export trip as PDF"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {isExportingPDF ? 'Exporting...' : 'PDF'}
+                    </button>
+                  </>
                 )}
               </div>
               {chatStatus?.description && (
