@@ -106,7 +106,11 @@ class ComparePartsInput(BaseModel):
 class SearchParksInput(BaseModel):
     query: str | None = Field(
         None,
-        description="Free-text search across park name, code, or state.",
+        description=(
+            "Search term matched against park names and descriptions. "
+            "Use specific keywords like park names ('Yellowstone'), states ('Utah'), "
+            "or features ('canyon', 'coast'). Do NOT pass full natural-language questions."
+        ),
         max_length=100,
     )
     state: str | None = Field(
