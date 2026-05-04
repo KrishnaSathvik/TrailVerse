@@ -193,7 +193,7 @@ async def _check_rate_limit(bucket: str) -> dict[str, Any] | None:
         "Generates a day-by-day itinerary for a US national park trip, including "
         "recommended hikes, scenic drives, lodging areas, and timing. Returns a "
         "structured plan with morning/afternoon/evening activities grounded in "
-        "live NPS alerts, weather forecasts, and web search results.\n\n"
+        "live NPS alerts, current weather forecasts, and curated park-specific knowledge.\n\n"
         "USE THIS WHEN the user wants to:\n"
         "- Plan, build, or design a trip to any US national park\n"
         "- Get an itinerary for a multi-day park visit\n"
