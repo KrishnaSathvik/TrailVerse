@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import re
 from typing import Any
+from urllib.parse import quote
 
 from .client import extract_itinerary, strip_itinerary_block
 
@@ -25,6 +26,27 @@ _TAG_RE = re.compile(r"<[^>]+>")
 def _strip_html(text: str) -> str:
     """Remove HTML tags and collapse whitespace."""
     return " ".join(_TAG_RE.sub("", text).split())
+
+
+def _build_day_maps_url(stops: list[dict[str, Any]]) -> str | None:
+    """Build a Google Maps directions URL from a day's stops.
+
+    Uses stop names when available, falls back to lat,lng coordinates.
+    Returns None if fewer than 1 stop has location data.
+    """
+    waypoints = []
+    for s in stops:
+        lat = s.get("latitude")
+        lng = s.get("longitude")
+        name = s.get("name") or ""
+        if lat is not None and lng is not None:
+            # Prefer name for readability in Google Maps, fall back to coords
+            waypoints.append(quote(name) if name else f"{lat},{lng}")
+        elif name:
+            waypoints.append(quote(name))
+    if len(waypoints) < 1:
+        return None
+    return f"https://www.google.com/maps/dir/{'/'.join(waypoints)}"
 
 
 # ---------- plan_trip ----------
@@ -93,6 +115,22 @@ def format_plan_trip(resp: dict[str, Any], *, user_message: str, park_code_hint:
         if itinerary and itinerary.get("days"):
             summary_parts.append(f"{len(itinerary['days'])}-day itinerary")
         text = ", ".join(summary_parts) if summary_parts else "Trip planning response"
+
+    # Build Google Maps direction links per day from itinerary stops
+    day_maps: list[dict[str, str | None]] = []
+    if itinerary and itinerary.get("days"):
+        map_lines = []
+        for day in itinerary["days"]:
+            stops = day.get("stops") or []
+            day_label = day.get("label") or f"Day {day.get('dayNumber', '?')}"
+            url = _build_day_maps_url(stops)
+            day_maps.append({"day": day_label, "url": url})
+            if url:
+                map_lines.append(f"- [{day_label}]({url})")
+        if map_lines:
+            text += "\n\n**Google Maps directions:**\n" + "\n".join(map_lines)
+
+    structured["dayMaps"] = day_maps
 
     text += f"\n\nContinue planning at {WEB_BASE}/plan-ai"
     if park_code:
