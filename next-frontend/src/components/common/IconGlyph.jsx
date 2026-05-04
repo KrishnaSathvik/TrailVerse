@@ -21,6 +21,8 @@ import {
   Pinterest,
   Play,
   Route,
+  Scales,
+  Search,
   Shield,
   Sun,
   Sparkles
@@ -46,6 +48,8 @@ const ICONS = {
   Pinterest,
   Play,
   Route,
+  Scales,
+  Search,
   Shield,
   Sun,
   Sparkles,

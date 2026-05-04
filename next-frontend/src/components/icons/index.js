@@ -162,6 +162,9 @@ export { KeyIcon as Key } from '@phosphor-icons/react';
 export { TargetIcon as Target } from '@phosphor-icons/react';
 export { DatabaseIcon as Database } from '@phosphor-icons/react';
 
+// Comparison
+export { ScalesIcon as Scales } from '@phosphor-icons/react';
+
 // Additional common icons
 export { LightningIcon as Zap } from '@phosphor-icons/react';
 export { QuestionIcon as HelpCircle } from '@phosphor-icons/react';

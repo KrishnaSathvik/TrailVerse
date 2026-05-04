@@ -6,6 +6,8 @@ which uses /api/ai/chat-anonymous (rate-limited but no auth needed).
 """
 from __future__ import annotations
 
+import asyncio
+import base64
 import json
 import logging
 import os
@@ -205,6 +207,64 @@ class TrailVerseClient:
         if anonymous_id:
             body["anonymousId"] = anonymous_id
         return await self._post("/api/ai/chat-anonymous", body)
+
+
+# ---------- Image fetching for MCP inline images ----------
+
+_IMAGE_TIMEOUT = 10.0  # seconds per image fetch
+_IMAGE_MAX_DOWNLOAD = 15_000_000  # skip downloads larger than 15MB
+_IMAGE_RESIZE_WIDTH = 600  # resize to this width (maintain aspect ratio)
+_IMAGE_JPEG_QUALITY = 75  # JPEG compression quality
+
+
+async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
+    """
+    Download an image URL, resize to ~600px wide, and return an MCP ImageContent dict.
+    Returns: {"type": "image", "data": "<base64>", "mimeType": "image/jpeg"}
+    NPS serves full-res photos (5-10MB), so we resize to keep responses small (~30-80KB).
+    """
+    if not url:
+        return None
+    try:
+        from io import BytesIO
+        from PIL import Image
+
+        async with httpx.AsyncClient(timeout=_IMAGE_TIMEOUT, follow_redirects=True) as c:
+            resp = await c.get(url)
+            resp.raise_for_status()
+            content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0].strip()
+            if not content_type.startswith("image/"):
+                return None
+            body = resp.content
+            if len(body) > _IMAGE_MAX_DOWNLOAD:
+                return None
+
+            # Resize and compress
+            img = Image.open(BytesIO(body))
+            if img.width > _IMAGE_RESIZE_WIDTH:
+                ratio = _IMAGE_RESIZE_WIDTH / img.width
+                new_size = (int(img.width * ratio), int(img.height * ratio))
+                img = img.resize(new_size, Image.LANCZOS)
+            # Convert to RGB JPEG (handles PNG/RGBA)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=_IMAGE_JPEG_QUALITY, optimize=True)
+            compressed = buf.getvalue()
+
+            return {
+                "type": "image",
+                "data": base64.b64encode(compressed).decode("ascii"),
+                "mimeType": "image/jpeg",
+            }
+    except Exception:
+        logger.debug("Failed to fetch/resize image: %s", url, exc_info=True)
+        return None
+
+
+async def fetch_images_as_base64(urls: list[str]) -> list[dict[str, str] | None]:
+    """Fetch multiple images concurrently. Returns list parallel to input (None on failure)."""
+    return await asyncio.gather(*(fetch_image_as_base64(u) for u in urls))
 
 
 # ---------- Helpers for parsing the AI response ----------

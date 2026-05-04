@@ -1,10 +1,12 @@
 """
 Formatters that convert raw TrailVerse backend responses into the
-structuredContent shape our widgets expect.
+structuredContent shape our widgets expect, plus rich text for LLMs.
 
-Each formatter returns a tuple: (structured_content_dict, human_text_summary).
-The structured content is what the widget iframe receives via the MCP
-Apps bridge. The text is what ChatGPT's model reads.
+Each formatter returns a tuple: (structured_content_dict, text_for_llm).
+- structured_content: what the widget iframe receives via the MCP Apps bridge
+  (ChatGPT renders these as visual cards)
+- text_for_llm: full data in markdown so LLMs without widget support (e.g. Claude)
+  can still generate rich, data-driven responses
 """
 from __future__ import annotations
 
@@ -54,6 +56,8 @@ def format_plan_trip(resp: dict[str, Any], *, user_message: str, park_code_hint:
         "parkName": park_name,
         "parkCode": park_code,
         "parkImages": park_images,
+        # Legacy persona label — both are now "Trailie" in the UI, but the
+        # provider-based routing (openai=structured, claude=casual) still applies.
         "persona": "planner" if data.get("provider") == "openai" else "local",
         "provider": data.get("provider"),
         "model": data.get("model"),
@@ -76,23 +80,23 @@ def format_plan_trip(resp: dict[str, Any], *, user_message: str, park_code_hint:
         },
     }
 
-    # Text summary the model sees (kept concise so it doesn't parrot the full plan)
-    summary_parts = []
-    if park_name:
-        summary_parts.append(f"Trip plan for {park_name}")
-    if itinerary and itinerary.get("days"):
-        summary_parts.append(f"{len(itinerary['days'])}-day itinerary")
-    if confidence.get("level"):
-        summary_parts.append(f"{confidence['level']} confidence")
-    if plan_score.get("label"):
-        summary_parts.append(f"plan quality: {plan_score['label']}")
+    # Text content the model sees — include the full narrative so LLMs that
+    # don't render structuredContent widgets (e.g. Claude) can still give a
+    # rich response.  ChatGPT will render the widget and may summarize.
+    text = ""
+    if clean_text:
+        text = clean_text
+    else:
+        summary_parts = []
+        if park_name:
+            summary_parts.append(f"Trip plan for {park_name}")
+        if itinerary and itinerary.get("days"):
+            summary_parts.append(f"{len(itinerary['days'])}-day itinerary")
+        text = ", ".join(summary_parts) if summary_parts else "Trip planning response"
 
-    text = (
-        f"{', '.join(summary_parts)}. Full itinerary rendered in the card above. "
-        f"For unlimited messages and web search, continue at {WEB_BASE}/plan-ai."
-        if summary_parts
-        else f"Trip planning response rendered above. Continue at {WEB_BASE}/plan-ai."
-    )
+    text += f"\n\nContinue planning at {WEB_BASE}/plan-ai"
+    if park_code:
+        text += f" | Park details: {WEB_BASE}/parks/{park_code}"
 
     return structured, text
 
@@ -190,16 +194,53 @@ def format_park_details(
         },
     }
 
-    text_parts = [f"{name}"]
+    # Build rich text so LLMs without widget support get the full picture
+    text_lines = [f"# {name}"]
     if park.get("designation"):
-        text_parts.append(f"({park['designation']})")
+        text_lines[0] += f" ({park['designation']})"
     if park.get("states"):
-        text_parts.append(f"in {park['states']}")
+        text_lines[0] += f" — {park['states']}"
+
+    desc = park.get("description") or park.get("summary")
+    if desc:
+        text_lines.append(f"\n{desc}")
+
+    if current and current.get("tempF") is not None:
+        wx = f"\n**Current weather:** {current['tempF']}°F"
+        if current.get("description"):
+            wx += f", {current['description']}"
+        if current.get("humidity"):
+            wx += f", {current['humidity']}% humidity"
+        if current.get("windMph"):
+            wx += f", wind {current['windMph']} mph"
+        text_lines.append(wx)
+
     if alert_list:
-        text_parts.append(f"— {len(alert_list)} active alert(s)")
+        text_lines.append(f"\n**Active alerts ({len(alert_list)}):**")
+        for a in alert_list:
+            line = f"- [{a.get('category', 'Alert')}] {a.get('title', '')}"
+            if a.get("description"):
+                line += f": {a['description']}"
+            text_lines.append(line)
+
+    activities = _pick_activities(park)
+    if activities:
+        text_lines.append(f"\n**Activities:** {', '.join(activities)}")
+
+    fees = park.get("entranceFees") or []
+    if fees:
+        text_lines.append("\n**Entrance fees:**")
+        for f in fees[:4]:
+            if isinstance(f, dict) and f.get("title"):
+                cost = f.get("cost", "?")
+                text_lines.append(f"- {f['title']}: ${cost}")
+
     if editorial:
-        text_parts.append("— with TrailVerse daily feed insight")
-    text = " ".join(text_parts) + f". Full details rendered above. Open on TrailVerse: {WEB_BASE}/parks/{park_code}"
+        if editorial.get("leadInsight"):
+            text_lines.append(f"\n**Today's insight:** {editorial['leadInsight']}")
+
+    text_lines.append(f"\nMore: {WEB_BASE}/parks/{park_code}")
+    text = "\n".join(text_lines)
 
     return structured, text
 
@@ -348,11 +389,41 @@ def format_compare(
         },
     }
 
+    # Rich text for LLMs without widget rendering
     names = [p["name"] for p in parks if p.get("name")]
-    text = (
-        f"Comparing {', '.join(names)}. Side-by-side comparison rendered above. "
-        f"Full comparison: {structured['links']['continueOnWebsite']}"
-    )
+    text_lines = [f"# Comparing: {', '.join(names)}\n"]
+    for p in parks:
+        pname = p.get("name", "Unknown")
+        parts = [f"**{pname}**"]
+        if p.get("states"):
+            parts.append(f"({p['states']})")
+        text_lines.append(" ".join(parts))
+        details = []
+        if p.get("currentTempF") is not None:
+            details.append(f"Current temp: {p['currentTempF']}°F")
+        if p.get("crowdLevel"):
+            details.append(f"Crowds: {p['crowdLevel']}")
+        if p.get("entranceFee"):
+            details.append(f"Entrance fee: {p['entranceFee']}")
+        if p.get("topActivities"):
+            details.append(f"Top activities: {', '.join(p['topActivities'][:5])}")
+        if details:
+            text_lines.append("  " + " | ".join(details))
+        text_lines.append("")
+
+    if highlights:
+        text_lines.append("**Highlights:**")
+        if highlights.get("bestOverall"):
+            text_lines.append(f"- Best overall: {highlights['bestOverall']}")
+        if highlights.get("warmest"):
+            text_lines.append(f"- Warmest: {highlights['warmest']}")
+        if highlights.get("lowerCrowd"):
+            text_lines.append(f"- Lower crowds: {highlights['lowerCrowd']}")
+        if highlights.get("sharedHighlights"):
+            text_lines.append(f"- Shared activities: {', '.join(highlights['sharedHighlights'])}")
+
+    text_lines.append(f"\nFull comparison: {structured['links']['continueOnWebsite']}")
+    text = "\n".join(text_lines)
     return structured, text
 
 
@@ -383,7 +454,20 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         "count": len(parks),
         "links": {"exploreAll": f"{WEB_BASE}/explore"},
     }
-    text = f"Found {len(parks)} park{'s' if len(parks) != 1 else ''}. Full list rendered above."
+    # Rich text for LLMs without widget rendering
+    text_lines = [f"Found {len(parks)} park{'s' if len(parks) != 1 else ''}:\n"]
+    for p in parks:
+        pname = p.get("name", "Unknown")
+        line = f"- **{pname}**"
+        if p.get("designation"):
+            line += f" ({p['designation']})"
+        if p.get("states"):
+            line += f" — {p['states']}"
+        if p.get("summary"):
+            line += f": {p['summary']}"
+        text_lines.append(line)
+    text_lines.append(f"\nExplore all parks: {WEB_BASE}/explore")
+    text = "\n".join(text_lines)
     return structured, text
 
 
@@ -417,5 +501,26 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         "count": len(events),
         "links": {"browseAll": f"{WEB_BASE}/events"},
     }
-    text = f"Found {len(events)} upcoming event{'s' if len(events) != 1 else ''} — see card above."
+    # Rich text for LLMs without widget rendering
+    text_lines = [f"Found {len(events)} upcoming event{'s' if len(events) != 1 else ''}:\n"]
+    for e in events:
+        title = e.get("title", "Untitled event")
+        line = f"- **{title}**"
+        if e.get("parkName"):
+            line += f" at {e['parkName']}"
+        if e.get("date"):
+            line += f" on {e['date']}"
+        if e.get("time"):
+            line += f" at {e['time']}"
+        text_lines.append(line)
+        if e.get("description"):
+            text_lines.append(f"  {e['description']}")
+        if e.get("location"):
+            loc = e["location"][:150] if len(e.get("location", "")) > 150 else e["location"]
+            text_lines.append(f"  Location: {loc}")
+        if e.get("category"):
+            text_lines.append(f"  Category: {e['category']}")
+        text_lines.append("")
+    text_lines.append(f"Browse all events: {WEB_BASE}/events")
+    text = "\n".join(text_lines)
     return structured, text
