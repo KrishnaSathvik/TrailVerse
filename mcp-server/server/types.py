@@ -83,10 +83,13 @@ class PlanTripInput(BaseModel):
 class GetParkDetailsInput(BaseModel):
     park_code: str = Field(
         ...,
-        description="NPS park code, typically 4 letters. Examples: 'zion', 'yell', 'grca', 'acad'.",
+        description=(
+            "Park name or NPS park code. Examples: 'Yellowstone', 'yell', "
+            "'Grand Canyon', 'grca', 'Zion', 'zion', 'Acadia', 'acad'. "
+            "Full park names are resolved automatically."
+        ),
         min_length=2,
-        max_length=10,
-        pattern=r"^[a-zA-Z0-9]+$",
+        max_length=60,
     )
 
 
@@ -95,7 +98,11 @@ class GetParkDetailsInput(BaseModel):
 class ComparePartsInput(BaseModel):
     park_codes: list[str] = Field(
         ...,
-        description="2 to 4 NPS park codes to compare side-by-side. Example: ['zion', 'bryc'].",
+        description=(
+            "2 to 4 park names or NPS codes to compare side-by-side. "
+            "Example: ['Zion', 'Grand Canyon'] or ['zion', 'grca']. "
+            "Full park names are resolved automatically."
+        ),
         min_length=2,
         max_length=4,
     )
@@ -125,7 +132,7 @@ class SearchParksInput(BaseModel):
         max_length=40,
     )
     limit: int = Field(
-        12, ge=1, le=24, description="Maximum number of parks to return."
+        20, ge=1, le=50, description="Maximum number of parks to return. Default 20."
     )
 
 
@@ -133,7 +140,7 @@ class SearchParksInput(BaseModel):
 
 class FindEventsInput(BaseModel):
     park_code: str | None = Field(
-        None, description="Filter events to a specific park by NPS code."
+        None, description="Filter events to a specific park by name or NPS code. Example: 'Yellowstone' or 'yell'."
     )
     state: str | None = Field(
         None, description="Two-letter US state code to filter events.",
