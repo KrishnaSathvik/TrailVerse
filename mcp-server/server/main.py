@@ -27,7 +27,7 @@ from mcp.server.fastmcp.resources import FunctionResource
 from mcp.types import Icon
 from pydantic import AnyUrl
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse, FileResponse
+from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 
 from .client import TrailVerseAPIError, TrailVerseClient
 from .conversations import conversation_store
@@ -509,10 +509,16 @@ async def find_events(
 # ---------- Health / root routes (so Render and connector wizards don't 502) ----------
 
 @mcp.custom_route("/", methods=["GET"])
-async def root(_request: Request) -> PlainTextResponse:
-    return PlainTextResponse(
-        "TrailVerse MCP server is running. MCP endpoint: /mcp",
-        media_type="text/plain",
+async def root(_request: Request) -> HTMLResponse:
+    return HTMLResponse(
+        "<!doctype html><html><head>"
+        "<title>TrailVerse MCP</title>"
+        f'<link rel="icon" href="{_BASE_URL}/icon-512.png" type="image/png" sizes="512x512">'
+        f'<link rel="icon" href="{_BASE_URL}/icon.svg" type="image/svg+xml">'
+        f'<link rel="apple-touch-icon" href="{_BASE_URL}/icon-512.png">'
+        "</head><body>"
+        "<p>TrailVerse MCP server is running. MCP endpoint: /mcp</p>"
+        "</body></html>"
     )
 
 
