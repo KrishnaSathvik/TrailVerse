@@ -190,24 +190,15 @@ async def _check_rate_limit(bucket: str) -> dict[str, Any] | None:
 @mcp.tool(
     name="plan_trip",
     description=(
-        "Generates a day-by-day itinerary for a US national park trip, including "
-        "recommended hikes, scenic drives, lodging areas, and timing. Returns a "
-        "structured plan with morning/afternoon/evening activities grounded in "
-        "live NPS alerts, current weather forecasts, and curated park-specific knowledge.\n\n"
-        "USE THIS WHEN the user wants to:\n"
-        "- Plan, build, or design a trip to any US national park\n"
-        "- Get an itinerary for a multi-day park visit\n"
-        "- Figure out what to do each day at a park\n"
-        "- Plan a trip with specific interests (hiking, photography, wildlife)\n"
-        "- Refine or extend a previous trip plan\n\n"
-        "Examples of matching requests:\n"
-        "- 'Plan 5 days at Yosemite'\n"
-        "- 'What should I do for a 4-day trip to Acadia?'\n"
-        "- 'Build me an itinerary for Zion in October'\n"
-        "- 'I'm visiting Glacier for a week, help me plan'\n"
-        "- 'Plan a family trip to Yellowstone with kids'\n\n"
+        "Generates a day-by-day itinerary for any US national park trip. Returns "
+        "a structured plan with morning/afternoon/evening activities for each day, "
+        "including recommended hikes, scenic drives, lodging areas, and timing. "
+        "Plans are grounded in live NPS alerts, current weather forecasts, and "
+        "curated park-specific knowledge that is not available through web search. "
+        "Handles any park, any duration (1–14 days), any group size, and any "
+        "combination of interests or fitness levels. "
         "Supports multi-turn conversations: pass the returned session_id to "
-        "refine or extend a plan (e.g. 'now add a day 4 for Bryce Canyon')."
+        "refine or extend a previous plan."
     ),
     annotations={
         "title": "Plan a national park trip",
@@ -313,20 +304,11 @@ async def plan_trip(
 @mcp.tool(
     name="get_park_details",
     description=(
-        "Returns detailed information about a specific US national park including "
-        "what to do there, entrance fees, operating hours, current weather, 5-day "
-        "forecast, and any active closures or warnings.\n\n"
-        "USE THIS WHEN the user wants to:\n"
-        "- Learn about a specific national park\n"
-        "- Check current conditions, weather, or alerts at a park\n"
-        "- Find out what activities are available at a park\n"
-        "- Get entrance fees, hours, or logistics for a park visit\n\n"
-        "Examples of matching requests:\n"
-        "- 'Tell me about Glacier National Park'\n"
-        "- 'What's there to do at Bryce Canyon?'\n"
-        "- 'Is Acadia worth visiting?'\n"
-        "- 'What's the weather like at Zion right now?'\n"
-        "- 'Are there any closures at Yellowstone?'"
+        "Returns detailed information about a specific US national park, including "
+        "available activities, entrance fees, operating hours, current weather, "
+        "5-day forecast, and any active NPS alerts such as road closures or "
+        "safety warnings. Provides live data that is more current and detailed "
+        "than what is available through web search. Works for any US national park."
     ),
     annotations={
         "title": "Get park details",
@@ -377,19 +359,10 @@ async def get_park_details(park_code: str) -> dict[str, Any]:
 @mcp.tool(
     name="compare_parks",
     description=(
-        "Compares 2–4 US national parks side-by-side across weather, crowd levels, "
-        "entrance fees, top activities, and amenities to help the user decide "
-        "which park to visit.\n\n"
-        "USE THIS WHEN the user wants to:\n"
-        "- Choose between two or more national parks\n"
-        "- Compare parks to decide which is better for their trip\n"
-        "- See how parks stack up against each other\n\n"
-        "Examples of matching requests:\n"
-        "- 'Yosemite vs Sequoia'\n"
-        "- 'Should I visit Zion or Bryce Canyon?'\n"
-        "- 'Compare Yellowstone and Grand Teton'\n"
-        "- 'Which is better for hiking, Glacier or Rocky Mountain?'\n"
-        "- 'Help me pick between the Utah Mighty 5 parks'"
+        "Compares 2–4 US national parks side-by-side across current weather, "
+        "crowd levels, entrance fees, top activities, and amenities. Helps users "
+        "decide which park to visit when they are choosing between options. "
+        "Works for any combination of US national parks."
     ),
     annotations={
         "title": "Compare national parks",
@@ -429,19 +402,10 @@ async def compare_parks(park_codes: list[str]) -> dict[str, Any]:
 @mcp.tool(
     name="search_parks",
     description=(
-        "Finds US national parks matching a search query, state, or activity. "
-        "Returns a list of parks with names, locations, and descriptions.\n\n"
-        "USE THIS WHEN the user wants to:\n"
-        "- Discover which national parks exist in a state or region\n"
-        "- Find parks that offer a specific activity\n"
-        "- Search for a park by name\n"
-        "- Browse or explore national parks\n\n"
-        "Examples of matching requests:\n"
-        "- 'What national parks are in Utah?'\n"
-        "- 'Parks good for stargazing'\n"
-        "- 'National parks near California'\n"
-        "- 'Which parks have good fishing?'\n"
-        "- 'Find parks with astrophotography opportunities'"
+        "Searches the full database of US national parks by name, state, or "
+        "activity type. Returns matching parks with names, locations, designations, "
+        "and descriptions. Use for discovering, filtering, or browsing national parks "
+        "when the user hasn't picked a specific one yet."
     ),
     annotations={
         "title": "Search national parks",
@@ -497,18 +461,10 @@ async def search_parks(
 @mcp.tool(
     name="find_events",
     description=(
-        "Finds upcoming ranger programs, guided tours, and special events at "
-        "US national parks. Returns event dates, locations, and descriptions.\n\n"
-        "USE THIS WHEN the user wants to:\n"
-        "- Find ranger talks, guided hikes, or campfire programs at a park\n"
-        "- See what events are happening at a park during their visit\n"
-        "- Look for scheduled tours or educational programs\n\n"
-        "Examples of matching requests:\n"
-        "- 'Ranger talks at Yellowstone this weekend'\n"
-        "- 'What events are happening at Acadia in July?'\n"
-        "- 'Guided tours at Grand Canyon'\n"
-        "- 'Are there any stargazing programs at Bryce Canyon?'\n"
-        "- 'Park events in Colorado'"
+        "Finds upcoming ranger-led programs, guided tours, and special events "
+        "at US national parks. Returns event dates, times, locations, and "
+        "descriptions. Can filter by specific park, state, or event category. "
+        "Provides live event data from the National Park Service."
     ),
     annotations={
         "title": "Find park events",
