@@ -67,6 +67,15 @@ class PlanTripInput(BaseModel):
     accommodation: Accommodation | None = Field(
         None, description="Preferred accommodation style."
     )
+    session_id: str | None = Field(
+        None,
+        description=(
+            "Session ID for multi-turn conversation continuity. "
+            "Returned in the previous plan_trip response as 'sessionId'. "
+            "Pass it back to continue the same conversation (e.g. 'now add day 4'). "
+            "Omit for a new trip planning session."
+        ),
+    )
 
 
 # ---------- get_park_details ----------

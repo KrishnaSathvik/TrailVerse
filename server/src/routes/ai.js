@@ -1741,7 +1741,7 @@ router.post('/chat-anonymous', async (req, res) => {
     }
 
     // Check if user can send more messages BEFORE processing the AI request
-    if (!session.canSendMessage()) {
+    if (!req.isTrustedMcp && !session.canSendMessage()) {
       // User has exceeded message limit, return conversion message
       const lastUserMessageContent = lastUserMessage?.content || '';
       
@@ -1828,6 +1828,7 @@ Ready to continue planning? 🚀`,
     let weatherFacts = null;
     let npsFacts = null;
     let feeFreeFacts = null;
+    let webSearchFacts = null;
 
     try {
       const factsResult = await fetchRelevantFacts({
@@ -1836,10 +1837,11 @@ Ready to continue planning? 🚀`,
         lat: resolvedMetadata.lat,
         lon: resolvedMetadata.lon,
         parkName: resolvedMetadata.parkName,
-        isAnonymous: true
+        isAnonymous: !req.isTrustedMcp
       });
       weatherFacts = factsResult.weatherFacts;
       feeFreeFacts = factsResult.feeFreeFacts;
+      webSearchFacts = factsResult.webSearchFacts;
 
       // Fetch NPS facts for ALL mentioned parks in parallel
       if (anonExtractedParks.length > 1) {
@@ -1854,7 +1856,7 @@ Ready to continue planning? 🚀`,
         npsFacts = factsResult.npsFacts;
       }
 
-      console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasFeeFree: !!feeFreeFacts, parks: anonParkNames });
+      console.log('[AI] Facts fetched for anonymous user:', { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, hasFeeFree: !!feeFreeFacts, parks: anonParkNames });
     } catch (factsError) {
       console.error('[AI] Facts fetching error for anonymous user:', factsError.message);
     }
@@ -1882,7 +1884,7 @@ Ready to continue planning? 🚀`,
       enhancedSystemPrompt += formatFeeFreeBlock(feeFreeFacts);
     }
 
-    if (npsFacts || weatherFacts) {
+    if (npsFacts || weatherFacts || webSearchFacts) {
       const parkLabel = anonParkNames.length > 1 ? anonParkNames.join(', ') : (resolvedMetadata.parkName || 'this park');
       const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -1891,7 +1893,7 @@ Ready to continue planning? 🚀`,
       const missing = [];
       if (npsFacts) available.push('NPS alerts/closures/permits/campgrounds'); else if (resolvedMetadata.parkCode) missing.push('NPS park data (API unavailable)');
       if (weatherFacts) available.push('weather forecast'); else if (resolvedMetadata.lat) missing.push('weather forecast');
-      missing.push('web search (requires sign-up)');
+      if (webSearchFacts) available.push('live web search'); else missing.push('web search (requires sign-up)');
 
       enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
       enhancedSystemPrompt += `\nThis is AUTHORITATIVE real-time data as of ${today}. This OVERRIDES your training data where they conflict.`;
@@ -1907,6 +1909,9 @@ Ready to continue planning? 🚀`,
       }
       if (weatherFacts) {
         enhancedSystemPrompt += weatherFacts + '\n';
+      }
+      if (webSearchFacts) {
+        enhancedSystemPrompt += webSearchFacts + '\n';
       }
 
       enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
@@ -2218,8 +2223,7 @@ ${anonCleanContent.substring(0, 6000)}`;
 
     // Hard gate: strip itinerary if no park/destination was detected
     if (anonNoParkDetected && anonItineraryData) {
-      // For anonymous users, web search is disabled — use isTravelRelated as the signal
-      const allowNonNpsItinerary = isTravelRelated(lastUserMessageContent);
+      const allowNonNpsItinerary = webSearchFacts || isTravelRelated(lastUserMessageContent);
       if (!allowNonNpsItinerary) {
         console.log('[AI] Itinerary stripped from anonymous response — no park or travel destination detected');
         anonItineraryData = null;
@@ -2288,7 +2292,7 @@ ${anonCleanContent.substring(0, 6000)}`;
     response.content = anonCleanContent;
 
     // Add web search conversion message for anonymous users when their question would benefit from live search
-    if (needsWebSearch(lastUserMessageContent) && isTravelRelated(lastUserMessageContent)) {
+    if (!req.isTrustedMcp && needsWebSearch(lastUserMessageContent) && isTravelRelated(lastUserMessageContent)) {
       response.content += '\n\n---\n\n🔍 **Want live search results?** Sign up free to unlock real-time hotel prices, restaurant ratings, and live web search powered answers in your trip plans.';
     }
 
@@ -2328,7 +2332,7 @@ ${anonCleanContent.substring(0, 6000)}`;
       blocks: {
         npsFacts: !!npsFacts,
         weatherFacts: !!weatherFacts,
-        webSearch: false,
+        webSearch: !!webSearchFacts,
         feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
         candidateParks: anonCandidateParksBlock,
         constraints: anonConstraints.hasConstraints,

@@ -24,11 +24,13 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
+from mcp.types import Icon
 from pydantic import AnyUrl
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse
+from starlette.responses import JSONResponse, PlainTextResponse, FileResponse
 
 from .client import TrailVerseAPIError, TrailVerseClient
+from .conversations import conversation_store
 from .formatters import (
     format_compare,
     format_events,
@@ -55,6 +57,15 @@ logger = logging.getLogger("trailverse-mcp")
 
 MCP_APPS_MIME = "text/html+skybridge"
 WIDGETS_DIR = Path(__file__).resolve().parent.parent / "widgets"
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+# Public base URL for icon references in MCP server metadata.
+# In production this is https://trailverse-mcp.onrender.com (MCP_SERVER_BASE);
+# locally it falls back to http://localhost:PORT.
+_BASE_URL = os.getenv(
+    "MCP_SERVER_BASE",
+    f"http://localhost:{os.getenv('PORT', '8000')}",
+).rstrip("/")
 
 WIDGET_MAP = {
     "itinerary":     ("ui://widget/itinerary.html",     "itinerary.html"),
@@ -84,6 +95,10 @@ mcp = FastMCP(
         "find parks by name/state/activity, and find_events for ranger programs. "
         "All data is grounded in live National Park Service sources."
     ),
+    icons=[
+        Icon(src=f"{_BASE_URL}/icon.svg", mimeType="image/svg+xml"),
+        Icon(src=f"{_BASE_URL}/icon-512.png", mimeType="image/png", sizes=["512x512"]),
+    ],
     host=os.getenv("HOST", "0.0.0.0"),
     port=int(os.getenv("PORT", "8000")),
     # Apps SDK needs streamable-http; json_response=True returns JSON rather than SSE
@@ -176,11 +191,11 @@ async def _check_rate_limit(bucket: str) -> dict[str, Any] | None:
     name="plan_trip",
     description=(
         "Generate a constraint-aware, day-by-day national park trip itinerary using "
-        "TrailVerse's AI planner. Grounds recommendations in live NPS alerts, weather, "
-        "and crowd data. Validates fitness level and group composition against trails. "
-        "Use when the user wants an itinerary, not just park info. Limited to 5 "
-        "messages per 48 hours (anonymous). For unlimited access, users can continue "
-        "at https://www.nationalparksexplorerusa.com/plan-ai."
+        "TrailVerse's AI planner with live web search, NPS alerts, weather, and crowd "
+        "data. Validates fitness level and group composition against trails. "
+        "Supports multi-turn conversations: pass the returned session_id to refine "
+        "or extend a plan (e.g. 'now add a day 4 for Bryce Canyon'). "
+        "Use when the user wants an itinerary, not just park info."
     ),
     annotations={
         "title": "Plan a national park trip",
@@ -199,6 +214,7 @@ async def plan_trip(
     has_kids: bool | None = None,
     interests: list[str] | None = None,
     accommodation: str | None = None,
+    session_id: str | None = None,
 ) -> dict[str, Any]:
     # Global MCP-side fuse (defense-in-depth behind backend bypass key)
     if (limited := await _check_rate_limit("plan_trip")):
@@ -215,9 +231,22 @@ async def plan_trip(
             has_kids=has_kids,
             interests=interests,
             accommodation=accommodation,  # type: ignore[arg-type]
+            session_id=session_id,
         )
     except Exception as e:
         return _error_result(f"Invalid input: {e}")
+
+    # --- Conversation continuity ---
+    conv = None
+    if payload.session_id:
+        conv = conversation_store.get(payload.session_id)
+        if not conv:
+            logger.warning("Session %s expired or unknown — starting fresh", payload.session_id)
+    if not conv:
+        conv = conversation_store.create()
+
+    # Append the new user message to the conversation
+    conv.messages.append({"role": "user", "content": payload.message})
 
     form_data: dict[str, Any] = {}
     if payload.days is not None:
@@ -240,12 +269,27 @@ async def plan_trip(
                 park_code=payload.park_code,
                 persona=payload.persona,
                 form_data=form_data or None,
+                messages=conv.messages,
+                anonymous_id=conv.anonymous_id,
             )
     except TrailVerseAPIError as e:
         logger.exception("plan_trip backend call failed")
         return _error_result(str(e))
 
+    # Extract assistant content and store in conversation history
+    assistant_content = ""
+    resp_data = resp.get("data", resp)
+    if isinstance(resp_data, dict):
+        assistant_content = resp_data.get("content", "")
+    if assistant_content:
+        conv.messages.append({"role": "assistant", "content": assistant_content})
+
     structured, text = format_plan_trip(resp, user_message=payload.message, park_code_hint=payload.park_code or "")
+
+    # Inject session_id so ChatGPT can pass it back on follow-up calls
+    structured["sessionId"] = conv.session_id
+    text += f" [session_id={conv.session_id}]"
+
     meta = _tool_meta(
         "itinerary",
         invoking="Planning your trip with live park data…",
@@ -475,6 +519,21 @@ async def root(_request: Request) -> PlainTextResponse:
 @mcp.custom_route("/health", methods=["GET"])
 async def health(_request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok", "service": "trailverse-mcp"})
+
+
+@mcp.custom_route("/icon.svg", methods=["GET"])
+async def icon_svg(_request: Request) -> FileResponse:
+    return FileResponse(STATIC_DIR / "icon.svg", media_type="image/svg+xml")
+
+
+@mcp.custom_route("/icon-512.png", methods=["GET"])
+async def icon_png(_request: Request) -> FileResponse:
+    return FileResponse(STATIC_DIR / "icon-512.png", media_type="image/png")
+
+
+@mcp.custom_route("/favicon.ico", methods=["GET"])
+async def favicon(_request: Request) -> FileResponse:
+    return FileResponse(STATIC_DIR / "icon-512.png", media_type="image/png")
 
 
 @mcp.custom_route("/.well-known/openai-apps-challenge", methods=["GET"])

@@ -167,7 +167,7 @@ class TrailVerseClient:
         return await self._get(
             "/api/events/",
             parkCode=safe_code,
-            state=state,
+            stateCode=state,
             category=category,
             limit=limit,
         )
@@ -180,12 +180,16 @@ class TrailVerseClient:
         park_code: str | None = None,
         persona: str = "planner",
         form_data: dict[str, Any] | None = None,
+        messages: list[dict[str, str]] | None = None,
+        anonymous_id: str | None = None,
     ) -> dict[str, Any]:
         """
-        Call the anonymous AI planner. Limited to 5 messages per 48h per IP.
+        Call the anonymous AI planner.
 
         persona: "planner" (GPT-5.4 Mini, structured) or "local" (Claude, casual).
         form_data: optional structured constraints (dates, groupSize, budget, etc.).
+        messages: full conversation history for multi-turn continuity.
+        anonymous_id: stable session identity for backend session lookup.
         """
         provider = "openai" if persona == "planner" else "claude"
         metadata: dict[str, Any] = {}
@@ -194,10 +198,12 @@ class TrailVerseClient:
         if form_data:
             metadata["formData"] = form_data
         body: dict[str, Any] = {
-            "messages": [{"role": "user", "content": message}],
+            "messages": messages if messages else [{"role": "user", "content": message}],
             "provider": provider,
             "metadata": metadata,
         }
+        if anonymous_id:
+            body["anonymousId"] = anonymous_id
         return await self._post("/api/ai/chat-anonymous", body)
 
 
