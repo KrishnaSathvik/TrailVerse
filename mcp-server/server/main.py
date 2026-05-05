@@ -23,10 +23,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastmcp.tools.base import ToolResult
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
-from mcp.types import Icon, ImageContent, TextContent
+from mcp.types import CallToolResult, Icon, ImageContent, TextContent
 from pydantic import AnyUrl
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
@@ -304,8 +303,8 @@ def _tool_result(
     structured: dict[str, Any],
     content: str | list[dict[str, str]],
     meta_extra: dict[str, Any],
-) -> ToolResult:
-    """Return a ToolResult that FastMCP passes through directly to the MCP protocol.
+) -> CallToolResult:
+    """Return a CallToolResult that the MCP server passes through directly.
 
     content can be a plain text string (backward compat) or a list of MCP
     content block dicts — mix of {"type": "text", "text": ...} and
@@ -324,17 +323,22 @@ def _tool_result(
                 ))
             else:
                 blocks.append(TextContent(type="text", text=block.get("text", "")))
-    return ToolResult(content=blocks, structured_content=structured, meta=meta_extra)
+    return CallToolResult.model_validate({
+        "content": blocks,
+        "structuredContent": structured,
+        "_meta": meta_extra,
+    })
 
 
-def _error_result(message: str) -> ToolResult:
-    return ToolResult(
+def _error_result(message: str) -> CallToolResult:
+    return CallToolResult(
         content=[TextContent(type="text", text=f"TrailVerse error: {message}")],
-        structured_content={"kind": "error", "message": message},
+        structuredContent={"kind": "error", "message": message},
+        isError=True,
     )
 
 
-async def _check_rate_limit(bucket: str) -> ToolResult | None:
+async def _check_rate_limit(bucket: str) -> CallToolResult | None:
     """
     Apply the appropriate in-MCP rate limit bucket. Returns an error ToolResult
     if rate-limited, or None if the request should proceed.
@@ -387,7 +391,7 @@ async def plan_trip(
     interests: list[str] | None = None,
     accommodation: str | None = None,
     session_id: str | None = None,
-) -> ToolResult:
+) -> CallToolResult:
     # Global MCP-side fuse (defense-in-depth behind backend bypass key)
     if (limited := await _check_rate_limit("plan_trip")):
         return limited
@@ -504,7 +508,7 @@ async def plan_trip(
         "idempotentHint": True,
     },
 )
-async def get_park_details(park_code: str) -> ToolResult:
+async def get_park_details(park_code: str) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
@@ -575,7 +579,7 @@ async def get_park_details(park_code: str) -> ToolResult:
         "idempotentHint": True,
     },
 )
-async def compare_parks(park_codes: list[str]) -> ToolResult:
+async def compare_parks(park_codes: list[str]) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
@@ -646,7 +650,7 @@ async def search_parks(
     state: str | None = None,
     activity: str | None = None,
     limit: int = 20,
-) -> ToolResult:
+) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
     try:
@@ -718,7 +722,7 @@ async def find_events(
     state: str | None = None,
     category: str | None = None,
     limit: int = 10,
-) -> ToolResult:
+) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
