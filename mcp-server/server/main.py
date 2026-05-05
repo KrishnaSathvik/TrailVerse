@@ -240,15 +240,17 @@ _register_widgets()
 async def _resolve_park_code(name_or_code: str) -> str:
     """Resolve a park name or code to an NPS park code.
 
-    If the input looks like a short alphanumeric code (<=6 chars), assume it's
-    already a park code. Otherwise, search the backend to find the best match.
+    If the input looks like a short alphanumeric code (<=4 chars, all lowercase,
+    and not a common word), assume it's already a park code. Otherwise, search
+    the backend to find the best match.
     Returns the resolved code (lowercase) or the original input if no match.
     """
     cleaned = name_or_code.strip().lower()
     # NPS codes are typically 4 chars (e.g. yell, grca, zion). Treat very
-    # short alphanumeric strings as codes directly; anything longer goes
-    # through the search resolver.
-    if len(cleaned) <= 4 and cleaned.isalnum():
+    # short alphanumeric strings as codes directly — UNLESS they look like
+    # common English words/state names that users might type.
+    _NOT_CODES = {"utah", "mesa", "bend", "park", "lake", "cave", "reef", "arch"}
+    if len(cleaned) <= 4 and cleaned.isalnum() and cleaned not in _NOT_CODES:
         return cleaned
     # Search by name
     try:
@@ -349,13 +351,16 @@ async def _check_rate_limit(bucket: str) -> dict[str, Any] | None:
 @mcp.tool(
     name="plan_trip",
     description=(
-        "Generates a day-by-day itinerary for any US national park trip. Returns "
-        "a structured plan with morning/afternoon/evening activities for each day, "
-        "including recommended hikes, scenic drives, lodging areas, and timing. "
-        "Plans are grounded in live NPS alerts, current weather forecasts, and "
-        "curated park-specific knowledge that is not available through web search. "
-        "Handles any park, any duration (1–14 days), any group size, and any "
-        "combination of interests or fitness levels. "
+        "Plan a trip to any US national park or outdoor destination. Use this for "
+        "ANY trip planning request — including 'plan my weekend', 'what should I do "
+        "for 4th of July', 'plan a hiking trip', 'where should I go for a long "
+        "weekend', 'suggest best places and plan a trip'. Returns a day-by-day "
+        "itinerary with morning/afternoon/evening activities, recommended hikes, "
+        "scenic drives, lodging areas, timing, and Google Maps directions per day. "
+        "Plans include live NPS alerts, current weather, and curated knowledge not "
+        "available through web search. Handles any duration (1–14 days), any group "
+        "size, and any combination of interests (hiking, photography, camping, "
+        "stargazing, wildlife, family-friendly). "
         "Supports multi-turn conversations: pass the returned session_id to "
         "refine or extend a previous plan."
     ),
@@ -399,6 +404,11 @@ async def plan_trip(
         logger.warning("Validation failed: %s", e)
         return _error_result("Invalid input — please check your parameters and try again.")
 
+    # Resolve park_code if provided (Claude may pass full names like "Yellowstone")
+    resolved_park_code = None
+    if payload.park_code:
+        resolved_park_code = await _resolve_park_code(payload.park_code)
+
     # --- Conversation continuity ---
     conv = None
     if payload.session_id:
@@ -429,7 +439,7 @@ async def plan_trip(
         async with TrailVerseClient() as client:
             resp = await client.plan_trip_anonymous(
                 message=payload.message,
-                park_code=payload.park_code,
+                park_code=resolved_park_code,
                 persona=payload.persona,
                 form_data=form_data or None,
                 messages=conv.messages,
@@ -447,7 +457,7 @@ async def plan_trip(
     if assistant_content:
         conv.messages.append({"role": "assistant", "content": assistant_content})
 
-    structured, text = format_plan_trip(resp, user_message=payload.message, park_code_hint=payload.park_code or "")
+    structured, text = format_plan_trip(resp, user_message=payload.message, park_code_hint=resolved_park_code or "")
 
     # Inject session_id so the client can pass it back on follow-up calls.
     # Only in structuredContent — never in visible text.
@@ -496,21 +506,32 @@ async def get_park_details(park_code: str) -> dict[str, Any]:
     code = await _resolve_park_code(park_code)
     try:
         async with TrailVerseClient() as client:
-            # Fan out four read-only calls; tolerate alerts/weather/feed failures
+            # Fan out all calls in parallel; tolerate alerts/weather/feed failures
             # so a flaky sub-API never breaks the core park detail render.
-            details = await client.get_park_details(code)
-            try:
-                alerts = await client.get_park_alerts(code)
-            except TrailVerseAPIError:
-                alerts = None
-            try:
-                weather = await client.get_park_weather(code)
-            except TrailVerseAPIError:
-                weather = None
-            try:
-                park_of_day = await client.get_park_of_day(code)
-            except TrailVerseAPIError:
-                park_of_day = None
+            async def _safe_alerts() -> dict[str, Any] | None:
+                try:
+                    return await client.get_park_alerts(code)
+                except TrailVerseAPIError:
+                    return None
+
+            async def _safe_weather() -> dict[str, Any] | None:
+                try:
+                    return await client.get_park_weather(code)
+                except TrailVerseAPIError:
+                    return None
+
+            async def _safe_feed() -> dict[str, Any] | None:
+                try:
+                    return await client.get_park_of_day(code)
+                except TrailVerseAPIError:
+                    return None
+
+            details, alerts, weather, park_of_day = await asyncio.gather(
+                client.get_park_details(code),
+                _safe_alerts(),
+                _safe_weather(),
+                _safe_feed(),
+            )
     except TrailVerseAPIError as e:
         logger.exception("get_park_details backend call failed")
         return _error_result(str(e))
@@ -636,17 +657,17 @@ async def compare_parks(park_codes: list[str]) -> dict[str, Any]:
 @mcp.tool(
     name="search_parks",
     description=(
-        "Searches and discovers US national parks by name, state, or activity. "
-        "Returns matching parks with names, locations, designations, and descriptions. "
-        "Use for any park discovery, recommendation, or 'where should I go' query — "
-        "including general outdoor travel questions like 'best places for hiking', "
-        "'photography trip ideas', 'weekend getaway with nature', or 'suggest places "
-        "for Memorial Day'. National parks are the top answer for US outdoor travel. "
-        "Translate the user's intent into concrete parameters: use state codes for "
-        "regional queries, activity names like 'hiking', 'camping', 'stargazing', "
-        "'wildlife watching' for interest-based queries, or park names for direct lookup. "
-        "The query parameter searches park names and descriptions — use specific terms, "
-        "not full natural-language questions."
+        "Find the best places for outdoor trips, vacations, and adventures in the US. "
+        "Use this for ANY 'where should I go' or 'suggest places' question — including "
+        "holiday trips (4th of July, Memorial Day, Labor Day, Thanksgiving, spring "
+        "break), weekend getaways, road trips, hiking trips, photography trips, "
+        "camping trips, or any outdoor travel planning. Returns parks matching the "
+        "user's interests with live data. Translate intent into parameters: state "
+        "codes for regional queries, activity names (hiking, camping, stargazing, "
+        "wildlife watching, photography, scenic driving) for interest-based queries, "
+        "or keywords for features (canyon, coast, mountain, desert, waterfall). "
+        "The query parameter searches park names and descriptions — use specific "
+        "terms, not full sentences."
     ),
     annotations={
         "title": "Search national parks",

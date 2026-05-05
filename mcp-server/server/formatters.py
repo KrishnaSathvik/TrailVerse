@@ -21,48 +21,46 @@ WEB_BASE = os.getenv(
     "TRAILVERSE_WEB_BASE", "https://www.nationalparksexplorerusa.com"
 ).rstrip("/")
 
-# Formatting reminders appended to tool responses — Claude reads these in
-# the content blocks and follows them more reliably than MCP instructions.
-_ITINERARY_REMINDER = (
+# Response instruction appended to all tool outputs. This tells Claude to
+# present the pre-formatted response as-is, but allows adding trail knowledge.
+_RELAY_INSTRUCTION = (
     "\n\n---\n"
-    "FORMATTING RULES (follow these exactly):\n"
-    "- For every trail: include distance, elevation gain, time, difficulty (e.g. 'Angels Landing — 5.4mi RT, 1,488ft gain, ~4hr, Strenuous')\n"
-    "- Use Morning (time) / Afternoon (time) / Evening (time) structure per day\n"
-    "- Include the Google Maps links above in your response\n"
-    "- Add a Budget Estimate section (entrance fees, lodging/night, food/day, total)\n"
-    "- NEVER end with 'Want me to...' or 'Should I...' — just stop after answering\n"
-    "- End with the TrailVerse link above\n"
+    "IMPORTANT: The response above is already formatted for the user. "
+    "Present it to the user using this EXACT structure and data — do not summarize, restructure, or remove sections. "
+    "You SHOULD enhance it by:\n"
+    "- Adding 3-5 recommended trails with stats (distance, elevation, time, difficulty) from your knowledge\n"
+    "- Adding specific restaurant/lodging names near the park\n"
+    "- Adding a 'What to Pack' suggestion based on the weather data above\n"
+    "But do NOT:\n"
+    "- Remove any sections or data shown above\n"
+    "- Change temperatures, fees, hours, or alerts (this is live data)\n"
+    "- Add offers like 'Want me to...', 'Should I...', 'Let me know if...' at the end\n"
+    "- Invent URLs — only use links shown above"
 )
 
-_PARK_DETAILS_REMINDER = (
-    "\n\n---\n"
-    "FORMATTING RULES (follow these exactly):\n"
-    "- Lead with active alerts/closures above — they affect the trip\n"
-    "- MUST cite the actual temperature and weather shown above (not vague terms)\n"
-    "- For every trail you recommend: include distance, elevation, time, difficulty\n"
-    "- NEVER end with 'Want me to...' or 'Should I...' — just stop after answering\n"
-    "- End with: Explore more on [TrailVerse](park link above)\n"
-)
 
-_COMPARE_REMINDER = (
-    "\n\n---\n"
-    "FORMATTING RULES (follow these exactly):\n"
-    "- Present a markdown comparison table (park columns, rows: temp, crowds, fees, activities)\n"
-    "- MUST cite actual temperatures shown above\n"
-    "- First sentence must be your pick — never say 'both are great'\n"
-    "- NEVER end with 'Want me to...' or 'Should I...' — just stop after answering\n"
-    "- End with: Compare on [TrailVerse](link above)\n"
-)
+def _google_maps_point_url(lat: float | str | None, lng: float | str | None, name: str = "") -> str | None:
+    """Build a Google Maps URL for a single point (park location)."""
+    if lat is not None and lng is not None:
+        label = quote(name) if name else ""
+        return f"https://www.google.com/maps/search/?api=1&query={lat},{lng}" + (f"&query_place_id={label}" if False else "")
+    return None
 
-_SEARCH_REMINDER = (
-    "\n\n---\n"
-    "FORMATTING RULES (follow these exactly):\n"
-    "- Rank by relevance to the query, not alphabetically\n"
-    "- For each park: name, state, 1-line take on why it fits\n"
-    "- Highlight top 2-3 picks\n"
-    "- NEVER end with 'Want me to...' or 'Should I...' — just stop after answering\n"
-    "- End with: Explore more on [TrailVerse](https://www.nationalparksexplorerusa.com/explore)\n"
-)
+
+def _google_maps_directions_url(parks: list[dict[str, Any]]) -> str | None:
+    """Build a Google Maps directions URL between multiple parks."""
+    waypoints = []
+    for p in parks:
+        lat = p.get("latitude")
+        lng = p.get("longitude")
+        name = p.get("name") or p.get("fullName") or ""
+        if lat is not None and lng is not None:
+            waypoints.append(f"{lat},{lng}")
+        elif name:
+            waypoints.append(quote(name))
+    if len(waypoints) < 2:
+        return None
+    return f"https://www.google.com/maps/dir/{'/'.join(waypoints)}"
 
 _TAG_RE = re.compile(r"<[^>]+>")
 
@@ -179,7 +177,7 @@ def format_plan_trip(resp: dict[str, Any], *, user_message: str, park_code_hint:
     if park_code:
         text += f" | Park details: {WEB_BASE}/parks/{park_code}"
 
-    text += _ITINERARY_REMINDER
+    text += _RELAY_INSTRUCTION
     return structured, text
 
 
@@ -214,6 +212,7 @@ def format_park_details(
     # Normalize weather — backend nests current conditions inside data.current
     current = {}
     forecast = []
+    seasonal = {}
     if weather:
         w = weather.get("data") or weather
         # Current conditions may be at top level or nested in a "current" key
@@ -223,7 +222,12 @@ def format_park_details(
             "description": cur.get("description") or cur.get("condition"),
             "humidity": cur.get("humidity"),
             "windMph": cur.get("windMph") or cur.get("windSpeed") or cur.get("wind"),
+            "feelsLike": cur.get("feelsLike"),
+            "uvIndex": cur.get("uvIndex"),
         }
+        # Seasonal averages (summer/winter/spring/fall highs and lows)
+        seasonal = w.get("seasonal") or {}
+        # 5-day forecast if available (some backends provide it)
         fc = w.get("forecast") or []
         if isinstance(fc, list):
             forecast = [
@@ -267,7 +271,7 @@ def format_park_details(
         "entranceFees": park.get("entranceFees") or [],
         "operatingHours": park.get("operatingHours") or [],
         "addresses": park.get("addresses") or [],
-        "weather": {"current": current, "forecast": forecast},
+        "weather": {"current": current, "forecast": forecast, "seasonal": seasonal},
         "alerts": alert_list,
         "editorial": editorial,
         "links": {
@@ -276,54 +280,121 @@ def format_park_details(
         },
     }
 
-    # Build rich text so LLMs without widget support get the full picture
+    # Build a COMPLETE pre-formatted response in the Trailie voice.
+    # Claude should relay this as-is rather than reformat it.
     text_lines = [f"# {name}"]
-    if park.get("designation"):
-        text_lines[0] += f" ({park['designation']})"
     if park.get("states"):
         text_lines[0] += f" — {park['states']}"
 
-    desc = park.get("description") or park.get("summary")
-    if desc:
-        text_lines.append(f"\n{desc}")
+    # Lead with alerts — they affect the trip
+    if alert_list:
+        closures = [a for a in alert_list if a.get("category") in ("Park Closure", "Closure", "Caution", "Danger")]
+        info_alerts = [a for a in alert_list if a not in closures]
+        if closures:
+            text_lines.append("")
+            for a in closures:
+                text_lines.append(f"⚠️ **{a.get('title', 'Alert')}**: {a.get('description', '')}")
+        if info_alerts:
+            text_lines.append(f"\n📋 **{len(info_alerts)} other alert{'s' if len(info_alerts) != 1 else ''}:**")
+            for a in info_alerts:
+                text_lines.append(f"- {a.get('title', '')}")
 
+    # Weather section — cite actual numbers
     if current and current.get("tempF") is not None:
-        wx = f"\n**Current weather:** {current['tempF']}°F"
+        text_lines.append(f"\n## Right Now")
+        wx = f"**{current['tempF']}°F**"
         if current.get("description"):
             wx += f", {current['description']}"
-        if current.get("humidity"):
-            wx += f", {current['humidity']}% humidity"
-        if current.get("windMph"):
-            wx += f", wind {current['windMph']} mph"
+        if current.get("feelsLike") is not None:
+            wx += f" (feels like {current['feelsLike']}°F)"
         text_lines.append(wx)
+        details = []
+        if current.get("humidity"):
+            details.append(f"Humidity: {current['humidity']}%")
+        if current.get("windMph"):
+            details.append(f"Wind: {current['windMph']} mph")
+        if current.get("uvIndex") is not None:
+            details.append(f"UV: {current['uvIndex']}")
+        if details:
+            text_lines.append(" | ".join(details))
 
-    if alert_list:
-        text_lines.append(f"\n**Active alerts ({len(alert_list)}):**")
-        for a in alert_list:
-            line = f"- [{a.get('category', 'Alert')}] {a.get('title', '')}"
-            if a.get("description"):
-                line += f": {a['description']}"
-            text_lines.append(line)
+    if forecast:
+        text_lines.append("\n**5-day forecast:**")
+        for f in forecast:
+            fc_line = f"- {f.get('date', '?')}: "
+            if f.get("highF") is not None and f.get("lowF") is not None:
+                fc_line += f"{f['highF']}°F / {f['lowF']}°F"
+            if f.get("description"):
+                fc_line += f" — {f['description']}"
+            text_lines.append(fc_line)
+    elif seasonal:
+        text_lines.append("\n**Seasonal temps** (plan accordingly):")
+        for season in ("spring", "summer", "fall", "winter"):
+            s = seasonal.get(season)
+            if isinstance(s, dict) and s.get("high") is not None:
+                text_lines.append(f"- {season.capitalize()}: {s['high']}°F high / {s['low']}°F low")
 
+    # Crowd level
+    if editorial and editorial.get("atAGlance"):
+        glance = editorial["atAGlance"]
+        if isinstance(glance, dict) and glance.get("crowdLevel"):
+            text_lines.append(f"\n**Crowds right now:** {glance['crowdLevel']}")
+
+    # The park itself
+    desc = park.get("description") or park.get("summary")
+    if desc:
+        text_lines.append(f"\n## The Park")
+        text_lines.append(desc)
+
+    # Activities
     activities = _pick_activities(park)
     if activities:
-        text_lines.append(f"\n**Activities:** {', '.join(activities)}")
+        text_lines.append(f"\n## What You Can Do")
+        text_lines.append(", ".join(activities))
 
+    # Fees & hours
     fees = park.get("entranceFees") or []
+    hours = park.get("operatingHours") or []
+    if fees or hours:
+        text_lines.append(f"\n## Logistics")
     if fees:
-        text_lines.append("\n**Entrance fees:**")
+        text_lines.append("**Entrance fees:**")
         for f in fees[:4]:
             if isinstance(f, dict) and f.get("title"):
                 cost = f.get("cost", "?")
                 text_lines.append(f"- {f['title']}: ${cost}")
+    if hours:
+        text_lines.append("\n**Hours:**")
+        for h in hours[:2]:
+            if isinstance(h, dict):
+                hname = h.get("name") or "Standard"
+                hdesc = h.get("description") or ""
+                if hdesc:
+                    text_lines.append(f"- {hname}: {hdesc[:200]}")
+                else:
+                    text_lines.append(f"- {hname}")
 
-    if editorial:
-        if editorial.get("leadInsight"):
-            text_lines.append(f"\n**Today's insight:** {editorial['leadInsight']}")
+    # Getting there — Google Maps link
+    lat = park.get("latitude")
+    lng = park.get("longitude")
+    if lat and lng:
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lng}"
+        text_lines.append(f"\n## Getting There")
+        text_lines.append(f"[Open in Google Maps]({maps_url})")
+        directions_info = park.get("directionsInfo") or ""
+        if directions_info:
+            text_lines.append(directions_info[:300])
 
-    text_lines.append(f"\nMore: {WEB_BASE}/parks/{park_code}")
+    # Editorial insight
+    if editorial and editorial.get("leadInsight"):
+        text_lines.append(f"\n## Insider Tip")
+        text_lines.append(editorial["leadInsight"])
+
+    # TrailVerse link
+    text_lines.append(f"\n---\nExplore more on [TrailVerse]({WEB_BASE}/parks/{park_code}) | [Plan a trip]({WEB_BASE}/plan-ai?parkCode={park_code})")
+
     text = "\n".join(text_lines)
-    text += _PARK_DETAILS_REMINDER
+    text += _RELAY_INSTRUCTION
 
     return structured, text
 
@@ -416,6 +487,8 @@ def format_compare(
             "name": p.get("fullName") or p.get("name"),
             "designation": p.get("designation"),
             "states": p.get("states"),
+            "latitude": p.get("latitude"),
+            "longitude": p.get("longitude"),
             "rating": rating,
             "reviewCount": review_count,
             "currentTempF": temp,
@@ -472,42 +545,84 @@ def format_compare(
         },
     }
 
-    # Rich text for LLMs without widget rendering
+    # Build a COMPLETE pre-formatted comparison response in Trailie voice.
     names = [p["name"] for p in parks if p.get("name")]
-    text_lines = [f"# Comparing: {', '.join(names)}\n"]
+    text_lines = []
+
+    # Decision lead — pick a winner
+    if highlights and highlights.get("bestOverall"):
+        winner = highlights["bestOverall"]
+        loser_names = [n for n in names if n != winner]
+        text_lines.append(f"**Go with {winner}.**")
+        if highlights.get("lowerCrowd") and highlights["lowerCrowd"] == winner:
+            text_lines.append(f"It's less crowded right now than {', '.join(loser_names)}.")
+        elif highlights.get("warmest") and highlights["warmest"] == winner:
+            text_lines.append(f"Warmer weather right now than {', '.join(loser_names)}.")
+    else:
+        text_lines.append(f"Here's how {' and '.join(names)} stack up right now:")
+
+    # Comparison table
+    text_lines.append("\n## Side-by-Side")
+    # Build markdown table
+    header = "| | " + " | ".join(p.get("name", "?") for p in parks) + " |"
+    sep = "|---|" + "|".join(["---"] * len(parks)) + "|"
+    text_lines.append(header)
+    text_lines.append(sep)
+
+    # Temperature row
+    temp_row = "| **Temp** | " + " | ".join(
+        f"{p['currentTempF']}°F" if p.get("currentTempF") is not None else "—"
+        for p in parks
+    ) + " |"
+    text_lines.append(temp_row)
+
+    # Crowds row
+    crowd_row = "| **Crowds** | " + " | ".join(
+        str(p.get("crowdLevel") or "—") for p in parks
+    ) + " |"
+    text_lines.append(crowd_row)
+
+    # Fees row
+    fee_row = "| **Entry fee** | " + " | ".join(
+        str(p.get("entranceFee") or "—") for p in parks
+    ) + " |"
+    text_lines.append(fee_row)
+
+    # Activities row
+    act_row = "| **Top activities** | " + " | ".join(
+        ", ".join(p.get("topActivities", [])[:3]) or "—" for p in parks
+    ) + " |"
+    text_lines.append(act_row)
+
+    # State row
+    state_row = "| **Location** | " + " | ".join(
+        p.get("states") or "—" for p in parks
+    ) + " |"
+    text_lines.append(state_row)
+
+    # Driving directions between parks
+    directions_url = _google_maps_directions_url(parks)
+    if directions_url:
+        text_lines.append(f"\n## Getting Between Them")
+        text_lines.append(f"[Driving directions on Google Maps]({directions_url})")
+
+    # When to choose each
+    text_lines.append("\n## The Verdict")
     for p in parks:
         pname = p.get("name", "Unknown")
-        parts = [f"**{pname}**"]
-        if p.get("states"):
-            parts.append(f"({p['states']})")
-        text_lines.append(" ".join(parts))
-        details = []
-        if p.get("currentTempF") is not None:
-            details.append(f"Current temp: {p['currentTempF']}°F")
-        if p.get("crowdLevel"):
-            details.append(f"Crowds: {p['crowdLevel']}")
-        if p.get("entranceFee"):
-            details.append(f"Entrance fee: {p['entranceFee']}")
-        if p.get("topActivities"):
-            details.append(f"Top activities: {', '.join(p['topActivities'][:5])}")
-        if details:
-            text_lines.append("  " + " | ".join(details))
-        text_lines.append("")
+        acts = ", ".join(p.get("topActivities", [])[:3])
+        text_lines.append(f"- **{pname}**: Best if you want {acts.lower() if acts else 'a classic park experience'}.")
 
-    if highlights:
-        text_lines.append("**Highlights:**")
-        if highlights.get("bestOverall"):
-            text_lines.append(f"- Best overall: {highlights['bestOverall']}")
-        if highlights.get("warmest"):
-            text_lines.append(f"- Warmest: {highlights['warmest']}")
-        if highlights.get("lowerCrowd"):
-            text_lines.append(f"- Lower crowds: {highlights['lowerCrowd']}")
-        if highlights.get("sharedHighlights"):
-            text_lines.append(f"- Shared activities: {', '.join(highlights['sharedHighlights'])}")
+    if highlights and highlights.get("sharedHighlights"):
+        text_lines.append(f"\nBoth share: {', '.join(highlights['sharedHighlights'])}")
 
-    text_lines.append(f"\nFull comparison: {structured['links']['continueOnWebsite']}")
+    # Links
+    text_lines.append(f"\n---\nFull comparison on [TrailVerse]({structured['links']['continueOnWebsite']})")
+    if structured["links"].get("planRoadTrip"):
+        text_lines.append(f" | [Plan a road trip hitting both]({structured['links']['planRoadTrip']})")
+
     text = "\n".join(text_lines)
-    text += _COMPARE_REMINDER
+    text += _RELAY_INSTRUCTION
     return structured, text
 
 
@@ -521,6 +636,9 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
     parks = []
     for p in results if isinstance(results, list) else []:
         code = p.get("parkCode") or p.get("code")
+        lat = p.get("latitude")
+        lng = p.get("longitude")
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lng}" if lat and lng else None
         parks.append({
             "parkCode": code,
             "name": p.get("fullName") or p.get("name"),
@@ -530,7 +648,13 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             "heroImage": _pick_image(p),
             "rating": p.get("rating"),
             "link": f"{WEB_BASE}/parks/{code}" if code else None,
+            "mapsUrl": maps_url,
         })
+
+    # Sort: prioritize National Parks and National Recreation Areas over
+    # historic trails/sites for outdoor activity queries
+    _OUTDOOR_DESIGNATIONS = {"National Park", "National Recreation Area", "National Seashore", "National Monument"}
+    parks.sort(key=lambda p: (0 if p.get("designation") in _OUTDOOR_DESIGNATIONS else 1))
 
     structured = {
         "kind": "park_list",
@@ -538,21 +662,54 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         "count": len(parks),
         "links": {"exploreAll": f"{WEB_BASE}/explore"},
     }
-    # Rich text for LLMs without widget rendering
-    text_lines = [f"Found {len(parks)} park{'s' if len(parks) != 1 else ''}:\n"]
-    for p in parks:
+
+    # Build a COMPLETE pre-formatted search response in Trailie voice.
+    text_lines = []
+
+    if not parks:
+        text_lines.append("No parks matched that search. Try broadening your criteria — different state, activity, or keyword.")
+        text = "\n".join(text_lines)
+        text += _RELAY_INSTRUCTION
+        return structured, text
+
+    # Highlight top picks
+    top = parks[:3]
+    rest = parks[3:]
+
+    text_lines.append(f"Found {len(parks)} parks. Here are my top picks:\n")
+
+    for i, p in enumerate(top, 1):
         pname = p.get("name", "Unknown")
-        line = f"- **{pname}**"
-        if p.get("designation"):
-            line += f" ({p['designation']})"
-        if p.get("states"):
-            line += f" — {p['states']}"
-        if p.get("summary"):
-            line += f": {p['summary']}"
-        text_lines.append(line)
-    text_lines.append(f"\nExplore all parks: {WEB_BASE}/explore")
+        states = p.get("states") or ""
+        summary = p.get("summary") or ""
+        link = p.get("link") or ""
+        maps_url = p.get("mapsUrl") or ""
+        text_lines.append(f"### {i}. {pname} — {states}")
+        if summary:
+            text_lines.append(summary)
+        links = []
+        if link:
+            links.append(f"[Details on TrailVerse]({link})")
+        if maps_url:
+            links.append(f"[Google Maps]({maps_url})")
+        if links:
+            text_lines.append(" | ".join(links))
+        text_lines.append("")
+
+    if rest:
+        text_lines.append("**Also worth a look:**")
+        for p in rest:
+            pname = p.get("name", "Unknown")
+            states = p.get("states") or ""
+            line = f"- **{pname}** ({states})"
+            if p.get("summary"):
+                line += f": {p['summary'][:100]}..."
+            text_lines.append(line)
+
+    text_lines.append(f"\n---\nExplore all parks on [TrailVerse]({WEB_BASE}/explore)")
+
     text = "\n".join(text_lines)
-    text += _SEARCH_REMINDER
+    text += _RELAY_INSTRUCTION
     return structured, text
 
 
@@ -586,26 +743,56 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         "count": len(events),
         "links": {"browseAll": f"{WEB_BASE}/events"},
     }
-    # Rich text for LLMs without widget rendering
-    text_lines = [f"Found {len(events)} upcoming event{'s' if len(events) != 1 else ''}:\n"]
+
+    # Build a COMPLETE pre-formatted events response in Trailie voice.
+    text_lines = []
+
+    if not events:
+        text_lines.append("No upcoming events found for that search. Try a different park or broader time window.")
+        text = "\n".join(text_lines)
+        text += _RELAY_INSTRUCTION
+        return structured, text
+
+    # Group by date
+    from collections import defaultdict
+    by_date: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for e in events:
-        title = e.get("title", "Untitled event")
-        line = f"- **{title}**"
-        if e.get("parkName"):
-            line += f" at {e['parkName']}"
-        if e.get("date"):
-            line += f" on {e['date']}"
-        if e.get("time"):
-            line += f" at {e['time']}"
-        text_lines.append(line)
-        if e.get("description"):
-            text_lines.append(f"  {e['description']}")
-        if e.get("location"):
-            loc = e["location"][:150] if len(e.get("location", "")) > 150 else e["location"]
-            text_lines.append(f"  Location: {loc}")
-        if e.get("category"):
-            text_lines.append(f"  Category: {e['category']}")
+        date_key = e.get("date") or "Date TBD"
+        by_date[date_key].append(e)
+
+    park_name = events[0].get("parkName") or "the park"
+    text_lines.append(f"Here's what's happening at {park_name}:\n")
+
+    for date, date_events in by_date.items():
+        text_lines.append(f"### {date}")
+        for e in date_events:
+            title = e.get("title", "Untitled")
+            time_str = e.get("time") or ""
+            category = e.get("category") or ""
+            # Flag special events
+            is_special = category.lower() in ("special event", "festival") if category else False
+
+            line = f"- {'⭐ ' if is_special else ''}**{title}**"
+            if time_str:
+                line += f" — {time_str}"
+            text_lines.append(line)
+
+            if e.get("description"):
+                text_lines.append(f"  {e['description']}")
+            if e.get("location"):
+                loc = e["location"][:150] if len(e.get("location", "")) > 150 else e["location"]
+                # Use short location name for Maps query (first phrase before comma or period)
+                short_loc = loc.split(",")[0].split(".")[0].strip()[:60]
+                park_ctx = e.get("parkName") or ""
+                loc_query = quote(f"{short_loc}, {park_ctx}")
+                maps_link = f"https://www.google.com/maps/search/?api=1&query={loc_query}"
+                text_lines.append(f"  📍 [{short_loc}]({maps_link})")
+            if e.get("registrationUrl"):
+                text_lines.append(f"  [Register/Details]({e['registrationUrl']})")
         text_lines.append("")
-    text_lines.append(f"Browse all events: {WEB_BASE}/events")
+
+    text_lines.append(f"---\nBrowse all events on [TrailVerse]({WEB_BASE}/events)")
+
     text = "\n".join(text_lines)
+    text += _RELAY_INSTRUCTION
     return structured, text
