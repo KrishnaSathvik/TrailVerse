@@ -41,9 +41,10 @@ _RELAY_INSTRUCTION = (
 
 def _google_maps_point_url(lat: float | str | None, lng: float | str | None, name: str = "") -> str | None:
     """Build a Google Maps URL for a single point (park location)."""
+    if name:
+        return f"https://www.google.com/maps/search/?api=1&query={quote(name)}"
     if lat is not None and lng is not None:
-        label = quote(name) if name else ""
-        return f"https://www.google.com/maps/search/?api=1&query={lat},{lng}" + (f"&query_place_id={label}" if False else "")
+        return f"https://www.google.com/maps/search/?api=1&query={lat},{lng}"
     return None
 
 
@@ -51,13 +52,14 @@ def _google_maps_directions_url(parks: list[dict[str, Any]]) -> str | None:
     """Build a Google Maps directions URL between multiple parks."""
     waypoints = []
     for p in parks:
-        lat = p.get("latitude")
-        lng = p.get("longitude")
-        name = p.get("name") or p.get("fullName") or ""
-        if lat is not None and lng is not None:
-            waypoints.append(f"{lat},{lng}")
-        elif name:
+        name = p.get("fullName") or p.get("name") or ""
+        if name:
             waypoints.append(quote(name))
+        else:
+            lat = p.get("latitude")
+            lng = p.get("longitude")
+            if lat is not None and lng is not None:
+                waypoints.append(f"{lat},{lng}")
     if len(waypoints) < 2:
         return None
     return f"https://www.google.com/maps/dir/{'/'.join(waypoints)}"
@@ -394,10 +396,8 @@ def format_park_details(
                     text_lines.append(f"- {hname}")
 
     # Getting there — Google Maps link
-    lat = park.get("latitude")
-    lng = park.get("longitude")
-    if lat and lng:
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lng}"
+    maps_url = _google_maps_point_url(park.get("latitude"), park.get("longitude"), name)
+    if maps_url:
         text_lines.append(f"\n## Getting There")
         text_lines.append(f"[Open in Google Maps]({maps_url})")
         directions_info = park.get("directionsInfo") or ""
@@ -655,9 +655,8 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
     parks = []
     for p in results if isinstance(results, list) else []:
         code = p.get("parkCode") or p.get("code")
-        lat = p.get("latitude")
-        lng = p.get("longitude")
-        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lng}" if lat and lng else None
+        pname = p.get("fullName") or p.get("name") or ""
+        maps_url = _google_maps_point_url(p.get("latitude"), p.get("longitude"), pname)
         parks.append({
             "parkCode": code,
             "name": p.get("fullName") or p.get("name"),
