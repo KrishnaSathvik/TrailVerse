@@ -95,7 +95,7 @@ class GetParkDetailsInput(BaseModel):
 
 # ---------- compare_parks ----------
 
-class ComparePartsInput(BaseModel):
+class CompareParksInput(BaseModel):
     park_codes: list[str] = Field(
         ...,
         description=(

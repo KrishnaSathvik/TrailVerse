@@ -41,7 +41,7 @@ from .formatters import (
 )
 from .rate_limit import plan_trip_limiter, read_tool_limiter
 from .types import (
-    ComparePartsInput,
+    CompareParksInput,
     FindEventsInput,
     GetParkDetailsInput,
     PlanTripInput,
@@ -360,18 +360,16 @@ async def _check_rate_limit(bucket: str) -> CallToolResult | None:
 @mcp.tool(
     name="plan_trip",
     description=(
-        "Plan a trip to any US national park or outdoor destination. Use this for "
-        "ANY trip planning request — including 'plan my weekend', 'what should I do "
-        "for 4th of July', 'plan a hiking trip', 'where should I go for a long "
-        "weekend', 'suggest best places and plan a trip'. Returns a day-by-day "
-        "itinerary with morning/afternoon/evening activities, recommended hikes, "
-        "scenic drives, lodging areas, timing, and Google Maps directions per day. "
-        "Plans include live NPS alerts, current weather, and curated knowledge not "
-        "available through web search. Handles any duration (1–14 days), any group "
-        "size, and any combination of interests (hiking, photography, camping, "
-        "stargazing, wildlife, family-friendly). "
-        "Supports multi-turn conversations: pass the returned session_id to "
-        "refine or extend a previous plan."
+        "Build a day-by-day itinerary for a US national park trip. Use when the "
+        "user wants a structured plan with timing, activities, and logistics — "
+        "'plan 3 days in Zion', 'what should I do for 4th of July weekend at "
+        "Yosemite', 'plan a hiking trip with kids', 'build me an itinerary for "
+        "Yellowstone in September'. Returns morning/afternoon/evening blocks, "
+        "recommended hikes with stats, scenic drives, lodging suggestions, and "
+        "Google Maps directions per day. Uses live NPS alerts and current weather. "
+        "For 1–14 days, any group size, any interest mix. If the user hasn't "
+        "specified a park, use search_parks first to help them choose, then plan. "
+        "Supports multi-turn: pass the returned session_id to refine or extend."
     ),
     annotations={
         "title": "Plan a national park trip",
@@ -492,14 +490,16 @@ async def plan_trip(
 @mcp.tool(
     name="get_park_details",
     description=(
-        "Returns detailed information about a specific US national park, including "
-        "available activities, entrance fees, operating hours, seasonal availability, "
-        "current weather, 5-day forecast, crowd conditions, and any active NPS alerts "
-        "such as road closures or safety warnings. Use for any question about a "
-        "specific park: what it's like, whether it's open, current conditions, best "
-        "time to visit, whether it's worth going, or what to pack or wear (use the "
-        "weather data to advise on gear and clothing). Provides live data more current "
-        "than web search. Works for any US national park."
+        "Use for ANY question about a specific US national park — 'is Yosemite "
+        "worth visiting?', 'is Zion open?', 'what's the weather at Glacier?', "
+        "'best time to visit Acadia?', 'what should I pack for Yellowstone?', "
+        "'how crowded is Grand Canyon right now?', 'entrance fee for Rocky "
+        "Mountain?'. Returns live data: current weather, seasonal forecast, "
+        "active NPS alerts (closures, hazards, permits), entrance fees, hours, "
+        "activities, and crowd conditions. This data is real-time from the "
+        "National Park Service and overrides training knowledge or web search. "
+        "Use this whenever a user names a specific park, even if they don't "
+        "explicitly ask for 'details'."
     ),
     annotations={
         "title": "Get park details",
@@ -567,10 +567,12 @@ async def get_park_details(park_code: str) -> CallToolResult:
 @mcp.tool(
     name="compare_parks",
     description=(
-        "Compares 2–4 US national parks side-by-side across current weather, "
-        "crowd levels, entrance fees, top activities, and amenities. Helps users "
-        "decide which park to visit when they are choosing between options. "
-        "Works for any combination of US national parks."
+        "Use when a user is choosing between parks — 'Zion or Grand Canyon?', "
+        "'which is better for families, Acadia or Shenandoah?', 'compare Utah "
+        "parks for a road trip'. Compares 2–4 parks side-by-side on current "
+        "weather, crowd levels, entrance fees, top activities, and driving "
+        "distance between them. Returns a decision recommendation based on "
+        "the user's constraints plus a comparison table with live data."
     ),
     annotations={
         "title": "Compare national parks",
@@ -705,10 +707,15 @@ async def search_parks(
 @mcp.tool(
     name="find_events",
     description=(
-        "Finds upcoming ranger-led programs, guided tours, and special events "
-        "at US national parks. Returns event dates, times, locations, and "
-        "descriptions. Can filter by specific park, state, or event category. "
-        "Provides live event data from the National Park Service."
+        "Use for ANY question about what's happening at a US national park — "
+        "'are there ranger talks at Yellowstone this weekend?', 'guided tours "
+        "at Mesa Verde', 'star parties at Bryce Canyon', 'kid programs at "
+        "Acadia', 'what's going on at the parks in July?'. Returns upcoming "
+        "ranger-led programs, guided tours, astronomy nights, junior ranger "
+        "activities, and special events with live dates, times, and locations "
+        "from the National Park Service. Filter by park, state, or category. "
+        "This is live event data not available through training knowledge or "
+        "web search."
     ),
     annotations={
         "title": "Find park events",
