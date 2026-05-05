@@ -23,9 +23,10 @@ import os
 from pathlib import Path
 from typing import Any
 
+from fastmcp.tools.base import ToolResult
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
-from mcp.types import Icon
+from mcp.types import Icon, ImageContent, TextContent
 from pydantic import AnyUrl
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
@@ -303,36 +304,40 @@ def _tool_result(
     structured: dict[str, Any],
     content: str | list[dict[str, str]],
     meta_extra: dict[str, Any],
-) -> dict[str, Any]:
-    """Return the dict shape that FastMCP serializes into a tools/call result.
+) -> ToolResult:
+    """Return a ToolResult that FastMCP passes through directly to the MCP protocol.
 
     content can be a plain text string (backward compat) or a list of MCP
-    content blocks — mix of {"type": "text", "text": ...} and
+    content block dicts — mix of {"type": "text", "text": ...} and
     {"type": "image", "data": ..., "mimeType": ...}.
     """
     if isinstance(content, str):
-        blocks = [{"type": "text", "text": content}]
+        blocks = [TextContent(type="text", text=content)]
     else:
-        blocks = content
-    return {
-        "content": blocks,
-        "structuredContent": structured,
-        "_meta": meta_extra,
-    }
+        blocks = []
+        for block in content:
+            if block.get("type") == "image":
+                blocks.append(ImageContent(
+                    type="image",
+                    data=block["data"],
+                    mimeType=block.get("mimeType", "image/jpeg"),
+                ))
+            else:
+                blocks.append(TextContent(type="text", text=block.get("text", "")))
+    return ToolResult(content=blocks, structured_content=structured, meta=meta_extra)
 
 
-def _error_result(message: str) -> dict[str, Any]:
-    return {
-        "content": [{"type": "text", "text": f"TrailVerse error: {message}"}],
-        "structuredContent": {"kind": "error", "message": message},
-        "isError": True,
-    }
+def _error_result(message: str) -> ToolResult:
+    return ToolResult(
+        content=[TextContent(type="text", text=f"TrailVerse error: {message}")],
+        structured_content={"kind": "error", "message": message},
+    )
 
 
-async def _check_rate_limit(bucket: str) -> dict[str, Any] | None:
+async def _check_rate_limit(bucket: str) -> ToolResult | None:
     """
-    Apply the appropriate in-MCP rate limit bucket. Returns an error result
-    dict if rate-limited, or None if the request should proceed.
+    Apply the appropriate in-MCP rate limit bucket. Returns an error ToolResult
+    if rate-limited, or None if the request should proceed.
 
     This is a server-wide fuse to cap damage if the backend bypass key ever
     leaks. Normal traffic should never hit these limits.
@@ -382,7 +387,7 @@ async def plan_trip(
     interests: list[str] | None = None,
     accommodation: str | None = None,
     session_id: str | None = None,
-) -> dict[str, Any]:
+) -> ToolResult:
     # Global MCP-side fuse (defense-in-depth behind backend bypass key)
     if (limited := await _check_rate_limit("plan_trip")):
         return limited
@@ -499,7 +504,7 @@ async def plan_trip(
         "idempotentHint": True,
     },
 )
-async def get_park_details(park_code: str) -> dict[str, Any]:
+async def get_park_details(park_code: str) -> ToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
@@ -570,7 +575,7 @@ async def get_park_details(park_code: str) -> dict[str, Any]:
         "idempotentHint": True,
     },
 )
-async def compare_parks(park_codes: list[str]) -> dict[str, Any]:
+async def compare_parks(park_codes: list[str]) -> ToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
@@ -594,57 +599,17 @@ async def compare_parks(park_codes: list[str]) -> dict[str, Any]:
 
     structured, text = format_compare(compare, summary)
 
-    # Fetch one hero image per park for interleaved inline rendering (Claude)
+    # Fetch one hero image per park for inline rendering (Claude)
     parks_data = structured.get("parks", [])
     image_urls = [p.get("heroImage") or "" for p in parks_data]
     fetched = await fetch_images_as_base64([u for u in image_urls if u])
 
-    # Build interleaved content: header → [image, park info] per park → highlights
-    names = [p.get("name", "") for p in parks_data]
-    content_blocks: list[dict[str, str]] = [
-        {"type": "text", "text": f"# Comparing: {', '.join(names)}\n"}
-    ]
-    fetch_idx = 0
-    for p in parks_data:
-        # Insert image if available
-        if p.get("heroImage") and fetch_idx < len(fetched) and fetched[fetch_idx]:
-            content_blocks.append(fetched[fetch_idx])
-        if p.get("heroImage"):
-            fetch_idx += 1
-        # Per-park text block
-        pname = p.get("name", "Unknown")
-        parts = [f"**{pname}**"]
-        if p.get("states"):
-            parts.append(f"({p['states']})")
-        detail_items = []
-        if p.get("currentTempF") is not None:
-            detail_items.append(f"Current temp: {p['currentTempF']}°F")
-        if p.get("crowdLevel"):
-            detail_items.append(f"Crowds: {p['crowdLevel']}")
-        if p.get("entranceFee"):
-            detail_items.append(f"Entrance fee: {p['entranceFee']}")
-        if p.get("topActivities"):
-            detail_items.append(f"Top activities: {', '.join(p['topActivities'][:5])}")
-        park_text = " ".join(parts)
-        if detail_items:
-            park_text += "\n  " + " | ".join(detail_items)
-        content_blocks.append({"type": "text", "text": park_text + "\n"})
-
-    # Highlights block
-    highlights = structured.get("highlights", {})
-    if highlights:
-        hl_lines = ["**Highlights:**"]
-        if highlights.get("bestOverall"):
-            hl_lines.append(f"- Best overall: {highlights['bestOverall']}")
-        if highlights.get("warmest"):
-            hl_lines.append(f"- Warmest: {highlights['warmest']}")
-        if highlights.get("lowerCrowd"):
-            hl_lines.append(f"- Lower crowds: {highlights['lowerCrowd']}")
-        content_blocks.append({"type": "text", "text": "\n".join(hl_lines)})
-
-    link = structured.get("links", {}).get("continueOnWebsite", "")
-    if link:
-        content_blocks.append({"type": "text", "text": f"\nFull comparison: {link}"})
+    content_blocks: list[dict[str, str]] = []
+    for img in fetched:
+        if img:
+            content_blocks.append(img)
+    # Use the rich formatted text (comparison table, verdict, Maps link)
+    content_blocks.append({"type": "text", "text": text})
 
     meta = _tool_meta(
         "compare",
@@ -681,7 +646,7 @@ async def search_parks(
     state: str | None = None,
     activity: str | None = None,
     limit: int = 20,
-) -> dict[str, Any]:
+) -> ToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
     try:
@@ -753,7 +718,7 @@ async def find_events(
     state: str | None = None,
     category: str | None = None,
     limit: int = 10,
-) -> dict[str, Any]:
+) -> ToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
