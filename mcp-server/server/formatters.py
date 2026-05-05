@@ -64,6 +64,25 @@ def _google_maps_directions_url(parks: list[dict[str, Any]]) -> str | None:
 
 _TAG_RE = re.compile(r"<[^>]+>")
 
+# Patterns the backend AI uses to end responses with offers — strip these.
+_OFFER_RE = re.compile(
+    r"\n+(?:Want me to|Should I|Would you like me to|Let me know if|I can also|"
+    r"If you'd like|If you want me to|Happy to|Shall I)[^\n]*(?:\?[^\n]*)?\s*$",
+    re.IGNORECASE,
+)
+
+
+def _strip_trailing_offers(text: str) -> str:
+    """Remove trailing 'Want me to...' style offers from backend AI responses."""
+    # Repeatedly strip — sometimes there are multiple trailing questions
+    for _ in range(3):
+        cleaned = _OFFER_RE.sub("", text).rstrip()
+        if cleaned == text.rstrip():
+            break
+        text = cleaned
+    return text
+
+
 def _strip_html(text: str) -> str:
     """Remove HTML tags and collapse whitespace."""
     return " ".join(_TAG_RE.sub("", text).split())
@@ -148,7 +167,7 @@ def format_plan_trip(resp: dict[str, Any], *, user_message: str, park_code_hint:
     # rich response.  ChatGPT will render the widget and may summarize.
     text = ""
     if clean_text:
-        text = clean_text
+        text = _strip_trailing_offers(clean_text)
     else:
         summary_parts = []
         if park_name:
