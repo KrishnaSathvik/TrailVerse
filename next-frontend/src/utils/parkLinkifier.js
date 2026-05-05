@@ -107,6 +107,39 @@ const PARK_NAME_TO_SLUG = {
   'Virgin Islands National Park': 'virgin-islands-national-park',
 };
 
+// Phrases containing park names that refer to geographic features, NOT the parks themselves.
+// These prevent false-positive linking (e.g. "Grand Canyon of the Yellowstone" is a
+// canyon inside Yellowstone, not Grand Canyon National Park).
+const FALSE_POSITIVE_PHRASES = [
+  'Grand Canyon of the Yellowstone',
+  'Grand Canyon of Yellowstone',
+];
+
+// Build a lookup: for each park name, collect phrases that contain it as a substring
+const falsePositiveByPark = {};
+for (const parkName of Object.keys(PARK_NAME_TO_SLUG)) {
+  const phrases = FALSE_POSITIVE_PHRASES.filter(p => p.includes(parkName) && p !== parkName);
+  if (phrases.length > 0) {
+    falsePositiveByPark[parkName] = phrases;
+  }
+}
+
+/**
+ * Check if a match at a given position in the text is part of a false-positive phrase.
+ */
+function isFalsePositive(text, matchIndex, matchLength, parkName) {
+  const phrases = falsePositiveByPark[parkName];
+  if (!phrases) return false;
+  // Check a window around the match to see if any false-positive phrase contains this occurrence
+  for (const phrase of phrases) {
+    const searchStart = Math.max(0, matchIndex - phrase.length);
+    const searchEnd = Math.min(text.length, matchIndex + matchLength + phrase.length);
+    const window = text.slice(searchStart, searchEnd);
+    if (window.includes(phrase)) return true;
+  }
+  return false;
+}
+
 // Sort by length descending so longer matches (e.g. "Grand Canyon National Park")
 // are matched before shorter ones ("Grand Canyon")
 const sortedParks = Object.keys(PARK_NAME_TO_SLUG).sort((a, b) => b.length - a.length);
@@ -152,8 +185,9 @@ export function linkifyParkNames(content, currentSlug = '') {
       const regex = new RegExp(`(?<!\\[)\\b(${escaped})\\b(?![^[]*\\])`, 'g');
       if (regex.test(text)) {
         regex.lastIndex = 0;
-        text = text.replace(regex, (m) => {
+        text = text.replace(regex, (m, _p1, offset) => {
           if (linkedSlugs.has(slug)) return m;
+          if (isFalsePositive(text, offset, m.length, parkName)) return m;
           linkedSlugs.add(slug);
           return `[${m}](/parks/${slug})`;
         });
@@ -203,8 +237,9 @@ export function linkifyParkNamesHtml(content, currentSlug = '') {
       const regex = new RegExp(`\\b(${escaped})\\b`, 'g');
       if (regex.test(text)) {
         regex.lastIndex = 0;
-        text = text.replace(regex, (m) => {
+        text = text.replace(regex, (m, _p1, offset) => {
           if (linkedSlugs.has(slug)) return m;
+          if (isFalsePositive(text, offset, m.length, parkName)) return m;
           linkedSlugs.add(slug);
           return `<a href="/parks/${slug}" style="color:var(--accent-green);text-decoration:underline">${m}</a>`;
         });
