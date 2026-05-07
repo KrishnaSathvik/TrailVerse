@@ -24,6 +24,7 @@ const connectDB = require('./src/config/database');
 const { startScheduler, stopScheduler } = require('./src/services/schedulerService');
 const { startDailyFeedScheduler, stopDailyFeedScheduler } = require('./src/services/dailyFeedScheduler');
 const npsService = require('./src/services/npsService');
+const { loadDynamicMap } = require('./src/utils/parkExtractor');
 
 // Connect to database
 connectDB().then(async () => {
@@ -55,6 +56,8 @@ connectDB().then(async () => {
     try {
       const parks = await npsService.getAllParks();
       console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
+      // Build dynamic park name map — reuses the already-cached park list
+      await loadDynamicMap();
     } catch (error) {
       console.warn(`⚠️ Parks snapshot warm-up failed: ${error.message}`);
     }

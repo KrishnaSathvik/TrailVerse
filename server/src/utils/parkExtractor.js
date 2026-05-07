@@ -1,6 +1,10 @@
 /**
  * Park name extraction utility — maps natural-language park references
  * to NPS park codes and coordinates for RAG live data injection.
+ *
+ * Two-tier lookup:
+ *   1. Hardcoded PARK_NAME_TO_CODE — 63 National Parks + landmark aliases (sync, always available)
+ *   2. Dynamic _dynamicMap — all ~470 NPS sites, built lazily from npsService.getAllParks() (async, populated at startup)
  */
 
 const PARK_NAME_TO_CODE = new Map([
@@ -121,6 +125,8 @@ const PARK_NAME_TO_CODE = new Map([
   ['glacier',                { code: 'glac', lat: 48.696, lon: -113.718 }],
   ['arches',                 { code: 'arch', lat: 38.733, lon: -109.592 }],
   ['acadia',                 { code: 'acad', lat: 44.409, lon: -68.247  }],
+  ['wrangell st elias',       { code: 'wrst', lat: 61.710, lon: -142.986 }],
+  ['wrangell',               { code: 'wrst', lat: 61.710, lon: -142.986 }],
   ['katmai',                 { code: 'katm', lat: 58.598, lon: -154.964 }],
   ['denali',                 { code: 'dena', lat: 63.330, lon: -150.501 }],
   ['lassen',                 { code: 'lavo', lat: 40.493, lon: -121.408 }],
@@ -149,8 +155,139 @@ const PARK_NAME_TO_CODE = new Map([
 // Pre-compute sorted keys (longest first) for greedy matching
 const SORTED_KEYS = [...PARK_NAME_TO_CODE.keys()].sort((a, b) => b.length - a.length);
 
+// ── Dynamic NPS Map (lazy-loaded from npsService.getAllParks()) ─────
+
+// Designation suffixes to strip when generating short aliases (longest first)
+const DESIGNATION_SUFFIXES = [
+  'national park and preserve',
+  'national park & preserve',
+  'national monument and preserve',
+  'national monument & preserve',
+  'national historical park and ecological preserve',
+  'national historical park',
+  'national historic site',
+  'national historic trail',
+  'national heritage area',
+  'national recreation area',
+  'national scenic trail',
+  'national scenic river',
+  'national scenic riverway',
+  'national scenic riverways',
+  'national wild and scenic river',
+  'national battlefield park',
+  'national battlefield',
+  'national military park',
+  'national memorial',
+  'national monument',
+  'national seashore',
+  'national lakeshore',
+  'national preserve',
+  'national reserve',
+  'national river',
+  'national parkway',
+  'national park',
+].sort((a, b) => b.length - a.length);
+
+// Generic words that would produce false-positive matches if used as short names
+const BLOCKED_SHORT_NAMES = new Set([
+  'river', 'rivers', 'lake', 'lakes', 'creek', 'fort', 'forts',
+  'trail', 'trails', 'island', 'islands', 'point', 'rock', 'rocks',
+  'spring', 'springs', 'falls', 'mount', 'mountain', 'mountains',
+  'valley', 'canyon', 'cape', 'north', 'south', 'east', 'west',
+  'upper', 'lower', 'great', 'little', 'big', 'new', 'old',
+  'white', 'black', 'blue', 'green', 'red', 'golden', 'sand',
+  'general', 'national', 'american', 'colonial', 'war', 'civil',
+  'gateway', 'harbor', 'port', 'marsh', 'woods', 'forest', 'field',
+]);
+
+const MIN_SHORT_NAME_LENGTH = 4;
+
+let _dynamicMap = null;        // Map<string, { code, lat, lon }> — null until loaded
+let _dynamicSortedKeys = null; // string[] sorted longest-first
+let _loadPromise = null;       // dedup concurrent calls
+
+/**
+ * Build the dynamic NPS map from npsService.getAllParks().
+ * Safe to call multiple times — deduplicates via _loadPromise.
+ */
+async function loadDynamicMap() {
+  if (_dynamicMap) return _dynamicMap;
+  if (_loadPromise) return _loadPromise;
+
+  _loadPromise = (async () => {
+    try {
+      const npsService = require('../services/npsService');
+      const parks = await npsService.getAllParks();
+
+      const map = new Map();
+      const hardcodedCodes = new Set();
+      for (const [, entry] of PARK_NAME_TO_CODE) {
+        hardcodedCodes.add(entry.code);
+      }
+
+      // Track short names that collide so we can remove them
+      const shortNameCodes = new Map(); // shortName -> parkCode (first seen)
+
+      for (const park of parks) {
+        if (!park.fullName || !park.parkCode) continue;
+        const lat = parseFloat(park.latitude);
+        const lon = parseFloat(park.longitude);
+        if (isNaN(lat) || isNaN(lon)) continue;
+
+        const code = park.parkCode.toLowerCase();
+        const entry = { code, lat, lon };
+        const fullName = park.fullName.toLowerCase().trim();
+
+        // Always add full name to dynamic map (unless it's already hardcoded)
+        if (!PARK_NAME_TO_CODE.has(fullName)) {
+          map.set(fullName, entry);
+        }
+
+        // Generate short alias by stripping designation suffix
+        let shortName = fullName;
+        for (const suffix of DESIGNATION_SUFFIXES) {
+          if (shortName.endsWith(suffix)) {
+            shortName = shortName.slice(0, -suffix.length).trim();
+            break;
+          }
+        }
+
+        // Only add short name if it differs from full name and passes filters
+        if (shortName && shortName !== fullName && shortName.length >= MIN_SHORT_NAME_LENGTH && !BLOCKED_SHORT_NAMES.has(shortName)) {
+          // Skip if already in hardcoded map (preserves landmark aliases)
+          if (PARK_NAME_TO_CODE.has(shortName)) continue;
+
+          // Handle collisions: if two parks produce the same short name, remove it
+          if (shortNameCodes.has(shortName)) {
+            if (shortNameCodes.get(shortName) !== code) {
+              // Collision — mark for deletion
+              shortNameCodes.set(shortName, '__COLLISION__');
+              map.delete(shortName);
+            }
+          } else {
+            shortNameCodes.set(shortName, code);
+            map.set(shortName, entry);
+          }
+        }
+      }
+
+      _dynamicMap = map;
+      _dynamicSortedKeys = [...map.keys()].sort((a, b) => b.length - a.length);
+      console.log(`🗺️  Park name extractor ready: ${PARK_NAME_TO_CODE.size} hardcoded + ${map.size} dynamic entries`);
+      return _dynamicMap;
+    } catch (err) {
+      console.warn(`⚠️ Dynamic park map failed to load: ${err.message}`);
+      _loadPromise = null; // reset so next call retries
+      return null;
+    }
+  })();
+
+  return _loadPromise;
+}
+
 /**
  * Extract a national park reference from a user message.
+ * Checks hardcoded map first (sync), then dynamic map if loaded.
  * @param {string} message - The raw user message
  * @returns {{ parkCode: string, lat: number, lon: number, parkName: string } | null}
  */
@@ -158,12 +295,23 @@ function extractParkFromMessage(message) {
   if (!message) return null;
   const lower = message.toLowerCase();
 
+  // 1. Hardcoded map (always available, includes landmark aliases)
   for (const key of SORTED_KEYS) {
     if (lower.includes(key)) {
       const entry = PARK_NAME_TO_CODE.get(key);
-      // Title-case the matched key for display
       const parkName = key.replace(/\b\w/g, c => c.toUpperCase());
       return { parkCode: entry.code, lat: entry.lat, lon: entry.lon, parkName };
+    }
+  }
+
+  // 2. Dynamic map (available after warm-up)
+  if (_dynamicMap && _dynamicSortedKeys) {
+    for (const key of _dynamicSortedKeys) {
+      if (lower.includes(key)) {
+        const entry = _dynamicMap.get(key);
+        const parkName = key.replace(/\b\w/g, c => c.toUpperCase());
+        return { parkCode: entry.code, lat: entry.lat, lon: entry.lon, parkName };
+      }
     }
   }
 
@@ -182,6 +330,7 @@ function extractAllParksFromMessage(message) {
   const found = [];
   const usedCodes = new Set();
 
+  // 1. Hardcoded map
   for (const key of SORTED_KEYS) {
     if (lower.includes(key)) {
       const entry = PARK_NAME_TO_CODE.get(key);
@@ -193,7 +342,21 @@ function extractAllParksFromMessage(message) {
     }
   }
 
+  // 2. Dynamic map
+  if (_dynamicMap && _dynamicSortedKeys) {
+    for (const key of _dynamicSortedKeys) {
+      if (lower.includes(key)) {
+        const entry = _dynamicMap.get(key);
+        if (!usedCodes.has(entry.code)) {
+          usedCodes.add(entry.code);
+          const parkName = key.replace(/\b\w/g, c => c.toUpperCase());
+          found.push({ parkCode: entry.code, lat: entry.lat, lon: entry.lon, parkName });
+        }
+      }
+    }
+  }
+
   return found;
 }
 
-module.exports = { extractParkFromMessage, extractAllParksFromMessage, PARK_NAME_TO_CODE };
+module.exports = { extractParkFromMessage, extractAllParksFromMessage, PARK_NAME_TO_CODE, loadDynamicMap };

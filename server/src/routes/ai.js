@@ -304,6 +304,23 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   // Store all park names for frontend display
   const parkNames = allExtractedParks.map(p => p.parkName).filter(Boolean);
 
+  // Detect state park queries (not NPS — no parkCode will exist)
+  const isStateParkQuery = !resolvedMetadata.parkCode && /state\s+park/i.test(lastUserMessage);
+
+  // Extract user city early for coordinate fallback + driving times
+  let userCity = extractUserCity(lastUserMessage);
+
+  // City coordinate fallback for weather when no park coordinates exist
+  if (!resolvedMetadata.lat || !resolvedMetadata.lon) {
+    if (userCity) {
+      resolvedMetadata.lat = resolvedMetadata.lat || userCity.lat;
+      resolvedMetadata.lon = resolvedMetadata.lon || userCity.lon;
+      if (isStateParkQuery) {
+        console.log(`${logPrefix} State park query — using city coords for weather: ${userCity.name} (${userCity.lat}, ${userCity.lon})`);
+      }
+    }
+  }
+
   // Fetch relevant facts based on user message and resolved metadata
   let weatherFacts = null;
   let npsFacts = null;
@@ -355,7 +372,6 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
   }
 
   // Logging-related variables hoisted for return
-  let userCity = extractUserCity(lastUserMessage);
   let candidateParksBlock = false;
 
   // Build enhanced system prompt with facts
@@ -428,7 +444,25 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
     // No park detected — check if it's a travel query about a non-NPS destination
     const isNonNpsTravelQuery = isTravelRelated(lastUserMessage);
 
-    if (isNonNpsTravelQuery) {
+    if (isStateParkQuery) {
+      // State park query — no NPS data available, but we may have city weather
+      const hasWeatherFromCity = !!(weatherFacts && userCity);
+      enhancedSystemPrompt += `\n\n--- STATE PARK GUIDANCE ---`;
+      enhancedSystemPrompt += `\nThe user is asking about a STATE PARK (not managed by NPS). No NPS alerts, closures, or permit data is available for state parks.`;
+      enhancedSystemPrompt += `\nUse your training knowledge and web search results to help plan their trip. Do NOT apologize for missing NPS data — state parks aren't NPS sites.`;
+      enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block for this destination.`;
+      if (hasWeatherFromCity) {
+        enhancedSystemPrompt += `\nWeather data below is from the nearest city (${userCity.name}) — note this in your response if relevant.`;
+      }
+      enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
+
+      if (weatherFacts) {
+        enhancedSystemPrompt += `\n${weatherFacts}\n`;
+      }
+      if (webSearchFacts) {
+        enhancedSystemPrompt += `\n${webSearchFacts}\n`;
+      }
+    } else if (isNonNpsTravelQuery) {
       // User is asking about a non-NPS destination — help naturally
       enhancedSystemPrompt += `\n\n--- DESTINATION GUIDANCE ---`;
       enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
@@ -1820,9 +1854,23 @@ Ready to continue planning? 🚀`,
 
     const anonParkNames = anonExtractedParks.map(p => p.parkName).filter(Boolean);
 
-    // Logging-related variables hoisted for structured logging
+    // Detect state park queries (not NPS — no parkCode will exist)
+    const anonIsStateParkQuery = !resolvedMetadata.parkCode && /state\s+park/i.test(lastUserMessageContent);
+
+    // Extract user city early for coordinate fallback + driving times
     let anonUserCity = extractUserCity(lastUserMessageContent);
     let anonCandidateParksBlock = false;
+
+    // City coordinate fallback for weather when no park coordinates exist
+    if (!resolvedMetadata.lat || !resolvedMetadata.lon) {
+      if (anonUserCity) {
+        resolvedMetadata.lat = resolvedMetadata.lat || anonUserCity.lat;
+        resolvedMetadata.lon = resolvedMetadata.lon || anonUserCity.lon;
+        if (anonIsStateParkQuery) {
+          console.log(`[AI Anon] State park query — using city coords for weather: ${anonUserCity.name} (${anonUserCity.lat}, ${anonUserCity.lon})`);
+        }
+      }
+    }
 
     // Fetch relevant facts (web search skipped for anonymous users via isAnonymous flag)
     let weatherFacts = null;
@@ -1929,7 +1977,25 @@ Ready to continue planning? 🚀`,
       // No park detected — check if it's a travel query about a non-NPS destination
       const isNonNpsTravelQuery = isTravelRelated(lastUserMessageContent);
 
-      if (isNonNpsTravelQuery) {
+      if (anonIsStateParkQuery) {
+        // State park query — no NPS data available, but we may have city weather
+        const hasWeatherFromCity = !!(weatherFacts && anonUserCity);
+        enhancedSystemPrompt += `\n\n--- STATE PARK GUIDANCE ---`;
+        enhancedSystemPrompt += `\nThe user is asking about a STATE PARK (not managed by NPS). No NPS alerts, closures, or permit data is available for state parks.`;
+        enhancedSystemPrompt += `\nUse your training knowledge and web search results to help plan their trip. Do NOT apologize for missing NPS data — state parks aren't NPS sites.`;
+        enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block for this destination.`;
+        if (hasWeatherFromCity) {
+          enhancedSystemPrompt += `\nWeather data below is from the nearest city (${anonUserCity.name}) — note this in your response if relevant.`;
+        }
+        enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
+
+        if (weatherFacts) {
+          enhancedSystemPrompt += `\n${weatherFacts}\n`;
+        }
+        if (webSearchFacts) {
+          enhancedSystemPrompt += `\n${webSearchFacts}\n`;
+        }
+      } else if (isNonNpsTravelQuery) {
         // User is asking about a non-NPS destination — help naturally
         enhancedSystemPrompt += `\n\n--- DESTINATION GUIDANCE ---`;
         enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;

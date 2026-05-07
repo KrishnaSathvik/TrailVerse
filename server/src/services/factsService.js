@@ -739,8 +739,9 @@ function needsWebSearch(userMessage) {
  * @returns {boolean} Whether weather facts should be fetched
  */
 function needsWeatherFacts(userMessage) {
-  const weatherKeywords = /(weather|forecast|temperature|rain|snow|wind|sunny|cloud|storm|hot|cold|precipitation|humidity|climate)/i;
-  return weatherKeywords.test(userMessage);
+  // Always fetch weather when we have coordinates — it's essential context
+  // for any park-related query (trip planning, packing, timing, etc.)
+  return true;
 }
 
 /**
@@ -763,6 +764,33 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
   const results = { weatherFacts: null, npsFacts: null, webSearchFacts: null, feeFreeFacts: null };
 
   try {
+    // Coordinate fallback: if we have a parkCode but no lat/lon, look up from parkExtractor
+    if (parkCode && (!lat || !lon)) {
+      const { PARK_NAME_TO_CODE } = require('../utils/parkExtractor');
+      for (const [, entry] of PARK_NAME_TO_CODE) {
+        if (entry.code === parkCode) {
+          lat = lat || entry.lat;
+          lon = lon || entry.lon;
+          break;
+        }
+      }
+
+      // Secondary fallback: dynamic map may have provided a parkCode that isn't
+      // in the hardcoded map — fetch coordinates from NPS API directly
+      if (!lat || !lon) {
+        try {
+          const npsService = require('./npsService');
+          const parkDetails = await npsService.getParkByCode(parkCode);
+          if (parkDetails) {
+            lat = lat || parseFloat(parkDetails.latitude);
+            lon = lon || parseFloat(parkDetails.longitude);
+          }
+        } catch (coordErr) {
+          console.warn(`[Facts] Coordinate lookup failed for ${parkCode}: ${coordErr.message}`);
+        }
+      }
+    }
+
     // Check for fee-free day overlap (sync, no API call)
     results.feeFreeFacts = getFeeFreeInfo(userMessage);
 
