@@ -517,8 +517,14 @@ def format_park_details(
     # Timed entry policies change annually (e.g. Yosemite, Arches, Glacier
     # dropped timed entry for 2026). We use cautious wording accordingly.
     if permit_list:
+        has_timed = any(
+            (p.get("type") or "").lower() in ("timed entry", "timed-entry")
+            for p in permit_list
+        )
         text_lines.append(f"\n## Permits & Reservations")
-        text_lines.append("⚠️ Timed-entry and permit requirements change annually. Always verify on Recreation.gov before your trip.")
+        if has_timed:
+            text_lines.append("⚠️ IMPORTANT: Timed-entry listings below are from Recreation.gov but do NOT confirm the requirement is currently active. Many parks (Yosemite, Arches, Glacier, Mt Rainier) dropped timed entry for 2026. Do NOT state timed entry is required — say \"check Recreation.gov to see if timed entry is currently needed\" and link the URL.")
+            text_lines.append("If timed entry is NOT required: warn users this means NO crowd control — expect heavier traffic, packed trailheads and parking lots, arrive before 7am for popular spots, and consider weekdays over weekends.")
         for p in permit_list:
             pname = p.get("name") or "Permit"
             ptype = p.get("type") or ""
@@ -526,7 +532,7 @@ def format_park_details(
             is_timed = ptype.lower() in ("timed entry", "timed-entry")
             if url:
                 if is_timed:
-                    text_lines.append(f"- **{pname}** [Timed Entry]: [Check if required on Recreation.gov]({url})")
+                    text_lines.append(f"- **{pname}** [Timed Entry — STATUS UNKNOWN]: [Check if needed on Recreation.gov]({url})")
                 else:
                     text_lines.append(f"- **{pname}** [Permit]: [Book on Recreation.gov]({url})")
             else:

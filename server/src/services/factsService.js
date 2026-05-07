@@ -280,12 +280,12 @@ async function fetchNPSFacts({ parkCode }) {
       const permitLines = parkPermits.slice(0, 8).map(p => {
         const isTimedEntry = (p.type || '').toLowerCase().includes('timed entry');
         if (isTimedEntry) {
-          return `- ${p.name} [Timed Entry — may not be active this year, verify]: ${p.reservationUrl}`;
+          return `- ${p.name} [STATUS UNKNOWN — this is a Recreation.gov listing only, NOT confirmation that timed entry is currently required. Many parks dropped timed entry for 2026. Do NOT tell the user timed entry is required. Say "check Recreation.gov to see if timed entry is needed"]: ${p.reservationUrl}`;
         }
         return `- ${p.name}${p.type ? ` [${p.type}]` : ''}: ${p.reservationUrl}`;
       }).join('\n');
       facts.push(
-        `Permits & Reservations (from Recreation.gov — timed-entry requirements change annually, always verify before your trip):\n${permitLines}`
+        `Permits & Reservations (from Recreation.gov):\nIMPORTANT: Timed-entry listings below do NOT confirm the requirement is active — many parks (Yosemite, Arches, Glacier, Mt Rainier) dropped timed entry for 2026. Do NOT state timed entry is required. Instead say "check Recreation.gov to see if timed entry is currently needed" and link the URL.\nIf timed entry is NOT required: warn users this means NO crowd control — expect heavier traffic, packed trailheads and parking lots, arrive before 7am for popular spots, and consider visiting on weekdays.\n${permitLines}`
       );
     } else {
       facts.push('Permits: No permit requirements found on Recreation.gov for this park');
