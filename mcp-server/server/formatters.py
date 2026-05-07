@@ -864,18 +864,32 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
     events = []
     for e in events_raw if isinstance(events_raw, list) else []:
         eid = e.get("id") or e.get("_id")
+        # Capture all dates for recurring events
+        all_dates = e.get("dates") or []
+        if isinstance(all_dates, list) and len(all_dates) > 1:
+            recurring = True
+            date_start = all_dates[0]
+            date_end = all_dates[-1]
+        else:
+            recurring = False
+            date_start = e.get("date") or e.get("startDate") or (all_dates[0] if all_dates else None)
+            date_end = None
         events.append({
             "id": eid,
             "title": e.get("title") or e.get("name"),
             "parkCode": e.get("parkCode"),
             "parkName": e.get("parkName"),
-            "date": e.get("date") or e.get("startDate"),
-            "time": e.get("time") or e.get("startTime"),
+            "date": date_start,
+            "dateEnd": date_end,
+            "recurring": recurring,
+            "totalDates": len(all_dates) if recurring else 1,
+            "time": e.get("time") or e.get("startTime") or e.get("timeinfo"),
             "duration": e.get("duration"),
             "category": e.get("category") or e.get("type"),
             "description": _strip_html((e.get("description") or ""))[:240],
             "location": e.get("location"),
-            "registrationUrl": e.get("registrationUrl") or e.get("url"),
+            "registrationUrl": e.get("registrationUrl") or e.get("regresurl") or e.get("url"),
+            "isFree": e.get("isfree"),
         })
 
     structured = {
@@ -894,13 +908,6 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         text += _RELAY_INSTRUCTION
         return structured, text
 
-    # Group by date
-    from collections import defaultdict
-    by_date: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for e in events:
-        date_key = e.get("date") or "Date TBD"
-        by_date[date_key].append(e)
-
     unique_parks = {e.get("parkName") for e in events if e.get("parkName")}
     if len(unique_parks) == 1:
         park_name = events[0].get("parkName") or "the park"
@@ -910,33 +917,59 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
     else:
         text_lines.append("Upcoming events:\n")
 
-    for date, date_events in by_date.items():
-        text_lines.append(f"### {date}")
-        for e in date_events:
-            title = e.get("title", "Untitled")
-            time_str = e.get("time") or ""
-            category = e.get("category") or ""
-            # Flag special events
-            is_special = category.lower() in ("special event", "festival") if category else False
+    # Separate recurring (daily/weekly) from one-time events
+    recurring_events = [e for e in events if e.get("recurring")]
+    onetime_events = [e for e in events if not e.get("recurring")]
 
-            line = f"- {'⭐ ' if is_special else ''}**{title}**"
-            if time_str:
-                line += f" — {time_str}"
-            text_lines.append(line)
+    def _format_event(e: dict[str, Any]) -> list[str]:
+        lines = []
+        title = e.get("title", "Untitled")
+        time_str = e.get("time") or ""
+        category = e.get("category") or ""
+        is_special = category.lower() in ("special event", "festival") if category else False
+        already_says_free = "free" in title.lower()
+        free_tag = " (free)" if e.get("isFree") and not already_says_free else ""
 
-            if e.get("description"):
-                text_lines.append(f"  {e['description']}")
-            if e.get("location"):
-                loc = e["location"][:150] if len(e.get("location", "")) > 150 else e["location"]
-                # Use short location name for Maps query (first phrase before comma or period)
-                short_loc = loc.split(",")[0].split(".")[0].strip()[:60]
-                park_ctx = e.get("parkName") or ""
-                loc_query = quote(f"{short_loc}, {park_ctx}")
-                maps_link = f"https://www.google.com/maps/search/?api=1&query={loc_query}"
-                text_lines.append(f"  📍 [{short_loc}]({maps_link})")
-            if e.get("registrationUrl"):
-                text_lines.append(f"  [Register/Details]({e['registrationUrl']})")
+        line = f"- {'⭐ ' if is_special else ''}**{title}**{free_tag}"
+        if time_str:
+            line += f" — {time_str}"
+        lines.append(line)
+
+        # Show recurrence range
+        if e.get("recurring") and e.get("dateEnd"):
+            lines.append(f"  Runs daily: {e['date']} through {e['dateEnd']}")
+
+        if e.get("description"):
+            lines.append(f"  {e['description']}")
+        if e.get("location"):
+            loc = e["location"][:150] if len(e.get("location", "")) > 150 else e["location"]
+            short_loc = loc.split(",")[0].split(".")[0].strip()[:60]
+            park_ctx = e.get("parkName") or ""
+            loc_query = quote(f"{short_loc}, {park_ctx}")
+            maps_link = f"https://www.google.com/maps/search/?api=1&query={loc_query}"
+            lines.append(f"  📍 [{short_loc}]({maps_link})")
+        if e.get("registrationUrl"):
+            lines.append(f"  [Register/Details]({e['registrationUrl']})")
+        return lines
+
+    if recurring_events:
+        text_lines.append("### Ongoing Programs")
+        for e in recurring_events:
+            text_lines.extend(_format_event(e))
         text_lines.append("")
+
+    if onetime_events:
+        # Group one-time events by date
+        from collections import defaultdict
+        by_date: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for e in onetime_events:
+            date_key = e.get("date") or "Date TBD"
+            by_date[date_key].append(e)
+        for date, date_events in sorted(by_date.items()):
+            text_lines.append(f"### {_format_forecast_date(date) if date != 'Date TBD' else date}")
+            for e in date_events:
+                text_lines.extend(_format_event(e))
+            text_lines.append("")
 
     text_lines.append(f"---\nBrowse all events on [TrailVerse]({WEB_BASE}/events)")
 
