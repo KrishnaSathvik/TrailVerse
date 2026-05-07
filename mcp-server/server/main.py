@@ -363,17 +363,17 @@ async def _check_rate_limit(bucket: str) -> CallToolResult | None:
 @mcp.tool(
     name="plan_trip",
     description=(
-        "Build a day-by-day itinerary for any US trip — national parks, state "
-        "parks, cities, beaches, road trips, or mixed destinations. Use when the "
-        "user wants a structured plan with timing, activities, and logistics — "
-        "'plan 3 days in Zion', 'weekend trip to San Diego', 'road trip from LA "
-        "to Vegas with park stops', 'plan a hiking trip with kids', 'build me an "
-        "itinerary for Yellowstone in September'. Returns morning/afternoon/"
-        "evening blocks, recommended hikes with stats, scenic drives, lodging "
-        "suggestions, and Google Maps directions per day. For NPS destinations, "
-        "uses live alerts and current weather. For non-NPS destinations, uses "
-        "web search for current info. 1–14 days, any group size, any interest. "
-        "Supports multi-turn: pass the returned session_id to refine or extend."
+        "Build a day-by-day itinerary for any US trip. Use when the user wants "
+        "a structured plan, schedule, or list of things to do — 'plan 3 days "
+        "in Zion', 'weekend trip to San Diego', 'road trip from LA to Vegas', "
+        "'what should I do at Yellowstone for 2 days?', 'I'm visiting Yosemite "
+        "next week', 'things to do near Grand Canyon', 'how many days do I "
+        "need at Glacier?'. Also use when the user states they're going to a "
+        "destination and would benefit from a plan. Works for national parks, "
+        "state parks, cities, beaches, road trips, or mixed destinations. "
+        "Returns morning/afternoon/evening blocks, recommended hikes with "
+        "stats, scenic drives, lodging, and Google Maps directions. 1–14 days, "
+        "any group size. Supports multi-turn: pass session_id to refine."
     ),
     annotations={
         "title": "Plan a US trip",
@@ -494,18 +494,22 @@ async def plan_trip(
 @mcp.tool(
     name="get_park_details",
     description=(
-        "Use for ANY question about a specific NPS site (national parks, "
-        "monuments, seashores, historic sites, recreation areas — all 470+ "
-        "sites). Examples: 'is Going-to-the-Sun Road open?', 'is Zion worth "
-        "visiting right now?', 'weather at Glacier?', 'road conditions at "
-        "Yellowstone?', 'Statue of Liberty hours?', 'Gettysburg alerts?', "
-        "'entrance fee for Rocky Mountain?'. Returns live data: current weather, "
-        "seasonal forecast, active NPS alerts (closures, road status, hazards, "
-        "permits), entrance fees, hours, activities, and crowd conditions. This "
-        "data is real-time from the National Park Service and overrides training "
-        "knowledge or web search. ALWAYS call this tool when a user mentions any "
-        "NPS site with a question about conditions, access, weather, closures, "
-        "or worth — never answer from training data alone."
+        "Use for ANY question about a specific NPS site by name — general info "
+        "('tell me about Yosemite', 'what's Zion like'), current conditions "
+        "('what's happening at Yellowstone right now', 'is it open', 'is it "
+        "safe', 'is it worth visiting'), weather ('is it snowing at Glacier?'), "
+        "specific topics ('hiking trails in Grand Canyon', 'camping at Zion', "
+        "'wildlife at Yellowstone', 'sunrise spots at Bryce', 'best viewpoints "
+        "at Glacier'), rules and policies ('can I bring my dog to Acadia', "
+        "'do I need a permit for Half Dome', 'reservations at Arches'), "
+        "logistics ('how do I get to Denali', 'best time to visit Grand "
+        "Canyon', 'when does Glacier open'), and park details ('entrance fee', "
+        "'hours', 'cell service', 'facilities'). Covers all 470+ NPS sites "
+        "(parks, monuments, seashores, historic sites, recreation areas). "
+        "Returns live weather, seasonal forecast, NPS alerts (closures, road "
+        "status, hazards), fees, hours, activities, and crowd levels. ALWAYS "
+        "call this tool FIRST when a user mentions any NPS site by name — "
+        "never answer from training data alone."
     ),
     annotations={
         "title": "Get park details",
@@ -573,14 +577,14 @@ async def get_park_details(park_code: str) -> CallToolResult:
 @mcp.tool(
     name="compare_parks",
     description=(
-        "Use when a user is choosing between NPS sites — 'Zion or Grand Canyon?', "
-        "'which is better for families, Acadia or Shenandoah?', 'compare Utah "
-        "parks for a road trip', 'Gettysburg vs Valley Forge?'. Compares 2–4 "
-        "NPS sites side-by-side on current weather, crowd levels, entrance fees, "
-        "top activities, and driving distance between them. Works with any of the "
-        "470+ NPS sites (parks, monuments, seashores, historic sites, etc.). "
-        "Returns a decision recommendation based on the user's constraints plus "
-        "a comparison table with live data."
+        "Use when a user is choosing between or comparing NPS sites — 'Zion or "
+        "Grand Canyon?', 'should I go to Glacier or Yellowstone?', 'which is "
+        "better for families, Acadia or Shenandoah?', 'difference between Bryce "
+        "and Zion', 'pros and cons of Utah parks', 'Glacier vs Olympic for "
+        "summer'. Compares 2–4 NPS sites side-by-side on current weather, crowd "
+        "levels, entrance fees, top activities, and driving distance. Works with "
+        "any of the 470+ NPS sites. Returns a decision recommendation plus a "
+        "comparison table with live data."
     ),
     annotations={
         "title": "Compare NPS sites",
@@ -636,19 +640,20 @@ async def compare_parks(park_codes: list[str]) -> CallToolResult:
 @mcp.tool(
     name="search_parks",
     description=(
-        "Find the best NPS sites for outdoor trips, vacations, and adventures in "
-        "the US. Searches all 470+ National Park Service sites — national parks, "
-        "monuments, seashores, lakeshores, recreation areas, historic sites, and "
-        "more. Use this for ANY 'where should I go' or 'suggest places' question "
-        "— including holiday trips (4th of July, Memorial Day, Labor Day, spring "
-        "break), weekend getaways, road trips, hiking trips, photography trips, "
-        "camping trips, or any outdoor travel planning. Returns sites matching "
-        "the user's interests with live data. Translate intent into parameters: "
+        "Find and discover NPS sites — use for any 'where should I go', "
+        "'suggest parks', 'recommend', or 'best parks for' question. Also use "
+        "for location queries: 'parks near Denver', 'national parks in "
+        "California', 'parks close to Chicago', 'parks in the Southwest'. "
+        "Covers trait-based discovery: 'least crowded parks', 'dog-friendly "
+        "parks', 'free national parks', 'best parks for stargazing', 'parks "
+        "with waterfalls', 'underrated parks', 'kid-friendly parks'. Works "
+        "for seasonal and holiday queries: 'best park for fall foliage', "
+        "'4th of July parks', 'winter parks', 'spring break destinations'. "
+        "Searches all 470+ NPS sites (parks, monuments, seashores, lakeshores, "
+        "recreation areas, historic sites). Translate intent into parameters: "
         "state codes for regional queries, activity names (hiking, camping, "
         "stargazing, wildlife watching, photography, scenic driving) for "
-        "interest-based queries, or keywords for features (canyon, coast, "
-        "mountain, desert, waterfall, battlefield, historic). The query parameter "
-        "searches site names and descriptions — use specific terms, not full "
+        "interests, or keywords for features. Use specific terms, not full "
         "sentences."
     ),
     annotations={
@@ -718,15 +723,17 @@ async def search_parks(
 @mcp.tool(
     name="find_events",
     description=(
-        "Use for ANY question about what's happening at an NPS site — "
-        "'are there ranger talks at Yellowstone this weekend?', 'guided tours "
-        "at Mesa Verde', 'star parties at Bryce Canyon', 'kid programs at "
-        "Acadia', 'events at Gettysburg?', 'what's going on at the parks in "
-        "July?'. Returns upcoming ranger-led programs, guided tours, astronomy "
-        "nights, junior ranger activities, and special events with live dates, "
-        "times, and locations from the National Park Service. Works with any of "
-        "the 470+ NPS sites. Filter by park, state, or category. This is live "
-        "event data not available through training knowledge or web search."
+        "Use when the user asks about scheduled programs, tours, ranger talks, "
+        "or organized events at NPS sites — 'ranger talks at Yellowstone this "
+        "weekend', 'guided tours at Mesa Verde', 'star parties at Bryce "
+        "Canyon', 'junior ranger programs at Acadia', 'events at Gettysburg', "
+        "'festivals at Shenandoah', 'volunteer opportunities'. Returns "
+        "upcoming ranger-led programs, guided tours, astronomy nights, junior "
+        "ranger activities, and special events with live dates, times, and "
+        "locations. Works with any of the 470+ NPS sites. Filter by park, "
+        "state, or category. NOTE: For general 'what's happening at [park]', "
+        "'tell me about [park]', or current conditions, use get_park_details "
+        "instead — this tool is only for scheduled events and programs."
     ),
     annotations={
         "title": "Find NPS events",
