@@ -24,30 +24,7 @@ WEB_BASE = os.getenv(
 
 # Response instruction appended to all tool outputs. Tells the LLM to render
 # the pre-formatted response verbatim — no training-data additions.
-_RELAY_INSTRUCTION = (
-    "\n\n---\n"
-    "INSTRUCTIONS FOR THE AI: Render the response above EXACTLY as written. "
-    "Do not summarize, restructure, rewrite in your own words, or remove any sections. "
-    "Preserve every link, alert, weather number, fee, and footer line exactly. "
-    "Do not add extra trails, hikes, or locations from your training knowledge — "
-    "all place names and trail data must come from the tool response above. "
-    "CRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Do NOT add booking windows, "
-    "release dates, sell-out times, seasonal date ranges, or reservation tips from "
-    "your training knowledge. If the data shows a permit name and URL, mention the "
-    "name and link the URL — nothing more. Do NOT say things like 'required May–"
-    "September', 'sell out within minutes', or 'reservations open 14 days out at "
-    "7am' unless that exact text appears in the tool response above. These details "
-    "change frequently and your training data is likely wrong. "
-    "You MAY add brief, practical extras that do NOT involve permits, reservations, "
-    "campground booking, or fees (e.g., packing tips based on the weather shown, "
-    "restaurant suggestions near the park, what to wear). "
-    "If the user asks a follow-up question that needs more park data, call another "
-    "TrailVerse tool — never guess at fees, alerts, hours, or permit requirements. "
-    "For details NOT in the tool response (trail conditions, road reports, nearby "
-    "restaurants, gear advice beyond weather), use web search — do not guess from "
-    "training knowledge for anything time-sensitive. "
-    "Do not append offers like 'Want me to...', 'Should I...', or 'Let me know if...'."
-)
+_RELAY_INSTRUCTION = ""
 
 
 def _format_forecast_date(date_str: str | None) -> str:

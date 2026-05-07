@@ -207,58 +207,124 @@ export default function MCPPage() {
                 className="text-3xl sm:text-4xl font-bold mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Trip Planning with Live Data
+                Real Conversations, Real Data
               </h2>
               <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                Ask Claude to plan a trip and TrailVerse checks real-time conditions &mdash;
-                road closures, weather, alerts &mdash; before building your itinerary.
+                TrailVerse gives Claude live park data &mdash; road closures, weather,
+                crowds, fees &mdash; so every answer is grounded in what&rsquo;s actually happening.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                }}
+            {/* Plan a Trip */}
+            <div className="mb-16">
+              <h3
+                className="text-xl font-semibold mb-6"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <img
-                  src="/mcp-screenshot1.png"
-                  alt="Claude checking live Yosemite conditions — road closures and seasonal alerts before building the itinerary"
-                  className="w-full h-auto"
-                />
-                <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    Live conditions check
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                    Claude pulls real-time road closures and alerts before planning &mdash; Tioga Road
-                    and Glacier Point Road are closed, so it routes around them automatically.
-                  </p>
+                Plan a Trip
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-screenshot1.png"
+                    alt="Claude checking live Yosemite conditions — road closures and seasonal alerts before building the itinerary"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Live conditions check
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Claude pulls real-time road closures and alerts before planning &mdash; Tioga Road
+                      and Glacier Point Road are closed, so it routes around them automatically.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-screenshot2.png"
+                    alt="Completed itinerary with packing list, driving warnings, and Google Maps links for each day"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Actionable itinerary
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Packing lists based on real weather, driving time warnings, and
+                      Google Maps links for each day of your trip.
+                    </p>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                }}
+            {/* Compare Parks */}
+            <div>
+              <h3
+                className="text-xl font-semibold mb-6"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <img
-                  src="/mcp-screenshot2.png"
-                  alt="Completed itinerary with packing list, driving warnings, and Google Maps links for each day"
-                  className="w-full h-auto"
-                />
-                <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    Actionable itinerary
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                    Packing lists based on real weather, driving time warnings, and
-                    Google Maps links for each day of your trip.
-                  </p>
+                Compare Parks
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-compare1.png"
+                    alt="Side-by-side comparison of Death Valley and Joshua Tree — live weather, crowds, fees, and activities"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Side-by-side with live data
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Real-time temperature, crowd levels, entry fees, and top activities
+                      pulled from both parks at once.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-compare2.png"
+                    alt="Detailed recommendation on which park is better with kids — trail suggestions, heat risk, and wow factor"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Opinionated recommendation
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Not just data &mdash; Claude picks the better option for your situation
+                      with kid-friendly trails, heat risk, and specific reasons why.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
