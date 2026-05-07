@@ -6,11 +6,11 @@ import IconGlyph from '@/components/common/IconGlyph';
 export const metadata = {
   title: 'TrailVerse for Claude — MCP Integration',
   description:
-    'Connect Claude to live National Park Service data. Plan trips, compare parks, check weather and alerts, find ranger programs — all 63 US national parks, right inside Claude.',
+    'Connect Claude to live National Park Service data. Plan trips, compare parks, check weather and alerts, find ranger programs — all 470+ NPS sites, right inside Claude.',
   openGraph: {
     title: 'TrailVerse for Claude — MCP Integration',
     description:
-      'Plan trips, compare parks, check live weather and alerts, find ranger programs — all 63 US national parks, right inside Claude.',
+      'Plan trips, compare parks, check live weather and alerts, find ranger programs — all 470+ NPS sites, right inside Claude.',
     url: 'https://www.nationalparksexplorerusa.com/mcp',
     type: 'website',
     images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse MCP for Claude' }],
@@ -19,7 +19,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'TrailVerse for Claude — MCP Integration',
     description:
-      'Plan trips, compare parks, check live weather and alerts — all 63 US national parks, right inside Claude.',
+      'Plan trips, compare parks, check live weather and alerts — all 470+ NPS sites, right inside Claude.',
     images: ['/og-image-trailverse.jpg'],
   },
   alternates: {
@@ -37,7 +37,7 @@ const tools = [
   {
     icon: 'Mountain',
     title: 'Park Details',
-    description: 'Full park info: weather, entrance fees, hours, active closures',
+    description: 'Live weather, alerts, entrance fees, hours, campgrounds, permits, activities, and Google Maps',
     accent: 'var(--accent-blue)',
   },
   {
@@ -59,7 +59,7 @@ const tools = [
     accent: 'var(--accent-blue)',
   },
   {
-    icon: 'Chat',
+    icon: 'MessageSquare',
     title: 'Multi-Turn Planning',
     description: 'Refine and extend plans across messages \u2014 "now add day 4" just works',
     accent: 'var(--accent-orange)',
@@ -70,7 +70,7 @@ const examplePrompts = [
   'Plan a 5-day trip to Yellowstone in September with my fianc\u00e9e',
   'Is Going-to-the-Sun Road open right now?',
   'Compare Zion and Grand Canyon for a family trip in June',
-  'What\u2019s the weather at Glacier this week?',
+  'What national parks are in Washington state?',
   'Are there star parties at Bryce this month?',
   'Plan a 3-day photography road trip through Utah\u2019s parks',
 ];
@@ -135,7 +135,7 @@ export default function MCPPage() {
 
             <p className="text-lg sm:text-xl leading-relaxed mb-10 text-white/90 max-w-3xl mx-auto">
               Connect Claude to live National Park Service data. Real alerts, real weather,
-              real itineraries &mdash; for all 63 parks.
+              real itineraries &mdash; for all 470+ NPS sites.
             </p>
 
             <a
@@ -273,7 +273,7 @@ export default function MCPPage() {
             </div>
 
             {/* Compare Parks */}
-            <div>
+            <div className="mt-16">
               <h3
                 className="text-xl font-semibold mb-6"
                 style={{ color: 'var(--text-primary)' }}
@@ -323,6 +323,63 @@ export default function MCPPage() {
                     <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
                       Not just data &mdash; Claude picks the better option for your situation
                       with kid-friendly trails, heat risk, and specific reasons why.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search & Park Details */}
+            <div className="mt-16">
+              <h3
+                className="text-xl font-semibold mb-6"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Search &amp; Park Details
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-searchpark.png"
+                    alt="Claude listing all 17 NPS sites in Washington state — Mount Rainier, North Cascades, Olympic, and more"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Discover parks by state
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Ask &ldquo;what parks are in Washington state?&rdquo; and get all 17 NPS sites &mdash;
+                      ranked with insider takes on what makes each one worth visiting.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-parkdetails.png"
+                    alt="Claude pulling live details for Olympic National Park — three ecosystems, 44°F weather, road closures, and fire impacts"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Deep dive on any park
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      &ldquo;Tell me more about Olympic&rdquo; pulls live weather, active road closures,
+                      fire impacts, and current conditions &mdash; not stale training data.
                     </p>
                   </div>
                 </div>
@@ -642,8 +699,8 @@ export default function MCPPage() {
                 className="text-base leading-7 mb-8"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Install TrailVerse in Claude and start planning your next national park trip
-                with live data.
+                Install TrailVerse in Claude and start planning your next trip
+                with live data from 470+ NPS sites.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a
@@ -671,18 +728,6 @@ export default function MCPPage() {
                   </span>
                 </Link>
               </div>
-              <p className="text-xs mt-6" style={{ color: 'var(--text-tertiary)' }}>
-                Built by{' '}
-                <a
-                  href="https://x.com/latentengineer_"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:no-underline"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  @latentengineer_
-                </a>
-              </p>
             </div>
           </div>
         </section>

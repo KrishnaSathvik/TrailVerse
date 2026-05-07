@@ -535,6 +535,32 @@ def format_park_details(
     # TrailVerse link
     text_lines.append(f"\n---\nExplore more on [TrailVerse]({WEB_BASE}/parks/{park_code}) | [Plan a trip]({WEB_BASE}/plan-ai?parkCode={park_code})")
 
+    # Data summary — reminds the model what sections were provided so none get dropped.
+    # This is NOT an instruction; it's a content manifest that makes omission obvious.
+    section_tags = []
+    if alert_list:
+        section_tags.append("alerts")
+    if has_weather:
+        section_tags.append("weather")
+    if forecast:
+        section_tags.append("5-day forecast")
+    elif seasonal:
+        section_tags.append("seasonal temps")
+    if activities:
+        section_tags.append(f"{len(activities)} activities")
+    if fees:
+        section_tags.append("entrance fees")
+    if hours:
+        section_tags.append("operating hours")
+    if campground_list:
+        section_tags.append(f"{len(campground_list)} campgrounds")
+    if permit_list:
+        section_tags.append(f"{len(permit_list)} permits")
+    if maps_url:
+        section_tags.append("Google Maps")
+    if section_tags:
+        text_lines.append(f"\n*Live data provided: {', '.join(section_tags)}. Include all sections above in your response.*")
+
     text = "\n".join(text_lines)
     text += _RELAY_INSTRUCTION
 
@@ -763,6 +789,14 @@ def format_compare(
     if structured["links"].get("planRoadTrip"):
         text_lines.append(f" | [Plan a road trip hitting both]({structured['links']['planRoadTrip']})")
 
+    section_tags = ["comparison table"]
+    if directions_url:
+        section_tags.append("Google Maps directions")
+    section_tags.append("verdict")
+    if highlights and highlights.get("sharedHighlights"):
+        section_tags.append("shared highlights")
+    text_lines.append(f"\n*Live data provided: {', '.join(section_tags)}. Include all sections above in your response.*")
+
     text = "\n".join(text_lines)
     text += _RELAY_INSTRUCTION
     return structured, text
@@ -848,6 +882,8 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             text_lines.append(line)
 
     text_lines.append(f"\n---\nExplore all parks on [TrailVerse]({WEB_BASE}/explore)")
+
+    text_lines.append(f"\n*{len(parks)} parks found with TrailVerse and Google Maps links. Include all links in your response.*")
 
     text = "\n".join(text_lines)
     text += _RELAY_INSTRUCTION
@@ -972,6 +1008,14 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             text_lines.append("")
 
     text_lines.append(f"---\nBrowse all events on [TrailVerse]({WEB_BASE}/events)")
+
+    section_tags = []
+    if recurring_events:
+        section_tags.append(f"{len(recurring_events)} ongoing programs")
+    if onetime_events:
+        section_tags.append(f"{len(onetime_events)} one-time events")
+    if section_tags:
+        text_lines.append(f"\n*Live data provided: {', '.join(section_tags)} with locations and registration links. Include all events and links in your response.*")
 
     text = "\n".join(text_lines)
     text += _RELAY_INSTRUCTION
