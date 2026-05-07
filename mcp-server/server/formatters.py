@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import re
+from datetime import datetime
 from typing import Any
 from urllib.parse import quote
 
@@ -21,22 +22,60 @@ WEB_BASE = os.getenv(
     "TRAILVERSE_WEB_BASE", "https://www.nationalparksexplorerusa.com"
 ).rstrip("/")
 
-# Response instruction appended to all tool outputs. This tells Claude to
-# present the pre-formatted response as-is, but allows adding trail knowledge.
+# Response instruction appended to all tool outputs. Tells the LLM to render
+# the pre-formatted response verbatim — no training-data additions.
 _RELAY_INSTRUCTION = (
     "\n\n---\n"
-    "IMPORTANT: The response above is already formatted for the user. "
-    "Present it to the user using this EXACT structure and data — do not summarize, restructure, or remove sections. "
-    "You SHOULD enhance it by:\n"
-    "- Adding 3-5 recommended trails with stats (distance, elevation, time, difficulty) from your knowledge\n"
-    "- Adding specific restaurant/lodging names near the park\n"
-    "- Adding a 'What to Pack' suggestion based on the weather data above\n"
-    "But do NOT:\n"
-    "- Remove any sections or data shown above\n"
-    "- Change temperatures, fees, hours, or alerts (this is live data)\n"
-    "- Add offers like 'Want me to...', 'Should I...', 'Let me know if...' at the end\n"
-    "- Invent URLs — only use links shown above"
+    "INSTRUCTIONS FOR THE AI: Render the response above EXACTLY as written. "
+    "Do not summarize, restructure, rewrite in your own words, or remove any sections. "
+    "Preserve every link, alert, weather number, fee, and footer line exactly. "
+    "Do not add extra trails, hikes, or locations from your training knowledge — "
+    "all place names and trail data must come from the tool response above. "
+    "You MAY add brief, practical extras that complement the data (e.g., packing tips "
+    "based on the weather shown, restaurant suggestions near the park, what to wear) "
+    "as long as you do not contradict any live data above. "
+    "If the user asks a follow-up question that needs more park data, call another "
+    "TrailVerse tool — never guess at fees, alerts, hours, or permit requirements. "
+    "Do not append offers like 'Want me to...', 'Should I...', or 'Let me know if...'."
 )
+
+
+def _format_forecast_date(date_str: str | None) -> str:
+    """Convert an ISO date string to a readable format like 'Thu May 08'."""
+    if not date_str:
+        return "Upcoming"
+    try:
+        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        return dt.strftime("%a %b %d")
+    except (ValueError, AttributeError):
+        return date_str
+
+
+def _smart_truncate(text: str, max_len: int = 200) -> str:
+    """Truncate text on a sentence boundary when possible."""
+    if not text or len(text) <= max_len:
+        return text
+    cutoff = text[:max_len].rsplit(". ", 1)[0]
+    if cutoff and len(cutoff) > max_len // 2:
+        return cutoff + "."
+    return text[:max_len].rsplit(" ", 1)[0] + "..."
+
+
+_HIGH_PRIORITY_KEYWORDS = (
+    "closure", "closed", "fire", "water", "flood", "flash flood",
+    "permit required", "danger", "warning", "hazard", "restricted",
+    "evacuation", "avalanche", "rescue",
+)
+
+
+def _is_high_priority_alert(alert: dict) -> bool:
+    """Check if an alert is safety-critical based on keywords in its text."""
+    text = (
+        (alert.get("title") or "")
+        + " " + (alert.get("category") or "")
+        + " " + (alert.get("description") or "")
+    ).lower()
+    return any(k in text for k in _HIGH_PRIORITY_KEYWORDS)
 
 
 def _google_maps_point_url(lat: float | str | None, lng: float | str | None, name: str = "") -> str | None:
@@ -309,7 +348,7 @@ def format_park_details(
 
     # Lead with alerts — they affect the trip
     if alert_list:
-        closures = [a for a in alert_list if a.get("category") in ("Park Closure", "Closure", "Caution", "Danger")]
+        closures = [a for a in alert_list if _is_high_priority_alert(a)]
         info_alerts = [a for a in alert_list if a not in closures]
         if closures:
             text_lines.append("")
@@ -320,8 +359,12 @@ def format_park_details(
             for a in info_alerts:
                 text_lines.append(f"- {a.get('title', '')}")
 
-    # Weather section — cite actual numbers
-    if current and current.get("tempF") is not None:
+    # Weather section — cite actual numbers, or note unavailability
+    has_weather = current and current.get("tempF") is not None
+    if not has_weather and not forecast and not seasonal:
+        text_lines.append(f"\n## Weather")
+        text_lines.append("Live weather data is temporarily unavailable. Check [current conditions on NPS.gov](https://www.nps.gov/{}/planyourvisit/conditions.htm) before your trip.".format(park_code))
+    if has_weather:
         text_lines.append(f"\n## Right Now")
         wx = f"**{current['tempF']}°F**"
         if current.get("description"):
@@ -342,7 +385,7 @@ def format_park_details(
     if forecast:
         text_lines.append("\n**5-day forecast:**")
         for f in forecast:
-            fc_line = f"- {f.get('date', '?')}: "
+            fc_line = f"- {_format_forecast_date(f.get('date'))}: "
             if f.get("highF") is not None and f.get("lowF") is not None:
                 fc_line += f"{f['highF']}°F / {f['lowF']}°F"
             if f.get("description"):
@@ -662,7 +705,7 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             "name": p.get("fullName") or p.get("name"),
             "designation": p.get("designation"),
             "states": p.get("states"),
-            "summary": (p.get("description") or "")[:220],
+            "summary": _smart_truncate(p.get("description") or "", 220),
             "heroImage": _pick_image(p),
             "rating": p.get("rating"),
             "link": f"{WEB_BASE}/parks/{code}" if code else None,
@@ -721,7 +764,7 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             states = p.get("states") or ""
             line = f"- **{pname}** ({states})"
             if p.get("summary"):
-                line += f": {p['summary'][:100]}..."
+                line += f": {_smart_truncate(p['summary'], 130)}"
             text_lines.append(line)
 
     text_lines.append(f"\n---\nExplore all parks on [TrailVerse]({WEB_BASE}/explore)")
@@ -778,8 +821,14 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         date_key = e.get("date") or "Date TBD"
         by_date[date_key].append(e)
 
-    park_name = events[0].get("parkName") or "the park"
-    text_lines.append(f"Here's what's happening at {park_name}:\n")
+    unique_parks = {e.get("parkName") for e in events if e.get("parkName")}
+    if len(unique_parks) == 1:
+        park_name = events[0].get("parkName") or "the park"
+        text_lines.append(f"Here's what's happening at {park_name}:\n")
+    elif len(unique_parks) > 1:
+        text_lines.append(f"Upcoming events across {len(unique_parks)} parks:\n")
+    else:
+        text_lines.append("Upcoming events:\n")
 
     for date, date_events in by_date.items():
         text_lines.append(f"### {date}")

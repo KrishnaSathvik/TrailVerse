@@ -430,7 +430,7 @@ async def plan_trip(
         conv = conversation_store.create()
 
     # Append the new user message to the conversation
-    conv.messages.append({"role": "user", "content": payload.message})
+    conv.append_message("user", payload.message)
 
     form_data: dict[str, Any] = {}
     if payload.days is not None:
@@ -466,7 +466,7 @@ async def plan_trip(
     if isinstance(resp_data, dict):
         assistant_content = resp_data.get("content", "")
     if assistant_content:
-        conv.messages.append({"role": "assistant", "content": assistant_content})
+        conv.append_message("assistant", assistant_content)
 
     structured, text = format_plan_trip(resp, user_message=payload.message, park_code_hint=resolved_park_code or "")
 
