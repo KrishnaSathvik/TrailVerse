@@ -8,17 +8,20 @@ function getApiBaseUrl() {
   return configuredUrl.endsWith('/api') ? configuredUrl : `${configuredUrl}/api`;
 }
 
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://trailverse.onrender.com/api').replace(/\/api\/?$/, '');
+
 function toAbsoluteImageUrl(imageUrl) {
   if (!imageUrl || imageUrl.trim() === '' || imageUrl.startsWith('data:')) {
     return `${SITE_URL}/og-image-trailverse.jpg`;
   }
 
-  // Route through Next.js image optimization so social crawlers get a compressed,
-  // edge-cached ~150KB JPEG instead of the raw 4MB+ upload via the Render proxy.
-  const raw = imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
-    ? imageUrl
-    : imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  return `${SITE_URL}/_next/image?url=${encodeURIComponent(raw)}&w=1200&q=75`;
+  // Social crawlers need a direct image URL — /_next/image routes don't work.
+  // Blog images are relative paths like /uploads/blog/... served by the Express backend.
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  return `${API_ORIGIN}${path}`;
 }
 
 async function getPostBySlug(slug) {

@@ -32,7 +32,6 @@ const AuthorBioCard = ({ author }) => {
       }}
     >
       <div className="flex items-center gap-4">
-        <AuthorPhoto name={data.name} photo={data.photo} />
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
             {data.name}
