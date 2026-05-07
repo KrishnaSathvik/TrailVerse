@@ -84,19 +84,9 @@ const CROWD_SCORES = {
   zion: [2,2,6,8,9,10,10,8,8,8,5,3],
 };
 
-/** Parks that require permits or timed-entry reservations */
-const PERMIT_PARKS = {
-  acad: 'Vehicle reservation May-Oct',
-  arch: 'Timed-entry Apr-Oct',
-  glac: 'Vehicle reservation Jun-Sep',
-  grte: 'Jenny Lake limited Jul-Aug',
-  hale: 'Sunrise reservation year-round',
-  mora: 'Timed-entry Jul-Sep',
-  romo: 'Timed-entry May-Oct',
-  shen: 'Timed-entry May-Nov',
-  yose: 'Timed-entry May-Sep',
-  zion: 'Shuttle + timed-entry peak season',
-};
+/** @deprecated Permit data now comes from live RIDB/NPS APIs via factsService.
+ *  Kept as empty object for backward compat with any imports. */
+const PERMIT_PARKS = {};
 
 /** Difficulty levels ordered from easiest to hardest */
 const DIFFICULTY_ORDER = ['easy', 'moderate', 'hard', 'strenuous'];

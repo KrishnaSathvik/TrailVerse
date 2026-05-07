@@ -42,13 +42,16 @@ Trailie also draws from TrailVerse's own published blog guides — visitor tips,
 Try it free with 5 messages, no account needed.
 
 ### Build Visual Itineraries
-After chatting with the AI, switch to the drag-and-drop itinerary builder to customize your trip:
-- Organize stops by day — parks, trails, campgrounds, lodging, food, or custom spots
-- Set start times and durations for each stop
-- Search and add real NPS trails, campgrounds, and visitor centers
-- Drag stops between days to rearrange
+After chatting with Trailie, switch to the Plan Workspace — a unified split view with an interactive Google Map and editable day cards:
+- See all your stops as color-coded markers on the map, connected by real driving route polylines
+- Organize stops by day with time-of-day grouping (Morning, Afternoon, Evening)
+- Search and add any place via Google Places autocomplete — trailheads, restaurants, viewpoints, lodges — biased toward your park area
+- Move stops between days, add or remove days, and remove stops from three-dot menus
+- Click a stop card to pan the map; click a marker to highlight its card
+- Open any day's full route in Google Maps for turn-by-turn navigation
 - Export the whole plan as a PDF
 - Share it with a public link anyone can view
+- All edits auto-save and sync bidirectionally with the AI chat
 
 ### Compare Parks
 Put parks side by side to decide between options. Each comparison includes a direct link to start planning a trip with AI.

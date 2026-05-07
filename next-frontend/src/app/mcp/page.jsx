@@ -58,14 +58,20 @@ const tools = [
     description: 'Ranger programs, guided tours, and special events with dates and locations',
     accent: 'var(--accent-blue)',
   },
+  {
+    icon: 'Chat',
+    title: 'Multi-Turn Planning',
+    description: 'Refine and extend plans across messages \u2014 "now add day 4" just works',
+    accent: 'var(--accent-orange)',
+  },
 ];
 
 const examplePrompts = [
   'Plan a 5-day trip to Yellowstone in September with my fianc\u00e9e',
-  'What national parks are in Colorado?',
+  'Is Going-to-the-Sun Road open right now?',
   'Compare Zion and Grand Canyon for a family trip in June',
-  'Are there any road closures at Acadia right now?',
-  'Find ranger programs at Grand Canyon this weekend',
+  'What\u2019s the weather at Glacier this week?',
+  'Are there star parties at Bryce this month?',
   'Plan a 3-day photography road trip through Utah\u2019s parks',
 ];
 
@@ -128,10 +134,8 @@ export default function MCPPage() {
             </h1>
 
             <p className="text-lg sm:text-xl leading-relaxed mb-10 text-white/90 max-w-3xl mx-auto">
-              Plan trips, compare parks, check live weather and alerts, find ranger programs &mdash;
-              all 63 US national parks, right inside Claude. TrailVerse connects Claude to live
-              National Park Service data so your trip planning is grounded in real-time conditions,
-              not outdated training data.
+              Connect Claude to live National Park Service data. Real alerts, real weather,
+              real itineraries &mdash; for all 63 parks.
             </p>
 
             <a
@@ -149,7 +153,7 @@ export default function MCPPage() {
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
-              <SectionBadge>5 Live Tools</SectionBadge>
+              <SectionBadge>Real-time NPS Data</SectionBadge>
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
                 style={{ color: 'var(--text-primary)' }}
@@ -157,8 +161,8 @@ export default function MCPPage() {
                 What You Get
               </h2>
               <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                Five tools that give Claude real-time access to National Park Service data,
-                weather, events, and AI trip planning.
+                TrailVerse connects Claude to live National Park Service data so your trip
+                planning is grounded in real-time conditions, not outdated training data.
               </p>
             </div>
 
@@ -190,33 +194,6 @@ export default function MCPPage() {
                   </p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Screenshot */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-5xl mx-auto">
-            <div
-              className="rounded-3xl overflow-hidden backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-              }}
-            >
-              {/* Replace placeholder with: <Image src="/mcp-screenshot.png" alt="TrailVerse tools in Claude" width={1200} height={675} className="w-full h-auto" /> */}
-              <div
-                className="flex items-center justify-center py-32 px-8"
-                style={{ backgroundColor: 'var(--bg-tertiary)' }}
-              >
-                <div className="text-center">
-                  <IconGlyph name="Camera" className="h-10 w-10 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    Screenshot coming soon
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -258,8 +235,8 @@ export default function MCPPage() {
                   {[
                     <>Open <strong>Settings</strong> &rarr; <strong>Connectors</strong></>,
                     <>Click &ldquo;Add custom connector&rdquo;</>,
-                    <>Paste the URL below</>,
-                    <>Done &mdash; TrailVerse tools appear in your conversation</>,
+                    <>Name: <strong>TrailVerse</strong>, URL: paste from below</>,
+                    <>Click Add &mdash; TrailVerse tools appear in your conversation</>,
                   ].map((step, i) => (
                     <li key={i} className="flex gap-3">
                       <span
@@ -274,6 +251,9 @@ export default function MCPPage() {
                     </li>
                   ))}
                 </ol>
+                <p className="text-xs mt-4" style={{ color: 'var(--text-tertiary)' }}>
+                  Requires Pro, Max, Team, or Enterprise plan. Free plan users cannot add custom connectors.
+                </p>
 
                 <div
                   className="mt-6 rounded-lg px-4 py-3 font-mono text-sm select-all"
@@ -409,9 +389,11 @@ export default function MCPPage() {
                   What leaves Claude
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  When you use a TrailVerse tool, Claude sends only the tool parameters (park name,
-                  state, dates) to our server. No conversation history, personal info, or Claude
-                  account data is transmitted.
+                  When you use a TrailVerse tool, Claude sends the tool parameters (park name,
+                  state, dates, your trip request) to our server. For multi-turn trip planning,
+                  the messages within that planning session are sent to enable follow-ups like
+                  &ldquo;now add day 4.&rdquo; Sessions expire after 2 hours. No Claude account
+                  data, billing info, or unrelated conversation history is transmitted.
                 </p>
               </div>
 
@@ -433,6 +415,16 @@ export default function MCPPage() {
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                   All park data comes from the National Park Service API (nps.gov). Weather data
                   from OpenWeatherMap. We do not sell or share any data.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Limits
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Free to use. Trip planning is rate-limited to 5 requests per 48 hours;
+                  park details, search, compare, and events have generous shared limits.
                 </p>
               </div>
             </div>
@@ -489,6 +481,18 @@ export default function MCPPage() {
                   </span>
                 </Link>
               </div>
+              <p className="text-xs mt-6" style={{ color: 'var(--text-tertiary)' }}>
+                Built by{' '}
+                <a
+                  href="https://x.com/latentengineer_"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:no-underline"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  @latentengineer_
+                </a>
+              </p>
             </div>
           </div>
         </section>

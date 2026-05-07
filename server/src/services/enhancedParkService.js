@@ -339,7 +339,7 @@ class EnhancedParkService {
     // Vary base level based on park popularity and designation
     if (park.designation === 'National Park') {
       // Popular parks get higher base levels
-      const popularParks = ['yell', 'grca', 'grte', 'yose', 'glac', 'zion', 'arch', 'brca'];
+      const popularParks = ['grsm', 'yell', 'grca', 'grte', 'yose', 'glac', 'zion', 'arch', 'brca', 'romo', 'acad'];
       return popularParks.includes(park.parkCode.toLowerCase()) ? 2.5 : 2.0;
     }
     if (park.designation === 'National Monument') return 1.8;
@@ -367,25 +367,34 @@ class EnhancedParkService {
     }
   }
 
-  // Check if date is a holiday
+  // Check if date is a holiday (or within a holiday weekend)
   isHoliday(date) {
-    const holidays = [
-      [0, 1],   // New Year's Day
-      [6, 17],  // Martin Luther King Jr. Day (3rd Monday)
-      [1, 15],  // Presidents' Day (3rd Monday)
-      [4, 25],  // Memorial Day (last Monday)
-      [6, 4],   // Independence Day
-      [8, 0],   // Labor Day (1st Monday)
-      [9, 8],   // Columbus Day (2nd Monday)
-      [10, 11], // Veterans Day
-      [10, 22], // Thanksgiving (4th Thursday)
-      [11, 25]  // Christmas
-    ];
-    
     const month = date.getMonth();
     const day = date.getDate();
-    
-    return holidays.some(([hMonth, hDay]) => hMonth === month && hDay === day);
+    const dow = date.getDay(); // 0=Sun, 1=Mon, ...
+
+    // Fixed-date holidays
+    if (month === 0 && day === 1) return true;   // New Year's Day
+    if (month === 6 && day === 4) return true;   // Independence Day
+    if (month === 10 && day === 11) return true; // Veterans Day
+    if (month === 11 && day === 25) return true; // Christmas
+
+    // Floating holidays: check if this Monday is the Nth Monday of the month
+    if (dow === 1) {
+      const weekOfMonth = Math.ceil(day / 7);
+      if (month === 0 && weekOfMonth === 3) return true;  // MLK Day (3rd Mon Jan)
+      if (month === 1 && weekOfMonth === 3) return true;  // Presidents' Day (3rd Mon Feb)
+      if (month === 8 && weekOfMonth === 1) return true;  // Labor Day (1st Mon Sep)
+      if (month === 9 && weekOfMonth === 2) return true;  // Columbus Day (2nd Mon Oct)
+    }
+
+    // Memorial Day: last Monday of May
+    if (month === 4 && dow === 1 && day > 24) return true;
+
+    // Thanksgiving: 4th Thursday of November
+    if (month === 10 && dow === 4 && Math.ceil(day / 7) === 4) return true;
+
+    return false;
   }
 
   // Calculate confidence in crowd prediction
@@ -529,18 +538,17 @@ class EnhancedParkService {
       // Northern mountain parks - short summer season
       'glac': ['June', 'July', 'August', 'September'],
       'dena': ['June', 'July', 'August', 'September'],
-      'wrangell': ['June', 'July', 'August', 'September'],
+      'wrst': ['June', 'July', 'August', 'September'],
       
       // Tropical/coastal parks - avoid hurricane season
       'ever': ['December', 'January', 'February', 'March', 'April'],
       'bisc': ['December', 'January', 'February', 'March', 'April'],
-      'dryt': ['December', 'January', 'February', 'March', 'April'],
+      'drto': ['December', 'January', 'February', 'March', 'April'],
       'viis': ['December', 'January', 'February', 'March', 'April'],
       
       // High altitude parks - avoid winter
-      'rmnp': ['May', 'June', 'July', 'August', 'September', 'October'],
+      'romo': ['May', 'June', 'July', 'August', 'September', 'October'],
       'crla': ['May', 'June', 'July', 'August', 'September', 'October'],
-      'yose': ['April', 'May', 'June', 'July', 'August', 'September', 'October'],
       
       // Popular summer destinations - prefer shoulder seasons
       'yell': ['April', 'May', 'September', 'October'],
@@ -554,7 +562,7 @@ class EnhancedParkService {
       
       // California parks - Mediterranean climate
       'yose': ['April', 'May', 'June', 'September', 'October'],
-      'seki': ['April', 'May', 'June', 'September', 'October'],
+      'sequ': ['April', 'May', 'June', 'September', 'October'],
       'pinn': ['March', 'April', 'May', 'September', 'October', 'November'],
       
       // Southwest parks - avoid summer heat

@@ -413,6 +413,7 @@ async function prepareChatContext(body, logPrefix = '[AI]') {
       }
     }
     enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
+    enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
     if (isNonNpsWithWebSearch) {
       enhancedSystemPrompt += `\nYou CAN generate an [ITINERARY_JSON] block for this destination. Use web search data for logistics, activities, and recommendations. Answer naturally as you would for any travel destination — do NOT mention "NPS" or "National Park Service" unless the user brought it up.\n\n`;
     } else {
@@ -1950,6 +1951,7 @@ Ready to continue planning? 🚀`,
         enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and direct users to nps.gov.`;
       }
       enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
+      enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
       enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
 
       if (npsFacts) {

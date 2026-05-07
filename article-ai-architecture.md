@@ -117,27 +117,21 @@ That's not a diagram we designed upfront. It's the result of months of hitting e
 
 ---
 
-## The Dual Personality System
+## Meet Trailie — The AI That Plans Your Trip
 
-One of our earliest design decisions was that one AI voice isn't enough. Different users want fundamentally different things from a travel assistant. Some want a quick "what should I do?" answer. Others want a minute-by-minute logistics plan with parking information and permit deadlines.
+We unified the AI under a single persona called **Trailie** — your AI guide to every national park in America. Trailie isn't a generic chatbot; it's a character with a voice. Opinionated, direct, and deeply knowledgeable about every trail, campground, and overlook in the NPS system. When you ask "Zion vs Bryce?", Trailie doesn't give you a balanced pros-and-cons list — it picks one and tells you why. It tells you what to *skip* as much as what to do.
 
-So we built two AI personalities:
+Under the hood, Trailie adapts its communication style based on context:
 
-### "The Local" — Powered by Claude
+### Quick Questions → Casual Mode (Claude)
 
-The Local is your insider travel buddy. The friend who's been to every park and always knows the spot tourists miss. It's opinionated, casual, direct. When you ask "Zion vs Bryce?", The Local doesn't give you a balanced pros-and-cons list — it picks one and tells you why. It tells you what to *skip* as much as what to do.
+For simple questions like "is Angels Landing worth it?" or "Zion vs Bryce for beginners?", Trailie responds like a friend who's been to every park. Short responses (150-300 words), no headers or sections, direct opinions. *"Talk like you're texting a friend — casual, direct, no fluff."*
 
-The Local's system prompt includes instructions like: *"Talk like you're texting a friend — casual, direct, no fluff"* and *"Lead with your TOP pick, not a list of 10 options."* It actively tells users what's overhyped: *"Old Faithful is worth 20 minutes, not 2 hours."*
+### Trip Planning → Planner Mode (GPT-5.4 Mini)
 
-Responses are short — 150-300 words for casual questions. No headers, no sections. Just talk.
+When you ask for a full itinerary, Trailie shifts into detail mode. Comprehensive, time-blocked plans with specific start times, driving distances, parking tips, reservation deadlines, and gear lists. Morning/afternoon/evening breakdowns, logistics summaries, and a mandatory structured JSON data block that powers the visual plan workspace.
 
-### "The Planner" — Powered by GPT-5.4 Mini
-
-The Planner is the detail-obsessed trip architect. It builds comprehensive, time-blocked itineraries with specific start times, driving distances, parking tips, reservation deadlines, and gear lists. When The Planner gives you a 3-day Zion itinerary, it includes things like "6:30 AM — Arrive at the trailhead (parking fills by 8 AM)" and a "Don't Forget" section with permits, gear, and preparation items.
-
-The Planner's format is structured: morning/afternoon/evening breakdowns, logistics summaries, estimated costs, and a mandatory structured JSON data block that powers our visual itinerary builder on the frontend.
-
-**Both personalities share the same underlying pipeline** — the same constraint engine, the same live data enrichment, the same validation and correction loops. The difference is in how they communicate, not what they know.
+**Both modes share the same underlying pipeline** — the same constraint engine, the same live data enrichment, the same validation and correction loops. The difference is in how Trailie communicates, not what it knows.
 
 ---
 
@@ -169,6 +163,28 @@ All of this gets assembled into a "LIVE TRAILVERSE DATA" block that's injected i
 We also tell it what data is *missing*. If the NPS API is down, the AI doesn't silently fall back to training data and pretend it's current. It tells the user: "I don't have real-time data for this park right now. My suggestions are based on general knowledge — check nps.gov for current conditions before you go."
 
 This is a small thing, but it matters enormously for trust. An AI that confidently tells you false information is worse than one that says "I'm not sure."
+
+---
+
+## Google Maps Driving Times: Real Distances, Not Estimates
+
+One of the subtler but most impactful additions to our data pipeline is **real-time driving distance injection from Google Maps**. When a user plans a multi-park trip or mentions a starting city, we fetch actual driving times between each pair of points using the Google Maps Distance Matrix API.
+
+The AI sees a block like:
+
+```
+--- DRIVING DISTANCES (Google Maps) ---
+These are real driving times. Use them instead of estimating.
+• Las Vegas → Grand Canyon: 278 mi, ~4 hrs 15 min
+• Grand Canyon → Zion: 247 mi, ~4 hrs 30 min
+--- END DRIVING DISTANCES ---
+```
+
+This solves a persistent LLM failure mode: confidently estimating drive times that are wildly wrong. An AI might say "Yellowstone to Glacier is a short drive" when it's actually 6+ hours. By injecting real data with the explicit instruction *"Use these instead of estimating"*, the itinerary's logistics become grounded in reality.
+
+Within generated itineraries, each stop also carries a `drivingTimeFromPreviousMin` field — the driving time from the previous stop. This appears on each stop card in the plan workspace as a pill badge (e.g., "15min drive"), giving users an immediate sense of the day's driving load without opening Google Maps.
+
+Results are cached per origin-destination pair to avoid redundant API calls across the same conversation.
 
 ---
 
@@ -223,9 +239,9 @@ Most AI products stop after generation. We're just getting started.
 
 ### Structured Output Extraction
 
-Both AI personalities are instructed to include an `[ITINERARY_JSON]` block at the end of trip planning responses. This isn't just text — it's a structured data format with days, stops, coordinates, durations, difficulty ratings, driving times, booking URLs, permit flags, and alternatives for each stop.
+Trailie is instructed to include an `[ITINERARY_JSON]` block at the end of trip planning responses. This isn't just text — it's a structured data format with days, stops, coordinates, durations, difficulty ratings, driving times, booking URLs, permit flags, and alternatives for each stop.
 
-This structured data powers our visual itinerary builder on the frontend — an interactive map with draggable stops, timeline visualization, and one-click booking links.
+This structured data powers the **Plan Workspace** — a unified split-view interface where users can see their itinerary on an interactive Google Map alongside editable day cards, with every edit syncing between both panels in real time. (More on this below.)
 
 ### Fallback Extraction
 
@@ -294,6 +310,66 @@ This catches a surprisingly common LLM behavior: ignoring inconvenient facts in 
 
 ---
 
+## The Plan Workspace: Where AI Meets Manual Editing
+
+Most AI trip planners stop at text output. You get a wall of text, maybe a pretty card layout, and that's it. If you want to change something, you type "remove the afternoon hike on Day 2" back into the chat and hope the AI gets it right.
+
+We built something different: a **unified Plan Workspace** where the AI's itinerary becomes a fully interactive, editable document that syncs bidirectionally with the chat.
+
+### The Layout
+
+On desktop, the plan workspace is a split view — **58% interactive Google Map** on the left, **42% day cards** on the right. Each day gets a color-coded set of numbered markers on the map, connected by actual driving route polylines (fetched from the Google Maps Directions API, not straight lines). The card panel groups stops by time of day — Morning, Afternoon, Evening — sorted by their scheduled order.
+
+On mobile, the same content appears as **two tabs** (Map and List) using CSS `hidden` rather than conditional rendering — so the Google Map doesn't reinitialize every time you switch tabs. That's a subtle but critical detail: Google Maps initialization is expensive, and remounting it on every tab switch would make the mobile experience feel sluggish.
+
+### Cross-View Sync
+
+Click a stop card → the map pans to that marker. Click a marker on the map → the corresponding card highlights with a green ring and scrolls into view. The highlight auto-clears after 3 seconds. On desktop, map markers don't show popups (the cards already display all the details). On mobile, tapping a marker shows a full-detail popup with type, stats, and description — because the card list isn't visible in the map tab.
+
+### Manual Editing
+
+Users can modify AI-generated itineraries directly:
+
+- **Add places** — A Google Places autocomplete input at the top of the card panel lets users search for any location (trailheads, restaurants, viewpoints, lodges) and add it to a specific day. We use Google's `AutocompleteService` with `PlacesService` instead of the default Autocomplete widget, giving us full styling control over the dropdown. Search results are biased toward the trip's park area using the park's coordinates as a location bias. Session tokens keep Google Places billing efficient — an autocomplete search plus the subsequent place detail lookup count as a single billing event.
+
+- **Remove stops** — Each card has a three-dot menu with "Remove stop" and "Move to Day N" options.
+
+- **Add/delete days** — A "+" button adds new days, and each day header has a trash icon (only shown when there are multiple days, so you can't delete your only day).
+
+- **Per-stop Google Maps links** — Each card has an external link icon that opens the stop in Google Maps using the place name (not raw coordinates, which would show unhelpful degree-minute-second notation).
+
+- **"Open Day in Maps" button** — A green button in the day pills bar opens the full day's route as a Google Maps directions URL: `maps/dir/Stop1/Stop2/Stop3/...` — ready for turn-by-turn navigation.
+
+### Shared State: The `usePlanWorkspace` Hook
+
+All plan workspace state lives in a single React hook — `usePlanWorkspace`. This hook owns the trip loading, `days` state, mutation handlers (add/remove/update stops, add/remove days, move stops between days), and auto-save logic.
+
+Auto-save uses a **2-second debounce** — after any mutation, the hook waits 2 seconds for additional changes before persisting to the database. A "Saving..." / "Saved" badge in the sub-header keeps users informed.
+
+The critical edge case: what happens if the user makes an edit and immediately clicks "Chat" to navigate away? The debounce timer would be cleared on unmount, and the change would be lost. We solved this with a **flush-on-unmount** pattern — a separate `useEffect` cleanup that fires a synchronous save (via `tripService.updateTrip`) when the component unmounts. Since this is a SPA route change (not a page unload), the fetch completes reliably.
+
+### Bidirectional AI Sync
+
+This is where the plan workspace and the AI chat become a single system:
+
+**Plan → Chat:** When the user navigates from the plan workspace to chat and sends a message, `formatItineraryForPrompt()` serializes the current plan (all days, stops with names, types, times, durations, difficulties, distances, and notes) into a text block appended to the AI's system prompt:
+
+```
+CURRENT ITINERARY (user-built in Itinerary Builder):
+Day 1 — South Rim intro (5 stops):
+  1. Grand Canyon Visitor Center (visitor_center) — 06:00, 45min
+  2. South Kaibab Trail (trail) — 06:45, 120min | moderate | 1.8mi | ↑600ft
+  ...
+```
+
+Trailie sees exactly what the user built (including manual additions) and can reference or modify it intelligently. "I see you added Bright Angel Trailhead to Day 1 — that pairs well with the South Kaibab hike you already have."
+
+**Chat → Plan:** When Trailie generates an updated itinerary (or a brand new one), the `[ITINERARY_JSON]` block is extracted, validated through the post-generation pipeline, and saved to the database. When the user navigates to the plan workspace, `usePlanWorkspace` loads the latest plan from the DB — including whatever Trailie just generated or revised.
+
+The result: users can fluidly switch between asking Trailie to revise the plan and making surgical edits themselves. Add a restaurant stop manually, go back to chat, ask "does Day 1 look too packed now?" — Trailie sees the manual addition and can give an informed answer.
+
+---
+
 ## The Crowd Calendar: 60+ Parks, Month by Month
 
 We maintain crowd scores (0-10) for 60+ national parks across all 12 months, based on 2025 NPS visitation data. These scores power several features:
@@ -349,7 +425,7 @@ The pipeline I've described so far produces a complete response, but users don't
 
 As the AI generates tokens, they're pushed to the frontend character-by-character. The user sees text appear as it's written — the same feel as watching someone type. On the frontend, a typing indicator shows dynamic status messages based on elapsed time and data sources: "Thinking..." becomes "Analyzing your request..." becomes "Researching the best options..." and finally "Creating your personalized plan..." When web search data is being fetched, source badges appear: "NPS Data," "Weather," "Web Search" — so the user knows their plan is being grounded in real information, not just generated from memory.
 
-The structured JSON block and post-generation validation still run after streaming completes. The visual itinerary builder populates once the full response is available, but the text response is already readable by then.
+The structured JSON block and post-generation validation still run after streaming completes. The plan workspace populates once the full response is available, but the text response is already readable by then.
 
 ---
 
@@ -420,6 +496,22 @@ The transition from V1 to V2 wasn't a single rewrite — it was iterative. We'd 
 15. **Decision enforcement verification** — Discovered through systematic testing that the route handler was bypassing our persona system prompts entirely, falling back to a generic "You are a helpful travel assistant" one-liner. Fixed prompt routing and built a 12-check enforcement suite covering comparison queries, conflict scenarios, and direct recommendations to verify decision-first behavior. Went from 1/12 passing to 12/12.
 
 16. **Memory-safe caching** — Replaced all unbounded `Map` caches (NPS endpoint cache with 18 endpoint types, enhanced park data cache, AI learning cache, response body cache) with `NodeCache` instances with `maxKeys` limits and automatic TTL-based eviction via `checkperiod`. The original Maps grew without bounds and caused OOM crashes on our hosting platform — which ironically surfaced as CORS errors on the frontend because a crashed server sends no headers at all. Also fixed WebSocket connection tracking to sweep stale entries every 5 minutes.
+
+17. **Unified Trailie persona** — Consolidated "The Local" and "The Planner" into a single AI persona called Trailie, with a consistent voice, blog knowledge, and natural citation style. The dual communication modes (casual for quick questions, structured for planning) are now contextual rather than user-selected.
+
+18. **Google Maps driving times** — Integrated the Google Maps Distance Matrix API to inject real driving distances between parks and starting cities into the AI prompt. Replaced LLM-estimated drive times (which were frequently wrong by hours) with cached, verified data. Each itinerary stop also carries a `drivingTimeFromPreviousMin` field displayed on the card UI.
+
+19. **Unified Plan Workspace** — Merged the separate itinerary builder and map view into a single split-view route (`/plan`). Desktop shows a 58/42 map+cards layout; mobile shows tabbed Map/List switching without remounting Google Maps. The `usePlanWorkspace` hook extracts all shared state (trip loading, days, mutations, auto-save with flush-on-unmount).
+
+20. **Google Places AddPlaceInput** — Built a custom Google Places search using `AutocompleteService` + `PlacesService` (not Google's default widget) with full styling control, location biasing toward the trip's park, session tokens for billing efficiency, and a three-state flow (idle → search dropdown → confirm with day picker).
+
+21. **Bidirectional AI-plan sync** — The plan workspace auto-saves to the database, and the chat loads the latest plan on mount. Manual edits in the workspace are serialized into the AI system prompt (`formatItineraryForPrompt`), so Trailie sees user modifications. AI-generated itineraries flow back to the workspace via the `[ITINERARY_JSON]` extraction and auto-save pipeline.
+
+22. **Cross-view interaction** — Clicking a stop card pans the map and opens a marker; clicking a map marker highlights the corresponding card with scroll-into-view. Desktop uses cards for all details (no map popups); mobile shows full-detail popups since the card panel isn't visible in the map tab.
+
+23. **Interactive map routing** — Each day's stops are connected by real driving route polylines (via Google Directions API, cached per route) instead of straight lines. Per-stop external links open individual stops in Google Maps; an "Open Day N in Maps" button opens the full day's route for turn-by-turn navigation.
+
+24. **PDF export** — Users can export their itinerary as a formatted PDF document directly from the plan workspace, suitable for offline use during the trip.
 
 ### V2: The Current System
 
@@ -497,7 +589,7 @@ If I had to distill it into a few key differentiators:
 
 3. **Self-correcting pipeline** — The AI's output is validated, corrected, scored, and sometimes regenerated before you see it. A beginner will never receive a plan with strenuous trails because even if the AI generates one, the correction pipeline catches it.
 
-4. **Two voices, one brain** — The Local and The Planner offer genuinely different planning experiences backed by the same data and validation infrastructure.
+4. **One persona, two modes** — Trailie adapts its communication style to context: casual and opinionated for quick questions, structured and comprehensive for trip planning — backed by the same data and validation infrastructure.
 
 5. **Honest uncertainty** — When data is missing, the AI says so. When confidence is low, we tell you. When a plan was heavily modified, we explain what changed and why. No confident hallucinations dressed up as expertise.
 
@@ -505,14 +597,20 @@ If I had to distill it into a few key differentiators:
 
 7. **End-to-end enforcement testing** — We don't just test the prompts — we test the full route, the way a real user would hit it. Our 12-check decision enforcement suite sends actual API requests and verifies that comparison queries produce decisions, not neutral pros-and-cons lists. If the AI says "both are great!" instead of picking one, the test fails.
 
+8. **Interactive plan workspace** — AI-generated itineraries aren't read-only text. They become fully editable documents in a split map+cards interface where users can add places, remove stops, reorder days, and see changes reflected on the map in real time.
+
+9. **Bidirectional AI sync** — Manual edits flow back to the AI (so it knows what you changed), and AI-generated revisions flow back to the workspace. The plan is a living document that both the user and Trailie can modify, not a one-shot output.
+
 ---
 
 ## What's Next
 
 We're not done. The pipeline I described handles a lot of edge cases, but there's more to build:
 
-- **Collaborative trip planning** — Multiple users contributing constraints to the same itinerary
-- **Real-time itinerary updates** — Push notifications when conditions change for your planned trip
+- **Collaborative trip planning** — Multiple users contributing constraints to the same itinerary, with real-time sync
+- **Real-time itinerary updates** — Push notifications when conditions change for your planned trip (trail closure on Day 3? We'll let you know)
+- **Drag-and-drop reordering** — Full DnD support in the plan workspace for reordering stops within a day and between days
+- **Offline trip access** — PDF export exists, but native offline support with cached maps and itinerary data would make the plan workspace useful in areas with no cell signal (which is most national parks)
 - **Cross-trip learning** — Using anonymized patterns from successful trips to improve future recommendations
 - **Expanded coverage** — State parks, BLM lands, national forests — the 470+ NPS sites are just the start
 
@@ -522,4 +620,4 @@ Build the pipeline, not just the prompt.
 
 ---
 
-*TrailVerse is a platform for exploring America's national parks. The AI trip planner is available at [nationalparksexplorerusa.com/plan-ai](https://www.nationalparksexplorerusa.com/plan-ai). Built with Claude, GPT-5.4 Mini, NPS API, OpenWeatherMap, NodeCache, and a healthy distrust of AI-generated itineraries.*
+*TrailVerse is a platform for exploring America's national parks. The AI trip planner is available at [nationalparksexplorerusa.com/plan-ai](https://www.nationalparksexplorerusa.com/plan-ai). Built with Claude, GPT-5.4 Mini, NPS API, Google Maps Platform, OpenWeatherMap, NodeCache, and a healthy distrust of AI-generated itineraries.*

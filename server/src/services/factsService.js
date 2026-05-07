@@ -247,13 +247,20 @@ async function fetchNPSFacts({ parkCode }) {
       facts.push('Active Closures/Alerts: None reported');
     }
 
-    // Campgrounds
+    // Campgrounds — top 5 by site count
     if (parkCampgrounds.length > 0) {
-      const cgLines = parkCampgrounds.slice(0, 3).map(cg => {
+      const sorted = [...parkCampgrounds].sort((a, b) => {
+        const aS = parseInt(a.campsites?.totalSites) || 0;
+        const bS = parseInt(b.campsites?.totalSites) || 0;
+        return bS - aS;
+      });
+      const cgLines = sorted.slice(0, 5).map(cg => {
         const info = cg.reservationInfo || 'See recreation.gov';
-        return `- ${cg.name}: ${info}`;
+        const fee = cg.fees?.[0]?.cost ? `$${cg.fees[0].cost}/night` : '';
+        const url = cg.reservationUrl ? ` — Book: ${cg.reservationUrl}` : '';
+        return `- ${cg.name}${fee ? ` (${fee})` : ''}: ${info}${url}`;
       }).join('\n');
-      facts.push(`Campgrounds (${parkCampgrounds.length} total):\n${cgLines}`);
+      facts.push(`Campgrounds (${parkCampgrounds.length} total, top 5):\n${cgLines}`);
     }
 
     // Visitor centers
@@ -266,14 +273,19 @@ async function fetchNPSFacts({ parkCode }) {
       facts.push(vcText);
     }
 
-    // Permits & reservations — live data from Recreation.gov (RIDB)
+    // Permits & reservations — from Recreation.gov (RIDB)
+    // NOTE: RIDB lists facilities that may not be active every year.
+    // Timed entry policies change annually (e.g. Yosemite, Arches dropped for 2026).
     if (parkPermits.length > 0) {
       const permitLines = parkPermits.slice(0, 8).map(p => {
-        const typeLabel = p.type ? ` [${p.type}]` : '';
-        return `- ${p.name}${typeLabel}: ${p.reservationUrl}`;
+        const isTimedEntry = (p.type || '').toLowerCase().includes('timed entry');
+        if (isTimedEntry) {
+          return `- ${p.name} [Timed Entry — may not be active this year, verify]: ${p.reservationUrl}`;
+        }
+        return `- ${p.name}${p.type ? ` [${p.type}]` : ''}: ${p.reservationUrl}`;
       }).join('\n');
       facts.push(
-        `Permits & Reservations Required (book directly on Recreation.gov — cite these URLs as markdown links when mentioning permits):\n${permitLines}`
+        `Permits & Reservations (from Recreation.gov — timed-entry requirements change annually, always verify before your trip):\n${permitLines}`
       );
     } else {
       facts.push('Permits: No permit requirements found on Recreation.gov for this park');

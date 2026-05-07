@@ -31,11 +31,21 @@ _RELAY_INSTRUCTION = (
     "Preserve every link, alert, weather number, fee, and footer line exactly. "
     "Do not add extra trails, hikes, or locations from your training knowledge — "
     "all place names and trail data must come from the tool response above. "
-    "You MAY add brief, practical extras that complement the data (e.g., packing tips "
-    "based on the weather shown, restaurant suggestions near the park, what to wear) "
-    "as long as you do not contradict any live data above. "
+    "CRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Do NOT add booking windows, "
+    "release dates, sell-out times, seasonal date ranges, or reservation tips from "
+    "your training knowledge. If the data shows a permit name and URL, mention the "
+    "name and link the URL — nothing more. Do NOT say things like 'required May–"
+    "September', 'sell out within minutes', or 'reservations open 14 days out at "
+    "7am' unless that exact text appears in the tool response above. These details "
+    "change frequently and your training data is likely wrong. "
+    "You MAY add brief, practical extras that do NOT involve permits, reservations, "
+    "campground booking, or fees (e.g., packing tips based on the weather shown, "
+    "restaurant suggestions near the park, what to wear). "
     "If the user asks a follow-up question that needs more park data, call another "
     "TrailVerse tool — never guess at fees, alerts, hours, or permit requirements. "
+    "For details NOT in the tool response (trail conditions, road reports, nearby "
+    "restaurants, gear advice beyond weather), use web search — do not guess from "
+    "training knowledge for anything time-sensitive. "
     "Do not append offers like 'Want me to...', 'Should I...', or 'Let me know if...'."
 )
 
@@ -247,6 +257,8 @@ def format_park_details(
     details: dict[str, Any],
     alerts: dict[str, Any] | None = None,
     weather: dict[str, Any] | None = None,
+    campgrounds: dict[str, Any] | None = None,
+    permits: dict[str, Any] | None = None,
     park_of_day: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Combine park details, alerts, weather, and daily-feed editorial into one payload."""
@@ -267,6 +279,43 @@ def format_park_details(
                     "category": a.get("category"),
                     "description": (a.get("description") or "")[:300],
                     "url": a.get("url"),
+                })
+
+    # Normalize campground data
+    campground_list: list[dict[str, Any]] = []
+    if campgrounds:
+        raw_cg = campgrounds.get("data") or campgrounds.get("campgrounds") or campgrounds
+        if isinstance(raw_cg, list):
+            for cg in raw_cg:
+                if not isinstance(cg, dict):
+                    continue
+                fees = cg.get("fees") or []
+                first_fee = None
+                if isinstance(fees, list) and fees:
+                    f = fees[0]
+                    if isinstance(f, dict):
+                        first_fee = f"${f.get('cost', '?')}/night"
+                campground_list.append({
+                    "name": cg.get("name"),
+                    "totalSites": cg.get("campsites", {}).get("totalSites") if isinstance(cg.get("campsites"), dict) else None,
+                    "fee": first_fee,
+                    "reservationInfo": (cg.get("reservationInfo") or "")[:300],
+                    "reservationUrl": cg.get("reservationUrl"),
+                    "operatingHours": cg.get("operatingHours"),
+                })
+
+    # Normalize permit data (from RIDB / Recreation.gov)
+    permit_list: list[dict[str, Any]] = []
+    if permits:
+        raw_permits = permits.get("data") or permits.get("permits") or permits
+        if isinstance(raw_permits, list):
+            for p in raw_permits:
+                if not isinstance(p, dict):
+                    continue
+                permit_list.append({
+                    "name": p.get("name"),
+                    "type": p.get("type"),
+                    "reservationUrl": p.get("reservationUrl"),
                 })
 
     # Normalize weather — backend nests current conditions inside data.current
@@ -333,6 +382,8 @@ def format_park_details(
         "addresses": park.get("addresses") or [],
         "weather": {"current": current, "forecast": forecast, "seasonal": seasonal},
         "alerts": alert_list,
+        "campgrounds": campground_list,
+        "permits": permit_list,
         "editorial": editorial,
         "links": {
             "trailverse": f"{WEB_BASE}/parks/{park_code}",
@@ -437,6 +488,52 @@ def format_park_details(
                     text_lines.append(f"- {hname}: {hdesc[:200]}")
                 else:
                     text_lines.append(f"- {hname}")
+
+    # Campgrounds — real reservation data from NPS API (top 5, most sites first)
+    if campground_list:
+        sorted_cg = sorted(
+            campground_list,
+            key=lambda c: int(c.get("totalSites") or 0),
+            reverse=True,
+        )
+        top_cg = sorted_cg[:5]
+        text_lines.append(f"\n## Campgrounds ({len(campground_list)} total — top {len(top_cg)} shown)")
+        for cg in top_cg:
+            cg_name = cg.get("name") or "Unnamed"
+            parts = [f"**{cg_name}**"]
+            if cg.get("totalSites"):
+                parts.append(f"{cg['totalSites']} sites")
+            if cg.get("fee"):
+                parts.append(cg["fee"])
+            line = " — ".join(parts)
+            text_lines.append(line)
+            if cg.get("reservationInfo"):
+                text_lines.append(f"  {cg['reservationInfo']}")
+            if cg.get("reservationUrl"):
+                text_lines.append(f"  [Book on Recreation.gov]({cg['reservationUrl']})")
+
+    # Permits & timed entry — from Recreation.gov (RIDB)
+    # NOTE: RIDB lists facilities that may not be active every year.
+    # Timed entry policies change annually (e.g. Yosemite, Arches, Glacier
+    # dropped timed entry for 2026). We use cautious wording accordingly.
+    if permit_list:
+        text_lines.append(f"\n## Permits & Reservations")
+        text_lines.append("⚠️ Timed-entry and permit requirements change annually. Always verify on Recreation.gov before your trip.")
+        for p in permit_list:
+            pname = p.get("name") or "Permit"
+            ptype = p.get("type") or ""
+            url = p.get("reservationUrl") or ""
+            is_timed = ptype.lower() in ("timed entry", "timed-entry")
+            if url:
+                if is_timed:
+                    text_lines.append(f"- **{pname}** [Timed Entry]: [Check if required on Recreation.gov]({url})")
+                else:
+                    text_lines.append(f"- **{pname}** [Permit]: [Book on Recreation.gov]({url})")
+            else:
+                text_lines.append(f"- **{pname}** [{ptype}]")
+    else:
+        text_lines.append(f"\n## Permits & Reservations")
+        text_lines.append("No permit or timed-entry requirements found on Recreation.gov for this park.")
 
     # Getting there — Google Maps link
     maps_url = _google_maps_point_url(park.get("latitude"), park.get("longitude"), name)

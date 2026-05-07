@@ -88,7 +88,7 @@ Every route in the app and who can access it.
 | `/home` | Personalized Daily Nature Feed (signed-in homepage) |
 | `/profile` | User profile with all personal tabs |
 | `/plan-ai/[tripId]` | Continue or view a saved AI trip |
-| `/plan-ai/[tripId]/itinerary` | Dedicated multi-day itinerary builder for a trip |
+| `/plan-ai/[tripId]/plan` | Unified plan workspace — interactive map + day cards |
 
 ---
 
@@ -248,9 +248,10 @@ gets its own page.
 
 ---
 
-## 6. AI Trip Planner — `/plan-ai` ⚡
+## 6. AI Trip Planner (Trailie) — `/plan-ai` ⚡
 
-Conversational, context-aware trip planning.
+Conversational, context-aware trip planning powered by **Trailie** — your
+opinionated AI guide to every national park in America.
 
 ### Intake — Quick Fill modal 🌐
 - Park selector with autocomplete.
@@ -278,27 +279,58 @@ Conversational, context-aware trip planning.
 - 🌐 **Shared conversation viewer** — recipients of a share link see a
   dedicated read-only rendering without signing in.
 
-### What the AI knows 🌐
-The assistant is grounded in fresh, real-world data before every answer:
+### What Trailie knows 🌐
+Trailie is grounded in fresh, real-world data before every answer:
 - **Live weather** — current conditions and 5-day forecast for the park.
 - **National Park Service facts** — alerts, campgrounds, visitor centers,
   facilities, permits and events for every park referenced in the message.
 - **Recreation.gov permits** — backcountry, vehicle and timed-entry permits.
+- **Google Maps driving times** — real driving distances between parks and
+  starting cities via the Distance Matrix API, injected into the prompt so
+  Trailie never estimates drive times.
 - **Multi-park awareness** — a single message mentioning two parks pulls
   facts for both.
+- **TrailVerse blog knowledge** — published guides, seasonal tips, and
+  park-specific advice feed into Trailie's context.
 - 🔒 **Live web search** — road and trail conditions, news, events, seasonal
   wildlife and local business lookups with freshness filters (disabled for
   anonymous visitors, who see a sign-up prompt instead).
 
-### Itineraries
-- 🌐 Automatic itinerary extraction from AI responses.
+### Itineraries & Plan Workspace
+- 🌐 Automatic itinerary extraction from AI responses via structured
+  `[ITINERARY_JSON]` blocks, with fallback AI extraction when truncated.
 - 🔒 **Save Trip modal** — name the trip, add a description, save it to the
   profile.
 - 🔒 **Continue a trip** — open any saved trip at `/plan-ai/[tripId]` to pick
   up the conversation exactly where it left off.
-- 🔒 **Dedicated itinerary builder** — `/plan-ai/[tripId]/itinerary` opens a
-  full-page multi-day planner with drag-and-drop stops, a day column per day,
-  add-stop search, per-stop cards with notes, and conflict detection.
+- 🔒 **Unified Plan Workspace** — `/plan-ai/[tripId]/plan` opens a split-view
+  interface: **58% interactive Google Map** (left) + **42% day cards** (right)
+  on desktop; **tabbed Map/List** on mobile (CSS `hidden` swap, no map
+  remount).
+- 🔒 **Interactive map features** — color-coded numbered markers per day,
+  driving route polylines (Google Directions API, cached per route), per-stop
+  external Google Maps links, and an "Open Day N in Maps" button that builds
+  a turn-by-turn navigation URL.
+- 🔒 **Cross-view sync** — clicking a stop card pans the map to that marker;
+  clicking a marker highlights and scrolls to the corresponding card. Desktop
+  shows no map popups (cards have all details); mobile shows full-detail
+  popups since the card list isn't visible in the map tab.
+- 🔒 **Google Places search** — custom `AutocompleteService` + `PlacesService`
+  input with full styling control, location biasing toward the trip's park,
+  session tokens for billing efficiency, and a day-picker confirmation step
+  before adding.
+- 🔒 **Day management** — day pills bar for switching between days (or "All"),
+  add/remove days, per-day color coding, stop grouping by time of day
+  (Morning / Afternoon / Evening).
+- 🔒 **Stop management** — add, remove, move stops between days via three-dot
+  menus on each card. Cards show type pill, difficulty badge, driving time
+  from previous stop, stats (distance, elevation, duration), and notes.
+- 🔒 **Auto-save** — 2-second debounce after any mutation, with a
+  "Saving…" / "Saved" badge. Flush-on-unmount prevents data loss when
+  navigating to chat.
+- 🔒 **Bidirectional AI sync** — manual edits are serialized into the AI
+  system prompt so Trailie sees user modifications; AI-generated itineraries
+  flow back to the workspace via the extraction and auto-save pipeline.
 - 🔒 **PDF export** of the final plan with full trip document formatting.
 
 ### Public shared trip view — `/plan-ai/shared/[shareId]` 🌐

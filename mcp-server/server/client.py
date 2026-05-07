@@ -131,6 +131,14 @@ class TrailVerseClient:
         safe_code = self._validate_park_code(park_code)
         return await self._get(f"/api/parks/{safe_code}/weather")
 
+    async def get_park_campgrounds(self, park_code: str) -> dict[str, Any]:
+        safe_code = self._validate_park_code(park_code)
+        return await self._get(f"/api/parks/{safe_code}/campgrounds")
+
+    async def get_park_permits(self, park_code: str) -> dict[str, Any]:
+        safe_code = self._validate_park_code(park_code)
+        return await self._get(f"/api/parks/{safe_code}/permits")
+
     async def get_park_of_day(self, park_code: str | None = None) -> dict[str, Any]:
         """
         Fetch the Daily Nature Feed's park-of-day editorial content.
