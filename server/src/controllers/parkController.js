@@ -405,7 +405,14 @@ exports.searchParks = async (req, res, next) => {
     let parks;
 
     if (state) {
-      parks = await npsService.getParksByState(state);
+      try {
+        parks = await npsService.getParksByState(state);
+      } catch {
+        // NPS API rate-limited — fall back to filtering cached getAllParks()
+        const all = await npsService.getAllParks();
+        const st = state.toUpperCase();
+        parks = all.filter(p => p.states && p.states.toUpperCase().split(',').some(s => s.trim() === st));
+      }
     } else {
       parks = await npsService.getAllParks();
     }

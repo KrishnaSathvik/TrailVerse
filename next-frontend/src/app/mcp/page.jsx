@@ -328,6 +328,63 @@ export default function MCPPage() {
                 </div>
               </div>
             </div>
+
+            {/* Find Events */}
+            <div className="mt-16">
+              <h3
+                className="text-xl font-semibold mb-6"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Find Events
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-events2.png"
+                    alt="Grand Canyon events next week — daily ranger programs and special events with times and locations"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Ranger programs and special events
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      Daily ranger talks, guided rim walks, comedy nights, and film screenings &mdash;
+                      with times, locations, and whether they&rsquo;re free.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <img
+                    src="/mcp-events1.png"
+                    alt="Death Valley events — no scheduled programs, with contextual advice about heat, self-guided options, and astrophotography"
+                    className="w-full h-auto"
+                  />
+                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      Context when there&rsquo;s nothing scheduled
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                      No events? Claude explains why and suggests what you can still do &mdash;
+                      self-guided stops, dark sky windows, and heat safety tips.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
