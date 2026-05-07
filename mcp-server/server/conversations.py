@@ -8,8 +8,8 @@ Data lost on process restart — acceptable (backend has MongoDB copy; worst cas
 from __future__ import annotations
 
 import re
+import secrets
 import time
-import uuid
 from dataclasses import dataclass, field
 
 MAX_AGE_SECONDS = 7200  # 2 hours
@@ -139,8 +139,8 @@ class ConversationStore:
         if len(self._store) >= MAX_CONVERSATIONS:
             oldest = min(self._store, key=lambda k: self._store[k].last_active)
             del self._store[oldest]
-        sid = f"mcp-{uuid.uuid4().hex[:12]}"
-        aid = f"mcp-{uuid.uuid4().hex[:16]}"
+        sid = f"mcp-{secrets.token_urlsafe(24)}"
+        aid = f"mcp-{secrets.token_urlsafe(24)}"
         conv = Conversation(session_id=sid, anonymous_id=aid)
         self._store[sid] = conv
         return conv

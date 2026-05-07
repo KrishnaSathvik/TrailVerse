@@ -72,7 +72,7 @@ class TrailVerseClient:
             resp = await self._client.get(path, params=clean)
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.error("GET %s returned %s: %s", path, e.response.status_code, e.response.text[:200])
+            logger.error("GET %s returned %s", path, e.response.status_code)
             if e.response.status_code >= 500:
                 raise TrailVerseAPIError("Backend service temporarily unavailable") from e
             elif e.response.status_code == 429:
@@ -90,7 +90,7 @@ class TrailVerseClient:
             resp = await self._client.post(path, json=body)
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.error("POST %s returned %s: %s", path, e.response.status_code, e.response.text[:200])
+            logger.error("POST %s returned %s", path, e.response.status_code)
             if e.response.status_code >= 500:
                 raise TrailVerseAPIError("Backend service temporarily unavailable") from e
             elif e.response.status_code == 429:
@@ -224,6 +224,29 @@ _IMAGE_MAX_DOWNLOAD = 15_000_000  # skip downloads larger than 15MB
 _IMAGE_RESIZE_WIDTH = 600  # resize to this width (maintain aspect ratio)
 _IMAGE_JPEG_QUALITY = 75  # JPEG compression quality
 
+# Only fetch images from these trusted domains (SSRF prevention).
+_ALLOWED_IMAGE_HOSTS = {
+    "www.nps.gov",
+    "nps.gov",
+    "home.nps.gov",
+    "npgallery.nps.gov",
+    "developer.nps.gov",
+    "upload.wikimedia.org",
+    "images.unsplash.com",
+}
+
+
+def _is_allowed_image_url(url: str) -> bool:
+    """Check if an image URL is from a trusted host."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = (parsed.hostname or "").lower()
+        return host in _ALLOWED_IMAGE_HOSTS
+    except Exception:
+        return False
+
 
 async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
     """
@@ -233,11 +256,14 @@ async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
     """
     if not url:
         return None
+    if not _is_allowed_image_url(url):
+        logger.debug("Blocked image fetch from untrusted host: %s", url)
+        return None
     try:
         from io import BytesIO
         from PIL import Image
 
-        async with httpx.AsyncClient(timeout=_IMAGE_TIMEOUT, follow_redirects=True) as c:
+        async with httpx.AsyncClient(timeout=_IMAGE_TIMEOUT, follow_redirects=False) as c:
             resp = await c.get(url)
             resp.raise_for_status()
             content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0].strip()
