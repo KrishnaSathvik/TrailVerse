@@ -9,30 +9,37 @@ const API_URL =
     : 'http://localhost:5001/api');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Static routes
+  // Static routes — group by change frequency for appropriate lastModified
   const staticRoutes: MetadataRoute.Sitemap = [
+    // Daily-changing content
     { url: BASE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
+    { url: `${BASE_URL}/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+    // Weekly-changing content
     { url: `${BASE_URL}/explore`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE_URL}/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
-    { url: `${BASE_URL}/map`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/plan-ai`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE_URL}/compare`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/features`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/testimonials`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${BASE_URL}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE_URL}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${BASE_URL}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/plan-ai`, lastModified: new Date('2026-05-01'), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/testimonials`, lastModified: new Date('2026-05-01'), changeFrequency: 'weekly', priority: 0.5 },
+    // Monthly/rarely-changing content
+    { url: `${BASE_URL}/map`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/compare`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/about`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/features`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/mcp`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/magazine`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE_URL}/newsletter`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE_URL}/faq`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE_URL}/privacy`, lastModified: new Date('2026-01-01'), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/terms`, lastModified: new Date('2026-01-01'), changeFrequency: 'yearly', priority: 0.3 },
   ];
 
-  // Park routes
+  // Park routes — content doesn't change at the URL level daily
   let parkRoutes: MetadataRoute.Sitemap = [];
   try {
     const parkSlugs = await getAllParkSlugs();
+    const parkLastModified = new Date('2026-05-01');
     parkRoutes = parkSlugs.map(({ slug }: { slug: string }) => ({
       url: `${BASE_URL}/parks/${slug}`,
-      lastModified: new Date(),
+      lastModified: parkLastModified,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
@@ -40,17 +47,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap: Failed to fetch park slugs', e);
   }
 
-  // Blog routes — only published posts
+  // Blog routes — use post's updatedAt if available, otherwise fixed date
   let blogRoutes: MetadataRoute.Sitemap = [];
   try {
     const res = await fetch(`${API_URL}/blogs?status=published&limit=200`, { next: { revalidate: 3600 } });
     if (res.ok) {
       const json = await res.json();
       const posts = json.data || json.blogs || json || [];
+      const blogFallbackDate = new Date('2026-05-01');
       blogRoutes = Array.isArray(posts)
-        ? posts.map((post: { slug: string }) => ({
+        ? posts.map((post: { slug: string; updatedAt?: string; updated_at?: string }) => ({
           url: `${BASE_URL}/blog/${post.slug}`,
-          lastModified: new Date(),
+          lastModified: post.updatedAt ? new Date(post.updatedAt) : post.updated_at ? new Date(post.updated_at) : blogFallbackDate,
           changeFrequency: 'weekly' as const,
           priority: 0.7,
         }))
@@ -60,28 +68,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap: Failed to fetch blog posts', e);
   }
 
-  // State aggregation pages
+  // State aggregation pages — all US states & territories with NPS sites
+  const stateLastModified = new Date('2026-05-01');
   const stateRoutes: MetadataRoute.Sitemap = [
-    'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'florida',
-    'hawaii', 'idaho', 'kentucky', 'maine', 'michigan', 'minnesota', 'montana',
-    'nevada', 'new-mexico', 'north-dakota', 'ohio', 'oregon', 'south-dakota',
-    'tennessee', 'texas', 'utah', 'virginia', 'washington', 'west-virginia',
-    'wyoming', 'north-carolina', 'south-carolina', 'indiana',
-    'american-samoa', 'virgin-islands',
+    'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado',
+    'connecticut', 'delaware', 'district-of-columbia', 'florida', 'georgia',
+    'hawaii', 'idaho', 'illinois', 'indiana', 'iowa', 'kansas', 'kentucky',
+    'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan', 'minnesota',
+    'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new-hampshire',
+    'new-jersey', 'new-mexico', 'new-york', 'north-carolina', 'north-dakota',
+    'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode-island',
+    'south-carolina', 'south-dakota', 'tennessee', 'texas', 'utah', 'vermont',
+    'virginia', 'washington', 'west-virginia', 'wisconsin', 'wyoming',
+    'american-samoa', 'guam', 'puerto-rico', 'virgin-islands',
   ].map(stateCode => ({
     url: `${BASE_URL}/parks/state/${stateCode}`,
-    lastModified: new Date(),
+    lastModified: stateLastModified,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
 
   // Blog category pages
+  const categoryLastModified = new Date('2026-03-01');
   const categoryRoutes: MetadataRoute.Sitemap = [
     'trip-planning', 'park-guides', 'gear-packing',
     'seasonal', 'astrophotography', 'budget-travel'
   ].map(cat => ({
     url: `${BASE_URL}/blog/category/${cat}`,
-    lastModified: new Date(),
+    lastModified: categoryLastModified,
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
