@@ -168,8 +168,14 @@ export default function useRealtimeVoice() {
         audioEl.srcObject = event.streams[0];
       };
 
-      // 4. Get microphone access and add track
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 4. Get microphone access and add track (with echo cancellation)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       if (stale()) { stream.getTracks().forEach(t => t.stop()); pc.close(); return; }
       streamRef.current = stream;
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -243,6 +249,8 @@ export default function useRealtimeVoice() {
       switch (event.type) {
         // ── User speech ──
         case 'input_audio_buffer.speech_started': {
+          // Ignore if Trailie is currently speaking — prevents echo self-interruption
+          if (streamRef.current?.getAudioTracks()[0]?.enabled === false) break;
           setStatus('listening');
           break;
         }
@@ -286,6 +294,10 @@ export default function useRealtimeVoice() {
           setIsToolCalling(false);
           setToolCallInfo(null);
           setStatus('speaking');
+          // Mute mic to prevent echo from triggering VAD self-interruption
+          if (streamRef.current) {
+            streamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });
+          }
           break;
         }
 
@@ -293,6 +305,10 @@ export default function useRealtimeVoice() {
         case 'response.output_audio.done': {
           setIsTrailieSpeaking(false);
           setStatus('connected');
+          // Re-enable mic so user can speak again
+          if (streamRef.current) {
+            streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
+          }
           break;
         }
 

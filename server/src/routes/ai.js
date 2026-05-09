@@ -2675,18 +2675,34 @@ const voiceSessionRateLimit = new Map(); // IP → { count, resetAt }
 const TRAILIE_VOICE_INSTRUCTIONS = `You are Trailie — TrailVerse AI's insider travel buddy for U.S. national parks and outdoor travel. You speak like a sharp, experienced friend who knows every park — not a travel brochure.
 
 VOICE DELIVERY — THIS IS CRITICAL:
-- You are a VOICE assistant. People are LISTENING, not reading. Pace yourself like a real conversation.
-- Give the most important takeaway FIRST in one sentence, then add 1-2 supporting details. Stop there unless asked for more.
-- NEVER dump a wall of data. Pick the 2-3 most useful facts. If they want more, they'll ask.
-- Use natural speech rhythm: short sentences, brief pauses between ideas. Not a monologue.
-- Example GOOD: "Death Valley's at 102 right now — brutal. There's a heat warning, so if you're going, stick to early mornings. Entrance is 30 bucks per car."
-- Example BAD: "Death Valley National Park right now has some key factors to know. The weather's blazing: currently around 102°F, very dry. There's a heat warning in effect, so caution's key. The main entrance fee is $30 per vehicle. Most roads are open, but always check for flash flood closures depending on the season. Camping is available, but best in fall and winter—summer's brutal. Tons of epic spots: Badwater Basin, Zabriskie Point, and Mesquite Flat Sand Dunes."
+- You are a VOICE assistant. People are LISTENING, not reading.
+- Your responses MUST be 2-4 sentences max. That's it. No exceptions.
+- Lead with the single most important fact, then 1-2 supporting details. STOP. Do not keep going.
+- NEVER list more than 3 items. If there are 5 alerts, mention the 1-2 most important ones.
+- NEVER read out descriptions, overviews, or long lists. Summarize in your own words briefly.
+- Speak at a natural conversational pace. Pause between ideas. Do NOT rush through information.
+- After answering, STOP and WAIT for the user to ask a follow-up. Do NOT volunteer extra info.
+- Example GOOD: "Zion's at 68 degrees right now, nice weather. There are a couple alerts — the Canyon Overlook Trail is closed for rockfall. Entrance is 35 bucks per car."
+- Example BAD: "Zion National Park is located in Utah. Current weather is 68 degrees Fahrenheit. There are 5 active alerts including a closure on Canyon Overlook Trail due to rockfall, information about shuttle schedules, seasonal road information, and two more. The entrance fee is $35 per vehicle. Today's hours are sunrise to sunset. Activities include hiking, camping, rock climbing, stargazing, canyoneering, wildlife watching, and more."
+
+RESPONSE LENGTH — HARD LIMIT:
+- Park details: weather + 1 key alert + fee. That's ONE response. Stop.
+- Search results: mention top 2-3 parks by name with one phrase each. Stop.
+- Comparisons: pick a winner, give 2 reasons. Stop.
+- Events: mention 1-2 upcoming events. Stop.
+- The user will ask follow-ups if they want more. Trust that.
 
 TOOL CALL BEHAVIOR — MANDATORY:
 - When you need to call a tool, call it IMMEDIATELY without saying anything first. Do NOT speak before the tool returns.
 - NEVER say "let me check", "hang tight", "let me pull that up", "alright here we go", "sure thing", or ANY filler before a tool call. Just call the tool silently.
-- After the tool returns data, give ONE clear response with the key info. Do NOT repeat yourself or give the same info twice.
+- After the tool returns data, give ONE short response (2-4 sentences). Do NOT read back all the data. Cherry-pick the 2-3 most relevant facts.
 - NEVER start speaking, then pause to call a tool, then speak again. Either speak OR call a tool — not both in sequence.
+- Do NOT give a summary, then repeat the same info with more detail. Say it ONCE.
+
+WHEN NOT TO CALL TOOLS:
+- For "best parks", "top parks", "recommended parks", "where should I go" — do NOT call search_parks. Use your own knowledge of parks combined with the current season/date to recommend 2-3 specific parks. You know the parks well enough.
+- For general advice like "best time to visit", "what to pack", "is it crowded" about a park already in context — answer directly from pre-loaded data or your knowledge.
+- Only call tools when you need LIVE data you don't have: specific weather, alerts, fees, events, or when searching for parks in a specific state/activity.
 
 Key persona rules:
 - Use contractions, be direct, be opinionated. "Skip the tourist trap — head to Lipan Point at sunrise."
@@ -2995,40 +3011,32 @@ router.post('/voice-tool', async (req, res) => {
 
         if (!park) return res.json({ result: `Could not find park with code "${parkCode}".` });
 
-        let text = `${park.fullName} (${parkCode.toUpperCase()})\nState: ${park.states || 'N/A'}`;
-        if (park.description) text += `\nOverview: ${park.description}`;
+        // Keep response concise for voice — model should NOT read all of this
+        let text = `${park.fullName}, ${park.states || 'N/A'}`;
 
         const fees = park.entranceFees || [];
-        if (fees.length > 0) text += `\nEntrance fee: $${fees[0].cost} — ${fees[0].title}`;
+        if (fees.length > 0) text += `\nFee: $${fees[0].cost}`;
 
         const hours = park.operatingHours || [];
         if (hours.length > 0) {
           const h = hours[0].standardHours || {};
-          const today = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date().getDay()];
-          text += `\nToday's hours: ${h[today] || 'Check park website'}`;
+          const dayName = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date().getDay()];
+          text += `\nHours: ${h[dayName] || 'Check park website'}`;
         }
 
         if (weather?.current) {
           const w = weather.current;
           text += `\nWeather: ${Math.round(w.tempF || w.temp)}°F, ${w.description || w.condition || 'N/A'}`;
-          if (w.humidity) text += `, humidity ${w.humidity}%`;
-        }
-        if (weather?.forecast?.length > 0) {
-          const next3 = weather.forecast.slice(0, 3).map(f =>
-            `${f.date || f.day}: ${Math.round(f.highF || f.high)}°/${Math.round(f.lowF || f.low)}° ${f.description || f.condition || ''}`
-          ).join(' | ');
-          text += `\nForecast: ${next3}`;
         }
 
         if (alerts.length > 0) {
-          text += `\nActive alerts (${alerts.length}):`;
-          alerts.slice(0, 5).forEach(a => { text += `\n  - [${a.category}] ${a.title}`; });
+          // Only include closures and warnings — skip informational alerts
+          const important = alerts.filter(a => a.category === 'Danger' || a.category === 'Caution' || a.category === 'Park Closure');
+          const toShow = important.length > 0 ? important.slice(0, 2) : alerts.slice(0, 2);
+          text += `\n${alerts.length} alerts. Key: ${toShow.map(a => a.title).join('; ')}`;
         } else {
-          text += `\nNo active alerts.`;
+          text += `\nNo alerts.`;
         }
-
-        const activities = (park.activities || []).slice(0, 10).map(a => a.name).join(', ');
-        if (activities) text += `\nActivities: ${activities}`;
 
         return res.json({ result: text });
       }
@@ -3067,11 +3075,10 @@ router.post('/voice-tool', async (req, res) => {
           return res.json({ result: 'No parks found matching your criteria.' });
         }
 
-        const top = parks.slice(0, 8);
-        let text = `Found ${parks.length} parks. Top results:\n`;
+        const top = parks.slice(0, 5);
+        let text = `${parks.length} parks found. Top picks:\n`;
         top.forEach(p => {
-          text += `\n- ${p.fullName} (${p.parkCode}) — ${p.states}`;
-          if (p.description) text += `: ${p.description.slice(0, 120)}...`;
+          text += `\n- ${p.fullName} (${p.parkCode}), ${p.states}`;
         });
 
         return res.json({ result: text });
@@ -3103,27 +3110,18 @@ router.post('/voice-tool', async (req, res) => {
           })
         );
 
-        let text = 'Park Comparison:\n';
+        let text = '';
         for (const r of results) {
           if (r.status !== 'fulfilled' || !r.value.park) continue;
           const { park, alerts, weather } = r.value;
-          text += `\n--- ${park.fullName} (${park.parkCode}) ---`;
-          text += `\nState: ${park.states || 'N/A'}`;
-
           const fees = park.entranceFees || [];
-          if (fees.length > 0) text += `\nFee: $${fees[0].cost}`;
-
-          if (weather?.current) {
-            text += `\nWeather: ${Math.round(weather.current.tempF || weather.current.temp)}°F, ${weather.current.description || weather.current.condition || ''}`;
-          }
-
-          text += `\nAlerts: ${alerts.length > 0 ? alerts.slice(0, 3).map(a => a.title).join('; ') : 'None'}`;
-
-          const activities = (park.activities || []).slice(0, 6).map(a => a.name).join(', ');
-          if (activities) text += `\nTop activities: ${activities}`;
+          text += `${park.fullName}: `;
+          if (weather?.current) text += `${Math.round(weather.current.tempF || weather.current.temp)}°F, `;
+          if (fees.length > 0) text += `$${fees[0].cost} entry, `;
+          text += `${alerts.length} alerts\n`;
         }
 
-        return res.json({ result: text });
+        return res.json({ result: text.trim() });
       }
 
       case 'find_events': {
@@ -3147,23 +3145,15 @@ router.post('/voice-tool', async (req, res) => {
           return res.json({ result: `No events found at ${parkCode.toUpperCase()} between ${dateStart} and ${dateEnd}.` });
         }
 
-        let text = `Events at ${parkCode.toUpperCase()} (${dateStart} to ${dateEnd}) — ${events.length} found:\n`;
-        events.slice(0, 10).forEach(e => {
-          text += `\n- ${e.title || 'Untitled event'}`;
-          if (e.dateStart || e.dates) text += ` | ${e.dateStart || e.dates}`;
-          if (e.times && e.times.length > 0) {
-            const t = e.times[0];
-            if (t.timeStart) text += ` at ${t.timeStart}`;
-          }
-          if (e.location) text += ` | ${e.location}`;
-          if (e.description) text += `\n  ${e.description.replace(/<[^>]*>/g, '').slice(0, 150)}`;
-          if (e.isReservationRequired) text += ` (Reservation required)`;
-          if (e.feeInfo) text += ` | Fee: ${e.feeInfo}`;
+        let text = `${events.length} events at ${parkCode.toUpperCase()}:\n`;
+        events.slice(0, 5).forEach(e => {
+          text += `- ${e.title || 'Event'}`;
+          if (e.dateStart || e.dates) text += `, ${e.dateStart || e.dates}`;
+          if (e.times?.[0]?.timeStart) text += ` at ${e.times[0].timeStart}`;
+          text += '\n';
         });
 
-        if (events.length > 10) text += `\n\n...and ${events.length - 10} more events.`;
-
-        return res.json({ result: text });
+        return res.json({ result: text.trim() });
       }
 
       default:
