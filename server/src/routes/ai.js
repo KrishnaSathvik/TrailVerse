@@ -828,37 +828,37 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
             errorType: error.error?.type,
             code: error.code
           });
-          
+
           // Check if it's a model not found error (404) or not_found_error type
           // Check multiple possible error locations (Anthropic SDK may structure errors differently)
           const errorBody = error.error || error.response?.data || error.body || {};
-          const is404Error = error.status === 404 || error.statusCode === 404 || 
-                           error.response?.status === 404;
-          const isNotFoundError = error.error?.type === 'not_found_error' || 
-                                 error.type === 'not_found_error' ||
-                                 errorBody.type === 'not_found_error' ||
-                                 errorBody.error?.type === 'not_found_error';
+          const is404Error = error.status === 404 || error.statusCode === 404 ||
+            error.response?.status === 404;
+          const isNotFoundError = error.error?.type === 'not_found_error' ||
+            error.type === 'not_found_error' ||
+            errorBody.type === 'not_found_error' ||
+            errorBody.error?.type === 'not_found_error';
           const isModelError = (error.message && (
-            error.message.includes('model') || 
+            error.message.includes('model') ||
             error.message.includes('not found') ||
             error.message.includes('not_found')
           )) || (errorBody.error?.message && errorBody.error.message.includes('model'));
-          
-          const isAuthError = error.status === 401 || error.statusCode === 401 || 
-                             error.status === 403 || error.statusCode === 403;
-          
+
+          const isAuthError = error.status === 401 || error.statusCode === 401 ||
+            error.status === 403 || error.statusCode === 403;
+
           // If it's a 404 or not_found_error, try next model
           if (is404Error || isNotFoundError || isModelError) {
             console.log(`[Chat] Model ${model} not available (404/not_found), trying next...`);
             continue; // Try next model
           }
-          
+
           // For auth errors on first model, try next model (might be API key issue with specific model)
           if (isAuthError && modelsToTry.indexOf(model) === 0) {
             console.log(`[Chat] Authentication error with ${model}, trying next model...`);
             continue;
           }
-          
+
           // For other errors, throw immediately (network errors, rate limits, etc.)
           throw error;
         }
@@ -866,7 +866,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
 
       if (!response) {
         console.error('[Chat] All Claude models failed');
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'No Claude models available with your API key',
           details: lastError?.message || 'Unknown error',
           availableModels: modelsToTry
@@ -1212,35 +1212,35 @@ ${cleanContent.substring(0, 6000)}`;
       provider: req.body.provider || 'unknown',
       userId: req.user?.id || 'anonymous'
     });
-    
+
     // Check if it's a model-related error
     if (error.message && (error.message.includes('model') || error.message.includes('not found') || error.message.includes('not_found'))) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid or unavailable model',
         details: error.message,
         suggestion: 'Try using the /api/ai/test-models endpoint to see available models'
       });
     }
-    
+
     // Check if it's an authentication error
     if (error.status === 401 || error.statusCode === 401 || error.message.includes('authentication') || error.message.includes('Invalid API key')) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'API key authentication failed',
         details: error.message || 'Please check your API key configuration',
         suggestion: 'Verify your API keys are correctly set in environment variables'
       });
     }
-    
+
     // Check if it's a rate limit error
     if (error.status === 429 || error.statusCode === 429 || error.message.includes('rate limit')) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'Rate limit exceeded',
         details: error.message,
         suggestion: 'Please wait a moment before trying again'
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Failed to get AI response',
       details: error.message || 'Unknown error occurred',
       errorType: error.type || 'unknown',
@@ -1728,7 +1728,7 @@ router.post('/chat-anonymous', async (req, res) => {
     // Use client-provided anonymousId if available, otherwise generate new one
     // This ensures session persistence across requests
     let ipAddress, userAgent, browserFingerprint;
-    
+
     if (clientAnonymousId) {
       // Client provided an anonymousId - use it and get IP/UA for session data
       anonymousId = clientAnonymousId;
@@ -1780,7 +1780,7 @@ router.post('/chat-anonymous', async (req, res) => {
     if (!req.isTrustedMcp && !session.canSendMessage()) {
       // User has exceeded message limit, return conversion message
       const lastUserMessageContent = lastUserMessage?.content || '';
-      
+
       const conversionMessage = {
         role: 'assistant',
         content: `Hey traveler! 👋
@@ -1807,8 +1807,8 @@ Ready to continue planning? 🚀`,
       };
 
       const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
-      
-      return res.json({ 
+
+      return res.json({
         data: {
           content: conversionMessage.content,
           provider: 'system',
@@ -1953,7 +1953,7 @@ Ready to continue planning? 🚀`,
       }
       enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
       enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
-    enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
+      enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
       enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
 
       if (npsFacts) {
@@ -2187,37 +2187,37 @@ CRITICAL ISOLATION RULES — follow these exactly:
             errorType: error.error?.type,
             code: error.code
           });
-          
+
           // Check if it's a model not found error (404) or not_found_error type
           // Check multiple possible error locations (Anthropic SDK may structure errors differently)
           const errorBody = error.error || error.response?.data || error.body || {};
-          const is404Error = error.status === 404 || error.statusCode === 404 || 
-                           error.response?.status === 404;
-          const isNotFoundError = error.error?.type === 'not_found_error' || 
-                                 error.type === 'not_found_error' ||
-                                 errorBody.type === 'not_found_error' ||
-                                 errorBody.error?.type === 'not_found_error';
+          const is404Error = error.status === 404 || error.statusCode === 404 ||
+            error.response?.status === 404;
+          const isNotFoundError = error.error?.type === 'not_found_error' ||
+            error.type === 'not_found_error' ||
+            errorBody.type === 'not_found_error' ||
+            errorBody.error?.type === 'not_found_error';
           const isModelError = (error.message && (
-            error.message.includes('model') || 
+            error.message.includes('model') ||
             error.message.includes('not found') ||
             error.message.includes('not_found')
           )) || (errorBody.error?.message && errorBody.error.message.includes('model'));
-          
-          const isAuthError = error.status === 401 || error.statusCode === 401 || 
-                             error.status === 403 || error.statusCode === 403;
-          
+
+          const isAuthError = error.status === 401 || error.statusCode === 401 ||
+            error.status === 403 || error.statusCode === 403;
+
           // If it's a 404 or not_found_error, try next model
           if (is404Error || isNotFoundError || isModelError) {
             console.log(`[Chat] Model ${model} not available (404/not_found) for anonymous user, trying next...`);
             continue; // Try next model
           }
-          
+
           // For auth errors on first model, try next model (might be API key issue with specific model)
           if (isAuthError && modelsToTry.indexOf(model) === 0) {
             console.log(`[Chat] Authentication error with ${model} for anonymous user, trying next model...`);
             continue;
           }
-          
+
           // For other errors, throw immediately (network errors, rate limits, etc.)
           throw error;
         }
@@ -2225,7 +2225,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
 
       if (!response) {
         console.error('[Chat] All Claude models failed for anonymous user');
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'No Claude models available with your API key',
           details: lastError?.message || 'Unknown error',
           availableModels: modelsToTry
@@ -2468,35 +2468,35 @@ ${anonCleanContent.substring(0, 6000)}`;
       provider: req.body.provider || 'unknown',
       anonymousId: anonymousId || 'unknown'
     });
-    
+
     // Check if it's a model-related error
     if (error.message && (error.message.includes('model') || error.message.includes('not found') || error.message.includes('not_found'))) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Invalid or unavailable model',
         details: error.message,
         suggestion: 'Try using the /api/ai/test-models endpoint to see available models'
       });
     }
-    
+
     // Check if it's an authentication error
     if (error.status === 401 || error.statusCode === 401 || error.message.includes('authentication') || error.message.includes('Invalid API key')) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'API key authentication failed',
         details: error.message || 'Please check your API key configuration',
         suggestion: 'Verify your API keys are correctly set in environment variables'
       });
     }
-    
+
     // Check if it's a rate limit error
     if (error.status === 429 || error.statusCode === 429 || error.message.includes('rate limit')) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'Rate limit exceeded',
         details: error.message,
         suggestion: 'Please wait a moment before trying again'
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Failed to get AI response',
       details: error.message || 'Unknown error occurred',
       errorType: error.type || 'unknown',
@@ -2508,20 +2508,20 @@ ${anonCleanContent.substring(0, 6000)}`;
 // Get anonymous session status
 router.get('/session-status/:anonymousId', async (req, res) => {
   try {
-    const session = await AnonymousSession.findOne({ 
-      anonymousId: req.params.anonymousId 
+    const session = await AnonymousSession.findOne({
+      anonymousId: req.params.anonymousId
     });
-    
+
     if (!session) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Session not found',
         canSendMore: false,
         messageCount: 0
       });
     }
-    
+
     const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
-    
+
     res.json({
       canSendMore: session.canSendMessage(),
       messageCount: userMessageCount,
@@ -2531,7 +2531,7 @@ router.get('/session-status/:anonymousId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking session status:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to check session status',
       canSendMore: false,
       messageCount: 0
@@ -2623,20 +2623,20 @@ router.get('/test-models', protect, async (req, res) => {
   for (const model of modelsToTest) {
     try {
       console.log(`Testing model: ${model}`);
-      
+
       await anthropic.messages.create({
         model: model,
         max_tokens: 10,
         messages: [{ role: 'user', content: 'Hi' }]
       });
-      
+
       results.push({ model, available: true, error: null });
       console.log(`✓ ${model} - Available`);
-      
+
     } catch (error) {
-      results.push({ 
-        model, 
-        available: false, 
+      results.push({
+        model,
+        available: false,
         error: error.message,
         errorType: error.type || 'unknown'
       });
@@ -2647,7 +2647,7 @@ router.get('/test-models', protect, async (req, res) => {
   const availableModels = results.filter(r => r.available).map(r => r.model);
   const unavailableModels = results.filter(r => !r.available);
 
-  res.json({ 
+  res.json({
     results,
     summary: {
       total: results.length,
@@ -2665,5 +2665,514 @@ router.get('/token-usage', protect, getTokenUsage);
 // AI Analytics routes
 router.get('/analytics', protect, getAIAnalytics);
 router.get('/learning-insights', protect, getLearningInsights);
+
+// ============================================
+// Voice: OpenAI Realtime API ephemeral session
+// ============================================
+
+const voiceSessionRateLimit = new Map(); // IP → { count, resetAt }
+
+const TRAILIE_VOICE_INSTRUCTIONS = `You are Trailie — TrailVerse AI's insider travel buddy for U.S. national parks and outdoor travel. You speak like a sharp, experienced friend who knows every park — not a travel brochure.
+
+VOICE DELIVERY — THIS IS CRITICAL:
+- You are a VOICE assistant. People are LISTENING, not reading. Pace yourself like a real conversation.
+- Give the most important takeaway FIRST in one sentence, then add 1-2 supporting details. Stop there unless asked for more.
+- NEVER dump a wall of data. Pick the 2-3 most useful facts. If they want more, they'll ask.
+- Use natural speech rhythm: short sentences, brief pauses between ideas. Not a monologue.
+- Example GOOD: "Death Valley's at 102 right now — brutal. There's a heat warning, so if you're going, stick to early mornings. Entrance is 30 bucks per car."
+- Example BAD: "Death Valley National Park right now has some key factors to know. The weather's blazing: currently around 102°F, very dry. There's a heat warning in effect, so caution's key. The main entrance fee is $30 per vehicle. Most roads are open, but always check for flash flood closures depending on the season. Camping is available, but best in fall and winter—summer's brutal. Tons of epic spots: Badwater Basin, Zabriskie Point, and Mesquite Flat Sand Dunes."
+
+TOOL CALL BEHAVIOR — MANDATORY:
+- When you need to call a tool, call it IMMEDIATELY without saying anything first. Do NOT speak before the tool returns.
+- NEVER say "let me check", "hang tight", "let me pull that up", "alright here we go", "sure thing", or ANY filler before a tool call. Just call the tool silently.
+- After the tool returns data, give ONE clear response with the key info. Do NOT repeat yourself or give the same info twice.
+- NEVER start speaking, then pause to call a tool, then speak again. Either speak OR call a tool — not both in sequence.
+
+Key persona rules:
+- Use contractions, be direct, be opinionated. "Skip the tourist trap — head to Lipan Point at sunrise."
+- Share insider tips: best times, hidden trails, where locals eat, what to skip.
+- Concrete over abstract: "4-hour drive" not "a manageable distance."
+- Include trail stats when recommending hikes: distance, elevation gain, time, difficulty.
+- Be honest about downsides: "Amazing views but brutal in July heat."
+- If LIVE PARK DATA is pre-loaded below, use it directly to answer — do NOT call tools for that park. Respond instantly.
+- Only call tools (get_park_details, search_parks, compare_parks, find_events) when the user asks about a DIFFERENT park, wants park search/comparison, or asks about events/programs.
+- Never guess about weather, alerts, fees, or hours — use pre-loaded data or call the relevant tool.`;
+
+router.post('/realtime-session', async (req, res) => {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(503).json({ error: 'Voice feature not configured' });
+    }
+
+    // Rate limit: 10 sessions per hour per user (UID preferred, IP fallback)
+    const rateLimitKey = req.user?.uid || req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+    let bucket = voiceSessionRateLimit.get(rateLimitKey);
+    if (!bucket || now > bucket.resetAt) {
+      bucket = { count: 0, resetAt: now + 60 * 60 * 1000 };
+      voiceSessionRateLimit.set(rateLimitKey, bucket);
+    }
+    bucket.count++;
+    if (bucket.count > 30) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Voice sessions are limited to 30 per hour.',
+      });
+    }
+
+    // Clean up stale entries periodically (every 100 requests)
+    if (Math.random() < 0.01) {
+      for (const [key, b] of voiceSessionRateLimit) {
+        if (now > b.resetAt) voiceSessionRateLimit.delete(key);
+      }
+    }
+
+    // Build instructions — inject park context if provided
+    const rawParkCode = req.body?.parkCode;
+    const parkCode = typeof rawParkCode === 'string'
+      ? rawParkCode.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)
+      : null;
+    let instructions = TRAILIE_VOICE_INSTRUCTIONS;
+
+    // Pre-fetch park data so the model can answer instantly (no MCP round-trip)
+    if (parkCode) {
+      try {
+        const enhancedParkService = require('../services/enhancedParkService');
+        const [parkResult, alertsResult, weatherResult] = await Promise.allSettled([
+          npsService.getParkByCode(parkCode),
+          npsService.getParkAlerts(parkCode),
+          npsService.getParkByCode(parkCode).then(p =>
+            p?.latitude && p?.longitude ? enhancedParkService.getWeatherData(p) : null
+          ),
+        ]);
+
+        const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
+        const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
+        const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+
+        if (park) {
+          let dataBlock = `\n\n--- LIVE PARK DATA (pre-loaded — use directly, do NOT call get_park_details for this park) ---`;
+          dataBlock += `\nPark: ${park.fullName} (${parkCode})`;
+          dataBlock += `\nState: ${park.states || 'N/A'}`;
+          if (park.description) dataBlock += `\nOverview: ${park.description}`;
+
+          // Fees
+          const fees = park.entranceFees || [];
+          if (fees.length > 0) {
+            const mainFee = fees[0];
+            dataBlock += `\nEntrance fee: $${mainFee.cost} — ${mainFee.title}`;
+          }
+
+          // Hours
+          const hours = park.operatingHours || [];
+          if (hours.length > 0) {
+            const h = hours[0].standardHours || {};
+            const today = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date().getDay()];
+            dataBlock += `\nToday's hours: ${h[today] || 'Check park website'}`;
+          }
+
+          // Weather
+          if (weather?.current) {
+            const w = weather.current;
+            dataBlock += `\nWeather right now: ${Math.round(w.tempF || w.temp)}°F, ${w.description || w.condition || 'N/A'}`;
+            if (w.humidity) dataBlock += `, humidity ${w.humidity}%`;
+          }
+          if (weather?.forecast?.length > 0) {
+            const next3 = weather.forecast.slice(0, 3).map(f =>
+              `${f.date || f.day}: ${Math.round(f.highF || f.high)}°/${Math.round(f.lowF || f.low)}° ${f.description || f.condition || ''}`
+            ).join(' | ');
+            dataBlock += `\nForecast: ${next3}`;
+          }
+
+          // Alerts
+          if (alerts.length > 0) {
+            dataBlock += `\nActive alerts (${alerts.length}):`;
+            alerts.slice(0, 5).forEach(a => {
+              dataBlock += `\n  - [${a.category}] ${a.title}`;
+            });
+          } else {
+            dataBlock += `\nNo active alerts.`;
+          }
+
+          // Activities
+          const activities = (park.activities || []).slice(0, 10).map(a => a.name).join(', ');
+          if (activities) dataBlock += `\nActivities: ${activities}`;
+
+          dataBlock += `\n--- END LIVE DATA ---`;
+          dataBlock += `\n\nThe user is viewing ${park.fullName}. Use the data above to answer questions about THIS park instantly. Only call tools if the user asks about a DIFFERENT park, wants search/comparison, or asks about events/programs.`;
+
+          instructions += dataBlock;
+        } else {
+          instructions += `\n\nThe user is currently viewing the park with code "${parkCode}". Use get_park_details to fetch live data if they ask about it.`;
+        }
+      } catch (prefetchErr) {
+        console.error('[Voice] Park pre-fetch failed (non-blocking):', prefetchErr.message);
+        instructions += `\n\nThe user is currently viewing the park with code "${parkCode}". Use get_park_details to fetch live data if they ask about it.`;
+      }
+    }
+
+    // Inject current date & season
+    const today = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const month = today.getMonth(); // 0-11
+    const season = month >= 2 && month <= 4 ? 'spring' : month >= 5 && month <= 7 ? 'summer' : month >= 8 && month <= 10 ? 'fall' : 'winter';
+    instructions += `\n\nToday is ${months[month]} ${today.getDate()}, ${today.getFullYear()} (${season}). Use this for seasonal recommendations.`;
+
+    // Inject nearby parks if user shared geolocation
+    const userLat = parseFloat(req.body?.lat);
+    const userLng = parseFloat(req.body?.lng);
+    if (!isNaN(userLat) && !isNaN(userLng) && Math.abs(userLat) <= 90 && Math.abs(userLng) <= 180) {
+      try {
+        const allParks = await npsService.getAllParks();
+        if (allParks && allParks.length > 0) {
+          // Calculate distance (Haversine) and find nearest parks
+          function haversine(lat1, lon1, lat2, lon2) {
+            const R = 3959; // miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          }
+
+          const parksWithDist = allParks
+            .filter(p => p.latitude && p.longitude)
+            .map(p => ({
+              name: p.fullName,
+              code: p.parkCode,
+              dist: Math.round(haversine(userLat, userLng, parseFloat(p.latitude), parseFloat(p.longitude))),
+            }))
+            .sort((a, b) => a.dist - b.dist)
+            .slice(0, 8);
+
+          if (parksWithDist.length > 0) {
+            let geoBlock = `\n\n--- USER LOCATION ---`;
+            geoBlock += `\nThe user is near coordinates (${userLat.toFixed(2)}, ${userLng.toFixed(2)}).`;
+            geoBlock += `\nNearest NPS sites:`;
+            parksWithDist.forEach(p => {
+              const driveEst = p.dist < 50 ? 'under 1 hr' : `~${Math.round(p.dist / 50)} hr drive`;
+              geoBlock += `\n  - ${p.name} (${p.code}) — ${p.dist} mi (${driveEst})`;
+            });
+            geoBlock += `\n--- END LOCATION ---`;
+            geoBlock += `\nWhen the user asks "near me", "close by", or "nearby", use this data. Don't ask where they are — you already know.`;
+            instructions += geoBlock;
+          }
+        }
+      } catch (geoErr) {
+        console.error('[Voice] Geo park lookup failed (non-blocking):', geoErr.message);
+      }
+    }
+
+    // Request ephemeral token from OpenAI
+    const fetch = require('node-fetch');
+    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        session: {
+          type: 'realtime',
+          model: 'gpt-realtime',
+          instructions,
+          output_modalities: ['audio'],
+          audio: {
+            input: {
+              turn_detection: {
+                type: 'semantic_vad',
+                interrupt_response: true,
+                create_response: true,
+              },
+            },
+            output: {
+              voice: 'marin',
+            },
+          },
+          tools: [
+            {
+              type: 'function',
+              name: 'get_park_details',
+              description: 'Get live details about a national park including weather, alerts, fees, hours, and activities. Use this when the user asks about a specific park.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  park_code: { type: 'string', description: 'The NPS park code, e.g. "zion", "yell", "grca", "yose"' },
+                },
+                required: ['park_code'],
+              },
+            },
+            {
+              type: 'function',
+              name: 'search_parks',
+              description: 'Search for national parks by state, activity, or keyword. Use when the user asks for park recommendations or discovery.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  state: { type: 'string', description: 'Two-letter state code to filter by, e.g. "CA", "UT", "CO"' },
+                  activity: { type: 'string', description: 'Activity to filter by, e.g. "hiking", "camping", "stargazing"' },
+                  query: { type: 'string', description: 'Search keyword or phrase' },
+                },
+              },
+            },
+            {
+              type: 'function',
+              name: 'compare_parks',
+              description: 'Compare two national parks side by side (weather, fees, alerts, activities). Use when the user wants to choose between parks.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  park_codes: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Array of 2 park codes to compare, e.g. ["zion", "grca"]',
+                  },
+                },
+                required: ['park_codes'],
+              },
+            },
+            {
+              type: 'function',
+              name: 'find_events',
+              description: 'Find upcoming ranger programs, tours, and events at a national park. Use when the user asks about events, programs, or things happening at a park.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  park_code: { type: 'string', description: 'The NPS park code, e.g. "grca", "yell", "zion"' },
+                  date_start: { type: 'string', description: 'Start date in YYYY-MM-DD format. Defaults to today.' },
+                  date_end: { type: 'string', description: 'End date in YYYY-MM-DD format. Defaults to 7 days from start.' },
+                },
+                required: ['park_code'],
+              },
+            },
+          ],
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error('[Voice] OpenAI session error:', response.status, errBody);
+      return res.status(502).json({ error: 'Failed to create voice session' });
+    }
+
+    const sessionData = await response.json();
+    console.log('[Voice] Session created successfully, keys:', Object.keys(sessionData));
+    res.json(sessionData);
+  } catch (err) {
+    console.error('[Voice] Session creation error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Voice: execute function calls from the Realtime API
+// ====================================================
+router.post('/voice-tool', async (req, res) => {
+  try {
+    const { tool, args } = req.body;
+    if (!tool || typeof tool !== 'string') {
+      return res.status(400).json({ error: 'Missing tool name' });
+    }
+
+    const enhancedParkService = require('../services/enhancedParkService');
+
+    switch (tool) {
+      case 'get_park_details': {
+        const parkCode = (args?.park_code || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toLowerCase();
+        if (!parkCode) return res.status(400).json({ error: 'Missing park_code' });
+
+        const [parkResult, alertsResult, weatherResult] = await Promise.allSettled([
+          npsService.getParkByCode(parkCode),
+          npsService.getParkAlerts(parkCode),
+          npsService.getParkByCode(parkCode).then(p =>
+            p?.latitude && p?.longitude ? enhancedParkService.getWeatherData(p) : null
+          ),
+        ]);
+
+        const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
+        const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
+        const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+
+        if (!park) return res.json({ result: `Could not find park with code "${parkCode}".` });
+
+        let text = `${park.fullName} (${parkCode.toUpperCase()})\nState: ${park.states || 'N/A'}`;
+        if (park.description) text += `\nOverview: ${park.description}`;
+
+        const fees = park.entranceFees || [];
+        if (fees.length > 0) text += `\nEntrance fee: $${fees[0].cost} — ${fees[0].title}`;
+
+        const hours = park.operatingHours || [];
+        if (hours.length > 0) {
+          const h = hours[0].standardHours || {};
+          const today = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date().getDay()];
+          text += `\nToday's hours: ${h[today] || 'Check park website'}`;
+        }
+
+        if (weather?.current) {
+          const w = weather.current;
+          text += `\nWeather: ${Math.round(w.tempF || w.temp)}°F, ${w.description || w.condition || 'N/A'}`;
+          if (w.humidity) text += `, humidity ${w.humidity}%`;
+        }
+        if (weather?.forecast?.length > 0) {
+          const next3 = weather.forecast.slice(0, 3).map(f =>
+            `${f.date || f.day}: ${Math.round(f.highF || f.high)}°/${Math.round(f.lowF || f.low)}° ${f.description || f.condition || ''}`
+          ).join(' | ');
+          text += `\nForecast: ${next3}`;
+        }
+
+        if (alerts.length > 0) {
+          text += `\nActive alerts (${alerts.length}):`;
+          alerts.slice(0, 5).forEach(a => { text += `\n  - [${a.category}] ${a.title}`; });
+        } else {
+          text += `\nNo active alerts.`;
+        }
+
+        const activities = (park.activities || []).slice(0, 10).map(a => a.name).join(', ');
+        if (activities) text += `\nActivities: ${activities}`;
+
+        return res.json({ result: text });
+      }
+
+      case 'search_parks': {
+        const state = (args?.state || '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
+        const activity = (args?.activity || '').slice(0, 50);
+        const query = (args?.query || '').slice(0, 100);
+
+        let parks = await npsService.getAllParks();
+        if (!parks || parks.length === 0) {
+          return res.json({ result: 'No parks data available at the moment.' });
+        }
+
+        if (state) {
+          parks = parks.filter(p => (p.states || '').toUpperCase().includes(state));
+        }
+
+        if (query) {
+          const q = query.toLowerCase();
+          parks = parks.filter(p =>
+            (p.fullName || '').toLowerCase().includes(q) ||
+            (p.description || '').toLowerCase().includes(q) ||
+            (p.states || '').toLowerCase().includes(q)
+          );
+        }
+
+        if (activity) {
+          const act = activity.toLowerCase();
+          parks = parks.filter(p =>
+            (p.activities || []).some(a => (a.name || '').toLowerCase().includes(act))
+          );
+        }
+
+        if (parks.length === 0) {
+          return res.json({ result: 'No parks found matching your criteria.' });
+        }
+
+        const top = parks.slice(0, 8);
+        let text = `Found ${parks.length} parks. Top results:\n`;
+        top.forEach(p => {
+          text += `\n- ${p.fullName} (${p.parkCode}) — ${p.states}`;
+          if (p.description) text += `: ${p.description.slice(0, 120)}...`;
+        });
+
+        return res.json({ result: text });
+      }
+
+      case 'compare_parks': {
+        const codes = args?.park_codes;
+        if (!Array.isArray(codes) || codes.length < 2) {
+          return res.json({ result: 'Need at least 2 park codes to compare.' });
+        }
+
+        const parkCodes = codes.slice(0, 4).map(c => c.replace(/[^a-zA-Z0-9]/g, '').toLowerCase());
+
+        const results = await Promise.allSettled(
+          parkCodes.map(async (code) => {
+            const [park, alerts, weather] = await Promise.allSettled([
+              npsService.getParkByCode(code),
+              npsService.getParkAlerts(code),
+              npsService.getParkByCode(code).then(p =>
+                p?.latitude && p?.longitude ? enhancedParkService.getWeatherData(p) : null
+              ),
+            ]);
+            return {
+              code,
+              park: park.status === 'fulfilled' ? park.value : null,
+              alerts: alerts.status === 'fulfilled' ? alerts.value : [],
+              weather: weather.status === 'fulfilled' ? weather.value : null,
+            };
+          })
+        );
+
+        let text = 'Park Comparison:\n';
+        for (const r of results) {
+          if (r.status !== 'fulfilled' || !r.value.park) continue;
+          const { park, alerts, weather } = r.value;
+          text += `\n--- ${park.fullName} (${park.parkCode}) ---`;
+          text += `\nState: ${park.states || 'N/A'}`;
+
+          const fees = park.entranceFees || [];
+          if (fees.length > 0) text += `\nFee: $${fees[0].cost}`;
+
+          if (weather?.current) {
+            text += `\nWeather: ${Math.round(weather.current.tempF || weather.current.temp)}°F, ${weather.current.description || weather.current.condition || ''}`;
+          }
+
+          text += `\nAlerts: ${alerts.length > 0 ? alerts.slice(0, 3).map(a => a.title).join('; ') : 'None'}`;
+
+          const activities = (park.activities || []).slice(0, 6).map(a => a.name).join(', ');
+          if (activities) text += `\nTop activities: ${activities}`;
+        }
+
+        return res.json({ result: text });
+      }
+
+      case 'find_events': {
+        const parkCode = (args?.park_code || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toLowerCase();
+        if (!parkCode) return res.json({ result: 'Missing park_code for event search.' });
+
+        const today = new Date();
+        const dateStart = args?.date_start || today.toISOString().slice(0, 10);
+        const defaultEnd = new Date(today);
+        defaultEnd.setDate(defaultEnd.getDate() + 7);
+        const dateEnd = args?.date_end || defaultEnd.toISOString().slice(0, 10);
+
+        const events = await npsService.getAllEvents({
+          parkCode,
+          dateStart,
+          dateEnd,
+          limit: 20,
+        });
+
+        if (!events || events.length === 0) {
+          return res.json({ result: `No events found at ${parkCode.toUpperCase()} between ${dateStart} and ${dateEnd}.` });
+        }
+
+        let text = `Events at ${parkCode.toUpperCase()} (${dateStart} to ${dateEnd}) — ${events.length} found:\n`;
+        events.slice(0, 10).forEach(e => {
+          text += `\n- ${e.title || 'Untitled event'}`;
+          if (e.dateStart || e.dates) text += ` | ${e.dateStart || e.dates}`;
+          if (e.times && e.times.length > 0) {
+            const t = e.times[0];
+            if (t.timeStart) text += ` at ${t.timeStart}`;
+          }
+          if (e.location) text += ` | ${e.location}`;
+          if (e.description) text += `\n  ${e.description.replace(/<[^>]*>/g, '').slice(0, 150)}`;
+          if (e.isReservationRequired) text += ` (Reservation required)`;
+          if (e.feeInfo) text += ` | Fee: ${e.feeInfo}`;
+        });
+
+        if (events.length > 10) text += `\n\n...and ${events.length - 10} more events.`;
+
+        return res.json({ result: text });
+      }
+
+      default:
+        return res.json({ result: `Unknown tool: ${tool}` });
+    }
+  } catch (err) {
+    console.error('[Voice] Tool execution error:', err);
+    res.status(500).json({ error: 'Tool execution failed' });
+  }
+});
 
 module.exports = router;

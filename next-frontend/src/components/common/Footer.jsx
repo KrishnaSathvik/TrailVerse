@@ -5,11 +5,20 @@ import Link from 'next/link';
 import { Mail, Instagram, Map } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 import SyncStatus from './SyncStatus';
 
 const Footer = () => {
   useTheme();
   const { isAuthenticated } = useAuth();
+  const { canInstall, canInstallDesktop, isIOS, install, deferredPrompt } = usePWAInstall();
+
+  const handleInstall = async (e) => {
+    e.preventDefault();
+    if (deferredPrompt) {
+      await install();
+    }
+  };
 
   return (
     <footer
@@ -78,6 +87,9 @@ const Footer = () => {
               <li><Link href="/features" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Features</Link></li>
               <li><Link href="/faq" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
               <li><a href="https://www.nps.gov" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>NPS Official Site</a></li>
+              {(canInstall || canInstallDesktop) && (
+                <li><a href="#" onClick={handleInstall} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Install App</a></li>
+              )}
             </ul>
           </div>
 
@@ -124,17 +136,14 @@ const Footer = () => {
         {/* Bottom */}
         <div
           className="mt-8 pt-8 border-t"
-          style={{
-            borderColor: 'var(--border)'
-          }}
+          style={{ borderColor: 'var(--border)' }}
         >
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-base sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              &copy; {new Date().getFullYear()} TrailVerse. All rights reserved.
-            </p>
-          </div>
+          <p className="text-base sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            &copy; {new Date().getFullYear()} TrailVerse. All rights reserved.
+          </p>
         </div>
       </div>
+
     </footer>
   );
 };

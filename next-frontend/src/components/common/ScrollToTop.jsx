@@ -65,11 +65,11 @@ const ScrollToTop = () => {
       {isVisible && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 lg:bottom-10 lg:right-10 z-50 
-                     w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16
-                     rounded-full 
+          className="fixed bottom-24 right-6 sm:bottom-28 sm:right-6 z-50
+                     w-11 h-11 sm:w-12 sm:h-12
+                     rounded-full
                      transition-all duration-300 ease-out
-                     hover:scale-110 active:scale-95 
+                     hover:scale-110 active:scale-95
                      opacity-0 animate-fade-in
                      group
                      focus:outline-none focus:ring-4 focus:ring-opacity-50
@@ -84,8 +84,8 @@ const ScrollToTop = () => {
           aria-label="Scroll to top of page"
           title="Scroll to top"
         >
-          <ArrowUp 
-            className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 transition-all duration-300 
+          <ArrowUp
+            className="h-5 w-5 sm:h-6 sm:w-6 transition-all duration-300
                        group-hover:-translate-y-1 group-hover:scale-110
                        group-active:translate-y-0 group-active:scale-100" 
             style={{ 

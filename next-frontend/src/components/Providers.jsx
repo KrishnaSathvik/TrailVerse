@@ -9,7 +9,6 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
 import ScrollToTop from './common/ScrollToTop';
-import PWAInstallButton from './common/PWAInstallButton';
 import { initGA } from '../utils/analytics';
 
 export default function Providers({ children }) {
@@ -42,7 +41,6 @@ export default function Providers({ children }) {
           <AuthProvider>
             {children}
             <ScrollToTop />
-            <PWAInstallButton />
             <Analytics />
             <SpeedInsights />
 

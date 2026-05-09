@@ -3,6 +3,7 @@ import "./globals.css";
 import Script from "next/script";
 import Providers from "../components/Providers";
 import GoogleMapsLoader from "../components/maps/GoogleMapsLoader";
+import VoiceButton from "../components/voice/VoiceButton";
 
 export const viewport = {
   width: "device-width",
@@ -109,6 +110,7 @@ export default function RootLayout({ children }) {
         <GoogleMapsLoader />
         <Providers>
           {children}
+          <VoiceButton />
         </Providers>
       </body>
     </html>

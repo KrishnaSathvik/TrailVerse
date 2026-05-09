@@ -43,9 +43,10 @@ const PWAInstallButton = () => {
 
   return (
     <>
+      {/* Floating button — mobile only */}
       <button
         onClick={handleInstall}
-        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold transition hover:opacity-90 hover:scale-105 active:scale-95"
+        className="fixed bottom-24 right-5 z-40 inline-flex md:hidden items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold transition hover:opacity-90 hover:scale-105 active:scale-95"
         style={{
           backgroundColor: 'var(--accent-green)',
           color: 'white',
@@ -55,7 +56,6 @@ const PWAInstallButton = () => {
         aria-label="Install TrailVerse app"
       >
         <Icon className="h-5 w-5" />
-        <span className="hidden sm:inline">Install App</span>
       </button>
 
       {(showIOSInstructions || showAndroidInstructions) && (

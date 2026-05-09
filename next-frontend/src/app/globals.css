@@ -626,3 +626,153 @@ section {
 .park-tabs-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* ============================================
+   TRAILIE VOICE BUTTON & OVERLAY
+   ============================================ */
+
+/* Voice button — override the floating element hiding rule */
+.trailie-voice-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 9998 !important;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--accent-green);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg, 0 4px 20px rgba(34, 197, 94, 0.4));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.trailie-voice-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(34, 197, 94, 0.55);
+}
+
+.trailie-voice-btn:active {
+  transform: scale(0.96);
+}
+
+.trailie-voice-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: var(--accent-orange, #f97316);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+/* Mic orb */
+.voice-mic-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  border-radius: 9999px;
+}
+
+.voice-mic-ring::before,
+.voice-mic-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+/* Idle — subtle breathing animation */
+.voice-mic-idle::before {
+  animation: voice-breathe 3s ease-in-out infinite;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+/* Listening — pulsing green rings */
+.voice-mic-listening::before {
+  animation: voice-pulse 1.5s ease-out infinite;
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
+.voice-mic-listening::after {
+  animation: voice-pulse 1.5s ease-out infinite 0.4s;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* Speaking — blue waveform rings */
+.voice-mic-speaking::before {
+  animation: voice-wave 0.8s ease-in-out infinite alternate;
+  border-color: rgba(14, 165, 233, 0.6);
+}
+
+.voice-mic-speaking::after {
+  animation: voice-wave 0.8s ease-in-out infinite alternate-reverse;
+  border-color: rgba(14, 165, 233, 0.4);
+}
+
+/* Connecting */
+.voice-mic-connecting .voice-mic-circle {
+  opacity: 0.6;
+}
+
+/* Error */
+.voice-mic-error .voice-mic-circle {
+  opacity: 0.7;
+}
+
+@keyframes voice-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.03); opacity: 1; }
+}
+
+@keyframes voice-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes voice-wave {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+.voice-mic-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+.voice-spinner {
+  animation: voice-spin 1s linear infinite;
+}
+
+@keyframes voice-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   END OF TRAILIE VOICE BUTTON & OVERLAY
+   ============================================ */

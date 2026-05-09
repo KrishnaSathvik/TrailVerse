@@ -9,6 +9,12 @@ import IconGlyph from '@/components/common/IconGlyph';
 import { parkToSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
 
+export const metadata = {
+  alternates: {
+    canonical: 'https://www.nationalparksexplorerusa.com',
+  },
+};
+
 async function getAllParks() {
   try {
     const response = await fetch(`${getApiBaseUrl()}/parks?all=true&nationalParksOnly=true`, {
