@@ -10,6 +10,31 @@ const API_URL =
 
 const REALTIME_API_URL = 'https://api.openai.com/v1/realtime/calls';
 
+// Cache geolocation at module level — only request once per page session
+let cachedLocation = null;
+let locationRequested = false;
+
+async function getCachedLocation() {
+  if (cachedLocation) return cachedLocation;
+  if (locationRequested) return null; // already tried and failed
+  if (!navigator.geolocation) return null;
+
+  locationRequested = true;
+  try {
+    cachedLocation = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(null), 2000);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+        () => { clearTimeout(timer); resolve(null); },
+        { timeout: 2000, maximumAge: 600000 } // cache for 10 minutes
+      );
+    });
+    return cachedLocation;
+  } catch (_) {
+    return null;
+  }
+}
+
 /**
  * Hook states: idle → connecting → connected → speaking → listening → error
  */
@@ -117,20 +142,8 @@ export default function useRealtimeVoice() {
       setIsToolCalling(false);
       setToolCallInfo(null);
 
-      // Try to get user's location (non-blocking, 2s timeout)
-      let userLocation = null;
-      if (navigator.geolocation) {
-        try {
-          userLocation = await new Promise((resolve, reject) => {
-            const timer = setTimeout(() => resolve(null), 2000);
-            navigator.geolocation.getCurrentPosition(
-              (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
-              () => { clearTimeout(timer); resolve(null); },
-              { timeout: 2000, maximumAge: 300000 }
-            );
-          });
-        } catch (_) {}
-      }
+      // Get user's location (cached — only prompts once per page session)
+      const userLocation = await getCachedLocation();
       if (stale()) return;
 
       // 1. Get ephemeral token from our backend

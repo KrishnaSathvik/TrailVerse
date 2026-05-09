@@ -61,7 +61,8 @@ The stack is OpenAI's Realtime API over WebRTC for voice-to-voice with minimal l
 
 Key technical decisions:
 - **Pre-fetching park context** — when you open voice chat on a park page, we inject live weather, alerts, and fees into the model's instructions so the first answer is instant (no tool call round-trip)
-- **Geolocation with timeout racing** — we request browser location with a 2-second timeout so the connection doesn't stall if permissions are slow
+- **Echo prevention** — mic is muted while the model speaks to prevent self-interruption, with echo cancellation and noise suppression enabled on the audio stream
+- **Geolocation caching** — location is requested once per page session and cached at the module level, so reopening voice chat doesn't re-prompt
 - **Semantic VAD** — using OpenAI's semantic voice activity detection instead of silence-based, so the model knows when you're actually done talking
 - **Function calling over MCP** — we started with MCP tools but migrated to Express function calling for better control, lower latency, and simpler error handling
 
@@ -98,9 +99,10 @@ I've been building TrailVerse, a platform covering all 470+ National Park Servic
 **Interesting problems we solved:**
 
 - **Pre-fetching context:** If you're on a park page, we inject live weather, alerts, fees, and hours into the model instructions before the session starts. First answer is instant — no tool call needed.
-- **Geolocation timing:** Originally we requested location in the button component and passed it via ref, but the overlay mounted before coords resolved. Moved geolocation into the connect function with a 2s Promise.race timeout.
+- **Echo self-interruption:** The mic was picking up Trailie's audio, triggering the VAD to think the user was speaking, which interrupted the response mid-sentence. Fixed by muting the mic track while the model is outputting audio, plus enabling echo cancellation/noise suppression on getUserMedia.
+- **Geolocation caching:** Originally requested location every time voice chat opened, causing repeated browser prompts. Moved to a module-level cache — only prompts once per page session, subsequent opens reuse cached coordinates.
 - **MCP → function calling migration:** Started with MCP tools but switched to Express function calling. Simpler to debug, better error handling, and we control the data formatting.
-- **Semantic VAD:** OpenAI's semantic voice activity detection is significantly better than silence-based. It understands when you pause mid-sentence vs when you're actually done.
+- **Trimming tool responses for voice:** The model would dump everything from tool results. Cut responses to bare essentials (name, weather, fee, key alerts) and added hard 2-4 sentence limits in instructions.
 - **React Strict Mode + WebRTC:** Strict Mode double-mounts components, which means double mic requests and double connections. Added a generation counter to cancel stale async connects.
 
 **What the voice can do:**
