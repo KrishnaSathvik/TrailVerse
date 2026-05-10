@@ -57,6 +57,10 @@ export default function useRealtimeVoice() {
   const activeFnCallRef = useRef(null);
   // Cooldown timer — prevents mic from picking up residual audio after Trailie stops
   const micCooldownRef = useRef(null);
+  // Track whether a response is currently in progress — prevents duplicate response.create
+  const responseActiveRef = useRef(false);
+  // Track when speech started — used to filter noise (real speech > 500ms)
+  const speechStartRef = useRef(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -85,6 +89,7 @@ export default function useRealtimeVoice() {
       audioRef.current = null;
     }
     activeFnCallRef.current = null;
+    responseActiveRef.current = false;
     if (micCooldownRef.current) {
       clearTimeout(micCooldownRef.current);
       micCooldownRef.current = null;
@@ -117,6 +122,7 @@ export default function useRealtimeVoice() {
         }));
 
         // 2. Trigger the model to respond with the data
+        responseActiveRef.current = true;
         dc.send(JSON.stringify({ type: 'response.create' }));
       }
     } catch (err) {
@@ -132,6 +138,7 @@ export default function useRealtimeVoice() {
             output: `Error fetching data: ${err.message}`,
           },
         }));
+        responseActiveRef.current = true;
         dc.send(JSON.stringify({ type: 'response.create' }));
       }
     }
@@ -284,15 +291,18 @@ export default function useRealtimeVoice() {
       switch (event.type) {
         // ── User speech ──
         case 'input_audio_buffer.speech_started': {
-          // Ignore during mic mute (Trailie speaking) or cooldown (just finished speaking)
+          // Ignore completely while Trailie is speaking, during cooldown, or mic is muted
+          if (responseActiveRef.current) break;
           if (streamRef.current?.getAudioTracks()[0]?.enabled === false) break;
           if (micCooldownRef.current) break;
+          speechStartRef.current = Date.now();
           setStatus('listening');
           break;
         }
 
         case 'input_audio_buffer.speech_stopped': {
-          // Only update status if mic is live (ignore stale events during mute/cooldown)
+          // Only update status if mic is live and no active response
+          if (responseActiveRef.current) break;
           if (streamRef.current?.getAudioTracks()[0]?.enabled !== false && !micCooldownRef.current) {
             setStatus('connected');
           }
@@ -300,20 +310,27 @@ export default function useRealtimeVoice() {
         }
 
         // Audio buffer committed — VAD detected end of speech turn
-        // With create_response: false, we must manually trigger the response
+        // Only respond if speech lasted > 500ms (filters out noise/false triggers)
         case 'input_audio_buffer.committed': {
-          // Only create response if mic is live and not in cooldown
+          const speechDuration = speechStartRef.current
+            ? Date.now() - speechStartRef.current
+            : 0;
+          speechStartRef.current = null;
+
+          // Block if: mic muted, cooldown active, response in progress, or noise (<500ms)
           const micEnabled = streamRef.current?.getAudioTracks()[0]?.enabled !== false;
-          if (micEnabled && !micCooldownRef.current) {
+          if (speechDuration > 500 && micEnabled && !micCooldownRef.current && !responseActiveRef.current) {
             const dc = dcRef.current;
             if (dc && dc.readyState === 'open') {
+              responseActiveRef.current = true;
               dc.send(JSON.stringify({ type: 'response.create' }));
             }
           }
           break;
         }
 
-        // User transcript finalized
+        // User transcript finalized — update transcript display only
+        // (response.create is triggered from committed handler based on speech duration)
         case 'conversation.item.done': {
           if (event.item?.role === 'user') {
             const parts = event.item.content || [];
@@ -321,7 +338,7 @@ export default function useRealtimeVoice() {
               .filter(p => p.transcript)
               .map(p => p.transcript.trim())
               .join(' ');
-            if (text) {
+            if (text && text.length > 1) {
               setTranscript(prev => {
                 const last = prev[prev.length - 1];
                 if (last && last.role === 'user') {
@@ -354,15 +371,8 @@ export default function useRealtimeVoice() {
         case 'output_audio_buffer.stopped':
         case 'response.output_audio.done': {
           setIsTrailieSpeaking(false);
-          setStatus('connected');
-          // Re-enable mic after a cooldown to avoid residual audio triggering VAD
-          if (micCooldownRef.current) clearTimeout(micCooldownRef.current);
-          micCooldownRef.current = setTimeout(() => {
-            if (streamRef.current) {
-              streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
-            }
-            micCooldownRef.current = null;
-          }, 1200);
+          // Don't re-enable mic here — wait for response.done so the full
+          // response cycle completes before accepting new input
           break;
         }
 
@@ -450,20 +460,37 @@ export default function useRealtimeVoice() {
           break;
         }
 
-        // Response complete — fallback clear
+        // Response complete — re-enable mic after cooldown
         case 'response.done': {
-          // Only clear if no active function call (function calls trigger a new response)
-          if (!activeFnCallRef.current) {
-            setIsTrailieSpeaking(false);
+          responseActiveRef.current = false;
+          // If a function call is pending, don't re-enable mic yet — a new response will follow
+          if (activeFnCallRef.current) break;
+
+          setIsTrailieSpeaking(false);
+          setIsToolCalling(false);
+          setToolCallInfo(null);
+          // Re-enable mic after cooldown so residual speaker audio doesn't trigger VAD
+          if (micCooldownRef.current) clearTimeout(micCooldownRef.current);
+          micCooldownRef.current = setTimeout(() => {
+            if (streamRef.current) {
+              streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
+            }
+            micCooldownRef.current = null;
             setStatus('connected');
-          }
+          }, 1200);
           break;
         }
 
         // Error from API
         case 'error': {
+          const msg = event.error?.message || '';
+          // Ignore non-fatal errors — these don't affect the conversation
+          if (msg.includes('active response') || msg.includes('already has')) {
+            console.warn('[Voice] Non-fatal:', msg);
+            break;
+          }
           console.error('[Voice] API error:', event.error);
-          setError(event.error?.message || 'An error occurred');
+          setError(msg || 'An error occurred');
           break;
         }
 
