@@ -117,6 +117,40 @@ Currently in beta — rate limited to 30 sessions/hour. Try it at https://www.na
 
 Happy to answer questions about the WebRTC setup or the function calling flow.
 
+---
+
+## Reddit — r/PWA
+
+**Title:** Built a national park PWA with offline caching — what would you prioritize next for low-signal areas?
+
+**Body:**
+
+I've been building TrailVerse, a Next.js PWA for exploring all 470+ National Park Service sites. It has park pages, live weather/alerts, AI trip planning, events, a compare tool, and a new voice assistant layer.
+
+The PWA setup is already decent — serwist service worker with CacheFirst for static assets/fonts/map tiles, StaleWhileRevalidate for park data/events/blog, NetworkFirst for user-specific data (saved trips, auth). There's an offline fallback page and cross-platform install prompts.
+
+But the real challenge: parks have garbage cell service. Someone saves a 3-day Zion trip at home, drives into the canyon, and now what? The trip page might be cached from a StaleWhileRevalidate hit, but the trail details, downloaded maps, and weather snapshot they checked that morning might not be.
+
+**What I'm debating:**
+
+1. **Explicit "Download for Offline" per trip** — user taps a button, we precache that trip's park pages, trail data, and a weather snapshot. But managing those caches (expiration, storage limits, stale data) feels complex.
+
+2. **Background sync for saved trips** — when they mark a trip as saved, a service worker job pulls and caches related data in the background. Less explicit for the user but harder to guarantee completeness.
+
+3. **Push notifications for alerts** — "Road closure on your saved Zion trip" while they still have signal. Useful but separate from the offline story.
+
+4. **Offline maps** — the hardest part. Google Maps tiles are CacheFirst but only for tiles already viewed. Pre-caching a park's full tile set at multiple zoom levels is a storage monster.
+
+For anyone who's built travel or outdoor PWAs — what actually matters when someone loses signal? Explicit download flows, aggressive background caching, or just making sure the last-viewed state is reliable enough?
+
+**First comment:**
+
+Here's a park page for context on what would need to work offline: https://www.nationalparksexplorerusa.com/parks/bryce-canyon-national-park
+
+The voice and AI planning features obviously need connectivity, but park details, saved trips, and alerts feel like they should work regardless.
+
+---
+
 ### r/NationalPark
 
 **Title:** Built a voice assistant for planning national park trips — ask it anything and it answers with live data

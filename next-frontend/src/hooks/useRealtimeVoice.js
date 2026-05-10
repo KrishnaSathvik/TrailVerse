@@ -55,6 +55,8 @@ export default function useRealtimeVoice() {
 
   // Track in-flight function calls: { call_id, name, arguments }
   const activeFnCallRef = useRef(null);
+  // Cooldown timer — prevents mic from picking up residual audio after Trailie stops
+  const micCooldownRef = useRef(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -81,6 +83,10 @@ export default function useRealtimeVoice() {
       audioRef.current = null;
     }
     activeFnCallRef.current = null;
+    if (micCooldownRef.current) {
+      clearTimeout(micCooldownRef.current);
+      micCooldownRef.current = null;
+    }
   }
 
   // Execute a function call against our Express backend and send the result back
@@ -262,8 +268,9 @@ export default function useRealtimeVoice() {
       switch (event.type) {
         // ── User speech ──
         case 'input_audio_buffer.speech_started': {
-          // Ignore if Trailie is currently speaking — prevents echo self-interruption
+          // Ignore during mic mute (Trailie speaking) or cooldown (just finished speaking)
           if (streamRef.current?.getAudioTracks()[0]?.enabled === false) break;
+          if (micCooldownRef.current) break;
           setStatus('listening');
           break;
         }
@@ -318,10 +325,14 @@ export default function useRealtimeVoice() {
         case 'response.output_audio.done': {
           setIsTrailieSpeaking(false);
           setStatus('connected');
-          // Re-enable mic so user can speak again
-          if (streamRef.current) {
-            streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
-          }
+          // Re-enable mic after a cooldown to avoid residual audio triggering VAD
+          if (micCooldownRef.current) clearTimeout(micCooldownRef.current);
+          micCooldownRef.current = setTimeout(() => {
+            if (streamRef.current) {
+              streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
+            }
+            micCooldownRef.current = null;
+          }, 800);
           break;
         }
 
