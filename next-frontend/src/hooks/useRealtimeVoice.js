@@ -79,7 +79,9 @@ export default function useRealtimeVoice() {
       streamRef.current = null;
     }
     if (audioRef.current) {
+      audioRef.current.pause();
       audioRef.current.srcObject = null;
+      if (audioRef.current.parentNode) audioRef.current.parentNode.removeChild(audioRef.current);
       audioRef.current = null;
     }
     activeFnCallRef.current = null;
@@ -181,18 +183,32 @@ export default function useRealtimeVoice() {
       // 3. Set up audio playback for Trailie's responses
       const audioEl = document.createElement('audio');
       audioEl.autoplay = true;
+      audioEl.playsInline = true;
+      audioEl.setAttribute('playsinline', '');
+      // Route to system default output (BT speaker support)
+      if (typeof audioEl.setSinkId === 'function') {
+        try { await audioEl.setSinkId('default'); } catch (_) {}
+      }
       audioRef.current = audioEl;
+
+      // Append to DOM — some browsers/BT devices won't play detached audio elements
+      audioEl.style.display = 'none';
+      document.body.appendChild(audioEl);
 
       pc.ontrack = (event) => {
         audioEl.srcObject = event.streams[0];
+        // Force play for BT devices that may block autoplay
+        audioEl.play().catch(() => {});
       };
 
       // 4. Get microphone access and add track (with echo cancellation)
+      // Use device's default mic — don't lock to a specific device (BT compatibility)
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          // Don't specify deviceId — let browser pick the best available mic
         },
       });
       if (stale()) { stream.getTracks().forEach(t => t.stop()); pc.close(); return; }
@@ -276,12 +292,26 @@ export default function useRealtimeVoice() {
         }
 
         case 'input_audio_buffer.speech_stopped': {
-          setStatus('connected');
+          // Only update status if mic is live (ignore stale events during mute/cooldown)
+          if (streamRef.current?.getAudioTracks()[0]?.enabled !== false && !micCooldownRef.current) {
+            setStatus('connected');
+          }
           break;
         }
 
-        case 'input_audio_buffer.committed':
+        // Audio buffer committed — VAD detected end of speech turn
+        // With create_response: false, we must manually trigger the response
+        case 'input_audio_buffer.committed': {
+          // Only create response if mic is live and not in cooldown
+          const micEnabled = streamRef.current?.getAudioTracks()[0]?.enabled !== false;
+          if (micEnabled && !micCooldownRef.current) {
+            const dc = dcRef.current;
+            if (dc && dc.readyState === 'open') {
+              dc.send(JSON.stringify({ type: 'response.create' }));
+            }
+          }
           break;
+        }
 
         // User transcript finalized
         case 'conversation.item.done': {
@@ -332,7 +362,7 @@ export default function useRealtimeVoice() {
               streamRef.current.getAudioTracks().forEach(t => { t.enabled = true; });
             }
             micCooldownRef.current = null;
-          }, 800);
+          }, 1200);
           break;
         }
 
@@ -376,6 +406,10 @@ export default function useRealtimeVoice() {
             setToolCallInfo(event.item.name);
             // Clear any filler transcript so only the post-tool answer shows
             setTranscript(prev => prev.filter(m => m.role === 'user'));
+            // Mute mic during tool call — prevents noise from queuing phantom responses
+            if (streamRef.current) {
+              streamRef.current.getAudioTracks().forEach(t => { t.enabled = false; });
+            }
             // Start tracking this function call
             activeFnCallRef.current = {
               call_id: event.item.call_id,

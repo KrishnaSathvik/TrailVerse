@@ -2897,8 +2897,8 @@ router.post('/realtime-session', async (req, res) => {
             input: {
               turn_detection: {
                 type: 'semantic_vad',
-                interrupt_response: true,
-                create_response: true,
+                interrupt_response: false,
+                create_response: false,
               },
             },
             output: {
