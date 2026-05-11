@@ -1,6 +1,6 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
-import { parkToSlug } from '@/utils/parkSlug';
+import { parkToSlug, findCorrectSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import ParkDetailClient from './ParkDetailClient';
 
@@ -20,12 +20,22 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { parkCode } = await params;
   // If parkCode is longer than 4 chars, it's a slug — look up by slug
-  const data = parkCode.length > 4
+  let data = parkCode.length > 4
     ? await getParkDetailsBySlug(parkCode)
     : await getParkDetails(parkCode);
 
   // getParkDetails returns the park object directly (or { park } in some routes)
-  const park = data?.park || data;
+  let park = data?.park || data;
+
+  // If slug lookup failed, try corrected slug for metadata
+  if (!park?.fullName && parkCode.length > 4) {
+    const correctedSlug = findCorrectSlug(parkCode);
+    if (correctedSlug) {
+      data = await getParkDetailsBySlug(correctedSlug);
+      park = data?.park || data;
+    }
+  }
+
   if (!park?.fullName) {
     return { title: '404 - Page Not Found | TrailVerse' };
   }
@@ -60,11 +70,21 @@ export async function generateMetadata({ params }) {
 export default async function ParkPage({ params }) {
   const { parkCode } = await params;
   // If parkCode is longer than 4 chars, it's a slug — look up by slug
-  const data = parkCode.length > 4
+  let data = parkCode.length > 4
     ? await getParkDetailsBySlug(parkCode)
     : await getParkDetails(parkCode);
 
-  const park = data?.park || data;
+  let park = data?.park || data;
+
+  // If slug lookup failed, try correcting common slug errors (e.g. missing "and")
+  // and 301 redirect to the canonical URL instead of 404-ing
+  if (!park?.fullName && parkCode.length > 4) {
+    const correctedSlug = findCorrectSlug(parkCode);
+    if (correctedSlug) {
+      permanentRedirect(`/parks/${correctedSlug}`);
+    }
+  }
+
   if (!park?.fullName) {
     notFound();
   }
