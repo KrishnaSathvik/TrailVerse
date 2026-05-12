@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
 const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
 const { formatFeeFreeBlock } = require('../services/feeFreeDaysService');
@@ -2670,9 +2670,14 @@ router.get('/learning-insights', protect, getLearningInsights);
 // Voice: OpenAI Realtime API ephemeral session
 // ============================================
 
-const voiceSessionRateLimit = new Map(); // IP → { count, resetAt }
+const voiceSessionRateLimit = new Map(); // key → { count, resetAt }
+const ANON_VOICE_FREE_SESSIONS = 3; // free voice sessions before requiring login
 
 const TRAILIE_VOICE_INSTRUCTIONS = `You are Trailie — TrailVerse AI's insider travel buddy for U.S. national parks and outdoor travel. You speak like a sharp, experienced friend who knows every park — not a travel brochure.
+
+STARTUP RULE — ABSOLUTE:
+- When the session starts, say NOTHING. Do not greet, introduce yourself, or speak at all until the user speaks first.
+- Stay completely silent until you hear the user's voice. No "hey", no "welcome", no "how can I help" — total silence.
 
 VOICE DELIVERY — THIS IS CRITICAL:
 - You are a VOICE assistant. People are LISTENING, not reading.
@@ -2714,14 +2719,38 @@ Key persona rules:
 - Only call tools (get_park_details, search_parks, compare_parks, find_events) when the user asks about a DIFFERENT park, wants park search/comparison, or asks about events/programs.
 - Never guess about weather, alerts, fees, or hours — use pre-loaded data or call the relevant tool.`;
 
-router.post('/realtime-session', async (req, res) => {
+router.post('/realtime-session', optionalAuth, async (req, res) => {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(503).json({ error: 'Voice feature not configured' });
     }
 
+    const isAuthenticated = !!req.user;
+    console.log(`[Voice] Session request — authenticated: ${isAuthenticated}, user: ${req.user?.email || 'anonymous'}, ip: ${req.ip}`);
+
+    // Anonymous users: allow ANON_VOICE_FREE_SESSIONS free sessions, then require login
+    // Uses a separate long-lived counter (24h) distinct from the hourly rate limit
+    if (!isAuthenticated) {
+      const anonKey = `anon:${req.ip || req.connection?.remoteAddress || 'unknown'}`;
+      const now = Date.now();
+      let anonBucket = voiceSessionRateLimit.get(anonKey);
+      if (!anonBucket || now > anonBucket.resetAt) {
+        anonBucket = { count: 0, resetAt: now + 24 * 60 * 60 * 1000 }; // 24h window
+        voiceSessionRateLimit.set(anonKey, anonBucket);
+      }
+      anonBucket.count++;
+      if (anonBucket.count > ANON_VOICE_FREE_SESSIONS) {
+        return res.status(401).json({
+          error: 'Sign up for free to keep using Trailie Voice.',
+          authRequired: true,
+          sessionsUsed: anonBucket.count - 1,
+          freeLimit: ANON_VOICE_FREE_SESSIONS,
+        });
+      }
+    }
+
     // Rate limit: 10 sessions per hour per user (UID preferred, IP fallback)
-    const rateLimitKey = req.user?.uid || req.ip || req.connection?.remoteAddress || 'unknown';
+    const rateLimitKey = req.user?.id || req.ip || req.connection?.remoteAddress || 'unknown';
     const now = Date.now();
     let bucket = voiceSessionRateLimit.get(rateLimitKey);
     if (!bucket || now > bucket.resetAt) {
@@ -2729,9 +2758,9 @@ router.post('/realtime-session', async (req, res) => {
       voiceSessionRateLimit.set(rateLimitKey, bucket);
     }
     bucket.count++;
-    if (bucket.count > 30) {
+    if (bucket.count > 10) {
       return res.status(429).json({
-        error: 'Rate limit exceeded. Voice sessions are limited to 30 per hour.',
+        error: 'Rate limit exceeded. Voice sessions are limited to 10 per hour.',
       });
     }
 
@@ -2876,6 +2905,15 @@ router.post('/realtime-session', async (req, res) => {
         }
       } catch (geoErr) {
         console.error('[Voice] Geo park lookup failed (non-blocking):', geoErr.message);
+      }
+    }
+
+    // On the last free anonymous session, tell Trailie to nudge the user to sign up
+    if (!isAuthenticated) {
+      const anonKey = `anon:${req.ip || req.connection?.remoteAddress || 'unknown'}`;
+      const anonBucket = voiceSessionRateLimit.get(anonKey);
+      if (anonBucket && anonBucket.count >= ANON_VOICE_FREE_SESSIONS) {
+        instructions += `\n\nIMPORTANT — SIGN-UP NUDGE: This is the user's last free voice chat. After answering their FIRST question, naturally mention: "By the way, this is your last free voice chat — sign up at TrailVerse to keep talking. It's free." Keep it casual, one sentence, then continue helping. Do NOT lead with the nudge — answer their question first.`;
       }
     }
 

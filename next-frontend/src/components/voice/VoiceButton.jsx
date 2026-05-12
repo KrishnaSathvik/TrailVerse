@@ -8,6 +8,7 @@ import { slugToParkCode } from '@/utils/parkSlug';
 
 export default function VoiceButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [sessionKey, setSessionKey] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const pathname = usePathname();
 
@@ -42,6 +43,7 @@ export default function VoiceButton() {
 
   function openVoice() {
     dismissHint();
+    setSessionKey(k => k + 1);
     setIsOpen(true);
   }
 
@@ -99,6 +101,7 @@ export default function VoiceButton() {
 
       {isOpen && (
         <VoiceOverlay
+          key={sessionKey}
           parkCode={parkCode}
           pagePath={pathname}
           onClose={() => setIsOpen(false)}

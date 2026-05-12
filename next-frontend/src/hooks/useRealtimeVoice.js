@@ -45,6 +45,7 @@ export default function useRealtimeVoice() {
   const [isToolCalling, setIsToolCalling] = useState(false);
   const [toolCallInfo, setToolCallInfo] = useState(null); // tool name string or null
   const [error, setError] = useState(null);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const pcRef = useRef(null);
   const dcRef = useRef(null);
@@ -152,6 +153,7 @@ export default function useRealtimeVoice() {
     try {
       setStatus('connecting');
       setError(null);
+      setAuthRequired(false);
       setTranscript([]);
       setIsTrailieSpeaking(false);
       setIsToolCalling(false);
@@ -168,15 +170,27 @@ export default function useRealtimeVoice() {
         body.lat = userLocation.lat;
         body.lng = userLocation.lng;
       }
+      // Send auth token if logged in so backend can identify authenticated users
+      const headers = { 'Content-Type': 'application/json' };
+      const token = typeof localStorage !== 'undefined'
+        && (localStorage.getItem('token') || sessionStorage.getItem('token'));
+      if (token) headers.Authorization = `Bearer ${token}`;
+
       const res = await fetch(`${API_URL}/ai/realtime-session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       });
       if (stale()) return;
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (errData.authRequired) {
+          setAuthRequired(true);
+          setStatus('error');
+          setError(errData.error || 'Sign up to continue using Trailie Voice.');
+          return;
+        }
         throw new Error(errData.error || `Failed to create session (${res.status})`);
       }
 
@@ -509,6 +523,7 @@ export default function useRealtimeVoice() {
     isToolCalling,
     toolCallInfo,
     error,
+    authRequired,
     connect,
     disconnect,
   };

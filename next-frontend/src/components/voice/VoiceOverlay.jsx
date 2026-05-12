@@ -31,7 +31,7 @@ function getToolLabel(toolName) {
 
 export default function VoiceOverlay({ parkCode, pagePath, onClose }) {
   const {
-    status, transcript, isTrailieSpeaking, isToolCalling, toolCallInfo, error, connect, disconnect,
+    status, transcript, isTrailieSpeaking, isToolCalling, toolCallInfo, error, authRequired, connect, disconnect,
   } = useRealtimeVoice();
 
   const parkFullName = useMemo(() => getParkFullName(parkCode), [parkCode]);
@@ -190,10 +190,34 @@ export default function VoiceOverlay({ parkCode, pagePath, onClose }) {
           </p>
         </div>
 
-        {error && (
+        {error && !authRequired && (
           <p className="mt-2 text-sm" style={{ color: 'var(--error, #ef4444)' }}>
             {error}
           </p>
+        )}
+
+        {authRequired && (
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <p className="text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
+              You&apos;ve used your free voice chats. Sign up to keep talking to Trailie — it&apos;s free.
+            </p>
+            <div className="flex gap-3">
+              <a
+                href="/signup"
+                className="inline-flex items-center px-5 py-2 rounded-xl text-sm font-semibold text-white transition"
+                style={{ backgroundColor: 'var(--accent-green)' }}
+              >
+                Sign Up Free
+              </a>
+              <a
+                href="/login"
+                className="inline-flex items-center px-5 py-2 rounded-xl text-sm font-medium transition"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+              >
+                Log In
+              </a>
+            </div>
+          </div>
         )}
 
         {/* Live caption area */}
