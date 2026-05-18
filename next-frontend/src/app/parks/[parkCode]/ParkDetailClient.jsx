@@ -80,7 +80,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
         .then(res => res.json())
         .then(json => { setData(json.data || []); setLoading(false); })
         .catch(() => { setData([]); setLoading(false); });
-    }, [tabParkCode, endpoint, enabled, data]);
+    }, [tabParkCode, endpoint, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return { data, loading };
   };
@@ -1474,7 +1474,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              {cam.images?.[0]?.url && (
+                              {cam.images?.[0]?.url ? (
                                 <div className="relative aspect-video rounded-lg overflow-hidden mb-4">
                                   <Image
                                     src={cam.images[0].url}
@@ -1484,6 +1484,11 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                     className="object-cover"
                                     onError={(e) => { e.target.parentElement.style.display = 'none'; }}
                                   />
+                                </div>
+                              ) : (
+                                <div className="relative aspect-video rounded-lg overflow-hidden mb-4 flex items-center justify-center"
+                                  style={{ backgroundColor: 'var(--surface-elevated, #1a1a2e)' }}>
+                                  <Monitor className="h-10 w-10" style={{ color: 'var(--text-tertiary)' }} />
                                 </div>
                               )}
                               <h3 className="text-lg font-semibold mb-2"
@@ -1524,7 +1529,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                             </div>
                           ))}
                         </div>
-                      ) : !webcamsLoading && (
+                      ) : !webcamsLoading && webcams !== null && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No webcams information available
                         </p>

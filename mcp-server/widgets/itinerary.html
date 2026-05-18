@@ -359,6 +359,33 @@ body {
   gap: 4px;
 }
 
+.it-maps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.it-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.it-map-link:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: var(--accent-green-light);
+}
+
 .it-footer {
   padding: 18px 28px 22px;
   background: var(--bg-secondary);
@@ -491,7 +518,7 @@ function render() {
       <p class="it-subtitle">${dayCount ? `${dayCount}-day itinerary` : "Trip plan"}${d.intent ? ` · optimized for ${esc(d.intent.replace(/_/g, " "))}` : ""}</p>
     </div>`;
 
-  // Park images — 2×2 grid matching app AI response
+  // Park images
   const imgs = d.parkImages || [];
   if (imgs.length > 0) {
     html += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:12px 28px 0;border-radius:16px;overflow:hidden;">`;
@@ -537,6 +564,17 @@ function render() {
         </div>`;
       }
       html += `</div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Day maps
+  const dayMaps = d.dayMaps || [];
+  const validMaps = dayMaps.filter(m => m && m.url);
+  if (validMaps.length) {
+    html += `<div class="it-maps">`;
+    for (const m of validMaps) {
+      html += `<a class="it-map-link" href="${esc(m.url)}" target="_blank" rel="noopener">📍 ${esc(m.day || "Directions")} →</a>`;
     }
     html += `</div>`;
   }

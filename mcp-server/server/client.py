@@ -263,7 +263,7 @@ async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
         from io import BytesIO
         from PIL import Image
 
-        async with httpx.AsyncClient(timeout=_IMAGE_TIMEOUT, follow_redirects=False) as c:
+        async with httpx.AsyncClient(timeout=_IMAGE_TIMEOUT, follow_redirects=True) as c:
             resp = await c.get(url)
             resp.raise_for_status()
             content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0].strip()

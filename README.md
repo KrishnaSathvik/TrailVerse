@@ -41,6 +41,25 @@ Trailie also draws from TrailVerse's own published blog guides — visitor tips,
 
 Try it free with 5 messages, no account needed.
 
+### Talk to Trailie (Voice Chat)
+Tap the mic button and ask Trailie anything — hands-free, voice-to-voice. Built with the OpenAI Realtime API over WebRTC for near-zero latency.
+
+What you can ask:
+- "What parks are near me?" (uses browser geolocation)
+- "Any closures at Yellowstone right now?"
+- "Compare Zion and Grand Canyon"
+- "Ranger programs at Grand Canyon this week"
+
+When Trailie needs data, it calls the backend in real-time via function calling — live weather, alerts, events, park details — and speaks the answer back. If you open voice chat on a park page, Trailie already knows which park you're looking at and has the latest data loaded (no tool call round-trip for the first answer).
+
+Technical details:
+- **WebRTC peer connection** directly to OpenAI Realtime API (no intermediary for audio)
+- **Semantic VAD** (voice activity detection) — knows when you're done talking
+- **Echo prevention** — mic is muted while Trailie speaks, with 1200ms cooldown after response completes
+- **Speech duration filtering** — ignores noise bursts under 500ms
+- **Geolocation caching** — location requested once per page session, cached at module level
+- **Bluetooth speaker support** — DOM-attached audio element with `playsInline` and `setSinkId`
+
 ### Build Visual Itineraries
 After chatting with Trailie, switch to the Plan Workspace — a unified split view with an interactive Google Map and editable day cards:
 - See all your stops as color-coded markers on the map, connected by real driving route polylines
@@ -52,6 +71,13 @@ After chatting with Trailie, switch to the Plan Workspace — a unified split vi
 - Export the whole plan as a PDF
 - Share it with a public link anyone can view
 - All edits auto-save and sync bidirectionally with the AI chat
+
+### Use Trailie in ChatGPT (MCP Server)
+TrailVerse ships an MCP (Model Context Protocol) server that brings Trailie into ChatGPT conversations. Ask ChatGPT about any national park and it calls TrailVerse tools for real-time data — weather, alerts, campgrounds, permits, events, and AI trip planning — rendered inline with custom HTML widgets.
+
+5 tools exposed: `plan_trip`, `get_park_details`, `compare_parks`, `search_parks`, `find_events`. All read-only, no auth required. Results render as visual cards inside ChatGPT using TrailVerse's editorial magazine aesthetic.
+
+Built with Python + FastMCP, deployed on Render. See `mcp-server/README.md` for the full technical documentation.
 
 ### Compare Parks
 Put parks side by side to decide between options. Each comparison includes a direct link to start planning a trip with AI.

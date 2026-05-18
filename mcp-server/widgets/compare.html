@@ -492,8 +492,10 @@ function render() {
   // Footer
   const allLink = d.links?.continueOnWebsite || "https://www.nationalparksexplorerusa.com/compare";
   const tripLink = d.links?.planRoadTrip;
+  const dirLink = d.links?.directionsUrl;
   html += `<div class="cmp-footer">
     <a class="tv-btn tv-btn-primary" href="${esc(allLink)}" target="_blank" rel="noopener">Open full comparison</a>
+    ${dirLink ? `<a class="tv-btn tv-btn-secondary" href="${esc(dirLink)}" target="_blank" rel="noopener">Driving directions →</a>` : ""}
     ${tripLink ? `<a class="tv-btn tv-btn-outline" href="${esc(tripLink)}" target="_blank" rel="noopener">Plan a road trip <span class="tv-btn-arrow">→</span></a>` : ""}
   </div></div>`;
 

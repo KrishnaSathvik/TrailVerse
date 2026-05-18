@@ -89,7 +89,7 @@ TOKENS_CSS = """\
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; color-scheme: light dark; }
 body {
-  background: transparent;
+  background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -120,11 +120,11 @@ body {
 .tv-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 9999px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -133,11 +133,22 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .tv-btn-primary {
+  background: var(--accent-green);
+  color: #ffffff;
+  border: 1px solid var(--accent-green);
+}
+.tv-btn-primary:hover {
+  background: var(--accent-green-dark);
+  border-color: var(--accent-green-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+.tv-btn-secondary {
   background: var(--surface);
   color: var(--text-primary);
   border: 1px solid var(--border);
 }
-.tv-btn-primary:hover {
+.tv-btn-secondary:hover {
   background: var(--surface-hover);
   border-color: var(--border-hover);
   transform: translateY(-1px);
@@ -354,11 +365,6 @@ ITINERARY_CSS = """
   background: var(--accent-green);
   box-shadow: 0 0 8px var(--accent-green);
 }
-.it-model {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
 .it-park {
   font-family: var(--font-display);
   font-weight: 600;
@@ -374,23 +380,12 @@ ITINERARY_CSS = """
   margin: 0;
 }
 
-.it-quality {
-  display: flex;
-  gap: 8px;
-  padding: 14px 28px;
-  flex-wrap: wrap;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-}
-
 .it-narrative {
   padding: 20px 28px;
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.7;
   border-bottom: 1px solid var(--border);
-  max-height: 260px;
-  overflow: auto;
 }
 .it-narrative h1, .it-narrative h2, .it-narrative h3 {
   font-family: var(--font-display);
@@ -505,6 +500,33 @@ ITINERARY_CSS = """
   gap: 4px;
 }
 
+.it-maps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.it-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.it-map-link:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: var(--accent-green-light);
+}
+
 .it-footer {
   padding: 18px 28px 22px;
   background: var(--bg-secondary);
@@ -537,8 +559,6 @@ function render() {
     return;
   }
 
-  const conf = d.confidence || {};
-  const score = d.planScore || {};
   const it = d.itinerary;
   const parkName = d.parkName || "Trip Plan";
   const isLocal = d.persona === "local";
@@ -549,19 +569,20 @@ function render() {
     <div class="it-hero">
       <div class="it-hero-top">
         <span class="it-persona"><span class="it-persona-dot"></span>${esc(personaLabel)}</span>
-        ${d.model ? `<span class="it-model">${esc(d.model)}</span>` : ""}
       </div>
       <h1 class="it-park">${esc(parkName)}</h1>
       <p class="it-subtitle">${dayCount ? `${dayCount}-day itinerary` : "Trip plan"}${d.intent ? ` · optimized for ${esc(d.intent.replace(/_/g, " "))}` : ""}</p>
     </div>`;
 
-  // Quality pills
-  if (conf.level || score.label) {
-    const confToClass = { high: "tv-badge--green", medium: "tv-badge--orange", low: "tv-badge--red" };
-    const scoreToClass = { "Excellent": "tv-badge--green", "Good": "tv-badge--green", "Fair": "tv-badge--orange", "Needs Improvement": "tv-badge--red" };
-    html += `<div class="it-quality">`;
-    if (conf.level) html += `<span class="tv-badge ${confToClass[conf.level] || ""}">${esc(conf.level)} confidence</span>`;
-    if (score.label) html += `<span class="tv-badge ${scoreToClass[score.label] || ""}">plan · ${esc(score.label)}</span>`;
+  // Park images
+  const imgs = d.parkImages || [];
+  if (imgs.length > 0) {
+    html += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:12px 28px 0;border-radius:16px;overflow:hidden;">`;
+    for (const img of imgs.slice(0, 4)) {
+      html += `<div style="aspect-ratio:4/3;overflow:hidden;background:var(--bg-tertiary);border-radius:0;">
+        <img src="${esc(img.url)}" alt="${esc(img.altText || "")}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />
+      </div>`;
+    }
     html += `</div>`;
   }
 
@@ -599,6 +620,17 @@ function render() {
         </div>`;
       }
       html += `</div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Day maps
+  const dayMaps = d.dayMaps || [];
+  const validMaps = dayMaps.filter(m => m && m.url);
+  if (validMaps.length) {
+    html += `<div class="it-maps">`;
+    for (const m of validMaps) {
+      html += `<a class="it-map-link" href="${esc(m.url)}" target="_blank" rel="noopener">📍 ${esc(m.day || "Directions")} →</a>`;
     }
     html += `</div>`;
   }
@@ -878,6 +910,75 @@ PARK_DETAILS_CSS = """
   font-variant-numeric: tabular-nums;
 }
 
+.pd-campgrounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pd-campground {
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.pd-campground-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+.pd-campground-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+}
+.pd-campground-meta > span { margin-right: 10px; }
+.pd-campground-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.pd-campground-book:hover { background: var(--accent-green); color: #fff; }
+
+.pd-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 12px 28px 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.pd-gallery-item {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+.pd-gallery-item img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.3s ease;
+}
+.pd-gallery-item:hover img {
+  transform: scale(1.1);
+}
+.pd-gallery-more {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.50);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .pd-footer {
   padding: 18px 28px 22px;
   display: flex;
@@ -918,6 +1019,22 @@ function render() {
     </div>
   </div></div>`;
 
+  // Photo gallery
+  const images = d.images || [];
+  if (images.length > 0) {
+    const visible = images.slice(0, 4);
+    html += `<div class="pd-gallery">`;
+    visible.forEach((img) => {
+      html += `<div class="pd-gallery-item">`;
+      html += `<img src="${esc(img.url)}" alt="${esc(img.altText || img.title || "")}" loading="lazy" />`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+    if (images.length > 4) {
+      html += `<div style="padding:4px 28px 0;"><a href="${esc(d.links?.trailverse || "#")}" target="_blank" rel="noopener" style="color:var(--accent-green);font-size:12px;font-weight:600;text-decoration:none;">View all ${images.length} photos</a></div>`;
+    }
+  }
+
   // Weather
   if (weather.tempF != null || weather.description) {
     html += `<div class="pd-section">
@@ -931,6 +1048,8 @@ function render() {
     html += `<div class="pd-condition-meta">`;
     if (weather.humidity != null) html += `<span>humidity ${esc(weather.humidity)}%</span>`;
     if (weather.windMph != null) html += `<span>wind ${esc(Math.round(weather.windMph))} mph</span>`;
+    if (weather.feelsLike != null) html += `<span>feels like ${esc(Math.round(weather.feelsLike))}°F</span>`;
+    if (weather.uvIndex != null) html += `<span>UV ${esc(weather.uvIndex)}</span>`;
     html += `</div></div></div>`;
     if (forecast.length) {
       html += `<div class="pd-forecast">`;
@@ -942,18 +1061,32 @@ function render() {
         </div>`;
       }
       html += `</div>`;
+    } else {
+      const seasonal = d.weather?.seasonal || {};
+      const seasons = ["spring", "summer", "fall", "winter"].filter(s => seasonal[s]);
+      if (seasons.length) {
+        html += `<div class="pd-forecast" style="grid-template-columns:repeat(${seasons.length}, 1fr)">`;
+        for (const s of seasons) {
+          const sv = seasonal[s];
+          html += `<div class="pd-forecast-day">
+            <div class="pd-forecast-date">${esc(s)}</div>
+            <div class="pd-forecast-temp">${sv.high != null ? esc(Math.round(sv.high)) + "°" : "—"}${sv.low != null ? `<span class="pd-forecast-low">${esc(Math.round(sv.low))}°</span>` : ""}</div>
+          </div>`;
+        }
+        html += `</div>`;
+      }
     }
     html += `</div>`;
   }
 
-  // Editorial (only if same-park feed is present)
+  // Editorial
   if (ed && (ed.leadInsight || ed.weatherInsight || ed.skyInsight || ed.atAGlance)) {
     html += `<div class="pd-editorial">`;
     if (ed.leadInsight) html += `<p class="pd-editorial-lead">${esc(ed.leadInsight)}</p>`;
     const cards = [
       ["Weather read", ed.weatherInsight],
       ["Sky & stars", ed.skyInsight],
-      ["At a glance", ed.atAGlance],
+      ["At a glance", typeof ed.atAGlance === "object" ? ed.atAGlance.crowdLevel : ed.atAGlance],
     ].filter(([, v]) => v);
     if (cards.length) {
       html += `<div class="pd-editorial-grid">`;
@@ -977,7 +1110,7 @@ function render() {
     for (const a of alerts.slice(0, 3)) {
       html += `<div class="pd-alert">
         ${a.category ? `<div class="pd-alert-cat">${esc(a.category)}</div>` : ""}
-        <p class="pd-alert-title">${esc(a.title || "Alert")}</p>
+        <p class="pd-alert-title">${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(a.title || "Alert")}</a>` : esc(a.title || "Alert")}</p>
         ${a.description ? `<p class="pd-alert-desc">${esc(a.description)}</p>` : ""}
       </div>`;
     }
@@ -1012,6 +1145,55 @@ function render() {
       html += `<div class="pd-fee">
         <span class="pd-fee-label">${esc(f.title || f.description || "Fee")}</span>
         <span class="pd-fee-price">$${esc(f.cost || "—")}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Operating Hours
+  const hours = d.operatingHours || [];
+  if (hours.length) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Hours</div></div>
+      <div class="pd-fees">`;
+    for (const h of hours.slice(0, 3)) {
+      html += `<div class="pd-fee">
+        <span class="pd-fee-label">${esc(h.name || "Standard")}</span>
+        <span class="pd-fee-price" style="font-size:12px;font-family:var(--font-sans);font-weight:500;max-width:60%;text-align:right">${esc(h.description || "")}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Campgrounds
+  const campgrounds = d.campgrounds || [];
+  if (campgrounds.length) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Campgrounds</div></div>
+      <div class="pd-campgrounds">`;
+    for (const cg of campgrounds.slice(0, 4)) {
+      html += `<div class="pd-campground">
+        <div class="pd-campground-name">${esc(cg.name || "Campground")}</div>
+        <div class="pd-campground-meta">`;
+      if (cg.totalSites) html += `<span>${esc(cg.totalSites)} sites</span>`;
+      if (cg.fee) html += `<span>${esc(cg.fee)}</span>`;
+      html += `</div>`;
+      if (cg.reservationUrl) html += `<a class="pd-campground-book" href="${esc(cg.reservationUrl)}" target="_blank" rel="noopener">Book →</a>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Permits
+  const permits = d.permits || [];
+  if (permits.length) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Permits</div></div>
+      <div class="pd-fees">`;
+    for (const p of permits.slice(0, 4)) {
+      html += `<div class="pd-fee">
+        <span class="pd-fee-label">${esc(p.name || "Permit")}${p.type ? ` <span style="color:var(--text-tertiary);font-size:11px">[${esc(p.type)}]</span>` : ""}</span>
+        ${p.reservationUrl ? `<a class="pd-campground-book" href="${esc(p.reservationUrl)}" target="_blank" rel="noopener">Reserve →</a>` : `<span class="pd-fee-price" style="font-size:12px">—</span>`}
       </div>`;
     }
     html += `</div></div>`;
@@ -1223,8 +1405,9 @@ function render() {
   // Facts grid
   const gridCols = `140px repeat(${n}, 1fr)`;
   html += `<div class="cmp-grid" style="grid-template-columns:${gridCols}">`;
+  const hasAnyReviews = parks.some(p => p.reviewCount > 0);
   const rows = [
-    ["Rating", (p) => p.rating != null ? `<span class="cmp-stars">${stars(p.rating)}</span> <span style="color:var(--text-tertiary);font-size:11px;margin-left:4px">${p.reviewCount || 0}</span>` : "—"],
+    ...(hasAnyReviews ? [["Rating", (p) => p.reviewCount > 0 ? `<span class="cmp-stars">${stars(p.rating)}</span> <span style="color:var(--text-tertiary);font-size:11px;margin-left:4px">${p.reviewCount}</span>` : "—"]] : []),
     ["Current temp", (p) => p.currentTempF != null ? `<strong>${Math.round(p.currentTempF)}°F</strong>` : "—"],
     ["Crowd level", (p) => esc(p.crowdLevel || "—")],
     ["Entrance fee", (p) => esc(p.entranceFee || "—")],
@@ -1243,8 +1426,10 @@ function render() {
   // Footer
   const allLink = d.links?.continueOnWebsite || "https://www.nationalparksexplorerusa.com/compare";
   const tripLink = d.links?.planRoadTrip;
+  const dirLink = d.links?.directionsUrl;
   html += `<div class="cmp-footer">
     <a class="tv-btn tv-btn-primary" href="${esc(allLink)}" target="_blank" rel="noopener">Open full comparison</a>
+    ${dirLink ? `<a class="tv-btn tv-btn-secondary" href="${esc(dirLink)}" target="_blank" rel="noopener">Driving directions →</a>` : ""}
     ${tripLink ? `<a class="tv-btn tv-btn-outline" href="${esc(tripLink)}" target="_blank" rel="noopener">Plan a road trip <span class="tv-btn-arrow">→</span></a>` : ""}
   </div></div>`;
 
@@ -1366,6 +1551,17 @@ PARK_LIST_CSS = """
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.pl-maps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.pl-maps-link:hover { color: var(--accent-green); }
 .pl-rating {
   color: var(--accent-green);
   font-size: 12px;
@@ -1422,7 +1618,10 @@ function render() {
         <h3 class="pl-name">${esc(p.name || "")}</h3>
         <div class="pl-designation">${esc(p.designation || "")}${p.states ? ` · ${esc(p.states)}` : ""}</div>
         ${p.summary ? `<p class="pl-summary">${esc(p.summary)}</p>` : ""}
-        ${p.rating != null ? `<div class="pl-rating">★ ${esc(p.rating.toFixed ? p.rating.toFixed(1) : p.rating)}</div>` : ""}
+        <div style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px">
+          ${p.rating != null ? `<span class="pl-rating" style="margin-top:0;padding-top:0">★ ${esc(p.rating.toFixed ? p.rating.toFixed(1) : p.rating)}</span>` : ""}
+          ${p.mapsUrl ? `<a class="pl-maps-link" href="${esc(p.mapsUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 Map</a>` : ""}
+        </div>
       </div>
     </a>`;
   }
@@ -1570,6 +1769,14 @@ EVENTS_CSS = """
   background: var(--accent-green);
   color: #fff;
 }
+.ev-date-range {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
 .ev-footer {
   padding: 14px 28px 20px;
   text-align: center;
@@ -1602,14 +1809,20 @@ function render() {
 
   for (const e of events) {
     const dt = fmtDate(e.date);
+    const dtEnd = e.dateEnd ? fmtDate(e.dateEnd) : null;
     html += `<div class="ev-row">
       <div class="ev-date">
         <div class="ev-date-month">${esc(dt.month)}</div>
         <div class="ev-date-day">${esc(dt.day)}</div>
         <div class="ev-date-weekday">${esc(dt.weekday)}</div>
+        ${e.recurring && dtEnd ? `<div class="ev-date-range">thru ${esc(dtEnd.month)} ${esc(dtEnd.day)}</div>` : ""}
       </div>
       <div class="ev-body">
-        ${e.category ? `<div class="ev-cat">${esc(e.category)}</div>` : ""}
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+          ${e.category ? `<div class="ev-cat" style="margin-bottom:0">${esc(e.category)}</div>` : ""}
+          ${e.recurring ? `<span class="tv-badge tv-badge--green">Ongoing${e.totalDates > 1 ? ` · ${esc(e.totalDates)} dates` : ""}</span>` : ""}
+          ${e.isFree ? `<span class="tv-badge tv-badge--green">Free</span>` : ""}
+        </div>
         <h3 class="ev-ev-title">${esc(e.title || "Event")}</h3>
         ${e.parkName || e.parkCode ? `<div class="ev-park">${esc(e.parkName || e.parkCode)}</div>` : ""}
         ${e.description ? `<p class="ev-desc">${esc(e.description)}</p>` : ""}

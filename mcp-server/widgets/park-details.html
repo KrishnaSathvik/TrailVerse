@@ -452,6 +452,40 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.pd-campgrounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pd-campground {
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.pd-campground-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+.pd-campground-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+}
+.pd-campground-meta > span { margin-right: 10px; }
+.pd-campground-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.pd-campground-book:hover { background: var(--accent-green); color: #fff; }
+
 .pd-gallery {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -612,7 +646,7 @@ function render() {
     </div>
   </div></div>`;
 
-  // Photo gallery — 2×2 grid matching app AI response
+  // Photo gallery
   const images = d.images || [];
   if (images.length > 0) {
     const visible = images.slice(0, 4);
@@ -641,6 +675,8 @@ function render() {
     html += `<div class="pd-condition-meta">`;
     if (weather.humidity != null) html += `<span>humidity ${esc(weather.humidity)}%</span>`;
     if (weather.windMph != null) html += `<span>wind ${esc(Math.round(weather.windMph))} mph</span>`;
+    if (weather.feelsLike != null) html += `<span>feels like ${esc(Math.round(weather.feelsLike))}°F</span>`;
+    if (weather.uvIndex != null) html += `<span>UV ${esc(weather.uvIndex)}</span>`;
     html += `</div></div></div>`;
     if (forecast.length) {
       html += `<div class="pd-forecast">`;
@@ -652,18 +688,32 @@ function render() {
         </div>`;
       }
       html += `</div>`;
+    } else {
+      const seasonal = d.weather?.seasonal || {};
+      const seasons = ["spring", "summer", "fall", "winter"].filter(s => seasonal[s]);
+      if (seasons.length) {
+        html += `<div class="pd-forecast" style="grid-template-columns:repeat(${seasons.length}, 1fr)">`;
+        for (const s of seasons) {
+          const sv = seasonal[s];
+          html += `<div class="pd-forecast-day">
+            <div class="pd-forecast-date">${esc(s)}</div>
+            <div class="pd-forecast-temp">${sv.high != null ? esc(Math.round(sv.high)) + "°" : "—"}${sv.low != null ? `<span class="pd-forecast-low">${esc(Math.round(sv.low))}°</span>` : ""}</div>
+          </div>`;
+        }
+        html += `</div>`;
+      }
     }
     html += `</div>`;
   }
 
-  // Editorial (only if same-park feed is present)
+  // Editorial
   if (ed && (ed.leadInsight || ed.weatherInsight || ed.skyInsight || ed.atAGlance)) {
     html += `<div class="pd-editorial">`;
     if (ed.leadInsight) html += `<p class="pd-editorial-lead">${esc(ed.leadInsight)}</p>`;
     const cards = [
       ["Weather read", ed.weatherInsight],
       ["Sky & stars", ed.skyInsight],
-      ["At a glance", ed.atAGlance],
+      ["At a glance", typeof ed.atAGlance === "object" ? ed.atAGlance.crowdLevel : ed.atAGlance],
     ].filter(([, v]) => v);
     if (cards.length) {
       html += `<div class="pd-editorial-grid">`;
@@ -687,7 +737,7 @@ function render() {
     for (const a of alerts.slice(0, 3)) {
       html += `<div class="pd-alert">
         ${a.category ? `<div class="pd-alert-cat">${esc(a.category)}</div>` : ""}
-        <p class="pd-alert-title">${esc(a.title || "Alert")}</p>
+        <p class="pd-alert-title">${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(a.title || "Alert")}</a>` : esc(a.title || "Alert")}</p>
         ${a.description ? `<p class="pd-alert-desc">${esc(a.description)}</p>` : ""}
       </div>`;
     }
@@ -722,6 +772,55 @@ function render() {
       html += `<div class="pd-fee">
         <span class="pd-fee-label">${esc(f.title || f.description || "Fee")}</span>
         <span class="pd-fee-price">$${esc(f.cost || "—")}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Operating Hours
+  const hours = d.operatingHours || [];
+  if (hours.length) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Hours</div></div>
+      <div class="pd-fees">`;
+    for (const h of hours.slice(0, 3)) {
+      html += `<div class="pd-fee">
+        <span class="pd-fee-label">${esc(h.name || "Standard")}</span>
+        <span class="pd-fee-price" style="font-size:12px;font-family:var(--font-sans);font-weight:500;max-width:60%;text-align:right">${esc(h.description || "")}</span>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Campgrounds
+  const campgrounds = d.campgrounds || [];
+  if (campgrounds.length) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Campgrounds</div></div>
+      <div class="pd-campgrounds">`;
+    for (const cg of campgrounds.slice(0, 4)) {
+      html += `<div class="pd-campground">
+        <div class="pd-campground-name">${esc(cg.name || "Campground")}</div>
+        <div class="pd-campground-meta">`;
+      if (cg.totalSites) html += `<span>${esc(cg.totalSites)} sites</span>`;
+      if (cg.fee) html += `<span>${esc(cg.fee)}</span>`;
+      html += `</div>`;
+      if (cg.reservationUrl) html += `<a class="pd-campground-book" href="${esc(cg.reservationUrl)}" target="_blank" rel="noopener">Book →</a>`;
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // Permits
+  const permits = d.permits || [];
+  if (permits.length) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Permits</div></div>
+      <div class="pd-fees">`;
+    for (const p of permits.slice(0, 4)) {
+      html += `<div class="pd-fee">
+        <span class="pd-fee-label">${esc(p.name || "Permit")}${p.type ? ` <span style="color:var(--text-tertiary);font-size:11px">[${esc(p.type)}]</span>` : ""}</span>
+        ${p.reservationUrl ? `<a class="pd-campground-book" href="${esc(p.reservationUrl)}" target="_blank" rel="noopener">Reserve →</a>` : `<span class="pd-fee-price" style="font-size:12px">—</span>`}
       </div>`;
     }
     html += `</div></div>`;

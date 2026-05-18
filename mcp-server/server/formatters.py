@@ -708,6 +708,7 @@ def format_compare(
         }
 
     codes = [p["parkCode"] for p in parks if p.get("parkCode")]
+    directions_url = _google_maps_directions_url(parks)
     structured = {
         "kind": "compare",
         "parks": parks,
@@ -715,6 +716,7 @@ def format_compare(
         "links": {
             "continueOnWebsite": f"{WEB_BASE}/compare?parks={','.join(codes)}" if codes else f"{WEB_BASE}/compare",
             "planRoadTrip": f"{WEB_BASE}/plan-ai?parks={','.join(codes)}" if codes else None,
+            "directionsUrl": directions_url,
         },
     }
 

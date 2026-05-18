@@ -18,6 +18,9 @@ TrailVerse already has:
   detection, post-generation validation, smart replacement, plan scoring, and
   regeneration — documented in `article-ai-architecture.md` in the main repo.
 - Side-by-side park comparison, events, daily nature feed, reviews, blog.
+- A **voice assistant** ("Trailie Voice") — talk to Trailie hands-free and
+  get answers with live park data. Built with OpenAI Realtime API over
+  WebRTC with function calling for real-time NPS data.
 
 This MCP server is a **thin adapter** that exposes five of those capabilities
 as tools ChatGPT can call during a conversation, and renders the results
@@ -59,7 +62,7 @@ ChatGPT user
 | Tool | Purpose | Backend endpoint |
 |---|---|---|
 | `plan_trip` | AI-powered constraint-aware itinerary — the crown jewel | `POST /api/ai/chat-anonymous` |
-| `get_park_details` | Rich park info with live alerts + weather | `GET /api/parks/:code/details` + `/alerts` + `/weather` |
+| `get_park_details` | Rich park info with live alerts, weather, campgrounds, permits | `GET /api/parks/:code/details` + `/alerts` + `/weather` + `/campgrounds` + `/permits` + `/api/feed/park-of-day` |
 | `compare_parks` | Side-by-side 2–4 park comparison | `POST /api/parks/compare` + `/compare/summary` |
 | `search_parks` | Search/filter by name, state, activity | `GET /api/parks/search` |
 | `find_events` | Ranger programs and park events | `GET /api/events/` |
@@ -72,13 +75,15 @@ funnels power users back to nationalparksexplorerusa.com for unlimited access.
 ## Project structure
 
 ```
-trailverse-mcp/
+mcp-server/
 ├── server/
 │   ├── __init__.py
 │   ├── main.py              # FastMCP server, tool registration, widget resources
-│   ├── client.py            # Async httpx client for the TrailVerse backend
+│   ├── client.py            # Async httpx client for the TrailVerse backend + image fetching
 │   ├── types.py             # Pydantic input schemas
-│   └── formatters.py        # Backend response → widget structuredContent
+│   ├── formatters.py        # Backend response → widget structuredContent + LLM text
+│   ├── conversations.py     # In-memory multi-turn session management
+│   └── rate_limit.py        # Global rate limiting (defense-in-depth)
 ├── widgets/                 # Self-contained HTML for ChatGPT inline rendering
 │   ├── itinerary.html       # Trip plan with confidence + score pills
 │   ├── park-details.html    # Hero + weather + alerts + activities
@@ -87,10 +92,12 @@ trailverse-mcp/
 │   └── events.html          # Events list
 ├── scripts/
 │   ├── test_local.py        # Smoke-test all 5 tools against live backend
-│   └── generate_previews.py # Generate static HTML previews with mock data
+│   ├── generate_previews.py # Generate static HTML previews with mock data
+│   └── build_widgets.py     # Widget builder utility
 ├── docs/
 │   ├── SUBMISSION_CHECKLIST.md  # OpenAI app submission walkthrough
-│   └── preview-*.html       # Generated widget previews (after running script)
+│   ├── BACKEND_CHANGES.md       # Required backend middleware for MCP bypass key
+│   └── QUICK_REFERENCE.md       # Tool quick reference
 ├── requirements.txt
 ├── render.yaml              # One-click Render deploy config
 ├── .env.example
@@ -299,9 +306,121 @@ formatter.
 ### AI planner rate-limited too aggressively
 
 The backend limits anonymous AI chat to 5 messages per 48h per IP. In
-production, ChatGPT calls will come from many different IPs (the model's
-infra), so this shouldn't be an issue. For local dev, cycle IPs or use a
-VPN if needed — or temporarily bypass the limit in your dev backend.
+production, all ChatGPT calls flow through the single MCP server IP, so
+without the `MCP_BYPASS_KEY` header the anonymous limit will be hit almost
+immediately. Make sure the bypass key is set on both the MCP server and
+the Express backend (see [docs/BACKEND_CHANGES.md](docs/BACKEND_CHANGES.md)).
+For local dev, point `TRAILVERSE_API_BASE` at your local backend where
+you can temporarily relax the limit.
+
+---
+
+## Voice Chat ("Trailie Voice")
+
+TrailVerse also ships an in-browser voice assistant built on a completely
+different stack from the MCP server. It uses the **OpenAI Realtime API**
+over **WebRTC** for voice-to-voice conversation with near-zero latency.
+
+### Architecture
+
+```
+User speaks into mic
+     │
+     │ WebRTC (getUserMedia → RTCPeerConnection)
+     ▼
+┌────────────────────────────┐
+│  OpenAI Realtime API       │  ← gpt-4o-realtime model
+│  (voice-to-voice + VAD)    │
+└────────────┬───────────────┘
+             │ Function call via data channel
+             ▼
+┌────────────────────────────┐
+│  TrailVerse Express        │  ← POST /api/ai/voice-tool
+│  Backend                   │
+└────────────┬───────────────┘
+             │
+             ▼
+   NPS API · Weather APIs · park data
+             │
+             ▼
+  Result → data channel → model speaks answer
+```
+
+### How it works
+
+1. User taps the mic button → browser requests microphone access
+2. Frontend calls `POST /api/ai/realtime-session` to get an ephemeral
+   OpenAI token (valid for one session)
+3. WebRTC peer connection established directly with OpenAI Realtime API
+4. User speaks → model processes with semantic VAD (voice activity detection)
+5. When the model needs data, it triggers a function call → Express backend
+   fetches from NPS/weather APIs → result sent back through the WebRTC data
+   channel → model speaks the answer
+
+### Key files
+
+| File | Purpose |
+|---|---|
+| `next-frontend/src/hooks/useRealtimeVoice.js` | React hook: WebRTC connection, mic management, data channel event handling, function call execution |
+| `next-frontend/src/components/voice/` | Voice UI overlay components |
+| `server/src/routes/ai.js` | Backend: `/api/ai/realtime-session` (ephemeral token), `/api/ai/voice-tool` (function call execution), voice instructions + tool definitions |
+
+### Voice-specific tools
+
+The voice assistant exposes 4 tools via OpenAI's function calling (not MCP):
+
+| Tool | What it does |
+|---|---|
+| `get_park_details` | Live weather, alerts, fees, hours for any NPS site |
+| `search_parks` | Search 470+ NPS sites by state, activity, keyword |
+| `compare_parks` | Side-by-side park comparison |
+| `find_events` | Ranger programs and upcoming events |
+
+Tool responses are trimmed for voice — bare essentials only (name, weather,
+fee, key alerts) with hard 2-4 sentence limits in the model instructions.
+
+### Echo prevention & mic management
+
+Voice chat had a self-interruption problem: the mic picks up Trailie's
+audio from the speaker, VAD detects it as user speech, and the model
+interrupts itself mid-sentence.
+
+Solution — strict mic lifecycle:
+
+1. **User speaks** → `speech_started` event → status: `listening`
+2. **User stops** → `committed` event → if speech lasted >500ms, send
+   `response.create` (filters out noise)
+3. **Trailie starts speaking** → mic muted (`track.enabled = false`)
+4. **Trailie finishes speaking** → audio stops (mic stays muted)
+5. **Response fully done** → `response.done` event → 1200ms cooldown →
+   mic re-enabled → status: `connected`
+
+The mic is off for the entire response cycle (`response.create` through
+`response.done` + cooldown). All speech events are blocked during this
+window via `responseActiveRef` checks.
+
+Additional protections:
+- `echoCancellation`, `noiseSuppression`, `autoGainControl` on getUserMedia
+- `create_response: false` in session config — client controls when to
+  trigger responses, not the server-side VAD
+- Speech duration filtering (>500ms) to ignore noise false positives
+- `responseActiveRef` prevents duplicate `response.create` calls
+- Non-fatal "active response" errors filtered from UI
+
+### Context awareness
+
+- If voice chat opens on a park page, live weather, alerts, and fees are
+  injected into the model instructions — first answer is instant (no tool
+  call round-trip)
+- Geolocation is cached at module level (requested once per page session)
+  so "what parks are near me?" works without re-prompting
+
+### Bluetooth speaker support
+
+- Audio element appended to DOM (detached elements don't play on some BT
+  devices)
+- `playsInline` attribute + `setSinkId('default')` for system audio routing
+- Forced `audioEl.play()` on track received
 
 ---
 

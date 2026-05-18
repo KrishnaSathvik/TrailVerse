@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
 from mcp.types import CallToolResult, Icon, ImageContent, TextContent
 from pydantic import AnyUrl
@@ -56,7 +56,7 @@ logger = logging.getLogger("trailverse-mcp")
 
 # ---------- Widget resources ----------
 
-MCP_APPS_MIME = "text/html+skybridge"
+MCP_APPS_MIME = "text/html;profile=mcp-app"
 WIDGETS_DIR = Path(__file__).resolve().parent.parent / "widgets"
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -334,6 +334,24 @@ def _tool_meta(widget_key: str, invoking: str, invoked: str) -> dict[str, Any]:
     }
 
 
+def _client_has_widgets(ctx: Context) -> bool:
+    """Check if the connected client supports MCP Apps UI/widget rendering."""
+    try:
+        params = ctx.request_context.session.client_params
+        caps = getattr(params, "capabilities", None)
+        exp = getattr(caps, "experimental", None)
+        if isinstance(exp, dict):
+            return any(
+                key.startswith("io.modelcontextprotocol/ui")
+                or key.startswith("openai")
+                or "mcp-app" in key
+                for key in exp.keys()
+            )
+    except Exception:
+        pass
+    return False
+
+
 def _tool_result(
     structured: dict[str, Any],
     content: str | list[dict[str, str]],
@@ -413,6 +431,7 @@ async def _check_rate_limit(bucket: str) -> CallToolResult | None:
         "openWorldHint": True,
         "idempotentHint": False,
     },
+    meta={"ui": {"resourceUri": "ui://widget/itinerary.html"}},
 )
 async def plan_trip(
     message: str,
@@ -425,6 +444,7 @@ async def plan_trip(
     interests: list[str] | None = None,
     accommodation: str | None = None,
     session_id: str | None = None,
+    ctx: Context | None = None,
 ) -> CallToolResult:
     # Global MCP-side fuse (defense-in-depth behind backend bypass key)
     if (limited := await _check_rate_limit("plan_trip")):
@@ -506,14 +526,20 @@ async def plan_trip(
     # Only in structuredContent — never in visible text.
     structured["sessionId"] = conv.session_id
 
-    # Fetch hero image for inline rendering (Claude)
-    content_blocks: list[dict[str, str]] = []
-    park_images = structured.get("parkImages") or []
-    if park_images:
-        img = await fetch_image_as_base64(park_images[0].get("url", ""))
-        if img:
-            content_blocks.append(img)
-    content_blocks.append({"type": "text", "text": text})
+    if ctx and _client_has_widgets(ctx):
+        # Widget renders the visual card — send a brief summary for the model
+        n_days = len(structured.get("itinerary", {}).get("days", []))
+        summary = f"{structured.get('parkName', 'Trip')} — {n_days} day itinerary ready"
+        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
+    else:
+        # No widget support — send full markdown + images for the LLM
+        content_blocks = []
+        park_images = structured.get("parkImages") or []
+        if park_images:
+            img = await fetch_image_as_base64(park_images[0].get("url", ""))
+            if img:
+                content_blocks.append(img)
+        content_blocks.append({"type": "text", "text": text})
 
     meta = _tool_meta(
         "itinerary",
@@ -547,8 +573,9 @@ async def plan_trip(
         "openWorldHint": True,
         "idempotentHint": True,
     },
+    meta={"ui": {"resourceUri": "ui://widget/park-details.html"}},
 )
-async def get_park_details(park_code: str) -> CallToolResult:
+async def get_park_details(park_code: str, ctx: Context | None = None) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
@@ -601,14 +628,17 @@ async def get_park_details(park_code: str) -> CallToolResult:
 
     structured, text = format_park_details(details, alerts, weather, campgrounds, permits, park_of_day)
 
-    # Fetch hero image for inline rendering (Claude)
-    content_blocks: list[dict[str, str]] = []
-    hero_url = structured.get("heroImage")
-    if hero_url:
-        img = await fetch_image_as_base64(hero_url)
-        if img:
-            content_blocks.append(img)
-    content_blocks.append({"type": "text", "text": text})
+    if ctx and _client_has_widgets(ctx):
+        summary = f"{structured.get('name', 'Park')} — details, weather, alerts, fees loaded"
+        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
+    else:
+        content_blocks = []
+        hero_url = structured.get("heroImage")
+        if hero_url:
+            img = await fetch_image_as_base64(hero_url)
+            if img:
+                content_blocks.append(img)
+        content_blocks.append({"type": "text", "text": text})
 
     meta = _tool_meta(
         "park-details",
@@ -636,8 +666,9 @@ async def get_park_details(park_code: str) -> CallToolResult:
         "openWorldHint": True,
         "idempotentHint": True,
     },
+    meta={"ui": {"resourceUri": "ui://widget/compare.html"}},
 )
-async def compare_parks(park_codes: list[str]) -> CallToolResult:
+async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
 
@@ -661,17 +692,20 @@ async def compare_parks(park_codes: list[str]) -> CallToolResult:
 
     structured, text = format_compare(compare, summary)
 
-    # Fetch one hero image per park for inline rendering (Claude)
-    parks_data = structured.get("parks", [])
-    image_urls = [p.get("heroImage") or "" for p in parks_data]
-    fetched = await fetch_images_as_base64([u for u in image_urls if u])
+    if ctx and _client_has_widgets(ctx):
+        names = ", ".join(p.get("name", "") for p in structured.get("parks", []))
+        summary_text = f"Comparison of {names} ready"
+        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary_text}]
+    else:
+        parks_data = structured.get("parks", [])
+        image_urls = [p.get("heroImage") or "" for p in parks_data]
+        fetched = await fetch_images_as_base64([u for u in image_urls if u])
 
-    content_blocks: list[dict[str, str]] = []
-    for img in fetched:
-        if img:
-            content_blocks.append(img)
-    # Use the rich formatted text (comparison table, verdict, Maps link)
-    content_blocks.append({"type": "text", "text": text})
+        content_blocks = []
+        for img in fetched:
+            if img:
+                content_blocks.append(img)
+        content_blocks.append({"type": "text", "text": text})
 
     meta = _tool_meta(
         "compare",
@@ -706,12 +740,14 @@ async def compare_parks(park_codes: list[str]) -> CallToolResult:
         "openWorldHint": True,
         "idempotentHint": True,
     },
+    meta={"ui": {"resourceUri": "ui://widget/park-list.html"}},
 )
 async def search_parks(
     query: str | None = None,
     state: str | None = None,
     activity: str | None = None,
     limit: int = 20,
+    ctx: Context | None = None,
 ) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
@@ -745,16 +781,19 @@ async def search_parks(
 
     structured, text = format_search(resp)
 
-    # Fetch hero images for top 3 results for inline rendering (Claude)
-    parks_data = structured.get("parks", [])
-    top_urls = [p.get("heroImage") for p in parks_data[:3] if p.get("heroImage")]
-    content_blocks: list[dict[str, str]] = []
-    if top_urls:
-        fetched = await fetch_images_as_base64(top_urls)
-        for img in fetched:
-            if img:
-                content_blocks.append(img)
-    content_blocks.append({"type": "text", "text": text})
+    if ctx and _client_has_widgets(ctx):
+        summary = f"{structured.get('count', 0)} parks found"
+        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
+    else:
+        parks_data = structured.get("parks", [])
+        top_urls = [p.get("heroImage") for p in parks_data[:3] if p.get("heroImage")]
+        content_blocks = []
+        if top_urls:
+            fetched = await fetch_images_as_base64(top_urls)
+            for img in fetched:
+                if img:
+                    content_blocks.append(img)
+        content_blocks.append({"type": "text", "text": text})
 
     meta = _tool_meta(
         "park-list",
@@ -785,12 +824,14 @@ async def search_parks(
         "openWorldHint": True,
         "idempotentHint": True,
     },
+    meta={"ui": {"resourceUri": "ui://widget/events.html"}},
 )
 async def find_events(
     park_code: str | None = None,
     state: str | None = None,
     category: str | None = None,
     limit: int = 10,
+    ctx: Context | None = None,
 ) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
         return limited
@@ -810,12 +851,20 @@ async def find_events(
         return _error_result(str(e))
 
     structured, text = format_events(resp)
+
+    if ctx and _client_has_widgets(ctx):
+        n = len(structured.get("events", []))
+        summary = f"{n} event{'s' if n != 1 else ''} found"
+        content: str | list[dict[str, str]] = [{"type": "text", "text": summary}]
+    else:
+        content = text
+
     meta = _tool_meta(
         "events",
         invoking="Fetching park events…",
         invoked="Events ready",
     )
-    return _tool_result(structured, text, meta)
+    return _tool_result(structured, content, meta)
 
 
 # ---------- Health / root routes (so Render and connector wizards don't 502) ----------

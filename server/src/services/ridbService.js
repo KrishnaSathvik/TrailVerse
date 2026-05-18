@@ -5,6 +5,7 @@ const RIDB_API_KEY = process.env.RIDB_API_KEY;
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+const ONE_DAY = 24 * 60 * 60 * 1000; // shorter TTL for failed resolutions
 
 class RIDBService {
   constructor() {
@@ -80,27 +81,46 @@ class RIDBService {
     }
   }
 
-  async resolveRecAreaId(parkCode) {
-    const key = parkCode.toLowerCase();
-    const cached = this.parkCodeToRecAreaId.get(key);
-    if (this._isCacheValid(cached, THIRTY_DAYS)) {
-      return cached.id;
+  async _searchFacilities(query, state) {
+    if (!RIDB_API_KEY) return [];
+    try {
+      const params = { query, limit: 25 };
+      if (state) params.state = state;
+      const response = await this.api.get('/facilities', { params });
+      return response.data?.RECDATA || [];
+    } catch (error) {
+      if (error.response?.status !== 429) {
+        console.error('RIDB facilities search error:', error.message);
+      }
+      return [];
     }
+  }
 
-    // Need fullName and state from NPS
-    let fullName = null;
-    let stateCode = null;
+  async _getParkInfo(parkCode) {
     try {
       const npsService = require('./npsService');
       const park = await npsService.getParkByCode(parkCode);
       if (park) {
-        fullName = park.fullName;
         const states = park.states ? park.states.split(',').map(s => s.trim()) : [];
-        stateCode = states[0] || null;
+        return { fullName: park.fullName, stateCode: states[0] || null };
       }
     } catch (error) {
       console.error(`Failed to get NPS park for ${parkCode}:`, error.message);
     }
+    return { fullName: null, stateCode: null };
+  }
+
+  async resolveRecAreaId(parkCode) {
+    const key = parkCode.toLowerCase();
+    const cached = this.parkCodeToRecAreaId.get(key);
+    // Use shorter TTL for failed (null) resolutions so they retry sooner
+    const cacheTtl = (cached && cached.id === null) ? ONE_DAY : THIRTY_DAYS;
+    if (this._isCacheValid(cached, cacheTtl)) {
+      return cached.id;
+    }
+
+    // Need fullName and state from NPS
+    const { fullName, stateCode } = await this._getParkInfo(parkCode);
 
     if (!fullName) {
       this.parkCodeToRecAreaId.set(key, { id: null, timestamp: Date.now() });
@@ -198,7 +218,12 @@ class RIDBService {
     if (type !== 'permit' && type !== 'timed entry' && type !== 'ticket facility') return false;
     // Filter out obviously outdated facilities (e.g. "2020" pilots)
     const name = (facility.FacilityName || '').toLowerCase();
-    if (/-20(19|20|21|22)\b/.test(name)) return false;
+    const yearMatch = name.match(/\b(20\d{2})\b/);
+    if (yearMatch) {
+      const facilityYear = parseInt(yearMatch[1], 10);
+      const currentYear = new Date().getFullYear();
+      if (facilityYear < currentYear - 2) return false;
+    }
     return true;
   }
 
@@ -226,34 +251,58 @@ class RIDBService {
 
   async _fetchPermits(parkCode) {
     const recAreaId = await this.resolveRecAreaId(parkCode);
-    if (!recAreaId) return [];
-
-    const facilities = await this._getFacilitiesForRecArea(recAreaId);
-    console.log(`[RIDB] ${parkCode} recArea=${recAreaId} → ${facilities.length} facilities`);
-    if (facilities.length === 0) return [];
-
     const allPermits = [];
     const seen = new Set();
 
-    // Extract permit-like facilities directly. RIDB treats some
-    // facilities AS permits (timed entry, ticket facility, permit)
-    // rather than containers of permit entrances.
-    for (const facility of facilities) {
-      if (this._isPermitLikeFacility(facility)) {
-        const id = facility.FacilityID;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        allPermits.push({
-          id,
-          name: facility.FacilityName || 'Permit',
-          description: this._stripHtml(facility.FacilityDescription || ''),
-          type: facility.FacilityTypeDescription || null,
-          accessible: facility.FacilityAdaAccess || false,
-          district: null,
-          town: null,
-          facilityName: facility.FacilityName || null,
-          reservationUrl: this._buildReservationUrl(facility)
-        });
+    // Primary path: RecArea → child facilities
+    if (recAreaId) {
+      const facilities = await this._getFacilitiesForRecArea(recAreaId);
+      console.log(`[RIDB] ${parkCode} recArea=${recAreaId} → ${facilities.length} facilities`);
+
+      for (const facility of facilities) {
+        if (this._isPermitLikeFacility(facility)) {
+          const id = facility.FacilityID;
+          if (seen.has(id)) continue;
+          seen.add(id);
+          allPermits.push({
+            id,
+            name: facility.FacilityName || 'Permit',
+            description: this._stripHtml(facility.FacilityDescription || ''),
+            type: facility.FacilityTypeDescription || null,
+            accessible: facility.FacilityAdaAccess || false,
+            district: null,
+            town: null,
+            facilityName: facility.FacilityName || null,
+            reservationUrl: this._buildReservationUrl(facility)
+          });
+        }
+      }
+    }
+
+    // Fallback: if RecArea path found no permits, search facilities directly
+    if (allPermits.length === 0) {
+      const { fullName, stateCode } = await this._getParkInfo(parkCode);
+      if (fullName) {
+        const directFacilities = await this._searchFacilities(fullName, stateCode);
+        console.log(`[RIDB] ${parkCode} fallback search "${fullName}" → ${directFacilities.length} facilities`);
+        for (const facility of directFacilities) {
+          if (this._isPermitLikeFacility(facility)) {
+            const id = facility.FacilityID;
+            if (seen.has(id)) continue;
+            seen.add(id);
+            allPermits.push({
+              id,
+              name: facility.FacilityName || 'Permit',
+              description: this._stripHtml(facility.FacilityDescription || ''),
+              type: facility.FacilityTypeDescription || null,
+              accessible: facility.FacilityAdaAccess || false,
+              district: null,
+              town: null,
+              facilityName: facility.FacilityName || null,
+              reservationUrl: this._buildReservationUrl(facility)
+            });
+          }
+        }
       }
     }
 

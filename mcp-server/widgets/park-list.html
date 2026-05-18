@@ -306,6 +306,17 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.pl-maps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.pl-maps-link:hover { color: var(--accent-green); }
 .pl-rating {
   color: var(--accent-green);
   font-size: 12px;
@@ -447,7 +458,10 @@ function render() {
         <h3 class="pl-name">${esc(p.name || "")}</h3>
         <div class="pl-designation">${esc(p.designation || "")}${p.states ? ` · ${esc(p.states)}` : ""}</div>
         ${p.summary ? `<p class="pl-summary">${esc(p.summary)}</p>` : ""}
-        ${p.rating != null ? `<div class="pl-rating">★ ${esc(p.rating.toFixed ? p.rating.toFixed(1) : p.rating)}</div>` : ""}
+        <div style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px">
+          ${p.rating != null ? `<span class="pl-rating" style="margin-top:0;padding-top:0">★ ${esc(p.rating.toFixed ? p.rating.toFixed(1) : p.rating)}</span>` : ""}
+          ${p.mapsUrl ? `<a class="pl-maps-link" href="${esc(p.mapsUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 Map</a>` : ""}
+        </div>
       </div>
     </a>`;
   }
