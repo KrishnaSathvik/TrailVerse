@@ -20,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -320,17 +321,15 @@ async def _resolve_park_code(name_or_code: str) -> str:
 
 def _tool_meta(widget_key: str, invoking: str, invoked: str) -> dict[str, Any]:
     """
-    Build the _meta dict attached to each tool so ChatGPT knows:
-      - which UI template to render
-      - what progress text to show
+    Build the _meta dict attached to each tool result.
+    Only progress text for now — widget keys are registered as MCP resources
+    but NOT advertised in _meta until ChatGPT's widget renderer is reliable.
+    Advertising openai/widgetAccessible causes ChatGPT to skip ImageContent
+    blocks in favour of widget rendering, which currently fails silently.
     """
-    uri, _ = WIDGET_MAP[widget_key]
     return {
-        "ui": {"resourceUri": uri},
-        "openai/outputTemplate": uri,
         "openai/toolInvocation/invoking": invoking,
         "openai/toolInvocation/invoked": invoked,
-        "openai/widgetAccessible": True,
     }
 
 
@@ -357,11 +356,19 @@ def _tool_result(
     content: str | list[dict[str, str]],
     meta_extra: dict[str, Any],
 ) -> CallToolResult:
-    """Return a CallToolResult that the MCP server passes through directly.
+    """Return a CallToolResult with content blocks for the LLM.
 
     content can be a plain text string (backward compat) or a list of MCP
     content block dicts — mix of {"type": "text", "text": ...} and
     {"type": "image", "data": ..., "mimeType": ...}.
+
+    NOTE: structuredContent is intentionally omitted. When present, ChatGPT
+    prioritizes it over the content blocks — treating the JSON as raw data
+    to summarize in its own words. This causes it to drop our pre-formatted
+    markdown (links, sections, relay instructions) and base64 images. Without
+    structuredContent, ChatGPT reads the text content blocks and renders the
+    ImageContent blocks inline. Re-enable structuredContent when ChatGPT's
+    widget renderer is working.
     """
     if isinstance(content, str):
         blocks = [TextContent(type="text", text=content)]
@@ -376,11 +383,10 @@ def _tool_result(
                 ))
             else:
                 blocks.append(TextContent(type="text", text=block.get("text", "")))
-    return CallToolResult.model_validate({
-        "content": blocks,
-        "structuredContent": structured,
-        "_meta": meta_extra,
-    })
+    return CallToolResult(
+        content=blocks,
+        _meta=meta_extra,
+    )
 
 
 def _error_result(message: str) -> CallToolResult:
@@ -406,6 +412,46 @@ async def _check_rate_limit(bucket: str) -> CallToolResult | None:
     return _error_result(
         f"Global rate limit reached. Please try again in ~{int(retry_after)}s."
     )
+
+
+# ---------- MCP analytics helpers ----------
+
+def _detect_mcp_client(ctx: Context | None) -> str:
+    """Detect whether the connected MCP client is ChatGPT, Claude, or unknown."""
+    if ctx is None:
+        return "unknown"
+    try:
+        params = ctx.request_context.session.client_params
+        client_info = getattr(params, "clientInfo", None)
+        if client_info:
+            name = (getattr(client_info, "name", "") or "").lower()
+            if "claude" in name:
+                return "claude"
+            if "chatgpt" in name or "openai" in name:
+                return "chatgpt"
+        # Fallback: check experimental capabilities for OpenAI keys
+        caps = getattr(params, "capabilities", None)
+        exp = getattr(caps, "experimental", None)
+        if isinstance(exp, dict) and any(k.startswith("openai") for k in exp):
+            return "chatgpt"
+    except Exception:
+        pass
+    return "unknown"
+
+
+def _send_analytics(event: dict[str, Any]) -> None:
+    """Fire-and-forget: POST an analytics event to the backend. Never blocks tool execution."""
+    async def _post() -> None:
+        try:
+            async with TrailVerseClient() as client:
+                await client.track_mcp_event(event)
+        except Exception:
+            logger.debug("Analytics send failed", exc_info=True)
+    try:
+        asyncio.create_task(_post())
+    except RuntimeError:
+        # No running event loop (shouldn't happen in MCP context)
+        pass
 
 
 # ---------- Tools ----------
@@ -446,107 +492,136 @@ async def plan_trip(
     session_id: str | None = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
-    # Global MCP-side fuse (defense-in-depth behind backend bypass key)
-    if (limited := await _check_rate_limit("plan_trip")):
-        return limited
-    # Validate with pydantic so bad inputs fail fast with clear messages
-    try:
-        payload = PlanTripInput(
-            message=message,
-            park_code=park_code,
-            persona=persona,  # type: ignore[arg-type]
-            days=days,
-            group_size=group_size,
-            fitness_level=fitness_level,  # type: ignore[arg-type]
-            has_kids=has_kids,
-            interests=interests,
-            accommodation=accommodation,  # type: ignore[arg-type]
-            session_id=session_id,
-        )
-    except Exception as e:
-        logger.warning("Validation failed: %s", e)
-        return _error_result("Invalid input — please check your parameters and try again.")
-
-    # Resolve park_code if provided (Claude may pass full names like "Yellowstone")
-    resolved_park_code = None
-    if payload.park_code:
-        resolved_park_code = await _resolve_park_code(payload.park_code)
-
-    # --- Conversation continuity ---
-    conv = None
-    if payload.session_id:
-        conv = conversation_store.get(payload.session_id)
-        if not conv:
-            logger.warning("Session %s expired or unknown — starting fresh", payload.session_id)
-    if not conv:
-        conv = conversation_store.create()
-
-    # Append the new user message to the conversation
-    conv.append_message("user", payload.message)
-
-    form_data: dict[str, Any] = {}
-    if payload.days is not None:
-        form_data["days"] = payload.days
-    if payload.group_size is not None:
-        form_data["groupSize"] = payload.group_size
-    if payload.fitness_level:
-        form_data["fitnessLevel"] = payload.fitness_level
-    if payload.has_kids is not None:
-        form_data["hasKids"] = payload.has_kids
-    if payload.interests:
-        form_data["interests"] = payload.interests
-    if payload.accommodation:
-        form_data["accommodation"] = payload.accommodation
+    _start = time.monotonic()
+    _success = True
+    _error_msg: str | None = None
+    _mcp_client = _detect_mcp_client(ctx)
+    _park_codes: list[str] = []
 
     try:
-        async with TrailVerseClient() as client:
-            resp = await client.plan_trip_anonymous(
-                message=payload.message,
-                park_code=resolved_park_code,
-                persona=payload.persona,
-                form_data=form_data or None,
-                messages=conv.messages,
-                anonymous_id=conv.anonymous_id,
+        # Global MCP-side fuse (defense-in-depth behind backend bypass key)
+        if (limited := await _check_rate_limit("plan_trip")):
+            return limited
+        # Validate with pydantic so bad inputs fail fast with clear messages
+        try:
+            payload = PlanTripInput(
+                message=message,
+                park_code=park_code,
+                persona=persona,  # type: ignore[arg-type]
+                days=days,
+                group_size=group_size,
+                fitness_level=fitness_level,  # type: ignore[arg-type]
+                has_kids=has_kids,
+                interests=interests,
+                accommodation=accommodation,  # type: ignore[arg-type]
+                session_id=session_id,
             )
-    except TrailVerseAPIError as e:
-        logger.exception("plan_trip backend call failed")
-        return _error_result(str(e))
+        except Exception as e:
+            logger.warning("Validation failed: %s", e)
+            return _error_result("Invalid input — please check your parameters and try again.")
 
-    # Extract assistant content and store in conversation history
-    assistant_content = ""
-    resp_data = resp.get("data", resp)
-    if isinstance(resp_data, dict):
-        assistant_content = resp_data.get("content", "")
-    if assistant_content:
-        conv.append_message("assistant", assistant_content)
+        # Resolve park_code if provided (Claude may pass full names like "Yellowstone")
+        resolved_park_code = None
+        if payload.park_code:
+            resolved_park_code = await _resolve_park_code(payload.park_code)
+            _park_codes = [resolved_park_code]
 
-    structured, text = format_plan_trip(resp, user_message=payload.message, park_code_hint=resolved_park_code or "")
+        # --- Conversation continuity ---
+        conv = None
+        if payload.session_id:
+            conv = conversation_store.get(payload.session_id)
+            if not conv:
+                logger.warning("Session %s expired or unknown — starting fresh", payload.session_id)
+        if not conv:
+            conv = conversation_store.create()
 
-    # Inject session_id so the client can pass it back on follow-up calls.
-    # Only in structuredContent — never in visible text.
-    structured["sessionId"] = conv.session_id
+        # Append the new user message to the conversation
+        conv.append_message("user", payload.message)
 
-    if False:  # Disabled: widgets not rendering in ChatGPT yet
-        # Widget renders the visual card — send a brief summary for the model
-        n_days = len(structured.get("itinerary", {}).get("days", []))
-        summary = f"{structured.get('parkName', 'Trip')} — {n_days} day itinerary ready"
-        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
-    else:
-        # No widget support — send full markdown + images for the LLM
-        content_blocks = []
-        park_images = structured.get("parkImages") or []
-        if park_images:
-            img = await fetch_image_as_base64(park_images[0].get("url", ""))
-            if img:
-                content_blocks.append(img)
-        content_blocks.append({"type": "text", "text": text})
+        form_data: dict[str, Any] = {}
+        if payload.days is not None:
+            form_data["days"] = payload.days
+        if payload.group_size is not None:
+            form_data["groupSize"] = payload.group_size
+        if payload.fitness_level:
+            form_data["fitnessLevel"] = payload.fitness_level
+        if payload.has_kids is not None:
+            form_data["hasKids"] = payload.has_kids
+        if payload.interests:
+            form_data["interests"] = payload.interests
+        if payload.accommodation:
+            form_data["accommodation"] = payload.accommodation
 
-    meta = _tool_meta(
-        "itinerary",
-        invoking="Planning your trip with live park data…",
-        invoked="Itinerary ready",
-    )
-    return _tool_result(structured, content_blocks, meta)
+        try:
+            async with TrailVerseClient() as client:
+                resp = await client.plan_trip_anonymous(
+                    message=payload.message,
+                    park_code=resolved_park_code,
+                    persona=payload.persona,
+                    form_data=form_data or None,
+                    messages=conv.messages,
+                    anonymous_id=conv.anonymous_id,
+                )
+        except TrailVerseAPIError as e:
+            logger.exception("plan_trip backend call failed")
+            return _error_result(str(e))
+
+        # Extract assistant content and store in conversation history
+        assistant_content = ""
+        resp_data = resp.get("data", resp)
+        if isinstance(resp_data, dict):
+            assistant_content = resp_data.get("content", "")
+        if assistant_content:
+            conv.append_message("assistant", assistant_content)
+
+        structured, text = format_plan_trip(resp, user_message=payload.message, park_code_hint=resolved_park_code or "")
+
+        # Inject session_id so the client can pass it back on follow-up calls.
+        structured["sessionId"] = conv.session_id
+
+        if False:  # Disabled: widgets not rendering in ChatGPT yet
+            # Widget renders the visual card — send a brief summary for the model
+            n_days = len(structured.get("itinerary", {}).get("days", []))
+            summary = f"{structured.get('parkName', 'Trip')} — {n_days} day itinerary ready"
+            content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
+        else:
+            # No widget support — send full markdown + images for the LLM
+            content_blocks = []
+            park_images = structured.get("parkImages") or []
+            if park_images:
+                img = await fetch_image_as_base64(park_images[0].get("url", ""))
+                if img:
+                    content_blocks.append(img)
+            # Append session ID so ChatGPT can pass it back for follow-up questions
+            text_with_session = text + f"\n\n[session_id: {conv.session_id}] — pass this as session_id on follow-up plan_trip calls to continue the conversation."
+            content_blocks.append({"type": "text", "text": text_with_session})
+
+        meta = _tool_meta(
+            "itinerary",
+            invoking="Planning your trip with live park data…",
+            invoked="Itinerary ready",
+        )
+        return _tool_result(structured, content_blocks, meta)
+    except Exception as exc:
+        _success = False
+        _error_msg = str(exc)
+        raise
+    finally:
+        _send_analytics({
+            "eventType": "mcp_tool_call",
+            "eventCategory": "technical",
+            "metadata": {
+                "source": "mcp",
+                "toolName": "plan_trip",
+                "parkCodes": _park_codes,
+                "executionTimeMs": round((time.monotonic() - _start) * 1000),
+                "success": _success,
+                "mcpClient": _mcp_client,
+                "errorMessage": _error_msg,
+            },
+            "parkCode": _park_codes[0] if _park_codes else None,
+            "sessionId": f"mcp-{_mcp_client}",
+        })
 
 
 @mcp.tool(
@@ -576,76 +651,104 @@ async def plan_trip(
     meta=_tool_meta("park-details", invoking="Looking up park details…", invoked="Park details ready"),
 )
 async def get_park_details(park_code: str, ctx: Context | None = None) -> CallToolResult:
-    if (limited := await _check_rate_limit("read")):
-        return limited
+    _start = time.monotonic()
+    _success = True
+    _error_msg: str | None = None
+    _mcp_client = _detect_mcp_client(ctx)
+    _park_codes: list[str] = []
 
-    code = await _resolve_park_code(park_code)
     try:
-        async with TrailVerseClient() as client:
-            # Fan out all calls in parallel; tolerate alerts/weather/feed failures
-            # so a flaky sub-API never breaks the core park detail render.
-            async def _safe_alerts() -> dict[str, Any] | None:
-                try:
-                    return await client.get_park_alerts(code)
-                except TrailVerseAPIError:
-                    return None
+        if (limited := await _check_rate_limit("read")):
+            return limited
 
-            async def _safe_weather() -> dict[str, Any] | None:
-                try:
-                    return await client.get_park_weather(code)
-                except TrailVerseAPIError:
-                    return None
+        code = await _resolve_park_code(park_code)
+        _park_codes = [code]
+        try:
+            async with TrailVerseClient() as client:
+                # Fan out all calls in parallel; tolerate alerts/weather/feed failures
+                # so a flaky sub-API never breaks the core park detail render.
+                async def _safe_alerts() -> dict[str, Any] | None:
+                    try:
+                        return await client.get_park_alerts(code)
+                    except TrailVerseAPIError:
+                        return None
 
-            async def _safe_campgrounds() -> dict[str, Any] | None:
-                try:
-                    return await client.get_park_campgrounds(code)
-                except TrailVerseAPIError:
-                    return None
+                async def _safe_weather() -> dict[str, Any] | None:
+                    try:
+                        return await client.get_park_weather(code)
+                    except TrailVerseAPIError:
+                        return None
 
-            async def _safe_permits() -> dict[str, Any] | None:
-                try:
-                    return await client.get_park_permits(code)
-                except TrailVerseAPIError:
-                    return None
+                async def _safe_campgrounds() -> dict[str, Any] | None:
+                    try:
+                        return await client.get_park_campgrounds(code)
+                    except TrailVerseAPIError:
+                        return None
 
-            async def _safe_feed() -> dict[str, Any] | None:
-                try:
-                    return await client.get_park_of_day(code)
-                except TrailVerseAPIError:
-                    return None
+                async def _safe_permits() -> dict[str, Any] | None:
+                    try:
+                        return await client.get_park_permits(code)
+                    except TrailVerseAPIError:
+                        return None
 
-            details, alerts, weather, campgrounds, permits, park_of_day = await asyncio.gather(
-                client.get_park_details(code),
-                _safe_alerts(),
-                _safe_weather(),
-                _safe_campgrounds(),
-                _safe_permits(),
-                _safe_feed(),
-            )
-    except TrailVerseAPIError as e:
-        logger.exception("get_park_details backend call failed")
-        return _error_result(str(e))
+                async def _safe_feed() -> dict[str, Any] | None:
+                    try:
+                        return await client.get_park_of_day(code)
+                    except TrailVerseAPIError:
+                        return None
 
-    structured, text = format_park_details(details, alerts, weather, campgrounds, permits, park_of_day)
+                details, alerts, weather, campgrounds, permits, park_of_day = await asyncio.gather(
+                    client.get_park_details(code),
+                    _safe_alerts(),
+                    _safe_weather(),
+                    _safe_campgrounds(),
+                    _safe_permits(),
+                    _safe_feed(),
+                )
+        except TrailVerseAPIError as e:
+            logger.exception("get_park_details backend call failed")
+            return _error_result(str(e))
 
-    if False:  # Disabled: widgets not rendering in ChatGPT yet
-        summary = f"{structured.get('name', 'Park')} — details, weather, alerts, fees loaded"
-        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
-    else:
-        content_blocks = []
-        hero_url = structured.get("heroImage")
-        if hero_url:
-            img = await fetch_image_as_base64(hero_url)
-            if img:
-                content_blocks.append(img)
-        content_blocks.append({"type": "text", "text": text})
+        structured, text = format_park_details(details, alerts, weather, campgrounds, permits, park_of_day)
 
-    meta = _tool_meta(
-        "park-details",
-        invoking=f"Looking up {code.upper()} on the National Park Service…",
-        invoked="Park details ready",
-    )
-    return _tool_result(structured, content_blocks, meta)
+        if False:  # Disabled: widgets not rendering in ChatGPT yet
+            summary = f"{structured.get('name', 'Park')} — details, weather, alerts, fees loaded"
+            content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
+        else:
+            content_blocks = []
+            hero_url = structured.get("heroImage")
+            if hero_url:
+                img = await fetch_image_as_base64(hero_url)
+                if img:
+                    content_blocks.append(img)
+            content_blocks.append({"type": "text", "text": text})
+
+        meta = _tool_meta(
+            "park-details",
+            invoking=f"Looking up {code.upper()} on the National Park Service…",
+            invoked="Park details ready",
+        )
+        return _tool_result(structured, content_blocks, meta)
+    except Exception as exc:
+        _success = False
+        _error_msg = str(exc)
+        raise
+    finally:
+        _send_analytics({
+            "eventType": "mcp_tool_call",
+            "eventCategory": "technical",
+            "metadata": {
+                "source": "mcp",
+                "toolName": "get_park_details",
+                "parkCodes": _park_codes,
+                "executionTimeMs": round((time.monotonic() - _start) * 1000),
+                "success": _success,
+                "mcpClient": _mcp_client,
+                "errorMessage": _error_msg,
+            },
+            "parkCode": _park_codes[0] if _park_codes else None,
+            "sessionId": f"mcp-{_mcp_client}",
+        })
 
 
 @mcp.tool(
@@ -669,50 +772,78 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
     meta=_tool_meta("compare", invoking="Comparing parks…", invoked="Comparison ready"),
 )
 async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> CallToolResult:
-    if (limited := await _check_rate_limit("read")):
-        return limited
-
-    # Resolve names to codes in parallel
-    resolved = await asyncio.gather(*(_resolve_park_code(c) for c in park_codes))
-    codes = list(resolved)
-
-    if len(codes) < 2:
-        return _error_result("Provide at least 2 parks to compare.")
+    _start = time.monotonic()
+    _success = True
+    _error_msg: str | None = None
+    _mcp_client = _detect_mcp_client(ctx)
+    _park_codes: list[str] = []
 
     try:
-        async with TrailVerseClient() as client:
-            compare = await client.compare_parks(codes)
-            try:
-                summary = await client.compare_summary(codes)
-            except TrailVerseAPIError:
-                summary = None
-    except TrailVerseAPIError as e:
-        logger.exception("compare_parks backend call failed")
-        return _error_result(str(e))
+        if (limited := await _check_rate_limit("read")):
+            return limited
 
-    structured, text = format_compare(compare, summary)
+        # Resolve names to codes in parallel
+        resolved = await asyncio.gather(*(_resolve_park_code(c) for c in park_codes))
+        codes = list(resolved)
+        _park_codes = codes
 
-    if False:  # Disabled: widgets not rendering in ChatGPT yet
-        names = ", ".join(p.get("name", "") for p in structured.get("parks", []))
-        summary_text = f"Comparison of {names} ready"
-        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary_text}]
-    else:
-        parks_data = structured.get("parks", [])
-        image_urls = [p.get("heroImage") or "" for p in parks_data]
-        fetched = await fetch_images_as_base64([u for u in image_urls if u])
+        if len(codes) < 2:
+            return _error_result("Provide at least 2 parks to compare.")
 
-        content_blocks = []
-        for img in fetched:
-            if img:
-                content_blocks.append(img)
-        content_blocks.append({"type": "text", "text": text})
+        try:
+            async with TrailVerseClient() as client:
+                compare = await client.compare_parks(codes)
+                try:
+                    summary = await client.compare_summary(codes)
+                except TrailVerseAPIError:
+                    summary = None
+        except TrailVerseAPIError as e:
+            logger.exception("compare_parks backend call failed")
+            return _error_result(str(e))
 
-    meta = _tool_meta(
-        "compare",
-        invoking=f"Comparing {len(codes)} parks…",
-        invoked="Comparison ready",
-    )
-    return _tool_result(structured, content_blocks, meta)
+        structured, text = format_compare(compare, summary)
+
+        if False:  # Disabled: widgets not rendering in ChatGPT yet
+            names = ", ".join(p.get("name", "") for p in structured.get("parks", []))
+            summary_text = f"Comparison of {names} ready"
+            content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary_text}]
+        else:
+            parks_data = structured.get("parks", [])
+            image_urls = [p.get("heroImage") or "" for p in parks_data]
+            fetched = await fetch_images_as_base64([u for u in image_urls if u])
+
+            content_blocks = []
+            for img in fetched:
+                if img:
+                    content_blocks.append(img)
+            content_blocks.append({"type": "text", "text": text})
+
+        meta = _tool_meta(
+            "compare",
+            invoking=f"Comparing {len(codes)} parks…",
+            invoked="Comparison ready",
+        )
+        return _tool_result(structured, content_blocks, meta)
+    except Exception as exc:
+        _success = False
+        _error_msg = str(exc)
+        raise
+    finally:
+        _send_analytics({
+            "eventType": "mcp_tool_call",
+            "eventCategory": "technical",
+            "metadata": {
+                "source": "mcp",
+                "toolName": "compare_parks",
+                "parkCodes": _park_codes,
+                "executionTimeMs": round((time.monotonic() - _start) * 1000),
+                "success": _success,
+                "mcpClient": _mcp_client,
+                "errorMessage": _error_msg,
+            },
+            "parkCode": _park_codes[0] if _park_codes else None,
+            "sessionId": f"mcp-{_mcp_client}",
+        })
 
 
 @mcp.tool(
@@ -749,58 +880,84 @@ async def search_parks(
     limit: int = 20,
     ctx: Context | None = None,
 ) -> CallToolResult:
-    if (limited := await _check_rate_limit("read")):
-        return limited
-    try:
-        payload = SearchParksInput(
-            query=query,
-            state=state.upper() if state else None,
-            activity=activity,
-            limit=limit,
-        )
-    except Exception as e:
-        logger.warning("Validation failed: %s", e)
-        return _error_result("Invalid input — please check your parameters and try again.")
-
-    if not any([payload.query, payload.state, payload.activity]):
-        return _error_result(
-            "Provide at least one of: query, state, or activity."
-        )
+    _start = time.monotonic()
+    _success = True
+    _error_msg: str | None = None
+    _mcp_client = _detect_mcp_client(ctx)
 
     try:
-        async with TrailVerseClient() as client:
-            resp = await client.search_parks(
-                q=payload.query,
-                state=payload.state,
-                activity=payload.activity,
-                limit=payload.limit,
+        if (limited := await _check_rate_limit("read")):
+            return limited
+        try:
+            payload = SearchParksInput(
+                query=query,
+                state=state.upper() if state else None,
+                activity=activity,
+                limit=limit,
             )
-    except TrailVerseAPIError as e:
-        logger.exception("search_parks backend call failed")
-        return _error_result(str(e))
+        except Exception as e:
+            logger.warning("Validation failed: %s", e)
+            return _error_result("Invalid input — please check your parameters and try again.")
 
-    structured, text = format_search(resp)
+        if not any([payload.query, payload.state, payload.activity]):
+            return _error_result(
+                "Provide at least one of: query, state, or activity."
+            )
 
-    if False:  # Disabled: widgets not rendering in ChatGPT yet
-        summary = f"{structured.get('count', 0)} parks found"
-        content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
-    else:
-        parks_data = structured.get("parks", [])
-        top_urls = [p.get("heroImage") for p in parks_data[:3] if p.get("heroImage")]
-        content_blocks = []
-        if top_urls:
-            fetched = await fetch_images_as_base64(top_urls)
-            for img in fetched:
-                if img:
-                    content_blocks.append(img)
-        content_blocks.append({"type": "text", "text": text})
+        try:
+            async with TrailVerseClient() as client:
+                resp = await client.search_parks(
+                    q=payload.query,
+                    state=payload.state,
+                    activity=payload.activity,
+                    limit=payload.limit,
+                )
+        except TrailVerseAPIError as e:
+            logger.exception("search_parks backend call failed")
+            return _error_result(str(e))
 
-    meta = _tool_meta(
-        "park-list",
-        invoking="Searching NPS sites…",
-        invoked="Results ready",
-    )
-    return _tool_result(structured, content_blocks, meta)
+        structured, text = format_search(resp)
+
+        if False:  # Disabled: widgets not rendering in ChatGPT yet
+            summary = f"{structured.get('count', 0)} parks found"
+            content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
+        else:
+            parks_data = structured.get("parks", [])
+            top_urls = [p.get("heroImage") for p in parks_data[:3] if p.get("heroImage")]
+            content_blocks = []
+            if top_urls:
+                fetched = await fetch_images_as_base64(top_urls)
+                for img in fetched:
+                    if img:
+                        content_blocks.append(img)
+            content_blocks.append({"type": "text", "text": text})
+
+        meta = _tool_meta(
+            "park-list",
+            invoking="Searching NPS sites…",
+            invoked="Results ready",
+        )
+        return _tool_result(structured, content_blocks, meta)
+    except Exception as exc:
+        _success = False
+        _error_msg = str(exc)
+        raise
+    finally:
+        _send_analytics({
+            "eventType": "mcp_tool_call",
+            "eventCategory": "technical",
+            "metadata": {
+                "source": "mcp",
+                "toolName": "search_parks",
+                "parkCodes": [],
+                "executionTimeMs": round((time.monotonic() - _start) * 1000),
+                "success": _success,
+                "mcpClient": _mcp_client,
+                "errorMessage": _error_msg,
+            },
+            "parkCode": None,
+            "sessionId": f"mcp-{_mcp_client}",
+        })
 
 
 @mcp.tool(
@@ -833,38 +990,67 @@ async def find_events(
     limit: int = 10,
     ctx: Context | None = None,
 ) -> CallToolResult:
-    if (limited := await _check_rate_limit("read")):
-        return limited
-
-    resolved_code = (await _resolve_park_code(park_code)) if park_code else None
+    _start = time.monotonic()
+    _success = True
+    _error_msg: str | None = None
+    _mcp_client = _detect_mcp_client(ctx)
+    _park_codes: list[str] = []
 
     try:
-        async with TrailVerseClient() as client:
-            resp = await client.list_events(
-                park_code=resolved_code,
-                state=state.upper() if state else None,
-                category=category,
-                limit=limit,
-            )
-    except TrailVerseAPIError as e:
-        logger.exception("find_events backend call failed")
-        return _error_result(str(e))
+        if (limited := await _check_rate_limit("read")):
+            return limited
 
-    structured, text = format_events(resp)
+        resolved_code = (await _resolve_park_code(park_code)) if park_code else None
+        if resolved_code:
+            _park_codes = [resolved_code]
 
-    if False:  # Disabled: widgets not rendering in ChatGPT yet
-        n = len(structured.get("events", []))
-        summary = f"{n} event{'s' if n != 1 else ''} found"
-        content: str | list[dict[str, str]] = [{"type": "text", "text": summary}]
-    else:
-        content = text
+        try:
+            async with TrailVerseClient() as client:
+                resp = await client.list_events(
+                    park_code=resolved_code,
+                    state=state.upper() if state else None,
+                    category=category,
+                    limit=limit,
+                )
+        except TrailVerseAPIError as e:
+            logger.exception("find_events backend call failed")
+            return _error_result(str(e))
 
-    meta = _tool_meta(
-        "events",
-        invoking="Fetching park events…",
-        invoked="Events ready",
-    )
-    return _tool_result(structured, content, meta)
+        structured, text = format_events(resp)
+
+        if False:  # Disabled: widgets not rendering in ChatGPT yet
+            n = len(structured.get("events", []))
+            summary = f"{n} event{'s' if n != 1 else ''} found"
+            content: str | list[dict[str, str]] = [{"type": "text", "text": summary}]
+        else:
+            content = text
+
+        meta = _tool_meta(
+            "events",
+            invoking="Fetching park events…",
+            invoked="Events ready",
+        )
+        return _tool_result(structured, content, meta)
+    except Exception as exc:
+        _success = False
+        _error_msg = str(exc)
+        raise
+    finally:
+        _send_analytics({
+            "eventType": "mcp_tool_call",
+            "eventCategory": "technical",
+            "metadata": {
+                "source": "mcp",
+                "toolName": "find_events",
+                "parkCodes": _park_codes,
+                "executionTimeMs": round((time.monotonic() - _start) * 1000),
+                "success": _success,
+                "mcpClient": _mcp_client,
+                "errorMessage": _error_msg,
+            },
+            "parkCode": _park_codes[0] if _park_codes else None,
+            "sessionId": f"mcp-{_mcp_client}",
+        })
 
 
 # ---------- Health / root routes (so Render and connector wizards don't 502) ----------

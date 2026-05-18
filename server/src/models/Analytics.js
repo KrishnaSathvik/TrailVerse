@@ -9,7 +9,7 @@ const analyticsSchema = new mongoose.Schema({
       'park_view', 'park_save', 'park_visit', 'review_create', 'review_helpful',
       'blog_view', 'blog_share', 'event_register', 'event_view',
       'ai_chat', 'conversation_create', 'image_upload', 'user_signup',
-      'user_login', 'user_logout', 'error', 'performance'
+      'user_login', 'user_logout', 'error', 'performance', 'mcp_tool_call'
     ]
   },
   eventCategory: {
@@ -145,6 +145,7 @@ analyticsSchema.index({ eventId: 1, timestamp: -1 });
 analyticsSchema.index({ 'metadata.searchTerm': 1, timestamp: -1 });
 analyticsSchema.index({ 'location.country': 1, timestamp: -1 });
 analyticsSchema.index({ 'device.type': 1, timestamp: -1 });
+analyticsSchema.index({ 'metadata.source': 1, timestamp: -1 });
 analyticsSchema.index({ timestamp: -1 }); // For time-based queries
 
 // Compound indexes for common queries

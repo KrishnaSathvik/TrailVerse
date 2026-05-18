@@ -959,27 +959,190 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         </div>
                       )}
                       {!campgroundsLoading && campgrounds !== null && campgrounds.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {campgrounds.map((campground, index) => (
                             <div
                               key={index}
-                              className="p-6 rounded-xl"
+                              className="rounded-xl overflow-hidden"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              <h3 className="text-lg font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
-                                {campground.name}
-                              </h3>
-                              <p className="text-sm"
-                                style={{ color: 'var(--text-secondary)' }}
-                              >
-                                {htmlToPlainText(campground.description)}
-                              </p>
+                              {/* Hero image */}
+                              {campground.images?.[0]?.url && (
+                                <div className="relative h-48 w-full">
+                                  <img
+                                    src={campground.images[0].url}
+                                    alt={campground.images[0].altText || campground.name}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                  {campground.images[0].credit && (
+                                    <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+                                      {campground.images[0].credit}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="p-6">
+                                {/* Name + reservation link */}
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                    {campground.name}
+                                  </h3>
+                                  {campground.reservationUrl && (
+                                    <a
+                                      href={campground.reservationUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+                                      style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                                    >
+                                      Reserve <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </div>
+
+                                {/* Quick stats row */}
+                                <div className="flex flex-wrap gap-3 mb-4">
+                                  {campground.campsites?.totalSites && (
+                                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                      style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-secondary)' }}>
+                                      <Tent className="h-3 w-3" /> {campground.campsites.totalSites} sites
+                                    </span>
+                                  )}
+                                  {(campground.numberOfSitesReservable > 0 || campground.numberOfSitesFirstComeFirstServe > 0) && (
+                                    <>
+                                      {Number(campground.numberOfSitesReservable) > 0 && (
+                                        <span className="text-xs px-2.5 py-1 rounded-full"
+                                          style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}>
+                                          {campground.numberOfSitesReservable} reservable
+                                        </span>
+                                      )}
+                                      {Number(campground.numberOfSitesFirstComeFirstServe) > 0 && (
+                                        <span className="text-xs px-2.5 py-1 rounded-full"
+                                          style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: 'var(--accent-blue, #3b82f6)' }}>
+                                          {campground.numberOfSitesFirstComeFirstServe} first-come
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                  {campground.fees?.[0]?.cost && (
+                                    <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                      style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-secondary)' }}>
+                                      <DollarSign className="h-3 w-3" /> ${campground.fees[0].cost}/night
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Description */}
+                                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                                  {htmlToPlainText(campground.description)}
+                                </p>
+
+                                {/* Site types */}
+                                {campground.campsites && (
+                                  <div className="flex flex-wrap gap-2 mb-4">
+                                    {Number(campground.campsites.tentOnly) > 0 && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                        Tent: {campground.campsites.tentOnly}
+                                      </span>
+                                    )}
+                                    {Number(campground.campsites.rvOnly) > 0 && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                        RV: {campground.campsites.rvOnly}
+                                      </span>
+                                    )}
+                                    {Number(campground.campsites.electricalHookups) > 0 && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                        Electric hookups: {campground.campsites.electricalHookups}
+                                      </span>
+                                    )}
+                                    {Number(campground.campsites.group) > 0 && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                        Group: {campground.campsites.group}
+                                      </span>
+                                    )}
+                                    {Number(campground.campsites.horse) > 0 && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                        Horse: {campground.campsites.horse}
+                                      </span>
+                                    )}
+                                    {Number(campground.campsites.walkBoatTo) > 0 && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                        Walk/Boat-to: {campground.campsites.walkBoatTo}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Amenities grid */}
+                                {campground.amenities && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 mb-4">
+                                    {campground.amenities.potableWater?.[0] && campground.amenities.potableWater[0] !== 'No water' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>💧 Water: {campground.amenities.potableWater[0]}</span>
+                                    )}
+                                    {campground.amenities.potableWater?.[0] === 'No water' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>💧 No potable water</span>
+                                    )}
+                                    {campground.amenities.toilets?.[0] && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>🚻 {campground.amenities.toilets[0]}</span>
+                                    )}
+                                    {campground.amenities.showers?.[0] && campground.amenities.showers[0] !== 'None' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>🚿 {campground.amenities.showers[0]}</span>
+                                    )}
+                                    {campground.amenities.cellPhoneReception === 'Yes' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>📶 Cell service</span>
+                                    )}
+                                    {campground.amenities.cellPhoneReception === 'No' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>📶 No cell service</span>
+                                    )}
+                                    {campground.amenities.campStore === 'Yes' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>🏪 Camp store</span>
+                                    )}
+                                    {campground.amenities.firewoodForSale === 'Yes' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>🪵 Firewood for sale</span>
+                                    )}
+                                    {campground.amenities.dumpStation === 'Yes' && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>🚛 Dump station</span>
+                                    )}
+                                    {campground.amenities.foodStorageLockers && campground.amenities.foodStorageLockers.startsWith('Yes') && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>🔒 Food lockers</span>
+                                    )}
+                                    {campground.amenities.staffOrVolunteerHostOnsite && campground.amenities.staffOrVolunteerHostOnsite.startsWith('Yes') && (
+                                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>👤 Host on-site</span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Operating hours / season */}
+                                {campground.operatingHours?.[0]?.description && (
+                                  <div className="flex items-start gap-2 mb-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                    <Calendar className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                    <span>{campground.operatingHours[0].description}</span>
+                                  </div>
+                                )}
+
+                                {/* Reservation info */}
+                                {campground.reservationInfo && (
+                                  <div className="flex items-start gap-2 mb-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                    <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                    <span>{htmlToPlainText(campground.reservationInfo)}</span>
+                                  </div>
+                                )}
+
+                                {/* Accessibility */}
+                                {campground.accessibility?.adaInfo && (
+                                  <div className="flex items-start gap-2 mb-4 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                    <Shield className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                    <span>{campground.accessibility.adaInfo}</span>
+                                  </div>
+                                )}
+
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1026,26 +1189,41 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                   borderColor: 'var(--border)'
                                 }}
                               >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                  <span className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                                     {name}
                                   </span>
-                                  <span className="text-[11px] px-2 py-0.5 rounded-full"
+                                  <span className="shrink-0 whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full"
                                     style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}>
                                     {grouped[name].length} {grouped[name].length === 1 ? 'location' : 'locations'}
                                   </span>
                                 </div>
-                                <div className="space-y-1">
-                                  {grouped[name].slice(0, 3).map((place, i) => (
-                                    <p key={i} className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
-                                      {place.placeName}
-                                    </p>
+                                <div className="space-y-1.5">
+                                  {grouped[name].map((place, i) => (
+                                    <div key={i} className="flex items-center gap-1.5">
+                                      {place.url ? (
+                                        <a
+                                          href={place.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs truncate hover:underline"
+                                          style={{ color: 'var(--accent-blue, #3b82f6)' }}
+                                        >
+                                          {place.placeName || 'View location'}
+                                        </a>
+                                      ) : (
+                                        <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                                          {place.placeName}
+                                        </span>
+                                      )}
+                                      {place.placeType && place.placeType !== 'General' && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                                          style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                          {place.placeType}
+                                        </span>
+                                      )}
+                                    </div>
                                   ))}
-                                  {grouped[name].length > 3 && (
-                                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                                      +{grouped[name].length - 3} more
-                                    </p>
-                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1243,11 +1421,21 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                               >
                                 {place.title}
                               </h3>
-                              <p className="text-sm"
+                              <p className="text-sm mb-3"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
                                 {htmlToPlainText(place.listingDescription || place.bodyText)?.substring(0, 300)}
                               </p>
+                              {place.tags && place.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {place.tags.map((tag, i) => (
+                                    <span key={i} className="text-[11px] px-2 py-0.5 rounded-full"
+                                      style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1277,31 +1465,80 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                           {tours.map((tour, index) => (
                             <div
                               key={tour.id || index}
-                              className="p-6 rounded-xl"
+                              className="rounded-xl overflow-hidden"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              <h3 className="text-lg font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
-                                {tour.title}
-                              </h3>
+                              {tour.images?.[0]?.crops?.[0]?.url && (
+                                <div className="relative h-48 w-full">
+                                  <img
+                                    src={tour.images[0].crops[0].url}
+                                    alt={tour.images[0].altText || tour.title}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                  />
+                                  {tour.images[0].credit && (
+                                    <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+                                      {tour.images[0].credit}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              <div className="p-6">
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <h3 className="text-lg font-semibold"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {tour.title}
+                                </h3>
+                                {tour.type && (
+                                  <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full"
+                                    style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
+                                    {tour.type}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm"
                                 style={{ color: 'var(--text-secondary)' }}
                               >
                                 {htmlToPlainText(tour.description)?.substring(0, 400)}
                               </p>
-                              {tour.duration && (
-                                <div className="flex items-center gap-1.5 text-sm mt-3"
-                                  style={{ color: 'var(--text-tertiary)' }}
-                                >
-                                  <Clock className="h-3.5 w-3.5" />
-                                  <span>{tour.duration}</span>
-                                </div>
-                              )}
+                              <div className="flex flex-wrap items-center gap-3 mt-3">
+                                {(tour.durationMin || tour.durationMax) && (
+                                  <div className="flex items-center gap-1.5 text-sm"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                  >
+                                    <Clock className="h-3.5 w-3.5" />
+                                    <span>
+                                      {tour.durationMin && tour.durationMax && tour.durationMin !== tour.durationMax
+                                        ? `${tour.durationMin}–${tour.durationMax} ${tour.durationUnit || 'h'}`
+                                        : `${tour.durationMin || tour.durationMax} ${tour.durationUnit || 'h'}`}
+                                    </span>
+                                  </div>
+                                )}
+                                {!tour.durationMin && !tour.durationMax && tour.duration && (
+                                  <div className="flex items-center gap-1.5 text-sm"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                  >
+                                    <Clock className="h-3.5 w-3.5" />
+                                    <span>{tour.duration}</span>
+                                  </div>
+                                )}
+                                {tour.activities && tour.activities.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {tour.activities.map((a, i) => (
+                                      <span key={i} className="text-[11px] px-2 py-0.5 rounded-full"
+                                        style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}>
+                                        {a.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                               {tour.stops && tour.stops.length > 0 && (
                                 <div className="mt-4">
                                   <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider"
@@ -1340,6 +1577,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                   </div>
                                 </div>
                               )}
+                              </div>{/* close p-6 wrapper */}
                             </div>
                           ))}
                         </div>
@@ -1370,16 +1608,34 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                             const accessibility = lot.accessibility;
                             const liveStatus = lot.liveStatus;
                             const fee = lot.fees?.[0];
+                            const hours = lot.operatingHours?.[0]?.standardHours;
+                            const hoursDesc = lot.operatingHours?.[0]?.description;
+                            // Derive a single hours string if all days are the same
+                            const hoursValues = hours ? Object.values(hours) : [];
+                            const uniformHours = hoursValues.length > 0 && new Set(hoursValues).size === 1 ? hoursValues[0] : null;
+                            const isClosed = liveStatus?.occupancy?.toLowerCase() === 'closed' || liveStatus?.isActive === false;
                             return (
                               <div
                                 key={lot.id || index}
-                                className="p-6 rounded-xl"
+                                className="rounded-xl overflow-hidden"
                                 style={{
                                   backgroundColor: 'var(--surface-hover)',
                                   borderWidth: '1px',
                                   borderColor: 'var(--border)'
                                 }}
                               >
+                                {lot.images?.[0]?.url && (
+                                  <div className="relative h-40 w-full">
+                                    <img
+                                      src={lot.images[0].url}
+                                      alt={lot.images[0].altText || lot.name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                      onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                    />
+                                  </div>
+                                )}
+                                <div className="p-6">
                                 <div className="flex items-start justify-between gap-3 mb-2">
                                   <h3 className="text-lg font-semibold"
                                     style={{ color: 'var(--text-primary)' }}
@@ -1388,6 +1644,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                   </h3>
                                   {liveStatus?.occupancy && (
                                     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
+                                      liveStatus.occupancy.toLowerCase() === 'closed' ? 'bg-red-500/20 text-red-400' :
                                       liveStatus.occupancy.toLowerCase() === 'light' ? 'bg-green-500/20 text-green-400' :
                                       liveStatus.occupancy.toLowerCase() === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
                                       liveStatus.occupancy.toLowerCase() === 'full' ? 'bg-red-500/20 text-red-400' :
@@ -1437,6 +1694,45 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                     </span>
                                   )}
                                 </div>
+                                {/* Operating hours — skip when closed (avoids "Closed" + "Open 24h" conflict) */}
+                                {!isClosed && (uniformHours || hoursDesc) && (
+                                  <div className="flex items-start gap-2 mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                    <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                    <span>
+                                      {uniformHours && uniformHours !== 'All Day'
+                                        ? `Open ${uniformHours} daily`
+                                        : uniformHours === 'All Day'
+                                          ? 'Open 24 hours'
+                                          : hoursDesc}
+                                    </span>
+                                  </div>
+                                )}
+                                {!isClosed && !uniformHours && hours && (
+                                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                    {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(day => (
+                                      hours[day] && hours[day] !== 'Closed' ? (
+                                        <div key={day} className="flex justify-between">
+                                          <span className="capitalize">{day.slice(0,3)}</span>
+                                          <span style={{ color: 'var(--text-tertiary)' }}>{hours[day]}</span>
+                                        </div>
+                                      ) : hours[day] === 'Closed' ? (
+                                        <div key={day} className="flex justify-between">
+                                          <span className="capitalize">{day.slice(0,3)}</span>
+                                          <span style={{ color: 'var(--text-tertiary)' }}>Closed</span>
+                                        </div>
+                                      ) : null
+                                    ))}
+                                  </div>
+                                )}
+                                {/* Webcam link */}
+                                {lot.webcamUrl && (
+                                  <a href={lot.webcamUrl} target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 mt-3 text-xs hover:underline"
+                                    style={{ color: 'var(--accent-blue, #3b82f6)' }}>
+                                    <Camera className="h-3 w-3" /> Live webcam
+                                  </a>
+                                )}
+                                </div>
                               </div>
                             );
                           })}
@@ -1474,23 +1770,6 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              {cam.images?.[0]?.url ? (
-                                <div className="relative aspect-video rounded-lg overflow-hidden mb-4">
-                                  <Image
-                                    src={cam.images[0].url}
-                                    alt={cam.images[0].altText || cam.title}
-                                    fill
-                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                    className="object-cover"
-                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
-                                  />
-                                </div>
-                              ) : (
-                                <div className="relative aspect-video rounded-lg overflow-hidden mb-4 flex items-center justify-center"
-                                  style={{ backgroundColor: 'var(--surface-elevated, #1a1a2e)' }}>
-                                  <Monitor className="h-10 w-10" style={{ color: 'var(--text-tertiary)' }} />
-                                </div>
-                              )}
                               <h3 className="text-lg font-semibold mb-2"
                                 style={{ color: 'var(--text-primary)' }}
                               >

@@ -7,6 +7,7 @@ const {
   getSearchAnalytics,
   getErrorAnalytics,
   getPerformanceAnalytics,
+  getMcpAnalytics,
   trackEvents
 } = require('../controllers/analyticsController');
 const { protect, admin } = require('../middleware/auth');
@@ -24,5 +25,6 @@ router.get('/content', getContentAnalytics);
 router.get('/search', getSearchAnalytics);
 router.get('/errors', getErrorAnalytics);
 router.get('/performance', getPerformanceAnalytics);
+router.get('/mcp', getMcpAnalytics);
 
 module.exports = router;

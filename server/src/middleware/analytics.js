@@ -41,6 +41,11 @@ const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
     const sessionId = generateSessionId(req);
     const deviceInfo = parseUserAgent(req.get('User-Agent'));
     
+    // Tag MCP-originated requests so they're filterable in the dashboard
+    if (req.isTrustedMcp) {
+      metadata.source = 'mcp';
+    }
+
     const analyticsData = {
       eventType,
       eventCategory,

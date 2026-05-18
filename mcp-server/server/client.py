@@ -182,6 +182,19 @@ class TrailVerseClient:
             limit=limit,
         )
 
+    # ---------- Analytics ----------
+
+    async def track_mcp_event(self, event: dict[str, Any]) -> None:
+        """Fire-and-forget POST to /api/analytics/track with an MCP tool call event."""
+        try:
+            await self._post("/api/analytics/track", {
+                "events": [event],
+                "sessionId": event.get("sessionId", "mcp-unknown"),
+            })
+        except Exception:
+            # Analytics must never break tool execution
+            logger.debug("Failed to send MCP analytics event", exc_info=True)
+
     # ---------- AI Planner (anonymous) ----------
 
     async def plan_trip_anonymous(

@@ -537,6 +537,186 @@ exports.trackEvents = async (req, res, next) => {
   }
 };
 
+// @desc    Get MCP tool call analytics
+// @route   GET /api/analytics/mcp
+// @access  Admin
+exports.getMcpAnalytics = async (req, res, next) => {
+  try {
+    const { period = '7d' } = req.query;
+
+    // Calculate date range
+    const now = new Date();
+    const startDate = new Date();
+
+    switch (period) {
+      case '24h':
+        startDate.setDate(now.getDate() - 1);
+        break;
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      default:
+        startDate.setDate(now.getDate() - 7);
+    }
+
+    const matchStage = {
+      eventType: 'mcp_tool_call',
+      timestamp: { $gte: startDate, $lte: now }
+    };
+
+    const [
+      overview,
+      toolBreakdown,
+      clientBreakdown,
+      topParks,
+      dailyTrend
+    ] = await Promise.all([
+      // Overview: total calls, error rate, avg/p95 execution time
+      Analytics.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalCalls: { $sum: 1 },
+            errors: {
+              $sum: { $cond: [{ $eq: ['$metadata.success', false] }, 1, 0] }
+            },
+            avgExecutionTime: { $avg: '$metadata.executionTimeMs' },
+            p95ExecutionTime: {
+              $percentile: {
+                input: '$metadata.executionTimeMs',
+                p: [0.95],
+                method: 'approximate'
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            totalCalls: 1,
+            errors: 1,
+            errorRate: {
+              $round: [
+                { $multiply: [{ $divide: ['$errors', { $max: ['$totalCalls', 1] }] }, 100] },
+                2
+              ]
+            },
+            avgExecutionTimeMs: { $round: ['$avgExecutionTime', 0] },
+            p95ExecutionTimeMs: 1
+          }
+        }
+      ]),
+
+      // Tool breakdown: per-tool call count, avg time, errors
+      Analytics.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$metadata.toolName',
+            calls: { $sum: 1 },
+            errors: {
+              $sum: { $cond: [{ $eq: ['$metadata.success', false] }, 1, 0] }
+            },
+            avgExecutionTimeMs: { $avg: '$metadata.executionTimeMs' }
+          }
+        },
+        {
+          $project: {
+            toolName: '$_id',
+            calls: 1,
+            errors: 1,
+            avgExecutionTimeMs: { $round: ['$avgExecutionTimeMs', 0] }
+          }
+        },
+        { $sort: { calls: -1 } }
+      ]),
+
+      // Client breakdown: ChatGPT vs Claude vs unknown
+      Analytics.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$metadata.mcpClient',
+            calls: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            client: { $ifNull: ['$_id', 'unknown'] },
+            calls: 1
+          }
+        },
+        { $sort: { calls: -1 } }
+      ]),
+
+      // Top 20 parks queried via MCP
+      Analytics.aggregate([
+        { $match: { ...matchStage, parkCode: { $exists: true, $ne: null } } },
+        {
+          $group: {
+            _id: '$parkCode',
+            calls: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            parkCode: '$_id',
+            calls: 1
+          }
+        },
+        { $sort: { calls: -1 } },
+        { $limit: 20 }
+      ]),
+
+      // Daily trend: calls per day
+      Analytics.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$timestamp' }
+            },
+            calls: { $sum: 1 },
+            errors: {
+              $sum: { $cond: [{ $eq: ['$metadata.success', false] }, 1, 0] }
+            }
+          }
+        },
+        {
+          $project: {
+            date: '$_id',
+            calls: 1,
+            errors: 1
+          }
+        },
+        { $sort: { date: 1 } }
+      ])
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        period,
+        dateRange: { startDate, endDate: now },
+        overview: overview[0] || { totalCalls: 0, errors: 0, errorRate: 0, avgExecutionTimeMs: 0, p95ExecutionTimeMs: [0] },
+        toolBreakdown,
+        clientBreakdown,
+        topParks,
+        dailyTrend
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Helper functions
 async function getDeviceStats(startDate, endDate) {
   return Analytics.aggregate([
