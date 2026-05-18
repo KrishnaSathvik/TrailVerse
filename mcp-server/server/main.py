@@ -22,12 +22,12 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
 from mcp.types import CallToolResult, Icon, ImageContent, TextContent
-from pydantic import AnyUrl
+from pydantic import AnyUrl, Field
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 
@@ -269,6 +269,97 @@ def _register_widgets() -> None:
 
 
 _register_widgets()
+
+
+# ---------- Prompts ----------
+# MCP prompts are predefined message templates that clients can list and
+# surface as clickable starters (e.g., ChatGPT's prompt picker).  They don't
+# call any APIs — just return canned messages that guide the AI to use the
+# right tool.
+
+from mcp.server.fastmcp.prompts.base import UserMessage, AssistantMessage
+
+
+@mcp.prompt(
+    name="welcome",
+    title="What is TrailVerse?",
+    description="Learn what Trailie can do — covers 470+ NPS sites with live data",
+)
+def welcome() -> list[AssistantMessage]:
+    return [
+        AssistantMessage(
+            content=(
+                "Hey — I'm Trailie, your insider guide to every National Park Service "
+                "site in the US. That's 470+ places: the big national parks, plus monuments, "
+                "seashores, battlefields, historic sites, and more.\n\n"
+                "Here's what I can do with **live data** (real-time alerts, weather, fees, events):\n\n"
+                "1. **Plan a trip** — day-by-day itineraries for any US destination\n"
+                "2. **Explore a park** — current weather, alerts, campgrounds, permits, fees, hours\n"
+                "3. **Compare parks** — side-by-side on weather, crowds, fees, activities\n"
+                "4. **Search parks** — find the right park by state, activity, or vibe\n"
+                "5. **Find events** — ranger programs, guided tours, star parties\n\n"
+                "Try asking:\n"
+                '- "Plan 3 days at Zion"\n'
+                '- "Tell me about Glacier National Park"\n'
+                '- "Compare Yellowstone and Grand Teton"\n\n'
+                "Plan your next adventure on [TrailVerse](https://www.nationalparksexplorerusa.com/plan-ai)."
+            )
+        ),
+    ]
+
+
+@mcp.prompt(
+    name="plan_my_trip",
+    title="Plan a trip",
+    description="Build a day-by-day itinerary for any US destination",
+)
+def plan_my_trip(
+    destination: Annotated[str, Field(description="e.g. Yellowstone, Zion, San Diego")],
+    days: Annotated[int, Field(description="Number of days (default 3)")] = 3,
+) -> list[UserMessage]:
+    return [
+        UserMessage(content=f"Plan a {days}-day trip to {destination}"),
+    ]
+
+
+@mcp.prompt(
+    name="explore_park",
+    title="Explore a park",
+    description="Get live details for any of the 470+ NPS sites",
+)
+def explore_park(
+    park_name: Annotated[str, Field(description="e.g. Glacier National Park, Zion, Acadia")],
+) -> list[UserMessage]:
+    return [
+        UserMessage(content=f"Tell me everything about {park_name}"),
+    ]
+
+
+@mcp.prompt(
+    name="compare",
+    title="Compare parks",
+    description="Side-by-side comparison of two NPS sites",
+)
+def compare_prompt(
+    park1: Annotated[str, Field(description="First park, e.g. Yellowstone")],
+    park2: Annotated[str, Field(description="Second park, e.g. Grand Teton")],
+) -> list[UserMessage]:
+    return [
+        UserMessage(content=f"Compare {park1} and {park2}"),
+    ]
+
+
+@mcp.prompt(
+    name="whats_happening",
+    title="What's happening at a park?",
+    description="Find ranger programs, tours, and events at an NPS site",
+)
+def whats_happening(
+    park_name: Annotated[str, Field(description="e.g. Yellowstone, Grand Canyon, Gettysburg")],
+) -> list[UserMessage]:
+    return [
+        UserMessage(content=f"What events and ranger programs are at {park_name} right now?"),
+    ]
 
 
 # ---------- Park code resolution ----------
@@ -597,12 +688,18 @@ async def plan_trip(
                 if url:
                     image_urls.append(url)
 
+            logger.info("plan_trip image candidates: %s", image_urls[:3])
+
             content_blocks = []
             if image_urls:
                 fetched = await fetch_images_as_base64(image_urls[:3])
                 for img in fetched:
                     if img:
                         content_blocks.append(img)
+
+            image_block_count = sum(1 for b in content_blocks if isinstance(b, dict) and b.get("type") == "image")
+            logger.info("plan_trip image blocks: %d", image_block_count)
+
             # Append session ID so ChatGPT can pass it back for follow-up questions
             text_with_session = text + f"\n\n[session_id: {conv.session_id}] — pass this as session_id on follow-up plan_trip calls to continue the conversation."
             content_blocks.append({"type": "text", "text": text_with_session})
@@ -740,12 +837,18 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
                 if url and url not in image_urls:
                     image_urls.append(url)
 
+            logger.info("get_park_details image candidates for %s: %s", code, image_urls[:3])
+
             content_blocks = []
             if image_urls:
                 fetched = await fetch_images_as_base64(image_urls[:3])
                 for img in fetched:
                     if img:
                         content_blocks.append(img)
+
+            image_block_count = sum(1 for b in content_blocks if isinstance(b, dict) and b.get("type") == "image")
+            logger.info("get_park_details image blocks for %s: %d", code, image_block_count)
+
             content_blocks.append({"type": "text", "text": text})
 
         meta = _tool_meta(
