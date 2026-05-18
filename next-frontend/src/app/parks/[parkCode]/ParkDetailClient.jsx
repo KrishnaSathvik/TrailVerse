@@ -100,6 +100,23 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
   const { data: brochureData, loading: brochuresLoading } = useTabData(npsParkCode, 'brochures', activeTab === 'brochures');
   const { data: permits, loading: permitsLoading } = useTabData(npsParkCode, 'permits', activeTab === 'permits');
 
+  // Eagerly fetch review count for the tab badge
+  const [reviewCount, setReviewCount] = useState(0);
+  useEffect(() => {
+    if (!npsParkCode) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ||
+      (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+        ? 'http://localhost:5001/api'
+        : 'https://trailverse.onrender.com/api');
+    fetch(`${apiUrl}/reviews/${npsParkCode}`)
+      .then(res => res.json())
+      .then(json => {
+        const count = json.stats?.totalReviews || json.total || json.pagination?.totalReviews || 0;
+        setReviewCount(count);
+      })
+      .catch(() => {});
+  }, [npsParkCode]);
+
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
     const parkImages = park?.images || [];
@@ -575,7 +592,8 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                   >
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
-                    const showBadge = tab.id === 'alerts' && alerts && alerts.length > 0;
+                    const showAlertBadge = tab.id === 'alerts' && alerts && alerts.length > 0;
+                    const showReviewBadge = tab.id === 'reviews' && reviewCount > 0;
                     return (
                       <button
                         key={tab.id}
@@ -593,7 +611,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       >
                         <Icon className="h-4 w-4 flex-shrink-0" />
                         {tab.label}
-                        {showBadge && (
+                        {showAlertBadge && (
                           <span
                             className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
                             style={{
@@ -606,6 +624,21 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                             }}
                           >
                             {alerts.length}
+                          </span>
+                        )}
+                        {showReviewBadge && (
+                          <span
+                            className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
+                            style={{
+                              backgroundColor: '#facc15',
+                              color: '#1a1a1a',
+                              minWidth: '1.25rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {reviewCount}
                           </span>
                         )}
                       </button>
@@ -2201,7 +2234,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
                   {activeTab === 'reviews' && (
                     <div>
-                      <ReviewSection parkCode={npsParkCode} parkName={park.fullName} />
+                      <ReviewSection parkCode={npsParkCode} parkName={park.fullName} onCountChange={setReviewCount} />
                     </div>
                   )}
                 </div>

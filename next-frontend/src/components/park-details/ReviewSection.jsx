@@ -13,7 +13,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 import { logEvent } from '../../utils/analytics';
 
-const ReviewSection = ({ parkCode, parkName }) => {
+const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
   const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -70,6 +70,11 @@ const ReviewSection = ({ parkCode, parkName }) => {
   useEffect(() => {
     fetchReviews();
   }, [parkCode]);
+
+  // Sync review count back to parent tab badge
+  useEffect(() => {
+    if (onCountChange) onCountChange(totalReviews);
+  }, [totalReviews, onCountChange]);
 
   // Setup WebSocket real-time sync for reviews
   useEffect(() => {

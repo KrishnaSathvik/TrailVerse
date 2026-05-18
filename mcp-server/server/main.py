@@ -26,12 +26,12 @@ from typing import Annotated, Any
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
-from mcp.types import CallToolResult, Icon, ImageContent, TextContent
+from mcp.types import CallToolResult, Icon, TextContent
 from pydantic import AnyUrl, Field
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 
-from .client import TrailVerseAPIError, TrailVerseClient, fetch_image_as_base64, fetch_images_as_base64
+from .client import TrailVerseAPIError, TrailVerseClient
 from .conversations import conversation_store
 from .formatters import (
     format_compare,
@@ -415,8 +415,6 @@ def _tool_meta(widget_key: str, invoking: str, invoked: str) -> dict[str, Any]:
     Build the _meta dict attached to each tool result.
     Only progress text for now — widget keys are registered as MCP resources
     but NOT advertised in _meta until ChatGPT's widget renderer is reliable.
-    Advertising openai/widgetAccessible causes ChatGPT to skip ImageContent
-    blocks in favour of widget rendering, which currently fails silently.
     """
     return {
         "openai/toolInvocation/invoking": invoking,
@@ -442,38 +440,34 @@ def _client_has_widgets(ctx: Context) -> bool:
     return False
 
 
+def _markdown_images(image_data: list[dict[str, str | None]], limit: int = 3) -> str:
+    """Build markdown image lines from image dicts with url/altText keys."""
+    lines = []
+    for img in image_data[:limit]:
+        url = img.get("url") if isinstance(img, dict) else img
+        alt = (img.get("altText") or img.get("title") or "Park photo") if isinstance(img, dict) else "Park photo"
+        if url:
+            lines.append(f"![{alt}]({url})")
+    return "\n\n".join(lines)
+
+
 def _tool_result(
     structured: dict[str, Any],
     content: str | list[dict[str, str]],
     meta_extra: dict[str, Any],
 ) -> CallToolResult:
-    """Return a CallToolResult with content blocks for the LLM.
+    """Return a CallToolResult with TextContent blocks for the LLM.
 
-    content can be a plain text string (backward compat) or a list of MCP
-    content block dicts — mix of {"type": "text", "text": ...} and
-    {"type": "image", "data": ..., "mimeType": ...}.
-
-    NOTE: structuredContent is intentionally omitted. When present, ChatGPT
-    prioritizes it over the content blocks — treating the JSON as raw data
-    to summarize in its own words. This causes it to drop our pre-formatted
-    markdown (links, sections, relay instructions) and base64 images. Without
-    structuredContent, ChatGPT reads the text content blocks and renders the
-    ImageContent blocks inline. Re-enable structuredContent when ChatGPT's
-    widget renderer is working.
+    content can be a plain text string or a list of {"type": "text", "text": ...}
+    dicts. Images are embedded as markdown ![alt](url) in the text itself.
     """
     if isinstance(content, str):
         blocks = [TextContent(type="text", text=content)]
     else:
-        blocks = []
-        for block in content:
-            if block.get("type") == "image":
-                blocks.append(ImageContent(
-                    type="image",
-                    data=block["data"],
-                    mimeType=block.get("mimeType", "image/jpeg"),
-                ))
-            else:
-                blocks.append(TextContent(type="text", text=block.get("text", "")))
+        blocks = [
+            TextContent(type="text", text=block.get("text", ""))
+            for block in content
+        ]
     return CallToolResult(
         content=blocks,
         _meta=meta_extra,
@@ -677,32 +671,18 @@ async def plan_trip(
             content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
         else:
             # No widget support — send full markdown + images for the LLM
-            image_urls: list[str] = []
-            for img_obj in structured.get("parkImages") or []:
-                if isinstance(img_obj, dict):
-                    url = img_obj.get("url")
-                elif isinstance(img_obj, str):
-                    url = img_obj
-                else:
-                    url = None
-                if url:
-                    image_urls.append(url)
-
-            logger.info("plan_trip image candidates: %s", image_urls[:3])
-
-            content_blocks = []
-            if image_urls:
-                fetched = await fetch_images_as_base64(image_urls[:3])
-                for img in fetched:
-                    if img:
-                        content_blocks.append(img)
-
-            image_block_count = sum(1 for b in content_blocks if isinstance(b, dict) and b.get("type") == "image")
-            logger.info("plan_trip image blocks: %d", image_block_count)
+            park_images = structured.get("parkImages") or []
+            image_md = _markdown_images(
+                [{"url": (img.get("url") if isinstance(img, dict) else img),
+                  "altText": (img.get("altText") if isinstance(img, dict) else None)}
+                 for img in park_images],
+                limit=3,
+            )
 
             # Append session ID so ChatGPT can pass it back for follow-up questions
             text_with_session = text + f"\n\n[session_id: {conv.session_id}] — pass this as session_id on follow-up plan_trip calls to continue the conversation."
-            content_blocks.append({"type": "text", "text": text_with_session})
+            full_text = (image_md + "\n\n" + text_with_session) if image_md else text_with_session
+            content_blocks = [{"type": "text", "text": full_text}]
 
         meta = _tool_meta(
             "itinerary",
@@ -824,32 +804,24 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
             content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
         else:
             # Collect all image URLs: hero first, then gallery images
-            image_urls: list[str] = []
+            all_images: list[dict[str, str | None]] = []
             if structured.get("heroImage"):
-                image_urls.append(structured["heroImage"])
+                all_images.append({"url": structured["heroImage"], "altText": structured.get("name", "Park photo")})
             for img_obj in structured.get("images", []):
                 if isinstance(img_obj, dict):
                     url = img_obj.get("url")
+                    alt = img_obj.get("altText") or img_obj.get("title")
                 elif isinstance(img_obj, str):
                     url = img_obj
+                    alt = None
                 else:
-                    url = None
-                if url and url not in image_urls:
-                    image_urls.append(url)
+                    continue
+                if url and url != structured.get("heroImage"):
+                    all_images.append({"url": url, "altText": alt})
 
-            logger.info("get_park_details image candidates for %s: %s", code, image_urls[:3])
-
-            content_blocks = []
-            if image_urls:
-                fetched = await fetch_images_as_base64(image_urls[:3])
-                for img in fetched:
-                    if img:
-                        content_blocks.append(img)
-
-            image_block_count = sum(1 for b in content_blocks if isinstance(b, dict) and b.get("type") == "image")
-            logger.info("get_park_details image blocks for %s: %d", code, image_block_count)
-
-            content_blocks.append({"type": "text", "text": text})
+            image_md = _markdown_images(all_images, limit=3)
+            full_text = (image_md + "\n\n" + text) if image_md else text
+            content_blocks = [{"type": "text", "text": full_text}]
 
         meta = _tool_meta(
             "park-details",
@@ -937,14 +909,13 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
             content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary_text}]
         else:
             parks_data = structured.get("parks", [])
-            image_urls = [p.get("heroImage") or "" for p in parks_data]
-            fetched = await fetch_images_as_base64([u for u in image_urls if u])
-
-            content_blocks = []
-            for img in fetched:
-                if img:
-                    content_blocks.append(img)
-            content_blocks.append({"type": "text", "text": text})
+            compare_images = [
+                {"url": p.get("heroImage"), "altText": p.get("name", "Park photo")}
+                for p in parks_data if p.get("heroImage")
+            ]
+            image_md = _markdown_images(compare_images, limit=4)
+            full_text = (image_md + "\n\n" + text) if image_md else text
+            content_blocks = [{"type": "text", "text": full_text}]
 
         meta = _tool_meta(
             "compare",
@@ -1051,14 +1022,13 @@ async def search_parks(
             content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
         else:
             parks_data = structured.get("parks", [])
-            top_urls = [p.get("heroImage") for p in parks_data[:3] if p.get("heroImage")]
-            content_blocks = []
-            if top_urls:
-                fetched = await fetch_images_as_base64(top_urls)
-                for img in fetched:
-                    if img:
-                        content_blocks.append(img)
-            content_blocks.append({"type": "text", "text": text})
+            search_images = [
+                {"url": p.get("heroImage"), "altText": p.get("name", "Park photo")}
+                for p in parks_data[:3] if p.get("heroImage")
+            ]
+            image_md = _markdown_images(search_images, limit=3)
+            full_text = (image_md + "\n\n" + text) if image_md else text
+            content_blocks = [{"type": "text", "text": full_text}]
 
         meta = _tool_meta(
             "park-list",
