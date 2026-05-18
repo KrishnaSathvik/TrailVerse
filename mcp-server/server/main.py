@@ -431,7 +431,7 @@ async def _check_rate_limit(bucket: str) -> CallToolResult | None:
         "openWorldHint": True,
         "idempotentHint": False,
     },
-    meta={"ui": {"resourceUri": "ui://widget/itinerary.html"}},
+    meta=_tool_meta("itinerary", invoking="Planning your trip with live park data…", invoked="Itinerary ready"),
 )
 async def plan_trip(
     message: str,
@@ -573,7 +573,7 @@ async def plan_trip(
         "openWorldHint": True,
         "idempotentHint": True,
     },
-    meta={"ui": {"resourceUri": "ui://widget/park-details.html"}},
+    meta=_tool_meta("park-details", invoking="Looking up park details…", invoked="Park details ready"),
 )
 async def get_park_details(park_code: str, ctx: Context | None = None) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
@@ -666,7 +666,7 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
         "openWorldHint": True,
         "idempotentHint": True,
     },
-    meta={"ui": {"resourceUri": "ui://widget/compare.html"}},
+    meta=_tool_meta("compare", invoking="Comparing parks…", invoked="Comparison ready"),
 )
 async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> CallToolResult:
     if (limited := await _check_rate_limit("read")):
@@ -740,7 +740,7 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
         "openWorldHint": True,
         "idempotentHint": True,
     },
-    meta={"ui": {"resourceUri": "ui://widget/park-list.html"}},
+    meta=_tool_meta("park-list", invoking="Searching NPS sites…", invoked="Results ready"),
 )
 async def search_parks(
     query: str | None = None,
@@ -824,7 +824,7 @@ async def search_parks(
         "openWorldHint": True,
         "idempotentHint": True,
     },
-    meta={"ui": {"resourceUri": "ui://widget/events.html"}},
+    meta=_tool_meta("events", invoking="Fetching park events…", invoked="Events ready"),
 )
 async def find_events(
     park_code: str | None = None,

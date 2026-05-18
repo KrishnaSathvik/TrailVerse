@@ -6,7 +6,6 @@ const {
   getParkWeather,
   getParkCrowdLevel,
   getBestTimeToVisit,
-  getParkFacilities,
   getParkComparisonSummary
 } = require('../controllers/enhancedParkController');
 const { getParkReviews } = require('../controllers/reviewController');
@@ -36,7 +35,6 @@ router.get('/:parkCode/enhanced', getEnhancedParkData);
 router.get('/:parkCode/weather', getParkWeather);
 router.get('/:parkCode/crowd', getParkCrowdLevel);
 router.get('/:parkCode/best-time', getBestTimeToVisit);
-router.get('/:parkCode/facilities', getParkFacilities);
 
 // Park reviews route - must come after other specific routes
 router.get('/:parkCode/reviews', getParkReviews);
