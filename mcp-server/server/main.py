@@ -526,7 +526,7 @@ async def plan_trip(
     # Only in structuredContent — never in visible text.
     structured["sessionId"] = conv.session_id
 
-    if ctx and _client_has_widgets(ctx):
+    if False:  # Disabled: widgets not rendering in ChatGPT yet
         # Widget renders the visual card — send a brief summary for the model
         n_days = len(structured.get("itinerary", {}).get("days", []))
         summary = f"{structured.get('parkName', 'Trip')} — {n_days} day itinerary ready"
@@ -628,7 +628,7 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
 
     structured, text = format_park_details(details, alerts, weather, campgrounds, permits, park_of_day)
 
-    if ctx and _client_has_widgets(ctx):
+    if False:  # Disabled: widgets not rendering in ChatGPT yet
         summary = f"{structured.get('name', 'Park')} — details, weather, alerts, fees loaded"
         content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
     else:
@@ -692,7 +692,7 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
 
     structured, text = format_compare(compare, summary)
 
-    if ctx and _client_has_widgets(ctx):
+    if False:  # Disabled: widgets not rendering in ChatGPT yet
         names = ", ".join(p.get("name", "") for p in structured.get("parks", []))
         summary_text = f"Comparison of {names} ready"
         content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary_text}]
@@ -781,7 +781,7 @@ async def search_parks(
 
     structured, text = format_search(resp)
 
-    if ctx and _client_has_widgets(ctx):
+    if False:  # Disabled: widgets not rendering in ChatGPT yet
         summary = f"{structured.get('count', 0)} parks found"
         content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
     else:
@@ -852,7 +852,7 @@ async def find_events(
 
     structured, text = format_events(resp)
 
-    if ctx and _client_has_widgets(ctx):
+    if False:  # Disabled: widgets not rendering in ChatGPT yet
         n = len(structured.get("events", []))
         summary = f"{n} event{'s' if n != 1 else ''} found"
         content: str | list[dict[str, str]] = [{"type": "text", "text": summary}]

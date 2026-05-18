@@ -20,6 +20,22 @@ class NPSService {
       }
     });
 
+    // Global rate-limit backoff: when a 429 is received, stop all NPS calls
+    // for a cooldown period to let the rate limit window reset
+    this._rateLimitedUntil = 0;
+    this._rateLimitCooldown = 10 * 60 * 1000; // 10 min backoff after 429
+
+    // Axios response interceptor: auto-trigger global backoff on 429
+    this.api.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 429) {
+          this._markRateLimited();
+        }
+        return Promise.reject(error);
+      }
+    );
+
     // Cache system for events
     this.eventsCache = {
       data: null,
@@ -169,6 +185,18 @@ class NPSService {
     const ttlMs = this.endpointCacheTTLs[type] || 30 * 60 * 1000;
     const ttlSeconds = Math.round(ttlMs / 1000);
     this.endpointCache.set(key, data, ttlSeconds);
+  }
+
+  // --- Rate-limit backoff ---
+
+  _markRateLimited() {
+    this._rateLimitedUntil = Date.now() + this._rateLimitCooldown;
+    const mins = Math.round(this._rateLimitCooldown / 60000);
+    console.warn(`🚫 NPS rate-limited — backing off for ${mins} minutes (until ${new Date(this._rateLimitedUntil).toISOString()})`);
+  }
+
+  _isRateLimited() {
+    return Date.now() < this._rateLimitedUntil;
   }
 
   _buildQueryCacheKey(prefix, params = {}) {
@@ -527,6 +555,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'activities');
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/thingstodo', {
         params: { parkCode, limit: 50 }
@@ -557,6 +587,15 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    // If rate-limited and we have a stale snapshot, use it rather than hammering NPS
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all alerts from NPS API (bulk)...');
@@ -641,6 +680,9 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'alerts');
     if (cached) return cached;
 
+    // Backoff if rate-limited
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/alerts', {
         params: { parkCode }
@@ -651,7 +693,6 @@ class NPSService {
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on alerts for ${parkCode}`);
         return [];
       }
       console.error(`❌ NPS API Error (getParkAlerts for ${parkCode}):`, error.message);
@@ -671,6 +712,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all campgrounds from NPS API (bulk)...');
@@ -745,6 +794,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'campgrounds');
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/campgrounds', {
         params: { parkCode, limit: 50 }
@@ -775,6 +826,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all visitor centers from NPS API (bulk)...');
@@ -849,6 +908,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'visitorcenters');
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/visitorcenters', {
         params: { parkCode, limit: 50 }
@@ -880,6 +941,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all places from NPS API (bulk)...');
@@ -953,6 +1022,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'places');
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/places', {
         params: { parkCode, limit: 50 }
@@ -983,6 +1054,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all tours from NPS API (bulk)...');
@@ -1056,6 +1135,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'tours');
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/tours', {
         params: { parkCode, limit: 50 }
@@ -1086,6 +1167,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all webcams from NPS API (bulk)...');
@@ -1159,6 +1248,9 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'webcams');
     if (cached) return cached;
 
+    // Backoff if rate-limited
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/webcams', {
         params: { parkCode, limit: 50 }
@@ -1169,7 +1261,6 @@ class NPSService {
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on webcams for ${parkCode}`);
         return [];
       }
       console.error(`❌ NPS API Error (getParkWebcams for ${parkCode}):`, error.message);
@@ -1190,6 +1281,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
       return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
+        return snapshot.data;
+      }
+      return {};
     }
 
     console.log('🔄 Fetching all parking lots from NPS API (bulk)...');
@@ -1263,6 +1362,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'parkinglots');
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/parkinglots', {
         params: { parkCode, limit: 50 }
@@ -1288,6 +1389,8 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
     if (cached) return cached;
 
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/multimedia/videos', {
         params: { parkCode, limit: 50 }
@@ -1312,6 +1415,8 @@ class NPSService {
     const cacheKey = `park_images_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
     if (cached) return cached;
+
+    if (this._isRateLimited()) return [];
 
     try {
       const response = await this.api.get('/parks', {
@@ -1345,6 +1450,8 @@ class NPSService {
     const cacheKey = `gallery_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
     if (cached) return cached;
+
+    if (this._isRateLimited()) return [];
 
     try {
       // Fetch individual gallery assets for this park
@@ -1382,6 +1489,9 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
     if (cached) return cached;
 
+    // Backoff if rate-limited
+    if (this._isRateLimited()) return [];
+
     try {
       const response = await this.api.get('/amenities/parksplaces', {
         params: { parkCode, limit: 100 }
@@ -1417,7 +1527,6 @@ class NPSService {
       return amenities;
     } catch (error) {
       if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on amenities for ${parkCode}`);
         return [];
       }
       console.error(`❌ NPS API Error (getParkAmenities for ${parkCode}):`, error.message);
@@ -1493,6 +1602,15 @@ class NPSService {
         console.log(`🗄️ Returning cached filtered events snapshot for ${queryCacheKey}`);
         return dedupedSnapshot.slice(0, normalizedLimit);
       }
+    }
+
+    // Backoff if rate-limited
+    if (this._isRateLimited()) {
+      if (!hasFilters) {
+        const staleSnap = await this._loadSnapshot('bulk-events', Infinity);
+        if (staleSnap?.data) return this._dedupeNpsEvents(staleSnap.data).slice(0, normalizedLimit);
+      }
+      return [];
     }
 
     try {
@@ -1704,6 +1822,14 @@ class NPSService {
     if (snapshot && !snapshot.stale) {
       this.setActivitiesCache(snapshot.data);
       return snapshot.data.slice(0, limit);
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this.setActivitiesCache(snapshot.data);
+        return snapshot.data.slice(0, limit);
+      }
+      return [];
     }
 
     try {
