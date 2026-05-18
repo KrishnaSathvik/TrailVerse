@@ -1387,23 +1387,28 @@ class NPSService {
         params: { parkCode, limit: 100 }
       });
 
-      // NPS amenities/parksplaces returns nested data — flatten it
+      // NPS amenities/parksplaces returns: data = [[{id, name, parks: [{places: [...]}]}], ...]
+      // Each entry in data is a single-element array wrapping an amenity object
       const rawData = response.data.data || [];
       const amenities = [];
 
       for (const item of rawData) {
-        // Each item has an array of parks/places with that amenity
-        const amenityName = item[0] || '';
-        const places = item[1] || [];
+        const amenityObj = Array.isArray(item) ? item[0] : item;
+        if (!amenityObj) continue;
+        const amenityName = amenityObj.name || '';
+        const parks = amenityObj.parks || [];
 
-        for (const place of places) {
-          amenities.push({
-            name: amenityName,
-            placeName: place.title || place.name || '',
-            placeType: place.parkFacilityType || 'General',
-            url: place.url || '',
-            isManagedByNPS: place.isManagedByNPS || false
-          });
+        for (const park of parks) {
+          const places = park.places || [];
+          for (const place of places) {
+            amenities.push({
+              name: amenityName,
+              placeName: place.title || place.name || '',
+              placeType: place.parkFacilityType || 'General',
+              url: place.url || '',
+              isManagedByNPS: place.isManagedByNPS || false
+            });
+          }
         }
       }
 
