@@ -1354,10 +1354,8 @@ class NPSService {
   }
 
   async getParkParkingLots(parkCode) {
-    if (this._isCacheValid(this.parkingLotsCache) && this.parkingLotsCache.data) {
-      return this.parkingLotsCache.data[parkCode] || [];
-    }
-
+    // Always use 10-min per-endpoint cache (not 24h bulk cache) so liveStatus
+    // occupancy data stays fresh — bulk cache freezes "Closed"/"Open" for hours
     const cacheKey = `parkinglots_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'parkinglots');
     if (cached) return cached;

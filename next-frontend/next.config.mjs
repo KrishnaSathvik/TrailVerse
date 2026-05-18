@@ -1,9 +1,25 @@
 import path from 'path';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { withSerwist } from '@serwist/turbopack';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Auto-generate redirects from park-slugs.json for ALL 470+ NPS sites
+const parkSlugsData = JSON.parse(
+  readFileSync(new URL('./src/data/park-slugs.json', import.meta.url), 'utf-8')
+);
+
+function nameToSlug(fullName) {
+  return fullName
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -12,70 +28,19 @@ const nextConfig = {
     root: path.join(__dirname, '..'),
   },
   async redirects() {
-    return [
-      { source: '/parks/acad', destination: '/parks/acadia-national-park', permanent: true },
-      { source: '/parks/arch', destination: '/parks/arches-national-park', permanent: true },
-      { source: '/parks/badl', destination: '/parks/badlands-national-park', permanent: true },
-      { source: '/parks/bibe', destination: '/parks/big-bend-national-park', permanent: true },
-      { source: '/parks/bisc', destination: '/parks/biscayne-national-park', permanent: true },
-      { source: '/parks/blca', destination: '/parks/black-canyon-of-the-gunnison-national-park', permanent: true },
-      { source: '/parks/brca', destination: '/parks/bryce-canyon-national-park', permanent: true },
-      { source: '/parks/cany', destination: '/parks/canyonlands-national-park', permanent: true },
-      { source: '/parks/care', destination: '/parks/capitol-reef-national-park', permanent: true },
-      { source: '/parks/cave', destination: '/parks/carlsbad-caverns-national-park', permanent: true },
-      { source: '/parks/chis', destination: '/parks/channel-islands-national-park', permanent: true },
-      { source: '/parks/cong', destination: '/parks/congaree-national-park', permanent: true },
-      { source: '/parks/crla', destination: '/parks/crater-lake-national-park', permanent: true },
-      { source: '/parks/cuva', destination: '/parks/cuyahoga-valley-national-park', permanent: true },
-      { source: '/parks/deva', destination: '/parks/death-valley-national-park', permanent: true },
-      { source: '/parks/dena', destination: '/parks/denali-national-park-and-preserve', permanent: true },
-      { source: '/parks/drto', destination: '/parks/dry-tortugas-national-park', permanent: true },
-      { source: '/parks/ever', destination: '/parks/everglades-national-park', permanent: true },
-      { source: '/parks/gaar', destination: '/parks/gates-of-the-arctic-national-park-and-preserve', permanent: true },
-      { source: '/parks/glac', destination: '/parks/glacier-national-park', permanent: true },
-      { source: '/parks/glba', destination: '/parks/glacier-bay-national-park-and-preserve', permanent: true },
-      { source: '/parks/grba', destination: '/parks/great-basin-national-park', permanent: true },
-      { source: '/parks/grca', destination: '/parks/grand-canyon-national-park', permanent: true },
-      { source: '/parks/grsa', destination: '/parks/great-sand-dunes-national-park-and-preserve', permanent: true },
-      { source: '/parks/grsm', destination: '/parks/great-smoky-mountains-national-park', permanent: true },
-      { source: '/parks/grte', destination: '/parks/grand-teton-national-park', permanent: true },
-      { source: '/parks/guad', destination: '/parks/guadalupe-mountains-national-park', permanent: true },
-      { source: '/parks/hale', destination: '/parks/haleakala-national-park', permanent: true },
-      { source: '/parks/havo', destination: '/parks/hawaii-volcanoes-national-park', permanent: true },
-      { source: '/parks/hosp', destination: '/parks/hot-springs-national-park', permanent: true },
-      { source: '/parks/indu', destination: '/parks/indiana-dunes-national-park', permanent: true },
-      { source: '/parks/isro', destination: '/parks/isle-royale-national-park', permanent: true },
-      { source: '/parks/jotr', destination: '/parks/joshua-tree-national-park', permanent: true },
-      { source: '/parks/katm', destination: '/parks/katmai-national-park-and-preserve', permanent: true },
-      { source: '/parks/kefj', destination: '/parks/kenai-fjords-national-park', permanent: true },
-      { source: '/parks/kova', destination: '/parks/kobuk-valley-national-park', permanent: true },
-      { source: '/parks/lacl', destination: '/parks/lake-clark-national-park-and-preserve', permanent: true },
-      { source: '/parks/lavo', destination: '/parks/lassen-volcanic-national-park', permanent: true },
-      { source: '/parks/maca', destination: '/parks/mammoth-cave-national-park', permanent: true },
-      { source: '/parks/meve', destination: '/parks/mesa-verde-national-park', permanent: true },
-      { source: '/parks/mora', destination: '/parks/mount-rainier-national-park', permanent: true },
-      { source: '/parks/noca', destination: '/parks/north-cascades-national-park', permanent: true },
-      { source: '/parks/olym', destination: '/parks/olympic-national-park', permanent: true },
-      { source: '/parks/pefo', destination: '/parks/petrified-forest-national-park', permanent: true },
-      { source: '/parks/pinn', destination: '/parks/pinnacles-national-park', permanent: true },
-      { source: '/parks/redw', destination: '/parks/redwood-national-and-state-parks', permanent: true },
-      { source: '/parks/romo', destination: '/parks/rocky-mountain-national-park', permanent: true },
-      { source: '/parks/sagu', destination: '/parks/saguaro-national-park', permanent: true },
-      { source: '/parks/sequ', destination: '/parks/sequoia-national-park', permanent: true },
-      { source: '/parks/shen', destination: '/parks/shenandoah-national-park', permanent: true },
-      { source: '/parks/thro', destination: '/parks/theodore-roosevelt-national-park', permanent: true },
-      { source: '/parks/voya', destination: '/parks/voyageurs-national-park', permanent: true },
-      { source: '/parks/whsa', destination: '/parks/white-sands-national-park', permanent: true },
-      { source: '/parks/wica', destination: '/parks/wind-cave-national-park', permanent: true },
-      { source: '/parks/wrst', destination: '/parks/wrangell-st-elias-national-park-and-preserve', permanent: true },
-      { source: '/parks/yell', destination: '/parks/yellowstone-national-park', permanent: true },
-      { source: '/parks/yose', destination: '/parks/yosemite-national-park', permanent: true },
-      { source: '/parks/zion', destination: '/parks/zion-national-park', permanent: true },
-      { source: '/parks/npsa', destination: '/parks/national-park-of-american-samoa', permanent: true },
-      { source: '/parks/viis', destination: '/parks/virgin-islands-national-park', permanent: true },
-      { source: '/parks/neri', destination: '/parks/new-river-gorge-national-park-and-preserve', permanent: true },
+    // Short-code → slug redirects for ALL parks (e.g. /parks/yell → /parks/yellowstone-national-park)
+    const parkRedirects = parkSlugsData
+      .filter(p => p.parkCode && p.fullName)
+      .map(p => ({
+        source: `/parks/${p.parkCode}`,
+        destination: `/parks/${nameToSlug(p.fullName)}`,
+        permanent: true,
+      }));
 
-      // Old Vite-era routes that Google indexed
+    return [
+      ...parkRedirects,
+
+      // Legacy route redirects (old Vite-era routes that Google indexed)
       { source: '/park/:slug', destination: '/parks/:slug', permanent: true },
       { source: '/plan', destination: '/plan-ai', permanent: true },
       { source: '/trip-planner', destination: '/plan-ai', permanent: true },
@@ -83,7 +48,7 @@ const nextConfig = {
       { source: '/parks', destination: '/explore', permanent: true },
       { source: '/activity', destination: '/explore', permanent: true },
 
-      // Partial park name redirects (Google indexed without full slug)
+      // Partial park name redirects (common searches Google indexed without full slug)
       { source: '/parks/yellowstone', destination: '/parks/yellowstone-national-park', permanent: true },
       { source: '/parks/yosemite', destination: '/parks/yosemite-national-park', permanent: true },
       { source: '/parks/grand-canyon', destination: '/parks/grand-canyon-national-park', permanent: true },
