@@ -270,7 +270,7 @@ async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
     if not url:
         return None
     if not _is_allowed_image_url(url):
-        logger.debug("Blocked image fetch from untrusted host: %s", url)
+        logger.warning("Image blocked by allowlist: %s", url)
         return None
     try:
         from io import BytesIO
@@ -281,9 +281,11 @@ async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
             resp.raise_for_status()
             content_type = resp.headers.get("content-type", "image/jpeg").split(";")[0].strip()
             if not content_type.startswith("image/"):
+                logger.warning("URL is not image content: %s content_type=%s", url, content_type)
                 return None
             body = resp.content
             if len(body) > _IMAGE_MAX_DOWNLOAD:
+                logger.warning("Image too large: %s size=%d", url, len(body))
                 return None
 
             # Resize and compress
@@ -305,7 +307,7 @@ async def fetch_image_as_base64(url: str) -> dict[str, str] | None:
                 "mimeType": "image/jpeg",
             }
     except Exception:
-        logger.debug("Failed to fetch/resize image: %s", url, exc_info=True)
+        logger.warning("Failed to fetch/resize image: %s", url, exc_info=True)
         return None
 
 

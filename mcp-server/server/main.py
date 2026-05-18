@@ -586,12 +586,23 @@ async def plan_trip(
             content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
         else:
             # No widget support — send full markdown + images for the LLM
+            image_urls: list[str] = []
+            for img_obj in structured.get("parkImages") or []:
+                if isinstance(img_obj, dict):
+                    url = img_obj.get("url")
+                elif isinstance(img_obj, str):
+                    url = img_obj
+                else:
+                    url = None
+                if url:
+                    image_urls.append(url)
+
             content_blocks = []
-            park_images = structured.get("parkImages") or []
-            if park_images:
-                img = await fetch_image_as_base64(park_images[0].get("url", ""))
-                if img:
-                    content_blocks.append(img)
+            if image_urls:
+                fetched = await fetch_images_as_base64(image_urls[:3])
+                for img in fetched:
+                    if img:
+                        content_blocks.append(img)
             # Append session ID so ChatGPT can pass it back for follow-up questions
             text_with_session = text + f"\n\n[session_id: {conv.session_id}] — pass this as session_id on follow-up plan_trip calls to continue the conversation."
             content_blocks.append({"type": "text", "text": text_with_session})
@@ -715,12 +726,26 @@ async def get_park_details(park_code: str, ctx: Context | None = None) -> CallTo
             summary = f"{structured.get('name', 'Park')} — details, weather, alerts, fees loaded"
             content_blocks: list[dict[str, str]] = [{"type": "text", "text": summary}]
         else:
+            # Collect all image URLs: hero first, then gallery images
+            image_urls: list[str] = []
+            if structured.get("heroImage"):
+                image_urls.append(structured["heroImage"])
+            for img_obj in structured.get("images", []):
+                if isinstance(img_obj, dict):
+                    url = img_obj.get("url")
+                elif isinstance(img_obj, str):
+                    url = img_obj
+                else:
+                    url = None
+                if url and url not in image_urls:
+                    image_urls.append(url)
+
             content_blocks = []
-            hero_url = structured.get("heroImage")
-            if hero_url:
-                img = await fetch_image_as_base64(hero_url)
-                if img:
-                    content_blocks.append(img)
+            if image_urls:
+                fetched = await fetch_images_as_base64(image_urls[:3])
+                for img in fetched:
+                    if img:
+                        content_blocks.append(img)
             content_blocks.append({"type": "text", "text": text})
 
         meta = _tool_meta(
