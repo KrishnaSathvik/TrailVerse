@@ -56,7 +56,9 @@ const Header = () => {
   const isMoreActive = () => moreNavItems.some((item) => isActive(item.path));
 
   const navLinkClassName = (active) =>
-    `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'}`;
+    `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
+      active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'
+    }`;
 
   const navLinkStyle = (active) => ({
     backgroundColor: active ? 'var(--surface)' : 'transparent',
@@ -329,16 +331,16 @@ const Header = () => {
 
   return (
     <header
-      className="relative backdrop-blur-xl border-b sticky top-0 z-50"
+      className="sticky top-0 z-50 border-b backdrop-blur-xl"
       style={{
         backgroundColor: 'var(--bg-primary)',
         borderColor: 'var(--border)',
-        color: 'var(--text-primary)'
+        color: 'var(--text-primary)',
       }}
     >
       <nav className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-        <div className="relative flex h-16 lg:h-[4.25rem] items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex h-16 items-center justify-between gap-4 lg:grid lg:h-[4.25rem] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
+          <div className="flex min-w-0 items-center gap-3 lg:justify-self-start">
             <button
               type="button"
               onClick={openMobileMenu}
@@ -346,7 +348,7 @@ const Header = () => {
               style={{
                 backgroundColor: 'var(--surface)',
                 borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
+                color: 'var(--text-primary)',
               }}
               aria-label="Open sidebar"
               aria-expanded={mobileMenuOpen}
@@ -370,99 +372,99 @@ const Header = () => {
             </Link>
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 hidden lg:flex justify-center">
-            <div className="pointer-events-auto flex items-center gap-2">
-              {primaryNavItems.map((item) => renderNavLink(item))}
+          <div className="hidden lg:flex items-center justify-center gap-2 lg:justify-self-center">
+            {primaryNavItems.map((item) => renderNavLink(item))}
 
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMoreMenuOpen((open) => !open)}
-                  className={`inline-flex items-center gap-1 rounded-full px-4 py-2.5 text-[0.9375rem] font-medium transition ${
-                    isMoreActive() ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                  style={{
-                    backgroundColor: isMoreActive() ? 'var(--surface)' : 'transparent',
-                    color: isMoreActive() ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    borderColor: isMoreActive() ? 'var(--border)' : 'transparent',
-                  }}
-                  aria-expanded={moreMenuOpen}
-                  aria-haspopup="menu"
-                >
-                  More
-                  <ChevronDown className={`h-3 w-3 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMoreMenuOpen((open) => !open)}
+                className={`inline-flex items-center gap-1 rounded-full px-4 py-2.5 text-[0.9375rem] font-medium transition ${
+                  isMoreActive() ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+                style={{
+                  backgroundColor: isMoreActive() ? 'var(--surface)' : 'transparent',
+                  color: isMoreActive() ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  borderColor: isMoreActive() ? 'var(--border)' : 'transparent',
+                }}
+                aria-expanded={moreMenuOpen}
+                aria-haspopup="menu"
+              >
+                More
+                <ChevronDown className={`h-3 w-3 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-                {moreMenuOpen && (
-                  <>
-                    <button
-                      type="button"
-                      className="fixed inset-0 z-10"
-                      onClick={closeMoreMenu}
-                      aria-label="Close more menu"
-                    />
-                    <div
-                      className="absolute left-1/2 top-full z-20 mt-2 min-w-[12rem] -translate-x-1/2 rounded-2xl border p-2 shadow-xl"
-                      style={{
-                        backgroundColor: 'var(--bg-primary)',
-                        borderColor: 'var(--border)',
-                      }}
-                      role="menu"
-                    >
-                      {moreNavItems.map((item) => {
-                        const active = isActive(item.path);
+              {moreMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-10"
+                    onClick={closeMoreMenu}
+                    aria-label="Close more menu"
+                  />
+                  <div
+                    className="absolute left-1/2 top-full z-20 mt-2 min-w-[12rem] -translate-x-1/2 rounded-2xl border p-2 shadow-xl"
+                    style={{
+                      backgroundColor: 'var(--bg-primary)',
+                      borderColor: 'var(--border)',
+                    }}
+                    role="menu"
+                  >
+                    {moreNavItems.map((item) => {
+                      const active = isActive(item.path);
 
-                        return (
-                          <Link
-                            key={item.path}
-                            href={item.path}
-                            onClick={closeMoreMenu}
-                            className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                              active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                            }`}
-                            style={navLinkStyle(active)}
-                            role="menuitem"
-                          >
-                            {item.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
+                      return (
+                        <Link
+                          key={item.path}
+                          href={item.path}
+                          onClick={closeMoreMenu}
+                          className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                            active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                          }`}
+                          style={{
+                            backgroundColor: active ? 'var(--surface)' : 'transparent',
+                            borderColor: active ? 'var(--border)' : 'transparent',
+                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          }}
+                          role="menuitem"
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-1 items-center justify-end gap-3">
-            <div className="hidden lg:flex items-center gap-3">
-              <ThemeSwitcher showLabel />
+          <div className="hidden lg:flex items-center justify-end gap-3 lg:justify-self-end">
+            <ThemeSwitcher showLabel />
 
-              {isAuthenticated ? (
-                <div className="flex items-center gap-3">
-                  {user?.role === 'admin' && (
-                    <Link
-                      href="/admin"
-                      className="text-sm font-medium transition"
-                      style={{ color: 'var(--text-secondary)' }}
-                      onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
-                      onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
-                    >
-                      Admin
-                    </Link>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 rounded-full transition"
-                    style={{ color: 'var(--text-tertiary)' }}
-                    onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
-                    onMouseLeave={(e) => e.target.style.color = 'var(--text-tertiary)'}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                {user?.role === 'admin' && (
+                  <Link
+                    href="/admin"
+                    className="text-sm font-medium transition"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
+                    onMouseLeave={(e) => { e.target.style.color = 'var(--text-secondary)'; }}
                   >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : null}
-            </div>
+                    Admin
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full transition"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
+                  onMouseLeave={(e) => { e.target.style.color = 'var(--text-tertiary)'; }}
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </nav>

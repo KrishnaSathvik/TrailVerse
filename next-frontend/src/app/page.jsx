@@ -68,7 +68,7 @@ export default async function LandingPage() {
       <Header />
 
       <main>
-        <section className="relative z-30 w-full min-h-[20rem] sm:min-h-[22rem] lg:min-h-[26rem] pb-2">
+        <section className="relative z-30 w-full overflow-x-hidden min-h-[22rem] sm:min-h-[26rem] md:min-h-[28rem] lg:min-h-[30rem]">
           <Image
             src="/background23.png"
             alt=""
@@ -80,13 +80,13 @@ export default async function LandingPage() {
           />
           <div className="absolute inset-0 z-[1] bg-black/50" />
           <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14 xl:px-12">
-            <div className="w-full max-w-6xl mx-auto text-center">
+            <div className="w-full max-w-[92rem] mx-auto text-center">
               <div className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 sm:px-5 sm:py-2.5 backdrop-blur-md mb-4 sm:mb-5 shadow-lg bg-black/30 border border-white/10">
                 <IconGlyph name="Route" className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
                 <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{LANDING_HERO_BADGE}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-[2.625rem] lg:text-[2.875rem] xl:text-5xl tracking-tight mb-4 sm:mb-5 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '1.05', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl tracking-tight mb-4 sm:mb-5 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '1', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
                 Discover America&apos;s <br className="hidden sm:block" />
                 <span style={{ color: 'var(--accent-green)', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>National Parks.</span>
               </h1>
@@ -95,7 +95,7 @@ export default async function LandingPage() {
                 {LANDING_HERO_SUBTITLE}
               </p>
 
-              <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-6 sm:mb-7">
+              <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
                 <Link href="/plan-ai" className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 backdrop-blur-md" style={{ backgroundColor: 'var(--accent-green)' }}>
                   <IconGlyph name="Sparkles" className="h-4 w-4" style={{ color: '#fff' }} />
                   Ask Trailie
@@ -105,13 +105,19 @@ export default async function LandingPage() {
                   {BROWSE_HUB_NAV_LABEL}
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
 
+        <section className="relative z-20 px-4 sm:px-6 lg:px-10 xl:px-12 pt-8 sm:pt-10 pb-2 overflow-visible" style={{ backgroundColor: 'var(--bg-primary)' }}>
+          <div className="max-w-[92rem] mx-auto">
+            <div className="relative mx-auto w-full max-w-3xl">
               <LandingSearchClient parks={allParks} />
             </div>
           </div>
         </section>
 
-        <section className="relative z-0 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section className="relative z-0 pt-8 sm:pt-10 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-[92rem] mx-auto">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-10">
               <div>

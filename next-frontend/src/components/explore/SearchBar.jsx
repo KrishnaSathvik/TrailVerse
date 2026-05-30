@@ -17,12 +17,13 @@ const SearchBar = ({
   onToggleFilters,
   variant = 'default',
   compact = false,
+  useExternalResults = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const isHero = variant === 'hero';
 
   return (
-    <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
+    <div className={`relative transition-all duration-300 ${isFocused && !useExternalResults ? 'scale-[1.02]' : ''}`}>
       <div className={`relative rounded-2xl transition-all ${
         isFocused ? (isHero ? HERO_SEARCH_FOCUS_RING : 'ring-2 ring-forest-500/50') : ''
       }`}
@@ -79,7 +80,7 @@ const SearchBar = ({
       </div>
 
       {/* Search Suggestions — landing/map hero uses an external results panel */}
-      {isFocused && value && !isHero && (
+      {isFocused && value && !isHero && !useExternalResults && (
         <div className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden backdrop-blur shadow-lg z-10"
           style={{
             backgroundColor: 'var(--surface)',
