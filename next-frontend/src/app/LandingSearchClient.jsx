@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import SearchBar from '@/components/explore/SearchBar';
 import { ChevronRight, Mountain } from '@components/icons';
@@ -10,8 +11,11 @@ import { parkToSlug } from '@/utils/parkSlug';
 export default function LandingSearchClient({ parks }) {
   const router = useRouter();
   const searchRef = useRef(null);
+  const dropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState(null);
+  const canUsePortal = typeof document !== 'undefined';
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim() || !parks.length) return [];
@@ -26,9 +30,14 @@ export default function LandingSearchClient({ parks }) {
       .slice(0, 6);
   }, [parks, searchQuery]);
 
+  const showDropdown = searchFocused && searchQuery.trim();
+
   useEffect(() => {
     const handler = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
+      const target = event.target;
+      const insideSearch = searchRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideSearch && !insideDropdown) {
         setSearchFocused(false);
       }
     };
@@ -37,28 +46,47 @@ export default function LandingSearchClient({ parks }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  return (
-    <div ref={searchRef} className="relative z-30 w-full max-w-3xl mx-auto">
-      <div onFocus={() => setSearchFocused(true)}>
-        <SearchBar
-          variant="hero"
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onClear={() => setSearchQuery('')}
-          placeholder="Search national parks..."
-        />
-      </div>
+  useEffect(() => {
+    if (!showDropdown || !searchRef.current) {
+      setDropdownStyle(null);
+      return undefined;
+    }
 
-      {searchFocused && searchQuery.trim() && (
-        <div
-          className="absolute top-full left-0 right-0 mt-3 rounded-[1.5rem] overflow-hidden backdrop-blur-md z-[70] animate-fade-in"
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
-          }}
-        >
+    const updatePosition = () => {
+      if (!searchRef.current) return;
+      const rect = searchRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        top: rect.bottom + 12,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [showDropdown, searchQuery]);
+
+  const dropdown = showDropdown && dropdownStyle ? (
+    <div
+      ref={dropdownRef}
+      id="landing-search-dropdown"
+      className="fixed rounded-[1.5rem] z-[100] animate-fade-in max-h-[min(24rem,calc(100dvh-6rem))] overflow-y-auto"
+      style={{
+        top: dropdownStyle.top,
+        left: dropdownStyle.left,
+        width: dropdownStyle.width,
+        backgroundColor: 'var(--bg-primary)',
+        borderWidth: '1px',
+        borderColor: 'var(--border)',
+        boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
+      }}
+    >
           <div
             className="flex items-center justify-between gap-3 px-5 py-3"
             style={{ borderBottom: '1px solid var(--border)' }}
@@ -133,8 +161,22 @@ export default function LandingSearchClient({ parks }) {
           >
             Open full explore results for &ldquo;{searchQuery}&rdquo; →
           </button>
-        </div>
-      )}
+    </div>
+  ) : null;
+
+  return (
+    <div ref={searchRef} className="relative z-40 w-full max-w-3xl mx-auto">
+      <div onFocus={() => setSearchFocused(true)}>
+        <SearchBar
+          variant="hero"
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onClear={() => setSearchQuery('')}
+          placeholder="Search national parks..."
+        />
+      </div>
+
+      {canUsePortal && dropdown ? createPortal(dropdown, document.body) : null}
     </div>
   );
 }

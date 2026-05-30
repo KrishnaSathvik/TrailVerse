@@ -78,8 +78,8 @@ const SearchBar = ({
         ) : null}
       </div>
 
-      {/* Search Suggestions (optional) */}
-      {isFocused && value && (
+      {/* Search Suggestions — landing/map hero uses an external results panel */}
+      {isFocused && value && !isHero && (
         <div className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden backdrop-blur shadow-lg z-10"
           style={{
             backgroundColor: 'var(--surface)',

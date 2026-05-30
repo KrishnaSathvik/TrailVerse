@@ -68,7 +68,7 @@ export default async function LandingPage() {
       <Header />
 
       <main>
-        <section className="relative z-30 w-full overflow-hidden min-h-[20rem] sm:min-h-[24rem] md:h-[58vh] md:max-h-[40rem]">
+        <section className="relative z-30 w-full min-h-[20rem] sm:min-h-[22rem] lg:min-h-[26rem] pb-2">
           <Image
             src="/background23.png"
             alt=""
@@ -79,14 +79,14 @@ export default async function LandingPage() {
             sizes="100vw"
           />
           <div className="absolute inset-0 z-[1] bg-black/50" />
-          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-12 md:justify-end md:pb-10 lg:px-10 lg:pb-12 xl:px-12">
+          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14 xl:px-12">
             <div className="w-full max-w-6xl mx-auto text-center">
               <div className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 sm:px-5 sm:py-2.5 backdrop-blur-md mb-4 sm:mb-5 shadow-lg bg-black/30 border border-white/10">
                 <IconGlyph name="Route" className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
                 <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{LANDING_HERO_BADGE}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl tracking-tight mb-4 sm:mb-5 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '1', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
+              <h1 className="text-3xl sm:text-4xl md:text-[2.625rem] lg:text-[2.875rem] xl:text-5xl tracking-tight mb-4 sm:mb-5 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '1.05', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
                 Discover America&apos;s <br className="hidden sm:block" />
                 <span style={{ color: 'var(--accent-green)', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>National Parks.</span>
               </h1>
