@@ -10,7 +10,7 @@ export const useVisitedParks = () => {
   const { isAuthenticated, user } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const { subscribe, unsubscribe, subscribeToVisited } = useWebSocket();
+  const { subscribe, unsubscribe, subscribeToVisited, getStatus } = useWebSocket();
 
   // Query for visited parks
   const {
@@ -182,9 +182,12 @@ export const useVisitedParks = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Auto-refresh every 30 seconds (reduced from 10s since WebSocket now handles real-time)
+    // Poll only when WebSocket is down — real-time events handle sync when connected
     const autoRefreshInterval = setInterval(() => {
-      console.log('[Auto-Refresh] Refreshing visited parks...');
+      const { isConnected, isAuthenticated: wsAuthenticated } = getStatus();
+      if (isConnected && wsAuthenticated) return;
+
+      console.log('[Auto-Refresh] WebSocket offline — safety refresh of visited parks...');
       queryClient.invalidateQueries(['visitedParks']);
     }, 30000);
 
@@ -212,7 +215,7 @@ export const useVisitedParks = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('refreshVisitedParks', handleRefreshEvent);
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, getStatus, queryClient]);
 
   return {
     visitedParks,

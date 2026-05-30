@@ -1,6 +1,6 @@
 import axios from 'axios';
 import imageUploadService from './imageUploadService';
-import { getStoredToken } from './authService';
+import { getStoredToken, notifySessionExpiredIfNeeded } from './authService';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -24,6 +24,14 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    notifySessionExpiredIfNeeded(error);
     return Promise.reject(error);
   }
 );

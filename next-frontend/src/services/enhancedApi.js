@@ -5,7 +5,7 @@
 
 import axios from 'axios';
 import cacheService from './cacheService';
-import { getStoredToken } from './authService';
+import { getStoredToken, notifySessionExpiredIfNeeded } from './authService';
 
 const DEFAULT_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -87,6 +87,8 @@ class EnhancedApiService {
         return response;
       },
       async (error) => {
+        notifySessionExpiredIfNeeded(error);
+
         // Debug logging for 413 errors
         if (error.response?.status === 413) {
           console.error('🚨 EnhancedApi: 413 Payload Too Large Error:', {

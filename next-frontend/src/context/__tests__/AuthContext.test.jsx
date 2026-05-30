@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '../AuthContext';
 import authService from '../../services/authService';
 
 vi.mock('../../services/authService', () => ({
+  AUTH_SESSION_EXPIRED_EVENT: 'authSessionExpired',
   default: {
     getCurrentUser: vi.fn(),
     getToken: vi.fn(),

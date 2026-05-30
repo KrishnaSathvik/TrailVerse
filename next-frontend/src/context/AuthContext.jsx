@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import authService from '../services/authService';
+import authService, { AUTH_SESSION_EXPIRED_EVENT } from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
 import { invalidateCache } from '../utils/cacheUtils';
 import { logEvent } from '../utils/analytics';
@@ -8,6 +8,7 @@ import LoginModal from '../components/auth/LoginModal';
 
 const AuthContext = createContext();
 const ANONYMOUS_CHAT_MIGRATION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+const SESSION_EXPIRED_MESSAGE = 'Your session expired. Please sign in again.';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -119,6 +120,20 @@ export const AuthProvider = ({ children }) => {
 
 
   useEffect(() => {
+    const handleSessionExpired = () => {
+      authService.logout();
+      setUser(null);
+      setUserDataLoaded(false);
+      setAuthModal({ isOpen: true, message: SESSION_EXPIRED_MESSAGE });
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => {
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
+  }, []);
+
+  useEffect(() => {
     // Sync auth state across tabs via localStorage events
     const handleStorageChange = (e) => {
       if (e.key === 'token') {
@@ -203,12 +218,12 @@ export const AuthProvider = ({ children }) => {
           console.log('❌ AuthContext: Error response:', error.response?.data);
           console.log('❌ AuthContext: Full error object:', error);
           
-          // Only clear token if server returns 401 (unauthorized)
+          // Clear stale session — don't keep sending an invalid token as anonymous
           if (error.response?.status === 401) {
-
             authService.logout();
             setUser(null);
             setUserDataLoaded(false);
+            setAuthModal({ isOpen: true, message: SESSION_EXPIRED_MESSAGE });
           } else {
             // For other errors (network, server down, etc.), keep user logged in
             console.warn('⚠️ AuthContext: Failed to validate token with server, but keeping user logged in:', error.message);

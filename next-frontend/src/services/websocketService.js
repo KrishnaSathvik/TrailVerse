@@ -125,7 +125,8 @@ class WebSocketService {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         reconnectionAttempts: this.maxReconnectAttempts,
-        transports: ['websocket', 'polling'],
+        // Prefer polling first — Render/Vercel edge often blocks raw WebSocket upgrades
+        transports: ['polling', 'websocket'],
         timeout: 10000,
         // Allow cross-origin connections
         withCredentials: true

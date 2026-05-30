@@ -7,7 +7,7 @@ import cacheService from '../services/cacheService';
 
 export const useFavorites = () => {
   const { user, isAuthenticated } = useAuth();
-  const { subscribe, unsubscribe, subscribeToFavorites } = useWebSocket();
+  const { subscribe, unsubscribe, subscribeToFavorites, getStatus } = useWebSocket();
   const queryClient = useQueryClient();
 
   // Query for favorites using React Query
@@ -221,12 +221,14 @@ export const useFavorites = () => {
     subscribe('favoriteAdded', handleFavoriteAdded);
     subscribe('favoriteRemoved', handleFavoriteRemoved);
 
-    // Auto-refresh fallback - refetch every 30 seconds as a safety net
-    // This is only needed if WebSocket events are missed
+    // Poll only when WebSocket is down — real-time events handle sync when connected
     const autoRefreshInterval = setInterval(() => {
-      console.log('[Auto-Refresh] Safety refresh of favorites...');
+      const { isConnected, isAuthenticated: wsAuthenticated } = getStatus();
+      if (isConnected && wsAuthenticated) return;
+
+      console.log('[Auto-Refresh] WebSocket offline — safety refresh of favorites...');
       queryClient.invalidateQueries(['favorites', user?.id || user?._id]);
-    }, 30000); // Reduced frequency since WebSocket should handle real-time updates
+    }, 30000);
 
     // Cleanup
     return () => {
@@ -234,7 +236,7 @@ export const useFavorites = () => {
       unsubscribe('favoriteRemoved', handleFavoriteRemoved);
       clearInterval(autoRefreshInterval);
     };
-  }, [user, isAuthenticated, subscribe, unsubscribe, subscribeToFavorites, queryClient]);
+  }, [user, isAuthenticated, subscribe, unsubscribe, subscribeToFavorites, getStatus, queryClient]);
 
   // Refresh favorites when page becomes visible (tab switching) or on custom event
   useEffect(() => {

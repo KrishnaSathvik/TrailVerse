@@ -1,4 +1,5 @@
 import axios from 'axios';
+import websocketService from './websocketService';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -17,6 +18,38 @@ const api = axios.create({
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
+export const AUTH_SESSION_EXPIRED_EVENT = 'authSessionExpired';
+
+const AUTH_ROUTES_SKIP_SESSION_EXPIRY = [
+  '/auth/login',
+  '/auth/signup',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/verify-email',
+  '/auth/resend-verification',
+];
+
+let sessionExpiredNotified = false;
+
+export const resetSessionExpiredNotify = () => {
+  sessionExpiredNotified = false;
+};
+
+export const notifySessionExpiredIfNeeded = (error) => {
+  if (typeof window === 'undefined') return;
+  if (error.response?.status !== 401) return;
+  if (!getStoredToken()) return;
+  if (sessionExpiredNotified) return;
+
+  const url = error.config?.url || '';
+  if (AUTH_ROUTES_SKIP_SESSION_EXPIRY.some((route) => url.includes(route))) {
+    return;
+  }
+
+  sessionExpiredNotified = true;
+  window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+};
+
 export const getStoredToken = () =>
   localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 
@@ -31,6 +64,7 @@ const clearStoredAuth = () => {
 };
 
 const persistAuth = (token, user, rememberMe) => {
+  resetSessionExpiredNotify();
   clearStoredAuth();
 
   // Always use localStorage so auth works across tabs
@@ -63,8 +97,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Don't automatically logout on 401 errors - let components handle it
-    // This prevents global logout on network issues
+    notifySessionExpiredIfNeeded(error);
     return Promise.reject(error);
   }
 );
@@ -136,7 +169,11 @@ class AuthService {
 
   logout() {
     console.log('🚪 AuthService: Removing token from storage and cookies');
+    resetSessionExpiredNotify();
     clearStoredAuth();
+    if (typeof window !== 'undefined') {
+      websocketService.disconnect();
+    }
     document.cookie = "trailverse_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     // Clear admin authentication flags
     localStorage.removeItem('adminAuthenticated');

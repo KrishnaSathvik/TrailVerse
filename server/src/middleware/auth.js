@@ -40,9 +40,13 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
+    const isExpired = error.name === 'TokenExpiredError';
     return res.status(401).json({
       success: false,
-      error: 'Not authorized to access this route'
+      error: isExpired
+        ? 'Session expired. Please sign in again.'
+        : 'Not authorized to access this route',
+      code: isExpired ? 'SESSION_EXPIRED' : 'UNAUTHORIZED'
     });
   }
 };

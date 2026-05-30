@@ -8,7 +8,7 @@ import cacheService from '../services/cacheService';
 export const useUserReviews = () => {
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
-  const { subscribe, unsubscribe, subscribeToReviews } = useWebSocket();
+  const { subscribe, unsubscribe, subscribeToReviews, getStatus } = useWebSocket();
   
   const queryResult = useQuery({
     queryKey: ['userReviews'],
@@ -93,9 +93,12 @@ export const useUserReviews = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Auto-refresh every 30 seconds (reduced since WebSocket now handles real-time)
+    // Poll only when WebSocket is down — real-time events handle sync when connected
     const autoRefreshInterval = setInterval(() => {
-      console.log('[Auto-Refresh] Refreshing user reviews...');
+      const { isConnected, isAuthenticated: wsAuthenticated } = getStatus();
+      if (isConnected && wsAuthenticated) return;
+
+      console.log('[Auto-Refresh] WebSocket offline — safety refresh of user reviews...');
       queryClient.invalidateQueries(['userReviews']);
     }, 30000);
 
@@ -123,7 +126,7 @@ export const useUserReviews = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('refreshUserReviews', handleRefreshEvent);
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, getStatus, queryClient]);
 
   return queryResult;
 };

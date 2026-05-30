@@ -166,34 +166,58 @@ app.use(mcpBypass);
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 minutes
 const jwt = require('jsonwebtoken');
 
-// Helper to extract user ID from JWT token (without requiring auth)
-const extractUserId = (req) => {
+// Resolve auth context once per request for rate limiting (valid or decodable JWT)
+const getAuthContext = (req) => {
+  if (req._authContext) return req._authContext;
+
+  const fallback = { userId: null, tokenState: 'none' };
+
   try {
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer')) {
-      const token = authHeader.split(' ')[1];
+    if (!authHeader?.startsWith('Bearer')) {
+      req._authContext = fallback;
+      return fallback;
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      req._authContext = fallback;
+      return fallback;
+    }
+
+    try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      return decoded.id || null;
+      req._authContext = { userId: decoded.id || null, tokenState: 'valid' };
+      return req._authContext;
+    } catch (verifyError) {
+      const decoded = jwt.decode(token);
+      const userId = decoded?.id || null;
+      req.authTokenInvalid = true;
+      req.authTokenExpired = verifyError.name === 'TokenExpiredError';
+
+      req._authContext = userId
+        ? { userId, tokenState: 'invalid' }
+        : fallback;
+      return req._authContext;
     }
   } catch {
-    // Token invalid or expired — treat as anonymous
+    req._authContext = fallback;
+    return fallback;
   }
-  return null;
 };
 
 // Tiered API rate limiting: 200 req/15min for authenticated, 60 req/15min for anonymous
 const tieredLimiter = rateLimit({
   windowMs,
   max: (req) => {
-    const userId = extractUserId(req);
-    return userId 
-      ? (parseInt(process.env.RATE_LIMIT_AUTH_USER_MAX) || 200)   // Authenticated users
-      : (parseInt(process.env.RATE_LIMIT_ANON_MAX) || 60);       // Anonymous users
+    const { userId } = getAuthContext(req);
+    return userId
+      ? (parseInt(process.env.RATE_LIMIT_AUTH_USER_MAX) || 200)
+      : (parseInt(process.env.RATE_LIMIT_ANON_MAX) || 60);
   },
   keyGenerator: (req) => {
-    // Use user ID for authenticated users (so limit is per-user, not per-IP)
-    const userId = extractUserId(req);
-    return userId || req.ip;
+    const { userId } = getAuthContext(req);
+    return userId ? String(userId) : req.ip;
   },
   message: 'Too many requests, please try again later. Sign in for higher rate limits.',
   standardHeaders: true,
