@@ -1,0 +1,69 @@
+{
+  "activity:astronomy": {
+    "intro": "Dark skies, ranger-led night programs, and Milky Way views across the National Park System. Explore parks where the NPS lists astronomy and stargazing among their signature experiences.",
+    "featuredTitle": "Great parks for stargazing",
+    "featuredParkCodes": ["grba", "grca", "acad", "brca", "cuva"],
+    "relatedActivitySlugs": ["junior-ranger-program", "guided-tours", "museum-exhibits", "camping", "living-history"],
+    "blogSlugs": []
+  },
+  "activity:hiking": {
+    "intro": "From short nature walks to multi-day backcountry routes, find parks and sites known for trails and hiking opportunities.",
+    "featuredTitle": "Iconic parks for hiking",
+    "featuredParkCodes": ["yose", "grte", "zion", "olym", "grca"],
+    "blogSlugs": []
+  },
+  "activity:camping": {
+    "intro": "Campgrounds, backcountry sites, and overnight adventures at parks across the country.",
+    "featuredTitle": "Popular parks for camping",
+    "featuredParkCodes": ["yell", "grte", "acad", "grsm", "arch"],
+    "blogSlugs": []
+  },
+  "activity:wildlife-watching": {
+    "intro": "Birding, wildlife viewing, and naturalist programs at parks where observing animals is a highlight.",
+    "featuredTitle": "Top parks for wildlife watching",
+    "featuredParkCodes": ["yell", "evgr", "dena", "romo", "ever"],
+    "blogSlugs": []
+  },
+  "activity:boating": {
+    "intro": "Lakes, rivers, and coastal parks with boating, paddling, and on-the-water recreation.",
+    "featuredTitle": "Great parks for boating",
+    "featuredParkCodes": ["ever", "viis", "glba", "bisc", "olym"],
+    "blogSlugs": []
+  },
+  "activity:biking": {
+    "intro": "Scenic bike routes and cycling opportunities at national parks and recreation areas.",
+    "featuredTitle": "Parks for cycling",
+    "featuredParkCodes": ["acad", "grca", "zion", "cuva", "badl"],
+    "blogSlugs": []
+  },
+  "activity:fishing": {
+    "intro": "Freshwater and saltwater fishing opportunities at parks that list angling among their activities.",
+    "featuredTitle": "Notable parks for fishing",
+    "featuredParkCodes": ["glac", "voya", "ever", "grte", "yell"],
+    "blogSlugs": []
+  },
+  "activity:guided-tours": {
+    "intro": "Ranger-led walks, bus tours, and guided experiences to help you get more from your visit.",
+    "featuredTitle": "Parks with standout guided tours",
+    "featuredParkCodes": ["grca", "yell", "alca", "stat", "inde"],
+    "blogSlugs": []
+  },
+  "activity:museum-exhibits": {
+    "intro": "Visitor centers, museums, and cultural exhibits that bring park stories to life.",
+    "featuredTitle": "Parks with rich museum experiences",
+    "featuredParkCodes": ["grca", "yell", "inde", "muwo", "chcu"],
+    "blogSlugs": []
+  },
+  "topic:animals": {
+    "intro": "Parks and sites where wildlife, habitats, and animal life are central themes.",
+    "featuredTitle": "Highlights for animal lovers",
+    "featuredParkCodes": ["yell", "ever", "dena", "romo", "katm"],
+    "blogSlugs": []
+  },
+  "topic:trails": {
+    "intro": "Explore the trail systems and hiking landscapes that define these destinations.",
+    "featuredTitle": "Trail-rich destinations",
+    "featuredParkCodes": ["yose", "zion", "grte", "acad", "grsm"],
+    "blogSlugs": []
+  }
+}

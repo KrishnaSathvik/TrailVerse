@@ -48,6 +48,12 @@ const nextConfig = {
       { source: '/parks', destination: '/explore', permanent: true },
       { source: '/activity', destination: '/explore', permanent: true },
 
+      // Crowd calendar — canonical URL without .html
+      { source: '/reports/when-to-go', destination: '/reports/when-to-go.html', permanent: true },
+      { source: '/reports/when-to-go/', destination: '/reports/when-to-go.html', permanent: true },
+      { source: '/reports/national-parks-2025', destination: '/reports/national-parks-2025.html', permanent: true },
+      { source: '/reports/national-parks-2025/', destination: '/reports/national-parks-2025.html', permanent: true },
+
       // Partial park name redirects (common searches Google indexed without full slug)
       { source: '/parks/yellowstone', destination: '/parks/yellowstone-national-park', permanent: true },
       { source: '/parks/yosemite', destination: '/parks/yosemite-national-park', permanent: true },
@@ -88,6 +94,16 @@ const nextConfig = {
       { source: '/parks/indiana-dunes', destination: '/parks/indiana-dunes-national-park', permanent: true },
       { source: '/parks/petrified-forest', destination: '/parks/petrified-forest-national-park', permanent: true },
       { source: '/parks/lassen-volcanic', destination: '/parks/lassen-volcanic-national-park', permanent: true },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+        ],
+      },
     ];
   },
   async rewrites() {

@@ -31,7 +31,7 @@ async function previewEmail(templateName) {
       resetUrl: 'https://www.nationalparksexplorerusa.com/reset-password?token=xyz789uvw012',
       twitterUrl: 'https://twitter.com/TrailVerse',
       instagramUrl: 'https://instagram.com/trailverse',
-      facebookUrl: 'https://facebook.com/trailverse',
+      facebookUrl: 'https://www.facebook.com/travelswithkrishna/',
       unsubscribeUrl: 'https://www.nationalparksexplorerusa.com/unsubscribe?email=john.doe@example.com'
     };
     

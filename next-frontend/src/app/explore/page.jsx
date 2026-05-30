@@ -18,13 +18,35 @@ async function getInitialParks() {
   }
 }
 
+async function getInitialAllParks() {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/parks?all=true`, {
+      next: { revalidate: 86400 },
+    });
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    return response.json();
+  } catch {
+    return undefined;
+  }
+}
+
 export default async function ExplorePage() {
-  const initialPaginatedData = await getInitialParks();
+  const [initialPaginatedData, initialAllParksData] = await Promise.all([
+    getInitialParks(),
+    getInitialAllParks(),
+  ]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <ExplorePageClient initialPaginatedData={initialPaginatedData} />
+      <ExplorePageClient
+        initialPaginatedData={initialPaginatedData}
+        initialAllParksData={initialAllParksData}
+      />
     </div>
   );
 }

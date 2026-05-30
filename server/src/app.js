@@ -227,6 +227,7 @@ app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/parks', require('./routes/enhancedParks')); // Enhanced parks routes first
 app.use('/api/parks', require('./routes/parks'));
+app.use('/api/discover', require('./routes/discover'));
 app.use('/api/activities', require('./routes/activities')); // Activities/Trails routes
 app.use('/api/users', require('./routes/users'));
 app.use('/api/user', require('./routes/userRoutes'));

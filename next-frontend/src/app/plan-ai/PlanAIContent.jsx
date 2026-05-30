@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Loader2, Clock, Sparkles, Mountain, Check, LogIn } from '@components/icons';
+import { Loader2, Sparkles } from '@components/icons';
 import Header from '@components/common/Header';
-import Button from '@components/common/Button';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
+import MyRecommendationsButton from '@components/plan-ai/MyRecommendationsButton';
+import SignupPromptPanel from '@components/plan-ai/SignupPromptPanel';
+import { SIGNUP_PROMPT_REASONS } from '@/lib/planAiSignupPrompts';
+import { MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE } from '@/lib/planAiWelcomeCopy';
 import usePlanAI from '@hooks/usePlanAI';
 
 const defaultFormData = {
@@ -65,89 +68,41 @@ const PlanAIContent = ({ tripId }) => {
   }
 
   if (showLimitDialog) {
+    const storeReturnToChat = () => {
+      const saved = localStorage.getItem('anonymousSession');
+      let anonymousId;
+      try {
+        anonymousId = saved ? JSON.parse(saved).anonymousId : undefined;
+      } catch {
+        anonymousId = undefined;
+      }
+      localStorage.setItem('returnToChat', JSON.stringify({
+        anonymousId,
+        parkName: selectedParkName,
+        formData: chatFormData || formData,
+        messages: [],
+        timestamp: Date.now(),
+      }));
+    };
+
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
         <section className="flex flex-1 items-center justify-center py-16 sm:py-20">
-          <div className="max-w-md mx-auto px-4 sm:px-6">
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.12)',
+          <div className="max-w-md mx-auto px-4 sm:px-6 w-full">
+            <SignupPromptPanel
+              reason={SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT}
+              parkName={selectedParkName}
+              onSignup={() => {
+                storeReturnToChat();
+                window.location.href = '/signup';
               }}
-            >
-              <div className="px-6 pt-6 pb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                  <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                    You&apos;ve Used Your 5 Free Messages
-                  </h2>
-                </div>
-                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                  Create a free account to:
-                </p>
-                <ul className="space-y-1.5 mb-4">
-                  {[
-                    'Save this trip permanently',
-                    'Unlimited AI trip planning',
-                    'Drag-and-drop itinerary builder',
-                    'Share trips with travel companions',
-                    'Export as PDF',
-                    'Save parks, track visits & write reviews',
-                    'Access from any device',
-                  ].map((prop) => (
-                    <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                      {prop}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-
-              <div className="px-6 py-4 space-y-3">
-                <Button
-                  onClick={() => { window.location.href = '/signup'; }}
-                  variant="primary"
-                  size="md"
-                  icon={Sparkles}
-                  className="w-full"
-                >
-                  Create Free Account
-                </Button>
-                <Button
-                  onClick={() => { window.location.href = '/login'; }}
-                  variant="secondary"
-                  size="md"
-                  icon={LogIn}
-                  className="w-full"
-                >
-                  Sign In
-                </Button>
-
-                {timeUntilReset && (
-                  <div className="pt-1">
-                    <div
-                      className="px-4 py-3 rounded-xl text-center"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        border: '1px solid var(--border)',
-                      }}
-                    >
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                        Or wait for free reset:
-                      </p>
-                      <p className="text-xl font-bold" style={{ color: 'var(--accent-green)' }}>
-                        {timeUntilReset}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+              onLogin={() => {
+                storeReturnToChat();
+                window.location.href = '/login';
+              }}
+              timeUntilReset={timeUntilReset}
+            />
           </div>
         </section>
       </div>
@@ -192,7 +147,7 @@ const PlanAIContent = ({ tripId }) => {
     <div className="h-dvh flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
-        <section className="relative z-10 overflow-hidden border-b px-4 py-2 sm:px-6 sm:py-4 lg:px-10 xl:px-12" style={{ borderColor: 'var(--border)' }}>
+        <section className="relative z-30 shrink-0 overflow-visible border-b px-4 py-2 sm:px-6 sm:py-4 lg:px-10 xl:px-12" style={{ borderColor: 'var(--border)' }}>
           <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-3">
             <div className="min-w-0">
               <p
@@ -202,29 +157,19 @@ const PlanAIContent = ({ tripId }) => {
                 Trailie
               </p>
               <h1 className="mt-1 truncate text-base font-semibold sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
-                {effectiveParkName || 'Plan Your Trip'}
+                {isPersonalized ? 'My Recommendations' : effectiveParkName || 'Plan Your Trip'}
               </h1>
+              {isPersonalized && (
+                <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE}
+                </p>
+              )}
             </div>
 
             {isAuthenticated && (
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {uniqueParksCount >= 3 && (
-                  <button
-                    type="button"
-                    onClick={handlePersonalizedRecommendations}
-                    title="My Recommendations"
-                    className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
-                    style={{
-                      backgroundColor: 'var(--button-filled-bg)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-primary)',
-                      boxShadow: 'var(--shadow)'
-                    }}
-                  >
-                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">My Recommendations</span>
-                    <span className="sm:hidden">For Me</span>
-                  </button>
+                  <MyRecommendationsButton onClick={handlePersonalizedRecommendations} />
                 )}
                 <button
                   type="button"

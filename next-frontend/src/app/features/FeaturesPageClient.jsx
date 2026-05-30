@@ -4,7 +4,7 @@ import {
   Sparkles, Compass, MapPin, Calendar, Heart, BookOpen, Route,
   Star, Shield, Users, MessageCircle, MessageSquare, ArchiveRestore,
   CheckCircle, Bot, Mountain, Globe, Zap, Cloud, Sun, Moon,
-  Sunrise, Sunset, Thermometer, Eye, ExternalLink, Download,
+  Sunrise, Sunset, Thermometer, ArrowsLeftRight, ExternalLink, Download,
   Share2, GripVertical, Edit2
 } from '@components/icons';
 
@@ -67,7 +67,7 @@ const FeaturesPage = () => {
       ]
     },
     {
-      category: "Explore & Discover",
+      category: "Explore & Browse",
       icon: Compass,
       description: "Browse 470+ parks with maps, weather, alerts, and comparison tools",
       items: [
@@ -90,7 +90,7 @@ const FeaturesPage = () => {
           benefits: ["Current conditions", "5-day forecasts", "NPS alerts", "Safety warnings"]
         },
         {
-          icon: Eye,
+          icon: ArrowsLeftRight,
           title: "Park Comparison Tool",
           description: "Compare up to 4 parks side-by-side. See activities, weather, ratings, and features in a single view to pick the right destination.",
           benefits: ["Up to 4 parks", "Side-by-side metrics", "Feature highlights", "Decision support"]

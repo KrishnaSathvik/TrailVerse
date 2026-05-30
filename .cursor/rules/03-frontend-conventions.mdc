@@ -1,0 +1,95 @@
+---
+description: Next.js frontend coding conventions — imports, styling, data fetching, components
+globs: next-frontend/**/*
+alwaysApply: false
+---
+
+# TrailVerse Frontend Conventions
+
+## File & language
+
+- **JSX** (not TypeScript) for app code; some `.ts` for sitemap/robots only
+- App Router: `page.jsx`, `layout.jsx`, `loading.jsx` as needed
+- Path alias: `@/` → `src/`
+
+## Server vs client components
+
+- **Default server** for pages needing SEO/metadata or initial data fetch
+- **`"use client"`** for: hooks, browser APIs, interactivity, TanStack Query, auth context
+- Pattern: thin server `page.jsx` fetches → passes `initialData` to `*Client.jsx`
+
+```jsx
+// Preferred pattern
+export default async function Page() {
+  const data = await fetch(..., { next: { revalidate: 300 } });
+  return <PageClient initialData={data} />;
+}
+```
+
+## Data fetching
+
+- **Server**: `fetch(`${getApiBaseUrl()}/...`)` with `next: { revalidate: N }`
+- **Client**: TanStack Query via custom hooks (e.g. `useDiscoverCatalog`)
+- **Browser calls**: prefer relative `/api/...` (Next rewrite → backend)
+- Do not call Render URL directly from client in dev
+
+## Styling
+
+- Tailwind v4 + CSS variables for theming:
+  - `var(--bg-primary)`, `var(--text-primary)`, `var(--text-secondary)`, `var(--accent-green)`, `var(--font-display)`
+- Inline `style={{ color: 'var(--text-primary)' }}` used alongside Tailwind — **keep this pattern**
+- Dark mode via `ThemeProvider` / class on `html`
+- Icons: `@components/icons` (Phosphor wrapper + custom `createAppIcon`)
+
+## Shared layout components
+
+| Component | Path |
+|-----------|------|
+| Header, Footer, Button | `components/common/` |
+| Park cards | `components/explore/ParkCard.jsx` |
+| Discover | `components/discover/*` |
+| Park detail tabs | `components/park-details/*` |
+| Auth modal | `components/auth/LoginModal.jsx` |
+
+## Auth patterns
+
+```jsx
+const { isAuthenticated, user, showLoginPrompt } = useAuth();
+// Gate action:
+if (!isAuthenticated) { showLoginPrompt('Sign in to save parks'); return; }
+```
+
+- Token stored for API: `authService` + cookie `trailverse_auth_token`
+- Protected pages also enforced in `proxy.js`
+
+## SEO helpers
+
+- `import { indexablePageRobots, privatePageMetadata } from '@/lib/seo'`
+- Parks: `lib/parkSeo.js` — descriptions, tier-A, state hubs
+- Blogs: `lib/blogSeo.js`
+- Always set `alternates.canonical` for indexable pages
+
+## Park slugs
+
+```js
+import { parkToSlug, findCorrectSlug } from '@/utils/parkSlug';
+const slug = parkToSlug(park.fullName);
+```
+
+## Tests
+
+- Unit: Vitest in `src/**/__tests__/`
+- E2E: Playwright in `next-frontend/tests/e2e/`
+- Run: `npm test`, `npm run test:e2e` from `next-frontend/`
+
+## Build
+
+- `prebuild`: `scripts/generate-park-slugs.mjs` → `src/data/park-slugs.json`
+- Serwist PWA via `@serwist/turbopack` in `next.config.mjs`
+
+## Avoid
+
+- Inline dynamic `import()` in components (project rule: top-level imports)
+- New hardcoded API hosts in client code
+- `noindex` pages in sitemap
+- Breaking `/parks/{code}` redirects (SEO)

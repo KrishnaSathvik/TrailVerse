@@ -20,6 +20,8 @@ import { linkifyParkNamesHtml, linkifyUrlsHtml } from '@/utils/parkLinkifier';
 import { Calendar, Clock, Eye, ArrowLeft, BookOpen } from '@components/icons';
 import '@/styles/blog-prose.css';
 
+const blogViewSessionKey = (slug) => `tv-blog-view:${slug}`;
+
 const BlogPostSkeleton = () => (
   <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
     <Header />
@@ -78,6 +80,7 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
   const router = useRouter();
   const articleRef = useRef(null);
   const contentRef = useRef(null);
+  const viewTrackedRef = useRef(false);
   const [post, setPost] = useState(initialPost);
   const [loading, setLoading] = useState(!initialPost);
   const [readingProgress, setReadingProgress] = useState(0);
@@ -111,11 +114,40 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
   }, [initialPost?.slug, slug]);
 
   useEffect(() => {
-    if (post) {
-      logBlogView(post.title, post._id, post.category || 'general');
-      blogService.trackView(post.slug).catch(() => {});
+    if (!post?.slug || viewTrackedRef.current) {
+      return;
     }
-  }, [post]);
+
+    const sessionKey = blogViewSessionKey(post.slug);
+    try {
+      if (sessionStorage.getItem(sessionKey)) {
+        return;
+      }
+    } catch {
+      // sessionStorage unavailable (private mode, blocked)
+    }
+
+    viewTrackedRef.current = true;
+
+    logBlogView(post.title, post._id, post.category || 'general');
+
+    blogService
+      .trackView(post.slug)
+      .then((views) => {
+        try {
+          sessionStorage.setItem(sessionKey, '1');
+        } catch {
+          // ignore
+        }
+        setPost((prev) => {
+          if (!prev) return prev;
+          const nextViews =
+            typeof views === 'number' ? views : (prev.views || 0) + 1;
+          return { ...prev, views: nextViews };
+        });
+      })
+      .catch(() => {});
+  }, [post?.slug, post?._id, post?.title, post?.category]);
 
   const headings = useMemo(() => parseBlogHeadingsFromHtml(post?.content || ''), [post?.content]);
   const contentWithHeadingIds = useMemo(

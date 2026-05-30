@@ -1,0 +1,110 @@
+'use client';
+
+import DiscoverSection from '@/components/discover/DiscoverSection';
+import DiscoverGridCard from '@/components/discover/DiscoverGridCard';
+import { useDiscoverCatalog } from '@/hooks/useDiscoverCatalog';
+import { BROWSE_HUB_DESCRIPTION, BROWSE_HUB_HEADLINE } from '@/lib/browseHub';
+import { Loader2 } from '@components/icons';
+
+const PREVIEW = 6;
+
+export default function DiscoverPageClient({ initialCatalog }) {
+  const { data: catalog, isLoading, error } = useDiscoverCatalog({ initialData: initialCatalog });
+  const data = catalog || initialCatalog;
+
+  if (isLoading && !data) {
+    return (
+      <div className="flex justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--accent-green)' }} />
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <p className="text-center py-16 px-4" style={{ color: 'var(--text-secondary)' }}>
+        Unable to load browse catalog. Please try again later.
+      </p>
+    );
+  }
+
+  const sortByCount = (items) =>
+    [...items].sort((a, b) => b.parkCount - a.parkCount || a.name.localeCompare(b.name));
+
+  const activities = sortByCount((data?.activities || []).filter((item) => item.parkCount > 0));
+  const types = sortByCount(data?.types || []);
+  const states = sortByCount(data?.states || []);
+  const topics = sortByCount((data?.topics || []).filter((item) => item.parkCount > 0));
+
+  return (
+    <div className="pb-24">
+      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <header className="pt-8 pb-6">
+          <h1
+            className="text-3xl sm:text-4xl font-bold mb-2"
+            style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+          >
+            {BROWSE_HUB_HEADLINE}
+          </h1>
+          <p className="text-base max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+            {BROWSE_HUB_DESCRIPTION}
+          </p>
+        </header>
+
+        <DiscoverSection title="Activities" seeAllHref="/discover/activities">
+          {activities.slice(0, PREVIEW).map((item) => (
+            <DiscoverGridCard
+              key={item.slug}
+              href={`/discover/activity/${item.slug}`}
+              label={item.name}
+              iconKey={item.iconKey}
+              showIcon
+              dimension="activity"
+              slug={item.slug}
+            />
+          ))}
+        </DiscoverSection>
+
+        <DiscoverSection title="Type" seeAllHref="/discover/types">
+          {types.slice(0, PREVIEW).map((item) => (
+            <DiscoverGridCard
+              key={item.slug}
+              href={`/discover/type/${item.slug}`}
+              label={item.name}
+              dimension="type"
+              slug={item.slug}
+            />
+          ))}
+        </DiscoverSection>
+
+        <DiscoverSection title="States" seeAllHref="/discover/states">
+          {states.slice(0, PREVIEW).map((item) => (
+            <DiscoverGridCard
+              key={item.slug}
+              href={`/parks/state/${item.slug}`}
+              label={item.name}
+              stateCode={item.code}
+              showIcon
+              dimension="state"
+              slug={item.slug}
+            />
+          ))}
+        </DiscoverSection>
+
+        <DiscoverSection title="Topics" seeAllHref="/discover/topics">
+          {topics.slice(0, PREVIEW).map((item) => (
+            <DiscoverGridCard
+              key={item.slug}
+              href={`/discover/topic/${item.slug}`}
+              label={item.name}
+              count={item.parkCount}
+              showCount
+              dimension="topic"
+              slug={item.slug}
+            />
+          ))}
+        </DiscoverSection>
+      </div>
+    </div>
+  );
+}

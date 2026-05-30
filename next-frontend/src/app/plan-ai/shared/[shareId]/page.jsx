@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/common/Header';
 import SharedConversation from '@/components/ai-chat/SharedConversation';
+import { privatePageRobots } from '@/lib/seo';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }) {
       title: trip.title || 'Shared Trip Plan',
       description: `A ${trip.parkName || 'national park'} trip plan made with TrailVerse AI`,
     },
-    robots: { index: true, follow: true },
+    robots: privatePageRobots,
   };
 }
 

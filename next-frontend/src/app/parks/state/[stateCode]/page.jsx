@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { parkToSlug } from '@/utils/parkSlug';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
-import Button from '@/components/common/Button';
+import StateParkPageClient from './StateParkPageClient';
+import { fetchNpsGuide } from '@/lib/discoverApi';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
@@ -110,6 +110,26 @@ export async function generateMetadata({ params }) {
   };
 }
 
+function buildStateIntro(stateName, parks) {
+  const sampleNames = parks
+    .slice(0, 4)
+    .map((park) => park.fullName)
+    .filter(Boolean);
+
+  let highlight = 'sites across the state';
+  if (sampleNames.length === 1) {
+    highlight = sampleNames[0];
+  } else if (sampleNames.length === 2) {
+    highlight = `${sampleNames[0]} and ${sampleNames[1]}`;
+  } else if (sampleNames.length > 2) {
+    highlight = `${sampleNames.slice(0, -1).join(', ')}, and ${sampleNames[sampleNames.length - 1]}`;
+  }
+
+  const countLabel = parks.length === 1 ? '1 National Park Service site' : `${parks.length} National Park Service sites`;
+
+  return `From ${highlight}, ${countLabel} in ${stateName} offer trails, campgrounds, historic places, and ranger-led programs. Browse the full directory below, compare parks, and plan your trip with TrailVerse.`;
+}
+
 export default async function StateParkPage({ params }) {
   const { stateCode } = await params;
   const state = STATE_MAP[stateCode];
@@ -117,6 +137,11 @@ export default async function StateParkPage({ params }) {
 
   const parks = await getParksForState(state.code);
   if (parks.length === 0) notFound();
+
+  const [intro, npsGuide] = await Promise.all([
+    Promise.resolve(buildStateIntro(state.name, parks)),
+    fetchNpsGuide(state.name, stateCode).catch(() => null)
+  ]);
 
   // Build ItemList schema
   const itemListSchema = {
@@ -141,74 +166,13 @@ export default async function StateParkPage({ params }) {
       />
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
-        <main className="pt-16">
-          {/* Hero */}
-          <section className="py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-              <nav className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                <Link href="/" style={{ color: 'var(--text-secondary)' }}>Home</Link>
-                <span className="mx-2">/</span>
-                <Link href="/explore" style={{ color: 'var(--text-secondary)' }}>Explore</Link>
-                <span className="mx-2">/</span>
-                <span style={{ color: 'var(--text-primary)' }}>{state.name}</span>
-              </nav>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                National Parks & Sites in {state.name}
-              </h1>
-              <p className="text-lg mb-2" style={{ color: 'var(--text-secondary)' }}>
-                {parks.length} National Park Service {parks.length === 1 ? 'site' : 'sites'} — explore trails, campgrounds, weather, and plan your visit with AI.
-              </p>
-              <div className="flex gap-3 mt-6">
-                <Button variant="success" size="sm" href="/plan-ai">Plan a {state.name} Trip with AI</Button>
-                <Button variant="outline" size="sm" href="/explore">All Parks</Button>
-              </div>
-            </div>
-          </section>
-
-          {/* Park Grid */}
-          <section className="pb-16 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {parks.map((park) => {
-                  const slug = parkToSlug(park.fullName);
-                  const image = park.images?.[0]?.url;
-                  return (
-                    <Link
-                      key={park.parkCode}
-                      href={`/parks/${slug}`}
-                      className="group rounded-2xl overflow-hidden transition hover:shadow-lg"
-                      style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                    >
-                      {image && (
-                        <div className="h-40 overflow-hidden">
-                          <img
-                            src={image}
-                            alt={`${park.fullName} — ${state.name} national park`}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h2 className="font-semibold text-base mb-1" style={{ color: 'var(--text-primary)' }}>
-                          {park.fullName}
-                        </h2>
-                        {park.states && (
-                          <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                            {park.states}
-                          </p>
-                        )}
-                        {park.description && (
-                          <p className="text-sm line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                            {park.description?.replace(/<[^>]+>/g, '').substring(0, 100)}...
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
+        <main>
+          <StateParkPageClient
+            stateName={state.name}
+            parks={parks}
+            intro={intro}
+            npsGuide={npsGuide}
+          />
         </main>
         <Footer />
       </div>

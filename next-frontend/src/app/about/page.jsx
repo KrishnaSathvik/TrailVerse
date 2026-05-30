@@ -58,7 +58,7 @@ const skills = [
 const socialLinks = [
   ['Globe', 'Astro by Krishna', 'https://www.astrobykrishna.com', 'Astrophotography Portfolio'],
   ['Instagram', 'Instagram', 'https://instagram.com/astrobykrishna', '@astrobykrishna'],
-  ['Facebook', 'Facebook', 'https://www.facebook.com/Gitam2015', 'Travel Community'],
+  ['Facebook', 'Facebook', 'https://www.facebook.com/travelswithkrishna/', 'Travel Community'],
   ['Camera', 'Pexels', 'https://www.pexels.com/@astrobykrishna/', 'Free Photography'],
   ['Image', '500px', 'https://500px.com/p/astrobykrishna?view=photos', 'Photography Portfolio'],
   ['Image', 'Unsplash', 'https://unsplash.com/@astrobykrishna', '25+ Astrophotography shots'],

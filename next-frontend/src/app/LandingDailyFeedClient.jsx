@@ -8,12 +8,13 @@ import Button from '@/components/common/Button';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import dailyFeedService from '@/services/dailyFeedService';
 import { parkToSlug } from '@/utils/parkSlug';
+import { getFeedDateKey } from '@/utils/dailyFeedDate';
 
 export default function LandingDailyFeedClient() {
-  const today = new Date().toISOString().split('T')[0];
+  const feedDate = getFeedDateKey();
 
   const { data: dailyFeed, isLoading } = useQuery({
-    queryKey: ['landingDailyFeed', today],
+    queryKey: ['landingDailyFeed', feedDate],
     queryFn: async () => {
       const feed = await dailyFeedService.getDailyFeed().catch(() => null);
       if (!feed?.parkOfDay) return null;

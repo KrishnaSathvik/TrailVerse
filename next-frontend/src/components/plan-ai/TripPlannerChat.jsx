@@ -2,11 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, LogIn, Edit2,
+  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, Edit2, Compare,
   Share2,
   Download,
-  Mountain,
-  Check
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -18,23 +16,64 @@ import aiService from '../../services/aiService';
 import api from '../../services/api';
 import feedbackService from '../../services/feedbackService';
 import { logAIChat } from '../../utils/analytics';
+import { truncatePlainText } from '@/utils/stripMarkdown';
 import ChatInput from '../ai-chat/ChatInput';
 import MessageBubble from '../ai-chat/MessageBubble';
 import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
+import SignupPromptPanel from './SignupPromptPanel';
 import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
+import { ANONYMOUS_MESSAGE_LIMIT, isAnonymousLimitReached } from '@/lib/anonymousChatLimits';
+import {
+  SIGNUP_PROMPT_REASONS,
+  getSignupPrompt,
+  getSignupPromptReason,
+  getSavePromptReasonFromMessages,
+} from '@/lib/planAiSignupPrompts';
+import {
+  getGenericWelcomeMessage,
+  getParkWelcomeMessage,
+  getPersonalizedWelcomeMessage,
+  getRoadTripWelcomeMessage,
+  MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE,
+} from '@/lib/planAiWelcomeCopy';
 
-const VALUE_PROPS = [
-  'Save this trip permanently',
-  'Unlimited AI trip planning',
-  'Drag-and-drop itinerary builder',
-  'Share trips with travel companions',
-  'Export as PDF',
-  'Save parks, track visits & write reviews',
-  'Access from any device',
-];
+const ANONYMOUS_SESSION_KEY = 'anonymousSession';
+const ANONYMOUS_GUEST_AVATAR_KEY = 'anonymousGuestAvatar';
+const ANONYMOUS_SESSION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+
+function readStoredAnonymousSession() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredGuestAvatarUrl() {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(ANONYMOUS_GUEST_AVATAR_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Stable anonymous avatar URL — persisted because generateRandomAvatar is not deterministic. */
+function resolveAnonymousAvatarUrl(anonymousId, existingSession = null) {
+  const session = existingSession || readStoredAnonymousSession();
+  if (session?.avatarUrl && (!anonymousId || session.anonymousId === anonymousId)) {
+    return session.avatarUrl;
+  }
+  const guestAvatar = readStoredGuestAvatarUrl();
+  if (guestAvatar) return guestAvatar;
+  const seed = anonymousId || `guest-${crypto.randomUUID()}`;
+  return generateRandomAvatar(seed);
+}
 
 const TripPlannerChat = ({
   formData,
@@ -79,13 +118,20 @@ const TripPlannerChat = ({
   const [parkInput, setParkInput] = useState('');
   const [isStartingFresh, setIsStartingFresh] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
-  // Stable anonymous avatar — generated once per session so it stays consistent
-  const [anonymousAvatar] = useState(() => generateRandomAvatar(`anon-${Date.now()}`));
+  const [anonymousAvatar, setAnonymousAvatar] = useState(() => {
+    const session = readStoredAnonymousSession();
+    if (session?.avatarUrl) return session.avatarUrl;
+    return readStoredGuestAvatarUrl();
+  });
   const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
   const [anonymousId, setAnonymousId] = useState(null);
   const [messageCount, setMessageCount] = useState(0);
   const [canSendMore, setCanSendMore] = useState(true);
   const [isSessionRestored, setIsSessionRestored] = useState(false);
+  /** pending | restored | empty | n/a — gates welcome message until anon history is loaded */
+  const [anonymousRestoreStatus, setAnonymousRestoreStatus] = useState(
+    () => (!isAuthenticated ? 'pending' : 'n/a')
+  );
   const [timeUntilReset, setTimeUntilReset] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [saveState, setSaveState] = useState('idle');
@@ -94,6 +140,7 @@ const TripPlannerChat = ({
   const [isSharing, setIsSharing] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveModalReason, setSaveModalReason] = useState(SIGNUP_PROMPT_REASONS.SAVE_ITINERARY);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -103,6 +150,7 @@ const TripPlannerChat = ({
   const lastMessageCountRef = useRef(0);
   const userSentMessageRef = useRef(false);
   const personalizedSentRef = useRef(false);
+  const personalizedInitRef = useRef(false);
 
   const chatStatus = isAnonymous
     ? null
@@ -119,16 +167,16 @@ const TripPlannerChat = ({
             tone: 'saved'
           }
         : null;
-  const anonymousMessagesRemaining = Math.max(0, 5 - messageCount);
+  const anonymousMessagesRemaining = Math.max(0, ANONYMOUS_MESSAGE_LIMIT - messageCount);
   const anonymousQuotaLabel =
-    isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < 5
+    isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < ANONYMOUS_MESSAGE_LIMIT
       ? `${anonymousMessagesRemaining} free ${anonymousMessagesRemaining === 1 ? 'message' : 'messages'} left`
       : null;
 
   const isWelcomeState =
     messages.length === 1 &&
     !isGenerating &&
-    !messages.some((message) => message.role === 'user') &&
+    !messages.some((message) => message.role === 'user' && !message.hiddenFromUi) &&
     !messages.some((message) => message.isConversionMessage);
 
   // Auto-scroll only when USER sends a message (not when AI responds)
@@ -180,70 +228,31 @@ const TripPlannerChat = ({
     }
   };
 
-  const createWelcomeBackMessage = (trip, existingMessages) => {
-    const parkName = trip.parkName || 'this adventure';
-
-    return {
-      id: Date.now(),
-      role: 'assistant',
-      content: `Welcome back! Ready to pick up where we left off on your ${parkName} trip? Just let me know what you'd like to change or add.`,
-      timestamp: new Date()
-    };
-  };
+  const stripWelcomeBackMessages = (messageList = []) =>
+    messageList.filter(
+      (msg) => !(msg.role === 'assistant' && /welcome back/i.test(String(msg.content || '')))
+    );
 
   const showWelcomeMessage = useCallback(async () => {
-    const userName = user?.name || user?.firstName || 'there';
-
-    // Check for personalized recommendations
+    let content;
     if (isPersonalized) {
-      const personalizedWelcome = {
-        id: Date.now(),
-        role: 'assistant',
-        content: `Hey ${userName}! I'm Trailie. I've looked at your past trips and have some ideas for what's next.\n\nWhat are you in the mood for — another national park, a road trip, or something completely different?`,
-        timestamp: new Date()
-      };
-
-      setMessages([personalizedWelcome]);
-      return;
+      content = getPersonalizedWelcomeMessage(user);
+    } else if (suggestText) {
+      content = getRoadTripWelcomeMessage(user, suggestText);
+    } else if (isNewChat || !parkName) {
+      content = getGenericWelcomeMessage(user);
+    } else {
+      content = getParkWelcomeMessage(user, parkName);
     }
 
-    // Road trip suggestion (from compare page)
-    if (suggestText) {
-      const roadTripGreeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
-      const roadTripWelcome = {
+    setMessages([
+      {
         id: Date.now(),
         role: 'assistant',
-        content: `${roadTripGreeting} I'm Trailie. A road trip hitting ${suggestText} — great call, that's one of the best ways to experience the area.\n\nI'll build you a full multi-park itinerary. Just tell me:\n- **When** — how many days do you have?\n- **Where from** — what's your starting city?\n- **Who & what** — group size and must-haves (camping, hiking, budget)?`,
-        timestamp: new Date()
-      };
-
-      setMessages([roadTripWelcome]);
-      return;
-    }
-
-    // Check for new chat or no park selected (generic welcome)
-    if (isNewChat || !parkName) {
-      const greeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
-      const newChatWelcome = {
-        id: Date.now(),
-        role: 'assistant',
-        content: `${greeting} I'm Trailie — your AI guide to every national park in America.\n\nTell me where you're headed (or let me help you pick) and I'll build your trip from scratch — trails, timing, lodging, the works.`,
-        timestamp: new Date()
-      };
-
-      setMessages([newChatWelcome]);
-      return;
-    }
-
-    const greeting = userName !== 'there' ? `Hey ${userName}!` : `Hey!`;
-    const welcomeMessage = {
-      id: Date.now(),
-      role: 'assistant',
-      content: `${greeting} I'm Trailie — let's plan your **${parkName}** trip.\n\nI'll start building an itinerary right away. To make it yours, share:\n- **When** you're going\n- **Who's** coming (solo, couple, family, group)\n- **What** gets you excited (hikes, views, wildlife, chill vibes)\n\nOr just say **"plan it"** and I'll pick my best recommendations.`,
-      timestamp: new Date()
-    };
-
-    setMessages([welcomeMessage]);
+        content,
+        timestamp: new Date(),
+      },
+    ]);
   }, [user, parkName, isPersonalized, isNewChat, suggestText]);
 
   // Define loadExistingTrip before the useEffect that uses it
@@ -266,40 +275,8 @@ const TripPlannerChat = ({
             // Fetch conversation from backend using conversationId
             const conversation = await conversationService.getConversation(trip.conversationId);
             console.log('🔄 Loaded conversation:', conversation);
-            const messagesToLoad = conversation.conversation || [];
-            
-          // Add welcome back message only when coming from chat history page
-          if (messagesToLoad.length > 0 && fromChatHistory) {
-            // Find the last welcome back message
-            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg =>
-              msg.role === 'assistant' &&
-              msg.content.includes('Welcome back') &&
-              msg.content.includes('pick up where we left off')
-            );
-
-            // Check if there are user messages after the last welcome back
-            const hasNewUserMessages = lastWelcomeBackIndex !== -1 &&
-              messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
-
-            // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
-            if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
-              const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
-              setMessages([...messagesToLoad, welcomeBackMessage]);
-              console.log('🔄 Added welcome back message to end of existing conversation (conversationId)');
-
-              // Auto-scroll to show the welcome back message
-              setTimeout(() => {
-                if (messagesEndRef.current) {
-                  messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
-              }, 100);
-            } else {
-              setMessages(messagesToLoad);
-              console.log('🔄 Welcome back message exists and no new user messages, not adding duplicate');
-            }
-          } else {
+            const messagesToLoad = stripWelcomeBackMessages(conversation.conversation || []);
             setMessages(messagesToLoad);
-          }
           } catch (error) {
             console.error('Error loading conversation:', error);
             // Fallback to empty messages if conversation fetch fails
@@ -310,42 +287,10 @@ const TripPlannerChat = ({
           console.log('🔄 Loading messages from trip:', trip.conversation || trip.messages);
           console.log('🔄 Trip conversation length:', (trip.conversation || []).length);
           console.log('🔄 Trip messages length:', (trip.messages || []).length);
-          const messagesToLoad = trip.conversation || trip.messages || [];
+          const messagesToLoad = stripWelcomeBackMessages(trip.conversation || trip.messages || []);
           console.log('🔄 Setting messages:', messagesToLoad.length, 'messages');
           console.log('🔄 Messages with feedback:', messagesToLoad.filter(m => m.userFeedback).map(m => ({ id: m.id, feedback: m.userFeedback })));
-          
-          // Add welcome back message only when coming from chat history page
-          if (messagesToLoad.length > 0 && fromChatHistory) {
-            // Find the last welcome back message
-            const lastWelcomeBackIndex = messagesToLoad.findLastIndex(msg =>
-              msg.role === 'assistant' &&
-              msg.content.includes('Welcome back') &&
-              msg.content.includes('pick up where we left off')
-            );
-
-            // Check if there are user messages after the last welcome back
-            const hasNewUserMessages = lastWelcomeBackIndex !== -1 &&
-              messagesToLoad.slice(lastWelcomeBackIndex + 1).some(msg => msg.role === 'user');
-
-            // Add welcome back if: no welcome back exists OR there are new user messages since last welcome back
-            if (lastWelcomeBackIndex === -1 || hasNewUserMessages) {
-              const welcomeBackMessage = createWelcomeBackMessage(trip, messagesToLoad);
-              setMessages([...messagesToLoad, welcomeBackMessage]);
-              console.log('🔄 Added welcome back message to end of existing conversation');
-
-              // Auto-scroll to show the welcome back message
-              setTimeout(() => {
-                if (messagesEndRef.current) {
-                  messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
-              }, 100);
-            } else {
-              setMessages(messagesToLoad);
-              console.log('🔄 Welcome back message exists and no new user messages, not adding duplicate');
-            }
-          } else {
-            setMessages(messagesToLoad);
-          }
+          setMessages(messagesToLoad);
         }
         
         setCurrentPlan(trip.plan);
@@ -549,8 +494,10 @@ const TripPlannerChat = ({
 
   // Clear anonymous session when user logs in
   const clearAnonymousSession = useCallback(() => {
-    localStorage.removeItem('anonymousSession');
+    localStorage.removeItem(ANONYMOUS_SESSION_KEY);
+    localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
     setAnonymousId(null);
+    setAnonymousAvatar(null);
     setMessageCount(0);
     setCanSendMore(true);
     setIsSessionRestored(false);
@@ -559,13 +506,11 @@ const TripPlannerChat = ({
   // Calculate time until reset
   const calculateTimeUntilReset = useCallback(() => {
     try {
-      const savedSession = localStorage.getItem('anonymousSession');
-      if (savedSession) {
-        const sessionData = JSON.parse(savedSession);
+      const sessionData = readStoredAnonymousSession();
+      if (sessionData?.timestamp) {
         const sessionAge = Date.now() - sessionData.timestamp;
-        const maxAge = 48 * 60 * 60 * 1000; // 48 hours
-        const timeRemaining = maxAge - sessionAge;
-        
+        const timeRemaining = ANONYMOUS_SESSION_MAX_AGE_MS - sessionAge;
+
         if (timeRemaining > 0) {
           const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
           const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
@@ -581,102 +526,155 @@ const TripPlannerChat = ({
   // Clean up expired sessions
   const cleanupExpiredSessions = useCallback(() => {
     try {
-      const savedSession = localStorage.getItem('anonymousSession');
-      if (savedSession) {
-        const sessionData = JSON.parse(savedSession);
-        const sessionAge = Date.now() - sessionData.timestamp;
-        const maxAge = 48 * 60 * 60 * 1000; // 48 hours
-        
-        if (sessionAge >= maxAge) {
-          localStorage.removeItem('anonymousSession');
-          console.log('🔄 Cleaned up expired anonymous session');
-        }
+      const sessionData = readStoredAnonymousSession();
+      if (!sessionData) return;
+
+      const sessionAge = Date.now() - (sessionData.timestamp || 0);
+      if (sessionAge >= ANONYMOUS_SESSION_MAX_AGE_MS) {
+        localStorage.removeItem(ANONYMOUS_SESSION_KEY);
+        localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
+        console.log('🔄 Cleaned up expired anonymous session');
       }
     } catch (error) {
       console.error('Error cleaning up expired sessions:', error);
-      localStorage.removeItem('anonymousSession');
+      localStorage.removeItem(ANONYMOUS_SESSION_KEY);
+      localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
     }
   }, []);
 
   // Save anonymous session data to localStorage
   const saveAnonymousSession = useCallback((sessionData) => {
     if (isAnonymous && sessionData.anonymousId) {
+      const existing = readStoredAnonymousSession();
+      const sameSession = existing?.anonymousId === sessionData.anonymousId;
+      const avatarUrl = resolveAnonymousAvatarUrl(sessionData.anonymousId, existing);
+
       const sessionToSave = {
         anonymousId: sessionData.anonymousId,
         messageCount: sessionData.messageCount || 0,
         canSendMore: sessionData.canSendMore !== undefined ? sessionData.canSendMore : true,
+        avatarUrl,
         parkName,
         formData,
-        timestamp: Date.now()
+        timestamp: sameSession && existing?.timestamp ? existing.timestamp : Date.now(),
       };
-      localStorage.setItem('anonymousSession', JSON.stringify(sessionToSave));
+      localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(sessionToSave));
+      localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
+      setAnonymousAvatar(avatarUrl);
     }
   }, [isAnonymous, parkName, formData]);
 
   // Validate session with backend
+  const mapServerMessagesToUi = useCallback((serverMessages = []) => {
+    return serverMessages.map((msg, index) => ({
+      id: `restored-${index}-${msg.timestamp || Date.now()}`,
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+      provider: msg.provider || undefined,
+      model: msg.model || undefined,
+    }));
+  }, []);
+
   const validateSessionWithBackend = useCallback(async (anonymousId) => {
-    if (!anonymousId) return false;
-    
+    if (!anonymousId) return null;
+
     try {
       const response = await api.get(`/ai/session-status/${anonymousId}`);
-      const { canSendMore, messageCount, isConverted } = response.data;
-      
+      const { canSendMore, messageCount, isConverted, messages: serverMessages } = response.data;
+
       setCanSendMore(canSendMore);
       setMessageCount(messageCount);
-      
+
       // Update localStorage with backend data
-      const savedSession = localStorage.getItem('anonymousSession');
+      const savedSession = localStorage.getItem(ANONYMOUS_SESSION_KEY);
       if (savedSession) {
         const sessionData = JSON.parse(savedSession);
         sessionData.canSendMore = canSendMore;
         sessionData.messageCount = messageCount;
-        localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
+        localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(sessionData));
+        if (sessionData.avatarUrl) {
+          setAnonymousAvatar(sessionData.avatarUrl);
+        }
       }
-      
-      console.log('🔄 Session validated with backend:', { canSendMore, messageCount, isConverted });
-      return true;
+
+      console.log('🔄 Session validated with backend:', {
+        canSendMore,
+        messageCount,
+        isConverted,
+        restoredMessages: serverMessages?.length || 0,
+      });
+      return { canSendMore, messageCount, messages: serverMessages || [] };
     } catch (error) {
       console.error('Error validating session with backend:', error);
-      return false;
+      return null;
     }
   }, []);
 
   // Restore anonymous session from localStorage
   const restoreAnonymousSession = useCallback(async () => {
-    if (isAnonymous && !isAuthenticated) {
-      try {
-        const savedSession = localStorage.getItem('anonymousSession');
-        if (savedSession) {
-          const sessionData = JSON.parse(savedSession);
-          
-          // Check if session is not too old (48 hours to match backend)
-          const sessionAge = Date.now() - sessionData.timestamp;
-          const maxAge = 48 * 60 * 60 * 1000; // 48 hours to match backend
-          
-          if (sessionAge < maxAge) {
-            setAnonymousId(sessionData.anonymousId);
-            setMessageCount(sessionData.messageCount);
-            setCanSendMore(sessionData.canSendMore);
-            setIsSessionRestored(true);
-            
-            // Validate with backend to ensure accuracy
-            await validateSessionWithBackend(sessionData.anonymousId);
-            
-            console.log('🔄 Restored anonymous session:', sessionData);
-            return true;
-          } else {
-            // Session too old, clear it
-            localStorage.removeItem('anonymousSession');
-            console.log('🔄 Anonymous session expired, cleared');
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring anonymous session:', error);
-        localStorage.removeItem('anonymousSession');
-      }
+    if (!isAnonymous || isAuthenticated) {
+      setAnonymousRestoreStatus('n/a');
+      return false;
     }
-    return false;
-  }, [isAnonymous, isAuthenticated, validateSessionWithBackend]);
+
+    try {
+      const sessionData = readStoredAnonymousSession();
+      if (!sessionData) {
+        setAnonymousRestoreStatus('empty');
+        return false;
+      }
+
+      const sessionAge = Date.now() - (sessionData.timestamp || 0);
+      if (sessionAge >= ANONYMOUS_SESSION_MAX_AGE_MS) {
+        localStorage.removeItem(ANONYMOUS_SESSION_KEY);
+        localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
+        setAnonymousAvatar(null);
+        console.log('🔄 Anonymous session expired, cleared');
+        setAnonymousRestoreStatus('empty');
+        return false;
+      }
+
+      if (sessionData.anonymousId) {
+        setAnonymousId(sessionData.anonymousId);
+      }
+      setMessageCount(sessionData.messageCount ?? 0);
+      setCanSendMore(sessionData.canSendMore ?? true);
+      setIsSessionRestored(true);
+
+      if (sessionData.avatarUrl) {
+        setAnonymousAvatar(sessionData.avatarUrl);
+      } else if (sessionData.anonymousId) {
+        const avatarUrl = resolveAnonymousAvatarUrl(sessionData.anonymousId, sessionData);
+        sessionData.avatarUrl = avatarUrl;
+        localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(sessionData));
+        setAnonymousAvatar(avatarUrl);
+      }
+
+      if (sessionData.anonymousId) {
+        const status = await validateSessionWithBackend(sessionData.anonymousId);
+        if (status?.messages?.length > 0) {
+          setMessages(mapServerMessagesToUi(status.messages));
+          setAnonymousRestoreStatus('restored');
+          console.log('🔄 Restored anonymous chat history:', status.messages.length, 'messages');
+        } else {
+          setAnonymousRestoreStatus('empty');
+        }
+      } else {
+        setAnonymousRestoreStatus('empty');
+      }
+
+      console.log('🔄 Restored anonymous session:', sessionData);
+      return true;
+    } catch (error) {
+      console.error('Error restoring anonymous session:', error);
+      localStorage.removeItem(ANONYMOUS_SESSION_KEY);
+      localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
+      setAnonymousAvatar(null);
+      setAnonymousRestoreStatus('empty');
+      return false;
+    }
+  }, [isAnonymous, isAuthenticated, validateSessionWithBackend, mapServerMessagesToUi]);
 
   // Clean up expired sessions and restore anonymous session on mount
   useEffect(() => {
@@ -686,6 +684,18 @@ const TripPlannerChat = ({
       restoreAnonymousSession();
     }
   }, [isAnonymous, isAuthenticated, restoreAnonymousSession, cleanupExpiredSessions]);
+
+  // Draft guest avatar before first API response — same URL after refresh until session links it
+  useEffect(() => {
+    if (!isAnonymous || isAuthenticated || anonymousAvatar) return;
+
+    let guestUrl = readStoredGuestAvatarUrl();
+    if (!guestUrl) {
+      guestUrl = generateRandomAvatar(`guest-${crypto.randomUUID()}`);
+      localStorage.setItem(ANONYMOUS_GUEST_AVATAR_KEY, guestUrl);
+    }
+    setAnonymousAvatar(guestUrl);
+  }, [isAnonymous, isAuthenticated, anonymousAvatar]);
 
   // Periodic cleanup of expired sessions (every 5 minutes)
   useEffect(() => {
@@ -764,7 +774,15 @@ const TripPlannerChat = ({
     // Skip restoration when explicitly starting a new chat or personalized session
     // BUT still load if there's an existingTripId (loading from chat history)
     if ((isNewChat || isPersonalized) && !existingTripId) {
-      showWelcomeMessage();
+      if (isPersonalized) {
+        if (!personalizedInitRef.current) {
+          personalizedInitRef.current = true;
+          setMessages([]);
+        }
+      } else {
+        personalizedInitRef.current = false;
+        showWelcomeMessage();
+      }
       return;
     }
 
@@ -773,6 +791,14 @@ const TripPlannerChat = ({
         console.log('🔄 Loading existing trip from URL:', existingTripId);
         loadExistingTrip(existingTripId);
       } else {
+        // Wait for anonymous session restore before showing welcome (avoids flash)
+        if (isAnonymous && !isAuthenticated && anonymousRestoreStatus === 'pending') {
+          return;
+        }
+        if (isAnonymous && !isAuthenticated && anonymousRestoreStatus === 'restored') {
+          return;
+        }
+
         // Check if we're restoring a session before showing welcome message
         const savedState = localStorage.getItem('planai-chat-state');
         if (savedState) {
@@ -790,7 +816,7 @@ const TripPlannerChat = ({
         showWelcomeMessage();
       }
     }
-  }, [providersLoaded, existingTripId, isStartingFresh, isNewChat, isPersonalized]);
+  }, [providersLoaded, existingTripId, isStartingFresh, isNewChat, isPersonalized, isAnonymous, isAuthenticated, anonymousRestoreStatus]);
 
   // Auto-send Quick Fill summary when applied
   useEffect(() => {
@@ -801,26 +827,36 @@ const TripPlannerChat = ({
     }
   }, [quickFillMessage, providersLoaded, providers.length]);
 
-  // Auto-send first message in personalized mode to trigger immediate AI recommendations
+  // Auto-send first message in personalized mode only (never on regular New Chat)
   useEffect(() => {
     if (
-      isPersonalized &&
-      providersLoaded &&
-      providers.length > 0 &&
-      !isGenerating &&
-      messages.length === 1 &&
-      !personalizedSentRef.current
+      !isPersonalized ||
+      isNewChat ||
+      providersLoaded === false ||
+      providers.length === 0 ||
+      isGenerating ||
+      messages.length > 0 ||
+      personalizedSentRef.current
     ) {
-      personalizedSentRef.current = true;
-      const hasTrips = tripHistory.length > 0;
-      const autoMessage = hasTrips
-        ? 'Based on my travel history, what are your top recommendations for my next trip? Consider the current season and parks I haven\'t explored yet.'
-        : 'I\'m new here — help me discover my ideal destinations. Ask me a few quick questions about my travel style.';
-      handleSendMessage(autoMessage);
+      return;
     }
-  }, [isPersonalized, providersLoaded, providers.length, isGenerating, messages.length, tripHistory.length]);
+    personalizedSentRef.current = true;
+    const hasTrips = tripHistory.length > 0;
+    const autoMessage = hasTrips
+      ? 'I opened My Recommendations — help me pick my next park trip based on my history. Ask me exactly ONE short question first (trip length, region, or vibe). Do not list destinations yet.'
+      : 'I opened My Recommendations — help me discover parks that fit me. Ask exactly ONE question about my travel style before suggesting places.';
+    handleSendMessage(autoMessage, { hiddenFromUi: true });
+  }, [isPersonalized, isNewChat, providersLoaded, providers.length, isGenerating, messages.length, tripHistory.length]);
 
-  const handleSendMessage = async (messageText) => {
+  useEffect(() => {
+    if (!isPersonalized) {
+      personalizedSentRef.current = false;
+      personalizedInitRef.current = false;
+    }
+  }, [isPersonalized]);
+
+  const handleSendMessage = async (messageText, options = {}) => {
+    const { hiddenFromUi = false } = options;
     if (!messageText.trim() || isGenerating) return;
 
     console.log('🔄 handleSendMessage called:', {
@@ -838,8 +874,18 @@ const TripPlannerChat = ({
     // For anonymous users, validate session before sending
     if (isAnonymous && anonymousId) {
       try {
-        await validateSessionWithBackend(anonymousId);
-        if (!canSendMore) {
+        const sessionStatus = await validateSessionWithBackend(anonymousId);
+        if (!sessionStatus) {
+          showToast('Unable to validate session. Please try again.', 'error');
+          return;
+        }
+        if (
+          !sessionStatus.canSendMore ||
+          isAnonymousLimitReached({
+            canSendMore: sessionStatus.canSendMore,
+            messageCount: sessionStatus.messageCount,
+          })
+        ) {
           showToast('You have reached your 5 message limit. Please create an account to continue.', 'error');
           return;
         }
@@ -860,11 +906,14 @@ const TripPlannerChat = ({
       id: Date.now(),
       role: 'user',
       content: messageText.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      hiddenFromUi,
     };
 
     setMessages(prev => [...prev, userMessage]);
-    userSentMessageRef.current = true; // flag for auto-scroll
+    if (!hiddenFromUi) {
+      userSentMessageRef.current = true; // flag for auto-scroll
+    }
     setIsGenerating(true);
     setThinkingStartTime(Date.now());
     setThinkingMessage('Thinking...');
@@ -876,7 +925,15 @@ const TripPlannerChat = ({
       
       // Build system prompt
       const systemPrompt = buildSystemPrompt(userContext, isPersonalized);
-      
+
+      const requestMetadata = {
+        parkCode: formData.parkCode,
+        parkName,
+        lat: formData.coordinates?.lat,
+        lon: formData.coordinates?.lon,
+        formData,
+        personalizedRecommendations: isPersonalized,
+      };
       // Build conversation history — include image context so AI can
       // answer follow-up questions about the photos it shared
       const conversationHistory = messages
@@ -910,13 +967,7 @@ const TripPlannerChat = ({
           top_p: 0.9,
           max_tokens: 8000,
           signal: controller.signal,
-          metadata: {
-            parkCode: formData.parkCode,
-            parkName,
-            lat: formData.coordinates?.lat,
-            lon: formData.coordinates?.lon,
-            formData: formData
-          },
+          metadata: requestMetadata,
           anonymousId: anonymousId  // Send existing anonymousId if available
         });
         
@@ -953,12 +1004,8 @@ const TripPlannerChat = ({
             conversationId: currentTripId,
             signal: controller.signal,
             metadata: {
-              parkCode: formData.parkCode,
-              parkName,
-              lat: formData.coordinates?.lat,
-              lon: formData.coordinates?.lon,
+              ...requestMetadata,
               userId: user?.id,
-              formData: formData
             },
             onThinking: (thinkingData) => {
               const { sources, parkName: sourcePark, parkNames: sourceParks } = thinkingData;
@@ -1040,12 +1087,8 @@ const TripPlannerChat = ({
             conversationId: currentTripId,
             signal: controller.signal,
             metadata: {
-              parkCode: formData.parkCode,
-              parkName,
-              lat: formData.coordinates?.lat,
-              lon: formData.coordinates?.lon,
+              ...requestMetadata,
               userId: user?.id,
-              formData: formData
             }
           });
         }
@@ -1385,24 +1428,37 @@ TRIP DETAILS:
       if (userContext.recentParks.length > 0) {
         prompt += `\n- Recently visited: ${userContext.recentParks.map(p => p.name).join(', ')}`;
       }
+
+      if (!isPersonalizedMode) {
+        prompt += `\n\nGENERAL CHAT MODE (NOT "My Recommendations"):
+- Answer the user's actual question first
+- Do NOT inventory their past parks, quote trip counts, or open with profiling questions
+- Only reference this history when directly relevant to what they asked`;
+      }
     }
 
     if (isPersonalizedMode) {
       if (userContext && userContext.totalTrips > 0) {
         prompt += `\n\nPERSONALIZATION MODE — ACTIVE:
-You are in personalized recommendation mode. The user clicked "My Recommendations" expecting tailored suggestions. Follow these rules:
-- Proactively recommend 2-3 destinations the user hasn't visited yet, explaining why each matches their travel pattern and interests
-- Reference their past trips explicitly (e.g., "Since you enjoyed hiking at ${userContext.recentParks?.[0]?.name || 'your recent parks'}...")
-- Consider the current season (${getCurrentSeason(new Date().getMonth() + 1)}) when making recommendations — suggest destinations that are ideal right now
-- Suggest parks or destinations that complement or are near ones they've already visited
-- Skip generic intros — jump straight into personalized suggestions
-- Ask targeted follow-up questions based on their history instead of generic ones (e.g., "Would you prefer something more remote like last time, or closer to a city?")
-- Prioritize variety — if they've done mostly hiking, suggest a scenic drive or water-based trip as a contrast option`;
+The user clicked "My Recommendations" expecting tailored suggestions over time. Follow these rules:
+
+FIRST RESPONSE (this turn only — this is the ONLY visible message; no separate welcome was shown):
+- Keep it under ~90 words in a single message
+- Greet them by first name once
+- Include one short line: you'll use their past trips, saved parks, and favorites for ideas (not live booking data)
+- Reference at most ONE known detail from their history if natural — never count trips or inventory parks ("10 parks", "solid range", etc.)
+- End with exactly ONE clarifying question (trip length, region, vibe, or season) — never two or more
+- Do NOT list destinations, rankings, or "top picks" yet — wait for their answer
+
+AFTER they reply:
+- Recommend 2-3 destinations they haven't visited yet, with brief why-each fits their pattern and interests
+- Reference past trips when relevant; consider the current season (${getCurrentSeason(new Date().getMonth() + 1)})
+- Suggest parks that complement ones they've already visited; offer variety when their history is one-note`;
       } else {
         prompt += `\n\nPERSONALIZATION MODE — NEW USER:
 You are in personalized recommendation mode, but this user has no trip history yet. Help them build a travel profile:
-- Ask 2-3 quick, engaging questions to understand their travel style (e.g., "Do you prefer rugged backcountry or scenic drives with easy access?")
-- Suggest a few diverse starter destinations based on their answers
+- FIRST RESPONSE: one warm line plus 1-2 quick questions about travel style (e.g., "Do you prefer rugged backcountry or scenic drives with easy access?") — no destination list yet
+- AFTER they answer: suggest a few diverse starter destinations
 - Keep it conversational and low-pressure — help them discover what they like`;
       }
     }
@@ -1493,22 +1549,29 @@ WEATHER & LIVE INFO RESPONSES:
     return prompt;
   };
 
-  const createTripSummary = (messages) => {
+  const createTripSummary = (messages, savedPlan = null) => {
     // Extract key information from conversation
     const userQuestions = messages.filter(msg => msg.role === 'user').map(msg => msg.content);
     const aiResponses = messages.filter(msg => msg.role === 'assistant');
-    
-    // Find if there's a generated plan
-    const planResponse = aiResponses.find(response => 
-      /(Day\s*\d+[:\-\s]|Itinerary|Schedule|Plan|## Day)/i.test(response.content)
-    );
-    
+
+    const hasStructuredPlan =
+      Array.isArray(savedPlan?.days) &&
+      savedPlan.days.some((day) => Array.isArray(day.stops) && day.stops.length > 0);
+
+    const planResponse = hasStructuredPlan
+      ? aiResponses.find((response) =>
+          /(Day\s*\d+[:\-\s]|Itinerary|Schedule|## Day)/i.test(response.content)
+        )
+      : null;
+
     // Create summary
     const summary = {
       totalMessages: messages.length,
       userQuestions: userQuestions.slice(0, 3), // First 3 user questions
-      hasPlan: !!planResponse,
-      planPreview: planResponse ? `${planResponse.content.substring(0, 200)}...` : null,
+      hasPlan: hasStructuredPlan,
+      planPreview: planResponse
+        ? truncatePlainText(planResponse.content, 200)
+        : null,
       lastActivity: new Date().toISOString(),
       keyTopics: extractKeyTopics(messages)
     };
@@ -1594,27 +1657,25 @@ WEATHER & LIVE INFO RESPONSES:
         handleSendMessage(customMessage);
       }, 300);
     } else if (parkName) {
-      // Create park-specific welcome message
-      const userName = user?.name || user?.firstName || 'there';
-      const parkWelcomeMessage = {
-        id: Date.now(),
-        role: 'assistant',
-        content: `Hey ${userName}! I'm Trailie — let's plan your **${parkName}** trip.\n\nI'll start building an itinerary right away. To make it yours, share:\n- **When** you're going\n- **Who's** coming (solo, couple, family, group)\n- **What** gets you excited (hikes, views, wildlife, chill vibes)\n\nOr just say **"plan it"** and I'll pick my best recommendations.`
-      };
-      
-      setMessages([parkWelcomeMessage]);
+      setMessages([
+        {
+          id: Date.now(),
+          role: 'assistant',
+          content: getParkWelcomeMessage(user, parkName),
+          timestamp: new Date(),
+        },
+      ]);
     } else {
-      // Create a fresh generic welcome message (not park-specific)
-      const userName = user?.name || user?.firstName || 'there';
-      const freshWelcomeMessage = {
-        id: Date.now(),
-        role: 'assistant',
-        content: `Hey ${userName}! I'm Trailie — your AI guide to every national park in America.\n\nTell me where you're headed (or let me help you pick) and I'll build your trip from scratch — trails, timing, lodging, the works.`
-      };
-      
-      setMessages([freshWelcomeMessage]);
+      setMessages([
+        {
+          id: Date.now(),
+          role: 'assistant',
+          content: getGenericWelcomeMessage(user),
+          timestamp: new Date(),
+        },
+      ]);
     }
-    
+
     // Reset the flag after a short delay to allow restoration for future sessions
     setTimeout(() => {
       setIsStartingFresh(false);
@@ -1684,6 +1745,7 @@ WEATHER & LIVE INFO RESPONSES:
       window.location.href = '/profile';
       return;
     }
+    setSaveModalReason(getSignupPromptReason(messages));
     setShowSaveModal(true);
   };
 
@@ -1692,7 +1754,24 @@ WEATHER & LIVE INFO RESPONSES:
       window.location.href = '/profile';
       return;
     }
+    setSaveModalReason(getSignupPromptReason(messages));
     setShowSaveModal(true);
+  };
+
+  const storeReturnToChat = () => {
+    localStorage.setItem('returnToChat', JSON.stringify({
+      anonymousId, parkName, formData, messages, timestamp: Date.now(),
+    }));
+  };
+
+  const handleSignupRedirect = () => {
+    storeReturnToChat();
+    router.push('/signup');
+  };
+
+  const handleLoginRedirect = () => {
+    storeReturnToChat();
+    router.push('/login');
   };
 
   const handleShare = async () => {
@@ -1766,7 +1845,7 @@ WEATHER & LIVE INFO RESPONSES:
     try {
       setSaveState('saving');
       savingInProgressRef.current = true;
-      const tripSummary = createTripSummary(messagesToSave);
+      const tripSummary = createTripSummary(messagesToSave, planToSave);
 
       if (currentTripId && !currentTripId.startsWith('temp-')) {
         console.log('🔄 Updating existing trip in database:', currentTripId);
@@ -1808,6 +1887,11 @@ WEATHER & LIVE INFO RESPONSES:
         const newTripId = response.data?._id || response._id;
         console.log('✅ NEW trip created with ID:', newTripId);
         setCurrentTripId(newTripId);
+
+        if (refreshTrips) {
+          console.log('🔄 Refreshing trips list after new chat created');
+          refreshTrips();
+        }
       }
 
       // Also save to temp state for page refresh persistence
@@ -1978,91 +2062,18 @@ WEATHER & LIVE INFO RESPONSES:
   }
 
   // Show warning message if user has exhausted their 5 messages (never for authenticated users)
-  if (isAnonymous && !isAuthenticated && !canSendMore && messageCount >= 5) {
+  if (isAnonymous && !isAuthenticated && !canSendMore && isAnonymousLimitReached({ canSendMore, messageCount })) {
     return (
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="flex flex-1 items-center justify-center p-4 sm:p-8">
           <div className="w-full max-w-md">
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.12)',
-              }}
-            >
-              <div className="px-6 pt-6 pb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                  <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                    Ready to Continue Planning?
-                  </h2>
-                </div>
-                <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                  You&apos;ve used your 5 free messages. Create a free account to:
-                </p>
-                <ul className="space-y-1.5 mb-4">
-                  {VALUE_PROPS.map((prop) => (
-                    <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                      {prop}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-
-              <div className="px-6 py-4 space-y-3">
-                <Button
-                  onClick={() => {
-                    localStorage.setItem('returnToChat', JSON.stringify({
-                      anonymousId, parkName, formData, messages, timestamp: Date.now(),
-                    }));
-                    router.push('/signup');
-                  }}
-                  variant="primary"
-                  size="md"
-                  icon={Sparkles}
-                  className="w-full"
-                >
-                  Create Free Account
-                </Button>
-                <Button
-                  onClick={() => {
-                    localStorage.setItem('returnToChat', JSON.stringify({
-                      anonymousId, parkName, formData, messages, timestamp: Date.now(),
-                    }));
-                    router.push('/login');
-                  }}
-                  variant="secondary"
-                  size="md"
-                  icon={LogIn}
-                  className="w-full"
-                >
-                  Sign In
-                </Button>
-
-                {timeUntilReset && (
-                  <div className="pt-1">
-                    <div
-                      className="px-4 py-3 rounded-xl text-center"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        border: '1px solid var(--border)',
-                      }}
-                    >
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                        Or wait for free reset:
-                      </p>
-                      <p className="text-xl font-bold" style={{ color: 'var(--accent-green)' }}>
-                        {timeUntilReset}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <SignupPromptPanel
+              reason={SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT}
+              parkName={parkName}
+              onSignup={handleSignupRedirect}
+              onLogin={handleLoginRedirect}
+              timeUntilReset={timeUntilReset}
+            />
           </div>
         </div>
       </div>
@@ -2083,10 +2094,11 @@ WEATHER & LIVE INFO RESPONSES:
           setShowScrollButton(scrollHeight - scrollTop - clientHeight > 200);
         }}
       >
-          <div className={`mx-auto w-full max-w-5xl px-3 sm:px-6 lg:px-8 ${isWelcomeState ? 'min-h-full py-2 sm:py-8' : 'py-2 sm:py-8'}`}>
-            <div className={isWelcomeState ? 'flex min-h-full items-start justify-center sm:items-center' : ''}>
-            <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-4xl' : ''}`}>
+          <div className={`mx-auto w-full max-w-5xl px-3 sm:px-6 lg:px-8 ${isWelcomeState ? 'py-2 sm:py-6' : 'py-2 sm:py-8'}`}>
+            <div className={isWelcomeState ? 'sm:flex sm:min-h-[min(100%,28rem)] sm:items-center sm:justify-center' : ''}>
+            <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-3xl' : ''}`}>
               {messages.map((message, index) => (
+                message.hiddenFromUi ? null : (
                 <React.Fragment key={`${message.id || message._id || index}-${user?.id || 'anonymous'}-${avatarVersion}`}>
                 <MessageBubble
                   message={message.content}
@@ -2096,6 +2108,18 @@ WEATHER & LIVE INFO RESPONSES:
                     isWelcomeState &&
                     message.role === 'assistant' &&
                     index === 0
+                  }
+                  compact={
+                    isWelcomeState &&
+                    message.role === 'assistant' &&
+                    index === 0
+                  }
+                  linkifyParks={
+                    !(
+                      isWelcomeState &&
+                      message.role === 'assistant' &&
+                      index === 0
+                    )
                   }
                   userAvatar={message.role === 'user' ? (() => {
                     // Anonymous users: use the session-stable random avatar
@@ -2255,12 +2279,19 @@ WEATHER & LIVE INFO RESPONSES:
                   } : undefined}
                 />
                 </React.Fragment>
+                )
               ))}
 
               {isAnonymous &&
-               messages.filter(m => m.role === 'user').length === 1 &&
+               messages.filter(m => m.role === 'user').length >= 1 &&
                !isGenerating &&
-               messages[messages.length - 1]?.role === 'assistant' && (
+               messages[messages.length - 1]?.role === 'assistant' && (() => {
+                const userMsgCount = messages.filter((m) => m.role === 'user').length;
+                if (userMsgCount !== 1) return null;
+
+                const saveReason = getSignupPromptReason(messages);
+                const savePrompt = getSignupPrompt(saveReason, { parkName });
+                return (
                 <div className="mx-auto max-w-3xl px-3 sm:px-6">
                   <div
                     className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl px-4 py-3"
@@ -2272,10 +2303,10 @@ WEATHER & LIVE INFO RESPONSES:
                   >
                     <div>
                       <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Love this plan? Save it to your account.
+                        {savePrompt.inlineTitle}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                        Free account — keeps your trip history and unlocks unlimited planning.
+                        {savePrompt.inlineSubtitle}
                       </p>
                     </div>
                     <Button
@@ -2284,11 +2315,12 @@ WEATHER & LIVE INFO RESPONSES:
                       size="sm"
                       icon={Sparkles}
                     >
-                      Save Trip Free
+                      {savePrompt.inlineCta}
                     </Button>
                   </div>
                 </div>
-              )}
+                );
+               })()}
 
               {isGenerating && <TypingIndicator
                 text={thinkingMessage}
@@ -2331,65 +2363,13 @@ WEATHER & LIVE INFO RESPONSES:
       {/* Conversion Message for Anonymous Users */}
       {isAnonymous && !isAuthenticated && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
         <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.12)',
-            }}
-          >
-            <div className="px-6 pt-5 pb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Mountain className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                  Ready to Continue Planning?
-                </h3>
-              </div>
-              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
-                You&apos;ve used your 5 free messages. Create a free account to:
-              </p>
-              <ul className="space-y-1.5 mb-4">
-                {VALUE_PROPS.map((prop) => (
-                  <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                    {prop}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-            <div className="px-6 py-4 flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => {
-                  localStorage.setItem('returnToChat', JSON.stringify({
-                    anonymousId, parkName, formData, messages, timestamp: Date.now(),
-                  }));
-                  router.push('/signup');
-                }}
-                variant="primary"
-                size="md"
-                icon={Sparkles}
-                className="flex-1"
-              >
-                Create Free Account
-              </Button>
-              <Button
-                onClick={() => {
-                  localStorage.setItem('returnToChat', JSON.stringify({
-                    anonymousId, parkName, formData, messages, timestamp: Date.now(),
-                  }));
-                  router.push('/login');
-                }}
-                variant="secondary"
-                size="md"
-                icon={LogIn}
-                className="flex-1"
-              >
-                Sign In
-              </Button>
-            </div>
-          </div>
+          <SignupPromptPanel
+            reason={SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT}
+            parkName={parkName}
+            headingLevel="h3"
+            onSignup={handleSignupRedirect}
+            onLogin={handleLoginRedirect}
+          />
         </div>
       )}
 
@@ -2521,16 +2501,29 @@ WEATHER & LIVE INFO RESPONSES:
               )}
             </div>
 
-            {isWelcomeState && onOpenQuickFill && (
-              <p className="mb-1.5 text-[11px] leading-4 sm:mb-3 sm:text-sm sm:leading-6" style={{ color: 'var(--text-secondary)' }}>
-                Use Plan My Trip to add your destination, dates, budget, and interests before you ask for an itinerary.
-                {isAuthenticated && <span className="sm:hidden"> Tap <strong>For Me</strong> for personalized recommendations based on your travel history.</span>}
+            {isWelcomeState && isPersonalized && (
+              <p
+                className="mb-1.5 text-xs leading-relaxed sm:mb-3 sm:text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE} — or try asking:
+              </p>
+            )}
+
+            {isWelcomeState && onOpenQuickFill && !isPersonalized && (
+              <p
+                className="mb-1.5 text-xs leading-relaxed sm:mb-3 sm:text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Use Plan My Trip to add destination, dates, budget, and interests — or try asking:
               </p>
             )}
 
             {isWelcomeState && (
-              <div className="mb-2 sm:mb-3">
+              <div className="mb-1.5 sm:mb-3">
                 <SuggestedPrompts
+                  mobileMax={2}
+                  hideTitle={Boolean(onOpenQuickFill || isPersonalized)}
                   prompts={isPersonalized ? [
                     { icon: Sparkles, text: "What should I explore this season based on my interests?", color: "text-green-400" },
                     { icon: MapPin, text: "Suggest a park I haven't visited yet that matches my style", color: "text-blue-400" },
@@ -2540,10 +2533,11 @@ WEATHER & LIVE INFO RESPONSES:
                     { icon: Sparkles, text: "Plan a 5-day trip to Yellowstone for a family", color: "text-green-400" },
                     { icon: MapPin, text: "Best national parks for stargazing in the Southwest", color: "text-blue-400" },
                     { icon: Calendar, text: "Weekend hiking trip from Denver under $500", color: "text-yellow-400" },
-                    { icon: Edit2, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
+                    { icon: Compare, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
                   ]}
                   onSelect={(text) => handleSendMessage(text)}
-                  title={isPersonalized ? "Suggestions for you" : "Try asking..."}
+                  title={isPersonalized ? 'Suggestions for you' : 'Try asking...'}
+                  subtitle={null}
                 />
               </div>
             )}
@@ -2551,7 +2545,6 @@ WEATHER & LIVE INFO RESPONSES:
             {/* Chat Input */}
             <ChatInput
               onSend={handleSendMessage}
-              onAttach={(file) => showToast(`Attached: ${file.name}`, 'success')}
               disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
               placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in or create an account to save this chat and continue..." : "Ask me about your trip..."}
               initialValue=""
@@ -2766,6 +2759,7 @@ WEATHER & LIVE INFO RESPONSES:
         anonymousId={anonymousId}
         formData={formData}
         messages={messages}
+        reason={saveModalReason}
       />
     </div>
   );

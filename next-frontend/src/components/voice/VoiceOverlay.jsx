@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useMemo } from 'react';
-import { CircleNotch, WaveformSlash } from '@phosphor-icons/react';
+import { createAppIcon } from '@/components/icons/createAppIcon';
+import { CircleNotchIcon, WaveformSlashIcon } from '@phosphor-icons/react';
 import { X, Microphone } from '@components/icons';
+
+const CircleNotch = createAppIcon(CircleNotchIcon);
+const WaveformSlash = createAppIcon(WaveformSlashIcon);
 import useRealtimeVoice from '@/hooks/useRealtimeVoice';
 import parkSlugs from '@/data/park-slugs.json';
 

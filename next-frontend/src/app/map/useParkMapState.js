@@ -7,10 +7,12 @@ const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
 const DEFAULT_ZOOM = 4;
 const STORAGE_KEY = 'trailverse-map-v2';
 
-export default function useParkMapState(allParks) {
+export default function useParkMapState(allParks, allCampgrounds = [], allPlaces = []) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedParkCode, setSelectedParkCode] = useState(null);
+  const [selectedCampgroundId, setSelectedCampgroundId] = useState(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState(null);
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
   const [hasRestored, setHasRestored] = useState(false);
@@ -74,12 +76,18 @@ export default function useParkMapState(allParks) {
     return aName.localeCompare(bName);
   });
 
-  const suggestions = normalizedQuery ? results.slice(0, 8) : [];
+  const suggestions = normalizedQuery ? results.slice(0, 12) : [];
   const selectedPark = (allParks || []).find((park) => park.parkCode?.toLowerCase() === selectedParkCode?.toLowerCase()) || null;
+  const selectedCampground =
+    (allCampgrounds || []).find((campground) => campground.id === selectedCampgroundId) || null;
+  const selectedPlace =
+    (allPlaces || []).find((place) => place.id === selectedPlaceId) || null;
 
   const selectPark = useCallback((park) => {
     if (!park) return;
 
+    setSelectedCampgroundId(null);
+    setSelectedPlaceId(null);
     setSelectedParkCode(park.parkCode);
 
     if (park.latitude && park.longitude) {
@@ -93,15 +101,51 @@ export default function useParkMapState(allParks) {
     }
   }, []);
 
+  const selectCampground = useCallback((campground) => {
+    if (!campground) return;
+
+    setSelectedParkCode(null);
+    setSelectedPlaceId(null);
+    setSelectedCampgroundId(campground.id);
+    setSearchQuery('');
+
+    if (campground.latitude && campground.longitude) {
+      setMapCenter({
+        lat: Number.parseFloat(campground.latitude),
+        lng: Number.parseFloat(campground.longitude),
+      });
+      setMapZoom((prev) => (prev < 9 ? 9 : prev));
+    }
+  }, []);
+
+  const selectPlace = useCallback((place) => {
+    if (!place) return;
+
+    setSelectedParkCode(null);
+    setSelectedCampgroundId(null);
+    setSelectedPlaceId(place.id);
+    setSearchQuery('');
+
+    if (place.latitude && place.longitude) {
+      setMapCenter({
+        lat: Number.parseFloat(place.latitude),
+        lng: Number.parseFloat(place.longitude),
+      });
+      setMapZoom((prev) => (prev < 10 ? 10 : prev));
+    }
+  }, []);
+
   const clearSelection = useCallback(() => {
     setSelectedParkCode(null);
-    setMapCenter(DEFAULT_CENTER);
-    setMapZoom(DEFAULT_ZOOM);
+    setSelectedCampgroundId(null);
+    setSelectedPlaceId(null);
   }, []);
 
   const clearSearch = useCallback(() => {
     setSearchQuery('');
     setSelectedParkCode(null);
+    setSelectedCampgroundId(null);
+    setSelectedPlaceId(null);
     setMapCenter(DEFAULT_CENTER);
     setMapZoom(DEFAULT_ZOOM);
   }, []);
@@ -117,10 +161,14 @@ export default function useParkMapState(allParks) {
     mapZoom,
     searchQuery,
     selectedPark,
+    selectedCampground,
+    selectedPlace,
     results,
     suggestions,
     setSearchQuery,
     selectPark,
+    selectCampground,
+    selectPlace,
     clearSelection,
     clearSearch,
     updateViewport,

@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { Search, X, MapPin, Filter } from '@components/icons';
+import { Search, X, Filter } from '@components/icons';
+import {
+  HERO_SEARCH_FIELD_STYLE,
+  HERO_SEARCH_FOCUS_RING,
+  HERO_SEARCH_ICON_COLOR,
+  HERO_SEARCH_MUTED_COLOR,
+  HERO_SEARCH_TEXT_COLOR,
+} from '@/lib/heroSearchStyles';
 
 const SearchBar = ({ 
   value, 
@@ -7,25 +14,28 @@ const SearchBar = ({
   onClear, 
   placeholder = "Search parks...",
   showFilters = false,
-  onToggleFilters
+  onToggleFilters,
+  variant = 'default',
+  compact = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const isHero = variant === 'hero';
 
   return (
     <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
       <div className={`relative rounded-2xl transition-all ${
-        isFocused ? 'ring-2 ring-forest-500/50' : ''
+        isFocused ? (isHero ? HERO_SEARCH_FOCUS_RING : 'ring-2 ring-forest-500/50') : ''
       }`}
-        style={{
+        style={isHero ? HERO_SEARCH_FIELD_STYLE : {
           backgroundColor: 'var(--surface)',
           borderWidth: '1px',
-          borderColor: 'var(--border)'
+          borderColor: 'var(--border)',
         }}
       >
         {/* Search Icon */}
         <Search 
-          className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
-          style={{ color: 'var(--text-tertiary)' }}
+          className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 ${compact ? 'left-4' : 'left-5'}`}
+          style={{ color: isHero ? HERO_SEARCH_ICON_COLOR : 'var(--text-tertiary)' }}
         />
 
         {/* Input */}
@@ -36,32 +46,36 @@ const SearchBar = ({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          className="w-full pl-14 pr-24 py-4 rounded-2xl text-base font-medium outline-none transition bg-transparent"
-          style={{ color: 'var(--text-primary)' }}
+          className={`w-full min-w-0 font-medium outline-none transition rounded-2xl ${
+            compact ? 'pl-11 pr-12 py-2.5 text-sm' : 'pl-14 pr-12 py-4 text-base'
+          } ${isHero ? 'placeholder:text-slate-500 bg-transparent' : 'placeholder:text-[color:var(--text-tertiary)] bg-transparent'}`}
+          style={{ color: isHero ? HERO_SEARCH_TEXT_COLOR : 'var(--text-primary)' }}
         />
 
         {/* Actions */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          {value && (
-            <button
-              onClick={onClear}
-              className="p-1.5 rounded-lg hover:bg-white/5 transition"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-          
-          {showFilters && (
-            <button
-              onClick={onToggleFilters}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-white/5 transition"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <Filter className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        {(value || showFilters) ? (
+          <div className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 ${compact ? 'right-2.5' : 'right-3'}`}>
+            {value ? (
+              <button
+                onClick={onClear}
+                className={`p-1.5 rounded-lg transition ${isHero ? 'hover:bg-black/5' : 'hover:bg-white/5'}`}
+                style={{ color: isHero ? HERO_SEARCH_MUTED_COLOR : 'var(--text-tertiary)' }}
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+            {showFilters ? (
+              <button
+                onClick={onToggleFilters}
+                className={`lg:hidden p-1.5 rounded-lg transition ${isHero ? 'hover:bg-black/5' : 'hover:bg-white/5'}`}
+                style={{ color: isHero ? HERO_SEARCH_MUTED_COLOR : 'var(--text-tertiary)' }}
+              >
+                <Filter className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {/* Search Suggestions (optional) */}

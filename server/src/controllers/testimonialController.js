@@ -29,13 +29,60 @@ exports.getTestimonials = async (req, res, next) => {
 
 // @desc    Create testimonial
 // @route   POST /api/testimonials
-// @access  Private
+// @access  Public (optionalAuth — links to user when logged in)
 exports.createTestimonial = async (req, res, next) => {
   try {
+    const { name, content, rating, role, parkCode, parkName, sourceUrl, sourceLabel, source } = req.body;
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    const trimmedContent = typeof content === 'string' ? content.trim() : '';
+
+    if (!trimmedName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide your name'
+      });
+    }
+
+    if (!trimmedContent || trimmedContent.length < 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'Testimonial must be at least 50 characters'
+      });
+    }
+
+    const numericRating = Number(rating);
+    if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a rating between 1 and 5'
+      });
+    }
+
+    const isAdmin = req.user?.role === 'admin';
+
     const testimonialData = {
-      ...req.body,
-      user: req.user.id
+      name: trimmedName,
+      content: trimmedContent,
+      rating: numericRating,
+      role: typeof role === 'string' && role.trim() ? role.trim() : 'Park Explorer',
+      parkCode: typeof parkCode === 'string' && parkCode.trim() ? parkCode.trim() : null,
+      parkName: typeof parkName === 'string' && parkName.trim() ? parkName.trim() : null,
+      approved: false,
+      source: 'user-submission',
+      sourceUrl: null,
+      sourceLabel: null,
+      user: req.user ? req.user.id : null
     };
+
+    if (isAdmin) {
+      if (source) testimonialData.source = source;
+      if (typeof sourceUrl === 'string' && sourceUrl.trim()) {
+        testimonialData.sourceUrl = sourceUrl.trim();
+      }
+      if (typeof sourceLabel === 'string' && sourceLabel.trim()) {
+        testimonialData.sourceLabel = sourceLabel.trim();
+      }
+    }
 
     const testimonial = await Testimonial.create(testimonialData);
 
@@ -70,7 +117,10 @@ exports.updateTestimonial = async (req, res, next) => {
       });
     }
 
-    const allowedFields = ['name', 'role', 'content', 'rating', 'parkCode', 'parkName'];
+    const allowedFields = [
+      'name', 'role', 'content', 'rating', 'parkCode', 'parkName',
+      'source', 'sourceUrl', 'sourceLabel'
+    ];
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         testimonial[field] = req.body[field];

@@ -1,0 +1,119 @@
+---
+description: TrailVerse monorepo overview — stack, dev workflow, architecture, branding. Read first for any task.
+alwaysApply: true
+---
+
+# TrailVerse (NPE-USA) — Master Context
+
+## Product
+
+**TrailVerse** (production: [nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)) is a national-parks exploration and trip-planning product covering **470+ NPS parks and sites**.
+
+- **Brand voice**: "Your Universe of National Parks Exploration"
+- **AI persona**: **Trailie** — park trip planner (nav label "Trailie", routes under `/plan-ai`)
+- **Public value prop**: Real-time weather, maps, reviews, compare, events, discover-by-taxonomy, blog, and AI itineraries — **no account required** to browse parks
+
+## Repository layout
+
+```
+npe-usa/
+├── package.json          # Root: `npm run dev` runs frontend + backend via concurrently
+├── next-frontend/        # Next.js App Router (primary UI) — Node 20, v0.3.0
+├── server/               # Express API + MongoDB + Socket.IO
+├── mcp-server/           # TrailVerse MCP for Claude/ChatGPT integrations
+└── docs/                 # SEO, content-engine, plans (not runtime)
+```
+
+## Local development
+
+| Service | Command | URL |
+|---------|---------|-----|
+| Both | `npm run dev` (repo root) | — |
+| Frontend only | `cd next-frontend && npm run dev` | http://127.0.0.1:3000 |
+| Backend only | `cd server && npm run dev` | http://localhost:5001/api |
+
+- Frontend proxies `/api/*` and `/uploads/*` to backend (`next-frontend/next.config.mjs` rewrites)
+- Default API base: `http://127.0.0.1:5001/api` via `getApiBaseUrl()` in `next-frontend/src/lib/apiBase.js`
+- Production API: `https://trailverse.onrender.com/api`
+
+## Tech stack
+
+| Layer | Choices |
+|-------|---------|
+| Frontend | Next.js App Router, React 19, Tailwind v4, TanStack Query, Phosphor icons (`@components/icons`), Serwist PWA |
+| Backend | Express, Mongoose, JWT auth, Socket.IO, Swagger at `/api-docs` |
+| Data | MongoDB; NPS API; OpenWeather; Google Maps (server proxy); RIDB; GTFS transit |
+| AI | OpenAI + Anthropic (Plan AI / Trailie) |
+| Email | Resend (primary) |
+| Deploy | Vercel (frontend), Render (backend) |
+
+## Global frontend providers (`next-frontend/src/components/Providers.jsx`)
+
+- `QueryClientProvider` (5min staleTime)
+- `ThemeProvider` — CSS vars: `--bg-primary`, `--text-primary`, `--accent-green`, `--font-display`
+- `AuthProvider` — JWT in cookie `trailverse_auth_token` + localStorage patterns via `authService`
+- `ToastProvider`, Vercel Analytics/Speed Insights, Serwist SW (production only)
+- Root layout adds `VoiceButton` (Talk to Trailie), `GoogleMapsLoader`
+
+## Middleware / proxy (`next-frontend/src/proxy.js`)
+
+- **Protected** (no cookie → `/login?redirect=...`): `/profile`, `/dashboard`, `/settings`, `/plan-ai/new`, `/home`
+- **Auth-only redirect** (logged in → `/home`): `/login`, `/signup`, `/forgot-password`, `/reset-password`
+- **Blog slug redirects**: fetches `/api/blogs/slug-redirects`, 308 to canonical slug
+
+## SEO conventions
+
+- **Canonical domain**: `https://www.nationalparksexplorerusa.com`
+- **Indexable**: use `indexablePageRobots` from `@/lib/seo`
+- **Private** (noindex): auth, profile, admin, chat-history, shared trips — use `privatePageRobots` / `privatePageMetadata`
+- **Park URLs**: slug-based `/parks/{full-name-slug}` (e.g. `yellowstone-national-park`); short codes redirect via `next.config.mjs`
+- **Sitemap**: `next-frontend/src/app/sitemap.ts` — static + parks + states + blogs
+- **robots.txt**: disallows `/admin`, `/login`, `/profile`, `/plan-ai/shared/`, etc.
+
+## Park slug system
+
+- Source of truth: `next-frontend/src/data/park-slugs.json` (generated prebuild)
+- Utils: `next-frontend/src/utils/parkSlug.js` — `parkToSlug`, `findCorrectSlug`
+- Redirect: `/parks/yell` → `/parks/yellowstone-national-park` (permanent)
+
+## When changing code
+
+1. **Match existing patterns** — JSX (not TS) in frontend; Express controllers + services on backend
+2. **Minimize scope** — parks/discover/SEO are sensitive; test slug redirects and metadata
+3. **API calls from browser** — prefer relative `/api/...` (rewritten) or `getApiBaseUrl()`
+4. **Auth** — `Authorization: Bearer` from cookie; `optionalAuth` for likes/reviews
+5. **Do not** commit secrets, `.env`, or large SEO export zips in repo root
+
+## Related rule files
+
+- `01-frontend-pages.mdc` — every route, UI sections, data sources
+- `02-backend-api.mdc` — Express routes, models, auth (when editing `server/`)
+- `03-frontend-conventions.mdc` — components, hooks, styling (when editing `next-frontend/`)
+- `04-discover-and-parks.mdc` — discover hub + park detail deep dive
+- `05-plan-ai-mcp-and-admin.mdc` — Trailie, voice, admin CMS
+- `06-mcp-chatgpt-cloud.mdc` — **MCP server on Render, ChatGPT App, Claude connector, widgets**
+- `07-frontend-services-layer.mdc` — `src/services/*.js` map
+
+## Coverage checklist (repo vs rules)
+
+| Area | Covered in |
+|------|------------|
+| All 51 App Router pages | `01-frontend-pages.mdc` |
+| Express API domains | `02-backend-api.mdc` |
+| Discover + park tabs | `04-discover-and-parks.mdc` |
+| Plan AI + voice + admin | `05-plan-ai-mcp-and-admin.mdc` |
+| MCP cloud + ChatGPT + Claude | `06-mcp-chatgpt-cloud.mdc` |
+| Client services layer | `07-frontend-services-layer.mdc` |
+| SEO/sitemap/redirects | `00` + `03` (park slugs, robots) |
+| `mcp-server/` Python package | `06` (+ `docs/mcp-server-technical-doc.md`) |
+| `docs/`, content-engine, SEO phase-0 exports | Not runtime — omit unless doing SEO/content work |
+| `src/old_pages/` | Legacy only — `07` |
+| `/dashboard`, `/settings` (user) | Proxy mentions; **no pages exist** — use `/profile` |
+
+## Human-readable handbook
+
+Full merged doc for humans: `docs/TRAILVERSE-AGENT-HANDBOOK.md` — sync when making large structural rule updates.
+
+## Next.js version note
+
+`next-frontend/AGENTS.md` warns this Next.js may differ from training data — check `node_modules/next/dist/docs/` for deprecations before using unfamiliar APIs.

@@ -144,7 +144,7 @@ const LandingPage = () => {
     logo: 'https://www.nationalparksexplorerusa.com/logo.png',
     description: 'The modern platform for exploring America\'s 470+ National Parks, Monuments, and Historic Sites',
     sameAs: [
-      'https://www.facebook.com/npeusa',
+      'https://www.facebook.com/travelswithkrishna/',
       'https://twitter.com/npeusa',
       'https://www.instagram.com/npeusa'
     ],

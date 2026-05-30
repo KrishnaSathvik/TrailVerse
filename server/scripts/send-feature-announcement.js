@@ -4,7 +4,7 @@
  * Feature Announcement Email Script
  * 
  * This script sends feature announcement emails to existing users
- * about the new Google Maps integration and Resend email system.
+ * about recent TrailVerse product updates (voice, Discover, map, compare, ChatGPT, etc.).
  * 
  * Usage:
  *   node scripts/send-feature-announcement.js [options]
@@ -21,7 +21,10 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const resendEmailService = require('../src/services/resendEmailService');
+const reactEmailRenderer = require('../src/services/reactEmailRenderer');
 const User = require('../src/models/User');
+const fs = require('fs');
+const path = require('path');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -55,15 +58,26 @@ async function previewEmail() {
       email: 'john.doe@example.com'
     };
 
-    const html = await resendEmailService.compileTemplate('feature-announcement', {
-      firstName: testUser.firstName,
-      email: testUser.email,
-      mapUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}/map`,
-      shareUrl: `${process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com'}?ref=feature-announcement`
+    const baseUrl = process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com';
+    const html = await reactEmailRenderer.renderFeatureAnnouncementEmail({
+      username: testUser.firstName,
+      planUrl: `${baseUrl}/plan-ai`,
+      exploreByActivityUrl: `${baseUrl}/discover`,
+      mapUrl: `${baseUrl}/map`,
+      compareUrl: `${baseUrl}/compare`,
+      chatgptUrl:
+        'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
+      exploreUrl: `${baseUrl}/explore`,
+      testimonialsUrl: `${baseUrl}/testimonials`,
+      unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(testUser.email)}`
     });
 
+    const previewPath = path.join(__dirname, '../templates/emails/preview-feature-announcement.html');
+    fs.mkdirSync(path.dirname(previewPath), { recursive: true });
+    fs.writeFileSync(previewPath, html, 'utf8');
+
     console.log('📧 Email preview generated successfully!');
-    console.log('📄 Preview saved to: server/templates/emails/preview-feature-announcement.html');
+    console.log(`📄 Preview saved to: ${previewPath}`);
     console.log('🌐 Open the preview file in your browser to see the email design.\n');
     
   } catch (error) {
@@ -83,7 +97,7 @@ async function sendTestEmail() {
 
     if (options.dryRun) {
       console.log('🔍 DRY RUN: Would send feature announcement email to:', testUser.email);
-      console.log('📧 Subject: New in TrailVerse: Plan My Trip, For Me Recommendations & More');
+      console.log("📧 Subject: It's been a while — here's what's new in TrailVerse");
       return;
     }
 

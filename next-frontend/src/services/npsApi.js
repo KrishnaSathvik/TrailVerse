@@ -1,7 +1,7 @@
 import enhancedApi from './enhancedApi';
 import globalCacheManager from './globalCacheManager';
 
-const ALL_PARKS_CACHE_VERSION = 'v3';
+const ALL_PARKS_CACHE_VERSION = 'v4';
 
 class NPSApi {
   // Get all parks with pagination support
@@ -97,6 +97,44 @@ class NPSApi {
           ttl: 5 * 60 * 1000 // 5 minutes - alerts change frequently
         });
         return result.data.data;
+      }
+    );
+    return result.data;
+  }
+
+  // Places (What to See) with coordinates for /map
+  async getMapPlaces() {
+    const result = await globalCacheManager.get(
+      'map-places-v1',
+      'parks',
+      async () => {
+        const result = await enhancedApi.get('/parks/map/places', {}, {
+          cacheType: 'parks',
+          ttl: 7 * 24 * 60 * 60 * 1000,
+        });
+        return {
+          data: result.data.data,
+          total: result.data.count,
+        };
+      }
+    );
+    return result.data;
+  }
+
+  // Campgrounds with coordinates for /map
+  async getMapCampgrounds() {
+    const result = await globalCacheManager.get(
+      'map-campgrounds-v1',
+      'parks',
+      async () => {
+        const result = await enhancedApi.get('/parks/map/campgrounds', {}, {
+          cacheType: 'parks',
+          ttl: 7 * 24 * 60 * 60 * 1000,
+        });
+        return {
+          data: result.data.data,
+          total: result.data.count,
+        };
       }
     );
     return result.data;

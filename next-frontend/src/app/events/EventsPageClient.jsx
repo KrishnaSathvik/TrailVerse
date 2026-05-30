@@ -646,7 +646,7 @@ const EventsPage = () => {
         {/* Events Grid */}
               {!isLoading && !error && filteredEvents.length > 0 && viewMode === 'grid' && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                     {paginatedEvents.map(event => (
                       <EventCard
                         key={event.renderKey}

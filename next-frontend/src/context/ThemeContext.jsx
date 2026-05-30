@@ -12,41 +12,42 @@ export const useTheme = () => {
   return context;
 };
 
-export const ThemeProvider = ({ children }) => {
-  // Always start with 'system' to avoid hydration mismatch (server has no localStorage)
-  const [theme, setTheme] = useState('system');
-  const [resolvedTheme, setResolvedTheme] = useState('dark');
+function readResolvedThemeFromDocument() {
+  if (typeof document === 'undefined') return 'light';
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
 
-  // Read saved theme from localStorage after mount
+export const ThemeProvider = ({ children }) => {
+  // Match SSR: never read document/localStorage during initial render (theme-init.js runs before React).
+  const [theme, setTheme] = useState('system');
+  const [resolvedTheme, setResolvedTheme] = useState('light');
+
+  // Sync with theme-init.js + localStorage after hydration.
   useEffect(() => {
     const saved = localStorage.getItem('theme');
-    if (saved && saved !== 'system') {
+    if (saved === 'light' || saved === 'dark' || saved === 'system') {
       setTheme(saved);
     }
+    setResolvedTheme(readResolvedThemeFromDocument());
   }, []);
 
-  // Apply theme to document
+  // Apply theme to document (sync with theme-init.js; avoid redundant class churn)
   useEffect(() => {
     const root = window.document.documentElement;
-    
-    // Remove previous theme classes
-    root.classList.remove('light', 'dark');
-    
+
     let effectiveTheme = theme;
-    
-    // If system, detect OS preference
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches 
-        ? 'dark' 
+      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
         : 'light';
-      effectiveTheme = systemTheme;
     }
-    
-    // Apply theme
-    root.classList.add(effectiveTheme);
+
+    if (!root.classList.contains(effectiveTheme)) {
+      root.classList.remove('light', 'dark');
+      root.classList.add(effectiveTheme);
+    }
+    root.style.colorScheme = effectiveTheme;
     setResolvedTheme(effectiveTheme);
-    
-    // Save to localStorage
     localStorage.setItem('theme', theme);
   }, [theme]);
 

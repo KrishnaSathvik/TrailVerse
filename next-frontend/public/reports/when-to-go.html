@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>National Park Crowd Calendar — TrailVerse</title>
-<meta name="description" content="See month-by-month crowd levels, shoulder season windows, and permit requirements for all 63 U.S. national parks. Powered by real NPS data.">
+<meta name="description" content="Month-by-month crowd levels, shoulder season windows, and 2026 permit notes for all 63 U.S. national parks. Based on NPS IRMA visitor statistics.">
 <meta property="og:title" content="National Park Crowd Calendar — TrailVerse">
-<meta property="og:description" content="Month-by-month crowd levels, shoulder season windows, and permit requirements for all 63 U.S. national parks. Powered by real NPS data.">
+<meta property="og:description" content="Month-by-month crowd levels, shoulder season windows, and 2026 permit notes for all 63 U.S. national parks. Based on NPS IRMA visitor statistics.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://www.nationalparksexplorerusa.com/reports/when-to-go">
 <meta name="twitter:card" content="summary_large_image">
@@ -104,6 +104,9 @@ nav{
 .park-header{margin-bottom:32px}
 .park-header h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,46px);font-weight:900;margin-bottom:6px}
 .park-header .ph-state{font-size:14px;color:var(--muted);letter-spacing:1px}
+.park-header .ph-visits{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+.park-header .ph-visits a{color:var(--rust);text-decoration:none;font-weight:500}
+.park-header .ph-visits a:hover{text-decoration:underline}
 
 /* CALENDAR GRID */
 .cal-section{margin-bottom:40px}
@@ -141,16 +144,38 @@ nav{
 /* SHOULDER HIGHLIGHT */
 .cal-cell.shoulder{outline:2px solid rgba(45,138,45,0.5);outline-offset:2px}
 
-/* INSIGHT PANELS */
-.insights{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px}
-.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
-.ic-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:block}
-.ic-eyebrow.gold{color:var(--gold)}
-.ic-eyebrow.sage{color:var(--sage)}
-.ic-eyebrow.rust{color:var(--rust)}
-.ic-eyebrow.blue{color:var(--glacier)}
-.ic-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--cream);display:block;margin-bottom:4px}
-.ic-desc{font-size:13px;color:var(--muted);line-height:1.5}
+/* VISIT SUMMARY (peak + shoulder + recommendation in one block) */
+.visit-summary{
+  background:linear-gradient(135deg,rgba(45,138,45,0.07),rgba(45,138,45,0.02));
+  border:1px solid rgba(45,138,45,0.22);border-radius:14px;
+  padding:26px 28px;margin-bottom:36px;
+}
+.vs-headline{
+  font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-weight:700;
+  line-height:1.2;margin-bottom:10px;color:var(--cream);
+}
+.vs-headline em{font-style:normal;color:var(--sage)}
+.vs-lead{font-size:15px;line-height:1.75;color:rgba(30,30,30,0.72);margin-bottom:20px;max-width:720px}
+.vs-grid{display:grid;grid-template-columns:1.1fr 0.9fr 1fr 1fr;gap:12px;margin-bottom:18px}
+.vs-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+}
+.vs-card.vs-go{border-color:rgba(45,138,45,0.35);background:rgba(45,138,45,0.06)}
+.vs-card.vs-avoid{border-color:rgba(179,61,24,0.3);background:rgba(179,61,24,0.05)}
+.vs-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px;color:var(--muted)}
+.vs-go .vs-label{color:var(--sage)}
+.vs-avoid .vs-label{color:var(--rust)}
+.vs-value{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;line-height:1.15;color:var(--cream);display:block}
+.vs-meta{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45;display:block}
+.vs-extra{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px}
+.vs-extra strong{color:var(--cream);font-weight:600}
+.vs-pills{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.vs-pill{
+  padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;
+  background:rgba(45,138,45,0.08);border:1px solid rgba(45,138,45,0.25);color:var(--sage);
+}
+.vs-pill.peak{background:rgba(179,61,24,0.08);border-color:rgba(179,61,24,0.25);color:var(--rust)}
+.vs-pill-quiet{background:rgba(26,122,155,0.08);border-color:rgba(26,122,155,0.25);color:var(--glacier)}
 
 /* PERMIT BANNER */
 .permit-banner{
@@ -172,23 +197,6 @@ nav{
 .mt-bar-wrap{height:28px;border-radius:4px;overflow:hidden;background:rgba(0,0,0,0.04)}
 .mt-bar{height:100%;border-radius:4px;transition:width 1s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:4px}
 .mt-bar-val{font-size:9px;font-weight:600;color:rgba(0,0,0,0.7);white-space:nowrap}
-
-/* BEST TIME BOX */
-.best-time-box{
-  background:linear-gradient(135deg,rgba(45,138,45,0.06),rgba(45,138,45,0.02));
-  border:1px solid rgba(45,138,45,0.2);border-radius:12px;padding:24px 28px;
-  margin-bottom:40px;
-}
-.btb-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:12px}
-.btb-title span{color:var(--sage)}
-.btb-body{font-size:15px;line-height:1.7;color:rgba(30,30,30,0.7)}
-.btb-months{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.btb-month{
-  padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;
-  background:rgba(45,138,45,0.08);border:1px solid rgba(45,138,45,0.25);
-  color:var(--sage);
-}
-.btb-month.peak{background:rgba(179,61,24,0.08);border-color:rgba(179,61,24,0.25);color:var(--rust)}
 
 /* TRAILVERSE CTA */
 .trailverse-cta{
@@ -235,8 +243,9 @@ html.dark-mode .hero-sub { color: rgba(255,255,255,0.65); }
 html.dark-mode .dropdown-item:hover, html.dark-mode .dropdown-item.active { background: rgba(255,255,255,0.05); }
 html.dark-mode .permit-banner { background: rgba(179,61,24,0.1); border-color: rgba(179,61,24,0.25); }
 html.dark-mode .pb-text { color: rgba(255,255,255,0.65); }
-html.dark-mode .best-time-box { background: linear-gradient(135deg, rgba(45,138,45,0.1), rgba(45,138,45,0.04)); border-color: rgba(45,138,45,0.25); }
-html.dark-mode .btb-body { color: rgba(255,255,255,0.7); }
+html.dark-mode .visit-summary { background: linear-gradient(135deg, rgba(45,138,45,0.12), rgba(45,138,45,0.04)); border-color: rgba(45,138,45,0.28); }
+html.dark-mode .vs-lead { color: rgba(255,255,255,0.72); }
+html.dark-mode .vs-card { background: rgba(255,255,255,0.04); }
 html.dark-mode .trailverse-cta:hover { background: rgba(184,146,46,0.08); }
 html.dark-mode .score-0 { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35); }
 html.dark-mode .score-1 { background: rgba(45,138,45,0.15); color: #8ecc6a; }
@@ -265,7 +274,8 @@ html.dark-mode .empty-state h3 { color: #fff; }
   .cal-cell{padding:8px 2px}
   .cal-cell .cc-score{font-size:16px}
   .cal-cell .cc-label{display:none}
-  .insights{grid-template-columns:1fr 1fr;gap:10px}
+  .vs-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .vs-headline{font-size:22px}
   .mt-header,.mt-row{grid-template-columns:70px repeat(12,1fr);font-size:9px}
 }
 </style>
@@ -278,7 +288,7 @@ html.dark-mode .empty-state h3 { color: #fff; }
     <div class="nav-sep"></div>
     <span class="nav-title">Crowd Calendar</span>
   </a>
-  <a href="/" class="nav-back" id="nav-back">← Back to TrailVerse</a>
+  <a href="/explore" class="nav-back" id="nav-back" data-tv-back-nav>← Back to TrailVerse</a>
 </nav>
 
 <!-- HERO -->
@@ -289,7 +299,7 @@ html.dark-mode .empty-state h3 { color: #fff; }
     <div class="hero-pill"><span class="hp-icon">📅</span><span>Month-by-month crowd levels</span></div>
     <div class="hero-pill"><span class="hp-icon">🌱</span><span>Best <strong>shoulder season</strong> windows</span></div>
     <div class="hero-pill"><span class="hp-icon">🎫</span><span>Permit & reservation warnings</span></div>
-    <div class="hero-pill"><span class="hp-icon">📊</span><span>Real NPS visitor counts by month</span></div>
+    <div class="hero-pill"><span class="hp-icon">📊</span><span>NPS monthly averages (<strong>2021–2025</strong>)</span></div>
   </div>
 </div>
 
@@ -316,39 +326,50 @@ html.dark-mode .empty-state h3 { color: #fff; }
   <div class="park-header">
     <h2 id="park-name"></h2>
     <div class="ph-state" id="park-state"></div>
+    <div class="ph-visits" id="park-visits-2025" style="display:none"></div>
   </div>
 
   <!-- PERMIT BANNER -->
   <div class="permit-banner" id="permit-banner">
     <div class="pb-icon">🎫</div>
     <div>
-      <div class="pb-title">Permit / Reservation Required</div>
+      <div class="pb-title">Reservations &amp; access (2026)</div>
       <div class="pb-text" id="permit-text"></div>
     </div>
   </div>
 
-  <!-- INSIGHTS -->
-  <div class="insights">
-    <div class="insight-card">
-      <span class="ic-eyebrow rust">Peak month</span>
-      <span class="ic-value" id="peak-month">—</span>
-      <span class="ic-desc" id="peak-desc">Busiest month of the year based on NPS visitor data</span>
+  <!-- WHEN TO GO (unified summary) -->
+  <section class="visit-summary" id="visit-summary" aria-label="When to visit summary">
+    <h3 class="vs-headline" id="vs-headline">When to go</h3>
+    <p class="vs-lead" id="vs-lead"></p>
+    <div class="vs-grid">
+      <div class="vs-card vs-go">
+        <span class="vs-label">Recommended</span>
+        <span class="vs-value" id="vs-go">—</span>
+      </div>
+      <div class="vs-card vs-avoid">
+        <span class="vs-label">Avoid</span>
+        <span class="vs-value" id="vs-avoid">—</span>
+        <span class="vs-meta" id="vs-avoid-meta"></span>
+      </div>
+      <div class="vs-card vs-peak">
+        <span class="vs-label">Peak month</span>
+        <span class="vs-value" id="vs-peak">—</span>
+        <span class="vs-meta" id="vs-peak-meta"></span>
+      </div>
+      <div class="vs-card vs-quiet">
+        <span class="vs-label">Quietest</span>
+        <span class="vs-value" id="vs-quiet">—</span>
+        <span class="vs-meta" id="vs-quiet-meta"></span>
+      </div>
     </div>
-    <div class="insight-card">
-      <span class="ic-eyebrow sage">Best shoulder windows</span>
-      <span class="ic-value" id="shoulder-months">—</span>
-      <span class="ic-desc">Good conditions with noticeably fewer crowds than peak</span>
-    </div>
-    <div class="insight-card">
-      <span class="ic-eyebrow blue">Quietest month</span>
-      <span class="ic-value" id="quiet-month">—</span>
-      <span class="ic-desc" id="quiet-desc">Lowest visitation — some parks have limited access</span>
-    </div>
-  </div>
+    <p class="vs-extra" id="vs-extra"></p>
+    <div class="vs-pills" id="vs-pills"></div>
+  </section>
 
   <!-- HEATMAP -->
   <div class="cal-section">
-    <div class="cal-section-title">How busy does it get? — each month shows the crowd score (1 = empty, 10 = peak). Click a month to see exact visitor numbers.</div>
+    <div class="cal-section-title">Month-by-month crowd score (1 = empty, 10 = peak). Green border = recommended months above. Click any month for visit counts.</div>
     <div class="legend">
       <span class="legend-label">Crowd level:</span>
       <div class="legend-swatch score-1"></div>
@@ -361,9 +382,9 @@ html.dark-mode .empty-state h3 { color: #fff; }
       <span class="legend-text">Peak</span>
       <div style="width:1px;height:12px;background:var(--border);margin:0 4px"></div>
       <div style="width:12px;height:12px;border-radius:50%;background:var(--rust);flex-shrink:0"></div>
-      <span class="legend-text">Permit required</span>
+      <span class="legend-text">Access / permit note</span>
       <div style="width:12px;height:12px;border-radius:3px;border:2px solid rgba(45,138,45,0.6);flex-shrink:0"></div>
-      <span class="legend-text">Shoulder season</span>
+      <span class="legend-text">Sweet spot</span>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
@@ -375,16 +396,9 @@ html.dark-mode .empty-state h3 { color: #fff; }
     <div style="font-size:14px;color:rgba(30,30,30,0.65)" id="md-context"></div>
   </div>
 
-  <!-- BEST TIME BOX -->
-  <div class="best-time-box">
-    <div class="btb-title">The <span id="rec-title">smart</span> time to visit</div>
-    <div class="btb-body" id="rec-body"></div>
-    <div class="btb-months" id="rec-months"></div>
-  </div>
-
   <!-- BAR CHART -->
   <div class="cal-section">
-    <div class="cal-section-title">Avg monthly visitors (NPS 5-year average, excl. 2020)</div>
+    <div class="cal-section-title">Avg monthly visitors (NPS 2021–2025 average; 2020 excluded)</div>
     <div id="bar-chart"></div>
   </div>
 
@@ -400,7 +414,7 @@ html.dark-mode .empty-state h3 { color: #fff; }
 </div>
 
 <div class="source-line">
-  Data: <a href="https://irma.nps.gov/Stats/" target="_blank">NPS Visitor Use Statistics (IRMA)</a> · Monthly recreation visit averages 2019–2024 (2020 excluded) ·
+  Data: <a href="https://irma.nps.gov/Stats/" target="_blank">NPS Visitor Use Statistics (IRMA)</a> · Monthly recreation visit averages (2021–2025; 2020 excluded) · 2025 annual totals match our <a href="/reports/national-parks-2025.html">2025 park report</a> · Permit notes updated May 2026 ·
   Built by <a href="/">TrailVerse</a>
 </div>
 
@@ -424,9 +438,39 @@ function scoreClass(s){
   return 'score-'+Math.min(10,Math.max(1,Math.round(s)));
 }
 
-// Find shoulder months: score 3-6, not 0
+// Shoulder months: open, meaningful visitation, and below peak (scores 3–8 and not the busiest month)
 function getShoulderMonths(park){
-  return park.scores.map((s,i)=>({s,i})).filter(x=>x.s>=3&&x.s<=6).map(x=>x.i);
+  const peak = Math.max(...park.scores.filter(s => s > 0));
+  return park.scores.map((s,i)=>({s,i})).filter(x=>x.s>=3&&x.s<=8&&x.s<peak).map(x=>x.i);
+}
+// Best shoulder picks: lowest crowd scores within the shoulder window (used below the chart)
+function getBestShoulderMonths(park, limit=3){
+  const shoulder = getShoulderMonths(park);
+  if(!shoulder.length) return [];
+  return shoulder.slice().sort((a,b)=>park.scores[a]-park.scores[b]).slice(0, limit);
+}
+function formatMonthOrList(indices){
+  const names = indices.map(i=>MONTHS_FULL[i]);
+  if(!names.length) return '';
+  if(names.length===1) return names[0];
+  if(names.length===2) return names[0]+' or '+names[1];
+  return names.slice(0,-1).join(', ')+', or '+names[names.length-1];
+}
+function groupMonthRanges(indices){
+  if(!indices.length) return '—';
+  const names = indices.map(i=>MONTHS[i]);
+  const groups = [];
+  let cur = [names[0]];
+  for(let i=1;i<names.length;i++){
+    if(indices[i]===indices[i-1]+1) cur.push(names[i]);
+    else { groups.push(cur); cur=[names[i]]; }
+  }
+  groups.push(cur);
+  return groups.map(g=>g.length>1?g[0]+'–'+g[g.length-1]:g[0]).join(', ');
+}
+function parkHasPermitNotes(park){
+  return park.permitMonths.some(m=>m===1) ||
+    (park.permitSystem && !/^none required/i.test(park.permitSystem));
 }
 function getPeakMonth(park){
   let mx=0,mi=0;
@@ -439,11 +483,70 @@ function getQuietMonth(park){
   return nonzero.reduce((a,b)=>b.s<a.s?b:a).i;
 }
 
+function parkDisplayName(park) {
+  return /national park/i.test(park.name) ? park.name : park.name + ' National Park';
+}
+
 // Format number
 function fmt(n){
   if(n>=1000000) return (n/1000000).toFixed(2)+'M';
   if(n>=1000) return Math.round(n/1000)+'K';
   return n.toString();
+}
+
+function renderVisitSummary(park, peak, quiet, shoulder, bestShoulder) {
+  const picks = bestShoulder.length ? bestShoulder : shoulder;
+  const hasPicks = picks.length >= 1;
+  const permitNote = hasPicks && (picks.some(i => park.permitMonths[i] === 1) || parkHasPermitNotes(park))
+    ? ' See the permit note above for shuttle, timed-entry, or trail-specific reservations.'
+    : hasPicks ? ' No park-wide reservation is required in those months.' : '';
+
+  if (hasPicks) {
+    const pickNames = formatMonthOrList(picks);
+    document.getElementById('vs-headline').innerHTML =
+      `Best time: <em>${pickNames}</em>`;
+    document.getElementById('vs-lead').textContent =
+      `${park.name} is noticeably less crowded in ${pickNames} than at peak ${MONTHS_FULL[peak]} (${fmt(park.raw[peak])} avg visits/month, 2021–2025 NPS data). Green borders on the chart mark these sweet-spot months.${permitNote}`;
+    document.getElementById('vs-go').textContent = pickNames;
+    document.getElementById('vs-avoid').textContent = MONTHS_FULL[peak];
+    document.getElementById('vs-avoid-meta').textContent = `Score ${park.scores[peak].toFixed(1)} / 10`;
+  } else {
+    document.getElementById('vs-headline').innerHTML =
+      `Best time: <em>${MONTHS_FULL[quiet]}</em>`;
+    document.getElementById('vs-lead').textContent =
+      `${park.name} has a short busy season. ${MONTHS_FULL[quiet]} is the quietest month with meaningful access — check park alerts for closures.`;
+    document.getElementById('vs-go').textContent = MONTHS_FULL[quiet];
+    document.getElementById('vs-avoid').textContent = MONTHS_FULL[peak];
+    document.getElementById('vs-avoid-meta').textContent = `Score ${park.scores[peak].toFixed(1)} / 10`;
+  }
+
+  document.getElementById('vs-peak').textContent = MONTHS_FULL[peak];
+  document.getElementById('vs-peak-meta').textContent = `${fmt(park.raw[peak])} avg visits/month`;
+  document.getElementById('vs-quiet').textContent = MONTHS_FULL[quiet];
+  document.getElementById('vs-quiet-meta').textContent =
+    `${fmt(park.raw[quiet])} avg · ${park.scores[quiet] === 0 ? 'limited access' : 'lowest traffic'}`;
+
+  const extraParts = [];
+  if (shoulder.length && bestShoulder.length && shoulder.length > bestShoulder.length) {
+    extraParts.push(`<strong>Broader shoulder:</strong> ${groupMonthRanges(shoulder)}`);
+  }
+  extraParts.push('<strong>Data:</strong> monthly averages 2021–2025 (2020 excluded)');
+  document.getElementById('vs-extra').innerHTML = extraParts.join(' · ');
+
+  const pills = document.getElementById('vs-pills');
+  while (pills.firstChild) pills.removeChild(pills.firstChild);
+  (hasPicks ? picks : [quiet]).forEach(i => {
+    const tag = document.createElement('span');
+    tag.className = 'vs-pill';
+    tag.textContent = MONTHS_FULL[i];
+    pills.appendChild(tag);
+  });
+  if (hasPicks) {
+    const avoid = document.createElement('span');
+    avoid.className = 'vs-pill peak';
+    avoid.textContent = `Avoid: ${MONTHS_FULL[peak]}`;
+    pills.appendChild(avoid);
+  }
 }
 
 // Render park
@@ -459,11 +562,19 @@ function renderPark(code) {
   card.classList.add('visible');
 
   // Header
-  document.getElementById('park-name').textContent = park.name + ' National Park';
+  document.getElementById('park-name').textContent = parkDisplayName(park);
   document.getElementById('park-state').textContent = park.state.toUpperCase();
+  const v25El = document.getElementById('park-visits-2025');
+  if (park.visits2025 > 0) {
+    v25El.style.display = 'block';
+    v25El.innerHTML = `<strong>${fmt(park.visits2025)}</strong> recreation visits in 2025 (NPS) · <a href="/reports/national-parks-2025.html">2025 visitation report</a>`;
+  } else {
+    v25El.style.display = 'none';
+    v25El.textContent = '';
+  }
 
   // Permit banner
-  const hasPerm = park.permitMonths.some(m=>m===1);
+  const hasPerm = parkHasPermitNotes(park);
   const banner = document.getElementById('permit-banner');
   if(hasPerm){
     banner.classList.add('visible');
@@ -472,29 +583,11 @@ function renderPark(code) {
     banner.classList.remove('visible');
   }
 
-  // Insights
   const peak = getPeakMonth(park);
   const quiet = getQuietMonth(park);
   const shoulder = getShoulderMonths(park);
-
-  document.getElementById('peak-month').textContent = MONTHS_FULL[peak];
-  document.getElementById('peak-desc').textContent = `Avg ${fmt(park.raw[peak])} visits — the busiest month based on 5-year NPS data`;
-  document.getElementById('quiet-month').textContent = MONTHS_FULL[quiet];
-  document.getElementById('quiet-desc').textContent = `Avg ${fmt(park.raw[quiet])} visits — ${park.scores[quiet]===0?'park may have limited access or closures':'lowest traffic of the year'}`;
-
-  if(shoulder.length){
-    const shoulderNames = shoulder.map(i=>MONTHS[i]);
-    // Group consecutive
-    let groups=[], cur=[shoulderNames[0]];
-    for(let i=1;i<shoulderNames.length;i++){
-      if(shoulder[i]===shoulder[i-1]+1) cur.push(shoulderNames[i]);
-      else { groups.push(cur); cur=[shoulderNames[i]]; }
-    }
-    groups.push(cur);
-    document.getElementById('shoulder-months').textContent = groups.map(g=>g.length>1?g[0]+'–'+g[g.length-1]:g[0]).join(', ');
-  } else {
-    document.getElementById('shoulder-months').textContent = 'Limited';
-  }
+  const bestShoulder = getBestShoulderMonths(park, 3);
+  renderVisitSummary(park, peak, quiet, shoulder, bestShoulder);
 
   // Heatmap
   const grid = document.getElementById('cal-grid');
@@ -503,7 +596,7 @@ function renderPark(code) {
 
   park.scores.forEach((s, i) => {
     const cell = document.createElement('div');
-    const isShoulder = shoulder.includes(i);
+    const isShoulder = bestShoulder.includes(i);
     const isPerm = park.permitMonths[i]===1;
     cell.className = `cal-cell ${scoreClass(s)}${isShoulder?' shoulder':''}`;
     cell.innerHTML = `
@@ -516,45 +609,13 @@ function renderPark(code) {
     grid.appendChild(cell);
   });
 
-  // Best time recommendation
-  const recTitle = document.getElementById('rec-title');
-  const recBody = document.getElementById('rec-body');
-  const recMonths = document.getElementById('rec-months');
-  recMonths.innerHTML = '';
-
-  const peakScore = park.scores[peak];
-  if(shoulder.length>=2){
-    recTitle.textContent = 'shoulder season';
-    const windowText = shoulder.length>0
-      ? shoulder.map(i=>MONTHS_FULL[i]).join(', ')
-      : 'spring or fall';
-    recBody.textContent = `${park.name}'s sweet spot is ${windowText.split(',').slice(0,3).join(' or ')}. You get most of what makes the park worth visiting at noticeably lower crowd levels — and in most cases no reservation system to navigate.`;
-    shoulder.slice(0,4).forEach(i=>{
-      const tag = document.createElement('div');
-      tag.className='btb-month';
-      tag.textContent=MONTHS_FULL[i];
-      recMonths.appendChild(tag);
-    });
-    const peakTag = document.createElement('div');
-    peakTag.className='btb-month peak';
-    peakTag.textContent=`Avoid: ${MONTHS_FULL[peak]}`;
-    recMonths.appendChild(peakTag);
-  } else {
-    recTitle.textContent = 'quietest window';
-    recBody.textContent = `${park.name} has a very concentrated busy season. The quietest accessible months are your best bet for lower crowds. Check park alerts before visiting — some months have road or facility closures.`;
-    const quietTag = document.createElement('div');
-    quietTag.className='btb-month';
-    quietTag.textContent = MONTHS_FULL[quiet];
-    recMonths.appendChild(quietTag);
-  }
-
   // Bar chart
   renderBarChart(park);
 
   // CTA
-  document.getElementById('cta-park-name').textContent = park.name + ' National Park';
-  const codeLC = code.toLowerCase();
-  document.getElementById('park-cta').href = `/parks/${codeLC}`;
+  document.getElementById('cta-park-name').textContent = parkDisplayName(park);
+  const slug = park.slug || code.toLowerCase();
+  document.getElementById('park-cta').href = `/parks/${slug}`;
 
   // Scroll to card
   card.scrollIntoView({behavior:'smooth', block:'start'});
@@ -569,13 +630,13 @@ function showMonthDetail(monthIdx, park) {
 
   const score = park.scores[monthIdx];
   const isPerm = park.permitMonths[monthIdx]===1;
-  const isShoulder = getShoulderMonths(park).includes(monthIdx);
+  const isShoulder = getBestShoulderMonths(park, 3).includes(monthIdx);
   let ctx = '';
   if(score===0) ctx='This park typically has no reported visits or limited access this month. Check the park website before planning a trip.';
-  else if(score<=3) ctx=`One of the quieter months. ${isPerm?'':'No reservation required. '}Expect fewer crowds and more solitude, though some facilities may be limited.`;
-  else if(score<=6) ctx=`Shoulder season territory. ${isShoulder?'Good conditions with noticeably fewer visitors than peak. ':''}${isPerm?'⚠️ Reservation may be required. ':'No reservation required. '}A solid time to visit.`;
-  else if(score<=8) ctx=`Getting busy. Popular trails and campgrounds will feel crowded. ${isPerm?'⚠️ Reservation required — book well in advance. ':'Book campsites early.'}`;
-  else ctx=`Peak season. The park is at or near maximum capacity. ${isPerm?'⚠️ Reservation required — sells out fast. ':''}Plan to arrive before 7am or after 4pm to avoid the worst congestion.`;
+  else if(score<=3) ctx=`One of the quieter months. ${isPerm?'See permit note above — some systems still apply year-round or on specific trails. ':'No special park access reservation this month. '}Expect fewer crowds and more solitude, though some facilities may be limited.`;
+  else if(score<=8) ctx=`Shoulder season territory. ${isShoulder?'Good conditions with noticeably fewer visitors than peak. ':''}${isPerm?'⚠️ Check permit note above — reservations or shuttles may apply. ':'No park-wide reservation flagged for this month. '}A solid time to visit.`;
+  else if(score<10) ctx=`Getting busy. Popular trails and campgrounds will feel crowded. ${isPerm?'⚠️ See permit note — book timed entry, shuttles, or trail permits early. ':'Book campsites and parking time early.'}`;
+  else ctx=`Peak season. The park is at or near maximum capacity. ${isPerm?'⚠️ See permit note — peak months sell out fast. ':''}Plan to arrive before 7am or after 4pm to avoid the worst congestion.`;
   document.getElementById('md-context').textContent = ctx;
   detail.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -670,7 +731,9 @@ input.addEventListener('keydown',e=>{
     if(res.length) selectPark(res[0].code);
   }
 });
-
+</script>
+<script src="/reports/report-back-nav.js"></script>
+<script>
 // Default load: Zion
 window.addEventListener('DOMContentLoaded',()=>{
   const params = new URLSearchParams(window.location.search);
@@ -678,19 +741,12 @@ window.addEventListener('DOMContentLoaded',()=>{
   const code = PARKS[parkParam] ? parkParam : 'ZION';
   renderPark(code);
 
-  // If came from a park page, show "Back to [Park]" using history.back()
-  if (parkParam && PARKS[parkParam]) {
-    const backLink = document.getElementById('nav-back');
-    backLink.textContent = '\u2190 Back to ' + PARKS[parkParam].name;
-    backLink.href = '/parks/' + parkParam.toLowerCase();
-    backLink.onclick = function(e) {
-      e.preventDefault();
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.location.href = '/parks/' + parkParam.toLowerCase();
-      }
-    };
+  if (typeof initReportBackNav === 'function') {
+    const park = PARKS[parkParam];
+    initReportBackNav(park && parkParam ? {
+      parkSlug: park.slug || parkParam.toLowerCase(),
+      parkName: park.name
+    } : {});
   }
 });
 </script>

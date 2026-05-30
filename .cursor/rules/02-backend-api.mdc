@@ -1,0 +1,111 @@
+---
+description: TrailVerse Express API — routes, auth, models, services, env vars
+globs: server/**/*
+alwaysApply: false
+---
+
+# TrailVerse Backend API
+
+Entry: `server/server.js` → `server/src/app.js`. Base path: **`/api`**. Swagger: `/api-docs`. Health: `/health` (not under `/api`).
+
+## Auth middleware (`server/src/middleware/auth.js`)
+
+| Middleware | Use |
+|------------|-----|
+| `protect` | Requires `Authorization: Bearer <JWT>` → `req.user` |
+| `admin` | After protect; `req.user.role === 'admin'` |
+| `optionalAuth` | Sets user or null; never 401 |
+
+JWT: `JWT_SECRET`, `JWT_EXPIRE` (default 7d). Token generation: `utils/generateToken.js`.
+
+## Route mount order (critical)
+
+- `enhancedParks` mounted **before** `parks` on `/api/parks`
+- Blog `GET /:slug` registered **last** in `blogs.js`
+- Comments mounted at `/api` root: `/blogs/:blogId/comments`
+
+## Domain quick reference
+
+### `/api/auth`
+`signup`, `login`, `logout`, `me`, `forgot-password`, `reset-password/:token`, `verify-email/:token`, `migrate-chat` (protect)
+
+### `/api/parks` + enhanced
+- List, search, `/:parkCode` and sub-resources: alerts, activities, campgrounds, places, tours, webcams, videos, gallery, parkinglots, transit, brochures, permits, facilities
+- Enhanced: `/:parkCode/enhanced`, `weather`, `crowd`, `best-time`, `reviews`
+- Compare: `GET|POST /compare`, `/compare/summary`
+
+### `/api/discover`
+`catalog`, `detail`, `parks`, `nps-guide` — all public
+
+### `/api/trips` (Plan AI persistence)
+- `GET /shared/:shareId` — **public**
+- All other routes: `protect`
+- CRUD + `/:tripId/messages`, `/:tripId/share`
+
+### `/api/ai`
+- `chat`, `chat-stream` — protect
+- `chat-anonymous`, `session-status/:anonymousId`, `providers-anonymous` — public
+- `realtime-session` — optionalAuth
+- `voice-tool` — public callback
+- Feedback sub-router under `/api/ai/feedback` — protect
+
+### `/api/blogs`
+Public: list, categories, tags, `/:slug`, view count  
+Admin: CRUD, publish-scheduled  
+Engagement: like/favorite — optionalAuth
+
+### `/api/users`, `/api/user`, `/api/users/preferences`
+Profile, saved-parks, visited-parks, password change, GDPR export/delete — all `protect` unless noted in master route list
+
+### `/api/reviews`, `/api/testimonials`, `/api/events`, `/api/feed`
+See `01-frontend-pages.mdc` for product mapping
+
+### `/api/admin`, `/api/analytics`
+All `protect` + `admin`
+
+### `/api/gmaps`
+Server-side Google Maps proxy — **never expose** `GMAPS_SERVER_KEY` to client
+
+### `/api/images`
+`GET /file/*` public; upload/management protect
+
+## Models (`server/src/models/`)
+
+| Model | Role |
+|-------|------|
+| User | Auth, role, profile |
+| TripPlan | Plan AI trips, messages, shareId |
+| AnonymousSession | Pre-login chat |
+| BlogPost, Comment | CMS |
+| ParkReview | User reviews |
+| Favorite, VisitedPark, UserPreferences | User park data |
+| Event, Testimonial, DailyFeed | Features |
+| Analytics, SiteSettings, Subscriber | Ops |
+
+## Key services
+
+- `npsService` — NPS API
+- `enhancedParkService` — weather, crowd, compare
+- `discoverCatalogService` — discover hub
+- `gtfsFeedService`, `gtfsCatalogService` — transit tabs
+- `openaiService`, `claudeService` — LLM
+- `resendEmailService` — transactional email
+- `websocketService` — Socket.IO
+
+## Required env (`server/src/config/validateEnv.js`)
+
+**Required**: `MONGODB_URI`, `JWT_SECRET` (≥32 chars), `NPS_API_KEY`, (`OPENAI_API_KEY` OR `ANTHROPIC_API_KEY`), email pair if Resend used
+
+**Common optional**: `PORT`, `CLIENT_URL`, `OPENWEATHER_API_KEY`, `GMAPS_SERVER_KEY`, `RIDB_API_KEY`, `MCP_BYPASS_KEY`, rate limit vars
+
+## Conventions for new endpoints
+
+1. Route file in `server/src/routes/`, controller in `controllers/`, logic in `services/`
+2. Mount in `app.js` with correct prefix
+3. Use `cacheMiddleware` for hot public GETs
+4. Specific routes before `/:param` patterns
+5. Response shape: `{ success, data }` or `{ success: false, error }` (existing pattern)
+
+## Rate limiting
+
+Tiered on `/api/`: anon vs auth limits per 15m. MCP bypass header: `x-trailverse-mcp-key` when `MCP_BYPASS_KEY` matches.

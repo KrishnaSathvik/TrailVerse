@@ -1,0 +1,234 @@
+---
+description: Complete TrailVerse page map — routes, UI purpose, auth, APIs, and key files. Use before adding features or new pages.
+alwaysApply: true
+---
+
+# TrailVerse — Frontend Page Map
+
+All routes live under `next-frontend/src/app/`. Most public pages use `Header` + `Footer`. Nav items in `Header.jsx`: Explore, Trailie, Events, Blog, Map, Compare, Discover (+ Chat History, Profile when logged in).
+
+---
+
+## Public marketing & content
+
+### `/` — Landing (index)
+- **File**: `app/page.jsx` (server component)
+- **Purpose**: Hero search, featured parks (yell, yose, grca, zion, glac, acad), Park of the Day, testimonials
+- **API**: `GET /api/parks?all=true&nationalParksOnly=true` (ISR 24h)
+- **CTAs**: Ask Trailie, Discover Parks, Browse All Parks, Interactive Map
+- **SEO**: canonical root domain
+
+### `/home` — Authenticated home
+- **Protected** via proxy (requires `trailverse_auth_token`)
+- **File**: `app/home/page.jsx`
+- **Purpose**: Logged-in dashboard / daily feed entry (not in public nav for guests)
+
+### `/about`, `/features`, `/faq`
+- Static marketing pages; monthly sitemap priority ~0.5–0.7
+- Footer links from every page
+
+### `/testimonials`
+- **File**: `app/testimonials/TestimonialsPageClient.jsx`
+- Public submission form + list; API `POST /api/testimonials` (`optionalAuth`), admin approve/feature
+
+### `/magazine`, `/newsletter`
+- Magazine layout: `app/magazine/layout.js`
+- Newsletter signup flows; email via subscribers API
+
+### `/chatgpt` — ChatGPT App Directory
+- **File**: `app/chatgpt/page.jsx` (server component, indexable)
+- **Purpose**: Marketing for the **published ChatGPT app**; CTA opens Apps Directory (`NEXT_PUBLIC_CHATGPT_APP_URL` or default `chatgpt.com/apps/trailverse/...`)
+- **Tools showcased**: plan_trip, get_park_details, compare_parks, search_parks, find_events, multi-turn planning
+- **Backend**: Same 5 tools as `mcp-server/` (see `06-mcp-chatgpt-cloud.mdc`)
+
+### `/mcp` — Claude MCP connector
+- **File**: `app/mcp/page.jsx` (server component, indexable)
+- **Purpose**: Install guide for **Claude** (Desktop / claude.ai custom connector)
+- **Connector URL**: `https://trailverse-mcp.onrender.com/mcp`
+- **Note**: The MCP server is also what powers the ChatGPT app; this page targets Claude users specifically
+
+Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
+
+### `/privacy`, `/terms`
+- Legal; yearly changeFrequency in sitemap
+
+### Static reports (public HTML in `public/reports/`)
+- `/reports/when-to-go.html` — crowd calendar (redirect from `/reports/when-to-go`)
+- `/reports/national-parks-2025.html` — data report
+- Built/updated via `next-frontend/scripts/build-when-to-go-data.py`
+
+---
+
+## Park discovery
+
+### `/explore` — Park grid
+- **Files**: `app/explore/ExplorePageClient.jsx`, `explore/layout.jsx`
+- **UI**: Search, "National Parks Only" toggle (64), state checkboxes (56), sort, grid/list, pagination, link "Browse by activity & topic →" to Discover
+- **API**: parks list from NPS proxy `GET /api/parks`
+- **SEO title pattern**: "Explore All 470+ Parks & Sites..."
+
+### `/parks/[parkCode]` — Park detail (canonical slug URLs)
+- **Files**: `app/parks/[parkCode]/page.jsx` (SSR metadata + data), `ParkDetailClient.jsx`
+- **URL**: `parkCode` is **slug** when length > 4 (e.g. `yellowstone-national-park`); 4-char codes redirect to slug
+- **revalidate**: 300s
+- **Hero**: Image, Back, Mark Visited, Favorite, Share, hours summary, phone, official site link
+- **Tabs** (query `?tab=`): Overview, Alerts, What to See, Things to Do, Self-Guided Tours, Visitor Centers, Where to Stay, Parking & Access, Amenities, Brochures, Permits, Photos, Videos, Webcams, Reviews (+ Transit if GTFS park)
+- **Lazy tab data**: `GET /api/parks/:npsCode/{activities|campgrounds|places|tours|...}` only when tab active
+- **Sidebar**: Map, Google Maps, directions, nearby Lodging/Food/Gas/Attractions (GMaps proxy), Crowd Calendar link, Plan with Trailie, Compare, related parks
+- **SEO**: `lib/parkSeo.js` — `buildParkMetaDescription`, tier-A parks, state hub links
+- **JSON-LD**: injected from page server component
+
+### `/parks/state/[stateCode]` — State aggregation
+- **File**: `app/parks/state/[stateCode]/StateParkPageClient.jsx`
+- Lists all NPS sites in state (slug like `utah`, `district-of-columbia`)
+- Linked from Discover "States" dimension
+
+### `/parks/[parkCode]/activity/[id]` — Single activity detail
+- Sub-route for RIDB/NPS activity deep link
+
+### `/compare`
+- Side-by-side park comparison
+- **API**: `GET|POST /api/parks/compare`, `/compare/summary`
+
+### `/map`
+- Full-screen interactive map (Google Maps); loads async ("Loading map...")
+- **Layout**: `app/map/layout.jsx`
+
+---
+
+## Discover hub (taxonomy browsing)
+
+### `/discover` — Hub
+- **Files**: `app/discover/page.jsx`, `DiscoverPageClient.jsx`, `discover/layout.jsx`
+- **SSR**: `fetchDiscoverCatalog()` → `GET /api/discover/catalog`
+- **Sections**: Activities, Type, States, Topics (6 preview cards each, "See all")
+- **Search**: `DiscoverSearchBar` — find parks across dimensions
+
+### Full grid pages
+| Route | Purpose |
+|-------|---------|
+| `/discover/activities` | All activities |
+| `/discover/activity/[slug]` | Parks for one activity (e.g. hiking) |
+| `/discover/types` | Designation types (Monument, Historic Site, …) |
+| `/discover/type/[slug]` | Parks for one designation |
+| `/discover/topics` | NPS topics (Animals, Military, …) |
+| `/discover/topic/[slug]` | Parks for one topic |
+| `/discover/states` | All states/territories |
+
+- **Detail pages**: `DiscoverDetailClient.jsx` — grid of parks, pagination, NPS guide section (`DiscoverNpsGuideSection`)
+- **API**: `GET /api/discover/detail?dimension=&slug=`, `/discover/parks`, `/discover/nps-guide`
+- **Backend**: `discoverCatalogService`, `server/data/discover-featured.json`
+
+---
+
+## Trailie / Plan AI
+
+### `/plan-ai` — Main chat (anonymous or authed)
+- **Files**: `app/plan-ai/page.jsx`, `PlanAIContent.jsx`, `plan-ai/layout.jsx`
+- **Behavior**: Anonymous chat via `POST /api/ai/chat-anonymous`; logged-in via `POST /api/ai/chat` + `TripPlan` model
+- **On login**: migrates anonymous session → `POST /api/auth/migrate-chat` → redirect `/plan-ai/{tripId}?chat=true`
+- **Voice**: global `VoiceButton` + realtime session endpoints
+
+### `/plan-ai/[tripId]` — Existing trip
+- Sub-routes: `/plan`, `/itinerary`, `/map` under `[tripId]/`
+- **API**: `GET|PUT /api/trips/:tripId` (`protect`)
+
+### `/plan-ai/shared/[shareId]` — Public shared trip
+- **robots**: disallowed in robots.txt
+- **API**: `GET /api/trips/shared/:shareId` (public)
+
+### `/chat-history`
+- **Protected** layout (`privatePageRobots`)
+- Lists past AI conversations / trips for user
+
+---
+
+## Blog
+
+### `/blog` — Index
+- **File**: `BlogPageClient.jsx`
+- Featured story, popular posts, category chips, search, pagination, newsletter embed, report promo cards
+- **API**: `GET /api/blogs?status=published`
+
+### `/blog/[slug]` — Post
+- **API**: `GET /api/blogs/:slug`, view tracking `POST .../view`
+- TipTap-rendered HTML; likes/favorites with `optionalAuth`
+- **SEO**: `lib/blogSeo.js`
+
+### `/blog/category/[category]`
+- Categories: `trip-planning`, `park-guides`, `gear-packing`, `seasonal`, `astrophotography`, `budget-travel`
+
+### Admin blog (see Admin)
+
+---
+
+## Events
+
+### `/events`
+- **File**: `EventsPageClient.jsx`
+- List/register for site events
+- **API**: `GET /api/events`, register `POST .../register` (`protect`)
+
+---
+
+## Auth & account (mostly noindex)
+
+| Route | Purpose | Notes |
+|-------|---------|-------|
+| `/login` | Login | Redirect to `/home` if token present |
+| `/signup` | Register | |
+| `/forgot-password` | Request reset | |
+| `/reset-password/[token]` | Set new password | |
+| `/verify-email/[token]` | Email verification | layout: noindex |
+| `/profile` | User profile, saved/visited parks | **protect** |
+| `/unsubscribe` | Email unsubscribe | token-based |
+
+**Auth cookie**: `trailverse_auth_token`  
+**Client**: `AuthContext`, `authService`, `LoginModal` for gated actions
+
+---
+
+## Admin (`/admin/*`)
+
+- **Metadata**: `privatePageRobots` on `admin/layout.js`
+- `/admin/login` — admin gate
+- `/admin` — dashboard stats
+- `/admin/users` — user management
+- `/admin/blog/new`, `/admin/blog/edit/[id]` — TipTap CMS (`BlogPostForm.jsx`)
+- `/admin/settings` — site settings
+- **Requires**: `protect` + `admin` role on API
+
+---
+
+## Utility / edge
+
+| Route | Purpose |
+|-------|---------|
+| `/offline` | PWA offline fallback (noindex layout) |
+| `/compare` | Park comparison tool |
+
+---
+
+## Global UI elements (all main pages)
+
+- **Header**: logo, nav, theme switcher (system/light/dark), mobile drawer
+- **Footer**: Quick Links, Resources, Reports, social, contact email
+- **VoiceButton**: "Talk to Trailie" — floating voice assistant
+- **Theme**: CSS variables in `globals.css`, not hardcoded grays only
+
+---
+
+## Page → primary backend dependencies
+
+| Feature | Endpoints |
+|---------|-----------|
+| Parks | `/api/parks/*`, `/api/parks/:code/enhanced`, weather, crowd |
+| Discover | `/api/discover/*` |
+| Plan AI | `/api/ai/*`, `/api/trips/*` |
+| Blog | `/api/blogs/*`, `/api/blogs/:id/comments` |
+| Reviews | `/api/reviews/:parkCode` |
+| User data | `/api/users/profile`, saved-parks, visited-parks |
+| Maps | `/api/gmaps/*` (server-side key) |
+| Images | `/api/images/*`, `/uploads/*` |
+
+When adding a **new public page**: add to `sitemap.ts`, set metadata + canonical, decide robots (index vs private), add nav/footer only if product-worthy.

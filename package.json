@@ -1,6 +1,6 @@
 {
   "name": "trailverse-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TrailVerse - Your Universe of National Parks Exploration",
   "private": true,
   "engines": { "node": "20.x" },

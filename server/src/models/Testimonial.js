@@ -58,8 +58,19 @@ const testimonialSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['user-submission', 'social-media', 'email', 'interview', 'admin-created'],
+    enum: ['user-submission', 'social-media', 'email', 'interview', 'press', 'admin-created'],
     default: 'user-submission'
+  },
+  sourceUrl: {
+    type: String,
+    trim: true,
+    default: null
+  },
+  sourceLabel: {
+    type: String,
+    trim: true,
+    maxlength: [120, 'Source label cannot be more than 120 characters'],
+    default: null
   },
   submittedAt: {
     type: Date,

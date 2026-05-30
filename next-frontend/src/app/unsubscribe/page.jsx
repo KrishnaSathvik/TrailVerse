@@ -1,10 +1,12 @@
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import UnsubscribeClient from './UnsubscribeClient';
+import { privatePageRobots } from '@/lib/seo';
 
 export const metadata = {
   title: 'Email Preferences — TrailVerse',
   description: 'Manage your TrailVerse email subscriptions. Unsubscribe from notifications or update your email preferences.',
+  robots: privatePageRobots,
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/unsubscribe',
   },

@@ -11,6 +11,10 @@ import { useToast } from '@/context/ToastContext';
 import { useTrips } from '@hooks/useTrips';
 import tripService from '@/services/tripService';
 import api from '@/services/api';
+import {
+  ANONYMOUS_SESSION_MAX_AGE_MS,
+  isAnonymousLimitReached
+} from '@/lib/anonymousChatLimits';
 
 const totalSteps = 4;
 
@@ -66,8 +70,8 @@ export default function usePlanAI(tripId) {
     accommodation: 'camping'
   });
 
-  const isPersonalized = searchParams.get('personalized') === 'true';
-  const isNewChat = !!searchParams.get('newchat'); // Truthy for any value (timestamp used for uniqueness)
+  const isPersonalized = searchParams.has('personalized');
+  const isNewChat = searchParams.has('newchat');
   const fromChatHistory = searchParams.get('chat') === 'true';
 
   // Load trip data - always from database (no more localStorage trips)
@@ -101,8 +105,8 @@ export default function usePlanAI(tripId) {
     const parkCode = searchParams.get('park');
     const parkName = searchParams.get('name');
     const showChatDirectly = searchParams.get('chat') === 'true';
-    const isPersonalized = searchParams.get('personalized') === 'true';
-    const isNewChat = !!searchParams.get('newchat');
+    const isPersonalized = searchParams.has('personalized');
+    const isNewChat = searchParams.has('newchat');
 
     // Handle personalized recommendations
     if (isPersonalized) {
@@ -217,9 +221,9 @@ export default function usePlanAI(tripId) {
         if (savedSession) {
           const sessionData = JSON.parse(savedSession);
           const sessionAge = Date.now() - sessionData.timestamp;
-          const maxAge = 48 * 60 * 60 * 1000; // 48 hours
+          const maxAge = ANONYMOUS_SESSION_MAX_AGE_MS;
 
-          if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
+          if (sessionAge < maxAge && isAnonymousLimitReached(sessionData)) {
             // Validate with backend
             if (sessionData.anonymousId) {
               try {
@@ -230,7 +234,7 @@ export default function usePlanAI(tripId) {
                 sessionData.messageCount = messageCount;
                 localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
 
-                if (!canSendMore && messageCount >= 3) {
+                if (isAnonymousLimitReached({ canSendMore, messageCount })) {
                   setShowLimitDialog(true);
                   // Calculate time until reset
                   const timeRemaining = maxAge - sessionAge;
@@ -275,7 +279,7 @@ export default function usePlanAI(tripId) {
       if (savedSession && showLimitDialog) {
         const sessionData = JSON.parse(savedSession);
         const sessionAge = Date.now() - sessionData.timestamp;
-        const maxAge = 48 * 60 * 60 * 1000;
+        const maxAge = ANONYMOUS_SESSION_MAX_AGE_MS;
         const timeRemaining = maxAge - sessionAge;
 
         if (timeRemaining > 0) {
@@ -441,44 +445,37 @@ export default function usePlanAI(tripId) {
   };
 
   const handleGenerate = async () => {
-    // Check if anonymous user has already used 3 messages
+    // Check if anonymous user has already used their free message quota
     if (isPublicAccess) {
       try {
         const savedSession = localStorage.getItem('anonymousSession');
         if (savedSession) {
           const sessionData = JSON.parse(savedSession);
 
-          // Check if session is not too old (48 hours to match backend)
           const sessionAge = Date.now() - sessionData.timestamp;
-          const maxAge = 48 * 60 * 60 * 1000; // 48 hours to match backend
+          const maxAge = ANONYMOUS_SESSION_MAX_AGE_MS;
 
-          // First check localStorage (fast check)
-          if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
-            // Validate with backend to ensure accuracy
+          if (sessionAge < maxAge && isAnonymousLimitReached(sessionData)) {
             if (sessionData.anonymousId) {
               try {
                 const response = await api.get(`/ai/session-status/${sessionData.anonymousId}`, {}, { skipCache: true });
                 const { canSendMore, messageCount } = response.data;
 
-                // Update localStorage with backend data
                 sessionData.canSendMore = canSendMore;
                 sessionData.messageCount = messageCount;
                 localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
 
-                // If backend confirms limit reached, show error
-                if (!canSendMore && messageCount >= 3) {
-                  showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+                if (isAnonymousLimitReached({ canSendMore, messageCount })) {
+                  showToast('You have already used your 5 free messages! Please create an account to continue planning.', 'error');
                   return;
                 }
               } catch (backendError) {
                 console.error('Error validating session with backend:', backendError);
-                // If backend check fails, use localStorage check as fallback
-                showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+                showToast('You have already used your 5 free messages! Please create an account to continue planning.', 'error');
                 return;
               }
             } else {
-              // No anonymousId but localStorage says limit reached - show error
-              showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+              showToast('You have already used your 5 free messages! Please create an account to continue planning.', 'error');
               return;
             }
           }
@@ -546,7 +543,7 @@ export default function usePlanAI(tripId) {
     // Clear saved session so restoration doesn't override the new chat
     localStorage.removeItem('planai-chat-state');
     // Use unique timestamp to force URL change even if already on ?newchat=true
-    router.push('/plan-ai?newchat=' + Date.now());
+    router.replace('/plan-ai?newchat=' + Date.now());
   };
 
   const handlePersonalizedRecommendations = () => {
@@ -564,8 +561,7 @@ export default function usePlanAI(tripId) {
     };
     setChatFormData(defaultFormData);
     setShowChat(true);
-    // Add personalized flag
-    router.push('/plan-ai?personalized=true');
+    router.replace('/plan-ai?personalized=' + Date.now());
   };
 
   const handleDeleteTrip = async (tripId) => {
@@ -648,7 +644,7 @@ export default function usePlanAI(tripId) {
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab, showLimitDialog, timeUntilReset,
     formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory,
-    newChatKey: searchParams.get('newchat') || '',
+    newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,
 
     // Setters

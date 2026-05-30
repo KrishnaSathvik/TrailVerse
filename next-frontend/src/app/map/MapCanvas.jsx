@@ -1,60 +1,127 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Loader2, MapPin } from '@components/icons';
-import { loadMaps } from '@/lib/loadMaps';
+import {
+  getCampgroundMarkerColors,
+  getPlaceMarkerColors,
+  getParkMapStyle,
+  getParkMarkerColors,
+  isNationalParkDesignation,
+  parkMarkerColorExpression,
+  PARK_MAP_DARK_LOADING_BG,
+  PARK_MAP_LOADING_BG,
+  PARK_MARKER,
+} from '@/lib/parkMapBasemap';
+import MapCanvasControls from './MapCanvasControls';
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
+const DEFAULT_ZOOM = 4;
+const PARKS_SOURCE = 'trailverse-parks';
+const PARKS_LAYER = 'trailverse-park-dots';
+const PARKS_LAYER_SELECTED = 'trailverse-park-dots-selected';
+const PLACES_SOURCE = 'trailverse-places';
+const PLACES_LAYER = 'trailverse-place-dots';
+const PLACES_LAYER_SELECTED = 'trailverse-place-dots-selected';
+const PLACE_MIN_ZOOM = 6;
+const CAMPGROUNDS_SOURCE = 'trailverse-campgrounds';
+const CAMPGROUNDS_LAYER = 'trailverse-campground-dots';
+const CAMPGROUNDS_LAYER_SELECTED = 'trailverse-campground-dots-selected';
+const CAMPGROUND_MIN_ZOOM = 5;
 
-const darkMapStyles = [
-  // Base
-  { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#c9d1d9' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0d1117' }] },
+function layerInsertBeforeParks(map) {
+  return map.getLayer(PARKS_LAYER) ? PARKS_LAYER : undefined;
+}
 
-  // Administrative boundaries
-  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#4b5563' }, { weight: 1.5 }] },
-  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#374151' }, { weight: 0.8 }] },
-  { featureType: 'administrative.land_parcel', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+function parksToGeoJson(parks, selectedPark) {
+  const features = (parks || [])
+    .filter((park) => park.latitude && park.longitude)
+    .map((park) => {
+      const lat = Number.parseFloat(park.latitude);
+      const lng = Number.parseFloat(park.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-  // Landscape
-  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
-  { featureType: 'landscape.natural.terrain', elementType: 'geometry', stylers: [{ color: '#1e2a3a' }] },
-  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#16213e' }] },
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: {
+          parkCode: park.parkCode,
+          fullName: park.fullName,
+          designation: park.designation || '',
+          isNationalPark: isNationalParkDesignation(park.designation) ? 1 : 0,
+          isSelected: selectedPark?.parkCode === park.parkCode ? 1 : 0,
+        },
+      };
+    })
+    .filter(Boolean);
 
-  // Water
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a1628' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4a6fa5' }] },
+  return { type: 'FeatureCollection', features };
+}
 
-  // Roads
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2d3a4a' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#3b4d63' }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#242e3e' }] },
-  { featureType: 'road.local', elementType: 'geometry', stylers: [{ color: '#1e2738' }] },
-  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+function placesToGeoJson(places, selectedPlace) {
+  const features = (places || [])
+    .map((place) => {
+      const lat = Number.parseFloat(place.latitude);
+      const lng = Number.parseFloat(place.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-  // Parks & green spaces
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#13301a' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#4ade80' }] },
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: {
+          id: place.id,
+          title: place.title,
+          parkCode: place.parkCode,
+          parkName: place.parkName || '',
+          isSelected: selectedPlace?.id === place.id ? 1 : 0,
+        },
+      };
+    })
+    .filter(Boolean);
 
-  // Hide other POIs
-  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.medical', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.school', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.sports_complex', stylers: [{ visibility: 'off' }] },
+  return { type: 'FeatureCollection', features };
+}
 
-  // Transit
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-];
+function campgroundsToGeoJson(campgrounds, selectedCampground) {
+  const features = (campgrounds || [])
+    .map((campground) => {
+      const lat = Number.parseFloat(campground.latitude);
+      const lng = Number.parseFloat(campground.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: {
+          id: campground.id,
+          name: campground.name,
+          parkCode: campground.parkCode,
+          parkName: campground.parkName || '',
+          isSelected: selectedCampground?.id === campground.id ? 1 : 0,
+        },
+      };
+    })
+    .filter(Boolean);
+
+  return { type: 'FeatureCollection', features };
+}
 
 export default function MapCanvas({
   parks,
+  places = [],
+  showPlaces = true,
+  campgrounds = [],
+  showCampgrounds = true,
   selectedPark,
+  selectedPlace,
+  selectedCampground,
   mapCenter,
   mapZoom,
   onSelectPark,
+  onSelectPlace,
+  onSelectCampground,
   onViewportChange,
   isDark,
   fullBleed = false,
@@ -62,67 +129,398 @@ export default function MapCanvas({
 }) {
   const mapNodeRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]);
-  const listenersRef = useRef([]);
+  const skipSyncRef = useRef(false);
+  const skipInitialThemeRef = useRef(true);
+  const parksRef = useRef(parks);
+  const placesRef = useRef(places);
+  const campgroundsRef = useRef(campgrounds);
+  const selectedParkRef = useRef(selectedPark);
+  const selectedPlaceRef = useRef(selectedPlace);
+  const selectedCampgroundRef = useRef(selectedCampground);
+  const showPlacesRef = useRef(showPlaces);
+  const showCampgroundsRef = useRef(showCampgrounds);
   const onViewportChangeRef = useRef(onViewportChange);
   const onSelectParkRef = useRef(onSelectPark);
-  const skipSyncRef = useRef(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const onSelectPlaceRef = useRef(onSelectPlace);
+  const onSelectCampgroundRef = useRef(onSelectCampground);
+  const isDarkRef = useRef(isDark);
   const [mapError, setMapError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Keep callback refs current without triggering effects
   useEffect(() => {
     onViewportChangeRef.current = onViewportChange;
     onSelectParkRef.current = onSelectPark;
+    onSelectPlaceRef.current = onSelectPlace;
+    parksRef.current = parks;
+    placesRef.current = places;
+    campgroundsRef.current = campgrounds;
+    selectedParkRef.current = selectedPark;
+    selectedPlaceRef.current = selectedPlace;
+    selectedCampgroundRef.current = selectedCampground;
+    showPlacesRef.current = showPlaces;
+    showCampgroundsRef.current = showCampgrounds;
+    isDarkRef.current = isDark;
   });
+
+  const setPlaceVisibility = useCallback((map, visible) => {
+    const visibility = visible ? 'visible' : 'none';
+    if (map.getLayer(PLACES_LAYER)) {
+      map.setLayoutProperty(PLACES_LAYER, 'visibility', visibility);
+    }
+    if (map.getLayer(PLACES_LAYER_SELECTED)) {
+      map.setLayoutProperty(PLACES_LAYER_SELECTED, 'visibility', visibility);
+    }
+  }, []);
+
+  const syncPlaceLayer = useCallback((map, placeList, selection, darkMode, visible) => {
+    const colors = getPlaceMarkerColors(darkMode);
+    const geojson = placesToGeoJson(placeList, selection);
+    const source = map.getSource(PLACES_SOURCE);
+
+    if (source) {
+      source.setData(geojson);
+      if (map.getLayer(PLACES_LAYER)) {
+        map.setPaintProperty(PLACES_LAYER, 'circle-color', colors.default);
+      }
+      if (map.getLayer(PLACES_LAYER_SELECTED)) {
+        map.setPaintProperty(PLACES_LAYER_SELECTED, 'circle-color', colors.selected);
+      }
+      setPlaceVisibility(map, visible);
+      return;
+    }
+
+    map.addSource(PLACES_SOURCE, { type: 'geojson', data: geojson });
+    const insertBelowParks = layerInsertBeforeParks(map);
+
+    map.addLayer({
+      id: PLACES_LAYER,
+      type: 'circle',
+      source: PLACES_SOURCE,
+      minzoom: PLACE_MIN_ZOOM,
+      filter: ['==', ['get', 'isSelected'], 0],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          6, 2.5,
+          8, 3,
+          11, 4,
+          14, 5,
+        ],
+        'circle-color': colors.default,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1,
+        'circle-opacity': 0.88,
+      },
+    }, insertBelowParks);
+
+    map.addLayer({
+      id: PLACES_LAYER_SELECTED,
+      type: 'circle',
+      source: PLACES_SOURCE,
+      minzoom: PLACE_MIN_ZOOM,
+      filter: ['==', ['get', 'isSelected'], 1],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          6, 4,
+          8, 5,
+          11, 7,
+          14, 9,
+        ],
+        'circle-color': colors.selected,
+        'circle-stroke-color': colors.ring,
+        'circle-stroke-width': 2.5,
+        'circle-opacity': 1,
+      },
+    }, insertBelowParks);
+
+    setPlaceVisibility(map, visible);
+
+    map.on('mouseenter', PLACES_LAYER, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', PLACES_LAYER, () => {
+      map.getCanvas().style.cursor = '';
+    });
+    map.on('mouseenter', PLACES_LAYER_SELECTED, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', PLACES_LAYER_SELECTED, () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    const handlePlaceClick = (event) => {
+      const feature = event.features?.[0];
+      if (!feature?.properties?.id) return;
+      const place = placeList.find((item) => item.id === feature.properties.id);
+      if (place) onSelectPlaceRef.current?.(place);
+    };
+
+    map.on('click', PLACES_LAYER, handlePlaceClick);
+    map.on('click', PLACES_LAYER_SELECTED, handlePlaceClick);
+  }, [setPlaceVisibility]);
+
+  const setCampgroundVisibility = useCallback((map, visible) => {
+    const visibility = visible ? 'visible' : 'none';
+    if (map.getLayer(CAMPGROUNDS_LAYER)) {
+      map.setLayoutProperty(CAMPGROUNDS_LAYER, 'visibility', visibility);
+    }
+    if (map.getLayer(CAMPGROUNDS_LAYER_SELECTED)) {
+      map.setLayoutProperty(CAMPGROUNDS_LAYER_SELECTED, 'visibility', visibility);
+    }
+  }, []);
+
+  const syncCampgroundLayer = useCallback((map, campgroundList, selection, darkMode, visible) => {
+    const colors = getCampgroundMarkerColors(darkMode);
+    const geojson = campgroundsToGeoJson(campgroundList, selection);
+    const source = map.getSource(CAMPGROUNDS_SOURCE);
+
+    if (source) {
+      source.setData(geojson);
+      if (map.getLayer(CAMPGROUNDS_LAYER)) {
+        map.setPaintProperty(CAMPGROUNDS_LAYER, 'circle-color', colors.default);
+      }
+      if (map.getLayer(CAMPGROUNDS_LAYER_SELECTED)) {
+        map.setPaintProperty(CAMPGROUNDS_LAYER_SELECTED, 'circle-color', colors.selected);
+      }
+      setCampgroundVisibility(map, visible);
+      return;
+    }
+
+    map.addSource(CAMPGROUNDS_SOURCE, { type: 'geojson', data: geojson });
+
+    const insertBelowParks = layerInsertBeforeParks(map);
+
+    map.addLayer({
+      id: CAMPGROUNDS_LAYER,
+      type: 'circle',
+      source: CAMPGROUNDS_SOURCE,
+      minzoom: CAMPGROUND_MIN_ZOOM,
+      filter: ['==', ['get', 'isSelected'], 0],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          5, 3,
+          8, 4,
+          12, 5,
+          14, 6,
+        ],
+        'circle-color': colors.default,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1,
+        'circle-opacity': 0.9,
+      },
+    }, insertBelowParks);
+
+    map.addLayer({
+      id: CAMPGROUNDS_LAYER_SELECTED,
+      type: 'circle',
+      source: CAMPGROUNDS_SOURCE,
+      minzoom: CAMPGROUND_MIN_ZOOM,
+      filter: ['==', ['get', 'isSelected'], 1],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          5, 5,
+          8, 7,
+          12, 9,
+          14, 10,
+        ],
+        'circle-color': colors.selected,
+        'circle-stroke-color': colors.ring,
+        'circle-stroke-width': 2.5,
+        'circle-opacity': 1,
+      },
+    }, insertBelowParks);
+
+    setCampgroundVisibility(map, visible);
+
+    map.on('mouseenter', CAMPGROUNDS_LAYER, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', CAMPGROUNDS_LAYER, () => {
+      map.getCanvas().style.cursor = '';
+    });
+    map.on('mouseenter', CAMPGROUNDS_LAYER_SELECTED, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', CAMPGROUNDS_LAYER_SELECTED, () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    const handleCampgroundClick = (event) => {
+      const feature = event.features?.[0];
+      if (!feature?.properties?.id) return;
+      const campground = campgroundList.find((item) => item.id === feature.properties.id);
+      if (campground) onSelectCampgroundRef.current?.(campground);
+    };
+
+    map.on('click', CAMPGROUNDS_LAYER, handleCampgroundClick);
+    map.on('click', CAMPGROUNDS_LAYER_SELECTED, handleCampgroundClick);
+  }, [setCampgroundVisibility]);
+
+  const syncParkLayer = useCallback((map, parkList, selection, darkMode) => {
+    const source = map.getSource(PARKS_SOURCE);
+    const geojson = parksToGeoJson(parkList, selection);
+    const colors = getParkMarkerColors(darkMode);
+    const colorExpr = parkMarkerColorExpression(colors);
+    if (source) {
+      source.setData(geojson);
+      if (map.getLayer(PARKS_LAYER)) {
+        map.setPaintProperty(PARKS_LAYER, 'circle-color', colorExpr);
+      }
+      if (map.getLayer(PARKS_LAYER_SELECTED)) {
+        map.setPaintProperty(PARKS_LAYER_SELECTED, 'circle-color', colorExpr);
+      }
+      return;
+    }
+
+    map.addSource(PARKS_SOURCE, { type: 'geojson', data: geojson });
+
+    map.addLayer({
+      id: PARKS_LAYER,
+      type: 'circle',
+      source: PARKS_SOURCE,
+      filter: ['==', ['get', 'isSelected'], 0],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          3,
+          ['case', ['==', ['to-number', ['get', 'isNationalPark']], 1], 5, 4],
+          6,
+          ['case', ['==', ['to-number', ['get', 'isNationalPark']], 1], 7, 5],
+          10,
+          ['case', ['==', ['to-number', ['get', 'isNationalPark']], 1], 8, 6],
+          14,
+          ['case', ['==', ['to-number', ['get', 'isNationalPark']], 1], 10, 8],
+        ],
+        'circle-color': colorExpr,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.5,
+        'circle-opacity': 0.92,
+      },
+    });
+
+    map.addLayer({
+      id: PARKS_LAYER_SELECTED,
+      type: 'circle',
+      source: PARKS_SOURCE,
+      filter: ['==', ['get', 'isSelected'], 1],
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          3, 7,
+          6, 10,
+          10, 12,
+          14, 14,
+        ],
+        'circle-color': colorExpr,
+        'circle-stroke-color': PARK_MARKER.selectedRing,
+        'circle-stroke-width': 3,
+        'circle-opacity': 1,
+      },
+    });
+
+    map.on('mouseenter', PARKS_LAYER, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', PARKS_LAYER, () => {
+      map.getCanvas().style.cursor = '';
+    });
+    map.on('mouseenter', PARKS_LAYER_SELECTED, () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', PARKS_LAYER_SELECTED, () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    const handleParkClick = (event) => {
+      const feature = event.features?.[0];
+      if (!feature?.properties?.parkCode) return;
+      const park = parkList.find((item) => item.parkCode === feature.properties.parkCode);
+      if (park) onSelectParkRef.current?.(park);
+    };
+
+    map.on('click', PARKS_LAYER, handleParkClick);
+    map.on('click', PARKS_LAYER_SELECTED, handleParkClick);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
     const initializeMap = async () => {
       try {
-        const apiKey = process.env.NEXT_PUBLIC_GMAPS_WEB_KEY;
+        if (!mapNodeRef.current || mapRef.current) return;
 
-        if (!apiKey) {
-          throw new Error('Google Maps API key not configured');
-        }
-
-        await loadMaps(apiKey);
-
-        if (!isMounted || !mapNodeRef.current || mapRef.current) {
-          return;
-        }
-
-        mapRef.current = new window.google.maps.Map(mapNodeRef.current, {
-          center: mapCenter || DEFAULT_CENTER,
-          zoom: typeof mapZoom === 'number' ? mapZoom : 4,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          clickableIcons: false,
-          gestureHandling: 'greedy',
-          styles: isDark ? darkMapStyles : undefined,
+        const map = new maplibregl.Map({
+          container: mapNodeRef.current,
+          style: getParkMapStyle(isDarkRef.current),
+          center: [mapCenter?.lng ?? DEFAULT_CENTER.lng, mapCenter?.lat ?? DEFAULT_CENTER.lat],
+          zoom: typeof mapZoom === 'number' ? mapZoom : DEFAULT_ZOOM,
+          minZoom: 2,
+          maxZoom: 16,
+          attributionControl: false,
+          pitchWithRotate: false,
+          dragRotate: false,
         });
 
-        listenersRef.current.push(
-          mapRef.current.addListener('idle', () => {
-            if (!mapRef.current) return;
-
-            const center = mapRef.current.getCenter();
-            skipSyncRef.current = true;
-            onViewportChangeRef.current?.({
-              center: center ? { lat: center.lat(), lng: center.lng() } : DEFAULT_CENTER,
-              zoom: mapRef.current.getZoom(),
-            });
-          })
+        map.addControl(
+          new maplibregl.AttributionControl({ compact: true }),
+          'bottom-right'
         );
+        map.addControl(new maplibregl.ScaleControl({ maxWidth: 100, unit: 'imperial' }), 'bottom-left');
 
-        if (isMounted) {
+        map.on('load', () => {
+          if (!isMounted) return;
+          syncPlaceLayer(
+            map,
+            placesRef.current,
+            selectedPlaceRef.current,
+            isDarkRef.current,
+            showPlacesRef.current
+          );
+          syncCampgroundLayer(
+            map,
+            campgroundsRef.current,
+            selectedCampgroundRef.current,
+            isDarkRef.current,
+            showCampgroundsRef.current
+          );
+          syncParkLayer(map, parksRef.current, selectedParkRef.current, isDarkRef.current);
           setIsLoading(false);
-        }
+        });
+
+        map.on('error', (event) => {
+          if (event?.error?.message) {
+            console.error('MapLibre error:', event.error.message);
+          }
+        });
+
+        map.on('moveend', () => {
+          if (!mapRef.current) return;
+          const center = map.getCenter();
+          skipSyncRef.current = true;
+          onViewportChangeRef.current?.({
+            center: { lat: center.lat, lng: center.lng },
+            zoom: map.getZoom(),
+          });
+        });
+
+        mapRef.current = map;
       } catch (error) {
         console.error('Failed to initialize map:', error);
-
         if (isMounted) {
           setMapError(error.message || 'Failed to load map');
           setIsLoading(false);
@@ -134,103 +532,123 @@ export default function MapCanvas({
 
     return () => {
       isMounted = false;
-      listenersRef.current.forEach((listener) => listener?.remove?.());
-      listenersRef.current = [];
+      mapRef.current?.remove();
+      mapRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- init once; callbacks via refs
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- init once
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (skipInitialThemeRef.current) {
+      skipInitialThemeRef.current = false;
+      return;
+    }
 
-    mapRef.current.setOptions({
-      styles: isDark ? darkMapStyles : undefined,
+    const map = mapRef.current;
+    if (!map) return;
+
+    setIsLoading(true);
+    map.setStyle(getParkMapStyle(isDark));
+    map.once('styledata', () => {
+      syncPlaceLayer(
+        map,
+        placesRef.current,
+        selectedPlaceRef.current,
+        isDark,
+        showPlacesRef.current
+      );
+      syncCampgroundLayer(
+        map,
+        campgroundsRef.current,
+        selectedCampgroundRef.current,
+        isDark,
+        showCampgroundsRef.current
+      );
+      syncParkLayer(map, parksRef.current, selectedParkRef.current, isDark);
+      setIsLoading(false);
     });
-  }, [isDark]);
+  }, [isDark, syncPlaceLayer, syncCampgroundLayer, syncParkLayer]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
 
-    // Skip pushing state back to the map when it originated from the map itself
     if (skipSyncRef.current) {
       skipSyncRef.current = false;
       return;
     }
 
-    const currentCenter = mapRef.current.getCenter();
-    const currentZoom = mapRef.current.getZoom();
-    const shouldMoveCenter = !currentCenter ||
-      Math.abs(currentCenter.lat() - mapCenter.lat) > 0.0001 ||
-      Math.abs(currentCenter.lng() - mapCenter.lng) > 0.0001;
+    const current = map.getCenter();
+    const shouldMove =
+      Math.abs(current.lat - mapCenter.lat) > 0.0001 ||
+      Math.abs(current.lng - mapCenter.lng) > 0.0001;
 
-    if (shouldMoveCenter) {
-      mapRef.current.setCenter(mapCenter);
-    }
-
-    if (typeof mapZoom === 'number' && currentZoom !== mapZoom) {
-      mapRef.current.setZoom(mapZoom);
+    if (shouldMove) {
+      map.easeTo({
+        center: [mapCenter.lng, mapCenter.lat],
+        zoom: typeof mapZoom === 'number' ? mapZoom : map.getZoom(),
+        duration: 600,
+      });
+    } else if (typeof mapZoom === 'number' && Math.abs(map.getZoom() - mapZoom) > 0.01) {
+      map.easeTo({ zoom: mapZoom, duration: 400 });
     }
   }, [mapCenter, mapZoom]);
 
   useEffect(() => {
-    if (!mapRef.current || !parks?.length) return;
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    syncParkLayer(map, parks, selectedPark, isDark);
+  }, [parks, selectedPark, isDark, syncParkLayer]);
 
-    markersRef.current.forEach((marker) => marker.setMap(null));
-    markersRef.current = [];
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    syncPlaceLayer(map, places, selectedPlace, isDark, showPlaces);
+  }, [places, selectedPlace, isDark, showPlaces, syncPlaceLayer]);
 
-    parks
-      .filter((park) => park.latitude && park.longitude)
-      .forEach((park) => {
-        const lat = Number.parseFloat(park.latitude);
-        const lng = Number.parseFloat(park.longitude);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    syncCampgroundLayer(map, campgrounds, selectedCampground, isDark, showCampgrounds);
+  }, [campgrounds, selectedCampground, isDark, showCampgrounds, syncCampgroundLayer]);
 
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-
-        const isSelected = selectedPark?.parkCode === park.parkCode;
-
-        // When a park is selected, only show the selected marker
-        if (selectedPark && !isSelected) return;
-
-        const marker = new window.google.maps.Marker({
-          position: { lat, lng },
-          map: mapRef.current,
-          title: park.fullName,
-          zIndex: isSelected ? 10 : 1,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: isSelected ? 13 : 9,
-            fillColor: park.designation === 'National Park' ? '#15803d' : '#2563eb',
-            fillOpacity: isSelected ? 1 : 0.9,
-            strokeColor: '#ffffff',
-            strokeWeight: isSelected ? 3 : 2,
-          },
-        });
-
-        marker.addListener('click', () => onSelectParkRef.current?.(park));
-        markersRef.current.push(marker);
-      });
-
-    return () => {
-      markersRef.current.forEach((marker) => marker.setMap(null));
-      markersRef.current = [];
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onSelectPark via ref
-  }, [parks, selectedPark]);
+  const handleZoomIn = () => mapRef.current?.zoomIn({ duration: 250 });
+  const handleZoomOut = () => mapRef.current?.zoomOut({ duration: 250 });
+  const handleResetView = () => {
+    onViewportChangeRef.current?.({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM });
+    mapRef.current?.easeTo({
+      center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
+      zoom: DEFAULT_ZOOM,
+      duration: 700,
+    });
+  };
 
   return (
     <div
       className={`relative h-full w-full overflow-hidden ${fullBleed ? '' : 'rounded-[28px] border'} ${className}`}
       style={{
         borderColor: fullBleed ? 'transparent' : 'var(--border)',
-        backgroundColor: 'var(--surface)'
+        backgroundColor: isDark ? PARK_MAP_DARK_LOADING_BG : PARK_MAP_LOADING_BG,
       }}
     >
-      <div ref={mapNodeRef} className="h-full w-full" />
+      <div ref={mapNodeRef} className="h-full w-full [&_.maplibregl-ctrl-scale]:!rounded-md [&_.maplibregl-ctrl-scale]:!border [&_.maplibregl-ctrl-scale]:!shadow-sm" />
+
+      {!isLoading && !mapError && (
+        <MapCanvasControls
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onResetView={handleResetView}
+          isDark={isDark}
+        />
+      )}
 
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--surface)' }}>
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ backgroundColor: isDark ? PARK_MAP_DARK_LOADING_BG : PARK_MAP_LOADING_BG }}
+        >
           <div className="text-center">
-            <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-emerald-600" />
+            <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-emerald-700" />
             <p style={{ color: 'var(--text-secondary)' }}>Loading map...</p>
           </div>
         </div>
@@ -242,7 +660,7 @@ export default function MapCanvas({
           style={{
             borderColor: 'color-mix(in srgb, var(--error-red) 35%, var(--border) 65%)',
             backgroundColor: 'var(--surface)',
-            color: 'var(--text-primary)'
+            color: 'var(--text-primary)',
           }}
         >
           <div className="flex items-start gap-3">

@@ -10,6 +10,9 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+/** Bump when runtime SW caches should be invalidated on deploy */
+const SW_CACHE_VERSION = "v4";
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
@@ -22,7 +25,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/_next/static/");
       },
       handler: new CacheFirst({
-        cacheName: "next-static",
+        cacheName: `next-static-${SW_CACHE_VERSION}`,
       }),
     },
     // Next.js data routes
@@ -31,7 +34,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/_next/data/");
       },
       handler: new NetworkFirst({
-        cacheName: "next-data",
+        cacheName: `next-data-${SW_CACHE_VERSION}`,
         networkTimeoutSeconds: 5,
       }),
     },
@@ -41,7 +44,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/api/parks");
       },
       handler: new StaleWhileRevalidate({
-        cacheName: "api-parks",
+        cacheName: `api-parks-${SW_CACHE_VERSION}`,
       }),
     },
     // User & trip APIs — NetworkFirst
@@ -50,7 +53,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/api/users") || url.pathname.startsWith("/api/trips");
       },
       handler: new NetworkFirst({
-        cacheName: "api-user-data",
+        cacheName: `api-user-data-${SW_CACHE_VERSION}`,
         networkTimeoutSeconds: 5,
       }),
     },
@@ -60,7 +63,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/api/reviews");
       },
       handler: new StaleWhileRevalidate({
-        cacheName: "api-reviews",
+        cacheName: `api-reviews-${SW_CACHE_VERSION}`,
       }),
     },
     // Blog API — StaleWhileRevalidate
@@ -69,7 +72,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/api/blog");
       },
       handler: new StaleWhileRevalidate({
-        cacheName: "api-blog",
+        cacheName: `api-blog-${SW_CACHE_VERSION}`,
       }),
     },
     // Events API — StaleWhileRevalidate
@@ -78,7 +81,7 @@ const serwist = new Serwist({
         return url.pathname.startsWith("/api/events");
       },
       handler: new StaleWhileRevalidate({
-        cacheName: "api-events",
+        cacheName: `api-events-${SW_CACHE_VERSION}`,
       }),
     },
     // Google Maps tiles — CacheFirst
@@ -87,7 +90,7 @@ const serwist = new Serwist({
         return url.hostname.endsWith(".googleapis.com") || url.hostname.endsWith(".gstatic.com");
       },
       handler: new CacheFirst({
-        cacheName: "google-maps",
+        cacheName: `google-maps-${SW_CACHE_VERSION}`,
       }),
     },
     // NPS images — CacheFirst
@@ -96,7 +99,7 @@ const serwist = new Serwist({
         return url.hostname.endsWith(".nps.gov");
       },
       handler: new CacheFirst({
-        cacheName: "nps-images",
+        cacheName: `nps-images-${SW_CACHE_VERSION}`,
       }),
     },
     // Other images — StaleWhileRevalidate
@@ -105,7 +108,7 @@ const serwist = new Serwist({
         return request.destination === "image";
       },
       handler: new StaleWhileRevalidate({
-        cacheName: "images",
+        cacheName: `images-${SW_CACHE_VERSION}`,
       }),
     },
     // Fonts — CacheFirst
@@ -114,7 +117,7 @@ const serwist = new Serwist({
         return request.destination === "font";
       },
       handler: new CacheFirst({
-        cacheName: "fonts",
+        cacheName: `fonts-${SW_CACHE_VERSION}`,
       }),
     },
   ],

@@ -5,49 +5,93 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, X, LogOut } from '@components/icons';
+import { Menu, X, LogOut, ChevronDown } from '@components/icons';
 import ThemeSwitcher from './ThemeSwitcher';
+import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 
+const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
+
+const PRIMARY_NAV_ITEMS = [
+  { path: '/explore', label: 'Explore' },
+  { path: '/map', label: 'Map' },
+  { path: '/plan-ai', label: 'Trailie' },
+  { path: '/blog', label: 'Blog' },
+];
+
+const SECONDARY_NAV_ITEMS = [
+  { path: '/events', label: 'Events' },
+  { path: '/compare', label: 'Compare' },
+  { path: BROWSE_HUB_PATH, label: BROWSE_HUB_NAV_LABEL },
+];
+
+const AUTH_MORE_NAV_ITEMS = [
+  { path: '/chat-history', label: 'Chat History' },
+  { path: '/profile', label: 'Profile' },
+];
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
-  const navItems = [
-    { path: '/home', label: 'Home' },
-    { path: '/explore', label: 'Explore' },
-    { path: '/plan-ai', label: 'Trailie' },
-    { path: '/events', label: 'Events' },
-    { path: '/blog', label: 'Blog' },
-    { path: '/map', label: 'Map' },
-    { path: '/compare', label: 'Compare' },
-  ];
+  const primaryNavItems = isAuthenticated
+    ? [AUTH_HOME_NAV_ITEM, ...PRIMARY_NAV_ITEMS]
+    : PRIMARY_NAV_ITEMS;
 
-  const authenticatedOnlyNavItems = [
-    { path: '/chat-history', label: 'Chat History' },
-  ];
-
-  // Add Profile to nav items for authenticated users
-  const allNavItems = isAuthenticated
-    ? [
-        ...navItems,
-        ...authenticatedOnlyNavItems,
-        { path: '/profile', label: 'Profile' }
-      ]
-    : navItems;
-  
-  // For unauthenticated users, show only public pages (exclude Daily Feed and Profile)
-  const publicNavItems = navItems.filter(item => 
-    item.path !== '/home' && item.path !== '/profile'
-  );
-  const mobileNavItems = isAuthenticated ? allNavItems : publicNavItems;
+  const moreNavItems = isAuthenticated
+    ? [...SECONDARY_NAV_ITEMS, ...AUTH_MORE_NAV_ITEMS]
+    : SECONDARY_NAV_ITEMS;
 
   const isActive = (path) => {
     if (path === '/plan-ai') return pathname.startsWith('/plan-ai');
     if (path === '/chat-history') return pathname.startsWith('/chat-history');
+    if (path === BROWSE_HUB_PATH) return pathname.startsWith(BROWSE_HUB_PATH);
+    if (path === '/blog') return pathname.startsWith('/blog');
     return pathname === path;
+  };
+
+  const isMoreActive = () => moreNavItems.some((item) => isActive(item.path));
+
+  const navLinkClassName = (active) =>
+    `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2 lg:text-sm ${active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'}`;
+
+  const navLinkStyle = (active) => ({
+    backgroundColor: active ? 'var(--surface)' : 'transparent',
+    borderColor: active ? 'var(--border)' : 'transparent',
+    color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+  });
+
+  const handleNavLinkHover = (event, active) => {
+    if (!active) {
+      event.currentTarget.style.color = 'var(--text-primary)';
+    }
+  };
+
+  const handleNavLinkLeave = (event, active) => {
+    if (!active) {
+      event.currentTarget.style.color = 'var(--text-secondary)';
+    }
+  };
+
+  const renderNavLink = (item, { onClick } = {}) => {
+    const active = isActive(item.path);
+
+    return (
+      <Link
+        key={item.path}
+        href={item.path}
+        onClick={onClick}
+        className={navLinkClassName(active)}
+        style={navLinkStyle(active)}
+        onMouseEnter={(event) => handleNavLinkHover(event, active)}
+        onMouseLeave={(event) => handleNavLinkLeave(event, active)}
+      >
+        {item.label}
+      </Link>
+    );
   };
 
   const handleLogout = () => {
@@ -55,8 +99,20 @@ const Header = () => {
     router.push('/');
   };
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    setMobileMoreOpen(false);
+  };
+  const openMobileMenu = () => {
+    setMobileMoreOpen(isMoreActive());
+    setMobileMenuOpen(true);
+  };
+  const closeMoreMenu = () => setMoreMenuOpen(false);
   const canUsePortal = typeof document !== 'undefined';
+
+  useEffect(() => {
+    setMoreMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!mobileMenuOpen) {
@@ -192,21 +248,34 @@ const Header = () => {
                 Navigation
               </p>
               <div className="grid gap-2">
-                {mobileNavItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    onClick={closeMobileMenu}
-                    className={`block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition ${isActive(item.path) ? 'ring-1' : ''}`}
-                    style={{
-                      backgroundColor: isActive(item.path) ? 'var(--surface)' : 'transparent',
-                      borderColor: isActive(item.path) ? 'var(--border)' : 'transparent',
-                      color: isActive(item.path) ? 'var(--text-primary)' : 'var(--text-secondary)'
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {primaryNavItems.map((item) =>
+                  renderNavLink(item, { onClick: closeMobileMenu })
+                )}
+              </div>
+
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setMobileMoreOpen((open) => !open)}
+                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3.5 text-left text-base font-medium transition ${isMoreActive() ? 'ring-1' : ''}`}
+                  style={{
+                    backgroundColor: isMoreActive() ? 'var(--surface)' : 'transparent',
+                    borderColor: isMoreActive() ? 'var(--border)' : 'transparent',
+                    color: isMoreActive() ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  }}
+                  aria-expanded={mobileMoreOpen}
+                >
+                  <span>More</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${mobileMoreOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {mobileMoreOpen && (
+                  <div className="mt-2 grid gap-2 border-l pl-3" style={{ borderColor: 'var(--border)' }}>
+                    {moreNavItems.map((item) =>
+                      renderNavLink(item, { onClick: closeMobileMenu })
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -272,7 +341,7 @@ const Header = () => {
           <div className="flex min-w-0 items-center gap-3 lg:contents">
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={openMobileMenu}
               className="lg:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition"
               style={{
                 backgroundColor: 'var(--surface)',
@@ -302,37 +371,68 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation Pills - Show for both authenticated and unauthenticated users */}
+          {/* Desktop Navigation Pills */}
           <div className="hidden lg:flex items-center gap-2">
-            {(isAuthenticated ? allNavItems : publicNavItems).map((item) => (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                    isActive(item.path)
-                      ? 'ring-1'
-                      : 'hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                  style={{
-                    backgroundColor: isActive(item.path) ? 'var(--surface)' : 'transparent',
-                    color: isActive(item.path) ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    borderColor: isActive(item.path) ? 'var(--border)' : 'transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive(item.path)) {
-                      e.target.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive(item.path)) {
-                      e.target.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+            {primaryNavItems.map((item) => renderNavLink(item))}
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMoreMenuOpen((open) => !open)}
+                className={`inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+                  isMoreActive() ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+                style={{
+                  backgroundColor: isMoreActive() ? 'var(--surface)' : 'transparent',
+                  color: isMoreActive() ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  borderColor: isMoreActive() ? 'var(--border)' : 'transparent',
+                }}
+                aria-expanded={moreMenuOpen}
+                aria-haspopup="menu"
+              >
+                More
+                <ChevronDown className={`h-3 w-3 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {moreMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-10"
+                    onClick={closeMoreMenu}
+                    aria-label="Close more menu"
+                  />
+                  <div
+                    className="absolute left-1/2 top-full z-20 mt-2 min-w-[12rem] -translate-x-1/2 rounded-2xl border p-2 shadow-xl"
+                    style={{
+                      backgroundColor: 'var(--bg-primary)',
+                      borderColor: 'var(--border)',
+                    }}
+                    role="menu"
+                  >
+                    {moreNavItems.map((item) => {
+                      const active = isActive(item.path);
+
+                      return (
+                        <Link
+                          key={item.path}
+                          href={item.path}
+                          onClick={closeMoreMenu}
+                          className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                            active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                          }`}
+                          style={navLinkStyle(active)}
+                          role="menuitem"
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
+          </div>
 
           {/* Actions */}
           <div className="hidden lg:flex items-center gap-3">

@@ -6,7 +6,7 @@
 class CacheService {
   constructor() {
     this.memoryCache = new Map();
-    this.storagePrefix = 'npe_cache_';
+    this.storagePrefix = 'npe_cache_v4_';
     this.defaultTTL = 5 * 60 * 1000; // 5 minutes
     this.maxMemorySize = 100; // Max items in memory cache
     this.maxStorageSize = 10 * 1024 * 1024; // 10MB max localStorage usage

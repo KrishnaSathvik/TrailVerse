@@ -273,10 +273,15 @@ class ResendEmailService {
       const baseUrl = 'https://www.nationalparksexplorerusa.com';
       const html = await reactEmailRenderer.renderFeatureAnnouncementEmail({
         username: user.firstName || user.name,
-        userEmail: user.email,
         planUrl: `${baseUrl}/plan-ai`,
+        exploreByActivityUrl: `${baseUrl}/discover`,
+        mapUrl: `${baseUrl}/map`,
+        compareUrl: `${baseUrl}/compare`,
+        chatgptUrl:
+          'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
         exploreUrl: `${baseUrl}/explore`,
-        unsubscribeUrl: `${baseUrl}/unsubscribe?email=${user.email || ''}`
+        testimonialsUrl: `${baseUrl}/testimonials`,
+        unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email || '')}`
       });
 
       const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'noreply@nationalparksexplorerusa.com';
@@ -286,7 +291,7 @@ class ResendEmailService {
         from: `${fromName} <${fromAddress}>`,
         to: user.email,
         reply_to: 'trailverseteam@gmail.com',
-        subject: 'Meet Trailie — Your New AI Trip Planner in TrailVerse',
+        subject: "🎉 What's new in TrailVerse — ChatGPT app, voice, map & more",
         html,
         tags: [
           { name: 'category', value: 'feature-announcement' },

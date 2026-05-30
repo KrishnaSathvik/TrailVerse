@@ -371,8 +371,11 @@ function classifyQuery(userMessage) {
     return 'history-facts';
   }
 
-  // LIVE buckets — past-day freshness
-  if (/(road condition|road closure|road open|road status|closed|open now|open today|open tomorrow|construction)/i.test(msg)) {
+  // LIVE buckets — past-day freshness (avoid bare "closed" — e.g. "is Angels Landing open")
+  if (
+    /(road condition|road closure|road open|road status|construction|detour)/i.test(msg) ||
+    (/\broad\b/i.test(msg) && /\b(closed|closure|closures)\b/i.test(msg))
+  ) {
     return 'road-conditions';
   }
   if (/(wildfire|fire|smoke|air quality|haze|flood)/i.test(msg)) {
@@ -746,6 +749,42 @@ function needsWebSearch(userMessage) {
 }
 
 /**
+ * Anonymous chat only — append the web-search signup footer when live web data
+ * would genuinely help. Narrower than needsWebSearch() (which also gates fetching).
+ * @returns {{ append: boolean, variant?: 'local'|'road'|'trail'|'conditions' }}
+ */
+function shouldAppendAnonymousWebSearchUpsell(userMessage) {
+  if (!userMessage) return { append: false };
+
+  const category = classifyQuery(userMessage);
+
+  if (category === 'local-business') return { append: true, variant: 'local' };
+  if (category === 'road-conditions') return { append: true, variant: 'road' };
+  if (category === 'trail-conditions') return { append: true, variant: 'trail' };
+  if (category === 'wildfire-smoke') return { append: true, variant: 'conditions' };
+
+  if (!isTravelRelated(userMessage)) return { append: false };
+
+  if (
+    category === 'nps-covered' ||
+    category === 'history-facts' ||
+    category === 'wildlife-seasonal' ||
+    category === 'events'
+  ) {
+    return { append: false };
+  }
+
+  if (category === 'planning') {
+    const localOrRoad = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|gas station|grocery|road condition|road closure|price|cost|review|rating|booking|availability|open now|hours|tour company|outfitter|guide service|shuttle)/i.test(
+      userMessage
+    );
+    if (localOrRoad) return { append: true, variant: 'local' };
+  }
+
+  return { append: false };
+}
+
+/**
  * Determine if weather facts are needed based on user message
  * @param {string} userMessage - The user's message
  * @returns {boolean} Whether weather facts should be fetched
@@ -773,7 +812,14 @@ function needsNPSFacts(userMessage) {
  * @returns {Promise<Object>} { weatherFacts, npsFacts, webSearchFacts }
  */
 async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, isAnonymous = false }) {
-  const results = { weatherFacts: null, npsFacts: null, webSearchFacts: null, feeFreeFacts: null };
+  const results = {
+    weatherFacts: null,
+    npsFacts: null,
+    webSearchFacts: null,
+    feeFreeFacts: null,
+    webSearchAttempted: false,
+    webSearchUnavailable: false,
+  };
 
   try {
     // Coordinate fallback: if we have a parkCode but no lat/lon, look up from parkExtractor
@@ -836,11 +882,16 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
     }
 
     if (shouldFetchWeb) {
+      results.webSearchAttempted = true;
       promises.push(
-        fetchWebSearchFacts({ userMessage, parkName, parkCode }).then(facts => { results.webSearchFacts = facts; }).catch(err => {
-          console.error('[Facts] Web search error:', err.message);
-          results.webSearchFacts = null;
-        })
+        fetchWebSearchFacts({ userMessage, parkName, parkCode })
+          .then((facts) => {
+            results.webSearchFacts = facts;
+          })
+          .catch((err) => {
+            console.error('[Facts] Web search error:', err.message);
+            results.webSearchFacts = null;
+          })
       );
     }
 
@@ -849,7 +900,18 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
       await Promise.allSettled(promises);
     }
 
-    console.log('[Facts] Results:', { hasWeather: !!results.weatherFacts, hasNPS: !!results.npsFacts, hasWebSearch: !!results.webSearchFacts, hasFeeFree: !!results.feeFreeFacts });
+    if (results.webSearchAttempted && !results.webSearchFacts) {
+      results.webSearchUnavailable = true;
+      console.warn('[Facts] Web search was needed but returned no results (timeout, empty, or API keys missing)');
+    }
+
+    console.log('[Facts] Results:', {
+      hasWeather: !!results.weatherFacts,
+      hasNPS: !!results.npsFacts,
+      hasWebSearch: !!results.webSearchFacts,
+      webSearchUnavailable: results.webSearchUnavailable,
+      hasFeeFree: !!results.feeFreeFacts,
+    });
     return results;
   } catch (error) {
     console.error('[Facts] fetchRelevantFacts error:', error.message);
@@ -1060,6 +1122,7 @@ module.exports = {
   needsWeatherFacts,
   needsNPSFacts,
   needsWebSearch,
+  shouldAppendAnonymousWebSearchUpsell,
   isTravelRelated,
   extractUserCity,
   getCandidateParks,

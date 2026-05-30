@@ -1,5 +1,13 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
+import {
+  buildParkMetaDescription,
+  buildParkSeoLeadLine,
+  formatStateList,
+  getStateHubSlug,
+  isTierAPark,
+  sortRelatedParks,
+} from '@/lib/parkSeo';
 import { parkToSlug, findCorrectSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import ParkDetailClient from './ParkDetailClient';
@@ -40,9 +48,9 @@ export async function generateMetadata({ params }) {
     return { title: '404 - Page Not Found | TrailVerse' };
   }
 
-  const description = `Explore ${park.fullName} in ${park.states}. ${park.description?.substring(0, 150)}... Find activities, camping, weather, and plan your visit.`;
-  const image = park.images?.[0]?.url;
   const slug = parkToSlug(park.fullName);
+  const description = buildParkMetaDescription(park, slug);
+  const image = park.images?.[0]?.url;
   const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
@@ -97,13 +105,15 @@ export default async function ParkPage({ params }) {
   }
 
   const parkUrl = `https://www.nationalparksexplorerusa.com/parks/${parkSlug}`;
+  const stateHubSlug = getStateHubSlug(park.states);
+  const seoLeadLine = buildParkSeoLeadLine(park, parkSlug);
+  const statesLabel = formatStateList(park.states);
 
   // All structured data below is built from our own server API data (trusted NPS source).
-  // Values are server-rendered strings from the NPS API — not user input.
-  const touristAttraction = {
-    '@type': 'TouristAttraction',
+  const placeNode = {
+    '@type': isTierAPark(parkSlug) ? 'NationalPark' : 'TouristAttraction',
     name: park.fullName,
-    description: park.description,
+    description: buildParkMetaDescription(park, parkSlug),
     image: park.images?.[0]?.url,
     address: {
       '@type': 'PostalAddress',
@@ -120,7 +130,32 @@ export default async function ParkPage({ params }) {
     sameAs: park.url,
   };
 
-  const structuredData = { '@context': 'https://schema.org', ...touristAttraction };
+  const breadcrumb = {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.nationalparksexplorerusa.com' },
+      { '@type': 'ListItem', position: 2, name: 'Explore', item: 'https://www.nationalparksexplorerusa.com/explore' },
+      ...(stateHubSlug
+        ? [{
+            '@type': 'ListItem',
+            position: 3,
+            name: statesLabel,
+            item: `https://www.nationalparksexplorerusa.com/parks/state/${stateHubSlug}`,
+          }]
+        : []),
+      {
+        '@type': 'ListItem',
+        position: stateHubSlug ? 4 : 3,
+        name: park.fullName,
+        item: parkUrl,
+      },
+    ],
+  };
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [placeNode, breadcrumb],
+  };
 
   // Fetch related parks (same state, different park) — cached 24h
   let relatedParks = [];
@@ -138,12 +173,7 @@ export default async function ParkPage({ params }) {
             p.parkCode !== park.parkCode &&
             parkStates.some((st) => p.states?.includes(st))
         );
-        // Shuffle and pick up to 4
-        for (let i = candidates.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-        }
-        relatedParks = candidates.slice(0, 4);
+        relatedParks = sortRelatedParks(candidates, park.parkCode).slice(0, 4);
       }
     } catch {
       // Non-critical — just skip related parks
@@ -156,7 +186,13 @@ export default async function ParkPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <ParkDetailClient initialData={data} parkCode={parkCode} relatedParks={relatedParks} />
+      <ParkDetailClient
+        initialData={data}
+        parkCode={parkCode}
+        relatedParks={relatedParks}
+        seoLeadLine={seoLeadLine}
+        stateHubSlug={stateHubSlug}
+      />
     </>
   );
 }

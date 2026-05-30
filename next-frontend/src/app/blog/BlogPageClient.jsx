@@ -7,7 +7,8 @@ import {
   Search,
   X,
   Clock,
-  TrendingUp,
+  BookOpen,
+  Star,
   ChevronLeft,
   ChevronRight,
   Eye
@@ -18,6 +19,7 @@ import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
 import { logSearch, logEvent } from '@/utils/analytics';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
+import { reportHref } from '@/lib/reportLinks';
 
 const BlogSkeleton = () => (
   <div className="space-y-10">
@@ -225,7 +227,7 @@ const BlogContent = ({ initialData }) => {
                 borderColor: 'var(--border)'
               }}
             >
-              <TrendingUp className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
+              <BookOpen className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                 Stories & Guides
               </span>
@@ -285,7 +287,7 @@ const BlogContent = ({ initialData }) => {
               {!searchTerm && selectedCategory === 'all' && featuredPosts.length > 0 && (
                 <div className="mb-14">
                   <div className="flex items-center gap-2 mb-6">
-                    <TrendingUp className="h-5 w-5" style={{ color: 'var(--accent-blue)' }} />
+                    <Star className="h-5 w-5" style={{ color: 'var(--accent-blue)' }} />
                     <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                       Featured Stories
                     </h2>
@@ -298,7 +300,10 @@ const BlogContent = ({ initialData }) => {
                 <div className="mb-12 rounded-[2rem] p-6 sm:p-8" style={{ backgroundColor: 'var(--surface)' }}>
                   <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
                     <div>
-                      <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Popular Posts</h2>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Eye className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                        <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Popular Posts</h2>
+                      </div>
                       <p className="text-sm sm:text-base mt-1" style={{ color: 'var(--text-secondary)' }}>
                         Most-read stories right now.
                       </p>
@@ -428,7 +433,7 @@ const BlogContent = ({ initialData }) => {
           )}
           {/* Data Report Callout */}
           <a
-            href="/reports/national-parks-2025.html"
+            href={reportHref('/reports/national-parks-2025.html', { from: pathname })}
             className="block mt-12 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
             style={{
               backgroundColor: 'var(--surface)',
@@ -462,7 +467,7 @@ const BlogContent = ({ initialData }) => {
 
           {/* Crowd Calendar Callout */}
           <a
-            href="/reports/when-to-go.html"
+            href={reportHref('/reports/when-to-go', { from: pathname })}
             className="block mt-4 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
             style={{
               backgroundColor: 'var(--surface)',

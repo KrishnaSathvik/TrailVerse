@@ -152,8 +152,8 @@ const sortedParks = Object.keys(PARK_NAME_TO_SLUG).sort((a, b) => b.length - a.l
 export function linkifyParkNames(content, currentSlug = '') {
   if (!content || typeof content !== 'string') return content;
 
-  // Split on code blocks and existing links to avoid processing them
-  const codeBlockRegex = /```[\s\S]*?```|`[^`]+`|\[([^\]]+)\]\([^)]+\)/g;
+  // Split on code blocks, emphasis, and existing links to avoid processing them
+  const codeBlockRegex = /```[\s\S]*?```|`[^`]+`|\[([^\]]+)\]\([^)]+\)|\*[^*\n]+\*|_[^_\n]+_/g;
   const parts = [];
   let lastIndex = 0;
   let match;

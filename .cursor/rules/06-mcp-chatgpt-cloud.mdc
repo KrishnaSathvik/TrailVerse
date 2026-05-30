@@ -1,0 +1,231 @@
+---
+description: MCP server (Render cloud), ChatGPT App Directory, Claude connector, widgets, and backend bypass — full integration reference
+alwaysApply: true
+---
+
+# MCP + ChatGPT + Cloud Integrations
+
+TrailVerse distributes AI park data through **three surfaces** that share one Express backend:
+
+| Surface | User entry | Protocol | Hosted service |
+|---------|------------|----------|----------------|
+| **Website Trailie** | `/plan-ai` | REST + WebSocket voice | Next.js + Express on Vercel/Render |
+| **ChatGPT App** | ChatGPT App Directory | OpenAI Apps SDK (MCP over HTTP) | `mcp-server/` on Render |
+| **Claude** | `/mcp` install guide | MCP connector URL | Same `mcp-server/` on Render |
+
+The Python MCP server is a **thin adapter** — no duplicate business logic. All data flows through `trailverse.onrender.com` (Express).
+
+---
+
+## Cloud deployment (Render)
+
+### MCP server (this repo: `mcp-server/`)
+
+| Item | Value |
+|------|--------|
+| **Production URL** | `https://trailverse-mcp.onrender.com` |
+| **MCP endpoint** | `https://trailverse-mcp.onrender.com/mcp` |
+| **Health** | `GET /health` → `{"status":"ok","service":"trailverse-mcp"}` |
+| **Blueprint** | `mcp-server/render.yaml` |
+| **Runtime** | Python 3.12.7, Uvicorn, FastMCP |
+| **Start** | `python -m server.main` |
+| **Region** | Oregon (near main backend) |
+
+### Main Express backend
+
+| Item | Value |
+|------|--------|
+| **API** | `https://trailverse.onrender.com/api` |
+| **Used by MCP** | `TRAILVERSE_API_BASE` env on MCP service |
+
+### Required paired secret (production)
+
+Both services must set the **same** `MCP_BYPASS_KEY`:
+
+1. **MCP server** (`mcp-server/server/client.py`) sends header `X-TrailVerse-MCP-Key` on every backend request
+2. **Express** (`server/src/middleware/mcpBypass.js`) sets `req.skipAnonymousRateLimit = true` when header matches
+
+Without this, all ChatGPT/Claude traffic shares one IP and hits the **60 req / 15 min** anonymous API limit immediately.
+
+Generate: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
+
+---
+
+## Architecture diagram
+
+```
+ChatGPT App Directory          Claude Desktop / claude.ai
+        │                              │
+        │  MCP JSON/HTTP                 │  MCP connector
+        └──────────────┬─────────────────┘
+                       ▼
+        ┌──────────────────────────────────┐
+        │  trailverse-mcp.onrender.com      │  Python FastMCP (port 8000)
+        │  • 5 tools                        │
+        │  • 5 HTML widgets (mcp-app MIME)  │
+        │  • In-memory conversation_store   │
+        │  • MCP-side rate_limit.py         │
+        └──────────────┬───────────────────┘
+                       │ HTTPS + X-TrailVerse-MCP-Key
+                       ▼
+        ┌──────────────────────────────────┐
+        │  trailverse.onrender.com/api      │  Express (port 5001)
+        └──────────────┬───────────────────┘
+                       ▼
+              MongoDB · NPS API · OpenAI · Claude · OpenWeather
+```
+
+---
+
+## The 5 MCP tools
+
+All **read-only** (`readOnlyHint: true`). Registered in `mcp-server/server/main.py`.
+
+| Tool | Purpose | Primary backend calls |
+|------|---------|------------------------|
+| `plan_trip` | AI itinerary (any US destination) | `POST /api/ai/chat-anonymous` |
+| `get_park_details` | Live park card (470+ NPS sites) | `GET /api/parks/:code/details` + alerts, weather, campgrounds, permits, feed |
+| `compare_parks` | 2–4 park comparison | `POST /api/parks/compare`, `/compare/summary` |
+| `search_parks` | Find parks by name/state/activity | `GET /api/parks/search` |
+| `find_events` | Ranger programs | `GET /api/events` |
+
+### Tool output shape (dual format)
+
+Every tool returns:
+
+1. **`structuredContent`** — JSON for ChatGPT **inline HTML widgets**
+2. **`text`** — Markdown for Claude and LLMs without widget UI
+3. Optional **images** — SSRF-safe fetch (nps.gov, unsplash, wikimedia) via Pillow
+
+Formatters: `mcp-server/server/formatters.py`  
+Pydantic inputs: `mcp-server/server/types.py` (flat schemas for OpenAI compatibility)
+
+### Anonymous AI limits
+
+- Website anonymous chat: 5 messages / 48h per IP (funnels signups)
+- MCP uses same anonymous endpoint intentionally (OpenAI review needs no demo account)
+- MCP bypass lifts **Express** rate limit only; MCP has its own `rate_limit.py` caps
+
+### Multi-turn planning
+
+`mcp-server/server/conversations.py` — in-memory session store for follow-ups ("add day 4"). Lost on server restart (acceptable for thin adapter).
+
+---
+
+## ChatGPT widgets (`mcp-server/widgets/`)
+
+Self-contained HTML with `text/html;profile=mcp-app` MIME type:
+
+| Widget file | Tool | UI |
+|-------------|------|-----|
+| `itinerary.html` | `plan_trip` | Day blocks, confidence/score pills |
+| `park-details.html` | `get_park_details` | Hero, weather, alerts, activities |
+| `compare.html` | `compare_parks` | Side-by-side table |
+| `park-list.html` | `search_parks` | Results grid |
+| `events.html` | `find_events` | Event list |
+
+Build/preview: `python scripts/generate_previews.py`, `scripts/build_widgets.py`  
+Verify: `python scripts/test_local.py`, `scripts/deep_verify.py`, `scripts/verify_widgets.py`
+
+---
+
+## Marketing pages (Next.js)
+
+### `/chatgpt` — ChatGPT App Directory landing
+
+- **File**: `next-frontend/src/app/chatgpt/page.jsx`
+- **SEO**: indexable; canonical `/chatgpt`
+- **CTA**: `NEXT_PUBLIC_CHATGPT_APP_URL` or default Apps Directory deep link
+- **Content**: 6 capability cards (Plan, Park Details, Compare, Search, Events, Multi-turn), example prompts, install steps
+- **Audience**: End users installing from [chatgpt.com/apps](https://chatgpt.com/apps)
+
+### `/mcp` — Claude MCP connector landing
+
+- **File**: `next-frontend/src/app/mcp/page.jsx`
+- **SEO**: indexable; canonical `/mcp`
+- **Connector URL**: `https://trailverse-mcp.onrender.com/mcp` (constant `MCP_URL` in page)
+- **Content**: Same 6 tools, "Install in Claude" instructions, developer mode / custom connector steps
+- **Audience**: Claude Desktop and claude.ai MCP users
+
+Both pages link back to `nationalparksexplorerusa.com` for unlimited Trailie access.
+
+---
+
+## FastMCP server instructions (persona)
+
+`main.py` embeds Trailie system instructions for connected LLMs:
+
+- Route **any NPS site name** → `get_park_details` first (never guess from training)
+- Use live tool text over training data for weather/alerts
+- Opinionated Trailie voice; no generic "want me to dig deeper?" endings
+- Deep links only: `/parks/{slug}`, `/plan-ai`, `/compare?parks=`
+
+When changing tool behavior, update **both** formatters and these instructions.
+
+---
+
+## MCP environment variables
+
+From `mcp-server/.env.example` and `render.yaml`:
+
+| Variable | Purpose |
+|----------|---------|
+| `TRAILVERSE_API_BASE` | Express backend root (no `/api` suffix in env; client adds paths) |
+| `MCP_SERVER_BASE` | Public URL for widget resource URIs |
+| `TRAILVERSE_WEB_BASE` | Website for CTA links in widgets |
+| `MCP_BYPASS_KEY` | **Secret** — must match Express |
+| `BACKEND_TIMEOUT` | Default 120s (plan_trip can be slow) |
+| `MCP_PLAN_TRIP_LIMIT` / `MCP_PLAN_TRIP_WINDOW` | MCP-side fuse for AI calls |
+| `MCP_READ_LIMIT` / `MCP_READ_WINDOW` | MCP-side fuse for read tools |
+| `LOG_LEVEL` | Python logging |
+
+Local dev:
+
+```bash
+cd mcp-server && python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+export TRAILVERSE_API_BASE=http://localhost:5001
+python -m server.main   # → http://localhost:8000/mcp
+```
+
+ChatGPT dev test: ngrok `8000` → paste `https://….ngrok.app/mcp` in ChatGPT developer connector settings.
+
+---
+
+## Backend analytics
+
+- MCP tool usage tracked: `Analytics` model event type `mcp_tool_call`
+- Admin dashboard: `GET /api/analytics/mcp` (`protect` + `admin`)
+
+---
+
+## Voice vs MCP (do not confuse)
+
+| Feature | Technology | Entry |
+|---------|------------|-------|
+| **Trailie Voice** | OpenAI Realtime API + WebRTC, 4 function tools | Website `VoiceButton` |
+| **MCP / ChatGPT** | FastMCP, 5 tools, HTML widgets | Render MCP server |
+
+Voice does **not** use MCP protocol. Documented in `mcp-server/README.md` second half.
+
+---
+
+## OpenAI App Directory submission
+
+Checklist: `mcp-server/docs/SUBMISSION_CHECKLIST.md`  
+Backend middleware doc: `mcp-server/docs/BACKEND_CHANGES.md`  
+Full technical spec: `docs/mcp-server-technical-doc.md`
+
+---
+
+## Change checklist (MCP / ChatGPT work)
+
+When modifying park or AI APIs:
+
+1. Update Express route/controller
+2. Update `mcp-server/server/client.py` method if path changed
+3. Update `formatters.py` for `structuredContent` + text shape
+4. Run `python scripts/test_local.py`
+5. Refresh ChatGPT connector / Claude MCP after deploy
+6. Update `/chatgpt` or `/mcp` marketing copy if user-facing capabilities changed
+7. Confirm `MCP_BYPASS_KEY` still set on both Render services

@@ -41,7 +41,7 @@ Open all content and discovery features to unauthenticated users. Gate only feat
 
 **Gated (auth required):**
 
-- AI Trip Planner — 3 free messages for anonymous users (keep existing `anonymousSession` logic with 48-hour window), unlimited for logged-in users
+- AI Trip Planner — 5 free messages for anonymous users (keep existing `anonymousSession` logic with 48-hour window), unlimited for logged-in users
 - Writing reviews — creating, editing, deleting reviews and uploading review images
 - Favorites — saving parks, blogs, events to favorites
 - Visited parks tracking — marking parks as visited with dates and memories
@@ -71,7 +71,7 @@ Open all content and discovery features to unauthenticated users. Gate only feat
 
 - Remove all blue `isPublicAccess` banners ("You're viewing the first page of X pages. Login to...")
 - Replace with contextual login prompts only on gated actions (e.g., clicking the favorite heart shows a tooltip/modal: "Create a free account to save favorites")
-- Keep the AI planner banner as-is ("You can chat 3 messages with our AI trip planner. Login for unlimited...")
+- Keep the AI planner banner as-is ("You can chat 5 messages with our AI trip planner. Login for unlimited...")
 
 **Backend changes:**
 

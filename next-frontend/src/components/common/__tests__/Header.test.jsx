@@ -40,6 +40,7 @@ vi.mock('@components/icons', () => ({
   X: (props) => <svg {...props} />,
   LogOut: (props) => <svg {...props} />,
   Sparkles: (props) => <svg {...props} />,
+  ChevronDown: (props) => <svg {...props} />,
 }));
 
 describe('Header mobile navigation', () => {

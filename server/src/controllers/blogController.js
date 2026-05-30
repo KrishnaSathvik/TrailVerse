@@ -99,21 +99,47 @@ exports.getPostBySlug = async (req, res, next) => {
   }
 }
 
+// @desc    Map legacy blog slugs to current slug (for 301 redirects)
+// @route   GET /api/blogs/slug-redirects
+// @access  Public
+exports.getSlugRedirects = async (req, res, next) => {
+  try {
+    const posts = await BlogPost.find(
+      { previousSlugs: { $exists: true, $ne: [] } },
+      { slug: 1, previousSlugs: 1 }
+    ).lean();
+
+    const redirects = {};
+    for (const post of posts) {
+      for (const legacySlug of post.previousSlugs || []) {
+        if (legacySlug && legacySlug !== post.slug) {
+          redirects[legacySlug] = post.slug;
+        }
+      }
+    }
+
+    res.status(200).json({ success: true, data: redirects });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Track a blog post view
 // @route   POST /api/blogs/:slug/view
 // @access  Public
 exports.trackView = async (req, res, next) => {
   try {
-    const result = await BlogPost.updateOne(
+    const post = await BlogPost.findOneAndUpdate(
       { slug: req.params.slug },
-      { $inc: { views: 1 } }
+      { $inc: { views: 1 } },
+      { new: true, select: 'views slug' }
     );
 
-    if (result.matchedCount === 0) {
+    if (!post) {
       return res.status(404).json({ success: false, error: 'Blog post not found' });
     }
 
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, data: { views: post.views } });
   } catch (error) {
     next(error);
   }
@@ -147,7 +173,23 @@ exports.getPostById = async (req, res, next) => {
 // @access  Private/Admin
 exports.createPost = async (req, res, next) => {
   try {
-    const { title, excerpt, content, featuredImage, author, category, tags, status, featured, scheduledAt, seoSchema, readTime } = req.body;
+    const {
+      title,
+      slug,
+      excerpt,
+      metaDescription,
+      seoNoindex,
+      content,
+      featuredImage,
+      author,
+      category,
+      tags,
+      status,
+      featured,
+      scheduledAt,
+      seoSchema,
+      readTime
+    } = req.body;
     
     console.log('📝 Creating blog post with data:', {
       title,
@@ -183,7 +225,10 @@ exports.createPost = async (req, res, next) => {
 
     const post = await BlogPost.create({
       title,
+      slug: typeof slug === 'string' ? slug.trim().toLowerCase() : undefined,
       excerpt,
+      metaDescription: metaDescription || null,
+      seoNoindex: Boolean(seoNoindex),
       content,
       featuredImage,
       author,
@@ -238,15 +283,26 @@ exports.updatePost = async (req, res, next) => {
       requestBody: req.body,
       featured: req.body.featured
     });
-    
+
+    const previousSlug = post.slug;
+    const nextSlug = typeof req.body.slug === 'string' ? req.body.slug.trim().toLowerCase() : null;
+
+    if (nextSlug && nextSlug !== previousSlug) {
+      const history = new Set(post.previousSlugs || []);
+      history.add(previousSlug);
+      post.previousSlugs = Array.from(history);
+      post.slug = nextSlug;
+    }
+
     // Handle scheduling logic for updates
     const { scheduledAt, status } = req.body;
-    
+
     // Always apply field updates from req.body first
     Object.keys(req.body).forEach(key => {
-      if (key !== 'scheduledAt' && key !== 'status') {
-        post[key] = req.body[key];
+      if (key === 'scheduledAt' || key === 'status' || key === 'slug') {
+        return;
       }
+      post[key] = req.body[key];
     });
 
     // Then handle status/scheduling logic

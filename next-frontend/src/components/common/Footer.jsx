@@ -2,7 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Mail, Instagram, Map } from '@components/icons';
+import { usePathname } from 'next/navigation';
+import { reportHref } from '@/lib/reportLinks';
+import { Mail, Instagram, Facebook, Map } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
@@ -10,7 +12,9 @@ import SyncStatus from './SyncStatus';
 
 const Footer = () => {
   useTheme();
+  const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+  const reportFrom = pathname || '/';
   const { canInstall, canInstallDesktop, isIOS, install, deferredPrompt } = usePWAInstall();
 
   const handleInstall = async (e) => {
@@ -54,6 +58,16 @@ const Footer = () => {
                 <Instagram className="h-5 w-5" />
               </a>
               <a
+                href="https://www.facebook.com/travelswithkrishna/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:opacity-80"
+                style={{ color: 'var(--text-secondary)' }}
+                aria-label="Facebook"
+              >
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a
                 href="https://www.tiktok.com/@travelswithkrishna"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -82,10 +96,11 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Quick Links</h3>
             <ul className="space-y-2 text-base sm:text-sm">
-              <li><Link href="/plan-ai" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Trailie AI Planner</Link></li>
+              <li><Link href="/plan-ai" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Talk with Trailie</Link></li>
               <li><Link href="/explore" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Explore Parks</Link></li>
               <li><Link href="/features" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Features</Link></li>
               <li><Link href="/faq" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
+              <li><Link href="/testimonials" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Testimonials</Link></li>
               <li><a href="https://www.nps.gov" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>NPS Official Site</a></li>
               {(canInstall || canInstallDesktop) && (
                 <li><a href="#" onClick={handleInstall} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Install App</a></li>
@@ -100,6 +115,7 @@ const Footer = () => {
               <li><Link href="/blog" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Blog</Link></li>
               <li><Link href="/about" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link></li>
               <li><Link href="/magazine" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Magazine</Link></li>
+              <li><Link href="/chatgpt" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>ChatGPT App</Link></li>
               <li><Link href="/mcp" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>MCP for Claude</Link></li>
               <li><Link href="/privacy" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Privacy Policy</Link></li>
               <li><Link href="/terms" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Terms of Service</Link></li>
@@ -110,8 +126,8 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Reports</h3>
             <ul className="space-y-2 text-base sm:text-sm">
-              <li><a href="/reports/national-parks-2025.html" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>2025 Park Report</a></li>
-              <li><a href="/reports/when-to-go.html" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Crowd Calendar</a></li>
+              <li><a href={reportHref('/reports/national-parks-2025.html', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>2025 Park Report</a></li>
+              <li><a href={reportHref('/reports/when-to-go', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Crowd Calendar</a></li>
             </ul>
           </div>
 

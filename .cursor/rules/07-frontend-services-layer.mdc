@@ -1,0 +1,46 @@
+---
+description: Client-side API service layer — which service file to use for each feature
+globs: next-frontend/src/services/**/*
+alwaysApply: false
+---
+
+# Frontend Services Layer
+
+Browser API access is centralized in `next-frontend/src/services/`. Prefer these over raw `fetch` in components.
+
+| Service | Use for |
+|---------|---------|
+| `api.js` | Base axios instance, interceptors, auth header |
+| `authService.js` | login, signup, logout, token, `/api/auth/me` |
+| `npsApi.js` | Park list, search, park sub-resources |
+| `enhancedParkService.js` | Weather, crowd, enhanced park payload |
+| `aiService.js` | Plan AI chat, stream, anonymous chat |
+| `tripService.js` | TripPlan CRUD, share |
+| `tripHistoryService.js` | Local trip list + `migrateLegacyTrips` |
+| `conversationService.js` | `/api/conversations` threads |
+| `blogService.js` | Blog list, slug, categories |
+| `commentService.js` | Blog comments |
+| `reviewService.js` | Park reviews |
+| `eventService.js` | Events list/register |
+| `favoriteService.js` | Saved parks (legacy favorites API) |
+| `userService.js` | Profile, saved/visited parks |
+| `userPreferencesService.js` | Map state, navigation prefs |
+| `dailyFeedService.js` | Park of day, nature facts |
+| `testimonialService.js` | Testimonials |
+| `discoverApi` is in `lib/discoverApi.js` (not services/) | Discover catalog SSR |
+| `analyticsService.js` | Client analytics track |
+| `feedbackService.js` | AI feedback |
+| `websocketService.js` | Socket.IO realtime |
+| `imageUploadService.js` | Image uploads |
+| `cacheService.js` / `globalCacheManager.js` | Client caching |
+| `batchService.js` / `smartPrefetchService.js` | Performance batching |
+
+## Patterns
+
+- Auth token attached in `api.js` interceptor from cookie/localStorage
+- Use `enhancedApi.js` when response needs unified error handling
+- Server components should use `getApiBaseUrl()` + `fetch` directly (not these services)
+
+## Legacy
+
+- `src/old_pages/` — Vite-era pages; **do not extend**; routes redirect in `next.config.mjs`

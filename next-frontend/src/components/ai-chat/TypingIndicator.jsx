@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bot, Globe } from '@components/icons';
+import { Globe } from '@components/icons';
+import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 
 const TypingIndicator = ({ text = "AI is thinking...", sources = [] }) => {
   const isSearching = sources?.includes('web');
@@ -7,13 +8,7 @@ const TypingIndicator = ({ text = "AI is thinking...", sources = [] }) => {
   return (
     <div className="flex gap-3 sm:gap-4 items-start" role="status" aria-live="polite" aria-label={text}>
       {/* Avatar */}
-      <div className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full flex items-center justify-center ring-2 ring-green-500/20"
-        style={{
-          backgroundColor: 'var(--accent-green)'
-        }}
-      >
-        <Bot className="h-5 w-5 text-white" />
-      </div>
+      <TrailieAvatar />
 
       {/* Typing Bubble */}
       <div className="flex-1">

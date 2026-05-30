@@ -119,9 +119,9 @@ class RIDBService {
       return filtered.map(r => ({
         FacilityID: r.entity_id,
         FacilityName: r.name || 'Permit',
-        FacilityTypeDescription: 'Permit',
+        FacilityTypeDescription: this._entityTypeToFacilityType(r.entity_type),
         FacilityDescription: r.description || '',
-        FacilityAdaAccess: false
+        FacilityAdaAccess: false,
       }));
     } catch (error) {
       console.error('Recreation.gov search error:', error.message);
@@ -274,6 +274,13 @@ class RIDBService {
       .trim();
   }
 
+  _entityTypeToFacilityType(entityType) {
+    const t = (entityType || '').toLowerCase().replace(/_/g, ' ');
+    if (t.includes('timed') && t.includes('entry')) return 'Timed Entry';
+    if (t.includes('ticket')) return 'Ticket Facility';
+    return 'Permit';
+  }
+
   _buildReservationUrl(facility) {
     const type = (facility.FacilityTypeDescription || '').toLowerCase();
     const id = facility.FacilityID;
@@ -370,7 +377,7 @@ class RIDBService {
                 district: null,
                 town: null,
                 facilityName: facility.FacilityName || null,
-                reservationUrl: `https://www.recreation.gov/permits/${id}`
+                reservationUrl: this._buildReservationUrl(facility)
               });
             }
           }

@@ -269,7 +269,7 @@ html:not(.dark-mode) #climate .chart-wrap p { color: rgba(30,30,30,0.42) !import
 
 <nav>
   <a class="nav-logo" href="/">TrailVerse</a>
-  <a href="/" class="nav-back">← Back to TrailVerse</a>
+  <a href="/explore" class="nav-back" data-tv-back-nav>← Back to TrailVerse</a>
 </nav>
 
 <!-- SCREEN 1: HERO -->
@@ -647,7 +647,8 @@ html:not(.dark-mode) #climate .chart-wrap p { color: rgba(30,30,30,0.42) !import
         </div>
       </div>
     </div>
-    <a class="cta-btn" href="/explore">Explore All 63 Parks on TrailVerse →</a>
+    <a class="cta-btn" href="/reports/when-to-go">See month-by-month crowd levels →</a>
+    <a class="cta-btn" href="/explore" style="margin-left:12px;background:transparent;border:1px solid rgba(245,240,232,0.35)">Explore all 63 parks</a>
     <div class="photo-credit">Photo: Unsplash / Robert Bye</div>
   </div>
 </section>
@@ -815,6 +816,12 @@ ScrollTrigger.create({
 ScrollTrigger.create({
   trigger: '.verdict-list', start: 'top 80%', once: true,
   onEnter: () => gsap.to('.verdict-item', { opacity:1, x:0, duration:0.7, stagger:0.15, ease:'power2.out' })
+});
+</script>
+<script src="/reports/report-back-nav.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof initReportBackNav === 'function') initReportBackNav();
 });
 </script>
 </body>

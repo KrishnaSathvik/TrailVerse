@@ -9,7 +9,7 @@ const {
   featureTestimonial,
   getTestimonialStats
 } = require('../controllers/testimonialController');
-const { protect, admin } = require('../middleware/auth');
+const { protect, admin, optionalAuth } = require('../middleware/auth');
 
 // Admin stats route (must be before /:id routes)
 router.get('/stats', protect, admin, getTestimonialStats);
@@ -17,8 +17,8 @@ router.get('/stats', protect, admin, getTestimonialStats);
 // Public routes
 router.get('/', getTestimonials);
 
-// Protected routes
-router.post('/', protect, createTestimonial);
+// Public submission (optional auth links testimonial to account when logged in)
+router.post('/', optionalAuth, createTestimonial);
 router.put('/:id', protect, updateTestimonial);
 router.delete('/:id', protect, deleteTestimonial);
 

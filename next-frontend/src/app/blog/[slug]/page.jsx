@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import BlogPostClient from './BlogPostClient';
+import { blogMetaDescription, blogRobots } from '@/lib/blogSeo';
 
 const SITE_URL = 'https://www.nationalparksexplorerusa.com';
 
@@ -53,13 +54,14 @@ export async function generateMetadata({ params }) {
   }
 
   const title = `${post.title} | TrailVerse`;
-  const description = post.excerpt || 'Read the latest national park stories and planning guides on TrailVerse.';
+  const description = blogMetaDescription(post.metaDescription || post.excerpt);
   const image = toAbsoluteImageUrl(post.featuredImage);
   const url = `${SITE_URL}/blog/${post.slug}`;
 
   return {
     title,
     description,
+    robots: blogRobots(post),
     alternates: { canonical: url },
     openGraph: {
       title,
@@ -91,7 +93,7 @@ export default async function BlogPostPage({ params }) {
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
         headline: post.title,
-        description: post.excerpt,
+        description: blogMetaDescription(post.metaDescription || post.excerpt),
         image: [
           {
             '@type': 'ImageObject',

@@ -128,7 +128,8 @@ class BlogService {
   }
 
   async trackView(slug) {
-    await enhancedApi.post(`/blogs/${slug}/view`);
+    const response = await enhancedApi.post(`/blogs/${slug}/view`);
+    return response.data?.data?.views;
   }
 
   async toggleLike(postId) {

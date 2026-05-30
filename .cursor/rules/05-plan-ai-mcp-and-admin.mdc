@@ -1,0 +1,89 @@
+---
+description: Trailie (Plan AI), voice, MCP server, and admin CMS workflows
+globs: "{next-frontend/src/app/plan-ai/**,next-frontend/src/components/voice/**,mcp-server/**,next-frontend/src/app/admin/**,server/src/routes/ai.js,server/src/routes/trips.js}"
+alwaysApply: false
+---
+
+# Plan AI (Trailie), Voice, MCP, Admin
+
+## Trailie / Plan AI UX
+
+- **Brand name in UI**: "Trailie" (not "Plan AI")
+- **Routes**: `/plan-ai`, `/plan-ai/[tripId]`, sub-pages `plan`, `itinerary`, `map`
+- **Entry component**: `PlanAIContent.jsx` — shared for new and existing trips
+
+### Anonymous flow
+
+1. User chats without account → `POST /api/ai/chat-anonymous`
+2. Session id stored client-side (`AnonymousSession` on server)
+3. On signup/login within 48h → `POST /api/auth/migrate-chat` → trip persisted as `TripPlan`
+4. Redirect: `/plan-ai/{tripId}?chat=true`
+
+### Authenticated flow
+
+- `POST /api/ai/chat` or `chat-stream` (SSE)
+- Trips: `GET|POST|PUT|DELETE /api/trips`
+- Share: `POST /api/trips/:tripId/share` → public `/plan-ai/shared/[shareId]` (noindex)
+
+### AI capabilities (server)
+
+- Tools: park lookup, weather, maps (via gmaps proxy), NPS data
+- Providers: OpenAI + Anthropic; `GET /api/ai/providers`
+- Token usage + analytics endpoints (protect)
+- Feedback loop: `/api/ai/feedback` for learning service
+
+### Voice (`components/voice/`)
+
+- `VoiceButton` in root layout — "Talk to Trailie"
+- `VoiceOverlay` — realtime session via `POST /api/ai/realtime-session`
+- `POST /api/ai/voice-tool` — tool callback (public, server-validated)
+
+## Chat history
+
+- Route: `/chat-history` (auth required, noindex)
+- Related: `/api/conversations` CRUD (all protect)
+
+## MCP + ChatGPT (cloud)
+
+**Do not duplicate here** — full reference is in **`06-mcp-chatgpt-cloud.mdc`** (always applied).
+
+Summary:
+- **Render MCP**: `https://trailverse-mcp.onrender.com/mcp` (Python FastMCP, 5 tools, 5 widgets)
+- **ChatGPT**: App Directory app → same MCP server; landing `/chatgpt`
+- **Claude**: Custom MCP connector → same URL; landing `/mcp`
+- **Bypass**: `MCP_BYPASS_KEY` + `X-TrailVerse-MCP-Key` on Express (`server/src/middleware/mcpBypass.js`)
+
+When changing park/AI APIs used by MCP tools, follow the checklist in rule `06`.
+
+## Admin CMS
+
+### Access
+
+- UI: `/admin/*` (noindex)
+- Login: `/admin/login` then JWT with `role: 'admin'`
+
+### Blog admin
+
+- **Create**: `/admin/blog/new` — `BlogPostForm.jsx` (TipTap editor)
+- **Edit**: `/admin/blog/edit/[id]`
+- **API**: `POST|PUT|DELETE /api/blogs` with `protect` + `admin`
+- Scheduled publish: `POST /api/blogs/publish-scheduled`, cron via `schedulerService`
+
+### Other admin
+
+- Users: `/admin/users` → `/api/admin/users`
+- Settings: `/admin/settings` → `/api/admin/settings`
+- Stats dashboards → `/api/admin/stats`, analytics routes
+
+## Email touchpoints
+
+- Blog publish notifications, feature announcements, verification, password reset
+- Resend templates via `reactEmailRenderer`
+- Unsubscribe: `/unsubscribe` + `/api/email/unsubscribe`
+
+## Testing Plan AI changes
+
+1. Anonymous chat → login → verify migration
+2. Stream endpoint does not break mid-response
+3. Shared trip link works without auth
+4. Voice session only when maps/keys configured

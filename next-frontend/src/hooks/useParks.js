@@ -2,12 +2,12 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import npsApi from '../services/npsApi';
 import { get, set } from 'idb-keyval';
 
-const ALL_PARKS_CACHE_VERSION = 'v3';
+const ALL_PARKS_CACHE_VERSION = 'v4';
 const getAllParksCacheKey = (includeActivities = false) =>
   `trailverse_all_parks_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
 const getAllParksCacheTimeKey = (includeActivities = false) =>
   `trailverse_all_parks_time_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
-const PARKS_QUERY_VERSION = 'v3';
+const PARKS_QUERY_VERSION = 'v4';
 
 // Hook for paginated parks (default behavior - fetches one page at a time)
 export const useParks = (page = 1, limit = 12, nationalParksOnly = true, initialData = undefined) => {

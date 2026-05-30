@@ -111,7 +111,7 @@ if (returnToChat) {
 ## Security Considerations
 
 ### Rate Limiting
-- Anonymous users have natural rate limiting (2 messages)
+- Anonymous users have natural rate limiting (5 messages per 48-hour session)
 - IP-based tracking prevents abuse
 - Session expiration prevents long-term abuse
 
@@ -123,8 +123,8 @@ if (returnToChat) {
 ## Testing Checklist
 
 - [ ] Anonymous user can fill form and go to chat
-- [ ] First 2 messages work normally
-- [ ] 3rd message shows conversion prompt
+- [ ] First 5 messages work normally
+- [ ] 6th message shows conversion prompt
 - [ ] Signup from chat redirects back to chat
 - [ ] Login from chat redirects back to chat
 - [ ] Conversation history is preserved

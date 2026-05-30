@@ -8,16 +8,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import Button from '../common/Button';
-
-const VALUE_PROPS = [
-  'Save this trip permanently',
-  'Unlimited AI trip planning',
-  'Drag-and-drop itinerary builder',
-  'Share trips with travel companions',
-  'Export as PDF',
-  'Save parks, track visits & write reviews',
-  'Access from any device',
-];
+import { getSignupPrompt } from '@/lib/planAiSignupPrompts';
 
 export default function SaveTripModal({
   isOpen,
@@ -26,9 +17,11 @@ export default function SaveTripModal({
   anonymousId,
   formData,
   messages,
+  reason = 'save-itinerary',
 }) {
   const { signup, login } = useAuth();
   const { showToast } = useToast();
+  const prompt = getSignupPrompt(reason, { parkName });
 
   const [mode, setMode] = useState('signup');
   const [isLoading, setIsLoading] = useState(false);
@@ -137,8 +130,6 @@ export default function SaveTripModal({
     onClose();
   };
 
-  const tripLabel = parkName || 'Your Trip';
-
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
@@ -172,13 +163,13 @@ export default function SaveTripModal({
                 }}
               >
                 <Mountain className="h-3.5 w-3.5" />
-                Save Trip
+                {prompt.badge || 'Save Trip'}
               </div>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                Save {tripLabel}
+                {prompt.title}
               </h2>
               <p className="mt-1 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
-                Create a free account to:
+                {prompt.subtitle}
               </p>
             </div>
 
@@ -198,7 +189,7 @@ export default function SaveTripModal({
           </div>
 
           <ul className="mt-4 space-y-1.5">
-            {VALUE_PROPS.map((prop) => (
+            {prompt.benefits.map((prop) => (
               <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
                 <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
                 {prop}
@@ -410,7 +401,7 @@ export default function SaveTripModal({
                 icon={Sparkles}
                 className="w-full"
               >
-                {isLoading ? 'Creating account...' : 'Create Free Account'}
+                {isLoading ? 'Creating account...' : prompt.primaryCta}
               </Button>
 
               <p className="text-center text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -478,7 +469,7 @@ export default function SaveTripModal({
                 icon={LogIn}
                 className="w-full"
               >
-                {isLoading ? 'Signing in...' : 'Sign In & Save Trip'}
+                {isLoading ? 'Signing in...' : `${prompt.secondaryCta} & Save`}
               </Button>
 
               <div className="flex items-center justify-between text-xs">

@@ -1,20 +1,205 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Star, Quote, MapPin, Award, ChevronLeft, ChevronRight } from '@components/icons';
+import { Star, Award, ChevronLeft, ChevronRight } from '@components/icons';
 import testimonialService from '../../services/testimonialService';
 import { useToast } from '../../context/ToastContext';
 import { handleApiError } from '../../utils/errorHandler';
+import {
+  TESTIMONIALS_SECTION_TITLE,
+  TESTIMONIALS_SECTION_SUBTITLE
+} from './testimonialsCopy';
 
-const TestimonialsSection = ({ featured = false, limit = 6, showTitle = true }) => {
+function TestimonialAttribution({ testimonial }) {
+  if (testimonial.sourceUrl) {
+    return (
+      <a
+        href={testimonial.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs font-medium underline-offset-2 hover:underline"
+        style={{ color: 'var(--primary)' }}
+      >
+        {testimonial.sourceLabel || 'Read article'}
+      </a>
+    );
+  }
+
+  if (testimonial.role && testimonial.role !== 'Park Explorer') {
+    return (
+      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        {testimonial.role}
+      </p>
+    );
+  }
+
+  return null;
+}
+
+function TestimonialCard({ testimonial, renderStars, className = '' }) {
+  return (
+    <div
+      className={`flex h-full flex-col rounded-2xl p-6 backdrop-blur ${className}`}
+      style={{
+        backgroundColor: 'var(--surface)',
+        borderWidth: '1px',
+        borderColor: 'var(--border)',
+      }}
+    >
+      <div className="mb-4 shrink-0">{renderStars(testimonial.rating)}</div>
+
+      <p
+        className="mb-6 flex-1 text-sm leading-relaxed"
+        style={{ color: 'var(--text-secondary)' }}
+      >
+        &quot;{testimonial.content}&quot;
+      </p>
+
+      <div className="mt-auto shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-400 to-purple-500">
+            {testimonial.avatar ? (
+              <img
+                src={testimonial.avatar}
+                alt={testimonial.name}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <span className="text-sm font-semibold text-white">
+                {testimonial.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {testimonial.name}
+            </h4>
+            <TestimonialAttribution testimonial={testimonial} />
+          </div>
+        </div>
+
+        {testimonial.source === 'press' && (
+          <div
+            className="mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs"
+            style={{
+              backgroundColor: 'var(--surface-hover)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            Press mention
+          </div>
+        )}
+        {testimonial.featured && testimonial.source !== 'press' && (
+          <div
+            className="mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs"
+            style={{ backgroundColor: 'var(--primary)', color: 'white' }}
+          >
+            <Award className="h-3 w-3" />
+            Featured
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TestimonialSlide({ testimonial, renderStars }) {
+  return (
+    <div className="flex w-full flex-shrink-0 self-stretch">
+      <TestimonialCard
+        testimonial={testimonial}
+        renderStars={renderStars}
+        className="w-full"
+      />
+    </div>
+  );
+}
+
+function TestimonialCarouselNav({ count, currentIndex, onPrev, onNext, onSelect, prevLabel = 'Previous', nextLabel = 'Next', dotLabel = (index) => `Go to slide ${index + 1}` }) {
+  if (count <= 1) return null;
+
+  return (
+    <div className="mt-4 flex items-center justify-center gap-4 sm:mt-6">
+      <button
+        type="button"
+        onClick={onPrev}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur transition"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-primary)',
+        }}
+        aria-label={prevLabel}
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+
+      <div className="flex items-center gap-2">
+        {Array.from({ length: count }, (_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => onSelect(index)}
+            className={`h-2 rounded-full transition ${
+              index === currentIndex ? 'w-6 bg-forest-500' : 'w-2 bg-gray-300'
+            }`}
+            aria-label={dotLabel(index)}
+          />
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={onNext}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur transition"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-primary)',
+        }}
+        aria-label={nextLabel}
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}
+
+const DESKTOP_BATCH_SIZE = 3;
+
+const TestimonialsSection = ({
+  featured = false,
+  limit = 6,
+  showTitle = true,
+  refreshTrigger = 0,
+  searchTerm = '',
+  showEmptyMessage = false
+}) => {
   const { showToast } = useToast();
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [desktopPage, setDesktopPage] = useState(0);
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const visibleTestimonials = normalizedSearch
+    ? testimonials.filter((t) => {
+        const haystack = [t.name, t.role, t.content, t.parkName, t.parkCode]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(normalizedSearch);
+      })
+    : testimonials;
 
   useEffect(() => {
     loadTestimonials();
-  }, [featured, limit]);
+  }, [featured, limit, refreshTrigger]);
 
   const loadTestimonials = async () => {
     try {
@@ -46,24 +231,43 @@ const TestimonialsSection = ({ featured = false, limit = 6, showTitle = true }) 
   };
 
 
-  const nextTestimonial = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  useEffect(() => {
+    setMobileIndex(0);
+    setDesktopPage(0);
+  }, [normalizedSearch, testimonials.length]);
+
+  const desktopPageCount = Math.ceil(visibleTestimonials.length / DESKTOP_BATCH_SIZE);
+  const desktopBatch = visibleTestimonials.slice(
+    desktopPage * DESKTOP_BATCH_SIZE,
+    desktopPage * DESKTOP_BATCH_SIZE + DESKTOP_BATCH_SIZE
+  );
+
+  const nextMobile = () => {
+    setMobileIndex((prev) => (prev + 1) % visibleTestimonials.length);
   };
 
-  const prevTestimonial = () => {
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  const prevMobile = () => {
+    setMobileIndex((prev) => (prev - 1 + visibleTestimonials.length) % visibleTestimonials.length);
+  };
+
+  const nextDesktopPage = () => {
+    setDesktopPage((prev) => (prev + 1) % desktopPageCount);
+  };
+
+  const prevDesktopPage = () => {
+    setDesktopPage((prev) => (prev - 1 + desktopPageCount) % desktopPageCount);
   };
 
   const renderStars = (rating) => {
+    const value = Number(rating) || 0;
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
+            weight={star <= value ? 'fill' : 'regular'}
             className={`h-4 w-4 ${
-              star <= rating
-                ? 'text-yellow-400 fill-yellow-400'
-                : 'text-gray-300'
+              star <= value ? 'text-yellow-400' : 'text-gray-300'
             }`}
           />
         ))}
@@ -78,31 +282,53 @@ const TestimonialsSection = ({ featured = false, limit = 6, showTitle = true }) 
           {showTitle && (
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                What Our Community Says
+                {TESTIMONIALS_SECTION_TITLE}
               </h2>
-              <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-                Real experiences from fellow National Parks explorers
+              <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+                {TESTIMONIALS_SECTION_SUBTITLE}
               </p>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(limit)].map((_, index) => (
-              <div key={index} className="rounded-2xl p-6 backdrop-blur animate-pulse"
+          <div className="hidden md:grid md:grid-cols-3 gap-8">
+            {[...Array(DESKTOP_BATCH_SIZE)].map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse rounded-2xl p-6 backdrop-blur"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
-                  borderColor: 'var(--border)'
+                  borderColor: 'var(--border)',
                 }}
               >
-                <div className="h-4 bg-gray-300 rounded mb-4"></div>
-                <div className="h-4 bg-gray-300 rounded mb-4"></div>
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-6"></div>
+                <div className="mb-4 h-4 w-24 rounded bg-gray-300" />
+                <div className="mb-4 h-4 rounded bg-gray-300" />
+                <div className="mb-4 h-4 rounded bg-gray-300" />
+                <div className="mb-6 h-4 w-3/4 rounded bg-gray-300" />
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 bg-gray-300 rounded-full"></div>
-                  <div className="h-4 bg-gray-300 rounded w-24"></div>
+                  <div className="h-8 w-8 rounded-full bg-gray-300" />
+                  <div className="h-4 w-24 rounded bg-gray-300" />
                 </div>
               </div>
             ))}
+          </div>
+          <div className="md:hidden mx-auto max-w-3xl">
+            <div
+              className="animate-pulse rounded-2xl p-6 backdrop-blur"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderWidth: '1px',
+                borderColor: 'var(--border)',
+              }}
+            >
+              <div className="mb-4 h-4 w-24 rounded bg-gray-300" />
+              <div className="mb-4 h-4 rounded bg-gray-300" />
+              <div className="mb-4 h-4 rounded bg-gray-300" />
+              <div className="mb-6 h-4 w-3/4 rounded bg-gray-300" />
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-gray-300" />
+                <div className="h-4 w-24 rounded bg-gray-300" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -110,8 +336,30 @@ const TestimonialsSection = ({ featured = false, limit = 6, showTitle = true }) 
   }
 
   if (testimonials.length === 0) {
-    // Don't show testimonials section if there are no real testimonials
-    return null;
+    if (!showEmptyMessage) {
+      return null;
+    }
+    return (
+      <div className="py-8">
+        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+          <p className="text-center text-base" style={{ color: 'var(--text-secondary)' }}>
+            No published testimonials yet. Be the first to share your experience below.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (visibleTestimonials.length === 0) {
+    return (
+      <div className="py-8">
+        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+          <p className="text-center text-base" style={{ color: 'var(--text-secondary)' }}>
+            No testimonials match your search.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -120,215 +368,63 @@ const TestimonialsSection = ({ featured = false, limit = 6, showTitle = true }) 
         {showTitle && (
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-              What Our Community Says
+              {TESTIMONIALS_SECTION_TITLE}
             </h2>
-            <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-              Real experiences from fellow National Parks explorers
+            <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              {TESTIMONIALS_SECTION_SUBTITLE}
             </p>
           </div>
         )}
 
-        {/* Desktop Grid Layout */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, _index) => (
-            <div
-              key={testimonial._id}
-              className="rounded-2xl p-6 backdrop-blur hover:-translate-y-1 transition-all duration-300"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              {/* Quote Icon */}
-              <Quote className="h-8 w-8 mb-4" style={{ color: 'var(--primary)' }} />
-              
-              {/* Rating */}
-              <div className="mb-4">
-                {renderStars(testimonial.rating)}
-              </div>
+        {/* Desktop — 3-card grid; carousel when more than 3 */}
+        <div className="hidden md:block">
+          <div className="grid grid-cols-3 items-stretch gap-8">
+            {desktopBatch.map((testimonial) => (
+              <TestimonialCard
+                key={testimonial._id}
+                testimonial={testimonial}
+                renderStars={renderStars}
+                className="h-full"
+              />
+            ))}
+          </div>
 
-              {/* Content */}
-              <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                &quot;{testimonial.content}&quot;
-              </p>
-
-              {/* Author Info */}
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                  {testimonial.avatar ? (
-                    <img
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span className="text-white font-semibold text-sm">
-                      {testimonial.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {testimonial.name}
-                  </h4>
-                  {testimonial.role && (
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      {testimonial.role}
-                    </p>
-                  )}
-                  {testimonial.parkName && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <MapPin className="h-3 w-3" style={{ color: 'var(--text-tertiary)' }} />
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {testimonial.parkName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Featured Badge */}
-              {testimonial.featured && (
-                <div className="mt-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs"
-                  style={{
-                    backgroundColor: 'var(--primary)',
-                    color: 'white'
-                  }}
-                >
-                  <Award className="h-3 w-3" />
-                  Featured
-                </div>
-              )}
-            </div>
-          ))}
+          <TestimonialCarouselNav
+            count={desktopPageCount}
+            currentIndex={desktopPage}
+            onPrev={prevDesktopPage}
+            onNext={nextDesktopPage}
+            onSelect={setDesktopPage}
+            prevLabel="Previous testimonials"
+            nextLabel="Next testimonials"
+            dotLabel={(index) => `Go to testimonial page ${index + 1}`}
+          />
         </div>
 
-        {/* Mobile Carousel Layout */}
-        <div className="md:hidden">
-          <div className="relative">
-            <div className="overflow-hidden rounded-2xl"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+        {/* Mobile — one card at a time */}
+        <div className="mx-auto max-w-3xl md:hidden">
+          <div className="overflow-hidden">
+            <div
+              className="flex items-stretch transition-transform duration-300 ease-in-out"
+              style={{ transform: `translateX(-${mobileIndex * 100}%)` }}
             >
-              <div
-                className="flex transition-transform duration-300 ease-in-out"
-                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-              >
-                {testimonials.map((testimonial) => (
-                  <div key={testimonial._id} className="w-full flex-shrink-0 p-6">
-                    <Quote className="h-8 w-8 mb-4" style={{ color: 'var(--primary)' }} />
-                    
-                    <div className="mb-4">
-                      {renderStars(testimonial.rating)}
-                    </div>
-
-                    <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                      &quot;{testimonial.content}&quot;
-                    </p>
-
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                        {testimonial.avatar ? (
-                          <img
-                            src={testimonial.avatar}
-                            alt={testimonial.name}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="text-white font-semibold text-sm">
-                            {testimonial.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                          {testimonial.name}
-                        </h4>
-                        {testimonial.role && (
-                          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                            {testimonial.role}
-                          </p>
-                        )}
-                        {testimonial.parkName && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <MapPin className="h-3 w-3" style={{ color: 'var(--text-tertiary)' }} />
-                            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                              {testimonial.parkName}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {testimonial.featured && (
-                      <div className="mt-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs"
-                        style={{
-                          backgroundColor: 'var(--primary)',
-                          color: 'white'
-                        }}
-                      >
-                        <Award className="h-3 w-3" />
-                        Featured
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {visibleTestimonials.map((testimonial) => (
+                <TestimonialSlide
+                  key={testimonial._id}
+                  testimonial={testimonial}
+                  renderStars={renderStars}
+                />
+              ))}
             </div>
-
-            {/* Navigation Arrows */}
-            {testimonials.length > 1 && (
-              <>
-                <button
-                  onClick={prevTestimonial}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full backdrop-blur transition"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={nextTestimonial}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full backdrop-blur transition"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </>
-            )}
-
-            {/* Dots Indicator */}
-            {testimonials.length > 1 && (
-              <div className="flex justify-center gap-2 mt-4">
-                {testimonials.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentIndex(index)}
-                    className={`w-2 h-2 rounded-full transition ${
-                      index === currentIndex
-                        ? 'bg-forest-500'
-                        : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
+
+          <TestimonialCarouselNav
+            count={visibleTestimonials.length}
+            currentIndex={mobileIndex}
+            onPrev={prevMobile}
+            onNext={nextMobile}
+            onSelect={setMobileIndex}
+          />
         </div>
       </div>
     </div>

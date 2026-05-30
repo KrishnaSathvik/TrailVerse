@@ -1,12 +1,10 @@
 /**
  * NPS Fee-Free Entrance Days Service
  *
- * Hardcoded list of fee-free entrance days for the current year.
- * Small stable list updated once/year — scraper maintenance cost exceeds
- * the cost of updating a constant annually.
+ * Year-keyed list of fee-free entrance days. Update annually when NPS publishes
+ * the next year's schedule (typically January).
  *
  * Source: https://www.nps.gov/planyourvisit/fee-free-parks.htm
- * Review by: January 2027 — update for next year's dates
  */
 
 const FEE_FREE_DAYS_2026 = [
@@ -22,10 +20,56 @@ const FEE_FREE_DAYS_2026 = [
   { date: '2026-11-11', label: 'Veterans Day' },
 ];
 
-// Staleness safety net: warn if all dates are in the past
-const allInPast = FEE_FREE_DAYS_2026.every(d => new Date(d.date + 'T23:59:59') < new Date());
+// Projected 2027 schedule — verify against nps.gov when published (review by Jan 2027)
+const FEE_FREE_DAYS_2027 = [
+  { date: '2027-02-15', label: "Presidents' Day" },
+  { date: '2027-05-31', label: 'Memorial Day' },
+  { date: '2027-06-14', label: 'Flag Day' },
+  { date: '2027-07-03', label: 'Independence Day weekend' },
+  { date: '2027-07-04', label: 'Independence Day weekend' },
+  { date: '2027-07-05', label: 'Independence Day weekend' },
+  { date: '2027-08-25', label: 'NPS Birthday' },
+  { date: '2027-09-17', label: 'Constitution Day' },
+  { date: '2027-10-27', label: "Theodore Roosevelt's Birthday" },
+  { date: '2027-11-11', label: 'Veterans Day' },
+];
+
+const FEE_FREE_DAYS_BY_YEAR = {
+  2026: FEE_FREE_DAYS_2026,
+  2027: FEE_FREE_DAYS_2027,
+};
+
+/**
+ * Fee-free days for the calendar year of `referenceDate` (defaults to now).
+ * Falls back to the most recent configured year if the current year is missing.
+ */
+function getActiveFeeFreeDays(referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  if (FEE_FREE_DAYS_BY_YEAR[year]) {
+    return FEE_FREE_DAYS_BY_YEAR[year];
+  }
+
+  const configuredYears = Object.keys(FEE_FREE_DAYS_BY_YEAR)
+    .map(Number)
+    .sort((a, b) => b - a);
+  const fallbackYear = configuredYears[0];
+  if (fallbackYear) {
+    console.warn(
+      `⚠️ No fee-free days configured for ${year} — using ${fallbackYear} calendar (update feeFreeDaysService.js)`
+    );
+    return FEE_FREE_DAYS_BY_YEAR[fallbackYear];
+  }
+
+  return FEE_FREE_DAYS_2026;
+}
+
+// Staleness safety net: warn if all dates for the active calendar are in the past
+const activeCalendar = getActiveFeeFreeDays();
+const allInPast = activeCalendar.every((d) => new Date(d.date + 'T23:59:59') < new Date());
 if (allInPast) {
-  console.warn('⚠️ All fee-free days are in the past — update FEE_FREE_DAYS constant for the new year');
+  console.warn(
+    '⚠️ All fee-free days for the active calendar are in the past — add the next year in feeFreeDaysService.js'
+  );
 }
 
 // Month name → number mapping for date extraction
@@ -111,6 +155,7 @@ function dateOverlaps(feeDay, dateRef) {
 function getFeeFreeInfo(userMessage) {
   if (!userMessage) return null;
 
+  const feeFreeDays = getActiveFeeFreeDays();
   const msg = userMessage.toLowerCase();
   const dateRefs = extractDateReferences(userMessage);
 
@@ -122,17 +167,17 @@ function getFeeFreeInfo(userMessage) {
   // If asking about fees generally, return all upcoming fee-free days
   if (askingAboutFees) {
     const now = new Date();
-    const upcoming = FEE_FREE_DAYS_2026.filter(d => new Date(d.date + 'T23:59:59') >= now);
+    const upcoming = feeFreeDays.filter(d => new Date(d.date + 'T23:59:59') >= now);
     if (upcoming.length > 0) {
       return { hasOverlap: true, days: upcoming };
     }
     // Even if all are past, return them so the model can say "no more this year"
-    return { hasOverlap: false, days: FEE_FREE_DAYS_2026 };
+    return { hasOverlap: false, days: feeFreeDays };
   }
 
   // If we extracted date references, check for overlap with fee-free days
   if (dateRefs.length > 0) {
-    const overlapping = FEE_FREE_DAYS_2026.filter(feeDay =>
+    const overlapping = feeFreeDays.filter(feeDay =>
       dateRefs.some(ref => dateOverlaps(feeDay, ref))
     );
     if (overlapping.length > 0) {
@@ -151,6 +196,8 @@ function getFeeFreeInfo(userMessage) {
 function formatFeeFreeBlock(feeFreeInfo) {
   if (!feeFreeInfo || feeFreeInfo.days.length === 0) return '';
 
+  const policyYear = new Date(feeFreeInfo.days[0].date + 'T12:00:00').getFullYear();
+
   const dayLines = feeFreeInfo.days.map(d => {
     const date = new Date(d.date + 'T12:00:00');
     const formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -166,7 +213,7 @@ function formatFeeFreeBlock(feeFreeInfo) {
   block += dayLines;
   block += `\nCRITICAL: Your response MUST include a sentence about the fee-free day(s) in the first paragraph. Example: "Heads up — July 3-5 are fee-free entrance days, so you won't pay an entrance fee at any NPS site that weekend." This is required. Do not skip it.`;
   block += `\nFee-free days apply at all NPS sites that normally charge entrance fees (~100 of 400+ sites).`;
-  block += `\nEligibility (2026 policy change):`;
+  block += `\nEligibility (${policyYear} policy — verify at nps.gov if user asks about international travel):`;
   block += `\n- US citizens and permanent residents: free entry on fee-free days`;
   block += `\n- Non-US residents: must pay the regular entrance fee, plus a nonresident fee at high-visitation parks`;
   block += `\nIf the user mentions traveling from outside the US, mentions a non-US city of origin, or asks about visa/passport considerations, surface the eligibility caveat prominently.`;
@@ -179,5 +226,8 @@ function formatFeeFreeBlock(feeFreeInfo) {
 module.exports = {
   getFeeFreeInfo,
   formatFeeFreeBlock,
+  getActiveFeeFreeDays,
   FEE_FREE_DAYS_2026,
+  FEE_FREE_DAYS_2027,
+  FEE_FREE_DAYS_BY_YEAR,
 };

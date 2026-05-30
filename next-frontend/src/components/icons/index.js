@@ -1,225 +1,347 @@
 /**
  * Centralized Icon Exports
- * Re-exports from @phosphor-icons/react, aliased to match previous Lucide names
- * so consumer components require zero changes.
+ * Phosphor icons wrapped so native size matches Tailwind h-/w- classes (crisp rendering).
  */
 
-// Navigation & UI
-export { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react';
-export { ArrowRightIcon as ArrowRight } from '@phosphor-icons/react';
-export { ArrowUpIcon as ArrowUp } from '@phosphor-icons/react';
-export { ArrowDownIcon as ArrowDown } from '@phosphor-icons/react';
-export { ListIcon as Menu } from '@phosphor-icons/react';
-export { XIcon as X } from '@phosphor-icons/react';
-export { CaretDownIcon as ChevronDown } from '@phosphor-icons/react';
-export { CaretUpIcon as ChevronUp } from '@phosphor-icons/react';
-export { CaretLeftIcon as ChevronLeft } from '@phosphor-icons/react';
-export { CaretRightIcon as ChevronRight } from '@phosphor-icons/react';
-export { DotsThreeVerticalIcon as MoreVertical } from '@phosphor-icons/react';
-export { DotsThreeIcon as MoreHorizontal } from '@phosphor-icons/react';
-export { ArrowSquareOutIcon as ExternalLink } from '@phosphor-icons/react';
+import { createAppIcon } from './createAppIcon';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ListIcon,
+  XIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  DotsThreeVerticalIcon,
+  DotsThreeIcon,
+  ArrowSquareOutIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  SlidersHorizontalIcon,
+  HeartIcon,
+  HeartBreakIcon,
+  ShareIcon,
+  ShareNetworkIcon,
+  DownloadIcon,
+  UploadIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+  PlusIcon,
+  MinusIcon,
+  CheckIcon,
+  CheckCircleIcon,
+  CopyIcon,
+  SpinnerIcon,
+  SpinnerGapIcon,
+  WarningCircleIcon,
+  WarningIcon,
+  InfoIcon,
+  XCircleIcon,
+  MountainsIcon,
+  TreeEvergreenIcon,
+  TentIcon,
+  CameraIcon,
+  SunHorizonIcon,
+  CompassIcon,
+  DogIcon,
+  BankIcon,
+  WheelchairIcon,
+  MapPinIcon,
+  MapPinLineIcon,
+  MapTrifoldIcon,
+  NavigationArrowIcon,
+  PathIcon,
+  CalendarIcon,
+  CalendarDotsIcon,
+  ClockIcon,
+  UserIcon,
+  UserCircleIcon,
+  UserCheckIcon,
+  UsersIcon,
+  SignInIcon,
+  SignOutIcon,
+  GearSixIcon,
+  StarIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  ChatCircleIcon,
+  ChatTextIcon,
+  ImageIcon,
+  FileTextIcon,
+  FileIcon,
+  PaperclipIcon,
+  PaperPlaneRightIcon,
+  FloppyDiskIcon,
+  ArchiveBoxIcon,
+  EnvelopeSimpleIcon,
+  PhoneIcon,
+  InstagramLogoIcon,
+  FacebookLogoIcon,
+  PinterestLogoIcon,
+  GoogleLogoIcon,
+  XLogoIcon,
+  CloudIcon,
+  CloudRainIcon,
+  CloudSnowIcon,
+  SunIcon,
+  MoonIcon,
+  WindIcon,
+  DropIcon,
+  ThermometerIcon,
+  ForkKnifeIcon,
+  BedIcon,
+  GasPumpIcon,
+  CarIcon,
+  BusIcon,
+  WifiHighIcon,
+  WifiSlashIcon,
+  CurrencyDollarIcon,
+  CreditCardIcon,
+  GiftIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  SquaresFourIcon,
+  LayoutIcon,
+  GlobeIcon,
+  LinkIcon,
+  LinkSimpleIcon,
+  BookmarkIcon,
+  TagIcon,
+  BellIcon,
+  BellSlashIcon,
+  HouseIcon,
+  MonitorIcon,
+  ChartBarIcon,
+  TrendUpIcon,
+  ActivityIcon,
+  ChartPieIcon,
+  ShieldIcon,
+  LockIcon,
+  LockOpenIcon,
+  KeyIcon,
+  TargetIcon,
+  DatabaseIcon,
+  ScalesIcon,
+  LightningIcon,
+  QuestionIcon,
+  PlayIcon,
+  PlayCircleIcon,
+  PauseIcon,
+  PauseCircleIcon,
+  ArrowsClockwiseIcon,
+  CornersOutIcon,
+  CornersInIcon,
+  MagnifyingGlassPlusIcon,
+  MagnifyingGlassMinusIcon,
+  PrinterIcon,
+  CodeIcon,
+  CodeSimpleIcon,
+  BookOpenIcon,
+  TicketIcon,
+  QuotesIcon,
+  ArrowBendUpLeftIcon,
+  TextBolderIcon,
+  TextItalicIcon,
+  TextStrikethroughIcon,
+  ListNumbersIcon,
+  TextTIcon,
+  AlignLeftIcon,
+  TextAlignCenterIcon,
+  AlignRightIcon,
+  ArrowCounterClockwiseIcon,
+  ArrowClockwiseIcon,
+  ArrowsLeftRightIcon,
+  ColumnsIcon,
+  RobotIcon,
+  BrainIcon,
+  LightbulbIcon,
+  SparkleIcon,
+  TrophyIcon,
+  ShuffleIcon,
+  PaletteIcon,
+  FolderSimpleIcon,
+  SmileyIcon,
+  CookieIcon,
+  MicrophoneIcon,
+  DotsSixVerticalIcon,
+  SnowflakeIcon,
+} from '@phosphor-icons/react';
 
-// Search & Filters
-export { MagnifyingGlassIcon as Search } from '@phosphor-icons/react';
-export { FunnelIcon as Filter } from '@phosphor-icons/react';
-export { SlidersHorizontalIcon as SlidersHorizontal } from '@phosphor-icons/react';
-
-// Actions
-export { HeartIcon as Heart } from '@phosphor-icons/react';
-export { HeartBreakIcon as HeartOff } from '@phosphor-icons/react';
-export { ShareIcon as Share } from '@phosphor-icons/react';
-export { ShareNetworkIcon as Share2 } from '@phosphor-icons/react';
-export { DownloadIcon as Download } from '@phosphor-icons/react';
-export { UploadIcon as Upload } from '@phosphor-icons/react';
-export { PencilSimpleIcon as Edit } from '@phosphor-icons/react';
-export { PencilSimpleIcon as Edit2 } from '@phosphor-icons/react';
-export { TrashIcon as Trash } from '@phosphor-icons/react';
-export { TrashIcon as Trash2 } from '@phosphor-icons/react';
-export { PlusIcon as Plus } from '@phosphor-icons/react';
-export { MinusIcon as Minus } from '@phosphor-icons/react';
-export { CheckIcon as Check } from '@phosphor-icons/react';
-export { CheckCircleIcon as CheckCircle } from '@phosphor-icons/react';
-export { CopyIcon as Copy } from '@phosphor-icons/react';
-
-// Status & Feedback
-export { SpinnerIcon as Loader } from '@phosphor-icons/react';
-export { SpinnerGapIcon as Loader2 } from '@phosphor-icons/react';
-export { WarningCircleIcon as AlertCircle } from '@phosphor-icons/react';
-export { WarningIcon as AlertTriangle } from '@phosphor-icons/react';
-export { InfoIcon as Info } from '@phosphor-icons/react';
-export { CheckCircleIcon as CheckCircle2 } from '@phosphor-icons/react';
-export { XCircleIcon as XCircle } from '@phosphor-icons/react';
-
-// Parks & Nature
-export { MountainsIcon as Mountain } from '@phosphor-icons/react';
-export { TreeEvergreenIcon as Trees } from '@phosphor-icons/react';
-export { TentIcon as Tent } from '@phosphor-icons/react';
-export { CameraIcon as Camera } from '@phosphor-icons/react';
-export { SunHorizonIcon as Sunrise } from '@phosphor-icons/react';
-export { SunHorizonIcon as Sunset } from '@phosphor-icons/react';
-export { CompassIcon as Compass } from '@phosphor-icons/react';
-export { DogIcon as Dog } from '@phosphor-icons/react';
-export { BankIcon as Landmark } from '@phosphor-icons/react';
-
-// Accessibility
-export { WheelchairIcon as Accessibility } from '@phosphor-icons/react';
-
-// Location & Map
-export { MapPinIcon as MapPin } from '@phosphor-icons/react';
-export { MapPinLineIcon as MapPinCheck } from '@phosphor-icons/react';
-export { MapTrifoldIcon as Map } from '@phosphor-icons/react';
-export { NavigationArrowIcon as Navigation } from '@phosphor-icons/react';
-export { PathIcon as Route } from '@phosphor-icons/react';
-
-// Time & Date
-export { CalendarIcon as Calendar } from '@phosphor-icons/react';
-export { CalendarDotsIcon as CalendarDays } from '@phosphor-icons/react';
-export { ClockIcon as Clock } from '@phosphor-icons/react';
-
-// User & Profile
-export { UserIcon as User } from '@phosphor-icons/react';
-export { UserCircleIcon as UserCircle } from '@phosphor-icons/react';
-export { UserCheckIcon as UserCheck } from '@phosphor-icons/react';
-export { UsersIcon as Users } from '@phosphor-icons/react';
-export { SignInIcon as LogIn } from '@phosphor-icons/react';
-export { SignOutIcon as LogOut } from '@phosphor-icons/react';
-export { GearSixIcon as Settings } from '@phosphor-icons/react';
-
-// Rating & Review
-export { StarIcon as Star } from '@phosphor-icons/react';
-export { ThumbsUpIcon as ThumbsUp } from '@phosphor-icons/react';
-export { ThumbsDownIcon as ThumbsDown } from '@phosphor-icons/react';
-export { ChatCircleIcon as MessageCircle } from '@phosphor-icons/react';
-export { ChatTextIcon as MessageSquare } from '@phosphor-icons/react';
-
-// Media & Content
-export { ImageIcon as Image } from '@phosphor-icons/react';
-export { FileTextIcon as FileText } from '@phosphor-icons/react';
-export { FileIcon as File } from '@phosphor-icons/react';
-export { PaperclipIcon as Paperclip } from '@phosphor-icons/react';
-export { PaperPlaneTiltIcon as Send } from '@phosphor-icons/react';
-export { FloppyDiskIcon as Save } from '@phosphor-icons/react';
-export { ArchiveBoxIcon as ArchiveRestore } from '@phosphor-icons/react';
-
-// Social (native Phosphor brand icons — no more custom SVGs)
-export { EnvelopeSimpleIcon as Mail } from '@phosphor-icons/react';
-export { PhoneIcon as Phone } from '@phosphor-icons/react';
-export { InstagramLogoIcon as Instagram } from '@phosphor-icons/react';
-export { FacebookLogoIcon as Facebook } from '@phosphor-icons/react';
-export { PinterestLogoIcon as Pinterest } from '@phosphor-icons/react';
-export { GoogleLogoIcon as Google } from '@phosphor-icons/react';
-export { XLogoIcon as Twitter } from '@phosphor-icons/react';
-
-// Weather
-export { CloudIcon as Cloud } from '@phosphor-icons/react';
-export { CloudRainIcon as CloudRain } from '@phosphor-icons/react';
-export { CloudSnowIcon as CloudSnow } from '@phosphor-icons/react';
-export { SunIcon as Sun } from '@phosphor-icons/react';
-export { MoonIcon as Moon } from '@phosphor-icons/react';
-export { WindIcon as Wind } from '@phosphor-icons/react';
-export { DropIcon as Droplets } from '@phosphor-icons/react';
-export { ThermometerIcon as Thermometer } from '@phosphor-icons/react';
-
-// Facilities & Services
-export { ForkKnifeIcon as Utensils } from '@phosphor-icons/react';
-export { BedIcon as Bed } from '@phosphor-icons/react';
-export { GasPumpIcon as Fuel } from '@phosphor-icons/react';
-export { CarIcon as Car } from '@phosphor-icons/react';
-export { WifiHighIcon as Wifi } from '@phosphor-icons/react';
-export { WifiSlashIcon as WifiOff } from '@phosphor-icons/react';
-export { CurrencyDollarIcon as DollarSign } from '@phosphor-icons/react';
-export { CreditCardIcon as CreditCard } from '@phosphor-icons/react';
-export { GiftIcon as Gift } from '@phosphor-icons/react';
-
-// View & Display
-export { EyeIcon as Eye } from '@phosphor-icons/react';
-export { EyeSlashIcon as EyeOff } from '@phosphor-icons/react';
-export { SquaresFourIcon as Grid } from '@phosphor-icons/react';
-export { ListIcon as List } from '@phosphor-icons/react';
-export { LayoutIcon as Layout } from '@phosphor-icons/react';
-
-// Tech & Web
-export { GlobeIcon as Globe } from '@phosphor-icons/react';
-export { LinkIcon as Link } from '@phosphor-icons/react';
-export { LinkSimpleIcon as Link2 } from '@phosphor-icons/react';
-export { BookmarkIcon as Bookmark } from '@phosphor-icons/react';
-export { TagIcon as Tag } from '@phosphor-icons/react';
-export { BellIcon as Bell } from '@phosphor-icons/react';
-export { BellSlashIcon as BellOff } from '@phosphor-icons/react';
-export { HouseIcon as Home } from '@phosphor-icons/react';
-export { MonitorIcon as Monitor } from '@phosphor-icons/react';
-
-// Admin & Dashboard
-export { ChartBarIcon as BarChart } from '@phosphor-icons/react';
-export { ChartBarIcon as BarChart3 } from '@phosphor-icons/react';
-export { TrendUpIcon as TrendingUp } from '@phosphor-icons/react';
-export { ActivityIcon as Activity } from '@phosphor-icons/react';
-export { ChartPieIcon as PieChart } from '@phosphor-icons/react';
-export { ShieldIcon as Shield } from '@phosphor-icons/react';
-export { LockIcon as Lock } from '@phosphor-icons/react';
-export { LockOpenIcon as Unlock } from '@phosphor-icons/react';
-export { KeyIcon as Key } from '@phosphor-icons/react';
-export { TargetIcon as Target } from '@phosphor-icons/react';
-export { DatabaseIcon as Database } from '@phosphor-icons/react';
-
-// Comparison
-export { ScalesIcon as Scales } from '@phosphor-icons/react';
-
-// Additional common icons
-export { LightningIcon as Zap } from '@phosphor-icons/react';
-export { QuestionIcon as HelpCircle } from '@phosphor-icons/react';
-export { PlayIcon as Play } from '@phosphor-icons/react';
-export { PlayCircleIcon as PlayCircle } from '@phosphor-icons/react';
-export { PauseIcon as Pause } from '@phosphor-icons/react';
-export { PauseCircleIcon as PauseCircle } from '@phosphor-icons/react';
-export { ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react';
-export { CornersOutIcon as Maximize } from '@phosphor-icons/react';
-export { CornersInIcon as Minimize } from '@phosphor-icons/react';
-export { CornersOutIcon as Maximize2 } from '@phosphor-icons/react';
-export { CornersInIcon as Minimize2 } from '@phosphor-icons/react';
-export { MagnifyingGlassPlusIcon as ZoomIn } from '@phosphor-icons/react';
-export { MagnifyingGlassMinusIcon as ZoomOut } from '@phosphor-icons/react';
-export { PrinterIcon as Printer } from '@phosphor-icons/react';
-export { CodeIcon as Code } from '@phosphor-icons/react';
-export { CodeSimpleIcon as Code2 } from '@phosphor-icons/react';
-
-// Content & Text
-export { BookOpenIcon as BookOpen } from '@phosphor-icons/react';
-export { TicketIcon as Ticket } from '@phosphor-icons/react';
-export { QuotesIcon as Quote } from '@phosphor-icons/react';
-export { ArrowBendUpLeftIcon as Reply } from '@phosphor-icons/react';
-export { TextBolderIcon as Bold } from '@phosphor-icons/react';
-export { TextItalicIcon as Italic } from '@phosphor-icons/react';
-export { TextStrikethroughIcon as Strikethrough } from '@phosphor-icons/react';
-export { ListNumbersIcon as ListOrdered } from '@phosphor-icons/react';
-export { TextTIcon as Type } from '@phosphor-icons/react';
-export { AlignLeftIcon as AlignLeft } from '@phosphor-icons/react';
-export { TextAlignCenterIcon as AlignCenter } from '@phosphor-icons/react';
-export { AlignRightIcon as AlignRight } from '@phosphor-icons/react';
-export { ArrowCounterClockwiseIcon as Undo } from '@phosphor-icons/react';
-export { ArrowClockwiseIcon as Redo } from '@phosphor-icons/react';
-
-// AI & Features
-export { RobotIcon as Bot } from '@phosphor-icons/react';
-export { BrainIcon as Brain } from '@phosphor-icons/react';
-export { LightbulbIcon as Lightbulb } from '@phosphor-icons/react';
-export { SparkleIcon as Sparkle } from '@phosphor-icons/react';
-export { SparkleIcon as Sparkles } from '@phosphor-icons/react';
-export { TrendUpIcon as TrendUp } from '@phosphor-icons/react';
-export { TrophyIcon as Award } from '@phosphor-icons/react';
-export { ShuffleIcon as Shuffle } from '@phosphor-icons/react';
-export { PaletteIcon as Palette } from '@phosphor-icons/react';
-export { FolderSimpleIcon as FolderSimple } from '@phosphor-icons/react';
-
-// Emojis & Reactions
-export { SmileyIcon as Smile } from '@phosphor-icons/react';
-export { CookieIcon as Cookie } from '@phosphor-icons/react';
-
-// Voice
-export { MicrophoneIcon as Microphone } from '@phosphor-icons/react';
-
-// Drag & Drop
-export { DotsSixVerticalIcon as GripVertical } from '@phosphor-icons/react';
-
-// Weather extras
-export { SnowflakeIcon as Snowflake } from '@phosphor-icons/react';
+export const ArrowLeft = createAppIcon(ArrowLeftIcon);
+export const ArrowRight = createAppIcon(ArrowRightIcon);
+export const ArrowUp = createAppIcon(ArrowUpIcon);
+export const ArrowDown = createAppIcon(ArrowDownIcon);
+export const Menu = createAppIcon(ListIcon);
+export const X = createAppIcon(XIcon);
+export const ChevronDown = createAppIcon(CaretDownIcon);
+export const ChevronUp = createAppIcon(CaretUpIcon);
+export const ChevronLeft = createAppIcon(CaretLeftIcon);
+export const ChevronRight = createAppIcon(CaretRightIcon);
+export const MoreVertical = createAppIcon(DotsThreeVerticalIcon);
+export const MoreHorizontal = createAppIcon(DotsThreeIcon);
+export const ExternalLink = createAppIcon(ArrowSquareOutIcon);
+export const Search = createAppIcon(MagnifyingGlassIcon);
+export const Filter = createAppIcon(FunnelIcon);
+export const SlidersHorizontal = createAppIcon(SlidersHorizontalIcon);
+export const Heart = createAppIcon(HeartIcon);
+export const HeartOff = createAppIcon(HeartBreakIcon);
+export const Share = createAppIcon(ShareIcon);
+export const Share2 = createAppIcon(ShareNetworkIcon);
+export const Download = createAppIcon(DownloadIcon);
+export const Upload = createAppIcon(UploadIcon);
+export const Edit = createAppIcon(PencilSimpleIcon);
+export const Edit2 = createAppIcon(PencilSimpleIcon);
+export const Trash = createAppIcon(TrashIcon);
+export const Trash2 = createAppIcon(TrashIcon);
+export const Plus = createAppIcon(PlusIcon);
+export const Minus = createAppIcon(MinusIcon);
+export const Check = createAppIcon(CheckIcon);
+export const CheckCircle = createAppIcon(CheckCircleIcon);
+export const Copy = createAppIcon(CopyIcon);
+export const Loader = createAppIcon(SpinnerIcon);
+export const Loader2 = createAppIcon(SpinnerGapIcon);
+export const AlertCircle = createAppIcon(WarningCircleIcon);
+export const AlertTriangle = createAppIcon(WarningIcon);
+export const Info = createAppIcon(InfoIcon);
+export const CheckCircle2 = createAppIcon(CheckCircleIcon);
+export const XCircle = createAppIcon(XCircleIcon);
+export const Mountain = createAppIcon(MountainsIcon);
+export const Trees = createAppIcon(TreeEvergreenIcon);
+export const Tent = createAppIcon(TentIcon);
+export const Camera = createAppIcon(CameraIcon);
+export const Sunrise = createAppIcon(SunHorizonIcon);
+export const Sunset = createAppIcon(SunHorizonIcon);
+export const Compass = createAppIcon(CompassIcon);
+export const Dog = createAppIcon(DogIcon);
+export const Landmark = createAppIcon(BankIcon);
+export const Accessibility = createAppIcon(WheelchairIcon);
+export const MapPin = createAppIcon(MapPinIcon);
+export const MapPinCheck = createAppIcon(MapPinLineIcon);
+export const Map = createAppIcon(MapTrifoldIcon);
+export const Navigation = createAppIcon(NavigationArrowIcon);
+export const Route = createAppIcon(PathIcon);
+export const Calendar = createAppIcon(CalendarIcon);
+export const CalendarDays = createAppIcon(CalendarDotsIcon);
+export const Clock = createAppIcon(ClockIcon);
+export const User = createAppIcon(UserIcon);
+export const UserCircle = createAppIcon(UserCircleIcon);
+export const UserCheck = createAppIcon(UserCheckIcon);
+export const Users = createAppIcon(UsersIcon);
+export const LogIn = createAppIcon(SignInIcon);
+export const LogOut = createAppIcon(SignOutIcon);
+export const Settings = createAppIcon(GearSixIcon);
+export const Star = createAppIcon(StarIcon);
+export const ThumbsUp = createAppIcon(ThumbsUpIcon);
+export const ThumbsDown = createAppIcon(ThumbsDownIcon);
+export const MessageCircle = createAppIcon(ChatCircleIcon);
+export const MessageSquare = createAppIcon(ChatTextIcon);
+export const Image = createAppIcon(ImageIcon);
+export const FileText = createAppIcon(FileTextIcon);
+export const File = createAppIcon(FileIcon);
+export const Paperclip = createAppIcon(PaperclipIcon);
+export const Send = createAppIcon(PaperPlaneRightIcon);
+export const Save = createAppIcon(FloppyDiskIcon);
+export const ArchiveRestore = createAppIcon(ArchiveBoxIcon);
+export const Mail = createAppIcon(EnvelopeSimpleIcon);
+export const Phone = createAppIcon(PhoneIcon);
+export const Instagram = createAppIcon(InstagramLogoIcon);
+export const Facebook = createAppIcon(FacebookLogoIcon);
+export const Pinterest = createAppIcon(PinterestLogoIcon);
+export const Google = createAppIcon(GoogleLogoIcon);
+export const Twitter = createAppIcon(XLogoIcon);
+export const Cloud = createAppIcon(CloudIcon);
+export const CloudRain = createAppIcon(CloudRainIcon);
+export const CloudSnow = createAppIcon(CloudSnowIcon);
+export const Sun = createAppIcon(SunIcon);
+export const Moon = createAppIcon(MoonIcon);
+export const Wind = createAppIcon(WindIcon);
+export const Droplets = createAppIcon(DropIcon);
+export const Thermometer = createAppIcon(ThermometerIcon);
+export const Utensils = createAppIcon(ForkKnifeIcon);
+export const Bed = createAppIcon(BedIcon);
+export const Fuel = createAppIcon(GasPumpIcon);
+export const Car = createAppIcon(CarIcon);
+export const Bus = createAppIcon(BusIcon);
+export const Wifi = createAppIcon(WifiHighIcon);
+export const WifiOff = createAppIcon(WifiSlashIcon);
+export const DollarSign = createAppIcon(CurrencyDollarIcon);
+export const CreditCard = createAppIcon(CreditCardIcon);
+export const Gift = createAppIcon(GiftIcon);
+export const Eye = createAppIcon(EyeIcon);
+export const EyeOff = createAppIcon(EyeSlashIcon);
+export const Grid = createAppIcon(SquaresFourIcon);
+export const List = createAppIcon(ListIcon);
+export const Layout = createAppIcon(LayoutIcon);
+export const Globe = createAppIcon(GlobeIcon);
+export const Link = createAppIcon(LinkIcon);
+export const Link2 = createAppIcon(LinkSimpleIcon);
+export const Bookmark = createAppIcon(BookmarkIcon);
+export const Tag = createAppIcon(TagIcon);
+export const Bell = createAppIcon(BellIcon);
+export const BellOff = createAppIcon(BellSlashIcon);
+export const Home = createAppIcon(HouseIcon);
+export const Monitor = createAppIcon(MonitorIcon);
+export const BarChart = createAppIcon(ChartBarIcon);
+export const BarChart3 = createAppIcon(ChartBarIcon);
+export const TrendingUp = createAppIcon(TrendUpIcon);
+export const Activity = createAppIcon(ActivityIcon);
+export const PieChart = createAppIcon(ChartPieIcon);
+export const Shield = createAppIcon(ShieldIcon);
+export const Lock = createAppIcon(LockIcon);
+export const Unlock = createAppIcon(LockOpenIcon);
+export const Key = createAppIcon(KeyIcon);
+export const Target = createAppIcon(TargetIcon);
+export const Database = createAppIcon(DatabaseIcon);
+export const Scales = createAppIcon(ScalesIcon);
+export const Zap = createAppIcon(LightningIcon);
+export const HelpCircle = createAppIcon(QuestionIcon);
+export const Play = createAppIcon(PlayIcon);
+export const PlayCircle = createAppIcon(PlayCircleIcon);
+export const Pause = createAppIcon(PauseIcon);
+export const PauseCircle = createAppIcon(PauseCircleIcon);
+export const RefreshCw = createAppIcon(ArrowsClockwiseIcon);
+export const ArrowsLeftRight = createAppIcon(ArrowsLeftRightIcon);
+/** Side-by-side compare (parks, metrics) */
+export const Compare = ArrowsLeftRight;
+export const Columns = createAppIcon(ColumnsIcon);
+export const Maximize = createAppIcon(CornersOutIcon);
+export const Minimize = createAppIcon(CornersInIcon);
+export const Maximize2 = createAppIcon(CornersOutIcon);
+export const Minimize2 = createAppIcon(CornersInIcon);
+export const ZoomIn = createAppIcon(MagnifyingGlassPlusIcon);
+export const ZoomOut = createAppIcon(MagnifyingGlassMinusIcon);
+export const Printer = createAppIcon(PrinterIcon);
+export const Code = createAppIcon(CodeIcon);
+export const Code2 = createAppIcon(CodeSimpleIcon);
+export const BookOpen = createAppIcon(BookOpenIcon);
+export const Ticket = createAppIcon(TicketIcon);
+export const Quote = createAppIcon(QuotesIcon);
+export const Reply = createAppIcon(ArrowBendUpLeftIcon);
+export const Bold = createAppIcon(TextBolderIcon);
+export const Italic = createAppIcon(TextItalicIcon);
+export const Strikethrough = createAppIcon(TextStrikethroughIcon);
+export const ListOrdered = createAppIcon(ListNumbersIcon);
+export const Type = createAppIcon(TextTIcon);
+export const AlignLeft = createAppIcon(AlignLeftIcon);
+export const AlignCenter = createAppIcon(TextAlignCenterIcon);
+export const AlignRight = createAppIcon(AlignRightIcon);
+export const Undo = createAppIcon(ArrowCounterClockwiseIcon);
+export const Redo = createAppIcon(ArrowClockwiseIcon);
+export const Bot = createAppIcon(RobotIcon);
+export const Brain = createAppIcon(BrainIcon);
+export const Lightbulb = createAppIcon(LightbulbIcon);
+export const Sparkle = createAppIcon(SparkleIcon);
+export const Sparkles = createAppIcon(SparkleIcon);
+export const TrendUp = createAppIcon(TrendUpIcon);
+export const Award = createAppIcon(TrophyIcon);
+export const Shuffle = createAppIcon(ShuffleIcon);
+export const Palette = createAppIcon(PaletteIcon);
+export const FolderSimple = createAppIcon(FolderSimpleIcon);
+export const Smile = createAppIcon(SmileyIcon);
+export const Cookie = createAppIcon(CookieIcon);
+export const Microphone = createAppIcon(MicrophoneIcon);
+export const GripVertical = createAppIcon(DotsSixVerticalIcon);
+export const Snowflake = createAppIcon(SnowflakeIcon);

@@ -125,8 +125,8 @@ describe('AuthService', () => {
         rememberMe: false
       });
 
-      expect(sessionStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
-      expect(sessionStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockResponse.data.data));
+      expect(localStorage.setItem).toHaveBeenCalledWith('token', 'mock-token');
+      expect(localStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockResponse.data.data));
       expect(result).toEqual(mockResponse.data);
     });
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Microphone, X } from '@phosphor-icons/react';
+import { Microphone, X } from '@components/icons';
 import VoiceOverlay from './VoiceOverlay';
 import { slugToParkCode } from '@/utils/parkSlug';
 

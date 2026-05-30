@@ -361,13 +361,27 @@ body.mobile-nav-open {
    END OF BUTTON TEXT SELECTION PREVENTION
    ============================================ */
 
-/* Ensure icons in buttons render properly */
-button svg, .btn svg {
-  display: inline-block;
-  vertical-align: middle;
+/* Phosphor icons: block layout avoids subpixel blur from inline alignment */
+button svg,
+.btn svg,
+[role="button"] svg,
+[role="tab"] svg {
+  display: block;
   flex-shrink: 0;
   background: none !important;
   background-color: transparent !important;
+}
+
+/* Phosphor SVGs are vectors, not fonts — keep paths sharp; text uses body smoothing */
+svg[viewBox="0 0 256 256"] {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  shape-rendering: geometricPrecision;
+}
+
+/* Icons are not text — do not inherit UI font on SVG roots */
+svg {
+  font-family: inherit;
 }
 
 /* Phosphor icons use fill-based rendering — no stroke overrides needed */
@@ -438,7 +452,7 @@ section {
   width: 100%;
 }
 
-* {
+*:where(:not(svg):not(svg *)) {
   font-family: 'Geist', 'Inter', system-ui, sans-serif;
 }
 

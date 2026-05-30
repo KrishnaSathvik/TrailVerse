@@ -5,6 +5,7 @@ import {
 } from '@components/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import PhotoLightbox from '../common/PhotoLightbox';
+import ParkTabSpinner from './ParkTabSpinner';
 import reviewService from '../../services/reviewService';
 import imageUploadService from '../../services/imageUploadService';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +14,14 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 import { logEvent } from '../../utils/analytics';
 
-const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
+const ReviewSection = ({
+  parkCode,
+  parkName,
+  onCountChange,
+  initialOpenForm = false,
+  onFormOpened,
+  onReviewSubmitted,
+}) => {
   const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -22,7 +30,7 @@ const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(initialOpenForm);
   const [newReview, setNewReview] = useState({
     rating: 5,
     title: '',
@@ -70,6 +78,12 @@ const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
   useEffect(() => {
     fetchReviews();
   }, [parkCode]);
+
+  useEffect(() => {
+    if (!initialOpenForm) return;
+    setShowReviewForm(true);
+    onFormOpened?.();
+  }, [initialOpenForm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync review count back to parent tab badge
   useEffect(() => {
@@ -236,6 +250,7 @@ const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
       setSelectedImages([]);
       setImagePreviews([]);
       setImageErrors([]);
+      onReviewSubmitted?.();
       fetchReviews(); // Refresh reviews
       
       // Invalidate parkRatings cache so explore page shows updated ratings
@@ -393,27 +408,7 @@ const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
   };
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="rounded-2xl p-8 backdrop-blur text-center"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)'
-          }}
-        >
-          <div className="animate-pulse">
-            <div className="h-16 bg-gray-300 rounded mb-4 mx-auto w-24"></div>
-            <div className="flex justify-center gap-1 mb-2">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-6 w-6 bg-gray-300 rounded"></div>
-              ))}
-            </div>
-            <div className="h-4 bg-gray-300 rounded w-32 mx-auto"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <ParkTabSpinner />;
   }
 
   return (
@@ -1120,15 +1115,9 @@ const ReviewSection = ({ parkCode, parkName, onCountChange }) => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <MessageSquare className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-            No reviews yet
-          </h3>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Be the first to share your experience!
-          </p>
-        </div>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          No reviews yet. Be the first to share your experience.
+        </p>
       )}
 
       {/* Review Image Lightbox */}

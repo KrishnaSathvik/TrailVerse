@@ -27,6 +27,8 @@ const getQueryClient = () => {
  */
 
 // Cache keys for different data types
+import { getFeedDateKey } from './dailyFeedDate';
+
 export const CACHE_KEYS = {
   PARKS: ['parks'],
   PARK: (parkCode) => ['park', parkCode],
@@ -34,7 +36,7 @@ export const CACHE_KEYS = {
   PARK_RATINGS: ['parkRatings'],
   BLOG_POSTS: ['blogPosts'],
   EVENTS: ['events'],
-  DAILY_FEED: (userId) => ['dailyFeed', new Date().toDateString(), userId],
+  DAILY_FEED: (userId) => ['dailyFeed', getFeedDateKey(), userId],
 };
 
 // Prefetch park data for better UX

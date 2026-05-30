@@ -1,9 +1,9 @@
 import api from './api';
 
 const tripService = {
-  // Get user's trips
+  // Get user's trips (never cache — list must reflect new chats immediately)
   getUserTrips: async (userId) => {
-    const response = await api.get(`/trips/user/${userId}`);
+    const response = await api.get(`/trips/user/${userId}`, {}, { skipCache: true });
     return response.data;
   },
 
@@ -47,7 +47,13 @@ const tripService = {
   unarchiveTrip: async (tripId) => {
     const response = await api.put(`/trips/${tripId}`, { status: 'active' });
     return response.data;
-  }
+  },
+
+  // Generate or fetch public share link
+  shareTrip: async (tripId) => {
+    const response = await api.post(`/trips/${tripId}/share`);
+    return response.data;
+  },
 };
 
 export default tripService;

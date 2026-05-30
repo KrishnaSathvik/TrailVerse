@@ -67,6 +67,20 @@ const blogPostSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  metaDescription: {
+    type: String,
+    maxlength: [160, 'Meta description cannot be more than 160 characters'],
+    default: null
+  },
+  seoNoindex: {
+    type: Boolean,
+    default: false
+  },
+  previousSlugs: [{
+    type: String,
+    lowercase: true,
+    trim: true
+  }],
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -110,9 +124,9 @@ blogPostSchema.index({
   }
 });
 
-// Generate slug from title before saving
+// Generate slug from title only when slug is not set (new posts)
 blogPostSchema.pre('save', function(next) {
-  if (this.isModified('title')) {
+  if (!this.slug && this.title) {
     this.slug = this.title
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')

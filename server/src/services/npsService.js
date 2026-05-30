@@ -57,6 +57,25 @@ class NPSService {
       ttl: 7 * 24 * 60 * 60 * 1000 // 7 days
     };
 
+    // Official NPS activity taxonomy (/activities — not thingstodo)
+    this.activityTaxonomyCache = {
+      data: null,
+      timestamp: null,
+      ttl: 7 * 24 * 60 * 60 * 1000
+    };
+
+    this.topicTaxonomyCache = {
+      data: null,
+      timestamp: null,
+      ttl: 7 * 24 * 60 * 60 * 1000
+    };
+
+    this.amenityTaxonomyCache = {
+      data: null,
+      timestamp: null,
+      ttl: 7 * 24 * 60 * 60 * 1000
+    };
+
     // Bulk alerts cache keyed by parkCode (alerts are time-sensitive but
     // bulk-fetching once avoids per-park API calls on detail pages)
     this.alertsCache = {
@@ -1482,6 +1501,53 @@ class NPSService {
 
   // --- Per-park amenities/facilities ---
 
+  _normalizePlaceUrl(url) {
+    return String(url || '').trim().toLowerCase().replace(/\/$/, '');
+  }
+
+  _amenityDescriptionFromPlace(place) {
+    if (!place) return '';
+    return (
+      place.listingDescription ||
+      place.description ||
+      place.locationDescription ||
+      place.bodyText ||
+      ''
+    );
+  }
+
+  _enrichAmenitiesFromPlaces(amenities, parkCode) {
+    const parkPlaces = [];
+    if (this._isCacheValid(this.placesCache) && this.placesCache.data?.[parkCode]) {
+      parkPlaces.push(...this.placesCache.data[parkCode]);
+    }
+    const cachedPlaces = this._getEndpointCache(`places_${parkCode}`, 'places');
+    if (Array.isArray(cachedPlaces)) {
+      parkPlaces.push(...cachedPlaces);
+    }
+
+    if (parkPlaces.length === 0) return amenities;
+
+    const byUrl = new Map();
+    for (const place of parkPlaces) {
+      const key = this._normalizePlaceUrl(place.url);
+      if (key && !byUrl.has(key)) byUrl.set(key, place);
+    }
+
+    return amenities.map((item) => {
+      const match = byUrl.get(this._normalizePlaceUrl(item.url));
+      if (!match) return item;
+      return {
+        ...item,
+        placeId: item.placeId || match.id || null,
+        description: item.description || this._amenityDescriptionFromPlace(match),
+        images: item.images?.length ? item.images : match.images || [],
+        latitude: item.latitude ?? match.latitude ?? null,
+        longitude: item.longitude ?? match.longitude ?? null,
+      };
+    });
+  }
+
   async getParkAmenities(parkCode) {
     const cacheKey = `amenities_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
@@ -1492,7 +1558,7 @@ class NPSService {
 
     try {
       const response = await this.api.get('/amenities/parksplaces', {
-        params: { parkCode, limit: 100 }
+        params: { parkCode, limit: 500 }
       });
 
       // NPS amenities/parksplaces returns: data = [[{id, name, parks: [{places: [...]}]}], ...]
@@ -1514,15 +1580,22 @@ class NPSService {
               placeName: place.title || place.name || '',
               placeType: place.parkFacilityType || 'General',
               url: place.url || '',
-              isManagedByNPS: place.isManagedByNPS || false
+              isManagedByNPS: place.isManagedByNPS || place.isManagedByNps || false,
+              placeId: place.id || null,
+              description: this._amenityDescriptionFromPlace(place),
+              images: Array.isArray(place.images) ? place.images : [],
+              latitude: place.latitude ?? null,
+              longitude: place.longitude ?? null,
             });
           }
         }
       }
 
-      console.log(`🏛️ Amenities for ${parkCode}: ${amenities.length} found`);
-      this._setEndpointCache(cacheKey, amenities, 'activities');
-      return amenities;
+      const enriched = this._enrichAmenitiesFromPlaces(amenities, parkCode);
+
+      console.log(`🏛️ Amenities for ${parkCode}: ${enriched.length} found`);
+      this._setEndpointCache(cacheKey, enriched, 'activities');
+      return enriched;
     } catch (error) {
       if (error.response?.status === 429) {
         return [];
@@ -1906,6 +1979,421 @@ class NPSService {
     } catch (error) {
       console.error(`❌ NPS API Error (getActivityById for ${activityId}):`, error.message);
       throw new Error(`Failed to fetch activity ${activityId}: ${error.message}`);
+    }
+  }
+
+  async _paginateNpsEndpoint(path, { pageSize = 100, maxPages = 50, params = {} } = {}) {
+    let all = [];
+    let start = 0;
+
+    for (let page = 0; page < maxPages; page++) {
+      if (this._isRateLimited()) break;
+
+      const response = await this.api.get(path, {
+        params: { limit: pageSize, start, ...params }
+      });
+
+      const batch = response.data?.data;
+      if (!batch?.length) break;
+
+      all = all.concat(batch);
+      start += pageSize;
+
+      if (batch.length < pageSize) break;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+
+    return all;
+  }
+
+  async getActivityTaxonomy() {
+    const cacheKey = 'activity-taxonomy';
+    const snapshot = await this._loadSnapshot(cacheKey, this.activityTaxonomyCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.activityTaxonomyCache = { ...this.activityTaxonomyCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
+    if (this._isCacheValid(this.activityTaxonomyCache)) {
+      return this.activityTaxonomyCache.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) return snapshot.data;
+      return this.activityTaxonomyCache.data || [];
+    }
+
+    try {
+      const activities = await this._paginateNpsEndpoint('/activities', { pageSize: 100, maxPages: 10 });
+      this.activityTaxonomyCache = { ...this.activityTaxonomyCache, data: activities, timestamp: Date.now() };
+      await this._saveSnapshot(cacheKey, activities);
+      return activities;
+    } catch (error) {
+      if (snapshot?.data) return snapshot.data;
+      console.error('NPS API Error (getActivityTaxonomy):', error.message);
+      return this.activityTaxonomyCache.data || [];
+    }
+  }
+
+  async getTopicTaxonomy() {
+    const cacheKey = 'topic-taxonomy';
+    const snapshot = await this._loadSnapshot(cacheKey, this.topicTaxonomyCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.topicTaxonomyCache = { ...this.topicTaxonomyCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
+    if (this._isCacheValid(this.topicTaxonomyCache)) {
+      return this.topicTaxonomyCache.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) return snapshot.data;
+      return this.topicTaxonomyCache.data || [];
+    }
+
+    try {
+      const topics = await this._paginateNpsEndpoint('/topics', { pageSize: 100, maxPages: 20 });
+      this.topicTaxonomyCache = { ...this.topicTaxonomyCache, data: topics, timestamp: Date.now() };
+      await this._saveSnapshot(cacheKey, topics);
+      return topics;
+    } catch (error) {
+      if (snapshot?.data) return snapshot.data;
+      console.error('NPS API Error (getTopicTaxonomy):', error.message);
+      return this.topicTaxonomyCache.data || [];
+    }
+  }
+
+  async getParksForActivityId(activityId) {
+    if (!activityId || this._isRateLimited()) return [];
+
+    const cacheKey = `activity-parks-${activityId}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities');
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/activities/parks', {
+        params: { id: activityId, limit: 500 }
+      });
+      const rows = response.data?.data || [];
+      const parks = rows.flatMap((row) => {
+        if (Array.isArray(row?.parks)) return row.parks;
+        if (row?.parkCode) return [row];
+        return [];
+      });
+      this._setEndpointCache(cacheKey, parks, 'activities');
+      return parks;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on activities/parks for ${activityId}`);
+        return [];
+      }
+      console.error(`NPS API Error (getParksForActivityId ${activityId}):`, error.message);
+      return [];
+    }
+  }
+
+  async getParksForTopicId(topicId) {
+    if (!topicId || this._isRateLimited()) return [];
+
+    const cacheKey = `topic-parks-${topicId}`;
+    const cached = this._getEndpointCache(cacheKey, 'activities');
+    if (cached) return cached;
+
+    try {
+      const response = await this.api.get('/topics/parks', {
+        params: { id: topicId, limit: 500 }
+      });
+      const rows = response.data?.data || [];
+      const parks = rows.flatMap((row) => {
+        if (Array.isArray(row?.parks)) return row.parks;
+        if (row?.parkCode) return [row];
+        return [];
+      });
+      this._setEndpointCache(cacheKey, parks, 'activities');
+      return parks;
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on topics/parks for ${topicId}`);
+        return [];
+      }
+      console.error(`NPS API Error (getParksForTopicId ${topicId}):`, error.message);
+      return [];
+    }
+  }
+
+  async getAmenityTaxonomy() {
+    const cacheKey = 'amenity-taxonomy';
+    const snapshot = await this._loadSnapshot(cacheKey, this.amenityTaxonomyCache.ttl);
+    if (snapshot && !snapshot.stale) {
+      this.amenityTaxonomyCache = { ...this.amenityTaxonomyCache, data: snapshot.data, timestamp: Date.now() };
+      return snapshot.data;
+    }
+
+    if (this._isCacheValid(this.amenityTaxonomyCache)) {
+      return this.amenityTaxonomyCache.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) return snapshot.data;
+      return this.amenityTaxonomyCache.data || [];
+    }
+
+    try {
+      const amenities = await this._paginateNpsEndpoint('/amenities', { pageSize: 100, maxPages: 10 });
+      this.amenityTaxonomyCache = { ...this.amenityTaxonomyCache, data: amenities, timestamp: Date.now() };
+      await this._saveSnapshot(cacheKey, amenities);
+      return amenities;
+    } catch (error) {
+      if (snapshot?.data) return snapshot.data;
+      console.error('NPS API Error (getAmenityTaxonomy):', error.message);
+      return this.amenityTaxonomyCache.data || [];
+    }
+  }
+
+  async _loadThingstodoListings(scanLimit = 1200) {
+    try {
+      return await this.getAllActivities(scanLimit);
+    } catch {
+      return this.getCachedActivities() || [];
+    }
+  }
+
+  _mapThingstodoListing(item, { includeLongDescription = false } = {}) {
+    const firstImage = Array.isArray(item.images) ? item.images.find((img) => img?.url) : null;
+    const imageUrl = firstImage?.url
+      ? firstImage.url.startsWith('http')
+        ? firstImage.url
+        : `https://www.nps.gov${firstImage.url.startsWith('/') ? firstImage.url : `/${firstImage.url}`}`
+      : null;
+    return {
+      id: item.id,
+      title: item.title,
+      parkCode: item.parkCode || item.relatedParks?.[0]?.parkCode,
+      parkName: item.relatedParks?.[0]?.fullName || item.parkName,
+      shortDescription: item.shortDescription || item.description,
+      longDescription: includeLongDescription ? item.longDescription : undefined,
+      activityTags: (item.activities || []).map((a) => a.name).filter(Boolean),
+      image: imageUrl,
+      imageAlt: firstImage?.altText || firstImage?.alt || item.title || null,
+      url: item.url || (item.parkCode ? `https://www.nps.gov/thingstodo/${item.id}.htm` : null)
+    };
+  }
+
+  async getThingsToDoForActivityName(activityName, limit = 12, { includeLongDescription = false } = {}) {
+    if (!activityName) return [];
+    const needle = activityName.toLowerCase();
+
+    try {
+      const listings = await this._loadThingstodoListings(Math.min(limit * 25, 1200));
+
+      const matched = listings.filter((item) => {
+        const types = item?.activities || [];
+        return types.some((a) => a?.name?.toLowerCase() === needle || a?.name?.toLowerCase().includes(needle));
+      });
+
+      return matched
+        .slice(0, limit)
+        .map((item) => this._mapThingstodoListing(item, { includeLongDescription }));
+    } catch (error) {
+      console.error('getThingsToDoForActivityName:', error.message);
+      return [];
+    }
+  }
+
+  _findNpsArticleMatch(items, { title, slug }) {
+    const slugNeedle = (slug || '').toLowerCase();
+    const titleLower = (title || '').toLowerCase();
+
+    return (
+      items.find((a) => a.title?.toLowerCase() === titleLower) ||
+      items.find((a) => slugNeedle && a.url?.toLowerCase().includes(`/000/${slugNeedle}.htm`)) ||
+      items.find((a) => slugNeedle && a.url?.toLowerCase().includes(`/${slugNeedle}.htm`)) ||
+      items.find((a) => slugNeedle && a.url?.toLowerCase().includes(`/${slugNeedle}/`))
+    );
+  }
+
+  /**
+   * NPS app activity/topic pages use /articles (e.g. /articles/000/astronomy.htm).
+   * Taxonomy endpoints only return id + name.
+   */
+  async getNpsGuideForDiscover({ title, slug }) {
+    if (!title) return null;
+
+    const cacheKey = `nps-guide-v2-${slug || title}`.toLowerCase();
+    const cached = this._getEndpointCache(cacheKey, 'activities');
+    if (cached) return cached;
+
+    try {
+      const { fetchNpsArticleBody, fetchNpsYouMightAlsoLike } = require('../utils/npsArticleScraper');
+      const response = await this.api.get('/articles', {
+        params: { q: title, limit: 25 }
+      });
+      const items = response.data?.data || [];
+      const match = this._findNpsArticleMatch(items, { title, slug });
+
+      if (!match?.url) return null;
+
+      const summary = match.listingDescription || '';
+      let body = '';
+      let sections = [];
+      let video = null;
+      try {
+        const parsed = await fetchNpsArticleBody(match.url);
+        body = parsed.body || '';
+        sections = parsed.sections || [];
+        video = parsed.video || null;
+        if (!body && summary) {
+          body = summary;
+        }
+      } catch (scrapeError) {
+        console.warn(`getNpsGuideForDiscover scrape failed for ${match.url}:`, scrapeError.message);
+        if (!body && summary) {
+          body = summary;
+        }
+      }
+      let youMightAlsoLike = [];
+      try {
+        youMightAlsoLike = await fetchNpsYouMightAlsoLike({
+          query: title,
+          excludePageUrl: match.url,
+          rows: 6
+        });
+      } catch (ymalError) {
+        console.warn(`getNpsGuideForDiscover YMAL failed for ${title}:`, ymalError.message);
+      }
+
+      const result = {
+        id: match.id,
+        title: match.title,
+        url: match.url,
+        summary,
+        description: body || summary,
+        body,
+        sections,
+        video,
+        youMightAlsoLike,
+        image: match.listingImage?.url || null,
+        imageAlt: match.listingImage?.altText || match.title,
+        source: 'nps-articles'
+      };
+      this._setEndpointCache(cacheKey, result, 'activities');
+      return result;
+    } catch (error) {
+      console.warn('getNpsGuideForDiscover:', error.message);
+      return null;
+    }
+  }
+
+  /** @deprecated use getNpsGuideForDiscover */
+  async getNpsArticleForDiscover(params) {
+    return this.getNpsGuideForDiscover(params);
+  }
+
+  async getThingsToDoForTopicName(topicName, limit = 12, { includeLongDescription = false } = {}) {
+    if (!topicName) return [];
+    const needle = topicName.toLowerCase();
+
+    try {
+      const listings = await this._loadThingstodoListings(Math.min(limit * 25, 1200));
+
+      const matched = listings.filter((item) => {
+        const topics = item?.topics || [];
+        const topicMatch = topics.some((t) => {
+          const name = (t?.name || '').toLowerCase();
+          return name === needle || name.includes(needle) || needle.includes(name);
+        });
+        if (topicMatch) return true;
+
+        const tags = item?.tags || [];
+        return tags.some((tag) => String(tag).toLowerCase().includes(needle));
+      });
+
+      return matched
+        .slice(0, limit)
+        .map((item) => this._mapThingstodoListing(item, { includeLongDescription }));
+    } catch (error) {
+      console.error('getThingsToDoForTopicName:', error.message);
+      return [];
+    }
+  }
+
+  async getRelatedTagsFromThingstodo(activityName, limit = 10) {
+    if (!activityName) return [];
+    const needle = activityName.toLowerCase();
+    const listings = await this._loadThingstodoListings(1500);
+    const counts = new Map();
+
+    listings.forEach((item) => {
+      const types = item?.activities || [];
+      const matchesPrimary = types.some(
+        (a) => a?.name?.toLowerCase() === needle || a?.name?.toLowerCase().includes(needle)
+      );
+      if (!matchesPrimary) return;
+
+      types.forEach((a) => {
+        const name = a?.name?.trim();
+        if (!name) return;
+        const lower = name.toLowerCase();
+        if (lower === needle) return;
+        counts.set(name, (counts.get(name) || 0) + 1);
+      });
+    });
+
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([name, count]) => ({ name, count, slug: null, kind: 'program-tag' }));
+  }
+
+  async getUpcomingEventsForParkCodes(parkCodes = [], limit = 12) {
+    const unique = [...new Set((parkCodes || []).map((c) => c?.toLowerCase()).filter(Boolean))];
+    if (!unique.length) return [];
+    if (this._isRateLimited()) return [];
+
+    const chunks = [];
+    for (let i = 0; i < unique.length; i += 10) {
+      chunks.push(unique.slice(i, i + 10));
+    }
+    const perChunk = Math.max(3, Math.ceil(limit / Math.min(chunks.length, 4)));
+    const maxChunks = Math.min(chunks.length, 4);
+    const collected = [];
+    const seen = new Set();
+
+    for (let i = 0; i < maxChunks; i += 1) {
+      if (this._isRateLimited()) break;
+      try {
+        const response = await this.api.get('/events', {
+          params: {
+            parkCode: chunks[i].join(','),
+            dateStart: new Date().toISOString().slice(0, 10),
+            limit: perChunk
+          }
+        });
+        (response.data?.data || []).forEach((event) => {
+          const key = event.id || event.eventid || `${event.title}-${event.sitecode}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          collected.push(event);
+        });
+      } catch (error) {
+        if (error.response?.status === 429) {
+          console.warn('⚠️ NPS 429 on events batch');
+          break;
+        }
+        console.warn('getUpcomingEventsForParkCodes:', error.message);
+      }
+    }
+
+    return collected.slice(0, limit);
+  }
+
+  async deleteSnapshot(key) {
+    try {
+      await NpsSnapshot.deleteOne({ key });
+      console.log(`🗄️ Deleted snapshot "${key}"`);
+    } catch (error) {
+      console.warn(`⚠️ Failed to delete snapshot "${key}":`, error.message);
     }
   }
 

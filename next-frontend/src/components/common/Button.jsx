@@ -174,9 +174,21 @@ const Button = ({
     e.target.style.boxShadow = currentVariant.hoverShadow || baseStyles.boxShadow;
   };
 
+  const iconSizePx =
+    size === 'xs'
+      ? 14
+      : size === 'sm'
+        ? 18
+        : size === 'lg'
+          ? 20
+          : size === 'xl'
+            ? 22
+            : 18;
+
   const iconElement = Icon && (
     <Icon 
-      className={`${size === 'xs' ? 'h-3 w-3' : size === 'sm' ? 'h-4 w-4' : 'h-4 w-4'}`}
+      size={iconSizePx}
+      className="flex-shrink-0"
       style={{
         color: 'inherit',
         flexShrink: 0

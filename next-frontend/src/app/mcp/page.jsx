@@ -41,7 +41,7 @@ const tools = [
     accent: 'var(--accent-blue)',
   },
   {
-    icon: 'Scales',
+    icon: 'ArrowsLeftRight',
     title: 'Compare Parks',
     description: 'Side-by-side comparison of 2\u20134 parks on weather, crowds, fees, activities',
     accent: 'var(--accent-orange)',
@@ -352,7 +352,7 @@ export default function MCPPage() {
                   />
                   <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
                     <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Discover parks by state
+                      Browse parks by state
                     </p>
                     <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
                       Ask &ldquo;what parks are in Washington state?&rdquo; and get all 17 NPS sites &mdash;
@@ -568,6 +568,13 @@ export default function MCPPage() {
                 </div>
               </div>
             </div>
+
+            <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
+              Using ChatGPT instead?{' '}
+              <Link href="/chatgpt" className="underline underline-offset-2" style={{ color: 'var(--text-secondary)' }}>
+                Open the TrailVerse ChatGPT app
+              </Link>
+            </p>
           </div>
         </section>
 
@@ -701,6 +708,12 @@ export default function MCPPage() {
               >
                 Install TrailVerse in Claude and start planning your next trip
                 with live data from 470+ NPS sites.
+              </p>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
+                Using ChatGPT instead?{' '}
+                <Link href="/chatgpt" className="underline underline-offset-2" style={{ color: 'var(--text-secondary)' }}>
+                  Open the TrailVerse ChatGPT app
+                </Link>
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a

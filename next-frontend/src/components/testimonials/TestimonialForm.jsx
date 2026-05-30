@@ -1,32 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import testimonialService from '../../services/testimonialService';
-import { Star, Send, User, MapPin, Award } from '@components/icons';
+import { Star, Send, User } from '@components/icons';
 
-const TestimonialForm = ({ onSuccess, onCancel }) => {
+const emptyFormState = (name = '') => ({
+  name,
+  content: '',
+  rating: 5
+});
+
+const TestimonialForm = ({
+  onSuccess,
+  onCancel,
+  resetOnSuccess = false,
+  initialData = null,
+  showHeading = false
+}) => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    role: '',
-    content: '',
-    rating: 5,
-    parkCode: '',
-    parkName: ''
+  const [formData, setFormData] = useState(() => {
+    if (initialData) {
+      return {
+        name: initialData.name || '',
+        content: initialData.content || '',
+        rating: initialData.rating || 5
+      };
+    }
+    return emptyFormState(user?.name || '');
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        content: initialData.content || '',
+        rating: initialData.rating || 5
+      });
+      return;
+    }
+    if (user?.name) {
+      setFormData((prev) => (prev.name ? prev : { ...prev, name: user.name }));
+    }
+  }, [user?.name, initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
   };
 
   const handleRatingChange = (rating) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       rating
     }));
@@ -34,21 +62,41 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (!formData.name.trim()) {
+      showToast('Please enter your name', 'error');
+      return;
+    }
+
     if (!formData.content.trim()) {
-      showToast('Please write your testimonial', 'error');
+      showToast('Please write your review', 'error');
       return;
     }
 
     if (formData.content.length < 50) {
-      showToast('Testimonial must be at least 50 characters long', 'error');
+      showToast('Review must be at least 50 characters', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      await testimonialService.createTestimonial(formData);
-      showToast('Testimonial submitted successfully! It will be reviewed before being published.', 'success');
+      const payload = {
+        name: formData.name.trim(),
+        content: formData.content.trim(),
+        rating: formData.rating
+      };
+
+      if (initialData?._id) {
+        await testimonialService.updateTestimonial(initialData._id, payload);
+        showToast('Testimonial updated', 'success');
+      } else {
+        await testimonialService.createTestimonial(payload);
+        showToast('Thanks! Your review will be checked before it goes live.', 'success');
+      }
+
+      if (resetOnSuccess) {
+        setFormData(emptyFormState(user?.name || ''));
+      }
       if (onSuccess) onSuccess();
     } catch (error) {
       showToast(error.response?.data?.error || 'Failed to submit testimonial', 'error');
@@ -57,137 +105,68 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
     }
   };
 
-  const renderStars = () => {
-    return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => handleRatingChange(star)}
-            className="transition-colors"
-          >
-            <Star
-              className={`h-6 w-6 ${
-                star <= formData.rating
-                  ? 'text-yellow-400 fill-yellow-400'
-                  : 'text-gray-300'
-              }`}
-            />
-          </button>
-        ))}
-        <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {formData.rating}/5
-        </span>
-      </div>
-    );
-  };
+  const renderStars = () => (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => handleRatingChange(star)}
+          className="transition-colors"
+          aria-label={`Rate ${star} out of 5`}
+        >
+          <Star
+            weight={star <= formData.rating ? 'fill' : 'regular'}
+            className={`h-6 w-6 ${
+              star <= formData.rating ? 'text-yellow-400' : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+      <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+        {formData.rating}/5
+      </span>
+    </div>
+  );
 
   return (
-    <div className="rounded-2xl p-8 backdrop-blur"
+    <div
+      className="rounded-2xl p-6 sm:p-8 backdrop-blur"
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
         borderColor: 'var(--border)'
       }}
     >
-      <div className="flex items-center gap-2 mb-6">
-        <Award className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
-        <h3 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          Share Your Experience
+      {showHeading && (
+        <h3 className="text-xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+          Share your experience
         </h3>
-      </div>
+      )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Name and Role */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              <User className="h-4 w-4 inline mr-1" />
-              Your Name *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 rounded-xl outline-none transition"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-              placeholder="Your full name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              <Award className="h-4 w-4 inline mr-1" />
-              Your Role/Title
-            </label>
-            <input
-              type="text"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl outline-none transition"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-              placeholder="e.g., Outdoor Photographer, Hiking Enthusiast"
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            <User className="h-4 w-4 inline mr-1" />
+            Name *
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            className="w-full px-4 py-3 rounded-xl outline-none transition"
+            style={{
+              backgroundColor: 'var(--surface-hover)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              color: 'var(--text-primary)'
+            }}
+            placeholder="Your name"
+          />
         </div>
 
-        {/* Park Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              <MapPin className="h-4 w-4 inline mr-1" />
-              Park Code (Optional)
-            </label>
-            <input
-              type="text"
-              name="parkCode"
-              value={formData.parkCode}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl outline-none transition"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-              placeholder="e.g., yose, grca, yell"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              Park Name (Optional)
-            </label>
-            <input
-              type="text"
-              name="parkName"
-              value={formData.parkName}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-xl outline-none transition"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-              placeholder="e.g., Yosemite National Park"
-            />
-          </div>
-        </div>
-
-        {/* Rating */}
         <div>
           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
             Rating *
@@ -195,17 +174,16 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
           {renderStars()}
         </div>
 
-        {/* Testimonial Content */}
         <div>
           <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-            Your Testimonial *
+            Your review *
           </label>
           <textarea
             name="content"
             value={formData.content}
             onChange={handleChange}
             required
-            rows={6}
+            rows={5}
             maxLength={1000}
             className="w-full px-4 py-3 rounded-xl outline-none resize-none transition"
             style={{
@@ -214,11 +192,11 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
               borderColor: 'var(--border)',
               color: 'var(--text-primary)'
             }}
-            placeholder="Share your experience with TrailVerse. How did it help you plan your National Parks adventure? What features did you find most useful? (Minimum 50 characters)"
+            placeholder="How did TrailVerse help you plan or explore national parks? (at least 50 characters)"
           />
           <div className="flex justify-between items-center mt-2">
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Minimum 50 characters required
+              At least 50 characters
             </p>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               {formData.content.length}/1000
@@ -226,11 +204,10 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex items-center gap-4 pt-4">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="submit"
-            disabled={loading || formData.content.length < 50}
+            disabled={loading || formData.content.length < 50 || !formData.name.trim()}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: 'var(--accent-green)',
@@ -245,11 +222,11 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Submit Testimonial
+                {initialData?._id ? 'Save changes' : 'Submit review'}
               </>
             )}
           </button>
-          
+
           {onCancel && (
             <button
               type="button"
@@ -267,9 +244,9 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
           )}
         </div>
 
-        <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          <p>Your testimonial will be reviewed before being published. We appreciate your feedback!</p>
-        </div>
+        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+          Reviews are moderated before they appear on the site.
+        </p>
       </form>
     </div>
   );

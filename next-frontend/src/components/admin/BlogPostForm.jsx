@@ -38,7 +38,9 @@ const EMPTY_FORM = {
   status: 'draft',
   scheduledAt: '',
   isScheduled: false,
-  seoSchema: ''
+  seoSchema: '',
+  metaDescription: '',
+  seoNoindex: false
 };
 
 const categories = [
@@ -251,7 +253,9 @@ const BlogPostForm = ({ mode, postId }) => {
           status: post.status || 'draft',
           scheduledAt: post.scheduledAt ? new Date(post.scheduledAt).toISOString().slice(0, 16) : '',
           isScheduled: Boolean(post.scheduledAt),
-          seoSchema: post.seoSchema || ''
+          seoSchema: post.seoSchema || '',
+          metaDescription: post.metaDescription || '',
+          seoNoindex: Boolean(post.seoNoindex)
         };
 
         setFormData(nextValue);
@@ -305,7 +309,7 @@ const BlogPostForm = ({ mode, postId }) => {
         [name]: nextValue
       };
 
-      if (name === 'title') {
+      if (name === 'title' && !isEditMode) {
         updated.slug = createSlug(nextValue);
       }
 
@@ -341,7 +345,10 @@ const BlogPostForm = ({ mode, postId }) => {
 
     return {
       title: formData.title.trim(),
+      slug: (formData.slug || createSlug(formData.title)).trim(),
       excerpt: formData.excerpt.trim(),
+      metaDescription: formData.metaDescription.trim() || null,
+      seoNoindex: Boolean(formData.seoNoindex),
       content: formData.content.trim(),
       category: formData.category,
       tags: formData.tags,
@@ -748,12 +755,24 @@ const BlogPostForm = ({ mode, postId }) => {
                 </div>
               )}
 
-              {formData.title && (
-                <div className="slug-preview">
-                  <span className="slug-label">URL:</span>
-                  <span className="slug-value">{formData.slug || 'auto-generated'}</span>
-                </div>
-              )}
+              <div className="slug-section" style={{ marginTop: '0.75rem' }}>
+                <label className="section-label">
+                  <span>URL slug</span>
+                  {isEditMode && (
+                    <span className="char-count" style={{ fontWeight: 400 }}>
+                      Changing slug 301-redirects the old URL
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="text"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleChange}
+                  placeholder={formData.title ? createSlug(formData.title) : 'auto-generated-from-title'}
+                  className="title-input"
+                />
+              </div>
             </div>
 
             <div className="excerpt-section">
@@ -776,6 +795,31 @@ const BlogPostForm = ({ mode, postId }) => {
                   <span>{validationErrors.excerpt}</span>
                 </div>
               )}
+            </div>
+
+            <div className="excerpt-section">
+              <label className="section-label">
+                <span>SEO meta description</span>
+                <span className="char-count">{formData.metaDescription.length}/160</span>
+              </label>
+              <textarea
+                name="metaDescription"
+                value={formData.metaDescription}
+                onChange={handleChange}
+                placeholder="Optional. Used in Google results; keep under 160 characters."
+                className="excerpt-input"
+                maxLength={160}
+                rows={2}
+              />
+              <label className="section-label" style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  name="seoNoindex"
+                  checked={formData.seoNoindex}
+                  onChange={handleChange}
+                />
+                <span>Hide from search engines (noindex)</span>
+              </label>
             </div>
 
             <div className="content-section">

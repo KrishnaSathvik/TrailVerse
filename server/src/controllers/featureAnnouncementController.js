@@ -219,11 +219,15 @@ class FeatureAnnouncementController {
       const baseUrl = process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com';
       const html = await reactEmailRenderer.renderFeatureAnnouncementEmail({
         username: user.firstName || user.name,
-        userEmail: user.email,
         planUrl: `${baseUrl}/plan-ai`,
+        exploreByActivityUrl: `${baseUrl}/discover`,
+        mapUrl: `${baseUrl}/map`,
+        compareUrl: `${baseUrl}/compare`,
+        chatgptUrl:
+          'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
         exploreUrl: `${baseUrl}/explore`,
-        magazineUrl: `${baseUrl}/magazine`,
-        unsubscribeUrl: `${baseUrl}/unsubscribe?email=${user.email || ''}`
+        testimonialsUrl: `${baseUrl}/testimonials`,
+        unsubscribeUrl: `${baseUrl}/unsubscribe?email=${encodeURIComponent(user.email || '')}`
       });
 
       res.setHeader('Content-Type', 'text/html');

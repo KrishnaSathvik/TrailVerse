@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { User, Bot, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
+import { User, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
+import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 import { linkifyParkNames } from '@/utils/parkLinkifier';
 
 
@@ -133,6 +134,8 @@ const MessageBubble = ({
   messageData = null, // Additional data for feedback
   initialFeedback = null, // Initial feedback state from database ('up' or 'down')
   hideActions = false,
+  compact = false,
+  linkifyParks = true,
   hasLiveData = false,
   liveDataParks = [],
   parkImages = []
@@ -151,6 +154,11 @@ const MessageBubble = ({
       setFeedbackState(initialFeedback);
     }
   }, [initialFeedback]);
+
+  const markdownBody = (message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd();
+  const markdownContent = isUser
+    ? message
+    : (linkifyParks ? linkifyParkNames(markdownBody) : markdownBody);
 
   const handleCopy = () => {
     if (!message) return;
@@ -189,23 +197,22 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`flex items-start gap-3 sm:gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} group mb-5 sm:mb-7`}
+      className={`flex items-start gap-3 sm:gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} group ${compact ? 'mb-2 sm:mb-3' : 'mb-5 sm:mb-7'}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       role="group"
       aria-label={isUser ? 'Your message' : 'Assistant message'}
     >
       {/* Avatar */}
-      <div className={`flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ${
-        isUser ? 'ring-gray-200' : 'ring-green-500/20'
-      }`}
-        style={{
-          backgroundColor: isUser ? 'var(--surface)' : 'var(--accent-green)',
-          marginTop: '2px' // Slight alignment adjustment
-        }}
-      >
-        {isUser ? (
-          userAvatar && !avatarError ? (
+      {isUser ? (
+        <div
+          className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-gray-200"
+          style={{
+            backgroundColor: 'var(--surface)',
+            marginTop: '2px',
+          }}
+        >
+          {userAvatar && !avatarError ? (
             <img
               src={userAvatar}
               alt="User avatar"
@@ -214,17 +221,19 @@ const MessageBubble = ({
             />
           ) : (
             <User className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
-          )
-        ) : (
-          <Bot className="h-5 w-5 text-white" />
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        <TrailieAvatar />
+      )}
 
       {/* Message Content */}
       <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
         <div className="flex flex-col gap-1.5">
           <div
-            className={`inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] px-4 py-3.5 sm:px-5 sm:py-4 backdrop-blur-sm chat-message-bubble ${
+            className={`inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] backdrop-blur-sm chat-message-bubble ${
+              compact ? 'px-3.5 py-2.5 sm:px-4 sm:py-3' : 'px-4 py-3.5 sm:px-5 sm:py-4'
+            } ${
               isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
             style={{
@@ -298,10 +307,7 @@ const MessageBubble = ({
               hyphens: 'none'
             }}
           >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              children={!isUser ? linkifyParkNames((message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd()) : message}
-              components={{
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
                 // Headings
                 h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold mb-3 mt-2 break-words">{children}</h1>,
                 h2: ({ children }) => <h2 className="text-base sm:text-lg font-semibold mb-2 mt-3 break-words">{children}</h2>,
@@ -469,7 +475,9 @@ const MessageBubble = ({
                   </td>
                 ),
               }}
-            />
+            >
+              {markdownContent}
+            </ReactMarkdown>
           </div>
 
           {/* Actions (assistant only) */}

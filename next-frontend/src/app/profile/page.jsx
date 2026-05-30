@@ -30,7 +30,7 @@ import UnifiedAvatarSelector from '@components/profile/UnifiedAvatarSelector';
 import FavoriteBlogs from '@components/profile/FavoriteBlogs';
 import ProfileHero from '@components/profile/ProfileHero';
 import ProfileStats from '@components/profile/ProfileStats';
-import ParkTabs from '@components/park-details/ParkTabs';
+import ParkExploreTabs from '@components/park-details/ParkExploreTabs';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@hooks/useFavorites';
@@ -179,7 +179,7 @@ const ProfilePage = () => {
   const [favoritesSubTab, setFavoritesSubTab] = useState('parks');
 
   const tabs = useMemo(() => [
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'account', label: 'Account', icon: User },
     { id: 'favorites', label: 'Favorites', icon: Heart },
     { id: 'adventures', label: 'Visited Parks', icon: Compass },
     { id: 'reviews', label: 'My Reviews', icon: Star },
@@ -188,9 +188,20 @@ const ProfilePage = () => {
   ], []);
   const validTabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
   const activeTab = useMemo(() => {
+    if (!searchParams.has('tab')) return null;
     const requestedTab = searchParams.get('tab');
-    return validTabIds.includes(requestedTab) ? requestedTab : 'profile';
+    if (!requestedTab || !validTabIds.includes(requestedTab)) return null;
+    return requestedTab;
   }, [searchParams, validTabIds]);
+
+  // Drop legacy default ?tab=profile (old tab id collided with /profile route)
+  useEffect(() => {
+    if (searchParams.get('tab') !== 'profile') return;
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete('tab');
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   // Debug favoriteBlogsCount changes
   useEffect(() => {
@@ -913,15 +924,31 @@ const ProfilePage = () => {
 
   const handleTabChange = useCallback((tabId) => {
     const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.set('tab', tabId);
-    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    if (activeTab === tabId) {
+      nextParams.delete('tab');
+      const query = nextParams.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    } else {
+      nextParams.set('tab', tabId);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    }
     setIsEditing(false);
     clearErrorStates();
-  }, [pathname, router, searchParams]);
+  }, [activeTab, pathname, router, searchParams]);
 
   const handleTabKeyDown = useCallback((event) => {
-    const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
-    if (currentIndex === -1) return;
+    const currentIndex = activeTab ? tabs.findIndex((tab) => tab.id === activeTab) : -1;
+
+    if (currentIndex === -1) {
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === 'Home') {
+        event.preventDefault();
+        handleTabChange(tabs[0].id);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        handleTabChange(tabs[tabs.length - 1].id);
+      }
+      return;
+    }
 
     let nextIndex = currentIndex;
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
@@ -1048,29 +1075,30 @@ const ProfilePage = () => {
 
           {/* Stats Section - Extracted Component */}
           <ProfileStats stats={stats} />
-        </div>
 
-        {/* Tab Navigation */}
-        <ParkTabs
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          tabs={tabs}
-          ariaLabel="Profile sections"
-          onKeyDown={handleTabKeyDown}
-          getTabId={(tab) => `profile-tab-${tab.id}`}
-          getAriaControls={(tab) => `profile-panel-${tab.id}`}
-        />
+          <ParkExploreTabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            sectionLabel="Your profile"
+            ariaLabel="Profile sections"
+            className={activeTab ? 'mb-6 sm:mb-8' : 'mb-0'}
+            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"
+            showParkBadges={false}
+            onKeyDown={handleTabKeyDown}
+            getTabId={(tab) => `profile-tab-${tab.id}`}
+            getAriaControls={(tab) => `profile-panel-${tab.id}`}
+          />
 
-        <div className="w-full max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 mt-8">
-
-          {/* Main Content Area */}
+          {/* Main Content Area — hidden until a tab is selected */}
+          {activeTab ? (
           <div className="min-w-0">
               {/* Enhanced Profile Tab */}
-              {activeTab === 'profile' && (
+              {activeTab === 'account' && (
                 <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
-                  id="profile-panel-profile"
+                  id="profile-panel-account"
                   role="tabpanel"
-                  aria-labelledby="profile-tab-profile"
+                  aria-labelledby="profile-tab-account"
                   style={panelStyle}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -1847,6 +1875,7 @@ const ProfilePage = () => {
                 </div>
               )}
           </div>
+          ) : null}
         </div>
       </section>
 

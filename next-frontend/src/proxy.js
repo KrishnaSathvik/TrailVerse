@@ -1,13 +1,58 @@
 import { NextResponse } from 'next/server';
 
 // Protected routes that require authentication
-const protectedRoutes = ['/profile', '/dashboard', '/settings', '/plan-ai/new', '/home'];
+const protectedRoutes = ['/profile', '/chat-history', '/dashboard', '/settings', '/plan-ai/new', '/home'];
 
 // Auth routes where logged-in users shouldn't go
 const publicOnlyRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
-export function proxy(request) {
+const REDIRECT_TTL_MS = 5 * 60 * 1000;
+let cachedBlogRedirects = null;
+let cachedBlogRedirectsAt = 0;
+
+function apiBaseUrl() {
+  const configured =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.API_URL ||
+    'http://127.0.0.1:5001/api';
+  return configured.replace(/\/api\/?$/, '');
+}
+
+async function getBlogSlugRedirects() {
+  const now = Date.now();
+  if (cachedBlogRedirects && now - cachedBlogRedirectsAt < REDIRECT_TTL_MS) {
+    return cachedBlogRedirects;
+  }
+
+  try {
+    const response = await fetch(`${apiBaseUrl()}/api/blogs/slug-redirects`);
+    if (!response.ok) {
+      return cachedBlogRedirects || {};
+    }
+    const payload = await response.json();
+    cachedBlogRedirects = payload?.data || {};
+    cachedBlogRedirectsAt = now;
+    return cachedBlogRedirects;
+  } catch {
+    return cachedBlogRedirects || {};
+  }
+}
+
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith('/blog/') && pathname !== '/blog') {
+    const slug = pathname.replace(/^\/blog\//, '').split('/')[0];
+    if (slug) {
+      const redirects = await getBlogSlugRedirects();
+      const targetSlug = redirects[slug];
+      if (targetSlug && targetSlug !== slug) {
+        const url = request.nextUrl.clone();
+        url.pathname = `/blog/${targetSlug}`;
+        return NextResponse.redirect(url, 308);
+      }
+    }
+  }
 
   // We'll read the token from cookies (which will be set by the client on login)
   const token = request.cookies.get('trailverse_auth_token')?.value;
@@ -35,6 +80,7 @@ export function proxy(request) {
 export const config = {
   matcher: [
     '/profile/:path*',
+    '/chat-history/:path*',
     '/dashboard/:path*',
     '/settings/:path*',
     '/plan-ai/:path*',
@@ -44,5 +90,6 @@ export const config = {
     '/reset-password',
     '/parks/:path*',
     '/home',
+    '/blog/:path*',
   ],
 };

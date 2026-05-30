@@ -4,6 +4,24 @@ import Script from "next/script";
 import Providers from "../components/Providers";
 import GoogleMapsLoader from "../components/maps/GoogleMapsLoader";
 import VoiceButton from "../components/voice/VoiceButton";
+import { indexablePageRobots } from "@/lib/seo";
+
+const JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'TrailVerse',
+  url: 'https://www.nationalparksexplorerusa.com',
+  description:
+    "Explore America's 470+ National Parks with AI-powered trip planning, real-time weather, interactive maps, and community reviews.",
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://www.nationalparksexplorerusa.com/explore?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 export const viewport = {
   width: "device-width",
@@ -18,6 +36,7 @@ export const metadata = {
   description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning. Free to explore — no account needed.",
   manifest: "/manifest.json",
   metadataBase: new URL("https://www.nationalparksexplorerusa.com"),
+  robots: indexablePageRobots,
   appleWebApp: {
     capable: true,
     title: "TrailVerse",
@@ -50,8 +69,16 @@ export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
 
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <script
+          id="json-ld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col font-sans">
+        <Script id="theme-init" strategy="beforeInteractive" src="/theme-init.js" />
         {gaId && (
           <>
             <Script
@@ -73,30 +100,8 @@ export default function RootLayout({ children }) {
           </>
         )}
         <Script
-          id="json-ld"
-          type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebSite',
-              name: 'TrailVerse',
-              url: 'https://www.nationalparksexplorerusa.com',
-              description: "Explore America's 470+ National Parks with AI-powered trip planning, real-time weather, interactive maps, and community reviews.",
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: {
-                  '@type': 'EntryPoint',
-                  urlTemplate: 'https://www.nationalparksexplorerusa.com/explore?q={search_term_string}',
-                },
-                'query-input': 'required name=search_term_string',
-              },
-            })
-          }}
-        />
-        <Script
           id="suppress-console"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {

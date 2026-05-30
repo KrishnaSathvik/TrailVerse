@@ -11,7 +11,7 @@ test.describe('Batch 2 Migration Routes', () => {
   test('Testimonials page loads', async ({ page }) => {
     const response = await page.goto('/testimonials');
     expect(response.status()).toBe(200);
-    await expect(page.locator('h1:has-text("Community Testimonials")')).toBeVisible();
+    await expect(page.locator('h1:has-text("What travelers are saying")')).toBeVisible();
   });
 
   test('Unsubscribe page loads with email param', async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe('Batch 2 Migration Routes', () => {
   test('Compare page loads', async ({ page }) => {
     const response = await page.goto('/compare');
     expect(response.status()).toBe(200);
-    await expect(page.locator('h1:has-text("Compare National Parks")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Compare Parks & Sites")')).toBeVisible();
   });
 
   test('Home page redirects to login without auth', async ({ page }) => {

@@ -17,12 +17,19 @@ const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 
 const FeatureAnnouncementEmail = ({
   username = 'there',
-  userEmail = 'user@example.com',
-  planUrl = 'https://nationalparksexplorerusa.com/plan-ai',
-  exploreUrl = 'https://nationalparksexplorerusa.com/explore',
-  unsubscribeUrl = 'https://nationalparksexplorerusa.com/unsubscribe',
+  exploreByActivityUrl = 'https://www.nationalparksexplorerusa.com/discover',
+  mapUrl = 'https://www.nationalparksexplorerusa.com/map',
+  compareUrl = 'https://www.nationalparksexplorerusa.com/compare',
+  chatgptUrl = 'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
+  planUrl = 'https://www.nationalparksexplorerusa.com/plan-ai',
+  exploreUrl = 'https://www.nationalparksexplorerusa.com/explore',
+  testimonialsUrl = 'https://www.nationalparksexplorerusa.com/testimonials',
+  unsubscribeUrl = 'https://www.nationalparksexplorerusa.com/unsubscribe',
 }) => {
-  const previewText = `Meet Trailie — your new AI trip planner in TrailVerse. Smarter answers, blog-powered knowledge, and one simple conversation to plan any park trip.`;
+  const previewText =
+    'TrailVerse is officially a ChatGPT app — plus park pages, voice, map, and more.';
+
+  const linkStyle = { color: '#06B569', textDecoration: 'underline', fontWeight: 700 };
 
   return (
     <Html>
@@ -33,8 +40,7 @@ const FeatureAnnouncementEmail = ({
           <Container style={{ maxWidth: '600px', backgroundColor: '#ffffff', margin: '0 auto' }}>
             <Section style={{ padding: '40px 50px' }}>
 
-              {/* Logo */}
-              <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                 <Img
                   src="https://www.nationalparksexplorerusa.com/android-chrome-192x192.png"
                   width="48"
@@ -47,94 +53,129 @@ const FeatureAnnouncementEmail = ({
                 </span>
               </div>
 
-              {/* Greeting */}
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
                 Hey {username} 👋
               </Text>
 
-              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Big update — your AI trip planner just got a major upgrade. Say hello to <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px', fontWeight: 700 }}>Trailie</span>.
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.65', color: '#111827' }}>
+                Been a while since my last update. I&apos;ve been fixing bugs, working through suggestions, and shipping changes on{' '}
+                <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px', fontWeight: 700 }}>TrailVerse</span>. Here&apos;s what&apos;s new — biggest first:
               </Text>
 
-              {/* Feature 1: Meet Trailie */}
-              <h3 style={{ margin: '32px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                🤖 Meet Trailie
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.65', color: '#111827' }}>
+                After a long wait, <strong>TrailVerse is officially a ChatGPT app</strong>. Open ChatGPT → <strong>Apps</strong> → search <strong>TrailVerse</strong> (or{' '}
+                <Link href={chatgptUrl} style={linkStyle}>
+                  try here
+                </Link>
+                ). From there you can plan trips, get park details (weather, alerts, fees, campgrounds), compare parks, search 470+ NPS sites, and find ranger programs — the same stuff you get on TrailVerse, just inside ChatGPT.
+              </Text>
+
+              <Hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '8px 0 32px' }} />
+
+              <h2 style={{ margin: '0 0 24px', fontSize: '20px', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>
+                A few more updates:
+              </h2>
+
+              <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
+                🏞️ Park pages — easier tabs
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                No more choosing between two AI planners. Trailie is one smart assistant that automatically adapts — ask a quick question and get insider tips, ask for a full trip plan and get a detailed day-by-day itinerary with times and logistics. Just talk naturally, Trailie figures out what you need.
+                Same sections as before (overview, alerts, things to do, campgrounds, photos, and more) — I redesigned the tab layout so everything is easier to find in one place. See it on{' '}
+                <Link href="https://www.nationalparksexplorerusa.com/parks/yellowstone-national-park" style={linkStyle}>
+                  Yellowstone
+                </Link>
+                .
               </Text>
 
-              {/* Feature 2: Blog-Powered Answers */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                📚 Blog-Powered Answers
+                💬 Trailie — polished
               </h3>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Trailie now draws from our published park guides when answering your questions. That means real visitor tips, seasonal advice, astrophotography spots, and on-the-ground details written from first-hand experience — not just generic travel info.
+                The planner chat you already know, cleaned up a bit.{' '}
+                <Link href={planUrl} style={linkStyle}>
+                  Open Trailie
+                </Link>
               </Text>
 
-              {/* What You Can Do With Trailie */}
               <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
-                💬 Things You Can Ask Trailie
+                🎙️ Voice on every page
               </h3>
-              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <span style={{ fontWeight: 700 }}>"Plan a 3-day trip to Yellowstone for a family with kids"</span> — get a full itinerary with kid-friendly trails, campgrounds, and timing.
-              </Text>
-              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <span style={{ fontWeight: 700 }}>"Bryce Canyon or Zion for a beginner?"</span> — get an honest recommendation based on current conditions, not a wishy-washy "both are great!"
-              </Text>
-              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <span style={{ fontWeight: 700 }}>"Best time to visit Grand Teton?"</span> — get seasonal advice with real closure info and crowd levels.
-              </Text>
-              <Text style={{ margin: '0 0 6px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <span style={{ fontWeight: 700 }}>"What should I pack for Death Valley in March?"</span> — get gear advice tailored to the specific park and season.
-              </Text>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                <span style={{ fontWeight: 700 }}>"I have a bad knee — what hikes can I still do at Arches?"</span> — Trailie adjusts for your fitness level and flags accessibility info.
+                Tap the mic anywhere on TrailVerse and ask Trailie out loud — no typing, no jumping to a separate screen.
               </Text>
 
-              {/* Still Has */}
-              <Text style={{ margin: '24px 0 20px', fontSize: '14px', lineHeight: '1.6', color: '#6b7280' }}>
-                Trailie still uses real-time NPS closures, campground availability, weather forecasts, and permit info — so every answer reflects what's actually happening at the park right now.
+              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
+                🧭 Explore by Activity
+              </h3>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Browse by activity, park type, state, and topic — learn what you can do and find parks that match.{' '}
+                <Link href={exploreByActivityUrl} style={linkStyle}>
+                  Explore by Activity
+                </Link>
               </Text>
 
-              {/* CTA */}
-              <div style={{ textAlign: 'center', margin: '40px 0 16px' }}>
-                <Button
-                  href={planUrl}
-                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
-                >
-                  Chat with Trailie
-                </Button>
-              </div>
-              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
+                🚌 Transit tab on park pages
+              </h3>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Shuttles, stops, and getting around inside the park — on the park page, in the Transit tab.
+              </Text>
+
+              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
+                🗺️ Map — redesigned
+              </h3>
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                All NPS parks and sites on one map; search a park, see nearby sights and campgrounds, tap a pin for details.{' '}
+                <Link href={mapUrl} style={linkStyle}>
+                  Open the map
+                </Link>
+              </Text>
+
+              <h3 style={{ margin: '24px 0 8px', fontSize: '16px', fontWeight: 800, color: '#111827' }}>
+                ⚖️ Compare — any park type
+              </h3>
+              <Text style={{ margin: '0 0 28px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
+                Not just the 63 national parks — monuments, recreation areas, historic sites, and more.{' '}
+                <Link href={compareUrl} style={linkStyle}>
+                  Compare parks
+                </Link>
+              </Text>
+
+              <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.7', color: '#111827' }}>
+                If a trip went well, I&apos;d love a{' '}
+                <Link href={testimonialsUrl} style={linkStyle}>
+                  testimonial
+                </Link>{' '}
+                or a quick review on a park page — only if you want to. It really helps the next person planning.
+              </Text>
+
+              <div style={{ textAlign: 'center', margin: '36px 0 32px' }}>
                 <Button
                   href={exploreUrl}
-                  style={{ display: 'inline-block', padding: '12px 24px', backgroundColor: '#ffffff', color: '#111827', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                  style={{ display: 'inline-block', padding: '14px 28px', backgroundColor: '#06B569', color: '#ffffff', textDecoration: 'none', fontWeight: 700, fontSize: '15px', borderRadius: '8px' }}
                 >
-                  Explore Parks
+                  Explore parks
                 </Button>
               </div>
 
-              {/* Instagram */}
               <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827', textAlign: 'center' }}>
-                Follow the journey on Instagram:{' '}
-                <Link href="https://instagram.com/travelswithkrishna" style={{ color: '#06B569', textDecoration: 'underline', fontWeight: 700 }}>
+                Follow along on Instagram:{' '}
+                <Link href="https://instagram.com/travelswithkrishna" style={linkStyle}>
                   @travelswithkrishna
                 </Link>
               </Text>
 
-              {/* Sign off */}
               <Text style={{ margin: '0 0 16px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Thanks for being part of <span style={{ backgroundColor: '#D1FAE5', padding: '2px 4px' }}>TrailVerse</span>. Give Trailie a try and let us know what you think — and if you're enjoying it, share it with someone planning their next park trip.
+                Thanks for being here. If TrailVerse helped you plan a trip, tell a friend who&apos;s heading to a park this year.
               </Text>
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.6', color: '#111827' }}>
-                Happy trails
+                Happy trails,
+                <br />
+                Krishna
               </Text>
 
-              {/* Divider */}
               <Hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '40px 0 32px' }} />
 
-              {/* Footer */}
               <div style={{ textAlign: 'center' }}>
                 <div style={{ marginBottom: '16px' }}>
                   <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.05em', color: '#111827' }}>
@@ -142,14 +183,14 @@ const FeatureAnnouncementEmail = ({
                   </span>
                 </div>
                 <Text style={{ margin: '0 0 8px', fontSize: '11px', color: '#6b7280' }}>
-                  You're receiving this because you have a TrailVerse account.
+                  You&apos;re receiving this because you have a TrailVerse account.
                 </Text>
                 <Text style={{ margin: 0, fontSize: '11px' }}>
-                  <Link href="https://nationalparksexplorerusa.com/faq" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                  <Link href="https://www.nationalparksexplorerusa.com/faq" style={linkStyle}>
                     FAQ
                   </Link>
                   {' · '}
-                  <Link href="mailto:trailverseteam@gmail.com" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                  <Link href="mailto:trailverseteam@gmail.com" style={linkStyle}>
                     Contact support
                   </Link>
                   {' · '}

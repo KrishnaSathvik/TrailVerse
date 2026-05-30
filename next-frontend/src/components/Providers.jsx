@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { IconContext } from '@phosphor-icons/react';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -36,6 +37,7 @@ export default function Providers({ children }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <IconContext.Provider value={{ size: 20, weight: 'regular' }}>
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
@@ -47,6 +49,7 @@ export default function Providers({ children }) {
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>
+      </IconContext.Provider>
     </QueryClientProvider>
   );
 }

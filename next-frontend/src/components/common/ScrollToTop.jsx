@@ -66,6 +66,7 @@ const ScrollToTop = () => {
         <button
           onClick={scrollToTop}
           className="fixed bottom-24 right-6 sm:bottom-28 sm:right-6 z-50
+                     flex items-center justify-center
                      w-11 h-11 sm:w-12 sm:h-12
                      rounded-full
                      transition-all duration-300 ease-out

@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback, useRef, memo, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
-  Search, X, MapPin, Star, ArrowRight,
+  Search, X, MapPin, ArrowRight,
   Loader2, SlidersHorizontal, Grid, List, Compass,
   ChevronLeft, ChevronRight, ChevronDown
 } from '@components/icons';
-import OptimizedImage from '@/components/common/OptimizedImage';
-import LoadingScreen from '@/components/common/LoadingScreen';
+import ParkCard from '@/components/explore/ParkCard';
+import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import { useAuth } from '@/context/AuthContext';
+import { getExploreMobilePlanCta } from '@/lib/planAiWelcomeCopy';
+import { BROWSE_HUB_CTA_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 import { useParks, useAllParks } from '@/hooks/useParks';
 import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -20,10 +21,10 @@ import { logSearch, logEvent } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
 import STATE_NAMES from '@/utils/stateNames';
 
-const ExploreContent = ({ initialPaginatedData }) => {
+const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const searchParams = useSearchParams();
   const { data: parkRatings, isLoading: ratingsLoading, error: ratingsError } = useParkRatings();
   const { handleSearch } = useSearchPrefetch();
@@ -40,7 +41,6 @@ const ExploreContent = ({ initialPaginatedData }) => {
     search: '',
     npOnly: true,
     statesLen: 0,
-    actsLen: 0,
   });
 
   const [currentPage, setCurrentPage] = useState(() => {
@@ -49,48 +49,35 @@ const ExploreContent = ({ initialPaginatedData }) => {
     return page > 0 ? page : 1;
   });
 
-  // Responsive parks per page: initialize from window on client to avoid query key mismatch on back navigation
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 640 : false
-  );
-  const parksPerPage = isMobile ? 6 : 12;
+  const [parksPerPage, setParksPerPage] = useState(12);
 
   const [filters, setFilters] = useState({
     nationalParksOnly: true,
-    states: [],
-    activities: []
+    states: []
   });
 
-  const hasActiveFilters = searchTerm || filters.states.length > 0 || filters.activities.length > 0;
-  const activityFiltersActive = filters.activities.length > 0;
+  const hasActiveFilters = searchTerm || filters.states.length > 0;
   const needsAllParks = !filters.nationalParksOnly || hasActiveFilters || sortBy === 'state';
 
-  const { data: paginatedData, isLoading: paginatedLoading, isPending: paginatedPending, error: paginatedError } = useParks(
+  const { data: paginatedData, isPending: paginatedPending, error: paginatedError } = useParks(
     currentPage,
     parksPerPage,
     filters.nationalParksOnly,
-    currentPage === 1 && parksPerPage === 12 && filters.nationalParksOnly ? initialPaginatedData : undefined
+    currentPage === 1 && filters.nationalParksOnly ? initialPaginatedData : undefined
   );
-  const { data: allParksData, isLoading: allParksLoading, isPending: allParksPending, error: allParksError } = useAllParks();
-  const {
-    data: allParksWithActivitiesData,
-    isLoading: allParksWithActivitiesLoading,
-    isPending: allParksWithActivitiesPending,
-    error: allParksWithActivitiesError
-  } = useAllParks(null, true, activityFiltersActive);
+  const { data: allParksData, isPending: allParksPending, error: allParksError } = useAllParks(
+    initialAllParksData,
+    false,
+    true
+  );
 
-  const activeAllParksData = activityFiltersActive ? allParksWithActivitiesData : allParksData;
-  const activeAllParksLoading = activityFiltersActive
-    ? (allParksWithActivitiesLoading || allParksWithActivitiesPending)
-    : (allParksLoading || allParksPending);
-  const activeAllParksError = activityFiltersActive ? allParksWithActivitiesError : allParksError;
-
-  // In React Query v5, isLoading = isPending && isFetching (only true on first load with no cache).
-  // Use isPending as fallback to catch cases where cache is empty but fetch hasn't started yet.
-  const isLoading = needsAllParks ? activeAllParksLoading : (paginatedLoading || paginatedPending);
-  const error = needsAllParks ? activeAllParksError : paginatedError;
-  const allParks = needsAllParks ? activeAllParksData?.data : paginatedData?.data;
-  const totalParks = needsAllParks ? activeAllParksData?.total : paginatedData?.total;
+  const hasPaginatedParks = Array.isArray(paginatedData?.data) && paginatedData.data.length > 0;
+  const showParksLoading = needsAllParks
+    ? allParksPending && !Array.isArray(allParksData?.data)
+    : paginatedPending && !hasPaginatedParks;
+  const error = needsAllParks ? allParksError : paginatedError;
+  const allParks = needsAllParks ? allParksData?.data : paginatedData?.data;
+  const totalParks = needsAllParks ? allParksData?.total : paginatedData?.total;
   const totalPages = needsAllParks ? null : paginatedData?.pages;
 
   const hasFullParksData = Array.isArray(allParksData?.data) && allParksData.data.length > 0;
@@ -99,13 +86,13 @@ const ExploreContent = ({ initialPaginatedData }) => {
     hasMounted.current = true;
   }, []);
 
-  // Update isMobile on resize
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
+    const updateParksPerPage = () => {
+      setParksPerPage(window.innerWidth < 640 ? 6 : 12);
     };
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    updateParksPerPage();
+    window.addEventListener('resize', updateParksPerPage);
+    return () => window.removeEventListener('resize', updateParksPerPage);
   }, []);
 
   useEffect(() => {
@@ -159,11 +146,6 @@ const ExploreContent = ({ initialPaginatedData }) => {
       (STATE_NAMES[a] || a).localeCompare(STATE_NAMES[b] || b)
     );
   }, [allParksData]);
-
-  const popularActivities = [
-    'Hiking', 'Camping', 'Wildlife Watching', 'Photography',
-    'Fishing', 'Boating', 'Biking', 'Climbing', 'Stargazing'
-  ];
 
   const filteredParks = useMemo(() => {
     if (!allParks || !Array.isArray(allParks)) return [];
@@ -248,14 +230,6 @@ const ExploreContent = ({ initialPaginatedData }) => {
       );
     }
 
-    if (filters.activities.length > 0) {
-      result = result.filter(park =>
-        filters.activities.some(activity =>
-          park.activities?.some(a => a.name?.toLowerCase() === activity.toLowerCase())
-        )
-      );
-    }
-
     return result;
   }, [allParks, normalizedSearchTerm, filters]);
 
@@ -292,8 +266,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
     const changed =
       prev.search !== normalizedSearchTerm ||
       prev.npOnly !== filters.nationalParksOnly ||
-      prev.statesLen !== filters.states.length ||
-      prev.actsLen !== filters.activities.length;
+      prev.statesLen !== filters.states.length;
 
     if (hasMounted.current && changed) {
       setCurrentPage(1);
@@ -306,9 +279,8 @@ const ExploreContent = ({ initialPaginatedData }) => {
       search: normalizedSearchTerm,
       npOnly: filters.nationalParksOnly,
       statesLen: filters.states.length,
-      actsLen: filters.activities.length,
     };
-  }, [normalizedSearchTerm, filters.nationalParksOnly, filters.states.length, filters.activities.length, pathname, router, searchParams]);
+  }, [normalizedSearchTerm, filters.nationalParksOnly, filters.states.length, pathname, router, searchParams]);
 
   // Handle page reset when switching between server/client pagination
   useEffect(() => {
@@ -348,23 +320,12 @@ const ExploreContent = ({ initialPaginatedData }) => {
     }));
   }, []);
 
-  const toggleActivityFilter = useCallback((activity) => {
-    setFilters(prev => ({
-      ...prev,
-      activities: prev.activities.includes(activity)
-        ? prev.activities.filter(a => a !== activity)
-        : [...prev.activities, activity]
-    }));
-  }, []);
-
   const clearAllFilters = useCallback(() => {
-    setFilters({ nationalParksOnly: true, states: [], activities: [] });
+    setFilters({ nationalParksOnly: true, states: [] });
     setSearchTerm('');
   }, []);
 
-  const activeFiltersCount =
-    filters.states.length +
-    filters.activities.length;
+  const activeFiltersCount = filters.states.length;
 
   const nationalParksCount = useMemo(() => {
     const parksToCount = allParksData?.data || [];
@@ -378,6 +339,24 @@ const ExploreContent = ({ initialPaginatedData }) => {
   const displayedNationalParksCount = nationalParksCount || (filters.nationalParksOnly ? (paginatedData?.total || 0) : 0);
   const displayedParksAndSitesCount = allParksData?.data?.length || totalParks || 0;
   const statesLabelCount = hasFullParksData ? uniqueStates.length : null;
+
+  const resultsTotal = needsAllParks ? filteredParks.length : (totalParks || filteredParks.length);
+  const resultsRangeStart = resultsTotal > 0
+    ? (needsAllParks ? startIndex + 1 : (currentPage - 1) * parksPerPage + 1)
+    : 0;
+  const resultsRangeEnd = needsAllParks
+    ? Math.min(endIndex, filteredParks.length)
+    : Math.min(currentPage * parksPerPage, resultsTotal);
+
+  const mobilePlanCta = useMemo(
+    () => getExploreMobilePlanCta({
+      user,
+      isAuthenticated,
+      searchTerm,
+      stateCodes: filters.states,
+    }),
+    [user, isAuthenticated, searchTerm, filters.states]
+  );
 
   return (
     <>
@@ -396,7 +375,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
               <span className="text-xs font-medium uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Discover Parks
+                Explore Parks
               </span>
             </div>
 
@@ -451,7 +430,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span>
-                Showing {filteredParks.length > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, filteredParks.length)} of {filteredParks.length} parks
+                Showing {resultsRangeStart}-{resultsRangeEnd} of {resultsTotal} parks
               </span>
             </div>
             {calculatedTotalPages > 1 && (
@@ -536,36 +515,13 @@ const ExploreContent = ({ initialPaginatedData }) => {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Activities</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {popularActivities.map(activity => (
-                      <button
-                        key={activity}
-                        onClick={() => toggleActivityFilter(activity)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                          filters.activities.includes(activity) ? '' : 'ring-1 hover:bg-white/5'
-                        }`}
-                        style={
-                          filters.activities.includes(activity)
-                            ? {
-                                backgroundColor: 'var(--surface-active)',
-                                borderWidth: '1px',
-                                borderColor: 'var(--border-hover)',
-                                color: 'var(--text-primary)'
-                              }
-                            : {
-                                backgroundColor: 'var(--surface)',
-                                borderColor: 'var(--border)',
-                                color: 'var(--text-secondary)'
-                              }
-                        }
-                      >
-                        {activity}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <Link
+                  href={BROWSE_HUB_PATH}
+                  className="mt-2 inline-flex text-sm font-medium hover:opacity-90"
+                  style={{ color: 'var(--accent-green)' }}
+                >
+                  {BROWSE_HUB_CTA_LABEL} →
+                </Link>
               </div>
             </aside>
 
@@ -643,7 +599,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
                 </div>
               </div>
 
-              {isLoading && (
+              {showParksLoading && (
                 <div className="flex items-center justify-center py-24">
                   <div className="text-center">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-forest-500" />
@@ -659,7 +615,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
                 </div>
               )}
 
-              {!isLoading && !error && filteredParks.length === 0 && (
+              {!showParksLoading && !error && filteredParks.length === 0 && (
                 <div className="text-center py-24">
                   <Compass className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
                   <p className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No parks found</p>
@@ -679,7 +635,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
                 </div>
               )}
 
-              {!isLoading && !error && filteredParks.length > 0 && (
+              {!showParksLoading && !error && filteredParks.length > 0 && (
                 <>
                   <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
                     {currentParks.map((park, index) => (
@@ -690,7 +646,7 @@ const ExploreContent = ({ initialPaginatedData }) => {
                   {calculatedTotalPages > 1 && (
                     <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        Showing {startIndex + 1}-{Math.min(endIndex, filteredParks.length)} of {filteredParks.length} parks
+                        Showing {resultsRangeStart}-{resultsRangeEnd} of {resultsTotal} parks
                       </div>
                       <div className="flex items-center gap-2">
                         <button onClick={goToPreviousPage} disabled={currentPage === 1}
@@ -732,22 +688,33 @@ const ExploreContent = ({ initialPaginatedData }) => {
 
       {/* Plan CTA — mobile only (desktop users see it in the header nav) */}
       <section className="pb-16 px-4 sm:px-6 lg:hidden">
-        <div className="max-w-3xl mx-auto text-center rounded-2xl p-8 backdrop-blur"
+        <div
+          className="max-w-3xl mx-auto rounded-2xl p-6 sm:p-8 backdrop-blur text-left"
           style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}
         >
-          <Compass className="h-10 w-10 mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
-          <h2 className="text-2xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-            Ready to plan your adventure?
-          </h2>
-          <p className="text-base mb-6 max-w-lg mx-auto" style={{ color: 'var(--text-secondary)' }}>
-            Let AI build a personalized itinerary based on your interests, travel dates, and preferred parks.
+          <div className="flex items-start gap-4 mb-4">
+            <TrailieAvatar className="!h-12 !w-12 shrink-0" />
+            <div className="min-w-0">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.24em]"
+                style={{ color: 'var(--accent-green)' }}
+              >
+                Trailie
+              </p>
+              <h2 className="text-xl sm:text-2xl font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
+                {mobilePlanCta.title}
+              </h2>
+            </div>
+          </div>
+          <p className="text-base mb-6 max-w-none" style={{ color: 'var(--text-secondary)' }}>
+            {mobilePlanCta.body}
           </p>
           <Link
             href="/plan-ai"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
+            className="inline-flex w-full items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 sm:w-auto"
             style={{ backgroundColor: 'var(--accent-green)' }}
           >
-            Plan with Trailie
+            {mobilePlanCta.button}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -791,32 +758,13 @@ const ExploreContent = ({ initialPaginatedData }) => {
                   ))}
                 </div>
               </div>
-              <div>
-                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>ACTIVITIES</h4>
-                <div className="flex flex-wrap gap-2">
-                  {popularActivities.map(activity => (
-                    <button
-                      key={activity}
-                      onClick={() => toggleActivityFilter(activity)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${filters.activities.includes(activity) ? '' : 'ring-1 hover:bg-white/5'}`}
-                      style={
-                        filters.activities.includes(activity)
-                          ? {
-                              backgroundColor: 'var(--bg-secondary)',
-                              borderWidth: '1px',
-                              borderColor: 'var(--border)',
-                              color: 'var(--text-primary)'
-                            }
-                          : {
-                              backgroundColor: 'var(--surface)',
-                              borderColor: 'var(--border)',
-                              color: 'var(--text-secondary)'
-                            }
-                      }
-                    >{activity}</button>
-                  ))}
-                </div>
-              </div>
+              <Link
+                href={BROWSE_HUB_PATH}
+                className="inline-flex text-sm font-medium"
+                style={{ color: 'var(--accent-green)' }}
+              >
+                {BROWSE_HUB_CTA_LABEL} →
+              </Link>
             </div>
             <div className="mt-8 flex gap-3">
               <button onClick={clearAllFilters} className="flex-1 py-3 rounded-xl font-semibold transition"
@@ -842,77 +790,23 @@ const ExploreContent = ({ initialPaginatedData }) => {
   );
 };
 
-const ParkCard = memo(({ park, viewMode, rating, index = 0 }) => {
-  if (viewMode === 'list') {
-    return (
-      <Link href={`/parks/${parkToSlug(park.fullName)}`}
-        className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
-        style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
-      >
-        <div className="relative w-48 h-32 flex-shrink-0 rounded-xl overflow-hidden">
-          <Image src={park.images[0]?.url || '/og-image-trailverse.jpg'} alt={park.fullName} fill sizes="192px" className="object-cover group-hover:scale-110 transition-transform duration-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <h3 className="text-xl font-bold group-hover:text-forest-500 transition" style={{ color: 'var(--text-primary)' }}>{park.fullName}</h3>
-            <ArrowRight className="h-5 w-5 flex-shrink-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" style={{ color: 'var(--text-primary)' }} />
-          </div>
-          <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--text-secondary)' }}>{park.description}</p>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-              <MapPin className="h-4 w-4" /><span className="text-sm">{park.states}</span>
-            </div>
-            {rating && rating.totalReviews > 0 ? (
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-400" weight="fill" />
-                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{rating.averageRating.toFixed(1)}</span>
-                <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>({rating.totalReviews})</span>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </Link>
-    );
-  }
-
+function ExplorePageFallback() {
   return (
-    <Link href={`/parks/${parkToSlug(park.fullName)}`}
-      className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300"
-      style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: 'var(--shadow)' }}
-    >
-      <div className="relative h-56 overflow-hidden">
-        <Image src={park.images[0]?.url || '/og-image-trailverse.jpg'} alt={park.fullName} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-110 transition-transform duration-500" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur"
-          style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-        >{park.states}</div>
-      </div>
-      <div className="p-6">
-        <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-forest-500 transition" style={{ color: 'var(--text-primary)' }}>{park.fullName}</h3>
-        <p className="text-sm line-clamp-3 mb-4" style={{ color: 'var(--text-secondary)' }}>{park.description}</p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
-            <MapPin className="h-4 w-4" /><span className="text-sm">{park.states}</span>
-          </div>
-          {rating && rating.totalReviews > 0 ? (
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400" weight="fill" />
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{rating.averageRating.toFixed(1)}</span>
-              <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>({rating.totalReviews})</span>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </Link>
+    <div
+      className="min-h-[50vh] animate-pulse"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
+      aria-hidden
+    />
   );
-});
+}
 
-ParkCard.displayName = 'ParkCard';
-
-export default function ExplorePage({ initialPaginatedData }) {
+export default function ExplorePage({ initialPaginatedData, initialAllParksData }) {
   return (
-    <Suspense fallback={<LoadingScreen />}>
-      <ExploreContent initialPaginatedData={initialPaginatedData} />
+    <Suspense fallback={<ExplorePageFallback />}>
+      <ExploreContent
+        initialPaginatedData={initialPaginatedData}
+        initialAllParksData={initialAllParksData}
+      />
     </Suspense>
   );
 }

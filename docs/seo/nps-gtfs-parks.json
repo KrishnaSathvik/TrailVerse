@@ -1,0 +1,646 @@
+{
+  "source": "https://www.nps.gov/common/uploads/sortable_dataset/developer/7A3D14E9-D971-C526-7A2BDBD1DE0CE1A7/7A3D14E9-D971-C526-7A2BDBD1DE0CE1A7.json",
+  "fetched": "2026-05-27",
+  "parks": {
+    "acad": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/acad/index.htm\">Acadia National Park</a>",
+        "parkName": "Acadia National Park",
+        "parkCode": "acad",
+        "parkUrl": "https://www.nps.gov/acad/index.htm",
+        "system": "Island Explorer",
+        "systemUrl": "https://www.nps.gov/acad/planyourvisit/island-explorer.htm",
+        "gtfsLabel": "Island Explorer GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/acad/island-explorer.zip",
+        "validThrough": "8/17/2025",
+        "lastModified": "7/10/2025",
+        "notes": "Seasonal Service Concluded"
+      }
+    ],
+    "band": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/band/index.htm\">Bandalier National Monument</a>",
+        "parkName": "Bandalier National Monument",
+        "parkCode": "band",
+        "parkUrl": "https://www.nps.gov/band/index.htm",
+        "system": "Bandalier National Monument Shuttle",
+        "systemUrl": "https://www.nps.gov/band/planyourvisit/shuttle.htm",
+        "gtfsLabel": "Bandalier National Monument GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/band/bandalier-national-monument.zip",
+        "validThrough": "10/14/2026",
+        "lastModified": "5/15/2026",
+        "notes": ""
+      }
+    ],
+    "boha": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/boha/index.htm\">Boston Harbor Island National Recreation Area</a>",
+        "parkName": "Boston Harbor Island National Recreation Area",
+        "parkCode": "boha",
+        "parkUrl": "https://www.nps.gov/boha/index.htm",
+        "system": "Boston Harbor Islands Ferry",
+        "systemUrl": "https://www.nps.gov/boha/planyourvisit/index.htm",
+        "gtfsLabel": "Boston Harbor Islands Ferry GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/boha/boston-harbor-islands-ferry.zip",
+        "validThrough": "10/13/2026",
+        "lastModified": "5/15/2026",
+        "notes": ""
+      },
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/boha/index.htm\">Boston Harbor Island National Recreation Area</a>",
+        "parkName": "Boston Harbor Island National Recreation Area",
+        "parkCode": "boha",
+        "parkUrl": "https://www.nps.gov/boha/index.htm",
+        "system": "Cathleen Stone Island Ferry",
+        "systemUrl": "https://www.nps.gov/boha/planyourvisit/index.htm",
+        "gtfsLabel": "Cathleen Stone Island Ferry GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/boha/cathleen-stone-island-ferry.zip",
+        "validThrough": "10/13/2026",
+        "lastModified": "5/15/2026",
+        "notes": ""
+      }
+    ],
+    "brca": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/brca/index.htm\">Bryce Canyon National Park</a>",
+        "parkName": "Bryce Canyon National Park",
+        "parkCode": "brca",
+        "parkUrl": "https://www.nps.gov/brca/index.htm",
+        "system": "Bryce Canyon Shuttle",
+        "systemUrl": "https://www.nps.gov/brca/planyourvisit/shuttle.htm",
+        "gtfsLabel": "Bryce Canyon Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/brca/bryce-canyon-shuttle.zip",
+        "validThrough": "10/19/2026",
+        "lastModified": "4/3/2026",
+        "notes": ""
+      }
+    ],
+    "calo": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/calo/index.htm\">Cape Lookout National Seashore</a>",
+        "parkName": "Cape Lookout National Seashore",
+        "parkCode": "calo",
+        "parkUrl": "https://www.nps.gov/calo/index.htm",
+        "system": "CALO Ferry Service",
+        "systemUrl": "https://www.nps.gov/calo/planyourvisit/ferry.htm",
+        "gtfsLabel": "CALO Ferry Service GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/calo/calo-ferry-service.zip",
+        "validThrough": "2/28/2027",
+        "lastModified": "4/27/2026",
+        "notes": ""
+      }
+    ],
+    "dena": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/dena/index.htm\">Denali National Park</a>",
+        "parkName": "Denali National Park",
+        "parkCode": "dena",
+        "parkUrl": "https://www.nps.gov/dena/index.htm",
+        "system": "DENA Shuttles",
+        "systemUrl": "https://www.nps.gov/dena/planyourvisit/courtesy-shuttle-buses.htm",
+        "gtfsLabel": "DENA Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/dena/dena-shuttle.zip",
+        "validThrough": "9/20/2026",
+        "lastModified": "4/27/2026",
+        "notes": "Seasonal Service Concluded"
+      }
+    ],
+    "depo": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/depo/index.htm\">Devils Postpile National Monument</a>",
+        "parkName": "Devils Postpile National Monument",
+        "parkCode": "depo",
+        "parkUrl": "https://www.nps.gov/depo/index.htm",
+        "system": "Reds Meadow Shuttle",
+        "systemUrl": "https://www.nps.gov/depo/planyourvisit/reds-meadow-and-devils-postpile-shuttle-information.htm",
+        "gtfsLabel": "Reds Meadow Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/depo/reds-meadow-shuttle.zip",
+        "validThrough": "12/31/2025",
+        "lastModified": "5/5/2025",
+        "notes": "Seasonal Service Concluded"
+      }
+    ],
+    "drto": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/drto/index.htm\">Dry Tortugas National Park</a>",
+        "parkName": "Dry Tortugas National Park",
+        "parkCode": "drto",
+        "parkUrl": "https://www.nps.gov/drto/index.htm",
+        "system": "DRTO Ferry Service",
+        "systemUrl": "https://www.nps.gov/drto/planyourvisit/directions.htm",
+        "gtfsLabel": "DRTO Ferry Service GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/drto/drto-ferry-service.zip",
+        "validThrough": "10/31/2026",
+        "lastModified": "3/26/2026",
+        "notes": ""
+      }
+    ],
+    "foma": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/foma/index.htm\">Fort Matanzas National Monument</a>",
+        "parkName": "Fort Matanzas National Monument",
+        "parkCode": "foma",
+        "parkUrl": "https://www.nps.gov/foma/index.htm",
+        "system": "FOMA Ferry Service",
+        "systemUrl": "https://www.nps.gov/foma/planyourvisit/hours.htm",
+        "gtfsLabel": "FOMA Ferry Service GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/foma/foma-ferry-service.zip",
+        "validThrough": "12/31/2026",
+        "lastModified": "1/29/2026",
+        "notes": ""
+      }
+    ],
+    "fosu": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/fosu/index.htm\">Fort Sumter and Fort Moultrie National Historical Park</a>",
+        "parkName": "Fort Sumter and Fort Moultrie National Historical Park",
+        "parkCode": "fosu",
+        "parkUrl": "https://www.nps.gov/fosu/index.htm",
+        "system": "FOSU Ferry Service",
+        "systemUrl": "https://www.nps.gov/fosu/planyourvisit/hours.htm",
+        "gtfsLabel": "FOSU Ferry Service GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/fosu/fosu-ferry-service.zip",
+        "validThrough": "11/25/2026",
+        "lastModified": "12/23/2025",
+        "notes": ""
+      }
+    ],
+    "glac": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/glac/index.htm\">Glacier National Park</a>",
+        "parkName": "Glacier National Park",
+        "parkCode": "glac",
+        "parkUrl": "https://www.nps.gov/glac/index.htm",
+        "system": "Going-to-the-Sun Road Shuttle",
+        "systemUrl": "https://www.nps.gov/glac/planyourvisit/shuttles.htm",
+        "gtfsLabel": "Going-to-the-Sun Road Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/glac/going-to-the-sun-road-shuttle.zip",
+        "validThrough": "9/1/2025",
+        "lastModified": "7/10/2025",
+        "notes": "Seasonal Service Concluded"
+      }
+    ],
+    "alca": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/alca/index.htm\">Golden Gate National Recreation Area (Alcatraz Island)</a>",
+        "parkName": "Golden Gate National Recreation Area (Alcatraz Island)",
+        "parkCode": "alca",
+        "parkUrl": "https://www.nps.gov/alca/index.htm",
+        "system": "Alcatraz Cruises Ferry",
+        "systemUrl": "https://www.nps.gov/alca/planyourvisit/index.htm",
+        "gtfsLabel": "Alcatraz Cruises Ferry GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/alca/alcatraz-cruises-ferry.zip",
+        "validThrough": "11/1/2026",
+        "lastModified": "5/4/2026",
+        "notes": ""
+      }
+    ],
+    "grca": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/grca/index.htm\">Grand Canyon National Park</a>",
+        "parkName": "Grand Canyon National Park",
+        "parkCode": "grca",
+        "parkUrl": "https://www.nps.gov/grca/index.htm",
+        "system": "South Rim Shuttle",
+        "systemUrl": "https://www.nps.gov/grca/planyourvisit/shuttle-buses.htm",
+        "gtfsLabel": "South Rim Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/grca/south-rim-shuttle-service.zip",
+        "validThrough": "5/22/2026",
+        "lastModified": "5/4/2026",
+        "notes": ""
+      }
+    ],
+    "guis": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/guis/index.htm\">Gulf Islands National Seashore</a>",
+        "parkName": "Gulf Islands National Seashore",
+        "parkCode": "guis",
+        "parkUrl": "https://www.nps.gov/guis/index.htm",
+        "system": "Pensacola Bay City Ferry (Florida Areas)",
+        "systemUrl": "https://www.nps.gov/guis/planyourvisit/pensacolabaycityferry.htm",
+        "gtfsLabel": "Pensacola Bay City Ferry GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/guis/guis-ferry-service-fl.zip",
+        "validThrough": "11/1/2026",
+        "lastModified": "3/30/2026",
+        "notes": ""
+      },
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/guis/index.htm\">Gulf Islands National Seashore</a>",
+        "parkName": "Gulf Islands National Seashore",
+        "parkCode": "guis",
+        "parkUrl": "https://www.nps.gov/guis/index.htm",
+        "system": "Ship Island Excursions (Mississippi Areas)",
+        "systemUrl": "https://www.nps.gov/guis/planyourvisit/ship-island-excursions.htm",
+        "gtfsLabel": "Ship Island Excursions GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/guis/guis-ferry-service-ms.zip",
+        "validThrough": "11/1/2026",
+        "lastModified": "3/6/2026",
+        "notes": ""
+      }
+    ],
+    "hafe": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/hafe/index.htm\">Harpers Ferry National Historical Park</a>",
+        "parkName": "Harpers Ferry National Historical Park",
+        "parkCode": "hafe",
+        "parkUrl": "https://www.nps.gov/hafe/index.htm",
+        "system": "HAFE Shuttle Transport",
+        "systemUrl": "https://www.nps.gov/hafe/planyourvisit/gettingaround.htm",
+        "gtfsLabel": "HAFE Shuttle Transport GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/hafe/hafe-shuttle-transport.zip",
+        "validThrough": "11/1/2026",
+        "lastModified": "10/31/2025",
+        "notes": ""
+      }
+    ],
+    "romo": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/romo/index.htm\">Rocky Mountain National Park</a>",
+        "parkName": "Rocky Mountain National Park",
+        "parkCode": "romo",
+        "parkUrl": "https://www.nps.gov/romo/index.htm",
+        "system": "Rocky Mountain National Park Visitor Shuttle",
+        "systemUrl": "https://www.nps.gov/romo/planyourvisit/shuttle-buses-and-public-transit.htm",
+        "gtfsLabel": "Rocky Mountain National Park Visitor Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/romo/rocky-mountain-national-park-shuttle.zip",
+        "validThrough": "10/19/2025",
+        "lastModified": "9/29/2025",
+        "notes": "Seasonal Service Concluded"
+      }
+    ],
+    "seki": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/seki/index.htm\">Sequoia & Kings Canyon National Parks</a>",
+        "parkName": "Sequoia & Kings Canyon National Parks",
+        "parkCode": "seki",
+        "parkUrl": "https://www.nps.gov/seki/index.htm",
+        "system": "Giant Forest Shuttle",
+        "systemUrl": "https://www.nps.gov/seki/planyourvisit/parktransit.htm",
+        "gtfsLabel": "Giant Forest Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/seki/giant-forest-shuttle.zip",
+        "validThrough": "9/7/2026",
+        "lastModified": "4/27/2026",
+        "notes": ""
+      }
+    ],
+    "stli": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/stli/index.htm\">Statue of Liberty National Monument</a>",
+        "parkName": "Statue of Liberty National Monument",
+        "parkCode": "stli",
+        "parkUrl": "https://www.nps.gov/stli/index.htm",
+        "system": "Statue of Liberty Ferries",
+        "systemUrl": "https://www.nps.gov/stli/planyourvisit/index.htm",
+        "gtfsLabel": "Statue of Liberty Ferries GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/stli/statue-of-liberty-ferries.zip",
+        "validThrough": "5/22/2026",
+        "lastModified": "3/12/2026",
+        "notes": ""
+      }
+    ],
+    "yose": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/yose/index.htm\">Yosemite National Park</a>",
+        "parkName": "Yosemite National Park",
+        "parkCode": "yose",
+        "parkUrl": "https://www.nps.gov/yose/index.htm",
+        "system": "Mariposa Grove Shuttle Service",
+        "systemUrl": "https://www.nps.gov/yose/planyourvisit/mg.htm#CP_JUMP_5917821",
+        "gtfsLabel": "Mariposa Grove Shuttle Service GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/yose/mariposa-grove-shuttle-service.zip",
+        "validThrough": "11/30/2026",
+        "lastModified": "5/4/2026",
+        "notes": ""
+      },
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/yose/index.htm\">Yosemite National Park</a>",
+        "parkName": "Yosemite National Park",
+        "parkCode": "yose",
+        "parkUrl": "https://www.nps.gov/yose/index.htm",
+        "system": "Yosemite Valley Shuttle",
+        "systemUrl": "https://www.nps.gov/yose/planyourvisit/publictransportation.htm",
+        "gtfsLabel": "Yosemite Valley Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/yose/yosemite-valley-shuttle.zip",
+        "validThrough": "1/1/2027",
+        "lastModified": "5/1/2026",
+        "notes": ""
+      }
+    ],
+    "zion": [
+      {
+        "parkHtml": "<a href=\"https://www.nps.gov/zion/index.htm\">Zion National Park</a>",
+        "parkName": "Zion National Park",
+        "parkCode": "zion",
+        "parkUrl": "https://www.nps.gov/zion/index.htm",
+        "system": "Zion Canyon Shuttle",
+        "systemUrl": "https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm",
+        "gtfsLabel": "Zion Canyon Shuttle GTFS",
+        "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/zion/zion-canyon-shuttle.zip",
+        "validThrough": "1/2/2027",
+        "lastModified": "3/6/2026",
+        "notes": ""
+      }
+    ]
+  },
+  "feeds": [
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/acad/index.htm\">Acadia National Park</a>",
+      "parkName": "Acadia National Park",
+      "parkCode": "acad",
+      "parkUrl": "https://www.nps.gov/acad/index.htm",
+      "system": "Island Explorer",
+      "systemUrl": "https://www.nps.gov/acad/planyourvisit/island-explorer.htm",
+      "gtfsLabel": "Island Explorer GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/acad/island-explorer.zip",
+      "validThrough": "8/17/2025",
+      "lastModified": "7/10/2025",
+      "notes": "Seasonal Service Concluded"
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/band/index.htm\">Bandalier National Monument</a>",
+      "parkName": "Bandalier National Monument",
+      "parkCode": "band",
+      "parkUrl": "https://www.nps.gov/band/index.htm",
+      "system": "Bandalier National Monument Shuttle",
+      "systemUrl": "https://www.nps.gov/band/planyourvisit/shuttle.htm",
+      "gtfsLabel": "Bandalier National Monument GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/band/bandalier-national-monument.zip",
+      "validThrough": "10/14/2026",
+      "lastModified": "5/15/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/boha/index.htm\">Boston Harbor Island National Recreation Area</a>",
+      "parkName": "Boston Harbor Island National Recreation Area",
+      "parkCode": "boha",
+      "parkUrl": "https://www.nps.gov/boha/index.htm",
+      "system": "Boston Harbor Islands Ferry",
+      "systemUrl": "https://www.nps.gov/boha/planyourvisit/index.htm",
+      "gtfsLabel": "Boston Harbor Islands Ferry GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/boha/boston-harbor-islands-ferry.zip",
+      "validThrough": "10/13/2026",
+      "lastModified": "5/15/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/boha/index.htm\">Boston Harbor Island National Recreation Area</a>",
+      "parkName": "Boston Harbor Island National Recreation Area",
+      "parkCode": "boha",
+      "parkUrl": "https://www.nps.gov/boha/index.htm",
+      "system": "Cathleen Stone Island Ferry",
+      "systemUrl": "https://www.nps.gov/boha/planyourvisit/index.htm",
+      "gtfsLabel": "Cathleen Stone Island Ferry GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/boha/cathleen-stone-island-ferry.zip",
+      "validThrough": "10/13/2026",
+      "lastModified": "5/15/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/brca/index.htm\">Bryce Canyon National Park</a>",
+      "parkName": "Bryce Canyon National Park",
+      "parkCode": "brca",
+      "parkUrl": "https://www.nps.gov/brca/index.htm",
+      "system": "Bryce Canyon Shuttle",
+      "systemUrl": "https://www.nps.gov/brca/planyourvisit/shuttle.htm",
+      "gtfsLabel": "Bryce Canyon Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/brca/bryce-canyon-shuttle.zip",
+      "validThrough": "10/19/2026",
+      "lastModified": "4/3/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/calo/index.htm\">Cape Lookout National Seashore</a>",
+      "parkName": "Cape Lookout National Seashore",
+      "parkCode": "calo",
+      "parkUrl": "https://www.nps.gov/calo/index.htm",
+      "system": "CALO Ferry Service",
+      "systemUrl": "https://www.nps.gov/calo/planyourvisit/ferry.htm",
+      "gtfsLabel": "CALO Ferry Service GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/calo/calo-ferry-service.zip",
+      "validThrough": "2/28/2027",
+      "lastModified": "4/27/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/dena/index.htm\">Denali National Park</a>",
+      "parkName": "Denali National Park",
+      "parkCode": "dena",
+      "parkUrl": "https://www.nps.gov/dena/index.htm",
+      "system": "DENA Shuttles",
+      "systemUrl": "https://www.nps.gov/dena/planyourvisit/courtesy-shuttle-buses.htm",
+      "gtfsLabel": "DENA Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/dena/dena-shuttle.zip",
+      "validThrough": "9/20/2026",
+      "lastModified": "4/27/2026",
+      "notes": "Seasonal Service Concluded"
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/depo/index.htm\">Devils Postpile National Monument</a>",
+      "parkName": "Devils Postpile National Monument",
+      "parkCode": "depo",
+      "parkUrl": "https://www.nps.gov/depo/index.htm",
+      "system": "Reds Meadow Shuttle",
+      "systemUrl": "https://www.nps.gov/depo/planyourvisit/reds-meadow-and-devils-postpile-shuttle-information.htm",
+      "gtfsLabel": "Reds Meadow Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/depo/reds-meadow-shuttle.zip",
+      "validThrough": "12/31/2025",
+      "lastModified": "5/5/2025",
+      "notes": "Seasonal Service Concluded"
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/drto/index.htm\">Dry Tortugas National Park</a>",
+      "parkName": "Dry Tortugas National Park",
+      "parkCode": "drto",
+      "parkUrl": "https://www.nps.gov/drto/index.htm",
+      "system": "DRTO Ferry Service",
+      "systemUrl": "https://www.nps.gov/drto/planyourvisit/directions.htm",
+      "gtfsLabel": "DRTO Ferry Service GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/drto/drto-ferry-service.zip",
+      "validThrough": "10/31/2026",
+      "lastModified": "3/26/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/foma/index.htm\">Fort Matanzas National Monument</a>",
+      "parkName": "Fort Matanzas National Monument",
+      "parkCode": "foma",
+      "parkUrl": "https://www.nps.gov/foma/index.htm",
+      "system": "FOMA Ferry Service",
+      "systemUrl": "https://www.nps.gov/foma/planyourvisit/hours.htm",
+      "gtfsLabel": "FOMA Ferry Service GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/foma/foma-ferry-service.zip",
+      "validThrough": "12/31/2026",
+      "lastModified": "1/29/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/fosu/index.htm\">Fort Sumter and Fort Moultrie National Historical Park</a>",
+      "parkName": "Fort Sumter and Fort Moultrie National Historical Park",
+      "parkCode": "fosu",
+      "parkUrl": "https://www.nps.gov/fosu/index.htm",
+      "system": "FOSU Ferry Service",
+      "systemUrl": "https://www.nps.gov/fosu/planyourvisit/hours.htm",
+      "gtfsLabel": "FOSU Ferry Service GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/fosu/fosu-ferry-service.zip",
+      "validThrough": "11/25/2026",
+      "lastModified": "12/23/2025",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/glac/index.htm\">Glacier National Park</a>",
+      "parkName": "Glacier National Park",
+      "parkCode": "glac",
+      "parkUrl": "https://www.nps.gov/glac/index.htm",
+      "system": "Going-to-the-Sun Road Shuttle",
+      "systemUrl": "https://www.nps.gov/glac/planyourvisit/shuttles.htm",
+      "gtfsLabel": "Going-to-the-Sun Road Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/glac/going-to-the-sun-road-shuttle.zip",
+      "validThrough": "9/1/2025",
+      "lastModified": "7/10/2025",
+      "notes": "Seasonal Service Concluded"
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/alca/index.htm\">Golden Gate National Recreation Area (Alcatraz Island)</a>",
+      "parkName": "Golden Gate National Recreation Area (Alcatraz Island)",
+      "parkCode": "alca",
+      "parkUrl": "https://www.nps.gov/alca/index.htm",
+      "system": "Alcatraz Cruises Ferry",
+      "systemUrl": "https://www.nps.gov/alca/planyourvisit/index.htm",
+      "gtfsLabel": "Alcatraz Cruises Ferry GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/alca/alcatraz-cruises-ferry.zip",
+      "validThrough": "11/1/2026",
+      "lastModified": "5/4/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/grca/index.htm\">Grand Canyon National Park</a>",
+      "parkName": "Grand Canyon National Park",
+      "parkCode": "grca",
+      "parkUrl": "https://www.nps.gov/grca/index.htm",
+      "system": "South Rim Shuttle",
+      "systemUrl": "https://www.nps.gov/grca/planyourvisit/shuttle-buses.htm",
+      "gtfsLabel": "South Rim Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/grca/south-rim-shuttle-service.zip",
+      "validThrough": "5/22/2026",
+      "lastModified": "5/4/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/guis/index.htm\">Gulf Islands National Seashore</a>",
+      "parkName": "Gulf Islands National Seashore",
+      "parkCode": "guis",
+      "parkUrl": "https://www.nps.gov/guis/index.htm",
+      "system": "Pensacola Bay City Ferry (Florida Areas)",
+      "systemUrl": "https://www.nps.gov/guis/planyourvisit/pensacolabaycityferry.htm",
+      "gtfsLabel": "Pensacola Bay City Ferry GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/guis/guis-ferry-service-fl.zip",
+      "validThrough": "11/1/2026",
+      "lastModified": "3/30/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/guis/index.htm\">Gulf Islands National Seashore</a>",
+      "parkName": "Gulf Islands National Seashore",
+      "parkCode": "guis",
+      "parkUrl": "https://www.nps.gov/guis/index.htm",
+      "system": "Ship Island Excursions (Mississippi Areas)",
+      "systemUrl": "https://www.nps.gov/guis/planyourvisit/ship-island-excursions.htm",
+      "gtfsLabel": "Ship Island Excursions GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/guis/guis-ferry-service-ms.zip",
+      "validThrough": "11/1/2026",
+      "lastModified": "3/6/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/hafe/index.htm\">Harpers Ferry National Historical Park</a>",
+      "parkName": "Harpers Ferry National Historical Park",
+      "parkCode": "hafe",
+      "parkUrl": "https://www.nps.gov/hafe/index.htm",
+      "system": "HAFE Shuttle Transport",
+      "systemUrl": "https://www.nps.gov/hafe/planyourvisit/gettingaround.htm",
+      "gtfsLabel": "HAFE Shuttle Transport GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/hafe/hafe-shuttle-transport.zip",
+      "validThrough": "11/1/2026",
+      "lastModified": "10/31/2025",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/romo/index.htm\">Rocky Mountain National Park</a>",
+      "parkName": "Rocky Mountain National Park",
+      "parkCode": "romo",
+      "parkUrl": "https://www.nps.gov/romo/index.htm",
+      "system": "Rocky Mountain National Park Visitor Shuttle",
+      "systemUrl": "https://www.nps.gov/romo/planyourvisit/shuttle-buses-and-public-transit.htm",
+      "gtfsLabel": "Rocky Mountain National Park Visitor Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/romo/rocky-mountain-national-park-shuttle.zip",
+      "validThrough": "10/19/2025",
+      "lastModified": "9/29/2025",
+      "notes": "Seasonal Service Concluded"
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/seki/index.htm\">Sequoia & Kings Canyon National Parks</a>",
+      "parkName": "Sequoia & Kings Canyon National Parks",
+      "parkCode": "seki",
+      "parkUrl": "https://www.nps.gov/seki/index.htm",
+      "system": "Giant Forest Shuttle",
+      "systemUrl": "https://www.nps.gov/seki/planyourvisit/parktransit.htm",
+      "gtfsLabel": "Giant Forest Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/seki/giant-forest-shuttle.zip",
+      "validThrough": "9/7/2026",
+      "lastModified": "4/27/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/stli/index.htm\">Statue of Liberty National Monument</a>",
+      "parkName": "Statue of Liberty National Monument",
+      "parkCode": "stli",
+      "parkUrl": "https://www.nps.gov/stli/index.htm",
+      "system": "Statue of Liberty Ferries",
+      "systemUrl": "https://www.nps.gov/stli/planyourvisit/index.htm",
+      "gtfsLabel": "Statue of Liberty Ferries GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/stli/statue-of-liberty-ferries.zip",
+      "validThrough": "5/22/2026",
+      "lastModified": "3/12/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/yose/index.htm\">Yosemite National Park</a>",
+      "parkName": "Yosemite National Park",
+      "parkCode": "yose",
+      "parkUrl": "https://www.nps.gov/yose/index.htm",
+      "system": "Mariposa Grove Shuttle Service",
+      "systemUrl": "https://www.nps.gov/yose/planyourvisit/mg.htm#CP_JUMP_5917821",
+      "gtfsLabel": "Mariposa Grove Shuttle Service GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/yose/mariposa-grove-shuttle-service.zip",
+      "validThrough": "11/30/2026",
+      "lastModified": "5/4/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/yose/index.htm\">Yosemite National Park</a>",
+      "parkName": "Yosemite National Park",
+      "parkCode": "yose",
+      "parkUrl": "https://www.nps.gov/yose/index.htm",
+      "system": "Yosemite Valley Shuttle",
+      "systemUrl": "https://www.nps.gov/yose/planyourvisit/publictransportation.htm",
+      "gtfsLabel": "Yosemite Valley Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/yose/yosemite-valley-shuttle.zip",
+      "validThrough": "1/1/2027",
+      "lastModified": "5/1/2026",
+      "notes": ""
+    },
+    {
+      "parkHtml": "<a href=\"https://www.nps.gov/zion/index.htm\">Zion National Park</a>",
+      "parkName": "Zion National Park",
+      "parkCode": "zion",
+      "parkUrl": "https://www.nps.gov/zion/index.htm",
+      "system": "Zion Canyon Shuttle",
+      "systemUrl": "https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm",
+      "gtfsLabel": "Zion Canyon Shuttle GTFS",
+      "gtfsUrl": "https://www.nps.gov/external-resources/gtfs/zion/zion-canyon-shuttle.zip",
+      "validThrough": "1/2/2027",
+      "lastModified": "3/6/2026",
+      "notes": ""
+    }
+  ]
+}

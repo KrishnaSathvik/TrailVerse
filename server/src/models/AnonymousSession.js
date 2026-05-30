@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ANONYMOUS_USER_MESSAGE_LIMIT, ANONYMOUS_SESSION_TTL_SECONDS } = require('../config/anonymousChatLimits');
 
 const AnonymousSessionSchema = new mongoose.Schema({
   anonymousId: {
@@ -72,7 +73,7 @@ const AnonymousSessionSchema = new mongoose.Schema({
 });
 
 // Index for cleanup of expired sessions
-AnonymousSessionSchema.index({ lastActivity: 1 }, { expireAfterSeconds: 48 * 60 * 60 }); // 48 hours
+AnonymousSessionSchema.index({ lastActivity: 1 }, { expireAfterSeconds: ANONYMOUS_SESSION_TTL_SECONDS });
 
 // Index for finding sessions by anonymousId
 AnonymousSessionSchema.index({ anonymousId: 1 });
@@ -88,7 +89,7 @@ AnonymousSessionSchema.methods.addMessage = function(message) {
 // Method to check if user can send more messages
 AnonymousSessionSchema.methods.canSendMessage = function() {
   const userMessageCount = this.messages.filter(msg => msg.role === 'user').length;
-  return userMessageCount <= 5;
+  return userMessageCount <= ANONYMOUS_USER_MESSAGE_LIMIT;
 };
 
 // Method to get conversation summary

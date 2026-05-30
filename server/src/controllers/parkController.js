@@ -1,4 +1,9 @@
 const npsService = require('../services/npsService');
+const { normalizePlaceForMap } = require('../utils/mapPlaceUtils');
+const gtfsCatalogService = require('../services/gtfsCatalogService');
+const gtfsFeedService = require('../services/gtfsFeedService');
+const { computeTransitOperating } = gtfsFeedService;
+const npsTransitPageService = require('../services/npsTransitPageService');
 
 const normalizeActivityName = (activityName = '') => {
   const name = activityName.toLowerCase();
@@ -190,26 +195,29 @@ exports.getParkByCode = async (req, res, next) => {
   }
 };
 
-// @desc    Get park with essential details (fast initial load — park info + alerts only)
+// @desc    Get park with essential details (park info + alerts + Recreation.gov permits)
 // @route   GET /api/parks/:parkCode/details
 // @access  Public
 exports.getParkDetails = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
 
-    const [parkResult, alertsResult] = await Promise.allSettled([
+    const ridbService = require('../services/ridbService');
+    const [parkResult, alertsResult, permitsResult] = await Promise.allSettled([
       npsService.getParkByCode(parkCode),
-      npsService.getParkAlerts(parkCode)
+      npsService.getParkAlerts(parkCode),
+      ridbService.getPermitsForPark(parkCode),
     ]);
 
     const park = parkResult.status === 'fulfilled' ? parkResult.value : null;
     const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
+    const permits = permitsResult.status === 'fulfilled' ? permitsResult.value : [];
 
     if (!park) {
       return res.status(404).json({ success: false, error: 'Park not found' });
     }
 
-    res.status(200).json({ success: true, data: { park, alerts } });
+    res.status(200).json({ success: true, data: { park, alerts, permits } });
   } catch (error) {
     next(error);
   }
@@ -228,6 +236,84 @@ const makeTabHandler = (serviceFn, label) => async (req, res, next) => {
   }
 };
 
+// @desc    Places (What to See) with coordinates for the interactive map
+// @route   GET /api/parks/map/places
+// @access  Public
+exports.getMapPlaces = async (req, res, next) => {
+  try {
+    const [byPark, allParks] = await Promise.all([
+      npsService.getAllPlaces(),
+      npsService.getAllParks(),
+    ]);
+
+    const parkNames = new Map(
+      (allParks || []).map((park) => [park.parkCode, park.fullName])
+    );
+
+    const places = [];
+    for (const [parkCode, list] of Object.entries(byPark || {})) {
+      if (!Array.isArray(list)) continue;
+      const parkName = parkNames.get(parkCode) || parkCode.toUpperCase();
+      for (const place of list) {
+        const normalized = normalizePlaceForMap(place, parkName);
+        if (normalized) places.push(normalized);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      count: places.length,
+      data: places,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Campgrounds with coordinates for the interactive map
+// @route   GET /api/parks/map/campgrounds
+// @access  Public
+exports.getMapCampgrounds = async (req, res, next) => {
+  try {
+    const [byPark, allParks] = await Promise.all([
+      npsService.getAllCampgrounds(),
+      npsService.getAllParks(),
+    ]);
+
+    const parkNames = new Map(
+      (allParks || []).map((park) => [park.parkCode, park.fullName])
+    );
+
+    const campgrounds = [];
+    for (const [parkCode, list] of Object.entries(byPark || {})) {
+      if (!Array.isArray(list)) continue;
+      for (const cg of list) {
+        const lat = Number.parseFloat(cg.latitude);
+        const lng = Number.parseFloat(cg.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        campgrounds.push({
+          id: cg.id || `${parkCode}-${cg.name}`,
+          name: cg.name,
+          parkCode,
+          parkName: parkNames.get(parkCode) || parkCode.toUpperCase(),
+          latitude: lat,
+          longitude: lng,
+          reservationUrl: cg.reservationUrl || null,
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      count: campgrounds.length,
+      data: campgrounds,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getParkAlerts = makeTabHandler(npsService.getParkAlerts.bind(npsService), 'alerts');
 exports.getParkActivities = makeTabHandler(npsService.getParkActivities.bind(npsService), 'activities');
 exports.getParkCampgrounds = makeTabHandler(npsService.getParkCampgrounds.bind(npsService), 'campgrounds');
@@ -239,6 +325,114 @@ exports.getParkVideos = makeTabHandler(npsService.getParkVideos.bind(npsService)
 exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bind(npsService), 'galleryPhotos');
 exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
 exports.getParkFacilities = makeTabHandler(npsService.getParkAmenities.bind(npsService), 'facilities');
+
+// @desc    Get park transit systems (NPS GTFS catalog)
+// @route   GET /api/parks/:parkCode/transit
+// @access  Public
+exports.getParkTransit = async (req, res, next) => {
+  try {
+    const parkCode = String(req.params.parkCode || '').toLowerCase();
+    if (!parkCode) {
+      return res.status(400).json({ success: false, error: 'parkCode is required' });
+    }
+
+    const { catalog, feeds } = await gtfsCatalogService.getFeedsForPark(parkCode);
+
+    const parsedFeeds = await Promise.all(
+      feeds.map(async (f) => {
+        if (!f.gtfsUrl) return { gtfsUrl: null, parsed: null, parsedError: 'Missing gtfsUrl' };
+        try {
+          const parsed = await gtfsFeedService.getParsedFeed(f.gtfsUrl);
+          return { gtfsUrl: f.gtfsUrl, parsed, parsedError: null };
+        } catch (e) {
+          return { gtfsUrl: f.gtfsUrl, parsed: null, parsedError: e?.message || 'Failed to parse GTFS feed' };
+        }
+      })
+    );
+    const parsedByUrl = new Map(parsedFeeds.map((p) => [p.gtfsUrl, p]));
+
+    const feedPayloads = await Promise.all(
+      feeds.map(async (f) => {
+        const parsed = parsedByUrl.get(f.gtfsUrl)?.parsed || null;
+        let operating = parsed
+          ? computeTransitOperating({
+            serviceToday: parsed.serviceToday,
+            agencyTimeZone: parsed.agencyTimeZone,
+            routes: parsed.summary?.routes || [],
+            season: parsed.season,
+            validThrough: f.validThrough,
+            notes: f.notes,
+          })
+          : null;
+
+        if (operating && npsTransitPageService.shouldPreferNpsOverGtfs(operating)) {
+          const npsOperating = await npsTransitPageService.getTransitSummary({
+            parkCode,
+            systemUrl: f.systemUrl,
+            preferNps: true,
+            agencyTimeZone: parsed?.agencyTimeZone || null,
+          });
+          if (npsOperating) {
+            const inactiveSeason = ['season_not_started', 'season_ended', 'schedule_unavailable'].includes(
+              npsOperating.serviceStatus
+            );
+            operating = {
+              ...operating,
+              ...npsOperating,
+              timeZone: operating.timeZone || npsOperating.timeZone,
+              gtfsDataThroughLabel: operating.gtfsDataThroughLabel,
+              catalogValidThrough: operating.catalogValidThrough,
+              catalogExpired: operating.catalogExpired,
+            };
+            if (inactiveSeason) {
+              operating.operatingDaysLabel = null;
+              operating.frequencyLabel = null;
+              operating.scheduleDateLabel = null;
+              operating.scheduleDateYmd = null;
+              operating.todayWindow = null;
+              operating.seasonStartLabel = null;
+              operating.seasonEndLabel = null;
+            } else {
+              operating.scheduleDateYmd = operating.scheduleDateYmd || npsOperating.scheduleDateYmd;
+              operating.scheduleDateLabel = operating.scheduleDateLabel || npsOperating.scheduleDateLabel;
+              operating.frequencyLabel = npsOperating.frequencyLabel || operating.frequencyLabel;
+            }
+            operating = npsTransitPageService.pruneRedundantOperatingFields(operating);
+          }
+        } else if (operating) {
+          operating = npsTransitPageService.pruneRedundantOperatingFields(operating);
+        }
+
+        return {
+          systemName: f.systemName,
+          systemUrl: f.systemUrl,
+          gtfsUrl: f.gtfsUrl,
+          validThrough: f.validThrough,
+          lastModified: f.lastModified,
+          notes: f.notes,
+          parsed: parsed ? { ...parsed, operating } : null,
+          parsedError: parsedByUrl.get(f.gtfsUrl)?.parsedError || null,
+        };
+      })
+    );
+
+    const response = {
+      parkCode,
+      hasGtfs: feeds.length > 0,
+      publicTransportationUrl: `https://www.nps.gov/${parkCode}/planyourvisit/publictransportation.htm`,
+      feeds: feedPayloads,
+      source: {
+        npsDatasetJsonUrl: catalog.sourceUrl,
+        fetchedAt: catalog.fetchedAt,
+        cached: catalog.cached,
+      },
+    };
+
+    res.status(200).json({ success: true, data: response });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // In-memory cache for brochure URLs (30 days, max 200 parks)
 const brochureCache = new Map();

@@ -71,6 +71,13 @@ const elevationService = require('../services/elevationService');
 const parkSizeService = require('../services/parkSizeService');
 const User = require('../models/User');
 const DailyFeed = require('../models/DailyFeed');
+const {
+  FEED_TIMEZONE,
+  getFeedDateKey,
+  shiftFeedDate,
+  isPastFeedWindowStart,
+  shouldGenerateFeed,
+} = require('../utils/dailyFeedDate');
 
 // Database-based caching - no in-memory cache needed
 
@@ -97,23 +104,21 @@ function haversine(a, b) {
 
 /**
  * Generate the full daily feed and save to MongoDB.
- * Returns the saved document. Skips if today's feed already exists.
+ * Returns the saved document. Regenerates when forced or when today's 7 AM CST window hasn't run yet.
  */
-const generateAndSaveDailyFeed = async () => {
+const generateAndSaveDailyFeed = async ({ force = false, feedDate = getFeedDateKey() } = {}) => {
   const now = new Date();
-  const todayDate = now.toISOString().split('T')[0];
 
-  // Already generated?
-  const existing = await DailyFeed.findOne({ date: todayDate, isShared: true });
-  if (existing?.parkOfDay?.parkCode && existing?.natureFact) {
-    console.log(`📦 Daily feed already exists for ${todayDate}, skipping`);
+  const existing = await DailyFeed.findOne({ date: feedDate, isShared: true });
+  if (!force && !shouldGenerateFeed({ feedDoc: existing, feedDate, force: false, now })) {
+    console.log(`📦 Daily feed already fresh for ${feedDate}, skipping`);
     return existing;
   }
 
-  console.log(`🔄 Generating daily feed for ${todayDate}…`);
+  console.log(`🔄 Generating daily feed for ${feedDate} (${FEED_TIMEZONE})…`);
 
   // 1. Pick today's park
-  const selectedPark = await getRandomParkOfDay(todayDate);
+  const selectedPark = await getRandomParkOfDay(feedDate);
   if (!selectedPark?.parkCode) throw new Error('No park selected');
 
   const parkLocation = {
@@ -173,14 +178,12 @@ const generateAndSaveDailyFeed = async () => {
   const stargazingGuide = pick(aiResults[7], 'stargazingGuide');
 
   // 4. Recent parks (7-day memory)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const recentFeeds = await DailyFeed.find({
     isShared: true,
-    date: { $gte: sevenDaysAgo.toISOString().split('T')[0], $lt: todayDate }
+    date: { $gte: shiftFeedDate(feedDate, -7), $lt: feedDate }
   }).sort({ createdAt: -1 }).limit(7);
 
-  const recentParks = [{ parkCode: selectedPark.parkCode, name: selectedPark.name, date: todayDate, selectedAt: new Date() }];
+  const recentParks = [{ parkCode: selectedPark.parkCode, name: selectedPark.name, date: feedDate, selectedAt: new Date() }];
   recentFeeds.forEach(feed => {
     if (feed.parkOfDay?.parkCode) {
       recentParks.push({ parkCode: feed.parkOfDay.parkCode, name: feed.parkOfDay.name, date: feed.date, selectedAt: feed.createdAt || new Date() });
@@ -214,20 +217,28 @@ const generateAndSaveDailyFeed = async () => {
     rawWeatherData,
     rawAstroData,
     timestamp: now.toISOString(),
-    generatedAt: now.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+    generatedAt: now.toLocaleString('en-US', {
+      timeZone: FEED_TIMEZONE,
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZoneName: 'short',
+    })
   };
 
   await DailyFeed.updateOne(
-    { date: todayDate, isShared: true },
+    { date: feedDate, isShared: true },
     {
       $set: { ...feedData, updatedAt: new Date() },
-      $setOnInsert: { userId: null, date: todayDate, isShared: true, createdAt: new Date(), expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+      $setOnInsert: { userId: null, date: feedDate, isShared: true, createdAt: new Date(), expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000) }
     },
     { upsert: true }
   );
 
-  console.log(`✅ Daily feed saved for ${todayDate} — park: ${selectedPark.name}`);
-  return await DailyFeed.findOne({ date: todayDate, isShared: true });
+  console.log(`✅ Daily feed saved for ${feedDate} — park: ${selectedPark.name}`);
+  return await DailyFeed.findOne({ date: feedDate, isShared: true });
 };
 
 exports.generateAndSaveDailyFeed = generateAndSaveDailyFeed;
@@ -239,22 +250,25 @@ exports.generateAndSaveDailyFeed = generateAndSaveDailyFeed;
 // @access  Private
 exports.getDailyFeed = async (req, res, next) => {
   try {
-    const todayDate = new Date().toISOString().split('T')[0];
+    const feedDate = getFeedDateKey();
 
-    // Read from DB — should be instant since the scheduler pre-generates it
-    let feed = await DailyFeed.findOne({ date: todayDate, isShared: true });
+    let feed = await DailyFeed.findOne({ date: feedDate, isShared: true });
 
-    // Fallback: generate on-demand if scheduler hasn't run yet
-    if (!feed?.parkOfDay?.parkCode) {
-      console.log(`⚠️ No pre-generated feed for ${todayDate}, generating on-demand…`);
-      feed = await generateAndSaveDailyFeed();
+    if (shouldGenerateFeed({ feedDoc: feed, feedDate })) {
+      if (isPastFeedWindowStart()) {
+        console.log(`⚠️ No fresh feed for ${feedDate}, generating on-demand…`);
+        feed = await generateAndSaveDailyFeed({ feedDate });
+      } else if (!feed?.parkOfDay?.parkCode) {
+        console.log(`⚠️ No feed for ${feedDate} (before 7 AM ${FEED_TIMEZONE}), generating fallback…`);
+        feed = await generateAndSaveDailyFeed({ feedDate });
+      }
     }
 
     if (!feed) {
       return res.status(503).json({ success: false, error: 'Daily feed is being generated. Please try again in a moment.' });
     }
 
-    res.json({ success: true, data: feed, cached: true });
+    res.json({ success: true, data: feed, feedDate, cached: true });
   } catch (error) {
     console.error('Error getting daily feed:', error);
     next(error);
@@ -266,19 +280,22 @@ exports.getDailyFeed = async (req, res, next) => {
 // @access  Public (optionalAuth)
 exports.getParkOfDay = async (req, res, next) => {
   try {
+    const feedDate = getFeedDateKey();
+    const sharedFeed = await DailyFeed.findOne({ date: feedDate, isShared: true });
+
+    if (sharedFeed?.parkOfDay?.parkCode) {
+      return res.status(200).json({ success: true, data: sharedFeed.parkOfDay, feedDate });
+    }
+
     let parkOfDay;
     if (req.user && req.user._id) {
       const user = await User.findById(req.user._id);
-      parkOfDay = await getPersonalizedParkOfDay(user);
+      parkOfDay = await getPersonalizedParkOfDay(user, feedDate);
     } else {
-      const today = new Date().toISOString().split('T')[0];
-      parkOfDay = await getRandomParkOfDay(today);
+      parkOfDay = await getRandomParkOfDay(feedDate);
     }
-    
-    res.status(200).json({
-      success: true,
-      data: parkOfDay
-    });
+
+    res.status(200).json({ success: true, data: parkOfDay, feedDate });
   } catch (error) {
     next(error);
   }
@@ -332,12 +349,12 @@ exports.testAuth = async (req, res, next) => {
 exports.debugDailyFeed = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const todayISO = new Date().toISOString().split('T')[0];
+    const feedDate = getFeedDateKey();
     
     console.log('🐛 Debug: Checking daily feed data for user:', userId);
     
-    // Check what's in the database
-    const dbFeed = await DailyFeed.findOne({ userId, date: todayISO });
+    const sharedFeed = await DailyFeed.findOne({ date: feedDate, isShared: true });
+    const dbFeed = await DailyFeed.findOne({ userId, date: feedDate });
     
     if (dbFeed) {
       console.log('🐛 Debug: Found database feed:', {
@@ -359,8 +376,14 @@ exports.debugDailyFeed = async (req, res, next) => {
       success: true,
       data: {
         userId,
-        todayISO,
+        feedDate,
+        hasSharedFeed: !!sharedFeed,
         hasDbFeed: !!dbFeed,
+        sharedFeed: sharedFeed ? {
+          parkName: sharedFeed.parkOfDay?.name,
+          generatedAt: sharedFeed.generatedAt,
+          updatedAt: sharedFeed.updatedAt,
+        } : null,
         dbFeed: dbFeed ? {
           hasParkOfDay: !!dbFeed.parkOfDay,
           parkName: dbFeed.parkOfDay?.name,
@@ -492,10 +515,7 @@ async function getRandomParkOfDay(dateStr) {
     }
 
     // Get recent parks from the last 7 days to avoid repetition
-    const targetDate = new Date(dateStr);
-    const sevenDaysAgo = new Date(targetDate);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+    const sevenDaysAgoStr = shiftFeedDate(dateStr, -7);
     
     console.log(`🕒 Checking for recent parks from ${sevenDaysAgoStr} up to ${dateStr} (excluding current day)`);
     
@@ -589,7 +609,7 @@ async function getRandomParkOfDay(dateStr) {
   }
 }
 
-async function getPersonalizedParkOfDay(user) {
+async function getPersonalizedParkOfDay(user, feedDate = getFeedDateKey()) {
   try {
     // Get user's saved parks and visited parks
     const savedParks = user.savedParks || [];
@@ -650,7 +670,7 @@ async function getPersonalizedParkOfDay(user) {
     const locationBasedParks = unvisitedParks;
     
     // Use user-specific date-based seed for personalized daily park selection
-    const today = new Date().toISOString().split('T')[0];
+    const today = feedDate;
     const userSeed = user._id.toString().slice(-6); // Use last 6 chars of user ID
     
     // Proper seeded PRNG using Mulberry32 algorithm
@@ -1512,7 +1532,7 @@ async function getRawAstroData(location) {
     
     // Get raw data from Sunrise-Sunset API
     const axios = require('axios');
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getFeedDateKey();
     
     const response = await axios.get('https://api.sunrise-sunset.org/json', {
       params: {

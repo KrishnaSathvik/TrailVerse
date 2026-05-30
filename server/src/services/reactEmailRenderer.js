@@ -193,20 +193,30 @@ class ReactEmailRenderer {
   async renderFeatureAnnouncementEmail(data) {
     const {
       username,
-      userEmail,
       planUrl,
+      exploreByActivityUrl,
+      discoverUrl,
+      mapUrl,
+      compareUrl,
+      chatgptUrl,
       exploreUrl,
-      magazineUrl,
+      testimonialsUrl,
       unsubscribeUrl
     } = data;
 
+    const base = 'https://www.nationalparksexplorerusa.com';
     const emailComponent = React.createElement(FeatureAnnouncementEmail, {
       username: username || 'there',
-      userEmail: userEmail || 'user@example.com',
-      planUrl: planUrl || 'https://nationalparksexplorerusa.com/plan-ai',
-      exploreUrl: exploreUrl || 'https://nationalparksexplorerusa.com/explore',
-      magazineUrl: magazineUrl || 'https://nationalparksexplorerusa.com/magazine',
-      unsubscribeUrl: unsubscribeUrl || 'https://nationalparksexplorerusa.com/unsubscribe'
+      planUrl: planUrl || `${base}/plan-ai`,
+      exploreByActivityUrl: exploreByActivityUrl || discoverUrl || `${base}/discover`,
+      mapUrl: mapUrl || `${base}/map`,
+      compareUrl: compareUrl || `${base}/compare`,
+      chatgptUrl:
+        chatgptUrl ||
+        'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
+      exploreUrl: exploreUrl || `${base}/explore`,
+      testimonialsUrl: testimonialsUrl || `${base}/testimonials`,
+      unsubscribeUrl: unsubscribeUrl || `${base}/unsubscribe`
     });
 
     return await render(emailComponent);

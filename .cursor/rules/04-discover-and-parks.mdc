@@ -1,0 +1,96 @@
+---
+description: Discover hub and park detail — data model, URLs, GTFS, SEO, extension points
+globs: "{next-frontend/src/app/discover/**,next-frontend/src/app/parks/**,next-frontend/src/components/discover/**,next-frontend/src/components/park-details/**,server/src/services/discover*,server/src/controllers/discover*}"
+alwaysApply: false
+---
+
+# Discover + Parks — Deep Reference
+
+## Discover dimensions
+
+Four independent taxonomies (from NPS/RIDB/catalog service):
+
+| Dimension | URL pattern | Example slug |
+|-----------|-------------|--------------|
+| Activity | `/discover/activity/[slug]` | `hiking` |
+| Type (designation) | `/discover/type/[slug]` | `national-park` |
+| State | `/parks/state/[slug]` | `utah` |
+| Topic | `/discover/topic/[slug]` | `animals` |
+
+**Hub** (`/discover`): SSR catalog `GET /api/discover/catalog` returns `{ activities, types, states, topics }` with `slug`, `name`, `parkCount`, `iconKey` (activities).
+
+**Client hook**: `useDiscoverCatalog({ initialData })` — React Query with server fallback.
+
+**Components**:
+- `DiscoverGridCard` — card with count badge
+- `DiscoverSection` — titled section + "See all"
+- `DiscoverDetailClient` — full listing page with pagination
+- `DiscoverNpsGuideSection` — scraped NPS article content (`npsArticleScraper`)
+- `DiscoverSearchBar` — cross-dimension park search
+
+**Featured overrides**: `server/data/discover-featured.json`
+
+## Park detail architecture
+
+### URL resolution (`parks/[parkCode]/page.jsx`)
+
+1. If `parkCode.length > 4` → treat as **slug**, `getParkDetailsBySlug`
+2. Else → NPS **park code** (4 chars), may redirect to canonical slug
+3. `findCorrectSlug` for typo correction
+4. `generateStaticParams` from `getAllParkSlugs()` — slug paths only at build
+
+### Client tabs (`ParkDetailClient.jsx`)
+
+- Tab state: `?tab=overview|alerts|places|activities|...`
+- **Lazy fetch** per tab: `useTabData(npsParkCode, endpoint, enabled)`
+- NPS code for API ≠ URL slug (resolved from park object)
+- **Transit tab**: only if `parkHasGtfs(npsParkCode)` — see `lib/gtfsParks.js`
+- **Getting there**: `GettingThereSection`, directions via `utils/directionsUtils.js`
+- **Parking**: `parkingUtils.js`, **Amenities**: `amenityUtils.js` with filter chips
+- **Webcams**: `webcamUtils.js`
+
+### Enhanced data (above fold)
+
+From server props or `/api/parks/:code/enhanced`:
+- Weather, crowd level, alerts count on tab badge
+- Link to `/reports/when-to-go.html` for crowd calendar
+
+### User actions (auth required)
+
+- Mark Visited, Favorite → user APIs
+- Share park → Web Share API / copy link
+- Plan with Trailie → `/plan-ai` with park context
+- Compare → `/compare` with park pre-selected
+
+### SEO (`lib/parkSeo.js`)
+
+- `buildParkMetaDescription`, `buildParkSeoLeadLine`
+- `isTierAPark` — enhanced copy for high-traffic parks
+- `getStateHubSlug` → link to `/parks/state/{slug}`
+- `sortRelatedParks` for "You Might Also Like"
+
+## State pages
+
+- `StateParkPageClient.jsx` — lists parks in state
+- Slugs match sitemap list in `sitemap.ts` (kebab-case state names)
+
+## GTFS transit
+
+- Parks with GTFS feeds: `lib/gtfsParks.js` + `server/src/services/gtfs*`
+- Park tab fetches `GET /api/parks/:code/transit`
+
+## Adding a new discover dimension or facet
+
+1. Extend `discoverCatalogService` + catalog API shape
+2. Add route under `app/discover/`
+3. Add hub section in `DiscoverPageClient.jsx`
+4. Update sitemap if indexable listing page
+5. Add tests in `server/src/utils/__tests__/discoverUtils.test.js`
+
+## Adding a new park tab
+
+1. Add NPS endpoint in `parks.js` route + `npsService`
+2. Add tab id to `ParkDetailClient` tabs array
+3. Wire `useTabData` with endpoint name
+4. Update `ParkExploreTabs` / filter chips if needed
+5. Consider lazy-load (do not fetch on page load)

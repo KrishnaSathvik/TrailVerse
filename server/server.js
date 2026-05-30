@@ -58,6 +58,29 @@ connectDB().then(async () => {
       console.log(`🌲 Warmed parks snapshot with ${parks.length} parks`);
       // Build dynamic park name map — reuses the already-cached park list
       await loadDynamicMap();
+
+      const discoverCatalogService = require('./src/services/discoverCatalogService');
+      const snapshot = await npsService._loadSnapshot('discover-catalog', 7 * 24 * 60 * 60 * 1000);
+      const needsRebuild =
+        !snapshot?.data || !discoverCatalogService.catalogIndexesLookHealthy(snapshot.data);
+
+      if (needsRebuild) {
+        console.log('🔭 Discover catalog indexes unhealthy — rebuilding in background...');
+        discoverCatalogService
+          .buildCatalog({ forceIndexes: true })
+          .then((catalog) => {
+            const zeroActivities = catalog.activities.filter((a) => a.parkCount === 0).length;
+            const zeroTopics = catalog.topics.filter((t) => t.parkCount === 0).length;
+            console.log(
+              `🔭 Discover catalog rebuilt (${catalog.activities.length} activities, ${zeroActivities} zero; ${catalog.topics.length} topics, ${zeroTopics} zero)`
+            );
+          })
+          .catch((err) => {
+            console.warn(`⚠️ Discover catalog rebuild failed: ${err.message}`);
+          });
+      } else {
+        console.log('🔭 Discover catalog indexes look healthy');
+      }
     } catch (error) {
       console.warn(`⚠️ Parks snapshot warm-up failed: ${error.message}`);
     }

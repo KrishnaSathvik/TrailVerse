@@ -38,9 +38,10 @@ export default function LandingSearchClient({ parks }) {
   }, []);
 
   return (
-    <div ref={searchRef} className="relative z-30 w-full max-w-3xl mx-auto mb-10">
+    <div ref={searchRef} className="relative z-30 w-full max-w-3xl mx-auto">
       <div onFocus={() => setSearchFocused(true)}>
         <SearchBar
+          variant="hero"
           value={searchQuery}
           onChange={setSearchQuery}
           onClear={() => setSearchQuery('')}

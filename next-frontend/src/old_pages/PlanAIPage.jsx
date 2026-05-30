@@ -175,7 +175,7 @@ const PlanAIPage = () => {
           const sessionAge = Date.now() - sessionData.timestamp;
           const maxAge = 48 * 60 * 60 * 1000; // 48 hours
 
-          if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
+          if (sessionAge < maxAge && sessionData.messageCount >= 5 && !sessionData.canSendMore) {
             // Validate with backend
             if (sessionData.anonymousId) {
               try {
@@ -186,7 +186,7 @@ const PlanAIPage = () => {
                 sessionData.messageCount = messageCount;
                 localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
                 
-                if (!canSendMore && messageCount >= 3) {
+                if (!canSendMore && messageCount >= 5) {
                   setShowLimitDialog(true);
                   // Calculate time until reset
                   const timeRemaining = maxAge - sessionAge;
@@ -439,7 +439,7 @@ const PlanAIPage = () => {
   };
 
   const handleGenerate = async () => {
-    // Check if anonymous user has already used 3 messages
+    // Check if anonymous user has already used their free message quota
     if (isPublicAccess) {
       try {
         const savedSession = localStorage.getItem('anonymousSession');
@@ -451,7 +451,7 @@ const PlanAIPage = () => {
           const maxAge = 48 * 60 * 60 * 1000; // 48 hours to match backend
           
           // First check localStorage (fast check)
-          if (sessionAge < maxAge && sessionData.messageCount >= 3 && !sessionData.canSendMore) {
+          if (sessionAge < maxAge && sessionData.messageCount >= 5 && !sessionData.canSendMore) {
             // Validate with backend to ensure accuracy
             if (sessionData.anonymousId) {
               try {
@@ -464,19 +464,19 @@ const PlanAIPage = () => {
                 localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
                 
                 // If backend confirms limit reached, show error
-                if (!canSendMore && messageCount >= 3) {
-                  showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+                if (!canSendMore && messageCount >= 5) {
+                  showToast('You have already used your 5 free messages! Please create an account to continue planning.', 'error');
                   return;
                 }
               } catch (backendError) {
                 console.error('Error validating session with backend:', backendError);
                 // If backend check fails, use localStorage check as fallback
-                showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+                showToast('You have already used your 5 free messages! Please create an account to continue planning.', 'error');
                 return;
               }
             } else {
               // No anonymousId but localStorage says limit reached - show error
-              showToast('You have already used your 3 free questions! Please create an account to continue planning.', 'error');
+              showToast('You have already used your 5 free messages! Please create an account to continue planning.', 'error');
               return;
             }
           }
@@ -743,10 +743,10 @@ const PlanAIPage = () => {
                   <Clock className="h-8 w-8" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-                  You've Used Your 3 Free Questions
+                  You&apos;ve Used Your 5 Free Messages
                 </h2>
                 <p className="text-base sm:text-lg max-w-xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                  You've reached your limit of 3 free questions. Create an account for unlimited access, or wait until your session resets.
+                  You&apos;ve reached your limit of 5 free messages. Create an account for unlimited access, or wait until your session resets.
                 </p>
               </div>
 

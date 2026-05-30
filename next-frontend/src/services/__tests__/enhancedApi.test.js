@@ -102,10 +102,10 @@ describe('EnhancedApiService', () => {
     expect(mockCacheService.delete).toHaveBeenCalledWith('specific-key');
   });
 
-  it('retries on network, server, and timeout errors', () => {
+  it('retries on network and server errors but not timeouts', () => {
     expect(apiInstance.shouldRetry({ response: null })).toBe(true);
     expect(apiInstance.shouldRetry({ response: { status: 500 } })).toBe(true);
-    expect(apiInstance.shouldRetry({ code: 'ECONNABORTED', response: { status: 408 } })).toBe(true);
+    expect(apiInstance.shouldRetry({ code: 'ECONNABORTED', response: { status: 408 } })).toBe(false);
     expect(apiInstance.shouldRetry({ response: { status: 400 } })).toBe(false);
   });
 

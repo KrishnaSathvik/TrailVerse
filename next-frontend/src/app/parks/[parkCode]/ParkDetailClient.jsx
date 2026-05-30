@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,10 +7,12 @@ import {
   ArrowLeft, Heart, MapPin, Clock, DollarSign, Phone,
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
-  Shield, ExternalLink, Route, Monitor, Play, Car, ChevronRight,
-  BookOpen, Download, FileText, Ticket, TrendingUp
+  Shield, ExternalLink, Route, Map as MapIcon, Monitor, Play, Car, ChevronRight,
+  BookOpen, Download, FileText, Ticket, Compare, Landmark, Bus
 } from '@components/icons';
 import { parkToSlug } from '@/utils/parkSlug';
+import { reportHref } from '@/lib/reportLinks';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -19,30 +21,87 @@ import { logParkView, logUserAction } from '@/utils/analytics';
 import { processHtmlContent, htmlToPlainText } from '@/utils/htmlUtils';
 import Header from '@/components/common/Header';
 import WeatherWidget from '@/components/park-details/WeatherWidget';
+import GettingThereSection from '@/components/park-details/GettingThereSection';
 import ReviewSection from '@/components/park-details/ReviewSection';
+import ParkExploreTabs from '@/components/park-details/ParkExploreTabs';
+import ParkOverviewVisitInfo from '@/components/park-details/ParkOverviewVisitInfo';
+import ParkOverviewWeather from '@/components/park-details/ParkOverviewWeather';
+import ParkReviewPromptDialog from '@/components/park-details/ParkReviewPromptDialog';
+import ParkAlertsTab from '@/components/park-details/ParkAlertsTab';
+import ParkPermitsTab from '@/components/park-details/ParkPermitsTab';
+import ParkTabSpinner from '@/components/park-details/ParkTabSpinner';
+import {
+  hasSeenVisitedReviewPrompt,
+  markVisitedReviewPromptSeen,
+  reviewBelongsToUser,
+} from '@/lib/reviewPromptStorage';
 import ShareButtons from '@/components/common/ShareButtons';
 import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
+import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
+import { getParkPlanVisitCta } from '@/lib/planAiWelcomeCopy';
 import blogService from '@/services/blogService';
-
-const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
+import { parkHasGtfs } from '@/lib/gtfsParks';
+import {
+  getTransitOperatingStyles,
+  shouldHideRouteSchedules,
+  shouldShowCatalogNotes,
+  shouldShowTodayTransitDetails,
+  shouldShowNpsScheduleLines,
+  shouldShowOperatingDaysLabel,
+} from '@/utils/transitOperatingUtils';
+import {
+  filterActivitiesByContent,
+  filterPlacesByContent,
+  getContentFilterForTab,
+  getDisplayPlaceTags,
+  isJunkPlaceTag,
+  normalizePlaceTag,
+} from '@/utils/parkExploreUtils';
+import { getParkHoursQuickSummary } from '@/utils/parkHoursUtils';
+import { getPrimaryEntranceFeeSummary } from '@/utils/parkVisitInfoUtils';
+import { buildCoordinatesMapsUrl } from '@/utils/directionsUtils';
+import { formatParkingFee } from '@/utils/parkingUtils';
+import {
+  getWebcamCta,
+  getWebcamImage,
+  getWebcamStatusDisplay,
+} from '@/utils/webcamUtils';
+import {
+  buildAmenityTabs,
+  filterFacilitiesByTab,
+  getFacilityExcerpt,
+  getFacilityImage,
+} from '@/utils/amenityUtils';
+const ParkDetailInner = ({
+  initialData,
+  parkCode,
+  relatedParks = [],
+  seoLeadLine = null,
+  stateHubSlug = null,
+}) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated, showLoginPrompt } = useAuth();
+  const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
   const { isParkVisited, markAsVisited, removeVisited, markingAsVisited, removingVisited } = useVisitedParks();
 
+  const npsParkCode = initialData?.park?.parkCode || parkCode;
+  const showTransitTab = parkHasGtfs(npsParkCode);
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Info },
     { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
-    { id: 'activities', label: 'Activities', icon: Mountain },
-    { id: 'camping', label: 'Camping', icon: Tent },
-    { id: 'places', label: 'Places', icon: MapPinCheck },
-    { id: 'tours', label: 'Tours', icon: Route },
-    { id: 'parking', label: 'Parking', icon: Car },
-    { id: 'facilities', label: 'Facilities', icon: Utensils },
+    { id: 'places', label: 'What to See', icon: MapPinCheck },
+    { id: 'activities', label: 'Things to Do', icon: Mountain },
+    { id: 'tours', label: 'Self-Guided Tours', icon: Route },
+    { id: 'visitorcenters', label: 'Visitor Centers', icon: Landmark },
+    { id: 'camping', label: 'Where to Stay', icon: Tent },
+    { id: 'parking', label: 'Parking & Access', icon: Car },
+    { id: 'facilities', label: 'Amenities', icon: Utensils },
+    ...(showTransitTab ? [{ id: 'transit', label: 'Transit', icon: Bus }] : []),
     { id: 'brochures', label: 'Brochures', icon: BookOpen },
     { id: 'permits', label: 'Permits', icon: Ticket },
     { id: 'photos', label: 'Photos', icon: Camera },
@@ -53,16 +112,25 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
   const validTabIds = tabs.map((tab) => tab.id);
   const requestedTab = searchParams.get('tab');
   const activeTab = validTabIds.includes(requestedTab) ? requestedTab : 'overview';
-  const [activeActivityTab, setActiveActivityTab] = useState(null);
+  const [activeActivityTab, setActiveActivityTab] = useState('All');
+  const [expandedActivityList, setExpandedActivityList] = useState(() => new Set());
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [savingPark, setSavingPark] = useState(false);
-  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
-  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
   const [parkGuides, setParkGuides] = useState({ guide: null, astro: null });
-  const tabScrollRef = useRef(null);
+  const [activeFacilityTab, setActiveFacilityTab] = useState('All');
+  const [expandedFacilityList, setExpandedFacilityList] = useState(() => new Set());
+  const [expandedRoutesByGtfsUrl, setExpandedRoutesByGtfsUrl] = useState(() => new Set());
+  const [expandedStopsByRouteId, setExpandedStopsByRouteId] = useState(() => new Set());
+  const [expandedPlaceTagSections, setExpandedPlaceTagSections] = useState(() => new Set());
+  const [activePlacesTag, setActivePlacesTag] = useState('All');
+  const [showReviewPromptDialog, setShowReviewPromptDialog] = useState(false);
+  const [userHasReviewed, setUserHasReviewed] = useState(false);
 
   const { park, alerts } = initialData;
+  const permitsFromSsr = initialData?.permits;
+  const [permits, setPermits] = useState(() => (Array.isArray(permitsFromSsr) ? permitsFromSsr : []));
+  const [permitsReady, setPermitsReady] = useState(() => Array.isArray(permitsFromSsr));
 
   // Lazy-loading hook for tab data
   const useTabData = (tabParkCode, endpoint, enabled) => {
@@ -78,44 +146,81 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
           : 'https://trailverse.onrender.com/api');
       fetch(`${apiUrl}/parks/${tabParkCode}/${endpoint}`)
         .then(res => res.json())
-        .then(json => { setData(json.data || []); setLoading(false); })
-        .catch(() => { setData([]); setLoading(false); });
+        .then(json => { setData(json?.data ?? null); setLoading(false); })
+        .catch(() => { setData(null); setLoading(false); });
     }, [tabParkCode, endpoint, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return { data, loading };
   };
 
   // Use the NPS park code (e.g. "arch") for API calls, not the URL slug (e.g. "arches-national-park")
-  const npsParkCode = park?.parkCode || parkCode;
+  // (If initialData parkCode exists, it will already be the NPS code.)
+  const npsParkCodeForApi = park?.parkCode || npsParkCode;
 
-  const { data: activities, loading: activitiesLoading } = useTabData(npsParkCode, 'activities', activeTab === 'activities');
-  const { data: campgrounds, loading: campgroundsLoading } = useTabData(npsParkCode, 'campgrounds', activeTab === 'camping');
-  const { data: places, loading: placesLoading } = useTabData(npsParkCode, 'places', activeTab === 'places');
-  const { data: tours, loading: toursLoading } = useTabData(npsParkCode, 'tours', activeTab === 'tours');
-  const { data: parkingLots, loading: parkingLoading } = useTabData(npsParkCode, 'parkinglots', activeTab === 'parking');
-  const { data: webcams, loading: webcamsLoading } = useTabData(npsParkCode, 'webcams', activeTab === 'webcams');
-  const { data: videos, loading: videosLoading } = useTabData(npsParkCode, 'videos', activeTab === 'videos');
-  const { data: galleryPhotos, loading: galleryLoading } = useTabData(npsParkCode, 'gallery', activeTab === 'photos');
-  const { data: facilities, loading: facilitiesLoading } = useTabData(npsParkCode, 'facilities', activeTab === 'facilities');
-  const { data: brochureData, loading: brochuresLoading } = useTabData(npsParkCode, 'brochures', activeTab === 'brochures');
-  const { data: permits, loading: permitsLoading } = useTabData(npsParkCode, 'permits', activeTab === 'permits');
+  const { data: activities, loading: activitiesLoading } = useTabData(npsParkCodeForApi, 'activities', activeTab === 'activities');
+  const { data: campgrounds, loading: campgroundsLoading } = useTabData(npsParkCodeForApi, 'campgrounds', activeTab === 'camping');
+  const { data: places, loading: placesLoading } = useTabData(npsParkCodeForApi, 'places', activeTab === 'places');
+  const { data: tours, loading: toursLoading } = useTabData(npsParkCodeForApi, 'tours', activeTab === 'tours');
+  const { data: visitorCenters, loading: visitorCentersLoading } = useTabData(
+    npsParkCodeForApi,
+    'visitorcenters',
+    activeTab === 'visitorcenters'
+  );
+  const { data: parkingLots, loading: parkingLoading } = useTabData(npsParkCodeForApi, 'parkinglots', activeTab === 'parking');
+  const { data: webcams, loading: webcamsLoading } = useTabData(npsParkCodeForApi, 'webcams', activeTab === 'webcams');
+  const { data: videos, loading: videosLoading } = useTabData(npsParkCodeForApi, 'videos', activeTab === 'videos');
+  const { data: galleryPhotos, loading: galleryLoading } = useTabData(npsParkCodeForApi, 'gallery', activeTab === 'photos');
+  const { data: facilities, loading: facilitiesLoading } = useTabData(npsParkCodeForApi, 'facilities', activeTab === 'facilities');
+  const { data: brochureData, loading: brochuresLoading } = useTabData(npsParkCodeForApi, 'brochures', activeTab === 'brochures');
+  const { data: transitData, loading: transitLoading } = useTabData(
+    npsParkCodeForApi,
+    'transit',
+    activeTab === 'transit'
+  );
 
-  // Eagerly fetch review count for the tab badge
+  // Eagerly fetch permits for tab badge (SSR may omit permits until /details includes RIDB)
+  useEffect(() => {
+    if (!npsParkCodeForApi || permitsReady) return;
+
+    let cancelled = false;
+    fetch(`${getApiBaseUrl()}/parks/${npsParkCodeForApi}/permits`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled) {
+          setPermits(Array.isArray(json?.data) ? json.data : []);
+          setPermitsReady(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPermits([]);
+          setPermitsReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [npsParkCodeForApi, permitsReady]);
+
+  // Eagerly fetch review count for the tab badge + whether this user already reviewed
   const [reviewCount, setReviewCount] = useState(0);
   useEffect(() => {
     if (!npsParkCode) return;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ||
-      (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-        ? 'http://localhost:5001/api'
-        : 'https://trailverse.onrender.com/api');
-    fetch(`${apiUrl}/reviews/${npsParkCode}`)
+    fetch(`${getApiBaseUrl()}/reviews/${npsParkCode}`)
       .then(res => res.json())
       .then(json => {
         const count = json.stats?.totalReviews || json.total || json.pagination?.totalReviews || 0;
         setReviewCount(count);
+        const list = json.data || [];
+        if (isAuthenticated && user) {
+          setUserHasReviewed(list.some((r) => reviewBelongsToUser(r, user)));
+        } else {
+          setUserHasReviewed(false);
+        }
       })
       .catch(() => {});
-  }, [npsParkCode]);
+  }, [npsParkCode, isAuthenticated, user]);
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -142,54 +247,87 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
     }
   }, [parkCode, park?.fullName]);
 
-  const handleTabChange = (tabId) => {
+  const urlFilter = searchParams.get('filter') || 'all';
+  const hoursQuickInfo = React.useMemo(() => getParkHoursQuickSummary(park), [park]);
+  const entranceFeeQuickInfo = React.useMemo(
+    () => getPrimaryEntranceFeeSummary(park?.entranceFees),
+    [park?.entranceFees]
+  );
+
+  const handleTabChange = (tabId, options = {}) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     if (tabId === 'overview') {
       nextParams.delete('tab');
     } else {
       nextParams.set('tab', tabId);
     }
+    if (options.filter) {
+      nextParams.set('filter', options.filter);
+    } else if (!options.keepFilter) {
+      nextParams.delete('filter');
+    }
+    if (options.write) {
+      nextParams.set('write', '1');
+    } else if (!options.keepWrite) {
+      nextParams.delete('write');
+    }
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     if (tabId !== 'activities') {
-      setActiveActivityTab(null);
+      setActiveActivityTab('All');
+    }
+    if (tabId !== 'facilities') {
+      setActiveFacilityTab('All');
     }
   };
 
-  useEffect(() => {
-    const tabsNode = tabScrollRef.current;
-    if (!tabsNode) return;
+  const scrollToOverviewSection = (sectionId) => {
+    handleTabChange('overview');
+    window.setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  };
 
-    const updateIndicators = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = tabsNode;
-      setCanScrollTabsLeft(scrollLeft > 8);
-      setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 8);
-    };
-
-    updateIndicators();
-    tabsNode.addEventListener('scroll', updateIndicators, { passive: true });
-    window.addEventListener('resize', updateIndicators);
-
-    return () => {
-      tabsNode.removeEventListener('scroll', updateIndicators);
-      window.removeEventListener('resize', updateIndicators);
-    };
-  }, []);
-
-  useEffect(() => {
-    const tabsNode = tabScrollRef.current;
-    const activeButton = tabsNode?.querySelector(`[data-tab-id="${activeTab}"]`);
-    if (!tabsNode || !activeButton) return;
-
-    activeButton.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'nearest'
+  const openReviewWriteFlow = () => {
+    handleTabChange('reviews', { write: true });
+    requestAnimationFrame(() => {
+      document.querySelector('[data-tab-id="reviews"]')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
-  }, [activeTab]);
+  };
+
+  const dismissReviewPromptDialog = () => {
+    markVisitedReviewPromptSeen(npsParkCode);
+    setShowReviewPromptDialog(false);
+    logUserAction('review_prompt_dismissed', park?.fullName);
+  };
+
+  const handleReviewPromptLeaveTip = () => {
+    markVisitedReviewPromptSeen(npsParkCode);
+    setShowReviewPromptDialog(false);
+    logUserAction('review_prompt_accepted', park?.fullName);
+    openReviewWriteFlow();
+  };
+
+  useEffect(() => {
+    if (searchParams.get('write') !== '1') return;
+    if (activeTab !== 'reviews') {
+      handleTabChange('reviews', { keepFilter: true, write: true });
+    }
+  }, [searchParams.get('write')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isSaved = isParkFavorited(npsParkCode);
   const isVisited = isParkVisited(npsParkCode);
+
+  const parkPlanCta = useMemo(
+    () => getParkPlanVisitCta({
+      user,
+      isAuthenticated,
+      parkName: park?.fullName,
+      isVisited,
+      isSaved,
+    }),
+    [user, isAuthenticated, park?.fullName, isVisited, isSaved]
+  );
 
   const handleSavePark = async () => {
     if (!isAuthenticated) {
@@ -249,6 +387,13 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
           null
         );
         logUserAction('visited_added', park?.fullName);
+        if (
+          !userHasReviewed &&
+          !hasSeenVisitedReviewPrompt(npsParkCode)
+        ) {
+          setShowReviewPromptDialog(true);
+          logUserAction('review_prompt_shown', park?.fullName);
+        }
       }
     } catch (error) {
       console.error('Error toggling visited status:', error);
@@ -311,6 +456,22 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
     }
 
     return null;
+  };
+
+  const createParkGoogleMapsDirectionsLink = () => {
+    if (park?.latitude && park?.longitude) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${park.latitude},${park.longitude}`)}`;
+    }
+
+    const parkAddress = park?.addresses?.[0];
+    const parkLocation = [
+      park?.fullName,
+      parkAddress?.city,
+      parkAddress?.stateCode,
+    ].filter(Boolean).join(', ');
+
+    if (!parkLocation) return null;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parkLocation)}`;
   };
 
   return (
@@ -443,94 +604,113 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
             {/* Main Column */}
             <div className="flex-1 min-w-0">
               {/* Quick Info Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8 sm:items-stretch">
                 {/* Hours */}
-                <div className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
+                <div
+                  className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform flex flex-col h-full"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
-                    borderColor: 'var(--border)'
+                    borderColor: 'var(--border)',
                   }}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-10 rounded-lg flex items-center justify-center"
+                    <div
+                      className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
                       style={{ backgroundColor: 'var(--surface-hover)' }}
                     >
                       <Clock className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                     </div>
-                    <h3 className="font-semibold text-sm uppercase tracking-wider"
+                    <h3
+                      className="font-semibold text-sm uppercase tracking-wider"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Hours
                     </h3>
                   </div>
-                  <p className="text-sm font-medium"
+                  <p
+                    className="text-sm font-medium leading-snug line-clamp-2 flex-1"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    {htmlToPlainText(park.operatingHours?.[0]?.description) || 'Open year-round, 24 hours'}
+                    {hoursQuickInfo.summary}
                   </p>
+                  <div className="mt-auto pt-2 min-h-[1.25rem]">
+                    {hoursQuickInfo.hasFullDetails ? (
+                      <button
+                        type="button"
+                        onClick={() => scrollToOverviewSection('operating-hours')}
+                        className="text-xs font-semibold hover:underline"
+                        style={{ color: 'var(--accent-green, #22c55e)' }}
+                      >
+                        View full hours
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Entrance Fee */}
-                <div className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
+                <div
+                  className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform flex flex-col h-full"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
-                    borderColor: 'var(--border)'
+                    borderColor: 'var(--border)',
                   }}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-10 rounded-lg flex items-center justify-center"
+                    <div
+                      className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
                       style={{ backgroundColor: 'var(--surface-hover)' }}
                     >
                       <DollarSign className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                     </div>
-                    <h3 className="font-semibold text-sm uppercase tracking-wider"
+                    <h3
+                      className="font-semibold text-sm uppercase tracking-wider"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Entrance Fee
                     </h3>
                   </div>
-                  <p className="text-2xl font-bold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {park.entranceFees?.[0]?.cost
-                      ? `$${park.entranceFees[0].cost}`
-                      : 'Free'
-                    }
+                  <p className="text-2xl font-bold flex-1 tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                    {entranceFeeQuickInfo.price}
                   </p>
-                  {park.entranceFees?.[0]?.title && (
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      {park.entranceFees[0].title}
-                    </p>
-                  )}
+                  <div className="mt-auto pt-2 min-h-[1.25rem]">
+                    {entranceFeeQuickInfo.subtitle ? (
+                      <p className="text-xs line-clamp-2" style={{ color: 'var(--text-tertiary)' }}>
+                        {entranceFeeQuickInfo.subtitle}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Contact */}
-                <div className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform"
+                <div
+                  className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform flex flex-col h-full"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
-                    borderColor: 'var(--border)'
+                    borderColor: 'var(--border)',
                   }}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-10 rounded-lg flex items-center justify-center"
+                    <div
+                      className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
                       style={{ backgroundColor: 'var(--surface-hover)' }}
                     >
                       <Phone className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
                     </div>
-                    <h3 className="font-semibold text-sm uppercase tracking-wider"
+                    <h3
+                      className="font-semibold text-sm uppercase tracking-wider"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       Contact
                     </h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="flex-1 space-y-2">
                     {park.contacts?.phoneNumbers?.[0]?.phoneNumber ? (
                       <a
                         href={`tel:${park.contacts.phoneNumbers[0].phoneNumber}`}
-                        className="text-sm font-medium hover:text-forest-400 transition block"
+                        className="text-sm font-medium transition block"
                         style={{ color: 'var(--text-primary)' }}
                       >
                         {park.contacts.phoneNumbers[0].phoneNumber}
@@ -540,112 +720,31 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         No phone listed
                       </p>
                     )}
-                    {park.url && (
+                  </div>
+                  <div className="mt-auto pt-2 min-h-[1.25rem]">
+                    {park.url ? (
                       <a
                         href={park.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-forest-400 hover:text-forest-300 transition"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent-green)] hover:text-[var(--accent-green-dark)] hover:underline transition-colors"
                       >
                         <Globe className="h-3 w-3" />
                         <span>Official Website</span>
                       </a>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="mb-6 sm:mb-8">
-                <div className="flex items-center justify-between gap-4 mb-2">
-                  <p className="text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--text-tertiary)' }}>
-                    Browse Park Details
-                  </p>
-                  {canScrollTabsRight && !canScrollTabsLeft && (
-                    <span className="flex items-center gap-0.5 text-[11px]"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      Scroll for more
-                      <ChevronRight className="h-3 w-3" />
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  {canScrollTabsLeft && (
-                    <div
-                      className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 rounded-l-2xl"
-                      style={{ background: 'linear-gradient(to right, var(--bg-primary), transparent)' }}
-                    />
-                  )}
-                  {canScrollTabsRight && (
-                    <div
-                      className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-2xl"
-                      style={{ background: 'linear-gradient(to left, var(--bg-primary), transparent)' }}
-                    />
-                  )}
-                  <div
-                    ref={tabScrollRef}
-                    role="tablist"
-                    aria-label="Park detail sections"
-                    className="flex gap-1 border-b pb-0 mb-4 sm:mb-6 overflow-x-auto park-tabs-scroll scroll-smooth"
-                    style={{ borderColor: 'var(--border)' }}
-                  >
-                  {tabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const showAlertBadge = tab.id === 'alerts' && alerts && alerts.length > 0;
-                    const showReviewBadge = tab.id === 'reviews' && reviewCount > 0;
-                    return (
-                      <button
-                        key={tab.id}
-                        data-tab-id={tab.id}
-                        onClick={() => handleTabChange(tab.id)}
-                        type="button"
-                        role="tab"
-                        className="whitespace-nowrap flex-shrink-0 relative inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors"
-                        aria-selected={activeTab === tab.id}
-                        style={{
-                          backgroundColor: 'transparent',
-                          borderBottomColor: activeTab === tab.id ? 'var(--text-primary)' : 'transparent',
-                          color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-secondary)'
-                        }}
-                      >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {tab.label}
-                        {showAlertBadge && (
-                          <span
-                            className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
-                            style={{
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              minWidth: '1.25rem',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            {alerts.length}
-                          </span>
-                        )}
-                        {showReviewBadge && (
-                          <span
-                            className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold"
-                            style={{
-                              backgroundColor: '#facc15',
-                              color: '#1a1a1a',
-                              minWidth: '1.25rem',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          >
-                            {reviewCount}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                  </div>
-                </div>
+              <ParkExploreTabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                alertCount={alerts?.length || 0}
+                permitCount={permits.length}
+                reviewCount={reviewCount}
+              />
 
                 {/* Tab Content */}
                 <div className="rounded-2xl p-4 sm:p-6 lg:p-8 backdrop-blur"
@@ -662,190 +761,22 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       >
                         About {park.fullName}
                       </h2>
+                      {seoLeadLine && (
+                        <p
+                          className="text-base leading-relaxed mb-4"
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          {seoLeadLine}
+                        </p>
+                      )}
                       <p className="text-base leading-relaxed mb-6"
                         style={{ color: 'var(--text-secondary)' }}
                         dangerouslySetInnerHTML={{ __html: processHtmlContent(park.description) }}
                       />
 
-                      {park.weatherInfo && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Weather Information
-                          </h3>
-                          <p className="text-base leading-relaxed"
-                            style={{ color: 'var(--text-secondary)' }}
-                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.weatherInfo) }}
-                          />
-                        </div>
-                      )}
+                      <ParkOverviewWeather weatherInfo={park.weatherInfo} />
 
-                      {park.directionsInfo && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            Getting There
-                          </h3>
-                          <p className="text-base leading-relaxed"
-                            style={{ color: 'var(--text-secondary)' }}
-                            dangerouslySetInnerHTML={{ __html: processHtmlContent(park.directionsInfo) }}
-                          />
-                          {park.latitude && park.longitude && (
-                            <Button
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(park.fullName)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              variant="secondary"
-                              size="md"
-                              icon={Navigation}
-                              className="mt-4"
-                            >
-                              Get Directions
-                            </Button>
-                          )}
-                        </div>
-                      )}
-
-                      {park.entranceFees && park.entranceFees.length > 0 && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            <DollarSign className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
-                            Entrance Fees
-                          </h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {park.entranceFees.map((fee, index) => (
-                              <div key={index} className="rounded-xl p-4"
-                                style={{
-                                  backgroundColor: 'var(--surface-hover)',
-                                  borderWidth: '1px',
-                                  borderColor: 'var(--border)'
-                                }}
-                              >
-                                <div className="flex items-start justify-between gap-3 mb-1">
-                                  <h4 className="font-semibold text-sm leading-snug"
-                                    style={{ color: 'var(--text-primary)' }}
-                                  >
-                                    {fee.title}
-                                  </h4>
-                                  {fee.cost !== undefined && fee.cost !== null && (
-                                    <span className="text-base font-bold whitespace-nowrap"
-                                      style={{ color: 'var(--accent-green, #22c55e)' }}
-                                    >
-                                      ${parseFloat(fee.cost).toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                                {fee.description && (
-                                  <p className="text-xs leading-relaxed"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                  >
-                                    {htmlToPlainText(fee.description)}
-                                  </p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {park.operatingHours && park.operatingHours.length > 0 && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            <Clock className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
-                            Operating Hours
-                          </h3>
-                          <div className="space-y-3">
-                            {park.operatingHours.map((hours, index) => (
-                              <div key={index} className="rounded-xl p-4"
-                                style={{
-                                  backgroundColor: 'var(--surface-hover)',
-                                  borderWidth: '1px',
-                                  borderColor: 'var(--border)'
-                                }}
-                              >
-                                <h4 className="font-semibold text-sm mb-2"
-                                  style={{ color: 'var(--text-primary)' }}
-                                >
-                                  {hours.name}
-                                </h4>
-                                {hours.description && (
-                                  <p className="text-sm leading-relaxed mb-3"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                  >
-                                    {htmlToPlainText(hours.description)}
-                                  </p>
-                                )}
-                                {hours.standardHours && (
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs">
-                                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                                      hours.standardHours[day] && (
-                                        <div key={day} className="flex justify-between">
-                                          <span className="capitalize" style={{ color: 'var(--text-tertiary)' }}>
-                                            {day.slice(0, 3)}
-                                          </span>
-                                          <span style={{ color: 'var(--text-secondary)' }}>
-                                            {hours.standardHours[day]}
-                                          </span>
-                                        </div>
-                                      )
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {park.entrancePasses && park.entrancePasses.length > 0 && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            <Shield className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
-                            Entrance Passes
-                          </h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {park.entrancePasses.map((pass, index) => (
-                              <div key={index} className="rounded-xl p-4"
-                                style={{
-                                  backgroundColor: 'var(--surface-hover)',
-                                  borderWidth: '1px',
-                                  borderColor: 'var(--border)'
-                                }}
-                              >
-                                <div className="flex items-start justify-between gap-3 mb-1">
-                                  <h4 className="font-semibold text-sm leading-snug"
-                                    style={{ color: 'var(--text-primary)' }}
-                                  >
-                                    {pass.title}
-                                  </h4>
-                                  {pass.cost !== undefined && pass.cost !== null && (
-                                    <span className="text-base font-bold whitespace-nowrap"
-                                      style={{ color: 'var(--accent-green, #22c55e)' }}
-                                    >
-                                      ${parseFloat(pass.cost).toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                                {pass.description && (
-                                  <p className="text-xs leading-relaxed"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                  >
-                                    {htmlToPlainText(pass.description)}
-                                  </p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <ParkOverviewVisitInfo park={park} />
 
                     </div>
                   )}
@@ -855,17 +786,150 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Activities
+                        Things to Do
                       </h2>
                       {activitiesLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!activitiesLoading && activities !== null && activities.length > 0 ? (
                         (() => {
-                          const groupedActivities = activities.reduce((acc, activity) => {
+                          const filteredActivities = filterActivitiesByContent(activities, 'all');
+
+                          const getActivityHref = (activity) => (
+                            activity?.id ? `/parks/${parkCode}/activity/${activity.id}` : null
+                          );
+
+                          const renderActivityCard = (activity, index) => {
+                            const href = getActivityHref(activity);
+                            const img = activity?.images?.[0];
+                            const title = activity?.title || activity?.name || 'Activity';
+                            const description = htmlToPlainText(
+                              activity?.shortDescription || activity?.longDescription || ''
+                            )?.trim();
+                            const category = activity?.activities?.[0]?.name;
+
+                            const CardInner = (
+                              <div
+                                className="rounded-xl overflow-hidden transition hover:-translate-y-0.5 group"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)',
+                                }}
+                              >
+                                {img?.url && (
+                                  <div className="relative h-48 w-full">
+                                    <Image
+                                      src={img.url}
+                                      alt={img.altText || title}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 720px"
+                                      className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                                      onError={(e) => {
+                                        e.target.parentElement.style.display = 'none';
+                                      }}
+                                    />
+                                    {img.credit && (
+                                      <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+                                        {img.credit}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="p-6">
+                                  <div className="flex items-start justify-between gap-3 mb-3">
+                                    <h3
+                                      className="text-lg font-semibold"
+                                      style={{ color: 'var(--text-primary)' }}
+                                    >
+                                      {title}
+                                    </h3>
+                                    {href && (
+                                      <span
+                                        className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+                                        style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                                      >
+                                        View details <ExternalLink className="h-3 w-3" />
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-3 mb-4">
+                                    {category && (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'rgba(59,130,246,0.1)',
+                                          color: 'var(--accent-blue, #3b82f6)',
+                                        }}
+                                      >
+                                        {category}
+                                      </span>
+                                    )}
+                                    {activity?.duration ? (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'var(--surface-elevated)',
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        <Clock className="h-3 w-3" />
+                                        {activity.duration}
+                                      </span>
+                                    ) : null}
+                                    {activity?.season?.length > 0 ? (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'var(--surface-elevated)',
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        <Calendar className="h-3 w-3" />
+                                        {activity.season.join(', ')}
+                                      </span>
+                                    ) : null}
+                                    {activity?.arePetsAllowed != null ? (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'var(--surface-elevated)',
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        <span aria-hidden>🐾</span>
+                                        {activity.arePetsAllowed ? 'Pets allowed' : 'No pets'}
+                                      </span>
+                                    ) : null}
+                                  </div>
+
+                                  {description && (
+                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                      {description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+
+                            if (!href) {
+                              return (
+                                <div key={activity?.id || index}>
+                                  {CardInner}
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <Link key={activity?.id || index} href={href} className="block">
+                                {CardInner}
+                              </Link>
+                            );
+                          };
+
+                          const groupedActivities = filteredActivities.reduce((acc, activity) => {
                             const category = activity.activities?.[0]?.name || 'Other';
                             if (!acc[category]) {
                               acc[category] = [];
@@ -874,97 +938,107 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                             return acc;
                           }, {});
 
-                          const categoryTabs = Object.entries(groupedActivities)
-                            .sort(([, a], [, b]) => b.length - a.length)
-                            .map(([category, categoryActivities]) => ({
-                              id: category,
-                              label: category,
-                              count: categoryActivities.length
-                            }));
+                          const categoryTabs = [
+                            { id: 'All', name: 'All', count: filteredActivities.length },
+                            ...Object.entries(groupedActivities)
+                              .sort(([, a], [, b]) => b.length - a.length)
+                              .map(([category, categoryActivities]) => ({
+                                id: category,
+                                name: category,
+                                count: categoryActivities.length,
+                              })),
+                          ];
 
                           const getDisplayActivities = () => {
+                            if (!activeActivityTab || activeActivityTab === 'All') {
+                              return filteredActivities;
+                            }
                             return groupedActivities[activeActivityTab] || [];
                           };
 
+                          const activityList = getDisplayActivities();
+                          const showAllKey = `activities:${activeActivityTab}`;
+                          const isExpanded = expandedActivityList.has(showAllKey);
+                          const visibleActivities = isExpanded ? activityList : activityList.slice(0, 10);
+
                           return (
                             <div>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pb-4 mb-4 sm:mb-6">
-                                {categoryTabs.map((tab) => (
-                                  <button
-                                    key={tab.id}
-                                    onClick={() => setActiveActivityTab(activeActivityTab === tab.id ? null : tab.id)}
-                                    className="flex items-center justify-center px-3 py-3 min-h-[60px] text-center transition-all duration-200 hover:scale-105 rounded-xl font-semibold text-xs"
-                                    style={{
-                                      backgroundColor: activeActivityTab === tab.id
-                                        ? '#ffffff'
-                                        : 'var(--surface)',
-                                      color: activeActivityTab === tab.id
-                                        ? '#000000'
-                                        : 'var(--text-primary)',
-                                      borderWidth: '1px',
-                                      borderColor: activeActivityTab === tab.id
-                                        ? '#e5e7eb'
-                                        : 'var(--border)',
-                                      boxShadow: activeActivityTab === tab.id
-                                        ? '0 3px 8px rgba(0, 0, 0, 0.15)'
-                                        : '0 1px 4px rgba(0, 0, 0, 0.08)'
-                                    }}
-                                  >
-                                    {tab.label}
-                                  </button>
-                                ))}
-                              </div>
-
-                              {activeActivityTab && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {getDisplayActivities().map((activity, index) => (
-                                    <div
-                                      key={index}
-                                      onClick={() => {
-                                        if (activity.id) {
-                                          router.push(`/parks/${parkCode}/activity/${activity.id}`);
-                                        }
-                                      }}
-                                      className="p-4 rounded-xl transition hover:-translate-y-0.5 cursor-pointer"
-                                      style={{
-                                        backgroundColor: 'var(--surface-hover)',
-                                        borderWidth: '1px',
-                                        borderColor: 'var(--border)'
-                                      }}
-                                    >
-                                      <h4 className="font-semibold mb-2 text-sm"
-                                        style={{ color: 'var(--text-primary)' }}
-                                      >
-                                        {activity.title || activity.name}
-                                      </h4>
-                                      {activity.shortDescription && (
-                                        <div
-                                          className="text-xs leading-relaxed mb-2"
-                                          style={{ color: 'var(--text-secondary)' }}
-                                          // Content sanitized by processHtmlContent utility
-                                          dangerouslySetInnerHTML={{
-                                            __html: processHtmlContent(activity.shortDescription)
+                              {categoryTabs.length > 1 ? (
+                                <>
+                                  <div className="flex flex-wrap gap-2 pb-4 mb-4 sm:mb-6">
+                                    {categoryTabs.map((tab) => {
+                                      const isActive = activeActivityTab === tab.id;
+                                      return (
+                                        <button
+                                          key={tab.id}
+                                          type="button"
+                                          onClick={() => setActiveActivityTab(tab.id)}
+                                          className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition"
+                                          style={{
+                                            backgroundColor: isActive ? 'var(--surface)' : 'transparent',
+                                            color: 'var(--text-primary)',
+                                            borderWidth: '1px',
+                                            borderColor: isActive ? 'var(--text-tertiary)' : 'var(--border)',
+                                            boxShadow: isActive ? '0 2px 8px rgba(0, 0, 0, 0.10)' : 'none',
                                           }}
-                                        />
-                                      )}
-                                      <div className="flex items-center gap-4 text-xs"
-                                        style={{ color: 'var(--text-tertiary)' }}
-                                      >
-                                        {activity.duration && (
-                                          <span className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            {activity.duration}
+                                        >
+                                          <span className="leading-snug">{tab.name}</span>
+                                          <span
+                                            className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                                            style={{
+                                              backgroundColor: isActive
+                                                ? 'rgba(59, 130, 246, 0.12)'
+                                                : 'var(--surface)',
+                                              color: isActive
+                                                ? 'var(--accent-blue, #3b82f6)'
+                                                : 'var(--text-tertiary)',
+                                              borderWidth: isActive ? '0px' : '1px',
+                                              borderColor: 'var(--border)',
+                                            }}
+                                          >
+                                            {tab.count}
                                           </span>
-                                        )}
-                                        {activity.season && activity.season.length > 0 && (
-                                          <span className="flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {activity.season.join(', ')}
-                                          </span>
-                                        )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {activityList.length > 10 && (
+                                    <div className="flex items-center justify-between gap-3 mb-4">
+                                      <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                        {isExpanded
+                                          ? `Showing all ${activityList.length}.`
+                                          : `Showing 10 of ${activityList.length}.`}
                                       </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setExpandedActivityList((prev) => {
+                                            const next = new Set(prev);
+                                            if (next.has(showAllKey)) next.delete(showAllKey);
+                                            else next.add(showAllKey);
+                                            return next;
+                                          });
+                                        }}
+                                        className="text-xs font-semibold hover:underline whitespace-nowrap"
+                                        style={{ color: 'var(--text-secondary)' }}
+                                      >
+                                        {isExpanded ? 'Show fewer' : `Show all (${activityList.length})`}
+                                      </button>
                                     </div>
-                                  ))}
+                                  )}
+
+                                  <div className="space-y-6">
+                                    {visibleActivities.map((activity, index) =>
+                                      renderActivityCard(activity, `${activeActivityTab}-${index}`)
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="space-y-6">
+                                  {filteredActivities.map((activity, index) =>
+                                    renderActivityCard(activity, index)
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -972,7 +1046,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         })()
                       ) : !activitiesLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
-                          No activities listed
+                          No things to do listed for this park yet.
                         </p>
                       )}
                     </div>
@@ -983,13 +1057,10 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Camping
+                        Where to Stay
                       </h2>
                       {campgroundsLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!campgroundsLoading && campgrounds !== null && campgrounds.length > 0 ? (
                         <div className="space-y-6">
@@ -1006,11 +1077,15 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                               {/* Hero image */}
                               {campground.images?.[0]?.url && (
                                 <div className="relative h-48 w-full">
-                                  <img
+                                  <Image
                                     src={campground.images[0].url}
                                     alt={campground.images[0].altText || campground.name}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, 720px"
+                                    className="object-cover"
+                                    onError={(e) => {
+                                      e.target.parentElement.style.display = 'none';
+                                    }}
                                   />
                                   {campground.images[0].credit && (
                                     <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
@@ -1049,12 +1124,6 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                   )}
                                   {(campground.numberOfSitesReservable > 0 || campground.numberOfSitesFirstComeFirstServe > 0) && (
                                     <>
-                                      {Number(campground.numberOfSitesReservable) > 0 && (
-                                        <span className="text-xs px-2.5 py-1 rounded-full"
-                                          style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}>
-                                          {campground.numberOfSitesReservable} reservable
-                                        </span>
-                                      )}
                                       {Number(campground.numberOfSitesFirstComeFirstServe) > 0 && (
                                         <span className="text-xs px-2.5 py-1 rounded-full"
                                           style={{ backgroundColor: 'rgba(59,130,246,0.1)', color: 'var(--accent-blue, #3b82f6)' }}>
@@ -1192,84 +1261,205 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Facilities & Amenities
+                        Amenities
                       </h2>
                       {facilitiesLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!facilitiesLoading && facilities && facilities.length > 0 && (() => {
-                        // Group amenities by name
-                        const grouped = {};
-                        facilities.forEach(item => {
-                          const key = item.name || 'Other';
-                          if (!grouped[key]) grouped[key] = [];
-                          grouped[key].push(item);
-                        });
-                        const amenityNames = Object.keys(grouped).sort();
+                        const { tabs: facilityTabs, topNames } = buildAmenityTabs(facilities);
+                        const filteredFacilities = filterFacilitiesByTab(
+                          facilities,
+                          activeFacilityTab,
+                          topNames
+                        );
+                        const showAllKey = `facilities:${activeFacilityTab}`;
+                        const isExpanded = expandedFacilityList.has(showAllKey);
+                        const visibleFacilities = isExpanded
+                          ? filteredFacilities
+                          : filteredFacilities.slice(0, 12);
 
                         return (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {amenityNames.map(name => (
-                              <div
-                                key={name}
-                                className="p-4 rounded-xl"
-                                style={{
-                                  backgroundColor: 'var(--surface-hover)',
-                                  borderWidth: '1px',
-                                  borderColor: 'var(--border)'
-                                }}
-                              >
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                  <span className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                                    {name}
-                                  </span>
-                                  <span className="shrink-0 whitespace-nowrap text-[11px] px-2 py-0.5 rounded-full"
-                                    style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}>
-                                    {grouped[name].length} {grouped[name].length === 1 ? 'location' : 'locations'}
-                                  </span>
+                          <>
+                            {facilityTabs.length > 1 && (
+                              <div className="flex flex-wrap gap-2 pb-4 mb-4 sm:mb-6">
+                                {facilityTabs.map((tab) => {
+                                  const isActive = activeFacilityTab === tab.id;
+                                  return (
+                                    <button
+                                      key={tab.id}
+                                      type="button"
+                                      onClick={() => setActiveFacilityTab(tab.id)}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition"
+                                      style={{
+                                        backgroundColor: isActive ? 'var(--surface)' : 'transparent',
+                                        color: 'var(--text-primary)',
+                                        borderWidth: '1px',
+                                        borderColor: isActive ? 'var(--text-tertiary)' : 'var(--border)',
+                                        boxShadow: isActive ? '0 2px 8px rgba(0, 0, 0, 0.10)' : 'none',
+                                      }}
+                                    >
+                                      <span className="leading-snug max-w-[14rem] truncate" title={tab.name}>
+                                        {tab.name}
+                                      </span>
+                                      <span
+                                        className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                                        style={{
+                                          backgroundColor: isActive
+                                            ? 'rgba(59, 130, 246, 0.12)'
+                                            : 'var(--surface)',
+                                          color: isActive
+                                            ? 'var(--accent-blue, #3b82f6)'
+                                            : 'var(--text-tertiary)',
+                                          borderWidth: isActive ? '0px' : '1px',
+                                          borderColor: 'var(--border)',
+                                        }}
+                                      >
+                                        {tab.count}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {filteredFacilities.length > 12 && (
+                              <div className="flex items-center justify-between gap-3 mb-4">
+                                <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                  {isExpanded
+                                    ? `Showing all ${filteredFacilities.length}.`
+                                    : `Showing 12 of ${filteredFacilities.length}.`}
                                 </div>
-                                <div className="space-y-1.5">
-                                  {grouped[name].map((place, i) => (
-                                    <div key={i} className="flex items-center gap-1.5">
-                                      {place.url ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setExpandedFacilityList((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(showAllKey)) next.delete(showAllKey);
+                                      else next.add(showAllKey);
+                                      return next;
+                                    });
+                                  }}
+                                  className="text-xs font-semibold hover:underline whitespace-nowrap"
+                                  style={{ color: 'var(--text-secondary)' }}
+                                >
+                                  {isExpanded ? 'Show fewer' : `Show all (${filteredFacilities.length})`}
+                                </button>
+                              </div>
+                            )}
+
+                            <div className="space-y-6">
+                              {visibleFacilities.map((facility, index) => {
+                                const img = getFacilityImage(facility);
+                                const excerpt = getFacilityExcerpt(facility);
+                                const mapsUrl = buildCoordinatesMapsUrl(
+                                  facility.latitude,
+                                  facility.longitude,
+                                  facility.placeName
+                                );
+
+                                const description = excerpt;
+
+                                return (
+                                  <div
+                                    key={`${facility.placeId || facility.url || index}-${facility.name}`}
+                                    className="rounded-xl overflow-hidden"
+                                    style={{
+                                      backgroundColor: 'var(--surface-hover)',
+                                      borderWidth: '1px',
+                                      borderColor: 'var(--border)',
+                                    }}
+                                  >
+                                    {img?.url && (
+                                      <div className="relative h-48 w-full">
+                                        <Image
+                                          src={img.url}
+                                          alt={img.alt}
+                                          fill
+                                          sizes="(max-width: 768px) 100vw, 720px"
+                                          className="object-cover"
+                                          onError={(e) => {
+                                            e.target.parentElement.style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+
+                                    <div className="p-6">
+                                      <div className="flex items-start justify-between gap-3 mb-3">
+                                        <h3
+                                          className="text-lg font-semibold"
+                                          style={{ color: 'var(--text-primary)' }}
+                                        >
+                                          {facility.placeName || 'Location'}
+                                        </h3>
+                                        {facility.url && (
+                                          <a
+                                            href={facility.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+                                            style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                                          >
+                                            NPS page <ExternalLink className="h-3 w-3" />
+                                          </a>
+                                        )}
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-3 mb-4">
+                                        <span
+                                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full max-w-full truncate"
+                                          style={{
+                                            backgroundColor: 'rgba(59, 130, 246, 0.10)',
+                                            color: 'var(--accent-blue, #3b82f6)',
+                                          }}
+                                          title={facility.name}
+                                        >
+                                          {facility.name}
+                                        </span>
+                                        {facility.placeType && facility.placeType !== 'General' && (
+                                          <span
+                                            className="text-xs px-2.5 py-1 rounded-full"
+                                            style={{
+                                              backgroundColor: 'var(--surface-elevated)',
+                                              color: 'var(--text-secondary)',
+                                            }}
+                                          >
+                                            {facility.placeType}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {description && (
+                                        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                                          {description}
+                                        </p>
+                                      )}
+
+                                      {mapsUrl && (
                                         <a
-                                          href={place.url}
+                                          href={mapsUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="text-xs truncate hover:underline"
+                                          className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
                                           style={{ color: 'var(--accent-blue, #3b82f6)' }}
                                         >
-                                          {place.placeName || 'View location'}
+                                          <MapPin className="h-3.5 w-3.5" />
+                                          Get directions
                                         </a>
-                                      ) : (
-                                        <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
-                                          {place.placeName}
-                                        </span>
-                                      )}
-                                      {place.placeType && place.placeType !== 'General' && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded shrink-0"
-                                          style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
-                                          {place.placeType}
-                                        </span>
                                       )}
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
                         );
                       })()}
                       {!facilitiesLoading && (!facilities || facilities.length === 0) && (
-                        <div className="text-center py-12">
-                          <Utensils className="h-8 w-8 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
-                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            No facility information available for this park.
-                          </p>
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No facility information available for this park.
+                        </p>
                       )}
                     </div>
                   )}
@@ -1287,10 +1477,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         )}
                       </h2>
                       {galleryLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!galleryLoading && allPhotos.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1335,10 +1522,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         )}
                       </h2>
                       {videosLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!videosLoading && videos !== null && videos.length > 0 ? (
                         <div className="space-y-6">
@@ -1417,64 +1601,365 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Places to Visit
+                        What to See
                       </h2>
                       {placesLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!placesLoading && places !== null && places.length > 0 ? (
-                        <div className="space-y-4">
-                          {places.map((place, index) => (
-                            <div
-                              key={place.id || index}
-                              className="p-6 rounded-xl"
-                              style={{
-                                backgroundColor: 'var(--surface-hover)',
-                                borderWidth: '1px',
-                                borderColor: 'var(--border)'
-                              }}
-                            >
-                              {place.images?.[0]?.url && (
-                                <div className="relative aspect-video rounded-lg overflow-hidden mb-4">
-                                  <Image
-                                    src={place.images[0].url}
-                                    alt={place.images[0].altText || place.title}
-                                    fill
-                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                    className="object-cover"
-                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
-                                  />
+                        (() => {
+                          const renderPlaceCard = (place, index) => {
+                            const description = htmlToPlainText(
+                              place.listingDescription || place.bodyText || ''
+                            )?.trim();
+                            const displayTags = getDisplayPlaceTags(place.tags, park);
+
+                            return (
+                              <div
+                                key={place.id || index}
+                                className="rounded-xl overflow-hidden"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)',
+                                }}
+                              >
+                                {place.images?.[0]?.url && (
+                                  <div className="relative h-48 w-full">
+                                    <Image
+                                      src={place.images[0].url}
+                                      alt={place.images[0].altText || place.title}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 720px"
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        e.target.parentElement.style.display = 'none';
+                                      }}
+                                    />
+                                    {place.images[0].credit && (
+                                      <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+                                        {place.images[0].credit}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="p-6">
+                                  <h3
+                                    className="text-lg font-semibold mb-3"
+                                    style={{ color: 'var(--text-primary)' }}
+                                  >
+                                    {place.title}
+                                  </h3>
+                                  {description && (
+                                    <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                                      {description}
+                                    </p>
+                                  )}
+                                  {displayTags.length > 0 && (
+                                    <div className="flex flex-wrap gap-3">
+                                      {displayTags.map((tag, i) => (
+                                        <span
+                                          key={i}
+                                          className="text-xs px-2.5 py-1 rounded-full"
+                                          style={{
+                                            backgroundColor: 'var(--surface-elevated)',
+                                            color: 'var(--text-secondary)',
+                                          }}
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              <h3 className="text-lg font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
-                                {place.title}
-                              </h3>
-                              <p className="text-sm mb-3"
-                                style={{ color: 'var(--text-secondary)' }}
-                              >
-                                {htmlToPlainText(place.listingDescription || place.bodyText)?.substring(0, 300)}
-                              </p>
-                              {place.tags && place.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {place.tags.map((tag, i) => (
-                                    <span key={i} className="text-[11px] px-2 py-0.5 rounded-full"
-                                      style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}>
-                                      {tag}
-                                    </span>
-                                  ))}
+                              </div>
+                            );
+                          };
+
+                          const tagCounts = new Map();
+                          const placesByTag = new Map();
+                          const untagged = [];
+
+                          places.forEach((place) => {
+                            const tags = Array.isArray(place.tags)
+                              ? place.tags.map(normalizePlaceTag).filter((t) => t && !isJunkPlaceTag(t, park))
+                              : [];
+                            if (tags.length === 0) {
+                              untagged.push(place);
+                              return;
+                            }
+                            tags.forEach((tag) => {
+                              tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+                              if (!placesByTag.has(tag)) placesByTag.set(tag, []);
+                              placesByTag.get(tag).push(place);
+                            });
+                          });
+
+                          const topTags = [...tagCounts.entries()]
+                            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                            .slice(0, 10)
+                            .map(([tag]) => tag);
+
+                          const placeTabs = [
+                            { id: 'All', name: 'All', count: places.length },
+                            ...topTags.map((tag) => ({ id: tag, name: tag, count: tagCounts.get(tag) || 0 })),
+                            ...(untagged.length ? [{ id: 'Other', name: 'Other', count: untagged.length }] : []),
+                          ];
+
+                          const getPlacesForActiveTag = () => {
+                            if (!activePlacesTag || activePlacesTag === 'All') return places;
+                            if (activePlacesTag === 'Other') return untagged;
+                            return placesByTag.get(activePlacesTag) || [];
+                          };
+
+                          return (
+                            <div>
+                              {placeTabs.length > 1 ? (
+                                <>
+                                  <div className="flex flex-wrap gap-2 pb-4 mb-4 sm:mb-6">
+                                    {placeTabs.map((tab) => {
+                                      const isActive = activePlacesTag === tab.id;
+                                      return (
+                                        <button
+                                          key={tab.id}
+                                          onClick={() => setActivePlacesTag(tab.id)}
+                                          className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold transition"
+                                          style={{
+                                            backgroundColor: isActive ? 'var(--surface)' : 'transparent',
+                                            color: 'var(--text-primary)',
+                                            borderWidth: '1px',
+                                            borderColor: isActive ? 'var(--text-tertiary)' : 'var(--border)',
+                                            boxShadow: isActive ? '0 2px 8px rgba(0, 0, 0, 0.10)' : 'none',
+                                          }}
+                                        >
+                                          <span className="leading-snug">
+                                            {tab.name}
+                                          </span>
+                                          <span
+                                            className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                                            style={{
+                                              backgroundColor: isActive ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface)',
+                                              color: isActive ? 'var(--accent-blue, #3b82f6)' : 'var(--text-tertiary)',
+                                              borderWidth: isActive ? '0px' : '1px',
+                                              borderColor: 'var(--border)',
+                                            }}
+                                          >
+                                            {tab.count}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {(() => {
+                                    const list = getPlacesForActiveTag();
+                                    const showAllKey = `places:${activePlacesTag}`;
+                                    const isExpanded = expandedPlaceTagSections.has(showAllKey);
+                                    const visible = isExpanded ? list : list.slice(0, 10);
+
+                                    return (
+                                      <div>
+                                        {list.length > 10 && (
+                                          <div className="flex items-center justify-between gap-3 mb-4">
+                                            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                              {isExpanded ? `Showing all ${list.length}.` : `Showing 10 of ${list.length}.`}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setExpandedPlaceTagSections((prev) => {
+                                                  const next = new Set(prev);
+                                                  if (next.has(showAllKey)) next.delete(showAllKey);
+                                                  else next.add(showAllKey);
+                                                  return next;
+                                                });
+                                              }}
+                                              className="text-xs font-semibold hover:underline whitespace-nowrap"
+                                              style={{ color: 'var(--text-secondary)' }}
+                                            >
+                                              {isExpanded ? 'Show fewer' : `Show all (${list.length})`}
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        <div className="space-y-6">
+                                          {visible.map((place, index) => renderPlaceCard(place, `${activePlacesTag}-${index}`))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </>
+                              ) : (
+                                <div className="space-y-6">
+                                  {places.map((place, index) => renderPlaceCard(place, index))}
                                 </div>
                               )}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })()
                       ) : !placesLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
                           No places information available
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'visitorcenters' && (
+                    <div>
+                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <Landmark className="h-6 w-6" />
+                        Visitor Centers
+                      </h2>
+                      {visitorCentersLoading && (
+                        <ParkTabSpinner />
+                      )}
+                      {!visitorCentersLoading && visitorCenters !== null && visitorCenters.length > 0 ? (
+                        <div className="space-y-6">
+                          {visitorCenters.map((center, index) => {
+                            const img = center.images?.[0];
+                            const description = htmlToPlainText(center.description || '')?.trim();
+                            const hoursBlock = center.operatingHours?.[0];
+                            const hoursDesc = hoursBlock?.description?.trim();
+                            const standardHours = hoursBlock?.standardHours;
+                            const hoursValues = standardHours ? Object.values(standardHours) : [];
+                            const uniformHours =
+                              hoursValues.length > 0 && new Set(hoursValues).size === 1
+                                ? hoursValues[0]
+                                : null;
+                            const mapsUrl = buildCoordinatesMapsUrl(
+                              center.latitude,
+                              center.longitude,
+                              center.name
+                            );
+
+                            return (
+                              <div
+                                key={center.id || index}
+                                className="rounded-xl overflow-hidden"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)',
+                                }}
+                              >
+                                {img?.url && (
+                                  <div className="relative h-48 w-full">
+                                    <Image
+                                      src={img.url}
+                                      alt={img.altText || center.name}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 720px"
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        e.target.parentElement.style.display = 'none';
+                                      }}
+                                    />
+                                    {img.credit && (
+                                      <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+                                        {img.credit}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="p-6">
+                                  <div className="flex items-start justify-between gap-3 mb-3">
+                                    <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                      {center.name}
+                                    </h3>
+                                    {center.url && (
+                                      <a
+                                        href={center.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+                                        style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                                      >
+                                        NPS page <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-3 mb-4">
+                                    {center.contacts?.phoneNumbers?.[0]?.phoneNumber && (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'var(--surface-elevated)',
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        <Phone className="h-3 w-3" />
+                                        {center.contacts.phoneNumbers[0].phoneNumber}
+                                      </span>
+                                    )}
+                                    {(uniformHours || hoursDesc) && (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'var(--surface-elevated)',
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        <Clock className="h-3 w-3" />
+                                        {uniformHours && uniformHours !== 'Closed'
+                                          ? uniformHours
+                                          : hoursDesc}
+                                      </span>
+                                    )}
+                                    {center.isPassportStampLocation && (
+                                      <span
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                                        style={{
+                                          backgroundColor: 'rgba(59,130,246,0.1)',
+                                          color: 'var(--accent-blue, #3b82f6)',
+                                        }}
+                                      >
+                                        <Star className="h-3 w-3" />
+                                        Passport stamp
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {description && (
+                                    <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                                      {description}
+                                    </p>
+                                  )}
+
+                                  {hoursDesc && uniformHours && hoursDesc !== uniformHours && (
+                                    <div
+                                      className="flex items-start gap-2 mb-4 text-xs"
+                                      style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                      <Calendar className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                      <span>{hoursDesc}</span>
+                                    </div>
+                                  )}
+
+                                  {mapsUrl && (
+                                    <a
+                                      href={mapsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+                                      style={{ color: 'var(--accent-blue, #3b82f6)' }}
+                                    >
+                                      <MapPin className="h-3.5 w-3.5" />
+                                      Get directions
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : !visitorCentersLoading && (
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No visitor center information available for this park yet.
                         </p>
                       )}
                     </div>
@@ -1485,16 +1970,13 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Tours
+                        Self-Guided Tours
                       </h2>
                       {toursLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!toursLoading && tours !== null && tours.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {tours.map((tour, index) => (
                             <div
                               key={tour.id || index}
@@ -1507,12 +1989,15 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                             >
                               {tour.images?.[0]?.crops?.[0]?.url && (
                                 <div className="relative h-48 w-full">
-                                  <img
+                                  <Image
                                     src={tour.images[0].crops[0].url}
                                     alt={tour.images[0].altText || tour.title}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                    onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, 720px"
+                                    className="object-cover"
+                                    onError={(e) => {
+                                      e.target.parentElement.style.display = 'none';
+                                    }}
                                   />
                                   {tour.images[0].credit && (
                                     <span className="absolute bottom-1 right-2 text-[10px] text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
@@ -1627,26 +2112,39 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        Parking Lots
+                        Parking &amp; Access
                       </h2>
+
+                      <GettingThereSection park={park} showMapLinks className="mb-8" />
+
+                      <h3 className="text-xl font-semibold mb-4"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        Parking lots
+                      </h3>
+
                       {parkingLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!parkingLoading && parkingLots !== null && parkingLots.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {parkingLots.map((lot, index) => {
                             const accessibility = lot.accessibility;
-                            const liveStatus = lot.liveStatus;
-                            const fee = lot.fees?.[0];
+                            const feeLabel = formatParkingFee(lot.fees?.[0]);
                             const hours = lot.operatingHours?.[0]?.standardHours;
                             const hoursDesc = lot.operatingHours?.[0]?.description;
-                            // Derive a single hours string if all days are the same
                             const hoursValues = hours ? Object.values(hours) : [];
-                            const uniformHours = hoursValues.length > 0 && new Set(hoursValues).size === 1 ? hoursValues[0] : null;
-                            const isClosed = liveStatus?.occupancy?.toLowerCase() === 'closed' || liveStatus?.isActive === false;
+                            const uniformHours =
+                              hoursValues.length > 0 && new Set(hoursValues).size === 1
+                                ? hoursValues[0]
+                                : null;
+                            const mapsUrl = buildCoordinatesMapsUrl(
+                              lot.latitude,
+                              lot.longitude,
+                              lot.name
+                            );
+                            const lotNote = String(lot.liveStatus?.description || '').trim() || null;
+
                             return (
                               <div
                                 key={lot.id || index}
@@ -1654,117 +2152,169 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                 style={{
                                   backgroundColor: 'var(--surface-hover)',
                                   borderWidth: '1px',
-                                  borderColor: 'var(--border)'
+                                  borderColor: 'var(--border)',
                                 }}
                               >
                                 {lot.images?.[0]?.url && (
                                   <div className="relative h-40 w-full">
-                                    <img
+                                    <Image
                                       src={lot.images[0].url}
                                       alt={lot.images[0].altText || lot.name}
-                                      className="w-full h-full object-cover"
-                                      loading="lazy"
-                                      onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 720px"
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        e.target.parentElement.style.display = 'none';
+                                      }}
                                     />
                                   </div>
                                 )}
                                 <div className="p-6">
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  <h3 className="text-lg font-semibold"
-                                    style={{ color: 'var(--text-primary)' }}
-                                  >
-                                    {lot.name}
-                                  </h3>
-                                  {liveStatus?.occupancy && (
-                                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${
-                                      liveStatus.occupancy.toLowerCase() === 'closed' ? 'bg-red-500/20 text-red-400' :
-                                      liveStatus.occupancy.toLowerCase() === 'light' ? 'bg-green-500/20 text-green-400' :
-                                      liveStatus.occupancy.toLowerCase() === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
-                                      liveStatus.occupancy.toLowerCase() === 'full' ? 'bg-red-500/20 text-red-400' :
-                                      'bg-blue-500/20 text-blue-400'
-                                    }`}>
-                                      {liveStatus.occupancy}
-                                    </span>
-                                  )}
-                                </div>
-                                {lot.description && (
-                                  <p className="text-sm mb-3"
-                                    style={{ color: 'var(--text-secondary)' }}
-                                  >
-                                    {htmlToPlainText(lot.description)}
-                                  </p>
-                                )}
-                                <div className="flex flex-wrap items-center gap-3 mt-3">
-                                  {accessibility?.totalSpaces > 0 && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                      style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
+                                  <div className="flex items-start justify-between gap-3 mb-2">
+                                    <h3
+                                      className="text-lg font-semibold"
+                                      style={{ color: 'var(--text-primary)' }}
                                     >
-                                      {accessibility.totalSpaces} spaces
-                                    </span>
-                                  )}
-                                  {accessibility?.numberofAdaSpaces > 0 && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/20 text-green-400">
-                                      {accessibility.numberofAdaSpaces} ADA
-                                    </span>
-                                  )}
-                                  {accessibility?.numberOfOversizeVehicleSpaces > 0 && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                      style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
-                                    >
-                                      {accessibility.numberOfOversizeVehicleSpaces} oversize
-                                    </span>
-                                  )}
-                                  {fee && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                      style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
-                                    >
-                                      ${fee.cost}
-                                    </span>
-                                  )}
-                                  {liveStatus?.estimatedWaitTimeInMinutes > 0 && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-500/20 text-orange-400">
-                                      ~{liveStatus.estimatedWaitTimeInMinutes} min wait
-                                    </span>
-                                  )}
-                                </div>
-                                {/* Operating hours — skip when closed (avoids "Closed" + "Open 24h" conflict) */}
-                                {!isClosed && (uniformHours || hoursDesc) && (
-                                  <div className="flex items-start gap-2 mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                                    <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                    <span>
-                                      {uniformHours && uniformHours !== 'All Day'
-                                        ? `Open ${uniformHours} daily`
-                                        : uniformHours === 'All Day'
-                                          ? 'Open 24 hours'
-                                          : hoursDesc}
-                                    </span>
+                                      {lot.name}
+                                    </h3>
                                   </div>
-                                )}
-                                {!isClosed && !uniformHours && hours && (
-                                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                                    {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(day => (
-                                      hours[day] && hours[day] !== 'Closed' ? (
-                                        <div key={day} className="flex justify-between">
-                                          <span className="capitalize">{day.slice(0,3)}</span>
-                                          <span style={{ color: 'var(--text-tertiary)' }}>{hours[day]}</span>
-                                        </div>
-                                      ) : hours[day] === 'Closed' ? (
-                                        <div key={day} className="flex justify-between">
-                                          <span className="capitalize">{day.slice(0,3)}</span>
-                                          <span style={{ color: 'var(--text-tertiary)' }}>Closed</span>
-                                        </div>
-                                      ) : null
-                                    ))}
+                                  {lot.description && (
+                                    <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                                      {htmlToPlainText(lot.description)}
+                                    </p>
+                                  )}
+                                  {lotNote && (
+                                    <p
+                                      className="text-xs mb-3 leading-relaxed rounded-lg px-3 py-2"
+                                      style={{
+                                        color: 'var(--text-secondary)',
+                                        backgroundColor: 'var(--surface)',
+                                        borderWidth: '1px',
+                                        borderColor: 'var(--border)',
+                                      }}
+                                    >
+                                      {lotNote}
+                                    </p>
+                                  )}
+                                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                                    {accessibility?.totalSpaces > 0 && (
+                                      <span
+                                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{
+                                          backgroundColor: 'var(--surface)',
+                                          color: 'var(--text-primary)',
+                                        }}
+                                      >
+                                        {accessibility.totalSpaces} spaces
+                                      </span>
+                                    )}
+                                    {accessibility?.numberofAdaSpaces > 0 && (
+                                      <span
+                                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{
+                                          backgroundColor: 'var(--accent-green-light)',
+                                          color: 'var(--accent-green)',
+                                        }}
+                                      >
+                                        {accessibility.numberofAdaSpaces} ADA
+                                      </span>
+                                    )}
+                                    {accessibility?.numberOfOversizeVehicleSpaces > 0 && (
+                                      <span
+                                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{
+                                          backgroundColor: 'var(--surface)',
+                                          color: 'var(--text-primary)',
+                                        }}
+                                      >
+                                        {accessibility.numberOfOversizeVehicleSpaces} oversize
+                                      </span>
+                                    )}
+                                    {feeLabel && (
+                                      <span
+                                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{
+                                          backgroundColor: 'var(--surface)',
+                                          color: 'var(--text-primary)',
+                                        }}
+                                      >
+                                        {feeLabel}
+                                      </span>
+                                    )}
                                   </div>
-                                )}
-                                {/* Webcam link */}
-                                {lot.webcamUrl && (
-                                  <a href={lot.webcamUrl} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 mt-3 text-xs hover:underline"
-                                    style={{ color: 'var(--accent-blue, #3b82f6)' }}>
-                                    <Camera className="h-3 w-3" /> Live webcam
-                                  </a>
-                                )}
+                                  {(uniformHours || hoursDesc) && (
+                                    <div
+                                      className="flex items-start gap-2 mt-3 text-xs"
+                                      style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                      <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                      <span>
+                                        {uniformHours && uniformHours !== 'All Day'
+                                          ? `Open ${uniformHours} daily`
+                                          : uniformHours === 'All Day'
+                                            ? 'Open 24 hours'
+                                            : hoursDesc}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {!uniformHours && hours && (
+                                    <div
+                                      className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs"
+                                      style={{ color: 'var(--text-secondary)' }}
+                                    >
+                                      {[
+                                        'monday',
+                                        'tuesday',
+                                        'wednesday',
+                                        'thursday',
+                                        'friday',
+                                        'saturday',
+                                        'sunday',
+                                      ].map((day) =>
+                                        hours[day] && hours[day] !== 'Closed' ? (
+                                          <div key={day} className="flex justify-between">
+                                            <span className="capitalize">{day.slice(0, 3)}</span>
+                                            <span style={{ color: 'var(--text-tertiary)' }}>
+                                              {hours[day]}
+                                            </span>
+                                          </div>
+                                        ) : hours[day] === 'Closed' ? (
+                                          <div key={day} className="flex justify-between">
+                                            <span className="capitalize">{day.slice(0, 3)}</span>
+                                            <span style={{ color: 'var(--text-tertiary)' }}>
+                                              Closed
+                                            </span>
+                                          </div>
+                                        ) : null
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap gap-3 mt-3">
+                                    {mapsUrl && (
+                                      <a
+                                        href={mapsUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold hover:underline"
+                                        style={{ color: 'var(--accent-blue, #3b82f6)' }}
+                                      >
+                                        <MapPin className="h-3 w-3" />
+                                        Open in Maps
+                                      </a>
+                                    )}
+                                    {lot.webcamUrl && (
+                                      <a
+                                        href={lot.webcamUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold hover:underline"
+                                        style={{ color: 'var(--accent-blue, #3b82f6)' }}
+                                      >
+                                        <Camera className="h-3 w-3" />
+                                        Live webcam
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -1772,7 +2322,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         </div>
                       ) : !parkingLoading && (
                         <p style={{ color: 'var(--text-secondary)' }}>
-                          No parking lot information available
+                          No parking lot information available from NPS for this park. Check the getting-here section above or the official park website for access and parking guidance.
                         </p>
                       )}
                     </div>
@@ -1786,60 +2336,146 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                         Webcams
                       </h2>
                       {webcamsLoading && (
-                        <div className="flex justify-center py-12">
-                          <div className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-                            style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }} />
-                        </div>
+                        <ParkTabSpinner />
                       )}
                       {!webcamsLoading && webcams !== null && webcams.length > 0 ? (
-                        <div className="space-y-4">
-                          {webcams.map((cam, index) => (
-                            <div
-                              key={cam.id || index}
-                              className="p-6 rounded-xl"
-                              style={{
-                                backgroundColor: 'var(--surface-hover)',
-                                borderWidth: '1px',
-                                borderColor: 'var(--border)'
-                              }}
-                            >
-                              <h3 className="text-lg font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)' }}
+                        <div className="space-y-6">
+                          {webcams.map((cam, index) => {
+                            const img = getWebcamImage(cam);
+                            const status = getWebcamStatusDisplay(cam);
+                            const cta = getWebcamCta(cam);
+                            const description = htmlToPlainText(cam.description || '')?.trim();
+                            const mapsUrl = buildCoordinatesMapsUrl(
+                              cam.latitude,
+                              cam.longitude,
+                              cam.title
+                            );
+                            const statusStyles =
+                              status.tone === 'active'
+                                ? {
+                                    backgroundColor: 'var(--accent-green-light)',
+                                    color: 'var(--accent-green)',
+                                  }
+                                : status.tone === 'inactive'
+                                  ? {
+                                      backgroundColor: 'rgba(239, 68, 68, 0.14)',
+                                      color: 'var(--error-red)',
+                                    }
+                                  : {
+                                      backgroundColor: 'var(--surface-elevated)',
+                                      color: 'var(--text-secondary)',
+                                    };
+
+                            return (
+                              <div
+                                key={cam.id || index}
+                                className="rounded-xl overflow-hidden"
+                                style={{
+                                  backgroundColor: 'var(--surface-hover)',
+                                  borderWidth: '1px',
+                                  borderColor: 'var(--border)',
+                                }}
                               >
-                                {cam.title}
-                              </h3>
-                              {cam.description && (
-                                <p className="text-sm"
-                                  style={{ color: 'var(--text-secondary)' }}
-                                >
-                                  {cam.description.replace(/<[^>]*>/g, '')}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-3 mt-3">
-                                {cam.status && (
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                    cam.status.toLowerCase() === 'active'
-                                      ? 'bg-green-500/20 text-green-400'
-                                      : 'bg-red-500/20 text-red-400'
-                                  }`}>
-                                    {cam.status}
-                                  </span>
+                                {img?.url && (
+                                  <div className="relative h-48 w-full">
+                                    <Image
+                                      src={img.url}
+                                      alt={img.alt}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 720px"
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        e.target.parentElement.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
                                 )}
-                                {cam.url && (
-                                  <a
-                                    href={cam.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
-                                    style={{ color: 'var(--text-accent, #3b82f6)' }}
-                                  >
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                    View Live Feed
-                                  </a>
-                                )}
+
+                                <div className="p-6">
+                                  <div className="flex items-start justify-between gap-3 mb-3">
+                                    <h3
+                                      className="text-lg font-semibold"
+                                      style={{ color: 'var(--text-primary)' }}
+                                    >
+                                      {cam.title}
+                                    </h3>
+                                    {cta ? (
+                                      <a
+                                        href={cta.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+                                        style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+                                      >
+                                        {cta.label} <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    ) : null}
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-3 mb-4">
+                                    {status.label && (
+                                      <span
+                                        className="text-xs px-2.5 py-1 rounded-full font-medium"
+                                        style={statusStyles}
+                                      >
+                                        {status.label}
+                                      </span>
+                                    )}
+                                    {cam.isStreaming && status.isActive && (
+                                      <span
+                                        className="text-xs px-2.5 py-1 rounded-full font-semibold uppercase tracking-wide"
+                                        style={{
+                                          backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                                          color: 'var(--accent-blue, #3b82f6)',
+                                        }}
+                                      >
+                                        Livestream
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {description && (
+                                    <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                                      {description}
+                                    </p>
+                                  )}
+
+                                  {(status.message || cta?.hint) && (
+                                    <p
+                                      className="text-xs mb-4 leading-relaxed rounded-lg px-3 py-2"
+                                      style={{
+                                        color: 'var(--text-secondary)',
+                                        backgroundColor: 'var(--surface)',
+                                        borderWidth: '1px',
+                                        borderColor: 'var(--border)',
+                                      }}
+                                    >
+                                      {status.message || cta.hint}
+                                    </p>
+                                  )}
+
+                                  {cam.credit && (
+                                    <p className="text-xs mb-4" style={{ color: 'var(--text-tertiary)' }}>
+                                      {cam.credit}
+                                    </p>
+                                  )}
+
+                                  {mapsUrl && (
+                                    <a
+                                      href={mapsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+                                      style={{ color: 'var(--accent-blue, #3b82f6)' }}
+                                    >
+                                      <MapPin className="h-3.5 w-3.5" />
+                                      Get directions
+                                    </a>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : !webcamsLoading && webcams !== null && (
                         <p style={{ color: 'var(--text-secondary)' }}>
@@ -1851,55 +2487,63 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
                   {activeTab === 'brochures' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                      <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)' }}
-                        >
-                          <BookOpen className="h-5 w-5" style={{ color: '#3b82f6' }} />
-                        </div>
                         Brochures & Maps
                       </h2>
 
                       {brochuresLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-20 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--surface-hover)' }} />
-                          ))}
-                        </div>
+                        <ParkTabSpinner />
                       ) : brochureData?.brochures?.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-4">
                           {brochureData.brochures.map((brochure, index) => (
                             <div
                               key={index}
-                              className="rounded-xl overflow-hidden flex items-center gap-4 p-4"
+                              className="rounded-xl p-5"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)'
                               }}
                             >
-                              <div className="h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
-                              >
-                                <FileText className="h-5 w-5" style={{ color: '#3b82f6' }} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm leading-snug line-clamp-2"
-                                  style={{ color: 'var(--text-primary)' }}
+                              <div className="flex items-start gap-4">
+                                <div
+                                  className="h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                                  style={{
+                                    backgroundColor: 'var(--surface)',
+                                    borderWidth: '1px',
+                                    borderColor: 'var(--border)'
+                                  }}
                                 >
-                                  {brochure.title}
-                                </p>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>PDF</p>
+                                  <FileText className="h-5 w-5" style={{ color: 'var(--accent-blue, #3b82f6)' }} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="font-semibold text-sm leading-snug break-words"
+                                    style={{ color: 'var(--text-primary)' }}
+                                    title={brochure.title}
+                                  >
+                                    {brochure.title || 'Park brochure'}
+                                  </p>
+                                  <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                                    PDF
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
+
+                              <div className="mt-4 flex flex-wrap gap-2">
                                 <a
                                   href={brochure.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-80"
-                                  style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
+                                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition hover:opacity-80"
+                                  style={{
+                                    backgroundColor: 'var(--surface)',
+                                    borderWidth: '1px',
+                                    borderColor: 'var(--border)',
+                                    color: 'var(--text-primary)'
+                                  }}
                                 >
                                   <ExternalLink className="h-3.5 w-3.5" />
                                   View
@@ -1907,338 +2551,353 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                                 <a
                                   href={brochure.url}
                                   download
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-80"
-                                  style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition hover:opacity-80"
+                                  style={{
+                                    backgroundColor: 'var(--surface)',
+                                    borderWidth: '1px',
+                                    borderColor: 'var(--border)',
+                                    color: 'var(--text-primary)'
+                                  }}
                                 >
                                   <Download className="h-3.5 w-3.5" />
+                                  Download
                                 </a>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
-                            style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
-                          >
-                            <BookOpen className="h-8 w-8" style={{ color: '#3b82f6' }} />
-                          </div>
-                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                            No brochures found
-                          </p>
-                          <p className="text-sm mt-1 mb-4" style={{ color: 'var(--text-tertiary)' }}>
-                            Brochures may not be available for this park
-                          </p>
-                          {brochureData?.planYourVisitUrl && (
-                            <a
-                              href={brochureData.planYourVisitUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition hover:opacity-80"
-                              style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              Visit NPS Plan Your Visit Page
-                            </a>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Always show NPS link at bottom */}
-                      {brochureData?.brochures?.length > 0 && brochureData?.planYourVisitUrl && (
-                        <div className="mt-6 text-center">
-                          <a
-                            href={brochureData.planYourVisitUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            View all resources on NPS.gov
-                          </a>
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No brochures available for this park.
+                        </p>
                       )}
                     </div>
                   )}
 
                   {activeTab === 'permits' && (
+                    <ParkPermitsTab permits={permits} loading={!permitsReady} />
+                  )}
+
+                  {activeTab === 'alerts' && (
+                    <ParkAlertsTab alerts={alerts} />
+                  )}
+
+                  {activeTab === 'transit' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
+                      <h2 className="text-2xl font-bold mb-6"
                         style={{ color: 'var(--text-primary)' }}
                       >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
-                        >
-                          <Ticket className="h-5 w-5" style={{ color: '#10b981' }} />
-                        </div>
-                        Permits & Reservations
+                        Shuttles & Ferries
                       </h2>
 
-                      {permitsLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-32 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--surface-hover)' }} />
-                          ))}
-                        </div>
-                      ) : permits?.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {permits.map((permit) => (
+                      {transitLoading ? (
+                        <ParkTabSpinner />
+                      ) : transitData?.hasGtfs && Array.isArray(transitData?.feeds) && transitData.feeds.length > 0 ? (
+                        <div className="space-y-4">
+                          {transitData.feeds.map((feed, idx) => (
                             <div
-                              key={permit.id}
-                              className="rounded-xl overflow-hidden p-4"
+                              key={`${feed.gtfsUrl || 'gtfs'}-${idx}`}
+                              className="rounded-xl p-5"
                               style={{
                                 backgroundColor: 'var(--surface-hover)',
                                 borderWidth: '1px',
                                 borderColor: 'var(--border)',
-                                borderLeftWidth: '4px',
-                                borderLeftColor: '#10b981'
                               }}
                             >
-                              <div className="flex items-start gap-3 mb-3">
-                                <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-base leading-snug break-words"
+                                  style={{ color: 'var(--text-primary)' }}
                                 >
-                                  <Ticket className="h-5 w-5" style={{ color: '#10b981' }} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="font-bold text-base leading-snug line-clamp-2"
-                                    style={{ color: 'var(--text-primary)' }}
+                                  {feed.systemName || 'Transit system'}
+                                </p>
+                                {shouldShowCatalogNotes(feed.notes, feed.parsed?.operating?.serviceStatus) ? (
+                                  <div className="mt-3 text-sm"
+                                    style={{ color: 'var(--text-secondary)' }}
                                   >
-                                    {permit.name}
-                                  </h3>
-                                  {permit.type && (
-                                    <span className="inline-block text-xs px-2 py-0.5 rounded-full font-semibold mt-1"
-                                      style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}
+                                    {feed.notes}
+                                  </div>
+                                ) : null}
+
+                                {feed.parsed?.operating && (() => {
+                                  const operating = feed.parsed.operating;
+                                  const styles = getTransitOperatingStyles(operating.serviceStatus);
+                                  const showTodayDetails = shouldShowTodayTransitDetails(
+                                    operating.serviceStatus
+                                  );
+                                  return (
+                                    <div
+                                      className="mt-3 rounded-xl p-3"
+                                      style={{
+                                        backgroundColor: 'var(--surface)',
+                                        borderWidth: '1px',
+                                        borderColor: 'var(--border)',
+                                      }}
                                     >
-                                      {permit.type}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {permit.description && (
-                                <p className="text-sm leading-relaxed line-clamp-3 mb-3"
-                                  style={{ color: 'var(--text-secondary)' }}
-                                >
-                                  {htmlToPlainText(permit.description)}
-                                </p>
-                              )}
-                              {permit.facilityName && (
-                                <p className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>
-                                  {permit.facilityName}
-                                </p>
-                              )}
-                              <a
-                                href={permit.reservationUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition hover:opacity-80 w-full sm:w-auto justify-center"
-                                style={{ backgroundColor: '#10b981', color: 'white' }}
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                                Reserve on Recreation.gov
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
-                            style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}
-                          >
-                            <Ticket className="h-8 w-8" style={{ color: '#10b981' }} />
-                          </div>
-                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                            No permits required
-                          </p>
-                          <p className="text-sm mt-1 mb-4" style={{ color: 'var(--text-tertiary)' }}>
-                            This park may not require advance permits, or permit information is not available
-                          </p>
-                          <a
-                            href={`https://www.nps.gov/${parkCode}/planyourvisit/permits.htm`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition hover:opacity-80"
-                            style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            Check NPS Permits Page
-                          </a>
-                        </div>
-                      )}
-
-                      {permits?.length > 0 && (
-                        <div className="mt-6 text-center">
-                          <a
-                            href="https://www.recreation.gov"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            Data from Recreation.gov
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'alerts' && (
-                    <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(251, 146, 60, 0.15)' }}
-                        >
-                          <AlertTriangle className="h-5 w-5" style={{ color: '#f97316' }} />
-                        </div>
-                        Park Alerts & Notices
-                      </h2>
-                      {alerts && alerts.length > 0 ? (
-                        <div className="space-y-4">
-                          {alerts.map((alert, index) => {
-                            const getSeverityConfig = (category) => {
-                              switch (category?.toLowerCase()) {
-                                case 'danger':
-                                  return {
-                                    bg: 'rgba(239, 68, 68, 0.06)',
-                                    border: 'rgba(239, 68, 68, 0.2)',
-                                    accent: '#ef4444',
-                                    iconBg: 'rgba(239, 68, 68, 0.12)',
-                                    icon: AlertTriangle,
-                                    label: 'Danger'
-                                  };
-                                case 'caution':
-                                  return {
-                                    bg: 'rgba(251, 146, 60, 0.06)',
-                                    border: 'rgba(251, 146, 60, 0.2)',
-                                    accent: '#f97316',
-                                    iconBg: 'rgba(251, 146, 60, 0.12)',
-                                    icon: AlertTriangle,
-                                    label: 'Caution'
-                                  };
-                                case 'park closure':
-                                  return {
-                                    bg: 'rgba(239, 68, 68, 0.04)',
-                                    border: 'rgba(239, 68, 68, 0.15)',
-                                    accent: '#dc2626',
-                                    iconBg: 'rgba(239, 68, 68, 0.1)',
-                                    icon: Shield,
-                                    label: 'Park Closure'
-                                  };
-                                case 'information':
-                                  return {
-                                    bg: 'rgba(59, 130, 246, 0.04)',
-                                    border: 'rgba(59, 130, 246, 0.15)',
-                                    accent: '#3b82f6',
-                                    iconBg: 'rgba(59, 130, 246, 0.1)',
-                                    icon: Info,
-                                    label: 'Information'
-                                  };
-                                default:
-                                  return {
-                                    bg: 'var(--surface-hover)',
-                                    border: 'var(--border)',
-                                    accent: 'var(--text-secondary)',
-                                    iconBg: 'var(--surface-hover)',
-                                    icon: Info,
-                                    label: category || 'Notice'
-                                  };
-                              }
-                            };
-
-                            const config = getSeverityConfig(alert.category);
-                            const SeverityIcon = config.icon;
-
-                            return (
-                              <div
-                                key={index}
-                                className="rounded-xl overflow-hidden"
-                                style={{
-                                  backgroundColor: config.bg,
-                                  borderWidth: '1px',
-                                  borderColor: config.border,
-                                  borderLeftWidth: '4px',
-                                  borderLeftColor: config.accent
-                                }}
-                              >
-                                <div className="p-5">
-                                  <div className="flex items-start gap-4">
-                                    <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                                      style={{ backgroundColor: config.iconBg }}
-                                    >
-                                      <SeverityIcon className="h-5 w-5" style={{ color: config.accent }} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-start justify-between gap-3 mb-1">
-                                        <h3 className="text-base font-bold leading-snug"
-                                          style={{ color: 'var(--text-primary)' }}
-                                        >
-                                          {alert.title}
-                                        </h3>
-                                      </div>
-                                      {alert.category && (
+                                      <div className="flex flex-wrap items-center gap-2">
                                         <span
-                                          className="inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider mb-3"
+                                          className="px-2 py-0.5 rounded-full text-xs font-semibold"
                                           style={{
-                                            backgroundColor: config.accent + '18',
-                                            color: config.accent
+                                            backgroundColor: styles.badgeBg,
+                                            color: styles.badgeColor,
                                           }}
                                         >
-                                          {config.label}
+                                          {operating.headline}
                                         </span>
-                                      )}
-                                      <p className="text-sm leading-relaxed"
-                                        style={{ color: 'var(--text-secondary)' }}
-                                      >
-                                        {alert.description}
-                                      </p>
-                                      {alert.url && (
+                                        {showTodayDetails &&
+                                        shouldShowOperatingDaysLabel(
+                                          operating.operatingDaysLabel,
+                                          operating.detail,
+                                          operating.scheduleLines
+                                        ) ? (
+                                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                            {operating.operatingDaysLabel}
+                                          </span>
+                                        ) : null}
+                                        {showTodayDetails && operating.frequencyLabel ? (
+                                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                            {operating.frequencyLabel}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      {showTodayDetails && operating.scheduleDateLabel ? (
+                                        <p className="mt-1.5 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                                          Schedule for {operating.scheduleDateLabel}
+                                        </p>
+                                      ) : null}
+                                      {operating.detail ? (
+                                        <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                          {operating.detail}
+                                        </p>
+                                      ) : null}
+                                      {operating.seasonEndLabel && operating.serviceStatus === 'season_ended' ? (
+                                        <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                          Season ended {operating.seasonEndLabel}
+                                        </p>
+                                      ) : null}
+                                      {showTodayDetails &&
+                                      operating.seasonStartLabel &&
+                                      operating.seasonEndLabel ? (
+                                        <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                          Season: {operating.seasonStartLabel} – {operating.seasonEndLabel}
+                                        </p>
+                                      ) : null}
+                                      {operating.source === 'nps' &&
+                                      shouldShowNpsScheduleLines(operating.serviceStatus) &&
+                                      Array.isArray(operating.scheduleLines) &&
+                                      operating.scheduleLines.length > 0 ? (
+                                        <ul className="mt-2 space-y-1 text-xs list-disc pl-4" style={{ color: 'var(--text-secondary)' }}>
+                                          {operating.scheduleLines.map((line) => (
+                                            <li key={line}>{line}</li>
+                                          ))}
+                                        </ul>
+                                      ) : null}
+                                      {(operating.pageUrl || feed.systemUrl) && (
                                         <a
-                                          href={alert.url}
+                                          href={operating.pageUrl || feed.systemUrl}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1.5 text-sm font-semibold mt-3 hover:underline"
-                                          style={{ color: config.accent }}
+                                          className="mt-2 inline-flex items-center gap-2 text-xs font-semibold hover:underline"
+                                          style={{ color: 'var(--accent-green)' }}
                                         >
-                                          More information
                                           <ExternalLink className="h-3.5 w-3.5" />
+                                          Official NPS transit page
                                         </a>
                                       )}
+                                      {operating.operatorLink?.url ? (
+                                        <a
+                                          href={operating.operatorLink.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="mt-2 ml-0 inline-flex items-center gap-2 text-xs font-semibold hover:underline"
+                                          style={{ color: 'var(--accent-green)' }}
+                                        >
+                                          <ExternalLink className="h-3.5 w-3.5" />
+                                          {operating.operatorLink.label || 'Ferry operator'}
+                                        </a>
+                                      ) : null}
                                     </div>
+                                  );
+                                })()}
+
+                                {feed.parsedError && (
+                                  <div className="mt-3 text-xs"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                  >
+                                    Couldn’t parse GTFS feed right now.
                                   </div>
-                                </div>
+                                )}
                               </div>
-                            );
-                          })}
+
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {/* Intentionally no per-system external link (UX prefers single NPS public transport link above). */}
+                              </div>
+
+                              {Array.isArray(feed.parsed?.summary?.routes) && feed.parsed.summary.routes.length > 0 && (
+                                <div className="mt-5">
+                                  <div className="text-xs font-semibold mb-2"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                  >
+                                    Routes
+                                  </div>
+                                  {(() => {
+                                    const gtfsUrlKey = feed.gtfsUrl || `${idx}`;
+                                    const isExpanded = expandedRoutesByGtfsUrl.has(gtfsUrlKey);
+                                    const routes = feed.parsed.summary.routes;
+                                    const visibleRoutes = isExpanded ? routes : routes.slice(0, 6);
+                                    const hideRouteSchedules = shouldHideRouteSchedules(
+                                      feed.parsed?.operating?.serviceStatus
+                                    );
+                                    return (
+                                      <>
+                                        {hideRouteSchedules ? (
+                                          <p className="mb-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                            Route stops shown for reference. Shuttles are not running for the current season.
+                                          </p>
+                                        ) : null}
+                                        <div className="space-y-3">
+                                          {visibleRoutes.map((r) => (
+                                            <div
+                                              key={r.routeId}
+                                              className="text-left rounded-xl p-4"
+                                              style={{
+                                                backgroundColor: 'var(--surface)',
+                                                borderWidth: '1px',
+                                                borderColor: 'var(--border)',
+                                              }}
+                                            >
+                                              <div className="min-w-0">
+                                                <div className="text-sm font-semibold"
+                                                  style={{ color: 'var(--text-primary)' }}
+                                                >
+                                                  {r.longName || r.shortName || 'Route'}
+                                                </div>
+                                                {!hideRouteSchedules && r.frequencyLabel ? (
+                                                  <p className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                                    {r.frequencyLabel}
+                                                  </p>
+                                                ) : null}
+
+                                                {(() => {
+                                                  const stopPoints = Array.isArray(r.stopPoints) ? r.stopPoints : [];
+                                                  if (stopPoints.length < 2) return null;
+
+                                                  return (
+                                                    <div className="mt-3 relative pl-5">
+                                                      <div
+                                                        className="absolute left-2 top-1 bottom-1 w-px"
+                                                        style={{ backgroundColor: 'rgba(168, 85, 247, 0.28)' }}
+                                                      />
+                                                      <div className="space-y-2">
+                                                        {stopPoints.map((s, i) => {
+                                                          const isStart = i === 0;
+                                                          const isEnd = i === stopPoints.length - 1;
+                                                          return (
+                                                            <div key={`${s.stopId || s.stopName}-${i}`} className="relative">
+                                                              <div
+                                                                className="absolute -left-5 top-1.5 h-2.5 w-2.5 rounded-full"
+                                                                style={{
+                                                                  backgroundColor: isStart || isEnd
+                                                                    ? 'rgb(168, 85, 247)'
+                                                                    : 'rgba(168, 85, 247, 0.55)',
+                                                                  border: '2px solid var(--surface)',
+                                                                }}
+                                                              />
+                                                              <div className="flex items-start justify-between gap-3">
+                                                                <div
+                                                                  className="text-xs break-words"
+                                                                  style={{ color: 'var(--text-tertiary)' }}
+                                                                >
+                                                                  {s.stopName}
+                                                                </div>
+                                                                {!hideRouteSchedules && isStart && r.nextDeparture?.departureTime && (
+                                                                  <div className="text-xs font-semibold shrink-0"
+                                                                    style={{ color: 'var(--text-primary)' }}
+                                                                  >
+                                                                    {r.nextDeparture.departureTime}
+                                                                  </div>
+                                                                )}
+                                                                {!hideRouteSchedules && isStart &&
+                                                                  !r.nextDeparture?.departureTime &&
+                                                                  r.todaySchedule?.lastDeparture && (
+                                                                    <div
+                                                                      className="text-xs font-medium shrink-0 text-right max-w-[9rem]"
+                                                                      style={{ color: 'var(--text-tertiary)' }}
+                                                                      title="No more departures scheduled for the rest of today"
+                                                                    >
+                                                                      {r.todaySchedule.firstDeparture ===
+                                                                      r.todaySchedule.lastDeparture
+                                                                        ? `Runs ${r.todaySchedule.lastDeparture}`
+                                                                        : `Done today · last ${r.todaySchedule.lastDeparture}`}
+                                                                    </div>
+                                                                  )}
+                                                              </div>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })()}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        {routes.length > 6 && (
+                                          <div className="mt-3 flex items-center justify-between gap-3">
+                                            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                              {isExpanded ? `Showing all ${routes.length} routes.` : `Showing 6 of ${routes.length} routes.`}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setExpandedRoutesByGtfsUrl((prev) => {
+                                                  const next = new Set(prev);
+                                                  if (next.has(gtfsUrlKey)) next.delete(gtfsUrlKey);
+                                                  else next.add(gtfsUrlKey);
+                                                  return next;
+                                                });
+                                              }}
+                                              className="text-xs font-semibold hover:underline"
+                                              style={{ color: 'var(--text-secondary)' }}
+                                            >
+                                              {isExpanded ? 'Show fewer' : `Show all routes (${routes.length})`}
+                                            </button>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
-                            style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
-                          >
-                            <Shield className="h-8 w-8" style={{ color: '#22c55e' }} />
-                          </div>
-                          <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-                            No current alerts
-                          </p>
-                          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                            This park has no active alerts or closures
-                          </p>
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                          No transit information available for this park.
+                        </p>
                       )}
                     </div>
                   )}
 
                   {activeTab === 'reviews' && (
                     <div>
-                      <ReviewSection parkCode={npsParkCode} parkName={park.fullName} onCountChange={setReviewCount} />
+                      <ReviewSection
+                        parkCode={npsParkCode}
+                        parkName={park.fullName}
+                        onCountChange={setReviewCount}
+                        initialOpenForm={searchParams.get('write') === '1'}
+                        onFormOpened={() => handleTabChange('reviews', { keepFilter: true })}
+                        onReviewSubmitted={() => {
+                          setUserHasReviewed(true);
+                          markVisitedReviewPromptSeen(npsParkCode);
+                        }}
+                      />
                     </div>
                   )}
                 </div>
-              </div>
             </div>
 
             {/* Sidebar */}
@@ -2270,11 +2929,12 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                   {park.addresses?.[0]?.line1}<br />
                   {park.addresses?.[0]?.city}, {park.addresses?.[0]?.stateCode} {park.addresses?.[0]?.postalCode}
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3">
                   {park.latitude && park.longitude && (
                     <button
+                      type="button"
                       onClick={() => router.push(`/map?park=${encodeURIComponent(park.parkCode)}`)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
+                      className="flex w-full items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         color: 'var(--text-primary)',
@@ -2292,18 +2952,37 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                       href={createParkGoogleMapsLink()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
+                      className="flex w-full items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         color: 'var(--text-primary)',
                         borderWidth: '1px',
-                        borderColor: 'var(--border)'
+                        borderColor: 'var(--border)',
                       }}
                     >
-                      <ExternalLink className="h-4 w-4" />
+                      <MapIcon className="h-4 w-4" />
                       Open in Google Maps
                     </a>
                   )}
+
+                  {createParkGoogleMapsDirectionsLink() && (
+                    <a
+                      href={createParkGoogleMapsDirectionsLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:scale-105"
+                      style={{
+                        backgroundColor: 'var(--surface-hover)',
+                        color: 'var(--text-primary)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)',
+                      }}
+                    >
+                      <Route className="h-4 w-4" />
+                      Get directions
+                    </a>
+                  )}
+
                 </div>
               </div>
 
@@ -2381,7 +3060,10 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
               <div className="space-y-3">
                 {/* Crowd Calendar */}
                 <a
-                  href={`/reports/when-to-go.html?park=${encodeURIComponent(park.parkCode?.toUpperCase())}`}
+                  href={reportHref('/reports/when-to-go', {
+                    park: park.parkCode?.toUpperCase(),
+                    from: pathname,
+                  })}
                   className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
                   style={{
                     backgroundColor: 'var(--surface)',
@@ -2457,36 +3139,46 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
               </div>
 
               {/* Plan Trip CTA — below guides */}
-              <div className="rounded-2xl p-4 sm:p-6 text-center backdrop-blur"
+              <div
+                className="rounded-2xl p-4 sm:p-6 backdrop-blur text-left"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
                   borderColor: 'var(--border)'
                 }}
               >
-                <Mountain className="h-12 w-12 mx-auto mb-4 text-forest-400" />
-                <h3 className="text-xl font-semibold mb-2"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Plan Your Visit
-                </h3>
+                <div className="flex items-start gap-4 mb-4">
+                  <TrailieAvatar className="!h-12 !w-12 shrink-0" />
+                  <div className="min-w-0">
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-[0.24em]"
+                      style={{ color: 'var(--accent-green)' }}
+                    >
+                      Trailie
+                    </p>
+                    <h3 className="text-lg sm:text-xl font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
+                      {parkPlanCta.title}
+                    </h3>
+                  </div>
+                </div>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                  Let AI create a personalized itinerary for {park.fullName}
+                  {parkPlanCta.body}
                 </p>
                 <Button
                   onClick={() => router.push(`/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`)}
                   variant="secondary"
                   size="lg"
                   icon={Calendar}
+                  className="w-full"
                 >
-                  Plan with Trailie
+                  {parkPlanCta.button}
                 </Button>
                 <Button
                   onClick={() => router.push(`/compare?park=${encodeURIComponent(park.parkCode)}`)}
                   variant="ghost"
                   size="md"
-                  icon={TrendingUp}
-                  className="mt-3"
+                  icon={Compare}
+                  className="mt-3 w-full"
                 >
                   Compare with other parks
                 </Button>
@@ -2510,7 +3202,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>You Might Also Like</h2>
               </div>
               <Link
-                href={`/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
+                href={stateHubSlug ? `/parks/state/${stateHubSlug}` : `/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
                 className="hidden sm:flex items-center gap-1.5 font-semibold text-sm hover:underline"
                 style={{ color: 'var(--accent-green)' }}
               >
@@ -2551,7 +3243,7 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
 
             <div className="mt-6 sm:hidden">
               <Link
-                href={`/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
+                href={stateHubSlug ? `/parks/state/${stateHubSlug}` : `/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
                 className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
                 style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
@@ -2561,6 +3253,13 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
           </div>
         </section>
       )}
+
+      <ParkReviewPromptDialog
+        isOpen={showReviewPromptDialog}
+        onClose={dismissReviewPromptDialog}
+        parkName={park.fullName}
+        onLeaveTip={handleReviewPromptLeaveTip}
+      />
 
       {/* Photo Lightbox */}
       {lightboxOpen && allPhotos.length > 0 && (
@@ -2574,10 +3273,15 @@ const ParkDetailInner = ({ initialData, parkCode, relatedParks = [] }) => {
   );
 };
 
-export default function ParkDetailClient({ relatedParks, ...props }) {
+export default function ParkDetailClient({ relatedParks, seoLeadLine, stateHubSlug, ...props }) {
   return (
     <Suspense>
-      <ParkDetailInner {...props} relatedParks={relatedParks} />
+      <ParkDetailInner
+        {...props}
+        relatedParks={relatedParks}
+        seoLeadLine={seoLeadLine}
+        stateHubSlug={stateHubSlug}
+      />
     </Suspense>
   );
 }

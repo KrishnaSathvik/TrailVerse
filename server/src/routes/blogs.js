@@ -14,7 +14,8 @@ const {
   getFavoritedPosts,
   publishScheduledPosts,
   getScheduledPosts,
-  trackView
+  trackView,
+  getSlugRedirects
 } = require('../controllers/blogController');
 const { protect, admin, optionalAuth } = require('../middleware/auth');
 const { cacheMiddleware } = require('../middleware/cache');
@@ -318,6 +319,7 @@ router.get('/favorites', protect, getFavoritedPosts);
  *       404:
  *         description: Blog post not found
  */
+router.get('/slug-redirects', cacheMiddleware(300), getSlugRedirects);
 router.post('/:slug/view', trackView);
 router.post('/:id/like', optionalAuth, toggleLike);
 
