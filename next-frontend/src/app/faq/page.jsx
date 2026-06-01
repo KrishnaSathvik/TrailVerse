@@ -53,6 +53,30 @@ const faqStructuredData = {
     },
     {
       '@type': 'Question',
+      name: 'Is TrailVerse free?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Browsing parks, maps, weather, alerts, compare, discover, and blog content is free with no credit card. Trailie AI offers free anonymous messages before signup; a free account unlocks saved trips, chat history, and PDF export.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'Do I need an account to explore parks?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue AI trip plans, or export itineraries.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'How is TrailVerse different from AllTrails?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and AI day-by-day itineraries.'
+      }
+    },
+    {
+      '@type': 'Question',
       name: 'How does AI trip planning work?',
       acceptedAnswer: {
         '@type': 'Answer',
@@ -81,6 +105,14 @@ const faqStructuredData = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: 'Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'How is TrailVerse different from using ChatGPT alone?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Generic ChatGPT can outline trip ideas but may miss current closures and 2026 rule changes. TrailVerse Trailie and the TrailVerse ChatGPT app pull live NPS alerts, weather, events, and park details for 470+ sites so plans reflect real conditions.'
       }
     },
     {

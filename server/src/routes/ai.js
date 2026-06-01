@@ -3,6 +3,9 @@ const router = express.Router();
 const { protect, optionalAuth } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
 const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, shouldAppendAnonymousWebSearchUpsell, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
+const { executeParkSearch, formatRankedParksDiscoveryBlock, formatVoiceSearchResult } = require('../services/parkSearchService');
+const { summarizePrimaryIntents } = require('../catalog/queryTraitIntent');
+const { isBroadDiscoveryQuery } = require('../utils/discoveryQuery');
 const { formatFeeFreeBlock } = require('../services/feeFreeDaysService');
 const { extractParkFromMessage, extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
@@ -195,7 +198,7 @@ function autoRouteProvider(messages) {
 
 // Helper: parse request body and prepare messages, facts, and system prompt
 async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
-  const { isAnonymous = false, isTrustedMcp = false } = options;
+  const { isAnonymous = false, isTrustedMcp = false, req: httpReq = null } = options;
   const skipWebSearchForGuest = isAnonymous && !isTrustedMcp;
 
   let {
@@ -499,17 +502,51 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
     }
 
-    // Inject candidate parks list so the model has real NPS data to recommend from
-    try {
-      const candidateResult = await getCandidateParks(userCity);
-      const candidateBlock = formatCandidateParksBlock(candidateResult);
-      candidateParksBlock = !!candidateBlock;
-      if (candidateBlock) {
-        enhancedSystemPrompt += candidateBlock;
-        console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
+    let rankedDiscoveryBlock = false;
+    if (
+      isTravelRelated(lastUserMessage) &&
+      isBroadDiscoveryQuery(lastUserMessage)
+    ) {
+      try {
+        const discoveryQuery = lastUserMessage.trim().slice(0, 200);
+        const { parks, count } = await executeParkSearch({
+          q: discoveryQuery,
+          limit: 5,
+          req: httpReq,
+          source: isAnonymous ? 'trailie_chat_anon' : 'trailie_chat',
+        });
+        if (count >= 3) {
+          const primaryIntents = summarizePrimaryIntents(discoveryQuery);
+          const block = formatRankedParksDiscoveryBlock(parks, primaryIntents);
+          if (block) {
+            enhancedSystemPrompt += block;
+            rankedDiscoveryBlock = true;
+            console.log(`${logPrefix} Ranked discovery search injected:`, {
+              query: discoveryQuery.slice(0, 60),
+              count,
+              intents: primaryIntents.map((i) => `${i.label}:${i.weight}`),
+              top: parks.slice(0, 3).map((p) => p.fullName || p.name),
+            });
+          }
+        }
+      } catch (discoveryErr) {
+        console.error(`${logPrefix} Discovery search error:`, discoveryErr.message);
       }
-    } catch (candidateErr) {
-      console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
+    }
+
+    // Fallback: regional candidate list when catalog search did not run
+    if (!rankedDiscoveryBlock) {
+      try {
+        const candidateResult = await getCandidateParks(userCity);
+        const candidateBlock = formatCandidateParksBlock(candidateResult);
+        candidateParksBlock = !!candidateBlock;
+        if (candidateBlock) {
+          enhancedSystemPrompt += candidateBlock;
+          console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
+        }
+      } catch (candidateErr) {
+        console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
+      }
     }
   }
 
@@ -1247,7 +1284,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, userCity, candidateParksBlock, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body);
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, userCity, candidateParksBlock, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -1569,7 +1606,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI Stream]');
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI Stream]', { req });
 
     // Pre-flight BLOCKER — stop before SSE
     if (preflightResult.blockers.length > 0) {
@@ -2137,7 +2174,7 @@ Ready to continue planning? 🚀`,
     const ctx = await prepareChatContext(
       { messages, provider, model, temperature, top_p, maxTokens, systemPrompt, metadata },
       '[AI Anon]',
-      { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp }
+      { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp, req }
     );
 
     let {
@@ -2701,10 +2738,11 @@ TOOL CALL BEHAVIOR — MANDATORY:
 - NEVER start speaking, then pause to call a tool, then speak again. Either speak OR call a tool — not both in sequence.
 - Do NOT give a summary, then repeat the same info with more detail. Say it ONCE.
 
-WHEN NOT TO CALL TOOLS:
-- For "best parks", "top parks", "recommended parks", "where should I go" — do NOT call search_parks. Use your own knowledge of parks combined with the current season/date to recommend 2-3 specific parks. You know the parks well enough.
-- For general advice like "best time to visit", "what to pack", "is it crowded" about a park already in context — answer directly from pre-loaded data or your knowledge.
-- Only call tools when you need LIVE data you don't have: specific weather, alerts, fees, events, or when searching for parks in a specific state/activity.
+WHEN TO CALL search_parks:
+- Use search_parks for park discovery ("best parks for couples", "romantic beach parks", "quiet parks for beginners", etc.). Pass the user's phrase as query when possible.
+- Results come from TrailVerse ranked search — mention top picks by name and briefly why they match.
+- For general advice about a park already in context ("best time to visit", "what to pack") — answer from pre-loaded data; do not call search_parks.
+- Call get_park_details when you need live weather, alerts, or fees for a specific park code.
 
 Key persona rules:
 - Use contractions, be direct, be opinionated. "Skip the tourist trap — head to Lipan Point at sunrise."
@@ -3079,44 +3117,20 @@ router.post('/voice-tool', async (req, res) => {
       case 'search_parks': {
         const state = (args?.state || '').replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
         const activity = (args?.activity || '').slice(0, 50);
-        const query = (args?.query || '').slice(0, 100);
+        const query = (args?.query || '').slice(0, 200);
 
-        let parks = await npsService.getAllParks();
-        if (!parks || parks.length === 0) {
-          return res.json({ result: 'No parks data available at the moment.' });
-        }
-
-        if (state) {
-          parks = parks.filter(p => (p.states || '').toUpperCase().includes(state));
-        }
-
-        if (query) {
-          const q = query.toLowerCase();
-          parks = parks.filter(p =>
-            (p.fullName || '').toLowerCase().includes(q) ||
-            (p.description || '').toLowerCase().includes(q) ||
-            (p.states || '').toLowerCase().includes(q)
-          );
-        }
-
-        if (activity) {
-          const act = activity.toLowerCase();
-          parks = parks.filter(p =>
-            (p.activities || []).some(a => (a.name || '').toLowerCase().includes(act))
-          );
-        }
-
-        if (parks.length === 0) {
-          return res.json({ result: 'No parks found matching your criteria.' });
-        }
-
-        const top = parks.slice(0, 5);
-        let text = `${parks.length} parks found. Top picks:\n`;
-        top.forEach(p => {
-          text += `\n- ${p.fullName} (${p.parkCode}), ${p.states}`;
+        const { parks, count } = await executeParkSearch({
+          q: query || undefined,
+          state: state || undefined,
+          activity: activity || undefined,
+          limit: 5,
+          req,
+          source: 'trailie_voice',
         });
 
-        return res.json({ result: text });
+        return res.json({
+          result: formatVoiceSearchResult(parks, count),
+        });
       }
 
       case 'compare_parks': {

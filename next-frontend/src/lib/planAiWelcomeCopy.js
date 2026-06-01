@@ -16,9 +16,11 @@ function greeting(user) {
 
 /** Generic / new chat — no park selected yet */
 export function getGenericWelcomeMessage(user) {
-  return `${greeting(user)} I'm **Trailie**. I help you plan real trips — **470+ national parks**, state parks, and road-trip loops.
+  const name = displayName(user);
+  const hey = name ? `Hey ${name},` : 'Hey,';
+  return `${hey} I'm **Trailie**. I can help you choose where to go, understand what to expect, and plan a trip that fits your time, season, group, and travel style.
 
-Where are you headed, and when? Tap a suggestion below, open **Plan My Trip**, or just type it — like *3 days in Zion in October*.`;
+Tell me where you're thinking of going — or just describe the kind of trip you want.`;
 }
 
 /** Park already chosen (Quick Fill, park page, etc.) */

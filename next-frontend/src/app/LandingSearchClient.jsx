@@ -1,31 +1,25 @@
 "use client";
 
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchBar from '@/components/explore/SearchBar';
-import { ChevronRight, Mountain } from '@components/icons';
-import { logSearch } from '@/utils/analytics';
+import { ChevronRight, Mountain, Loader2 } from '@components/icons';
+import { logSearch, logSearchResultClick } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
+import { useDebounce } from '@/hooks/useDebounce';
+import npsApi from '@/services/npsApi';
+import { saveParkSearchSession } from '@/lib/parkSearchSession';
 
-export default function LandingSearchClient({ parks, variant = 'default' }) {
+export default function LandingSearchClient({ variant = 'default' }) {
   const router = useRouter();
   const searchRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [lastSearchId, setLastSearchId] = useState(null);
 
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim() || !parks.length) return [];
-
-    const q = searchQuery.toLowerCase();
-    return parks
-      .filter((park) =>
-        park.fullName?.toLowerCase().includes(q) ||
-        park.parkCode?.toLowerCase().includes(q) ||
-        park.states?.toLowerCase().includes(q)
-      )
-      .slice(0, 6);
-  }, [parks, searchQuery]);
-
+  const debouncedQuery = useDebounce(searchQuery.trim(), 300);
   const showDropdown = searchFocused && searchQuery.trim();
 
   useEffect(() => {
@@ -40,6 +34,66 @@ export default function LandingSearchClient({ parks, variant = 'default' }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    if (!debouncedQuery || debouncedQuery.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+
+    npsApi
+      .searchParks(debouncedQuery, null, 8)
+      .then(({ parks, count, searchId }) => {
+        if (cancelled) return;
+        setSearchResults(parks);
+        setLastSearchId(searchId);
+        saveParkSearchSession({
+          searchTerm: debouncedQuery,
+          searchId,
+          resultCount: count,
+          surface: 'landing',
+        });
+        logSearch(debouncedQuery, count, 'landing', { searchId });
+      })
+      .catch(() => {
+        if (!cancelled) setSearchResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
+  const handleParkSelect = (park, index) => {
+    const code = park.parkCode;
+    saveParkSearchSession({
+      searchTerm: debouncedQuery || searchQuery,
+      searchId: lastSearchId,
+      resultCount: searchResults.length,
+      surface: 'landing',
+      clickedParkCode: code,
+    });
+    logSearchResultClick({
+      searchTerm: debouncedQuery || searchQuery,
+      searchId: lastSearchId,
+      parkCode: code,
+      parkName: park.fullName,
+      surface: 'landing',
+      position: index + 1,
+    });
+    logSearch(debouncedQuery || searchQuery, searchResults.length, 'landing', {
+      searchId: lastSearchId,
+    });
+    router.push(`/parks/${parkToSlug(park.fullName)}`);
+    setSearchFocused(false);
+  };
+
   return (
     <div ref={searchRef} className="relative z-40 w-full">
       <div onFocus={() => setSearchFocused(true)}>
@@ -49,7 +103,7 @@ export default function LandingSearchClient({ parks, variant = 'default' }) {
           value={searchQuery}
           onChange={setSearchQuery}
           onClear={() => setSearchQuery('')}
-          placeholder="Search national parks..."
+          placeholder="Search parks — try “relaxing ocean” or “photography”"
         />
       </div>
 
@@ -69,24 +123,25 @@ export default function LandingSearchClient({ parks, variant = 'default' }) {
             style={{ borderBottom: '1px solid var(--border)' }}
           >
             <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--text-secondary)' }}>
-              {searchResults.length > 0 ? 'Matching Parks' : 'No Exact Matches'}
+              {searchLoading ? 'Searching…' : searchResults.length > 0 ? 'Matching Parks' : 'No Matches'}
             </p>
             <p className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {searchResults.length > 0 ? `${searchResults.length} shown` : 'Try a broader search'}
+              {searchLoading ? '' : searchResults.length > 0 ? `${searchResults.length} shown` : 'Try different words'}
             </p>
           </div>
 
-          {searchResults.length > 0 ? (
+          {searchLoading ? (
+            <div className="flex items-center justify-center gap-2 px-5 py-10" style={{ color: 'var(--text-secondary)' }}>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Finding parks for you…</span>
+            </div>
+          ) : searchResults.length > 0 ? (
             <div>
-              {searchResults.map((park) => (
+              {searchResults.map((park, index) => (
                 <button
                   key={park.parkCode}
                   type="button"
-                  onClick={() => {
-                    logSearch(searchQuery, searchResults.length, 'landing');
-                    router.push(`/parks/${parkToSlug(park.fullName)}`);
-                    setSearchFocused(false);
-                  }}
+                  onClick={() => handleParkSelect(park, index)}
                   className="w-full flex items-center gap-4 px-4 sm:px-6 py-4 text-left transition-colors"
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -113,6 +168,11 @@ export default function LandingSearchClient({ parks, variant = 'default' }) {
                     <p className="text-xs sm:text-sm truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                       {park.states} • {park.designation}
                     </p>
+                    {park.matchReason ? (
+                      <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--accent-green)' }}>
+                        {park.matchReason}
+                      </p>
+                    ) : null}
                   </div>
                   <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
                 </button>
@@ -124,7 +184,7 @@ export default function LandingSearchClient({ parks, variant = 'default' }) {
                 No parks matched &ldquo;{searchQuery}&rdquo;
               </p>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Search by park name, state abbreviation, or park code.
+                Try intent like relaxing ocean, easy hikes, or photography.
               </p>
             </div>
           )}

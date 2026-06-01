@@ -112,7 +112,7 @@ export default async function LandingPage() {
         <section className="relative z-20 px-4 sm:px-6 lg:px-10 xl:px-12 pt-8 sm:pt-10 pb-2 overflow-visible" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-[92rem] mx-auto">
             <div className="relative mx-auto w-full max-w-3xl">
-              <LandingSearchClient parks={allParks} />
+              <LandingSearchClient />
             </div>
           </div>
         </section>

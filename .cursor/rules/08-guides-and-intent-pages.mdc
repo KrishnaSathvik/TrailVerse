@@ -1,0 +1,105 @@
+---
+description: Planning guides hub, editorial guides, and intent landing pages — copy, structure, and data patterns
+globs: next-frontend/src/data/guides.js,next-frontend/src/data/intentLandings.js,next-frontend/src/components/intent/**,next-frontend/src/components/guides/**,next-frontend/src/app/guides/**
+alwaysApply: false
+---
+
+# Guides & intent landing pages
+
+Two **separate levers** — do not confuse them:
+
+| Type | Config | Page body | Rankings |
+|------|--------|-----------|----------|
+| **Editorial guides** | `src/data/guides.js` | Static sections, FAQ, TrailVerse tool links | None — prose only |
+| **Intent landings** | `src/data/intentLandings.js` | Quick answer + standouts + live grid | `GET /api/parks/search?q=` + optional `pinned=` |
+
+Hub: `/guides` — sections **Planning & tools** (editorial) and **Parks by vibe** (intent).
+
+---
+
+## Intent landing page structure (required order)
+
+1. **Header** — back to `/guides`, H1, intro (no park-count subtitle)
+2. **Quick answer** — one short paragraph, green left border
+3. **The standouts** — editorial list (see voice below)
+4. **Plan on TrailVerse** — pill links (`trailverseLinks`)
+5. **Top matches** — live `ParkCard` grid; user-facing explainer (traits from NPS data — **never** mention ChatGPT, Trailie, or “green text”)
+6. **FAQ** — accordion
+7. **Related searches** — **two-column `GuideCard` grid** (`hubExcerpt`, badge, “See ranked parks →”)
+
+### Do NOT add on intent pages
+
+- “Refine your trip” footer CTA block
+- “281 matching parks ranked…” count line
+- Images on hub cards or intent hero
+- Raw internal paths in user prose (`/plan-ai`, `/compare?parks=…`)
+- API endpoint lists or “Data sources” blocks
+
+---
+
+## `The standouts` — editorial voice
+
+8 parks per page (unless user specifies otherwise). Stored in `standouts[]`:
+
+```js
+{
+  parkCode: 'acad',
+  fullName: 'Acadia National Park',  // for parkToSlug links
+  label: 'Acadia, Maine',
+  description: '…',  // one paragraph, em dash after label in UI
+}
+```
+
+**Writing pattern** (match existing couples/photo/fall/quiet/ocean pages):
+
+- **Label** — `Park name, State` (linked to park detail)
+- **Lead** — why this park belongs on *this* list (one sharp claim)
+- **Specifics** — named viewpoints, drives, trails, seasonal phenomena
+- **Practical note** — crowds, road opening, permits, boats, heat, timing
+- Tone: confident travel editor, not marketing fluff or trait jargon
+
+**Featured pins vs standouts:**
+
+- `featuredParkCodes` → `pinned=` on search API (top of **Top matches** grid)
+- `standouts` → human curation; may differ from pins (e.g. 8 editorial, 6 pinned)
+- Pins must align with page promise (no Joshua Tree on quiet; no Big Bend on fall color)
+
+---
+
+## Hub card copy (`hubExcerpt`)
+
+- One line + optional second clause
+- Mention **live match reasons** or trip vibe — **do not** lone-wolf “470+ NPS sites” on one card only
+- Badge: `Park picks` for intent pages
+- CTA on hub: `See ranked parks →`
+
+**Parks by vibe section intro** (`guides/page.jsx`):
+
+> Pick a trip vibe — couples, photography, coast, fall color, or quiet escapes. Each list is ranked from live NPS data, with a short note on why every park made the cut.
+
+---
+
+## Technical checklist (new intent page)
+
+1. Add entry to `INTENT_LANDINGS` in `intentLandings.js`
+2. Thin `src/app/{path}/page.jsx` via `createIntentLandingPageExports(path)`
+3. Sitemap entry in `sitemap.ts`
+4. `relatedLinks` → other intent paths (renders as GuideCards)
+5. `fetchIntentLandingParks` passes `pinned=featuredParkCodes.join(',')`
+6. Dev fetch: `cache: 'no-store'`; production ISR 1h
+7. Match reasons come from backend — fix traits in `server/src/catalog/traitBuilder.js` / `matchExplanation.js`, not in this file
+
+---
+
+## Editorial guides (`guides.js`)
+
+- Slug under `/guides/[slug]`
+- `GuideDetailClient`: hero (no image), TOC, quick answer, sections, FAQ, related guides
+- No date badges on guide pages
+- Tool links use friendly labels, not raw URLs in body copy
+
+---
+
+## Planned intent expansions (same pattern)
+
+Additional pages follow the same structure in `intentLandingsExtended.js` (merged into `INTENT_LANDINGS`): dark-sky, families, first-timers, dog-friendly, winter, accessible, wildlife.

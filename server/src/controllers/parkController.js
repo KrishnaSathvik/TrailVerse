@@ -4,6 +4,7 @@ const gtfsCatalogService = require('../services/gtfsCatalogService');
 const gtfsFeedService = require('../services/gtfsFeedService');
 const { computeTransitOperating } = gtfsFeedService;
 const npsTransitPageService = require('../services/npsTransitPageService');
+const { executeParkSearch } = require('../services/parkSearchService');
 
 const normalizeActivityName = (activityName = '') => {
   const name = activityName.toLowerCase();
@@ -594,54 +595,21 @@ exports.getParkPermits = async (req, res, next) => {
 // @access  Public
 exports.searchParks = async (req, res, next) => {
   try {
-    const { q, state, activity, limit } = req.query;
-
-    let parks;
-
-    if (state) {
-      try {
-        parks = await npsService.getParksByState(state);
-      } catch {
-        // NPS API rate-limited — fall back to filtering cached getAllParks()
-        const all = await npsService.getAllParks();
-        const st = state.toUpperCase();
-        parks = all.filter(p => p.states && p.states.toUpperCase().split(',').some(s => s.trim() === st));
-      }
-    } else {
-      parks = await npsService.getAllParks();
-    }
-
-    // Filter by search query if provided
-    if (q) {
-      const query = q.toLowerCase();
-      parks = parks.filter(park =>
-        park.fullName.toLowerCase().includes(query) ||
-        park.description.toLowerCase().includes(query) ||
-        park.states.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by activity if provided
-    if (activity) {
-      const activityQuery = activity.toLowerCase();
-      parks = parks.filter(park => {
-        const activities = park.activities || [];
-        return activities.some(a => {
-          const name = (typeof a === 'string' ? a : a.name || '').toLowerCase();
-          return name.includes(activityQuery);
-        });
-      });
-    }
-
-    // Apply limit if provided
-    if (limit) {
-      parks = parks.slice(0, parseInt(limit, 10));
-    }
+    const { q, state, activity, limit, pinned } = req.query;
+    const { parks, count, searchId } = await executeParkSearch({
+      q,
+      state,
+      activity,
+      limit,
+      pinned,
+      req,
+    });
 
     res.status(200).json({
       success: true,
-      count: parks.length,
-      data: parks
+      count,
+      ...(searchId ? { searchId } : {}),
+      data: parks,
     });
   } catch (error) {
     next(error);

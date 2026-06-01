@@ -306,6 +306,13 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.pl-match-reason {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-green);
+  line-height: 1.45;
+  margin: 6px 0 0;
+}
 .pl-maps-link {
   display: inline-flex;
   align-items: center;
@@ -457,7 +464,7 @@ function render() {
       <div class="pl-body">
         <h3 class="pl-name">${esc(p.name || "")}</h3>
         <div class="pl-designation">${esc(p.designation || "")}${p.states ? ` · ${esc(p.states)}` : ""}</div>
-        ${p.summary ? `<p class="pl-summary">${esc(p.summary)}</p>` : ""}
+        ${p.matchReason ? `<p class="pl-match-reason">${esc(p.matchReason)}</p>` : (p.summary ? `<p class="pl-summary">${esc(p.summary)}</p>` : "")}
         <div style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px">
           ${p.rating != null ? `<span class="pl-rating" style="margin-top:0;padding-top:0">★ ${esc(p.rating.toFixed ? p.rating.toFixed(1) : p.rating)}</span>` : ""}
           ${p.mapsUrl ? `<a class="pl-maps-link" href="${esc(p.mapsUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 Map</a>` : ""}

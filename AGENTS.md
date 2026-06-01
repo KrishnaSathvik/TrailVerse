@@ -14,6 +14,7 @@
 | `.cursor/rules/05-plan-ai-mcp-and-admin.mdc` | Trailie, voice, admin CMS |
 | `.cursor/rules/06-mcp-chatgpt-cloud.mdc` | **MCP on Render, ChatGPT App Directory, Claude, widgets** |
 | `.cursor/rules/07-frontend-services-layer.mdc` | `src/services/` API clients |
+| `.cursor/rules/08-guides-and-intent-pages.mdc` | Planning guides hub, intent landings, standouts copy |
 
 ## External AI distribution
 

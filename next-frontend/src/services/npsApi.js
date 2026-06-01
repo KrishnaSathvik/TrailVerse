@@ -140,17 +140,23 @@ class NPSApi {
     return result.data;
   }
 
-  // Search parks
-  async searchParks(query, state) {
+  // Search parks (catalog: tokens + traits + matchReason)
+  async searchParks(query, state, limit = 24) {
     const params = {};
     if (query) params.q = query;
     if (state) params.state = state;
-    
-    const result = await enhancedApi.get('/parks/search', params, { 
+    if (limit) params.limit = limit;
+
+    const result = await enhancedApi.get('/parks/search', params, {
       cacheType: 'search',
-      ttl: 2 * 60 * 1000 // 2 minutes
+      ttl: 2 * 60 * 1000, // 2 minutes
     });
-    return result.data.data;
+    const body = result.data || {};
+    return {
+      parks: body.data || [],
+      count: body.count ?? (body.data?.length || 0),
+      searchId: body.searchId || null,
+    };
   }
 
   // Prefetch park data for better UX

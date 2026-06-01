@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import CompareUrlHydration from './CompareUrlHydration';
 import {
   Search, X, Plus, ChevronDown, ChevronUp, Check,
   MapPin, Star, RefreshCw, Sparkles,
   Columns, BarChart, Sun, Mountain, Calendar, Copy, Car
 } from '@components/icons';
-import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
+import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import { useAuth } from '@/context/AuthContext';
+import { useVisitedParks } from '@/hooks/useVisitedParks';
+import { useFavorites } from '@/hooks/useFavorites';
+import { getCompareRoadTripCta, getCompareParkPlanButton } from '@/lib/planAiWelcomeCopy';
 import { useAllParks } from '@/hooks/useParks';
 import { useParkComparison } from '@/hooks/useEnhancedParks';
 import { useCompareParkingLots } from '@/hooks/useCompareParkingLots';
@@ -23,6 +27,18 @@ const COMPARE_PRESETS = [
   { label: 'Yellowstone vs Grand Teton', codes: ['yell', 'grte'] },
   { label: 'Yosemite vs Sequoia', codes: ['yose', 'seki'] },
 ];
+
+/** Default picker list — search still queries all parks from useAllParks */
+const COMPARE_FEATURED_PARK_CODES = [
+  'yell', 'yose', 'grca', 'zion', 'glac', 'acad', 'grte', 'grsm',
+  'arch', 'brca', 'jotr', 'olym', 'ever', 'dena', 'seki', 'romo',
+  'deva', 'cany', 'bibe', 'whsa', 'havo', 'drto', 'crla', 'mora',
+  'stli', 'goga', 'inde', 'alca', 'gett', 'nama',
+];
+
+const COMPARE_FEATURED_ORDER = Object.fromEntries(
+  COMPARE_FEATURED_PARK_CODES.map((code, index) => [code, index])
+);
 
 const maxParks = 4;
 
@@ -85,38 +101,13 @@ function getParkOverviewContent(park) {
   };
 }
 
-function getRoadTripCta(parks) {
-  const count = parks.length;
+function formatFacilityCount(count, singular, plural) {
+  const n = Number(count) || 0;
+  return `${n} ${n === 1 ? singular : plural}`;
+}
 
-  if (count === 1) {
-    return {
-      title: `Planning a trip to ${parks[0].fullName}?`,
-      subtitle: 'Let Trailie build a day-by-day itinerary for this park.',
-      button: 'Plan with Trailie →',
-    };
-  }
-
-  if (count === 2) {
-    return {
-      title: "Can't decide? Visit both.",
-      subtitle: 'Let Trailie plan a road trip that links both parks.',
-      button: 'Plan a Road Trip with Trailie →',
-    };
-  }
-
-  if (count === 3) {
-    return {
-      title: "Can't decide between all three?",
-      subtitle: 'Let Trailie plan a road trip covering all three parks.',
-      button: 'Plan a 3-Park Road Trip with Trailie →',
-    };
-  }
-
-  return {
-    title: 'Comparing four parks?',
-    subtitle: 'Let Trailie plan one road trip that hits all four.',
-    button: 'Plan a 4-Park Road Trip with Trailie →',
-  };
+function formatFacilityAvailability(available) {
+  return available ? 'Available' : 'Limited';
 }
 
 function CompareOverviewBlock({ park, parkColor, showState }) {
@@ -174,10 +165,13 @@ function CompareOverviewBlock({ park, parkColor, showState }) {
   );
 }
 
-const ComparePageInner = () => {
-  const searchParams = useSearchParams();
+const COMPARE_PATH = '/compare';
+
+const ComparePageInner = ({ initialParkCodes = [] }) => {
   const router = useRouter();
-  const pathname = usePathname();
+  const { isAuthenticated, user } = useAuth();
+  const { isParkVisited } = useVisitedParks();
+  const { isParkFavorited } = useFavorites();
   const { data: allParksData, isLoading } = useAllParks();
   const allParks = allParksData?.data;
   const [selectedParks, setSelectedParks] = useState([]);
@@ -230,25 +224,42 @@ const ComparePageInner = () => {
   const availableParks = useMemo(() => {
     if (!allParks) return [];
 
-    return allParks.filter(park => {
-      if (park.designation !== 'National Park') return false;
-      if (selectedParks.some(p => p.parkCode === park.parkCode)) return false;
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        if (!park.fullName.toLowerCase().includes(search) &&
-            !park.states.toLowerCase().includes(search)) {
-          return false;
-        }
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const isSearching = normalizedSearch.length > 0;
+
+    const filtered = allParks.filter((park) => {
+      if (selectedParks.some((p) => p.parkCode === park.parkCode)) return false;
+
+      if (isSearching) {
+        return (
+          park.fullName.toLowerCase().includes(normalizedSearch) ||
+          park.states.toLowerCase().includes(normalizedSearch) ||
+          (park.designation || '').toLowerCase().includes(normalizedSearch) ||
+          park.parkCode.toLowerCase().includes(normalizedSearch)
+        );
       }
-      return true;
+
+      return COMPARE_FEATURED_PARK_CODES.includes(park.parkCode?.toLowerCase());
+    });
+
+    return filtered.sort((a, b) => {
+      if (isSearching) {
+        return a.fullName.localeCompare(b.fullName);
+      }
+
+      const aOrder = COMPARE_FEATURED_ORDER[a.parkCode?.toLowerCase()] ?? 999;
+      const bOrder = COMPARE_FEATURED_ORDER[b.parkCode?.toLowerCase()] ?? 999;
+      return aOrder - bOrder;
     });
   }, [allParks, selectedParks, searchTerm]);
 
-  const resolveNationalPark = (code) => {
+  const isSearchingParks = searchTerm.trim().length > 0;
+
+  const resolveParkByCode = (code) => {
     if (!code || !allParks?.length) return null;
     const normalized = code.trim().toLowerCase();
     return allParks.find(
-      (park) => park.parkCode?.toLowerCase() === normalized && park.designation === 'National Park'
+      (park) => park.parkCode?.toLowerCase() === normalized
     ) || null;
   };
 
@@ -261,31 +272,28 @@ const ComparePageInner = () => {
     }
   };
 
-  // Hydrate from ?parks=zion,brca (MCP / share) or legacy ?park=zion (map / park detail)
-  useEffect(() => {
-    if (!allParks?.length || urlHydratedRef.current) return;
-
-    const parksParam = searchParams.get('parks');
-    const legacyPark = searchParams.get('park');
-    let codes = [];
-
-    if (parksParam) {
-      codes = parksParam.split(',').map((c) => c.trim().toLowerCase()).filter(Boolean);
-    } else if (legacyPark) {
-      codes = [legacyPark.trim().toLowerCase()];
-    }
-
-    codes = [...new Set(codes)].slice(0, maxParks);
-
-    if (codes.length > 0) {
-      const parks = codes.map(resolveNationalPark).filter(Boolean);
+  const hydrateFromCodes = useCallback(
+    (codes) => {
+      const normalized = [...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean))].slice(
+        0,
+        maxParks
+      );
+      if (!normalized.length || !allParks?.length) return;
+      const parks = normalized.map((code) => resolveParkByCode(code)).filter(Boolean);
       if (parks.length > 0) {
         setSelectedParks(parks);
       }
-    }
+    },
+    [allParks]
+  );
 
-    urlHydratedRef.current = true;
-  }, [allParks, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!allParks?.length || urlHydratedRef.current) return;
+    if (initialParkCodes.length > 0) {
+      hydrateFromCodes(initialParkCodes);
+      urlHydratedRef.current = true;
+    }
+  }, [allParks, initialParkCodes, hydrateFromCodes]);
 
   // Keep URL in sync for shareable comparisons
   useEffect(() => {
@@ -297,18 +305,19 @@ const ComparePageInner = () => {
     }
 
     const nextQuery = params.toString();
-    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
-    const currentQuery = searchParams.toString();
-    const currentUrl = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+    const nextUrl = nextQuery ? `${COMPARE_PATH}?${nextQuery}` : COMPARE_PATH;
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : COMPARE_PATH;
+    const currentSearch = typeof window !== 'undefined' ? window.location.search : '';
+    const currentUrl = currentSearch ? `${currentPath}${currentSearch}` : currentPath;
 
     if (nextUrl !== currentUrl) {
       router.replace(nextUrl, { scroll: false });
     }
-  }, [selectedParks, pathname, router, searchParams]);
+  }, [selectedParks, router]);
 
   const applyPreset = (codes) => {
     if (!allParks?.length) return;
-    const parks = codes.map(resolveNationalPark).filter(Boolean).slice(0, maxParks);
+    const parks = codes.map(resolveParkByCode).filter(Boolean).slice(0, maxParks);
     if (parks.length >= 2) {
       setSelectedParks(parks);
       setShowSelector(false);
@@ -509,9 +518,23 @@ const ComparePageInner = () => {
   }, [enhancedParks]);
 
   const roadTripCta = useMemo(
-    () => getRoadTripCta(selectedParks),
-    [selectedParks]
+    () => getCompareRoadTripCta({
+      user,
+      isAuthenticated,
+      parks: selectedParks,
+      visitedCodes: selectedParks.filter((park) => isParkVisited(park.parkCode)).map((park) => park.parkCode),
+      savedCodes: selectedParks.filter((park) => isParkFavorited(park.parkCode)).map((park) => park.parkCode),
+    }),
+    [user, isAuthenticated, selectedParks, isParkVisited, isParkFavorited]
   );
+
+  const crowdTodayShort = useMemo(
+    () => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date()),
+    []
+  );
+
+  const crowdLevelHint = `Today (${crowdTodayShort}) · model estimate, not live counts`;
+  const weatherHint = 'Live now · summer/winter are seasonal estimates';
 
   const comparisonHighlights = useMemo(() => {
     if (enhancedParks.length < 2) return [];
@@ -604,71 +627,18 @@ const ComparePageInner = () => {
   }, [comparisonData, enhancedParks]);
 
   return (
-    <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <Header />
+    <div className="overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {initialParkCodes.length === 0 && (
+        <CompareUrlHydration
+          allParks={allParks}
+          hydratedRef={urlHydratedRef}
+          onHydrate={(parks) => {
+            setSelectedParks(parks);
+            urlHydratedRef.current = true;
+          }}
+        />
+      )}
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-6 sm:py-12 lg:py-20">
-        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-          <div className="mt-1 sm:mt-6">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-3 sm:mb-4 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <Columns className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-              <span className="text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Side-by-Side Comparison
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-semibold tracking-tighter leading-none mb-3 sm:mb-4"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Compare National Parks
-            </h1>
-            <p className="text-base sm:text-lg lg:text-xl max-w-3xl"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Compare up to 4 national parks side-by-side — fees, parking, weather, crowds,
-              and activities to help you choose your next adventure.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Explainer — targets "compare entrance fees parking amenities" queries */}
-      <section className="pb-4 sm:pb-10">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-          <p className="md:hidden text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-            Compare entrance fees, NPS parking lots, crowd levels, weather, and facilities across national parks.
-          </p>
-          <div className="hidden md:grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
-              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Entrance Fees &amp; Parking</h2>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                See entrance fees, parking costs, and pass options for each park before you buy. Compare included amenities across up to 4 parks at once.
-              </p>
-            </div>
-            <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
-              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Crowds &amp; Best Times</h2>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                Compare visitor crowd levels by season, peak hours, and holiday weekends so you can pick the quietest window for your trip.
-              </p>
-            </div>
-            <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
-              <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Activities &amp; Facilities</h2>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                Compare hiking trails, campgrounds, lodging, visitor centers, and accessibility features side by side for every national park.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Main Content */}
       <section className="pb-24">
@@ -679,7 +649,7 @@ const ComparePageInner = () => {
               <h2 className="text-xl sm:text-2xl font-bold"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Select National Parks to Compare
+                Select Parks to Compare
               </h2>
               <div className="flex flex-wrap items-center gap-2">
                 {selectedParks.length >= 2 && (
@@ -855,7 +825,7 @@ const ComparePageInner = () => {
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search parks..."
+                        placeholder="Search all parks and sites..."
                         className="w-full pl-10 pr-4 py-3 rounded-xl outline-none transition"
                         style={{
                           backgroundColor: 'var(--surface-hover)',
@@ -884,6 +854,12 @@ const ComparePageInner = () => {
                         <p style={{ color: 'var(--text-secondary)' }}>No parks found</p>
                       </div>
                     ) : (
+                      <>
+                        {!isSearchingParks && (
+                          <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--text-tertiary)' }}>
+                            Popular parks and sites below. Search to browse all 470+ units.
+                          </p>
+                        )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                         {availableParks.map(park => (
                           <button
@@ -907,15 +883,22 @@ const ComparePageInner = () => {
                             >
                               {park.fullName}
                             </h4>
-                            <p className="text-xs flex items-center gap-1"
+                            <p className="text-xs flex items-center gap-1 flex-wrap"
                               style={{ color: 'var(--text-tertiary)' }}
                             >
-                              <MapPin className="h-3 w-3" />
-                              {park.states}
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span>{park.states}</span>
+                              {park.designation && (
+                                <>
+                                  <span aria-hidden>·</span>
+                                  <span>{park.designation}</span>
+                                </>
+                              )}
                             </p>
                           </button>
                         ))}
                       </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1004,9 +987,21 @@ const ComparePageInner = () => {
                     ))}
                   </div>
 
-                  <div className={desktopScrollable ? 'hidden lg:block overflow-x-auto overscroll-x-contain' : 'hidden lg:block w-full min-w-0'}>
-                    <div className="w-full min-w-0" style={desktopTableMinWidth ? { minWidth: desktopTableMinWidth } : undefined}>
-                  <div className="flex w-full min-w-0 border-b" style={{ borderColor: 'var(--border)' }}>
+                  <div
+                    className={
+                      desktopScrollable
+                        ? 'w-full min-w-0 lg:overflow-x-auto lg:overscroll-x-contain'
+                        : 'w-full min-w-0'
+                    }
+                  >
+                    <div
+                      className="w-full min-w-0 max-lg:!min-w-0"
+                      style={desktopTableMinWidth ? { minWidth: desktopTableMinWidth } : undefined}
+                    >
+                  <div
+                    className="hidden lg:flex w-full min-w-0 border-b"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
                       <div className="flex-shrink-0 w-48 px-4 py-4 font-semibold text-sm text-left sticky left-0 z-10"
                         style={{
                           backgroundColor: 'var(--surface-hover)',
@@ -1088,7 +1083,14 @@ const ComparePageInner = () => {
                     ))}
                   </ComparisonRow>
 
-                  <ComparisonRow label="Weather" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors} desktopParkColMin={desktopParkColMin}>
+                  <ComparisonRow
+                    label="Weather"
+                    hint={weatherHint}
+                    parkNames={enhancedParks.map(p => p.fullName)}
+                    parkCodes={enhancedParks.map(p => p.parkCode)}
+                    parkColors={parkColors}
+                    desktopParkColMin={desktopParkColMin}
+                  >
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-1">
                         <div className="text-sm font-medium">
@@ -1110,14 +1112,20 @@ const ComparePageInner = () => {
 
                   <ComparisonRow label="Facilities" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors} desktopParkColMin={desktopParkColMin}>
                     {enhancedParks.map(park => (
-                      <div key={park.parkCode} className="flex flex-col gap-1">
-                        <div className="text-sm">
-                          <span className="font-medium">{park.facilities?.visitorCenters?.count || 0}</span> centers •
-                          <span className="font-medium"> {park.facilities?.campgrounds?.count || park.facilities?.camping?.count || 0}</span> camps
+                      <div key={park.parkCode} className="flex flex-col gap-1 text-sm leading-relaxed">
+                        <div>
+                          {formatFacilityCount(park.facilities?.visitorCenters?.count, 'visitor center', 'visitor centers')}
+                          {' · '}
+                          {formatFacilityCount(
+                            park.facilities?.campgrounds?.count ?? park.facilities?.camping?.count,
+                            'campground',
+                            'campgrounds'
+                          )}
                         </div>
                         <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                          Food: {park.facilities?.foodServices ? 'Yes' : 'Limited'} •
-                          Lodging: {park.facilities?.lodging?.available ? 'Yes' : 'Limited'}
+                          Food services: {formatFacilityAvailability(park.facilities?.foodServices)}
+                          {' · '}
+                          Lodging: {formatFacilityAvailability(park.facilities?.lodging?.available)}
                         </div>
                       </div>
                     ))}
@@ -1164,7 +1172,14 @@ const ComparePageInner = () => {
                     ))}
                   </ComparisonRow>
 
-                  <ComparisonRow label="Crowd Level" parkNames={enhancedParks.map(p => p.fullName)} parkCodes={enhancedParks.map(p => p.parkCode)} parkColors={parkColors} desktopParkColMin={desktopParkColMin}>
+                  <ComparisonRow
+                    label="Crowd Level"
+                    hint={crowdLevelHint}
+                    parkNames={enhancedParks.map(p => p.fullName)}
+                    parkCodes={enhancedParks.map(p => p.parkCode)}
+                    parkColors={parkColors}
+                    desktopParkColMin={desktopParkColMin}
+                  >
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col gap-2 items-center">
                         <span
@@ -1291,13 +1306,19 @@ const ComparePageInner = () => {
                         </Link>
                         <Link
                           href={`/plan-ai?park=${park.parkCode}&name=${encodeURIComponent(park.fullName)}`}
-                          className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                          className="px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:brightness-110 text-center"
                           style={{
-                            backgroundColor: 'var(--accent-green)',
+                            backgroundColor: 'var(--accent-green-dark)',
                             color: '#fff',
                           }}
                         >
-                          Plan a Trip →
+                          {getCompareParkPlanButton({
+                            isAuthenticated,
+                            parkName: park.fullName,
+                            isVisited: isParkVisited(park.parkCode),
+                            isSaved: isParkFavorited(park.parkCode),
+                          })}
+                          {' →'}
                         </Link>
                       </div>
                     ))}
@@ -1336,32 +1357,59 @@ const ComparePageInner = () => {
           {/* Trailie CTA — copy scales with 1–4 selected parks */}
           {selectedParks.length >= 1 && roadTripCta && (
             <div
-              className={`rounded-2xl p-6 sm:p-8 text-center ${selectedParks.length >= 2 ? 'mt-4' : 'mt-8'}`}
+              className={`rounded-2xl p-6 sm:p-8 text-left lg:text-center ${selectedParks.length >= 2 ? 'mt-4' : 'mt-8'}`}
               style={{
                 backgroundColor: 'var(--surface)',
                 border: '1px solid var(--border)',
               }}
             >
-              <p className="text-lg sm:text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                {roadTripCta.title}
-              </p>
-              <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
+              <div className="flex items-start gap-4 mb-4 lg:flex-col lg:items-center">
+                <TrailieAvatar className="!h-12 !w-12 shrink-0" />
+                <div className="min-w-0 lg:text-center">
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.24em]"
+                    style={{ color: 'var(--accent-green)' }}
+                  >
+                    Trailie
+                  </p>
+                  <p className="text-lg sm:text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>
+                    {roadTripCta.title}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm mb-5 lg:max-w-xl lg:mx-auto" style={{ color: 'var(--text-secondary)' }}>
                 {roadTripCta.subtitle}
               </p>
               <Link
                 href={`/plan-ai?suggest=${encodeURIComponent(selectedParks.map((p) => p.fullName).join(' and '))}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition hover:opacity-90"
-                style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+                className="inline-flex w-full sm:w-auto lg:mx-auto items-center justify-center gap-2 flex-nowrap px-5 py-3 rounded-full text-sm font-semibold transition hover:brightness-110"
+                style={{ backgroundColor: 'var(--accent-green-dark)', color: '#fff' }}
               >
-                <Sparkles className="h-4 w-4" />
-                {roadTripCta.button}
+                <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="text-center leading-snug">
+                  {roadTripCta.buttonCompact ? (
+                    <>
+                      <span className="sm:hidden">
+                        {roadTripCta.buttonCompact}
+                        {'\u00a0→'}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {roadTripCta.button}
+                        {'\u00a0→'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {roadTripCta.button}
+                      {'\u00a0→'}
+                    </>
+                  )}
+                </span>
               </Link>
             </div>
           )}
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 };
@@ -1415,6 +1463,7 @@ const ComparisonSection = ({ title, icon: Icon, isExpanded, onToggle, children }
 
 const ComparisonRow = ({
   label,
+  hint,
   children,
   desktopAlign = 'center',
   hideDesktop = false,
@@ -1431,10 +1480,20 @@ const ComparisonRow = ({
     <>
       <div className="lg:hidden border-b" style={{ borderColor: 'var(--border)' }}>
         <div
-          className="px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em]"
-          style={{ color: 'var(--text-tertiary)', backgroundColor: 'var(--surface-hover)' }}
+          className="px-4 py-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
+          style={{ backgroundColor: 'var(--surface-hover)' }}
         >
-          {label}
+          <div
+            className="text-xs font-semibold uppercase tracking-[0.18em]"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            {label}
+          </div>
+          {hint && (
+            <span className="text-[10px] font-normal normal-case tracking-normal leading-tight" style={{ color: 'var(--text-tertiary)' }}>
+              {hint}
+            </span>
+          )}
         </div>
         <div>
           {childArray.map((child, index) => {
@@ -1478,6 +1537,11 @@ const ComparisonRow = ({
             }}
           >
             <div className="leading-relaxed break-words">{label}</div>
+            {hint && (
+              <p className="mt-1 text-[10px] font-normal leading-tight" style={{ color: 'var(--text-tertiary)' }}>
+                {hint}
+              </p>
+            )}
           </div>
           {childArray.map((child, index) => (
             <div
@@ -1499,10 +1563,6 @@ const ComparisonRow = ({
   );
 };
 
-export default function ComparePage() {
-  return (
-    <Suspense>
-      <ComparePageInner />
-    </Suspense>
-  );
+export default function ComparePageClient({ initialParkCodes = [] }) {
+  return <ComparePageInner initialParkCodes={initialParkCodes} />;
 }

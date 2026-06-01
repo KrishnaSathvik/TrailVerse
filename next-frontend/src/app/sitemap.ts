@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllParkSlugs } from '@/lib/parkApi';
+import { GUIDES } from '@/data/guides';
+import { INTENT_LANDINGS } from '@/data/intentLandings';
 
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 const API_URL =
@@ -34,6 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/magazine`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/newsletter`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE_URL}/faq`, lastModified: new Date('2026-01-01'), changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE_URL}/guides`, lastModified: new Date('2026-05-31'), changeFrequency: 'monthly', priority: 0.75 },
     { url: `${BASE_URL}/privacy`, lastModified: new Date('2026-01-01'), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE_URL}/terms`, lastModified: new Date('2026-01-01'), changeFrequency: 'yearly', priority: 0.3 },
   ];
@@ -106,5 +109,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes];
+  const guideLastModified = new Date('2026-05-31');
+  const guideRoutes: MetadataRoute.Sitemap = GUIDES.map((guide) => ({
+    url: `${BASE_URL}/guides/${guide.slug}`,
+    lastModified: guideLastModified,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
+  const intentLastModified = new Date('2026-05-31');
+  const intentRoutes: MetadataRoute.Sitemap = INTENT_LANDINGS.map((landing) => ({
+    url: `${BASE_URL}${landing.path}`,
+    lastModified: intentLastModified,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  return [...staticRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
 }

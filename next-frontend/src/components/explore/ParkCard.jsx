@@ -6,12 +6,15 @@ import OptimizedImage from '../common/OptimizedImage';
 import { useParkRatings } from '../../hooks/useParkRatings';
 import { htmlToPlainText } from '../../utils/htmlUtils';
 import { parkToSlug } from '../../utils/parkSlug';
+import { getParkSearchSession, saveParkSearchSession } from '../../lib/parkSearchSession';
+import { logSearchResultClick } from '../../utils/analytics';
 
 const DEFAULT_PARK_IMAGE = '/og-image-trailverse.jpg';
 
-const ExploreListCard = ({ park, rating }) => (
+const ExploreListCard = ({ park, rating, onNavigate }) => (
   <Link
     href={`/parks/${parkToSlug(park.fullName)}`}
+    onClick={onNavigate}
     className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
     style={{
       backgroundColor: 'var(--surface)',
@@ -42,8 +45,11 @@ const ExploreListCard = ({ park, rating }) => (
           style={{ color: 'var(--text-primary)' }}
         />
       </div>
-      <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--text-secondary)' }}>
-        {park.description}
+      <p
+        className="text-sm line-clamp-2 mb-3"
+        style={{ color: park.matchReason ? 'var(--accent-green)' : 'var(--text-secondary)' }}
+      >
+        {park.matchReason || htmlToPlainText(park.description || '').slice(0, 160)}
       </p>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
@@ -66,9 +72,10 @@ const ExploreListCard = ({ park, rating }) => (
   </Link>
 );
 
-const ExploreGridCard = ({ park, rating, priority = false }) => (
+const ExploreGridCard = ({ park, rating, priority = false, onNavigate }) => (
   <Link
     href={`/parks/${parkToSlug(park.fullName)}`}
+    onClick={onNavigate}
     className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300"
     style={{
       backgroundColor: 'var(--surface)',
@@ -98,8 +105,11 @@ const ExploreGridCard = ({ park, rating, priority = false }) => (
       >
         {park.fullName}
       </h3>
-      <p className="text-sm line-clamp-3 mb-4" style={{ color: 'var(--text-secondary)' }}>
-        {park.description}
+      <p
+        className="text-sm line-clamp-3 mb-4"
+        style={{ color: park.matchReason ? 'var(--accent-green)' : 'var(--text-secondary)' }}
+      >
+        {park.matchReason || htmlToPlainText(park.description || '').slice(0, 160)}
       </p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
@@ -135,12 +145,36 @@ const ParkCard = memo(({ park, onSave, isSaved = false, showReviews = true, view
     [park, onSave]
   );
 
+  const handleNavigate = useCallback(() => {
+    const session = getParkSearchSession();
+    if (!session?.searchTerm) return;
+    saveParkSearchSession({
+      ...session,
+      clickedParkCode: park.parkCode,
+    });
+    logSearchResultClick({
+      searchTerm: session.searchTerm,
+      searchId: session.searchId,
+      parkCode: park.parkCode,
+      parkName: park.fullName,
+      surface: session.surface || 'explore',
+      position: index + 1,
+    });
+  }, [park, index]);
+
   if (viewMode === 'list') {
-    return <ExploreListCard park={park} rating={parkRating} />;
+    return <ExploreListCard park={park} rating={parkRating} onNavigate={handleNavigate} />;
   }
 
   if (viewMode === 'grid') {
-    return <ExploreGridCard park={park} rating={parkRating} priority={index < 6} />;
+    return (
+      <ExploreGridCard
+        park={park}
+        rating={parkRating}
+        priority={index < 6}
+        onNavigate={handleNavigate}
+      />
+    );
   }
 
   return (

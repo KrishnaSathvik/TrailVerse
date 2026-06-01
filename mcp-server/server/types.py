@@ -115,8 +115,9 @@ class SearchParksInput(BaseModel):
         None,
         description=(
             "Search term matched against park names and descriptions. "
-            "Use specific keywords like park names ('Yellowstone'), states ('Utah'), "
-            "or features ('canyon', 'coast'). Do NOT pass full natural-language questions."
+            "Accepts park names, keywords, activities, or natural-language travel intent "
+            "such as 'relaxing ocean parks', 'easy hikes with waterfalls', or "
+            "'parks for photography'."
         ),
         max_length=100,
     )

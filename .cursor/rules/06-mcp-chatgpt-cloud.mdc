@@ -158,7 +158,7 @@ Both pages link back to `nationalparksexplorerusa.com` for unlimited Trailie acc
 - Route **any NPS site name** → `get_park_details` first (never guess from training)
 - Use live tool text over training data for weather/alerts
 - Opinionated Trailie voice; no generic "want me to dig deeper?" endings
-- Deep links only: `/parks/{slug}`, `/plan-ai`, `/compare?parks=`
+- Deep links: `/parks/{slug}`, `/plan-ai`, `/compare?parks=`, `/guides`, `/llms.txt`, and Park picks intent URLs (`/parks-for-couples`, `/wildlife-national-parks`, etc.) — see `mcp-server/server/main.py` instructions
 
 When changing tool behavior, update **both** formatters and these instructions.
 

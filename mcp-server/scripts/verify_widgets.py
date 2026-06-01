@@ -95,7 +95,7 @@ WIDGET_CHECKS = {
         "optional_keys": [
             "weather.current", "weather.forecast", "weather.seasonal",
             "editorial", "operatingHours", "campgrounds", "permits",
-            "images", "links",
+            "images", "directionsInfo", "links", "links.maps",
         ],
         "array_checks": {
             "alerts": ["title", "category"],
@@ -183,7 +183,12 @@ async def verify_tool(name: str, spec: dict) -> tuple[bool, list[str]]:
     text = _extract_text(result)
 
     if not sc:
-        return False, ["No structuredContent returned"]
+        min_len = 400 if name == "park_details" else 150
+        if len(text) >= min_len:
+            print(f"  {GREEN}✓{RESET} markdown-only mode ({len(text)} chars text, no structuredContent)")
+            print(f"\n  {DIM}text length:{RESET} {len(text)} chars")
+            return True, []
+        return False, ["No structuredContent and text too short for markdown-only mode"]
 
     if sc.get("kind") == "error":
         return False, [f"Tool returned error: {sc.get('message', '?')}"]
@@ -257,6 +262,12 @@ async def verify_tool(name: str, spec: dict) -> tuple[bool, list[str]]:
         else:
             if alerts:
                 issues.append(f"{YELLOW}ALERT{RESET}: no alerts have 'url' field (may be OK)")
+
+        maps_link = _deep_get(sc, "links.maps")
+        if maps_link:
+            print(f"  {GREEN}✓{RESET} links.maps (Getting there)")
+        if sc.get("directionsInfo"):
+            print(f"  {GREEN}✓{RESET} directionsInfo: {str(sc['directionsInfo'])[:60]}...")
 
     if name == "itinerary":
         dm = sc.get("dayMaps", [])

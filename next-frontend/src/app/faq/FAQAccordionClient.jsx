@@ -20,6 +20,18 @@ const faqCategories = [
       {
         question: "What makes TrailVerse different?",
         answer: "TrailVerse uniquely combines Trailie (smart AI trip planning), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations."
+      },
+      {
+        question: "Is TrailVerse free?",
+        answer: "Yes. Browsing parks, maps, weather, alerts, compare, discover, and blog content is free with no credit card. Trailie AI offers free anonymous messages before signup; a free account unlocks saved trips, chat history, and PDF export."
+      },
+      {
+        question: "Do I need an account to explore parks?",
+        answer: "No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue AI trip plans, or export itineraries."
+      },
+      {
+        question: "How is TrailVerse different from AllTrails?",
+        answer: "AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and AI day-by-day itineraries. Many visitors use TrailVerse to plan the trip and AllTrails on specific hikes."
       }
     ]
   },
@@ -42,6 +54,10 @@ const faqCategories = [
       {
         question: "Are my AI conversations private?",
         answer: "Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time."
+      },
+      {
+        question: "How is TrailVerse different from using ChatGPT alone?",
+        answer: "Generic ChatGPT can outline trip ideas but may miss current closures and 2026 rule changes. TrailVerse Trailie and the TrailVerse ChatGPT app pull live NPS alerts, weather, events, and park details for 470+ sites so plans reflect real conditions."
       }
     ]
   },

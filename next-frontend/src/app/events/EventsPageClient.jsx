@@ -17,7 +17,7 @@ import EventListItem from '@/components/events/EventListItem';
 import { logEvent } from '@/utils/analytics';
 import STATE_NAMES from '@/utils/stateNames';
 
-const EventsPage = () => {
+const EventsPage = ({ initialData }) => {
   const formatLocalDate = (date) => (
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
   );
@@ -63,16 +63,35 @@ const EventsPage = () => {
     })
   ), []);
   const selectedMonth = monthOptions[selectedMonthOffset] || monthOptions[0];
+  const matchesInitialMonth = Boolean(
+    initialData
+    && selectedMonth?.dateStart === initialData.dateStart
+    && selectedMonth?.dateEnd === initialData.dateEnd
+  );
   const eventQueryOptions = useMemo(() => {
     return {
       upcoming: 'true',
       dateStart: selectedMonth?.dateStart || null,
       dateEnd: selectedMonth?.dateEnd || null,
       limit: 150,
+      ...(matchesInitialMonth
+        ? {
+            initialEvents: initialData.events,
+            skipInitialFetch: true,
+          }
+        : {}),
     };
-  }, [selectedMonth]);
+  }, [selectedMonth, matchesInitialMonth, initialData]);
   const { data: eventsData, isLoading, error } = useEvents(eventQueryOptions);
-  const { data: futureSummary } = useEventSummary({ upcoming: 'true' });
+  const { data: futureSummary } = useEventSummary({
+    upcoming: 'true',
+    ...(matchesInitialMonth
+      ? {
+          initialSummary: initialData.summary,
+          skipInitialFetch: true,
+        }
+      : {}),
+  });
   const { data: allParksData } = useAllParks();
   const allParks = allParksData?.data || [];
   const { saveEvent: rawSaveEvent, unsaveEvent: rawUnsaveEvent, isEventSaved } = useSavedEvents();
@@ -867,4 +886,6 @@ const EventsPage = () => {
   );
 };
 
-export default EventsPage;
+export default function EventsPageClient(props) {
+  return <EventsPage {...props} />;
+}

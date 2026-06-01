@@ -113,6 +113,7 @@ const Footer = () => {
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Resources</h3>
             <ul className="space-y-2 text-base sm:text-sm">
               <li><Link href="/blog" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Blog</Link></li>
+              <li><Link href="/guides" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Planning Guides</Link></li>
               <li><Link href="/about" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link></li>
               <li><Link href="/magazine" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Magazine</Link></li>
               <li><Link href="/chatgpt" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>ChatGPT App</Link></li>

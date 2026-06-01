@@ -378,6 +378,12 @@ body {
   margin: 0;
   line-height: 1.5;
 }
+.pd-alert-link {
+  color: var(--accent-green);
+  font-weight: 600;
+  text-decoration: none;
+}
+.pd-alert-link:hover { text-decoration: underline; }
 
 .pd-editorial {
   padding: 22px 28px;
@@ -429,6 +435,19 @@ body {
   line-height: 1.7;
   color: var(--text-secondary);
 }
+.pd-directions {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+.pd-directions-maps {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-green);
+  text-decoration: none;
+}
+.pd-directions-maps:hover { text-decoration: underline; }
 .pd-activities {
   display: flex;
   flex-wrap: wrap;
@@ -734,12 +753,19 @@ function render() {
     html += `<div class="pd-section">
       <div class="pd-section-head"><div class="pd-section-title">Active alerts</div></div>
       <div class="pd-alerts">`;
-    for (const a of alerts.slice(0, 3)) {
+    for (const a of alerts.slice(0, 5)) {
+      const desc = (a.description || "").trim();
+      const linkOnly = !desc || /visit this link|click here|see link|follow this link/i.test(desc);
       html += `<div class="pd-alert">
         ${a.category ? `<div class="pd-alert-cat">${esc(a.category)}</div>` : ""}
-        <p class="pd-alert-title">${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(a.title || "Alert")}</a>` : esc(a.title || "Alert")}</p>
-        ${a.description ? `<p class="pd-alert-desc">${esc(a.description)}</p>` : ""}
-      </div>`;
+        <p class="pd-alert-title">${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">${esc(a.title || "Alert")}</a>` : esc(a.title || "Alert")}</p>`;
+      if (linkOnly && a.url) {
+        html += `<p class="pd-alert-desc"><a class="pd-alert-link" href="${esc(a.url)}" target="_blank" rel="noopener">Read full update on NPS.gov →</a></p>`;
+      } else {
+        if (desc) html += `<p class="pd-alert-desc">${esc(desc)}</p>`;
+        if (a.url) html += `<p class="pd-alert-desc"><a class="pd-alert-link" href="${esc(a.url)}" target="_blank" rel="noopener">More on NPS.gov →</a></p>`;
+      }
+      html += `</div>`;
     }
     html += `</div></div>`;
   }
@@ -824,6 +850,21 @@ function render() {
       </div>`;
     }
     html += `</div></div>`;
+  }
+
+  // Getting there
+  const mapsUrl = d.links?.maps;
+  const directions = d.directionsInfo;
+  if (mapsUrl || directions) {
+    html += `<div class="pd-section">
+      <div class="pd-section-head"><div class="pd-section-title">Getting there</div></div>`;
+    if (mapsUrl) {
+      html += `<p style="margin:0 0 10px"><a class="pd-directions-maps" href="${esc(mapsUrl)}" target="_blank" rel="noopener">Open in Google Maps →</a></p>`;
+    }
+    if (directions) {
+      html += `<p class="pd-directions">${esc(directions)}</p>`;
+    }
+    html += `</div>`;
   }
 
   // Footer

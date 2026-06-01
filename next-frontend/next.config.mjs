@@ -48,6 +48,18 @@ const nextConfig = {
       { source: '/parks', destination: '/explore', permanent: true },
       { source: '/activity', destination: '/explore', permanent: true },
 
+      // Guide slug rename (2026 metadata pack)
+      {
+        source: '/guides/national-park-planning-in-chatgpt',
+        destination: '/guides/plan-national-parks-in-chatgpt',
+        permanent: true,
+      },
+      {
+        source: '/guides/how-to-check-if-a-national-park-is-open',
+        destination: '/guides/how-to-compare-national-parks-on-trailverse',
+        permanent: true,
+      },
+
       // Crowd calendar — canonical URL without .html
       { source: '/reports/when-to-go', destination: '/reports/when-to-go.html', permanent: true },
       { source: '/reports/when-to-go/', destination: '/reports/when-to-go.html', permanent: true },

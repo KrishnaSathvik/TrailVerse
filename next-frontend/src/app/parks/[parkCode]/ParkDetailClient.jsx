@@ -18,6 +18,7 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useVisitedParks } from '@/hooks/useVisitedParks';
 import { logParkView, logUserAction } from '@/utils/analytics';
+import { getParkSearchSession } from '@/lib/parkSearchSession';
 import { processHtmlContent, htmlToPlainText } from '@/utils/htmlUtils';
 import Header from '@/components/common/Header';
 import WeatherWidget from '@/components/park-details/WeatherWidget';
@@ -236,7 +237,22 @@ const ParkDetailInner = ({
   }, [park?.images, galleryPhotos]);
 
   useEffect(() => {
-    if (park) {
+    if (!park) return;
+    const searchSession = getParkSearchSession();
+    const code = (park.parkCode || parkCode || '').toLowerCase();
+    const fromSearch =
+      searchSession &&
+      code &&
+      (searchSession.clickedParkCode === code ||
+        !searchSession.clickedParkCode);
+
+    if (fromSearch) {
+      logParkView(code, park.fullName, 'search', {
+        searchTerm: searchSession.searchTerm,
+        searchId: searchSession.searchId,
+        searchSurface: searchSession.surface,
+      });
+    } else {
       logParkView(parkCode, park.fullName, 'direct');
     }
   }, [park, parkCode]);

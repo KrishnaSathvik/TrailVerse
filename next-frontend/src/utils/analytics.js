@@ -132,7 +132,7 @@ export const trackEvent = (category, action, label) => {
 };
 
 // Enhanced custom events with detailed tracking
-export const logParkView = (parkCode, parkName, source = 'unknown') => {
+export const logParkView = (parkCode, parkName, source = 'unknown', extra = {}) => {
   ReactGA.event({
     category: 'Park',
     action: 'View',
@@ -140,27 +140,59 @@ export const logParkView = (parkCode, parkName, source = 'unknown') => {
     custom_parameters: {
       park_code: parkCode,
       source, // 'search', 'map', 'recommendation', 'direct'
-      user_type: localStorage.getItem('user') ? 'authenticated' : 'anonymous'
+      user_type: localStorage.getItem('user') ? 'authenticated' : 'anonymous',
+      ...extra,
     }
   });
 
-  trackBackend('park_view', 'content', { parkCode, parkName, source });
+  trackBackend('park_view', 'content', { parkCode, parkName, source, ...extra });
 };
 
-export const logSearch = (searchQuery, resultCount = 0, searchType = 'general') => {
+export const logSearch = (
+  searchQuery,
+  resultCount = 0,
+  searchType = 'general',
+  extra = {}
+) => {
   ReactGA.event({
     category: 'Search',
     action: 'Query',
     label: searchQuery,
     value: resultCount,
     custom_parameters: {
-      search_type: searchType, // 'parks', 'events', 'blogs'
+      search_type: searchType,
       query_length: searchQuery.length,
-      has_results: resultCount > 0
+      has_results: resultCount > 0,
+      ...extra,
     }
   });
 
-  trackBackend('search', 'engagement', { searchTerm: searchQuery, resultCount, searchType });
+  trackBackend('search', 'engagement', {
+    searchTerm: searchQuery,
+    resultCount,
+    searchType,
+    ...extra,
+  });
+};
+
+/** Search results list → park detail (funnel step after catalog search). */
+export const logSearchResultClick = ({
+  searchTerm,
+  searchId,
+  parkCode,
+  parkName,
+  surface = 'unknown',
+  position,
+}) => {
+  trackBackend('user_action', 'engagement', {
+    action: 'search_result_click',
+    searchTerm,
+    searchId: searchId || null,
+    parkCode,
+    parkName,
+    surface,
+    position: position ?? null,
+  });
 };
 
 export const logShare = (platform, content, contentType = 'unknown') => {

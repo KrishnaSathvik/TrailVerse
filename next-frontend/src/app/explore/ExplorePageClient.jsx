@@ -17,7 +17,9 @@ import { useParks, useAllParks } from '@/hooks/useParks';
 import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchPrefetch } from '@/hooks/useSmartPrefetch';
-import { logSearch, logEvent } from '@/utils/analytics';
+import { logSearch, logSearchResultClick, logEvent } from '@/utils/analytics';
+import npsApi from '@/services/npsApi';
+import { saveParkSearchSession } from '@/lib/parkSearchSession';
 import { parkToSlug } from '@/utils/parkSlug';
 import STATE_NAMES from '@/utils/stateNames';
 
@@ -71,17 +73,6 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
     true
   );
 
-  const hasPaginatedParks = Array.isArray(paginatedData?.data) && paginatedData.data.length > 0;
-  const showParksLoading = needsAllParks
-    ? allParksPending && !Array.isArray(allParksData?.data)
-    : paginatedPending && !hasPaginatedParks;
-  const error = needsAllParks ? allParksError : paginatedError;
-  const allParks = needsAllParks ? allParksData?.data : paginatedData?.data;
-  const totalParks = needsAllParks ? allParksData?.total : paginatedData?.total;
-  const totalPages = needsAllParks ? null : paginatedData?.pages;
-
-  const hasFullParksData = Array.isArray(allParksData?.data) && allParksData.data.length > 0;
-
   useEffect(() => {
     hasMounted.current = true;
   }, []);
@@ -125,13 +116,64 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
   const normalizedSearchTerm = searchTerm.trim();
   const debouncedSearchTerm = useDebounce(normalizedSearchTerm, 300);
+  const [catalogSearchParks, setCatalogSearchParks] = useState(null);
+  const [catalogSearchId, setCatalogSearchId] = useState(null);
+  const [catalogSearchLoading, setCatalogSearchLoading] = useState(false);
+
+  const hasPaginatedParks = Array.isArray(paginatedData?.data) && paginatedData.data.length > 0;
+  const showParksLoading = normalizedSearchTerm
+    ? catalogSearchLoading
+    : needsAllParks
+      ? allParksPending && !Array.isArray(allParksData?.data)
+      : paginatedPending && !hasPaginatedParks;
+  const error = needsAllParks ? allParksError : paginatedError;
+  const allParks = needsAllParks ? allParksData?.data : paginatedData?.data;
+  const totalParks = needsAllParks ? allParksData?.total : paginatedData?.total;
+  const totalPages = needsAllParks ? null : paginatedData?.pages;
+
+  const hasFullParksData = Array.isArray(allParksData?.data) && allParksData.data.length > 0;
 
   useEffect(() => {
-    if (debouncedSearchTerm && debouncedSearchTerm.length > 2) {
-      handleSearch(debouncedSearchTerm);
-      logSearch(debouncedSearchTerm, 0, 'parks');
+    if (!debouncedSearchTerm || debouncedSearchTerm.length < 2) {
+      setCatalogSearchParks(null);
+      setCatalogSearchId(null);
+      setCatalogSearchLoading(false);
+      return;
     }
-  }, [debouncedSearchTerm, handleSearch]);
+
+    let cancelled = false;
+    setCatalogSearchLoading(true);
+    setCatalogSearchParks(null);
+    handleSearch(debouncedSearchTerm);
+
+    const stateFilter =
+      filters.states.length === 1 ? filters.states[0] : null;
+
+    npsApi
+      .searchParks(debouncedSearchTerm, stateFilter, 120)
+      .then(({ parks, count, searchId }) => {
+        if (cancelled) return;
+        setCatalogSearchParks(parks);
+        setCatalogSearchId(searchId);
+        saveParkSearchSession({
+          searchTerm: debouncedSearchTerm,
+          searchId,
+          resultCount: count,
+          surface: 'explore',
+        });
+        logSearch(debouncedSearchTerm, count, 'parks', { searchId });
+      })
+      .catch(() => {
+        if (!cancelled) setCatalogSearchParks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCatalogSearchLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearchTerm, handleSearch, filters.states]);
 
   const uniqueStates = useMemo(() => {
     const parksForStates = allParksData?.data || [];
@@ -148,65 +190,14 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
   }, [allParksData]);
 
   const filteredParks = useMemo(() => {
-    if (!allParks || !Array.isArray(allParks)) return [];
-    let result = [...allParks];
+    let result;
 
     if (normalizedSearchTerm) {
-      const searchLower = normalizedSearchTerm.toLowerCase();
-      const scoredMatches = result
-        .map((park) => {
-          const parkStates = park.states ? park.states.split(',').map(s => s.trim().toLowerCase()) : [];
-          const stateCode = Object.entries(STATE_NAMES).find(
-            ([, name]) => name.toLowerCase() === searchLower
-          )?.[0]?.toLowerCase();
-          const searchTerms = [searchLower];
-          if (stateCode) searchTerms.push(stateCode);
-          const fullName = park.fullName?.toLowerCase() || '';
-          const description = park.description?.toLowerCase() || '';
-          const parkCode = park.parkCode?.toLowerCase() || '';
-
-          let score = 0;
-          let directMatch = false;
-
-          if (fullName.startsWith(searchLower)) {
-            score += 120;
-            directMatch = true;
-          } else if (fullName.includes(searchLower)) {
-            score += 90;
-            directMatch = true;
-          }
-
-          if (parkCode === searchLower) {
-            score += 80;
-            directMatch = true;
-          } else if (parkCode.includes(searchLower)) {
-            score += 50;
-            directMatch = true;
-          }
-
-          if (parkStates.some((state) => searchTerms.some((term) => state === term))) {
-            score += 70;
-            directMatch = true;
-          } else if (parkStates.some((state) => searchTerms.some((term) => state.includes(term)))) {
-            score += 45;
-            directMatch = true;
-          }
-
-          if (description.includes(searchLower)) score += 15;
-
-          return { park, score, directMatch, descriptionMatch: description.includes(searchLower) };
-        })
-        .filter(({ score }) => score > 0);
-
-      const hasDirectMatches = scoredMatches.some(({ directMatch }) => directMatch);
-
-      result = scoredMatches
-        .filter(({ directMatch, descriptionMatch }) => {
-          if (!hasDirectMatches) return directMatch || descriptionMatch;
-          return directMatch;
-        })
-        .sort((a, b) => b.score - a.score || a.park.fullName.localeCompare(b.park.fullName))
-        .map(({ park }) => park);
+      if (catalogSearchParks === null) return [];
+      result = [...catalogSearchParks];
+    } else {
+      if (!allParks || !Array.isArray(allParks)) return [];
+      result = [...allParks];
     }
 
     if (filters.states.length > 0) {
@@ -231,7 +222,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
     }
 
     return result;
-  }, [allParks, normalizedSearchTerm, filters]);
+  }, [allParks, normalizedSearchTerm, filters, catalogSearchParks]);
 
   const calculatedTotalPages = needsAllParks ? Math.ceil(filteredParks.length / parksPerPage) : (totalPages || 1);
   const startIndex = (currentPage - 1) * parksPerPage;

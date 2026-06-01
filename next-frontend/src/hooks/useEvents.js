@@ -1,11 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import eventService from '../services/eventService';
 
 export const useEvents = (parkCode = null) => {
-  const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const options = typeof parkCode === 'object' && parkCode !== null
     ? parkCode
     : { parkCode };
@@ -16,8 +12,19 @@ export const useEvents = (parkCode = null) => {
   const normalizedQuery = options.q ?? null;
   const normalizedUpcoming = options.upcoming ?? 'true';
   const normalizedLimit = options.limit ?? null;
+  const hasInitialEvents = Array.isArray(options.initialEvents);
+  const skipInitialFetchRef = useRef(Boolean(options.skipInitialFetch && hasInitialEvents));
+
+  const [data, setData] = useState(hasInitialEvents ? options.initialEvents : []);
+  const [isLoading, setIsLoading] = useState(!hasInitialEvents);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
+
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
@@ -48,8 +55,13 @@ export const useEvents = (parkCode = null) => {
 };
 
 export const useEventSummary = (options = {}) => {
-  const [data, setData] = useState({ count: 0, meta: {} });
-  const [isLoading, setIsLoading] = useState(true);
+  const hasInitialSummary = options.initialSummary != null;
+  const skipInitialFetchRef = useRef(Boolean(options.skipInitialFetch && hasInitialSummary));
+
+  const [data, setData] = useState(
+    hasInitialSummary ? options.initialSummary : { count: 0, meta: {} }
+  );
+  const [isLoading, setIsLoading] = useState(!hasInitialSummary);
   const [error, setError] = useState(null);
 
   const normalizedDateStart = options.dateStart ?? null;
@@ -57,6 +69,11 @@ export const useEventSummary = (options = {}) => {
   const normalizedUpcoming = options.upcoming ?? 'true';
 
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
+
     const fetchSummary = async () => {
       try {
         setIsLoading(true);

@@ -224,7 +224,7 @@ const TripPlannerChat = ({
       return contextMsg;
     } catch (error) {
       console.error('Error getting user context:', error);
-      return "I'm Trailie \u2014 let's plan your trip.";
+      return '';
     }
   };
 
