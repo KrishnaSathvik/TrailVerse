@@ -79,7 +79,7 @@ export function createIntentLandingPageExports(path) {
     const landing = getIntentLandingByPath(path);
     if (!landing) notFound();
 
-    const { parks, totalCount } = await fetchIntentLandingParks(landing);
+    const { parks } = await fetchIntentLandingParks(landing);
     const collectionSchema = buildCollectionSchema(landing, parks);
     const faqSchema = buildFaqSchema(landing);
 
@@ -92,7 +92,11 @@ export function createIntentLandingPageExports(path) {
         <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <Header />
           <main>
-            <IntentLandingClient landing={landing} parks={parks} totalCount={totalCount} />
+            <IntentLandingClient
+              landing={landing}
+              parks={parks}
+              canonicalUrl={getIntentLandingCanonicalUrl(landing)}
+            />
           </main>
           <Footer />
         </div>

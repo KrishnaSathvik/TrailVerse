@@ -16,13 +16,9 @@ function serverSideApiUrl() {
     return normalizeApiUrl(publicUrl);
   }
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
-  if (publicUrl === '/api' && appUrl) {
-    return `${appUrl.replace(/\/$/, '')}/api`;
-  }
-
+  // Relative `/api` only works in the browser (Next rewrites). Server components and
+  // static generation must call the backend directly — self-fetch via VERCEL_URL
+  // often fails at build time and caches empty ISR payloads (e.g. intent Top matches).
   return process.env.NODE_ENV === 'production' ? PRODUCTION_API : LOCAL_API;
 }
 
