@@ -1,0 +1,7 @@
+{
+  "couples": ["acad", "olym", "shen", "viis", "grte", "crla"],
+  "quiet": ["noca", "chir", "care", "voya", "bibe", "isro"],
+  "beginners": ["grsm", "shen", "acad", "romo", "cuva", "neri"],
+  "photography": ["yose", "grte", "mora", "zion", "arch", "cany"],
+  "first_timers": ["grsm", "shen", "acad", "romo", "cuva", "neri"]
+}

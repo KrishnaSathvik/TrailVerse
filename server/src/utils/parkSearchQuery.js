@@ -26,6 +26,7 @@ const {
   buildTraitIntentFromQuery,
   scoreTraitIntent,
   applyIntentAdjustments,
+  summarizePrimaryIntents,
 } = require('../catalog/queryTraitIntent');
 const { buildMatchExplanation } = require('../catalog/matchExplanation');
 
@@ -33,8 +34,14 @@ const { buildMatchExplanation } = require('../catalog/matchExplanation');
  * Hybrid rank: keyword token overlap + trait intent fit.
  * Falls back to phrase match when no tokens remain.
  */
-function attachSearchMatch(park, traitIntent, queryTokens) {
-  const explanation = buildMatchExplanation(park, traitIntent, queryTokens);
+function attachSearchMatch(park, traitIntent, queryTokens, query) {
+  const primaryIntents = query ? summarizePrimaryIntents(query) : [];
+  const explanation = buildMatchExplanation(
+    park,
+    traitIntent,
+    queryTokens,
+    primaryIntents
+  );
   park.searchMatch = explanation;
   return park;
 }
@@ -64,7 +71,9 @@ function applyPinnedParksToResults(rankedParks, catalog, pinnedCodes, q) {
     }
     const park = catalog.find((p) => p.id.toLowerCase() === code);
     if (park) {
-      pinned.push(attachSearchMatch({ ...park, traits: { ...park.traits } }, traitIntent, queryTokens));
+      pinned.push(
+        attachSearchMatch({ ...park, traits: { ...park.traits } }, traitIntent, queryTokens, q)
+      );
     }
   }
 
@@ -72,7 +81,7 @@ function applyPinnedParksToResults(rankedParks, catalog, pinnedCodes, q) {
   return [...pinned, ...rest];
 }
 
-function rankParksByHybridSearch(parks, traitIntent, queryTokens) {
+function rankParksByHybridSearch(parks, traitIntent, queryTokens, query) {
   return parks
     .map((park) => {
       const keywordScore = scoreParkForTokens(park, queryTokens);
@@ -87,7 +96,7 @@ function rankParksByHybridSearch(parks, traitIntent, queryTokens) {
         keywordScore > 0 || traitScore >= MIN_TRAIT_ONLY_SCORE
     )
     .sort((a, b) => b.total - a.total)
-    .map(({ park }) => attachSearchMatch(park, traitIntent, queryTokens));
+    .map(({ park }) => attachSearchMatch(park, traitIntent, queryTokens, query));
 }
 
 function filterParksBySearchQuery(parks, q) {
@@ -97,19 +106,17 @@ function filterParksBySearchQuery(parks, q) {
 
   if (queryTokens.length === 0) {
     if (Object.keys(traitIntent).length > 0) {
-      return rankParksByHybridSearch(parks, traitIntent, queryTokens);
+      return rankParksByHybridSearch(parks, traitIntent, queryTokens, q);
     }
     return parks
       .filter((park) => {
         const haystack = buildSearchHaystack(park);
         return haystack.includes(query);
       })
-      .map((park) =>
-        attachSearchMatch(park, traitIntent, queryTokens)
-      );
+      .map((park) => attachSearchMatch(park, traitIntent, queryTokens, q));
   }
 
-  return rankParksByHybridSearch(parks, traitIntent, queryTokens);
+  return rankParksByHybridSearch(parks, traitIntent, queryTokens, q);
 }
 
 module.exports = {

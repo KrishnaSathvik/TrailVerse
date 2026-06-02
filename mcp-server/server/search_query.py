@@ -17,6 +17,7 @@ INTENT_KEYWORDS: dict[str, list[str]] = {
     "hiking": ["hiking", "hike", "trails", "trail", "backcountry"],
     "camping": ["camping", "campground", "backcountry"],
     "family": ["family", "kids", "children", "kid-friendly", "accessible"],
+    "beginner": ["beginner", "beginners", "first-time", "first-timer", "easy", "newbie"],
     "winter": ["winter", "snow", "ski", "cold"],
     "waterfall": ["waterfall", "falls", "cascade"],
 }

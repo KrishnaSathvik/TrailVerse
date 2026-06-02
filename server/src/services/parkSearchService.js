@@ -5,6 +5,7 @@ const { loadCanonicalParks } = require('../catalog/parkCatalog');
 const { canonicalParkMatchesActivity } = require('../catalog/canonicalPark');
 const { canonicalListToApiParks } = require('../adapters/npsParkAdapter');
 const { filterParksBySearchQuery, applyPinnedParksToResults } = require('../utils/parkSearchQuery');
+const { resolveSearchPinsFromQuery } = require('../utils/searchIntentPins');
 const { logParkSearch } = require('./parkSearchAnalytics');
 
 /**
@@ -25,7 +26,7 @@ async function executeParkSearch({ q, state, activity, limit, pinned, req, sourc
   let parks = catalog;
 
   const query = q ? String(q).trim() : '';
-  const pinnedCodes = pinned
+  let pinnedCodes = pinned
     ? String(pinned)
         .split(',')
         .map((c) => c.trim().toLowerCase())
@@ -34,6 +35,9 @@ async function executeParkSearch({ q, state, activity, limit, pinned, req, sourc
 
   if (query) {
     parks = filterParksBySearchQuery(parks, query);
+    if (pinnedCodes.length === 0) {
+      pinnedCodes = resolveSearchPinsFromQuery(query);
+    }
     if (pinnedCodes.length > 0) {
       parks = applyPinnedParksToResults(parks, catalog, pinnedCodes, query);
     }

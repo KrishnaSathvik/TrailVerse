@@ -47,6 +47,6 @@ describe('park search pinning', () => {
     );
 
     expect(merged.map((p) => p.id)).toEqual(['acad', 'shen']);
-    expect(merged[0].searchMatch?.matchReason).toMatch(/Strong match for/i);
+    expect(merged[0].searchMatch?.matchReason).toMatch(/couples|Couples|scenic|fit/i);
   });
 });

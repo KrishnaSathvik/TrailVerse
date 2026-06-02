@@ -309,13 +309,49 @@ function scoreTraitIntent(park, intent) {
  * @param {Record<string, number>} intent
  * @returns {number}
  */
+/** Headline parks that often feel crowded — downrank when user wants quiet/peaceful trips. */
+const BUSY_ICON_PARK_CODES = new Set([
+  'yell', 'yose', 'zion', 'grca', 'glac', 'grte', 'arch', 'brca', 'romo', 'dena', 'grsm',
+  'jotr', 'olym', 'ever',
+]);
+
+/**
+ * @param {import('./canonicalPark').CanonicalPark} park
+ * @returns {boolean}
+ */
+function isWeakTripDestination(park) {
+  const cat = (park.category || '').toLowerCase();
+  if (cat.includes('historic_trail') || cat === 'national_trail') return true;
+  if (cat.includes('parkway')) return true;
+  if (cat.includes('historic_site') && !(park.traits?.scenic >= 0.5)) return true;
+  return false;
+}
+
 function applyIntentAdjustments(score, park, intent) {
   const traits = park.traits || {};
+  let adjusted = score;
+
+  const wantsQuiet =
+    (intent.relaxing || 0) >= 0.85 &&
+    ((intent.nature || 0) >= 0.5 || (intent.scenic || 0) >= 0.45);
+
+  if (wantsQuiet && BUSY_ICON_PARK_CODES.has((park.id || '').toLowerCase())) {
+    adjusted *= 0.68;
+  }
+
+  const isDiscoveryTrip =
+    (intent.romantic || 0) >= 0.5 ||
+    (intent.relaxing || 0) >= 0.75 ||
+    (intent.familyFriendly || 0) >= 0.7;
+
+  if (isDiscoveryTrip && isWeakTripDestination(park)) {
+    adjusted *= 0.55;
+  }
 
   const isRomanticIntent =
     (intent.romantic || 0) >= 0.8 || (intent.relaxing || 0) >= 0.9;
 
-  if (!isRomanticIntent) return score;
+  if (!isRomanticIntent) return adjusted;
 
   const hasWaterOrOcean =
     (traits.water || 0) >= 0.35 ||
@@ -330,10 +366,10 @@ function applyIntentAdjustments(score, park, intent) {
     ((traits.camping || 0) >= 0.5 || (traits.hiking || 0) >= 0.6);
 
   if (isDryRuggedMatch && !hasWaterOrOcean) {
-    return score * 0.82;
+    adjusted *= 0.82;
   }
 
-  return score;
+  return adjusted;
 }
 
 /** User-facing labels for phrase intents (search → Trailie alignment). */

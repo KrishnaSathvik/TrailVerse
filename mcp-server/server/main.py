@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import time
 from pathlib import Path
 from typing import Annotated, Any
@@ -137,6 +138,7 @@ When responding with TrailVerse tool data, adopt the Trailie persona. Write like
 
 ## Live data rules — CRITICAL
 Tool responses are full markdown text blocks with LIVE data (alerts, weather, fees, hours, photos, events, itineraries). Always read and relay EVERY section in the text — do not summarize away alerts, fees, links, or weather numbers. Include all sections exactly as provided.
+- **search_parks:** The tool text is a **finished Trailie reply** (title, ranked parks, links). Send it to the user as-is or with light edits only. Do **not** replace the list with parks from memory, reorder ranks, or say you "filtered" results.
 - This live data OVERRIDES your training knowledge. If the tool says 55°F, say 55°F — don't guess.
 - ALWAYS cite the actual temperature and forecast from the tool response. Example: "Right now it's 55°F with overcast skies; the 5-day forecast shows highs in the low 60s." Never skip the weather or say something vague like "weather is moody" when you have real numbers.
 - ALWAYS surface active alerts and closures prominently — they affect the user's trip.
@@ -233,14 +235,7 @@ The tool response contains ALL sections below — include every one:
 6. **TrailVerse links** — include the compare page and road trip planning links from the footer.
 
 ### Search results (search_parks)
-The tool response contains ALL sections below — include every one:
-1. **Top picks** — the tool highlights the top 3 parks. For each: include name, state, summary, TrailVerse detail link, and Google Maps link. Do NOT drop the links.
-2. **Also worth a look** — remaining parks listed with name, state, and brief summary.
-3. **TrailVerse footer** — include the "Explore all parks" link.
-4. **Park picks guide** — if the query matches a vibe in "Park picks — ranked vibe guides" above, add one line with that guide URL (e.g. "See the full ranked list: [Best parks for couples](https://www.nationalparksexplorerusa.com/parks-for-couples)").
-- Rank by relevance to the user's query — don't just list alphabetically.
-- For each park: name, state, and a 1-line take on why it fits what they asked.
-- Group by region or theme if >5 results.
+The tool returns a complete markdown answer (heading, numbered parks with **Why it matches**, TrailVerse + Maps links, footer). **Deliver that text to the user.** Do not substitute a different park list. Optional: one short intro sentence, then the tool body unchanged.
 
 ### Events (find_events)
 The tool response contains ALL sections below — include every one:
@@ -407,6 +402,25 @@ def whats_happening(
 
 # ---------- Park code resolution ----------
 
+# Tokens stripped from website-style slugs (yellowstone-national-park → yellowstone).
+_PARK_SLUG_DROP = frozenset({
+    "national", "park", "monument", "preserve", "recreation", "area",
+    "historic", "site", "memorial", "battlefield", "parkway", "trail",
+    "and", "of", "the", "river", "lakeshore", "seashore", "recreation",
+})
+
+
+def _park_search_query(name_or_code: str) -> str:
+    """Turn a slug or long name into a short search string for the parks API."""
+    raw = name_or_code.strip()
+    if "-" not in raw or len(raw) <= 4:
+        return raw
+    tokens = [t for t in raw.lower().split("-") if t and t not in _PARK_SLUG_DROP]
+    if not tokens:
+        return raw
+    return " ".join(tokens)
+
+
 async def _park_display_name(park_code: str) -> str:
     """Resolve NPS display name from a park code (e.g. zion → Zion National Park)."""
     code = (park_code or "").strip().lower()
@@ -431,35 +445,45 @@ async def _resolve_park_code(name_or_code: str) -> str:
     Returns the resolved code (lowercase) or the original input if no match.
     """
     cleaned = name_or_code.strip().lower()
+    search_q = _park_search_query(name_or_code)
     # NPS codes are typically 4 chars (e.g. yell, grca, zion). Treat very
     # short alphanumeric strings as codes directly — UNLESS they look like
     # common English words/state names that users might type.
     _NOT_CODES = {"utah", "mesa", "bend", "park", "lake", "cave", "reef", "arch"}
-    if len(cleaned) <= 4 and cleaned.isalnum() and cleaned not in _NOT_CODES:
+    if (
+        len(cleaned) <= 4
+        and cleaned.isalnum()
+        and cleaned not in _NOT_CODES
+        and "-" not in cleaned
+    ):
         return cleaned
-    # Search by name
+    # Search by name (use normalized query for slugs like yellowstone-national-park)
     try:
         async with TrailVerseClient() as client:
-            resp = await client.search_parks(q=name_or_code, limit=5)
+            resp = await client.search_parks(q=search_q, limit=8)
         parks = resp.get("data", resp)
         if isinstance(parks, dict) and "parks" in parks:
             parks = parks["parks"]
         if isinstance(parks, list) and parks:
-            query_lower = name_or_code.strip().lower()
-            # Score each park: prefer shortest name that starts with query
-            # (e.g. "Glacier National Park" over "Glacier Bay NP & Preserve")
-            candidates = []
+            query_lower = search_q.strip().lower()
+            query_tokens = query_lower.split()
+            candidates: list[tuple[int, int, str]] = []
             for p in parks:
                 pname = (p.get("fullName") or p.get("name") or "").lower()
                 code = (p.get("parkCode") or "").lower()
+                if not code:
+                    continue
                 if pname.startswith(query_lower):
                     candidates.append((0, len(pname), code))
-                elif query_lower in pname:
+                elif query_tokens and pname.startswith(query_tokens[0]):
                     candidates.append((1, len(pname), code))
+                elif query_lower in pname:
+                    candidates.append((2, len(pname), code))
+                elif all(tok in pname for tok in query_tokens):
+                    candidates.append((3, len(pname), code))
             if candidates:
                 candidates.sort()
                 return candidates[0][2] or cleaned
-            # Fallback to first result
             return (parks[0].get("parkCode") or cleaned).lower()
     except TrailVerseAPIError:
         pass
@@ -647,11 +671,17 @@ async def plan_trip(
             logger.warning("Validation failed: %s", e)
             return _error_result("Invalid input — please check your parameters and try again.")
 
-        # Resolve park_code if provided (Claude may pass full names like "Yellowstone")
+        # Resolve park_code if provided (names, NPS codes, or website slugs).
         resolved_park_code = None
         if payload.park_code:
             resolved_park_code = await _resolve_park_code(payload.park_code)
             _park_codes = [resolved_park_code]
+
+        trip_days = payload.days
+        if trip_days is None:
+            day_match = re.search(r"\b(\d{1,2})\s*[- ]?\s*day", payload.message, re.I)
+            if day_match:
+                trip_days = int(day_match.group(1))
 
         # --- Conversation continuity ---
         conv = None
@@ -666,8 +696,8 @@ async def plan_trip(
         conv.append_message("user", payload.message)
 
         form_data: dict[str, Any] = {}
-        if payload.days is not None:
-            form_data["days"] = payload.days
+        if trip_days is not None:
+            form_data["days"] = trip_days
         if payload.group_size is not None:
             form_data["groupSize"] = payload.group_size
         if payload.fitness_level:
@@ -988,8 +1018,8 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
         "Searches all 470+ NPS sites (parks, monuments, seashores, lakeshores, "
         "recreation areas, historic sites). Accepts park names, keywords, "
         "activities, or natural-language travel intent (e.g. 'relaxing ocean "
-        "parks', 'easy hikes with waterfalls'). Combine with state or activity "
-        "filters when useful."
+        "parks', 'quiet parks for beginners'). Combine with state or activity "
+        "filters when useful. Returns a complete ranked answer ready to show the user."
     ),
     annotations={
         "title": "Search NPS sites",
@@ -1077,7 +1107,7 @@ async def search_parks(
             logger.exception("search_parks backend call failed")
             return _error_result(str(e))
 
-        structured, text = format_search(resp)
+        structured, text = format_search(resp, query=raw_query or query)
 
         parks_data = structured.get("parks", [])
         search_images = [

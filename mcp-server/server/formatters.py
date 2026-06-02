@@ -877,7 +877,87 @@ def format_compare(
 
 # ---------- search_parks ----------
 
-def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
+def _search_framing_sentence(query: str | None, park_count: int) -> str:
+    """One-line intro: what this list is optimized for."""
+    if not query or not query.strip():
+        return (
+            f"TrailVerse ranked **{park_count}** NPS sites from live data. "
+            "Best fits first; more options below."
+        )
+    q = query.lower()
+    goals: list[str] = []
+    if re.search(r"\b(quiet|peaceful|calm|less crowded|underrated)\b", q):
+        goals.append("peaceful pace over headline-park crowds")
+    if re.search(r"\b(couples?|romantic|honeymoon)\b", q):
+        goals.append("scenery and shared experiences for two")
+    if re.search(r"\b(beginners?|first[- ]?time|first visit)\b", q):
+        goals.append("easier trails and low-stress planning")
+    if re.search(r"\b(photography|photo spots?|scenic shots?)\b", q):
+        goals.append("views and photo-friendly landscapes")
+    if not goals:
+        return (
+            f"TrailVerse ranked **{park_count}** NPS sites from live data. "
+            "Best fits first; more options below."
+        )
+    return (
+        f"TrailVerse ranked **{park_count}** parks for **{', '.join(goals)}**. "
+        "Top five below; more matches after that."
+    )
+
+
+def _search_headline(query: str | None) -> str:
+    if not query or not query.strip():
+        return "NPS sites for you"
+    headline = query.strip().rstrip("?").strip()
+    if len(headline) > 80:
+        headline = headline[:77] + "…"
+    return headline[0].upper() + headline[1:] if headline else "NPS sites for you"
+
+
+def _search_park_block(p: dict[str, Any], rank: int) -> list[str]:
+    """One park entry for search tool text — complete enough to send as the user reply."""
+    pname = p.get("name", "Unknown")
+    states = p.get("states") or ""
+    state_bit = f" ({states})" if states else ""
+    lines = [f"### {rank}. {pname}{state_bit}"]
+    match_reason = p.get("matchReason")
+    summary = p.get("summary") or ""
+    if match_reason:
+        if match_reason.startswith("Strong match"):
+            lines.append(f"**Why it matches:** {match_reason}")
+        else:
+            lines.append(match_reason)
+    elif summary:
+        lines.append(summary)
+    link_parts = []
+    if p.get("link"):
+        link_parts.append(f"[Details on TrailVerse]({p['link']})")
+    if p.get("mapsUrl"):
+        link_parts.append(f"[Google Maps]({p['mapsUrl']})")
+    if link_parts:
+        lines.append(" | ".join(link_parts))
+    lines.append("")
+    return lines
+
+
+def _search_vibe_guide_links(query: str | None) -> list[str]:
+    """Editorial ranked lists that match common search intents."""
+    if not query:
+        return []
+    q = query.lower()
+    links: list[str] = []
+    if re.search(r"\b(quiet|peaceful|calm|less crowded|underrated|low crowd)\b", q):
+        links.append(f"[Quiet national parks]({WEB_BASE}/quiet-national-parks)")
+    if re.search(r"\b(beginners?|first[- ]?time|first visit|new to)\b", q):
+        links.append(f"[Parks for first-timers]({WEB_BASE}/parks-for-first-timers)")
+    if re.search(r"\b(couples?|romantic|honeymoon)\b", q):
+        links.append(f"[Parks for couples]({WEB_BASE}/parks-for-couples)")
+    return links
+
+
+def format_search(
+    resp: dict[str, Any], query: str | None = None
+) -> tuple[dict[str, Any], str]:
     results = resp.get("data") or resp.get("results") or []
     if isinstance(results, dict) and "parks" in results:
         results = results["parks"]
@@ -910,55 +990,50 @@ def format_search(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         "links": {"exploreAll": f"{WEB_BASE}/explore"},
     }
 
-    # Build a COMPLETE pre-formatted search response in Trailie voice.
-    text_lines = []
+    # Finished Trailie reply — ChatGPT should pass this through, not invent a new list.
+    text_lines: list[str] = []
 
     if not parks:
         text_lines.append("No parks matched that search. Try broadening your criteria — different state, activity, or keyword.")
         return structured, "\n".join(text_lines)
 
-    # Highlight top picks
-    top = parks[:3]
-    rest = parks[3:]
+    headline = _search_headline(query)
+    text_lines.append(f"# {headline}")
+    text_lines.append("")
+    text_lines.append(_search_framing_sentence(query, len(parks)))
+    text_lines.append("")
 
-    text_lines.append(f"Found {len(parks)} parks. Here are my top picks:\n")
+    top = parks[:5]
+    rest = parks[5:]
 
+    text_lines.append("## Top picks")
+    text_lines.append("")
     for i, p in enumerate(top, 1):
-        pname = p.get("name", "Unknown")
-        states = p.get("states") or ""
-        summary = p.get("summary") or ""
-        link = p.get("link") or ""
-        maps_url = p.get("mapsUrl") or ""
-        text_lines.append(f"### {i}. {pname} — {states}")
-        match_reason = p.get("matchReason")
-        if match_reason:
-            text_lines.append(f"**Why it matches:** {match_reason}")
-        elif summary:
-            text_lines.append(summary)
-        links = []
-        if link:
-            links.append(f"[Details on TrailVerse]({link})")
-        if maps_url:
-            links.append(f"[Google Maps]({maps_url})")
-        if links:
-            text_lines.append(" | ".join(links))
-        text_lines.append("")
+        text_lines.extend(_search_park_block(p, i))
 
     if rest:
-        text_lines.append("**Also worth a look:**")
+        text_lines.append("## Also consider")
+        text_lines.append("")
         for p in rest:
             pname = p.get("name", "Unknown")
             states = p.get("states") or ""
             line = f"- **{pname}** ({states})"
-            if p.get("summary"):
-                line += f": {_smart_truncate(p['summary'], 130)}"
+            match_reason = p.get("matchReason")
+            if match_reason:
+                line += f" — {match_reason}"
+            elif p.get("summary"):
+                line += f": {_smart_truncate(p['summary'], 120)}"
+            link = p.get("link")
+            if link:
+                line += f" — [TrailVerse]({link})"
             text_lines.append(line)
+        text_lines.append("")
 
-    text_lines.append(f"\n---\nExplore all parks on [TrailVerse]({WEB_BASE}/explore)")
-    text_lines.append(
-        f"Ranked lists by trip vibe (couples, wildlife, dark sky, families, and more): "
-        f"[Planning guides]({WEB_BASE}/guides)"
-    )
+    footer = [f"[Explore all parks]({WEB_BASE}/explore)"]
+    footer.extend(_search_vibe_guide_links(query))
+    footer.append(f"[Planning guides]({WEB_BASE}/guides)")
+    text_lines.append("---")
+    text_lines.append(" | ".join(footer))
 
     return structured, "\n".join(text_lines)
 

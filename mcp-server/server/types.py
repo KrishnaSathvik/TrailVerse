@@ -33,7 +33,8 @@ class PlanTripInput(BaseModel):
     park_code: str | None = Field(
         None,
         description=(
-            "Optional 4-letter NPS park code (e.g. 'zion', 'yell', 'grca'). "
+            "Optional NPS park code or name (e.g. 'yell', 'Yellowstone', 'zion'). "
+            "Prefer 4-letter codes. Do not use website URL slugs. "
             "If omitted, the backend extracts the park from the message."
         ),
     )

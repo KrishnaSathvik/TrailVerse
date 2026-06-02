@@ -762,6 +762,31 @@ function isPermitPlanningQuery(userMessage = '') {
   return /\b(permit|reservation|timed entry|lottery|recreation\.gov|angels landing|north cascades|wilderness permit)\b/i.test(userMessage);
 }
 
+/** Day-by-day trip plans — skip Recreation.gov permit inventory footers unless user asked about permits. */
+function isItineraryPlanningQuery(userMessage = '') {
+  if (!userMessage || isPermitPlanningQuery(userMessage)) return false;
+  return (
+    /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|things to do)\b/i.test(userMessage) ||
+    /\b\d{1,2}\s*[- ]?day\b/i.test(userMessage)
+  );
+}
+
+/** Permits that should not appear in generic trip-plan footers (niche programs, not park entry). */
+function isObscurePermitForFooter(nameOrLine = '') {
+  const s = String(nameOrLine).toLowerCase();
+  return (
+    /snowmobile|guided.*access program|corridor vehicle|slough creek|day-use ticket/i.test(s) ||
+    (/timed entry/i.test(s) && /corridor|junction|tower/i.test(s))
+  );
+}
+
+function sanitizePermitLineForFooter(line) {
+  return String(line)
+    .replace(/\s*\[STATUS UNKNOWN[^\]]*\]/gi, '')
+    .replace(/\s*\[(?:Permit|Timed Entry)[^\]]*\]/gi, '')
+    .trim();
+}
+
 /** Open/closed status for a named trail — don't footnote unrelated lottery permits. */
 function isTrailStatusQuery(userMessage = '') {
   if (!userMessage) return false;
@@ -929,6 +954,7 @@ function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
   const skipPermitFooter =
     !isPermitPlanningQuery(userMessage) &&
     (compareQuery ||
+      isItineraryPlanningQuery(userMessage) ||
       isTrailStatusQuery(userMessage) ||
       isLogisticsOrAccessQuery(userMessage) ||
       isCampingStayQuery(userMessage) ||
@@ -968,14 +994,18 @@ function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
       return nameMatch ? nameMatch[1].trim() : line.split(':')[0].trim();
     }).filter(Boolean);
 
-    const missedPermits = permits.filter(name => !alertMentioned(name, responseLower));
+    let missedPermits = permits.filter(name => !alertMentioned(name, responseLower));
+    if (/no\s+(vehicle\s+)?entrance\s+reservation|reservations?\s+not\s+required|no\s+timed[- ]?entry/i.test(responseLower)) {
+      missedPermits = missedPermits.filter((name) => !/timed entry|day-use/i.test(name));
+    }
+    missedPermits = missedPermits.filter((name) => !isObscurePermitForFooter(name));
     if (missedPermits.length > 0) {
       // Format with original lines for context (URLs, types)
       const missedWithContext = missedPermits.map(name => {
         const original = permitLines.find(l => l.toLowerCase().includes(name.toLowerCase()));
-        return original || name;
+        return sanitizePermitLineForFooter(original || name);
       });
-      warnings.push({ label: 'Permits/reservations required (not addressed by name)', items: missedWithContext });
+      warnings.push({ label: 'Permits/reservations to double-check', items: missedWithContext });
     } else if (permits.length > 0) {
       // Permits were mentioned, but check for vague/generic references
       const hasSpecificPermit = permits.some(name => {
