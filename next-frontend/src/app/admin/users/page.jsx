@@ -1,26 +1,28 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  ArrowLeft, Users, Search,
-  Eye, Edit, Trash2,
+  Users, Eye, Edit, Trash2,
   UserCheck, X, Save, RefreshCw,
   Mail, Calendar, Shield, Clock
 } from '@components/icons';
 import { useToast } from '@/context/ToastContext';
 import api from '@/services/api';
-import AdminRoute from '@components/admin/AdminRoute';
+import AdminShell from '@components/admin/AdminShell';
+import {
+  AdminLoading,
+  AdminKpi,
+  AdminSection,
+  AdminBadge,
+  AdminIconButton,
+  AdminEmptyState,
+  adminCard,
+} from '@components/admin/AdminUI';
 
 const AdminUsersPage = () => {
   const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const searchTimerRef = useRef(null);
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,16 +35,9 @@ const AdminUsersPage = () => {
 
   const usersPerPage = 20;
 
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-  }, []);
-
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, debouncedSearch, filterRole, filterStatus]);
+  }, [currentPage]);
 
   const fetchUsers = async () => {
     try {
@@ -50,9 +45,6 @@ const AdminUsersPage = () => {
       const params = new URLSearchParams({
         page: currentPage,
         limit: usersPerPage,
-        search: debouncedSearch,
-        role: filterRole !== 'all' ? filterRole : '',
-        status: filterStatus !== 'all' ? filterStatus : ''
       });
 
       const response = await api.get(`/admin/users?${params}`);
@@ -66,23 +58,6 @@ const AdminUsersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value); // Update UI immediately
-    setCurrentPage(1);
-    // Debounce the actual fetch
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => {
-      setDebouncedSearch(value);
-    }, 300);
-  };
-
-  const handleFilterChange = (type, value) => {
-    if (type === 'role') setFilterRole(value);
-    if (type === 'status') setFilterStatus(value);
-    setCurrentPage(1);
   };
 
   const handleSelectUser = (userId) => {
@@ -190,224 +165,170 @@ const AdminUsersPage = () => {
     });
   };
 
-  const getRoleBadge = (role) => {
-    return role === 'admin'
-      ? 'bg-purple-500/20 text-purple-400'
-      : 'bg-blue-500/20 text-blue-400';
-  };
+  const getStatusBadge = (isEmailVerified) => (isEmailVerified ? 'success' : 'warning');
 
-  const getStatusBadge = (isEmailVerified) => {
-    return isEmailVerified
-      ? 'bg-green-500/20 text-green-400'
-      : 'bg-yellow-500/20 text-yellow-400';
-  };
+  const pageStats = useMemo(() => ({
+    unverified: users.filter((u) => !u.isEmailVerified).length,
+  }), [users]);
+
+  const renderUserActions = (user) => (
+    <div className="flex items-center gap-0.5 flex-shrink-0">
+      <AdminIconButton title="View" onClick={() => openUserModal(user, 'view')}>
+        <Eye className="h-4 w-4" />
+      </AdminIconButton>
+      <AdminIconButton title="Edit" onClick={() => openUserModal(user, 'edit')}>
+        <Edit className="h-4 w-4" />
+      </AdminIconButton>
+      {!user.isEmailVerified && (
+        <AdminIconButton title="Verify" onClick={() => handleVerifyUser(user._id)}>
+          <UserCheck className="h-4 w-4" style={{ color: '#22c55e' }} />
+        </AdminIconButton>
+      )}
+      <AdminIconButton title="Delete" tone="danger" onClick={() => setDeleteConfirm(user)}>
+        <Trash2 className="h-4 w-4" />
+      </AdminIconButton>
+    </div>
+  );
 
   if (loading && users.length === 0) {
     return (
-      <AdminRoute>
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="text-center">
-            <div className="h-12 w-12 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin mx-auto mb-4" />
-            <p style={{ color: 'var(--text-secondary)' }}>Loading users...</p>
-          </div>
-        </div>
-      </AdminRoute>
+      <AdminShell title="Users" subtitle="Manage accounts, roles, and verification.">
+        <AdminLoading label="Loading users…" />
+      </AdminShell>
     );
   }
 
   return (
-    <AdminRoute>
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden py-16 sm:py-20">
-          <div className="absolute inset-0 opacity-30">
-            <div className="absolute inset-0 bg-gradient-to-b from-forest-500/20 to-transparent" />
-          </div>
+    <AdminShell
+      title="Users"
+      subtitle="Manage accounts and email verification."
+      actions={
+        <button
+          type="button"
+          onClick={fetchUsers}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-60"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      }
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+        <AdminKpi label="Total accounts" value={totalUsers.toLocaleString()} />
+        <AdminKpi label="On this page" value={users.length} hint={`Page ${currentPage} of ${totalPages}`} />
+        <AdminKpi label="Unverified" value={pageStats.unverified} accent={pageStats.unverified ? '#f97316' : undefined} hint="On this page" />
+      </div>
 
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+      {selectedUsers.length > 0 && (
+        <div
+          className="mb-6 px-4 py-3 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+            {selectedUsers.length} selected
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleBulkAction('verify')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
             >
-              <Users className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-              <span className="text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                User Management
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tighter leading-none mb-4"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  User Management
-                </h1>
-                <p className="text-lg sm:text-xl max-w-3xl"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  Manage TrailVerse users, roles, and permissions. Monitor user activity,
-                  verify accounts, and maintain platform security.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {totalUsers.toLocaleString()}
-                  </div>
-                  <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Total Users
-                  </div>
-                </div>
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center gap-2 px-3 sm:px-6 py-3 rounded-full font-semibold transition shadow-lg hover:opacity-80 text-sm sm:text-base"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Back to Dashboard</span>
-                  <span className="sm:hidden">Back</span>
-                </Link>
-              </div>
-            </div>
+              <UserCheck className="h-4 w-4" />
+              Verify
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBulkAction('delete')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ backgroundColor: 'var(--error-red)', color: 'white' }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
           </div>
-        </section>
+        </div>
+      )}
 
-        {/* Main Content */}
-        <section className="pb-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Filters and Search */}
-          <div className="rounded-2xl p-4 sm:p-6 backdrop-blur mb-6"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)'
-            }}
-          >
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5"
-                    style={{ color: 'var(--text-tertiary)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search users by name or email..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl outline-none transition"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <select
-                  value={filterRole}
-                  onChange={(e) => handleFilterChange('role', e.target.value)}
-                  className="px-3 sm:px-4 py-2 sm:py-3 rounded-xl outline-none transition text-sm sm:text-base"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
+      <AdminSection
+        title="Accounts"
+        description={
+          totalUsers > 0
+            ? `Showing ${((currentPage - 1) * usersPerPage) + 1}–${Math.min(currentPage * usersPerPage, totalUsers)} of ${totalUsers}`
+            : 'No accounts yet'
+        }
+      >
+        {users.length === 0 ? (
+          <AdminEmptyState
+            icon={Users}
+            title="No users found"
+            description="There are no user accounts to show."
+          />
+        ) : (
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              <label className="flex items-center gap-2 px-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedUsers.length === users.length && users.length > 0}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300"
+                />
+                Select all on page
+              </label>
+              {users.map((user) => (
+                <article
+                  key={user._id}
+                  className="p-4 rounded-xl"
+                  style={adminCard}
                 >
-                  <option value="all">All Roles</option>
-                  <option value="user">Users</option>
-                  <option value="admin">Admins</option>
-                </select>
-
-                <select
-                  value={filterStatus}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="px-3 sm:px-4 py-2 sm:py-3 rounded-xl outline-none transition text-sm sm:text-base"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  <option value="all">All Status</option>
-                  <option value="verified">Verified</option>
-                  <option value="unverified">Unverified</option>
-                </select>
-              </div>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.includes(user._id)}
+                      onChange={() => handleSelectUser(user._id)}
+                      className="rounded border-gray-300 mt-1"
+                    />
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-sm">
+                        {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                            {user.name || 'No name'}
+                          </p>
+                          <p className="text-xs break-all mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                            {user.email}
+                          </p>
+                        </div>
+                        <AdminBadge tone={getStatusBadge(user.isEmailVerified)}>
+                          {user.isEmailVerified ? 'Verified' : 'Unverified'}
+                        </AdminBadge>
+                      </div>
+                      <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
+                        Joined {formatDate(user.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t flex items-center justify-end" style={{ borderColor: 'var(--border)' }}>
+                    {renderUserActions(user)}
+                  </div>
+                </article>
+              ))}
             </div>
 
-            {/* Bulk Actions */}
-            {selectedUsers.length > 0 && (
-              <div className="mt-4 p-4 rounded-xl"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {selectedUsers.length} user{selectedUsers.length > 1 ? 's' : ''} selected
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleBulkAction('verify')}
-                      className="px-4 py-2 rounded-full font-semibold text-sm transition shadow-lg hover:opacity-80"
-                      style={{
-                        backgroundColor: 'var(--accent-green)',
-                        color: 'white'
-                      }}
-                    >
-                      <UserCheck className="h-4 w-4 inline mr-1" />
-                      Verify
-                    </button>
-                    <button
-                      onClick={() => handleBulkAction('delete')}
-                      className="px-4 py-2 rounded-full font-semibold text-sm transition shadow-lg hover:opacity-80"
-                      style={{
-                        backgroundColor: 'var(--error-red)',
-                        color: 'white'
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 inline mr-1" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Users Table */}
-          <div className="rounded-2xl backdrop-blur"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)'
-            }}
-          >
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
               <table className="w-full">
                 <thead>
                   <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                    <th className="text-left py-3 sm:py-4 px-3 sm:px-6">
+                    <th className="text-left py-3 px-2 w-10">
                       <input
                         type="checkbox"
                         checked={selectedUsers.length === users.length && users.length > 0}
@@ -415,39 +336,16 @@ const AdminUsersPage = () => {
                         className="rounded border-gray-300"
                       />
                     </th>
-                    <th className="text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      User
-                    </th>
-                    <th className="hidden sm:table-cell text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      Role
-                    </th>
-                    <th className="hidden sm:table-cell text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      Status
-                    </th>
-                    <th className="hidden sm:table-cell text-left py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      Joined
-                    </th>
-                    <th className="text-right py-3 sm:py-4 px-3 sm:px-6 text-sm font-semibold"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      Actions
-                    </th>
+                    <th className="text-left py-3 px-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>User</th>
+                    <th className="text-left py-3 px-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                    <th className="hidden lg:table-cell text-left py-3 px-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Joined</th>
+                    <th className="text-right py-3 px-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user._id} className="border-b hover:bg-white/5 transition"
-                      style={{ borderColor: 'var(--border)' }}
-                    >
-                      <td className="py-3 sm:py-4 px-3 sm:px-6">
+                    <tr key={user._id} className="border-b hover:bg-white/[0.02] transition" style={{ borderColor: 'var(--border)' }}>
+                      <td className="py-3 px-2 align-top">
                         <input
                           type="checkbox"
                           checked={selectedUsers.includes(user._id)}
@@ -455,70 +353,32 @@ const AdminUsersPage = () => {
                           className="rounded border-gray-300"
                         />
                       </td>
-                      <td className="py-3 sm:py-4 px-3 sm:px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-semibold text-xs sm:text-sm">
+                      <td className="py-3 px-3 align-top">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-semibold text-sm">
                               {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <p className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                              {user.name || 'No Name'}
+                            <p className="font-semibold truncate text-sm" style={{ color: 'var(--text-primary)' }}>
+                              {user.name || 'No name'}
                             </p>
-                            <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
-                              {user.email}
-                            </p>
+                            <p className="text-xs truncate max-w-[220px] lg:max-w-xs" style={{ color: 'var(--text-secondary)' }}>{user.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-6">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadge(user.role)}`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-6">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(user.isEmailVerified)}`}>
+                      <td className="py-3 px-3 align-top">
+                        <AdminBadge tone={getStatusBadge(user.isEmailVerified)}>
                           {user.isEmailVerified ? 'Verified' : 'Unverified'}
-                        </span>
+                        </AdminBadge>
                       </td>
-                      <td className="hidden sm:table-cell py-3 sm:py-4 px-3 sm:px-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <td className="hidden lg:table-cell py-3 px-3 align-top text-sm whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
                         {formatDate(user.createdAt)}
                       </td>
-                      <td className="py-3 sm:py-4 px-3 sm:px-6">
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
-                          <button
-                            onClick={() => openUserModal(user, 'view')}
-                            className="p-2 rounded-xl hover:bg-white/5 transition"
-                            style={{ color: 'var(--text-secondary)' }}
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => openUserModal(user, 'edit')}
-                            className="p-2 rounded-xl hover:bg-white/5 transition"
-                            style={{ color: 'var(--text-secondary)' }}
-                            title="Edit User"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          {!user.isEmailVerified && (
-                            <button
-                              onClick={() => handleVerifyUser(user._id)}
-                              className="p-2 rounded-xl hover:bg-green-500/10 transition text-green-400"
-                              title="Verify User"
-                            >
-                              <UserCheck className="h-4 w-4" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setDeleteConfirm(user)}
-                            className="p-2 rounded-xl hover:bg-red-500/10 transition text-red-400"
-                            title="Delete User"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                      <td className="py-3 px-2 align-top">
+                        <div className="flex items-center justify-end">
+                          {renderUserActions(user)}
                         </div>
                       </td>
                     </tr>
@@ -527,53 +387,37 @@ const AdminUsersPage = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-6 border-t"
-                style={{ borderColor: 'var(--border)' }}
-              >
-                <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Showing {((currentPage - 1) * usersPerPage) + 1} to {Math.min(currentPage * usersPerPage, totalUsers)} of {totalUsers} users
-                </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Page {currentPage} of {totalPages}
+                </p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 rounded-full font-semibold transition shadow-lg hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)'
-                    }}
+                    className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
+                    style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-primary)' }}
                   >
                     Previous
                   </button>
-                  <span className="px-4 py-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    Page {currentPage} of {totalPages}
-                  </span>
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 rounded-full font-semibold transition shadow-lg hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: 'var(--surface-hover)',
-                      borderWidth: '1px',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)'
-                    }}
+                    className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40"
+                    style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-primary)' }}
                   >
                     Next
                   </button>
                 </div>
               </div>
             )}
-            </div>
-          </div>
-        </section>
-      </div>
+          </>
+        )}
+      </AdminSection>
 
-      {/* User View/Edit Modal */}
       {modalUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={closeModal}
@@ -629,7 +473,7 @@ const AdminUsersPage = () => {
                       <Shield className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
                       <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Role</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadge(modalUser.role)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${modalUser.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
                       {modalUser.role}
                     </span>
                   </div>
@@ -638,7 +482,7 @@ const AdminUsersPage = () => {
                       <UserCheck className="h-3.5 w-3.5" style={{ color: 'var(--text-tertiary)' }} />
                       <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Status</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(modalUser.isEmailVerified)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${modalUser.isEmailVerified ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                       {modalUser.isEmailVerified ? 'Verified' : 'Unverified'}
                     </span>
                   </div>
@@ -800,7 +644,7 @@ const AdminUsersPage = () => {
           </div>
         </div>
       )}
-    </AdminRoute>
+    </AdminShell>
   );
 };
 

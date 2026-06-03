@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // Protected routes that require authentication
-const protectedRoutes = ['/profile', '/chat-history', '/dashboard', '/settings', '/plan-ai/new', '/home'];
+const protectedRoutes = ['/profile', '/chat-history', '/dashboard', '/settings', '/home'];
 
 // Auth routes where logged-in users shouldn't go
 const publicOnlyRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -9,6 +9,8 @@ const publicOnlyRoutes = ['/login', '/signup', '/forgot-password', '/reset-passw
 const REDIRECT_TTL_MS = 5 * 60 * 1000;
 let cachedBlogRedirects = null;
 let cachedBlogRedirectsAt = 0;
+let cachedPublicSettings = null;
+let cachedPublicSettingsAt = 0;
 
 function apiBaseUrl() {
   const configured =
@@ -38,6 +40,28 @@ async function getBlogSlugRedirects() {
   }
 }
 
+async function getPublicSettings() {
+  const now = Date.now();
+  if (cachedPublicSettings && now - cachedPublicSettingsAt < REDIRECT_TTL_MS) {
+    return cachedPublicSettings;
+  }
+
+  try {
+    const response = await fetch(`${apiBaseUrl()}/api/settings/public`, {
+      next: { revalidate: 60 },
+    });
+    if (!response.ok) {
+      return cachedPublicSettings || null;
+    }
+    const payload = await response.json();
+    cachedPublicSettings = payload?.data || null;
+    cachedPublicSettingsAt = now;
+    return cachedPublicSettings;
+  } catch {
+    return cachedPublicSettings || null;
+  }
+}
+
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
@@ -54,11 +78,29 @@ export async function proxy(request) {
     }
   }
 
-  // We'll read the token from cookies (which will be set by the client on login)
   const token = request.cookies.get('trailverse_auth_token')?.value;
 
-  // 1. If accessing a protected route without a token, redirect to login
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+  // Maintenance mode (skip admin + offline fallback)
+  const isAdminPath = pathname === '/admin/login' || pathname.startsWith('/admin');
+  if (!isAdminPath && pathname !== '/offline') {
+    const publicSettings = await getPublicSettings();
+    if (publicSettings?.maintenanceMode) {
+      const url = new URL('/offline', request.url);
+      url.searchParams.set('maintenance', '1');
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Admin UI requires auth cookie (role checked client-side via AdminRoute)
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    if (!token) {
+      const url = new URL('/admin/login', request.url);
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (protectedRoutes.some((route) => pathname.startsWith(route))) {
     if (!token) {
       const url = new URL('/login', request.url);
       url.searchParams.set('redirect', pathname);
@@ -66,14 +108,12 @@ export async function proxy(request) {
     }
   }
 
-  // 2. If accessing an auth route while already logged in, redirect to home
-  if (publicOnlyRoutes.some(route => pathname.startsWith(route))) {
+  if (publicOnlyRoutes.some((route) => pathname.startsWith(route))) {
     if (token) {
       return NextResponse.redirect(new URL('/home', request.url));
     }
   }
 
-  // Default: Allow request to proceed
   return NextResponse.next();
 }
 
@@ -83,7 +123,6 @@ export const config = {
     '/chat-history/:path*',
     '/dashboard/:path*',
     '/settings/:path*',
-    '/plan-ai/:path*',
     '/login',
     '/signup',
     '/forgot-password',
@@ -91,5 +130,8 @@ export const config = {
     '/parks/:path*',
     '/home',
     '/blog/:path*',
+    '/admin',
+    '/admin/:path*',
+    '/offline',
   ],
 };

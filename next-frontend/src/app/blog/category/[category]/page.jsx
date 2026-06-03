@@ -4,18 +4,12 @@ import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
+import { BLOG_CATEGORIES, normalizeBlogCategory } from '@/lib/blogCategories';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
 
-const CATEGORIES = {
-  'trip-planning': { name: 'Trip Planning', description: 'Guides and tips for planning your perfect national park visit — itineraries, permits, packing lists, and budgeting advice.' },
-  'park-guides': { name: 'Park Guides', description: 'In-depth guides to individual national parks — best trails, campgrounds, wildlife, seasonal tips, and what to expect.' },
-  'gear-packing': { name: 'Gear & Packing', description: 'What to bring on your national park adventure — gear recommendations, packing lists, and must-have equipment.' },
-  'seasonal': { name: 'Seasonal Guides', description: 'The best national parks to visit by season — spring wildflowers, summer crowds, fall foliage, and winter solitude.' },
-  'astrophotography': { name: 'Astrophotography', description: 'National park astrophotography guides — dark sky parks, Milky Way timing, camera settings, and the best stargazing spots.' },
-  'budget-travel': { name: 'Budget Travel', description: 'Visit national parks on a budget — free parks, annual pass math, free camping, and money-saving strategies.' },
-};
+const CATEGORIES = BLOG_CATEGORIES;
 
 async function getPostsByCategory(categoryName) {
   try {
@@ -26,7 +20,7 @@ async function getPostsByCategory(categoryName) {
     if (!Array.isArray(posts)) return [];
     // Filter by category field or tags containing the category name
     return posts.filter(post => {
-      const postCategory = (post.category || '').toLowerCase().replace(/\s+/g, '-');
+      const postCategory = normalizeBlogCategory(post.category);
       const postTags = (post.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-'));
       return postCategory === categoryName || postTags.includes(categoryName);
     });

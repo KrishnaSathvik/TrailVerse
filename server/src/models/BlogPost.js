@@ -32,8 +32,29 @@ const blogPostSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Hiking', 'Photography', 'Wildlife', 'Travel Tips', 'Park Guides', 'Camping', 'History', 'Conservation', 'Fall Travel Blog', 'Travel Blogs', 'Astrophotography', 'National Parks', 'Seasonal Guides'],
-    default: 'Park Guides'
+    enum: [
+      'trip-planning',
+      'park-guides',
+      'gear-packing',
+      'seasonal',
+      'astrophotography',
+      'budget-travel',
+      // Legacy values kept for existing posts
+      'Hiking',
+      'Photography',
+      'Wildlife',
+      'Travel Tips',
+      'Park Guides',
+      'Camping',
+      'History',
+      'Conservation',
+      'Fall Travel Blog',
+      'Travel Blogs',
+      'Astrophotography',
+      'National Parks',
+      'Seasonal Guides',
+    ],
+    default: 'park-guides',
   },
   tags: [{
     type: String

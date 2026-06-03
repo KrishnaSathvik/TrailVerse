@@ -103,7 +103,6 @@ const analyticsSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['desktop', 'mobile', 'tablet'],
-      default: null
     },
     brand: String,
     model: String
@@ -237,7 +236,10 @@ analyticsSchema.statics.getPopularContent = function(startDate, endDate, content
   };
 
   if (contentType === 'parks') {
-    matchStage.parkCode = { $exists: true, $ne: null };
+    matchStage.$or = [
+      { parkCode: { $exists: true, $ne: null } },
+      { 'metadata.parkCode': { $exists: true, $ne: null } },
+    ];
   } else if (contentType === 'blogs') {
     matchStage.blogId = { $exists: true, $ne: null };
   } else if (contentType === 'events') {
@@ -247,9 +249,18 @@ analyticsSchema.statics.getPopularContent = function(startDate, endDate, content
   return this.aggregate([
     { $match: matchStage },
     {
+      $addFields: {
+        contentKey: contentType === 'parks'
+          ? { $ifNull: ['$parkCode', '$metadata.parkCode'] }
+          : contentType === 'blogs'
+            ? { $ifNull: ['$blogId', '$metadata.blogId'] }
+            : { $ifNull: ['$eventId', '$metadata.eventId'] },
+      },
+    },
+    { $match: { contentKey: { $ne: null } } },
+    {
       $group: {
-        _id: contentType === 'parks' ? '$parkCode' : 
-             contentType === 'blogs' ? '$blogId' : '$eventId',
+        _id: '$contentKey',
         views: { $sum: 1 },
         uniqueUsers: { $addToSet: '$userId' }
       }
@@ -305,10 +316,21 @@ analyticsSchema.statics.getErrorAnalytics = function(startDate, endDate) {
       }
     },
     {
+      $addFields: {
+        resolvedErrorCode: { $ifNull: ['$errorCode', '$metadata.errorCode'] },
+        resolvedErrorMessage: { $ifNull: ['$errorMessage', '$metadata.errorMessage'] },
+      },
+    },
+    {
+      $match: {
+        resolvedErrorCode: { $ne: null },
+      },
+    },
+    {
       $group: {
         _id: {
-          errorCode: '$errorCode',
-          errorMessage: '$errorMessage'
+          errorCode: '$resolvedErrorCode',
+          errorMessage: '$resolvedErrorMessage'
         },
         count: { $sum: 1 },
         uniqueUsers: { $addToSet: '$userId' },

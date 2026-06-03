@@ -1,16 +1,11 @@
 import ReactGA from 'react-ga4';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 const getTrackingId = () => process.env.NEXT_PUBLIC_GA_TRACKING_ID;
 
 // Buffer for batching backend analytics events
 let backendEventBuffer = [];
 let flushTimer = null;
-
-const getApiUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:5001/api'
-    : 'https://trailverse.onrender.com/api');
 
 const getSessionId = () => {
   if (typeof window === 'undefined') return 'server';
@@ -26,13 +21,17 @@ const flushBackendEvents = () => {
   if (backendEventBuffer.length === 0) return;
   const events = [...backendEventBuffer];
   backendEventBuffer = [];
-  const apiUrl = getApiUrl();
+  const apiUrl = getApiBaseUrl();
   // Fire-and-forget — don't block the UI
   fetch(`${apiUrl}/analytics/track`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId: getSessionId(), events }),
-  }).catch(() => { /* analytics is non-critical */ });
+  }).catch((error) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[analytics] track failed:', error?.message || error);
+    }
+  });
 };
 
 const trackBackend = (eventType, eventCategory, metadata = {}) => {

@@ -100,6 +100,18 @@ Hub: `/guides` — sections **Planning & tools** (editorial) and **Parks by vibe
 
 ---
 
-## Planned intent expansions (same pattern)
+## Extended intent pages (`intentLandingsExtended.js`)
 
-Additional pages follow the same structure in `intentLandingsExtended.js` (merged into `INTENT_LANDINGS`): dark-sky, families, first-timers, dog-friendly, winter, accessible, wildlife.
+Merged into `INTENT_LANDINGS` in `intentLandings.js` (same page pattern as core five):
+
+| Path | Topic |
+|------|--------|
+| `/dark-sky-parks` | Dark sky |
+| `/parks-for-families` | Families |
+| `/parks-for-first-timers` | First-timers |
+| `/dog-friendly-parks` | Dog-friendly |
+| `/winter-national-parks` | Winter |
+| `/accessible-national-parks` | Accessible |
+| `/wildlife-national-parks` | Wildlife |
+
+Route list also summarized in `01-frontend-pages.mdc`.

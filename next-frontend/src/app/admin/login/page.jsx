@@ -41,11 +41,6 @@ const AdminLoginPage = () => {
 
       // Check if user has admin role
       if (response.data.role === 'admin') {
-        // JWT token already stored by authService
-        // Also set localStorage flags that AdminRoute expects
-        localStorage.setItem('adminAuthenticated', 'true');
-        localStorage.setItem('adminEmail', response.data.email);
-
         showToast('Welcome back, Admin!', 'success');
         router.push('/admin');
       } else {
@@ -96,7 +91,7 @@ const AdminLoginPage = () => {
               style={{ color: 'var(--text-secondary)' }}
             >
               Access the TrailVerse admin dashboard with secure authentication.
-              Manage content, users, and platform settings.
+              Manage content, users, and analytics.
             </p>
           </div>
         </div>

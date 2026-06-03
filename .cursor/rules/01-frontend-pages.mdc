@@ -5,7 +5,17 @@ alwaysApply: true
 
 # TrailVerse — Frontend Page Map
 
-All routes live under `next-frontend/src/app/`. Most public pages use `Header` + `Footer`. Nav items in `Header.jsx`: Explore, Trailie, Events, Blog, Map, Compare, Discover (+ Chat History, Profile when logged in).
+All routes live under `next-frontend/src/app/` (**~65** `page.jsx` files). Most public pages use `Header` + `Footer`.
+
+**Header nav** (`Header.jsx` + `lib/browseHub.js`):
+
+| Zone | Items |
+|------|--------|
+| Primary | Explore, Map, Trailie (`/plan-ai`), Blog — plus **Home** (`/home`) when logged in |
+| More menu | Events, Compare, **Explore by Activity** → `/discover` (`BROWSE_HUB_NAV_LABEL`; URL stays `/discover` for SEO) |
+| More (auth only) | Chat History, Profile |
+
+Footer links **Planning Guides** → `/guides`.
 
 ---
 
@@ -63,7 +73,7 @@ Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
 
 ### `/explore` — Park grid
 - **Files**: `app/explore/ExplorePageClient.jsx`, `explore/layout.jsx`
-- **UI**: Search, "National Parks Only" toggle (64), state checkboxes (56), sort, grid/list, pagination, link "Browse by activity & topic →" to Discover
+- **UI**: Search, "National Parks Only" toggle (64), state checkboxes (56), sort, grid/list, pagination, CTA to browse hub (`BROWSE_HUB_CTA_LABEL` → `/discover`)
 - **API**: parks list from NPS proxy `GET /api/parks`
 - **SEO title pattern**: "Explore All 470+ Parks & Sites..."
 
@@ -98,7 +108,8 @@ Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
 
 ## Discover hub (taxonomy browsing)
 
-### `/discover` — Hub
+### `/discover` — Browse hub (taxonomy)
+- **Nav label**: "Explore by Activity" (`BROWSE_HUB_*` in `lib/browseHub.js`); **URL** remains `/discover`
 - **Files**: `app/discover/page.jsx`, `DiscoverPageClient.jsx`, `discover/layout.jsx`
 - **SSR**: `fetchDiscoverCatalog()` → `GET /api/discover/catalog`
 - **Sections**: Activities, Type, States, Topics (6 preview cards each, "See all")
@@ -118,6 +129,44 @@ Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
 - **Detail pages**: `DiscoverDetailClient.jsx` — grid of parks, pagination, NPS guide section (`DiscoverNpsGuideSection`)
 - **API**: `GET /api/discover/detail?dimension=&slug=`, `/discover/parks`, `/discover/nps-guide`
 - **Backend**: `discoverCatalogService`, `server/data/discover-featured.json`
+
+---
+
+## Planning guides & intent landings
+
+Full copy/structure rules: **`08-guides-and-intent-pages.mdc`**.
+
+### `/guides` — Hub
+- **File**: `app/guides/page.jsx`
+- **Sections**: Planning & tools (editorial) + Parks by vibe (intent cards)
+- **Data**: `src/data/guides.js`, `src/data/intentLandings.js`
+- **Sitemap**: included in `sitemap.ts`
+
+### `/guides/[slug]` — Editorial guides (8)
+- **Config**: `guides.js` — static sections, FAQ, TrailVerse tool links (no live rankings)
+- **Slugs**: `best-free-national-park-trip-planner`, `trailverse-vs-alltrails`, `plan-national-parks-in-chatgpt`, `yosemite-vs-yellowstone-first-timers`, `best-national-park-apps-2026`, `trailverse-vs-recreation-gov-and-nps-app`, `how-to-compare-national-parks-on-trailverse`, `how-to-find-national-park-permits-and-reservations`
+- **Client**: `GuideDetailClient.jsx`
+
+### Intent landing pages (12, live-ranked grids)
+Thin `app/{path}/page.jsx` via `createIntentLandingPageExports`. Config in `intentLandings.js` + `intentLandingsExtended.js`.
+
+| Route | Topic |
+|-------|--------|
+| `/parks-for-couples` | Couples |
+| `/parks-for-photography` | Photography |
+| `/ocean-national-parks` | Coast / ocean |
+| `/fall-color-parks` | Fall color |
+| `/quiet-national-parks` | Quiet escapes |
+| `/dark-sky-parks` | Dark sky |
+| `/parks-for-families` | Families |
+| `/parks-for-first-timers` | First-timers |
+| `/dog-friendly-parks` | Dog-friendly |
+| `/winter-national-parks` | Winter |
+| `/accessible-national-parks` | Accessible |
+| `/wildlife-national-parks` | Wildlife |
+
+- **API**: `GET /api/parks/search?q=` + optional `pinned=` (featured codes)
+- **UI**: Quick answer → standouts → TrailVerse pills → `ParkCard` grid → FAQ → related intent `GuideCard`s
 
 ---
 
@@ -205,7 +254,6 @@ Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
 | Route | Purpose |
 |-------|---------|
 | `/offline` | PWA offline fallback (noindex layout) |
-| `/compare` | Park comparison tool |
 
 ---
 
@@ -223,6 +271,7 @@ Full MCP/cloud architecture: **`06-mcp-chatgpt-cloud.mdc`**
 | Feature | Endpoints |
 |---------|-----------|
 | Parks | `/api/parks/*`, `/api/parks/:code/enhanced`, weather, crowd |
+| Guides / intent | `/api/parks/search` (traits + match reasons) |
 | Discover | `/api/discover/*` |
 | Plan AI | `/api/ai/*`, `/api/trips/*` |
 | Blog | `/api/blogs/*`, `/api/blogs/:id/comments` |

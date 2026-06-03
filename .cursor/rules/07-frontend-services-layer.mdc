@@ -22,7 +22,9 @@ Browser API access is centralized in `next-frontend/src/services/`. Prefer these
 | `commentService.js` | Blog comments |
 | `reviewService.js` | Park reviews |
 | `eventService.js` | Events list/register |
+| `savedEventsService.js` | User saved events |
 | `favoriteService.js` | Saved parks (legacy favorites API) |
+| `statsService.js` | Aggregated stats endpoints |
 | `userService.js` | Profile, saved/visited parks |
 | `userPreferencesService.js` | Map state, navigation prefs |
 | `dailyFeedService.js` | Park of day, nature facts |

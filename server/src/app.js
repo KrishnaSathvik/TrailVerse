@@ -243,10 +243,19 @@ const authLimiter = rateLimit({
   }
 });
 
+const { loadSiteSettings, enforceMaintenanceMode, requireFeature } = require('./middleware/siteSettings');
+const { trackApiCall } = require('./middleware/analytics');
+
 // Apply tiered rate limiting to all API routes
 app.use('/api/', tieredLimiter);
 
+// Site settings + maintenance gate for all API routes
+app.use('/api', loadSiteSettings);
+app.use('/api', enforceMaintenanceMode);
+app.use('/api', trackApiCall);
+
 // Routes
+app.use('/api/settings', require('./routes/settings'));
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/parks', require('./routes/enhancedParks')); // Enhanced parks routes first
@@ -256,11 +265,11 @@ app.use('/api/activities', require('./routes/activities')); // Activities/Trails
 app.use('/api/users', require('./routes/users'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/users/preferences', require('./routes/userPreferences'));
-app.use('/api/blogs', require('./routes/blogs'));
-app.use('/api/ai', require('./routes/ai'));
+app.use('/api/blogs', requireFeature('enableBlog'), require('./routes/blogs'));
+app.use('/api/ai', requireFeature('enableAI'), require('./routes/ai'));
 app.use('/api/ai/feedback', require('./routes/feedback'));
 app.use('/api/feed', require('./routes/dailyFeed'));
-app.use('/api/events', require('./routes/events'));
+app.use('/api/events', requireFeature('enableEvents'), require('./routes/events'));
 app.use('/api/trips', require('./routes/trips'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/testimonials', require('./routes/testimonials'));
@@ -268,9 +277,9 @@ app.use('/api/stats', require('./routes/stats'));
 app.use('/api/email', require('./routes/emailRoutes'));
 app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/images', require('./routes/images'));
-app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/analytics', requireFeature('enableAnalytics'), require('./routes/analytics'));
 app.use('/api', require('./routes/comments'));
-app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/reviews', requireFeature('enableReviews'), require('./routes/reviews'));
 app.use('/api/gmaps', require('./routes/gmaps')); // Google Maps proxy
 app.use('/api/feature-announcement', require('./routes/featureAnnouncement')); // Feature announcement emails
 app.use('/api/subscribers', require('./routes/subscribers')); // Newsletter subscribers

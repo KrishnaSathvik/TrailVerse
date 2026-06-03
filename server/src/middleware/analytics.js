@@ -1,5 +1,6 @@
 const Analytics = require('../models/Analytics');
 const { v4: uuidv4 } = require('uuid');
+const { hoistAnalyticsFields } = require('../utils/analyticsNormalize');
 
 // Generate session ID if not exists
 const generateSessionId = (req) => {
@@ -46,7 +47,7 @@ const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
       metadata.source = 'mcp';
     }
 
-    const analyticsData = {
+    const analyticsData = hoistAnalyticsFields({
       eventType,
       eventCategory,
       userId: req.user?.id || null,
@@ -59,7 +60,7 @@ const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
       metadata,
       ...deviceInfo,
       timestamp: new Date()
-    };
+    });
 
     // Add specific fields based on event type
     if (req.params.parkCode) analyticsData.parkCode = req.params.parkCode;
@@ -79,16 +80,21 @@ const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
 
 // Middleware to track API calls
 exports.trackApiCall = (req, res, next) => {
+  const path = req.path || '';
+  if (path.includes('/analytics/track')) {
+    return next();
+  }
+
   const startTime = Date.now();
   
   // Track the API call
   res.on('finish', () => {
     const responseTime = Date.now() - startTime;
-    const eventCategory = req.user ? 'user' : 'anonymous';
+    const eventCategory = req.user ? 'user' : 'technical';
     
     trackEvent(req, 'api_call', eventCategory, {
       method: req.method,
-      endpoint: req.route?.path || req.originalUrl,
+      endpoint: req.route?.path ? `${req.baseUrl || ''}${req.route.path}` : req.path,
       statusCode: res.statusCode,
       responseTime,
       userAgent: req.get('User-Agent')
@@ -104,7 +110,7 @@ exports.trackPageView = (req, res, next) => {
   
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    const eventCategory = req.user ? 'user' : 'anonymous';
+    const eventCategory = req.user ? 'user' : 'content';
     
     trackEvent(req, 'page_view', eventCategory, {
       duration,
@@ -152,7 +158,7 @@ exports.trackSearch = (req, res, next) => {
       const searchTerm = req.query.search || req.body.search;
       const resultCount = res.locals.searchResults?.length || 0;
       
-      trackEvent(req, 'search', req.user ? 'user' : 'anonymous', {
+      trackEvent(req, 'search', req.user ? 'user' : 'engagement', {
         searchTerm,
         resultCount,
         searchType: req.query.type || 'general'

@@ -5,11 +5,18 @@ import { useToast } from '@/context/ToastContext';
 import api from '@/services/api';
 import {
   MessageSquare, CheckCircle, XCircle, Star,
-  Eye, EyeOff, Search, Calendar,
+  Eye, EyeOff, Calendar,
   MapPin, Clock
 } from '@components/icons';
+import {
+  AdminSearchInput,
+  AdminTabs,
+  AdminEmptyState,
+  AdminSection,
+  adminCard,
+} from '@components/admin/AdminUI';
 
-const TestimonialsManagement = () => {
+const TestimonialsManagement = ({ embedded = false, refreshKey = 0, onStatsChange }) => {
   const { showToast } = useToast();
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +27,7 @@ const TestimonialsManagement = () => {
 
   useEffect(() => {
     fetchTestimonials();
-  }, []);
+  }, [refreshKey]);
 
   const fetchTestimonials = async () => {
     try {
@@ -41,6 +48,7 @@ const TestimonialsManagement = () => {
       await api.put(`/testimonials/${id}/approve`);
       showToast('Testimonial approved successfully', 'success');
       fetchTestimonials();
+      onStatsChange?.();
     } catch (error) {
       console.error('Error approving testimonial:', error);
       showToast('Failed to approve testimonial', 'error');
@@ -52,6 +60,7 @@ const TestimonialsManagement = () => {
       await api.delete(`/testimonials/${id}`);
       showToast('Testimonial rejected and deleted', 'success');
       fetchTestimonials();
+      onStatsChange?.();
     } catch (error) {
       console.error('Error rejecting testimonial:', error);
       showToast('Failed to reject testimonial', 'error');
@@ -63,6 +72,7 @@ const TestimonialsManagement = () => {
       await api.put(`/testimonials/${id}/feature`, { featured: !featured });
       showToast(featured ? 'Testimonial unfeatured' : 'Testimonial featured', 'success');
       fetchTestimonials();
+      onStatsChange?.();
     } catch (error) {
       console.error('Error toggling feature:', error);
       showToast('Failed to update testimonial', 'error');
@@ -128,94 +138,55 @@ const TestimonialsManagement = () => {
     ));
   };
 
+  const filterTabs = [
+    { id: 'all', label: 'All', count: testimonials.length },
+    { id: 'pending', label: 'Pending', count: testimonials.filter((t) => !t.approved).length },
+    { id: 'approved', label: 'Approved', count: testimonials.filter((t) => t.approved && !t.featured).length },
+    { id: 'featured', label: 'Featured', count: testimonials.filter((t) => t.featured).length },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="h-8 w-8 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin mx-auto mb-4" />
-          <p style={{ color: 'var(--text-secondary)' }}>Loading testimonials...</p>
-        </div>
+        <div className="h-8 w-8 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4">
+      {!embedded && (
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Testimonials Management
-          </h2>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Review and manage user testimonials
-          </p>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Testimonials</h2>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Review and manage user stories</p>
         </div>
-        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {filteredTestimonials.length} of {testimonials.length} testimonials
-        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-3">
+        <AdminSearchInput
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by name, park, or quote…"
+          icon={MessageSquare}
+        />
+        <AdminTabs tabs={filterTabs} active={filter} onChange={setFilter} />
       </div>
 
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-            <input
-              type="text"
-              placeholder="Search testimonials..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-            />
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['all', 'pending', 'approved', 'featured'].map((filterType) => (
-            <button
-              key={filterType}
-              onClick={() => setFilter(filterType)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition"
-              style={filter === filterType
-                ? { backgroundColor: 'var(--accent-green, #22c55e)', color: 'white' }
-                : { backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
-              }
-            >
-              {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Testimonials List */}
-      <div className="space-y-4">
+      <AdminSection title={`${filteredTestimonials.length} result${filteredTestimonials.length === 1 ? '' : 's'}`}>
         {filteredTestimonials.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
-            <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
-              No testimonials found
-            </h3>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              {searchTerm ? 'Try adjusting your search terms' : 'No testimonials match the current filter'}
-            </p>
-          </div>
+          <AdminEmptyState
+            icon={MessageSquare}
+            title="No testimonials found"
+            description={searchTerm ? 'Try a different search term.' : 'Nothing matches this filter yet.'}
+          />
         ) : (
-          filteredTestimonials.map((testimonial) => (
-            <div
-              key={testimonial._id}
-              className="p-4 sm:p-6 rounded-xl border"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                {/* Testimonial Content */}
+          <div className="space-y-3">
+            {filteredTestimonials.map((testimonial) => (
+              <div
+                key={testimonial._id}
+                className="p-4 sm:p-5 rounded-xl flex flex-col lg:flex-row lg:items-start gap-4"
+                style={adminCard}
+              >
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -255,11 +226,11 @@ const TestimonialsManagement = () => {
                   </p>
                 </div>
 
-                {/* Actions */}
                 <div className="flex flex-col gap-2 lg:min-w-[200px]">
                   {!testimonial.approved ? (
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => handleApprove(testimonial._id)}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
                         style={{ backgroundColor: '#22c55e', color: 'white' }}
@@ -268,6 +239,7 @@ const TestimonialsManagement = () => {
                         Approve
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleReject(testimonial._id)}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
                         style={{ backgroundColor: '#ef4444', color: 'white' }}
@@ -277,32 +249,32 @@ const TestimonialsManagement = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleFeature(testimonial._id, testimonial.featured)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
-                        style={{
-                          backgroundColor: testimonial.featured ? '#eab308' : 'var(--surface-hover)',
-                          color: testimonial.featured ? 'white' : 'var(--text-primary)',
-                          border: testimonial.featured ? 'none' : '1px solid var(--border)'
-                        }}
-                      >
-                        {testimonial.featured ? (
-                          <>
-                            <EyeOff className="h-4 w-4" />
-                            Unfeature
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="h-4 w-4" />
-                            Feature
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleFeature(testimonial._id, testimonial.featured)}
+                      className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium"
+                      style={{
+                        backgroundColor: testimonial.featured ? '#eab308' : 'var(--surface-hover)',
+                        color: testimonial.featured ? 'white' : 'var(--text-primary)',
+                        border: testimonial.featured ? 'none' : '1px solid var(--border)',
+                      }}
+                    >
+                      {testimonial.featured ? (
+                        <>
+                          <EyeOff className="h-4 w-4" />
+                          Unfeature
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4" />
+                          Feature
+                        </>
+                      )}
+                    </button>
                   )}
 
                   <button
+                    type="button"
                     onClick={() => {
                       setSelectedTestimonial(testimonial);
                       setShowModal(true);
@@ -311,17 +283,17 @@ const TestimonialsManagement = () => {
                     style={{
                       borderColor: 'var(--border)',
                       color: 'var(--text-primary)',
-                      backgroundColor: 'var(--surface)'
+                      backgroundColor: 'var(--surface)',
                     }}
                   >
                     View Details
                   </button>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
-      </div>
+      </AdminSection>
 
       {/* Modal for detailed view */}
       {showModal && selectedTestimonial && (

@@ -3,7 +3,7 @@
 > **Human-readable merge of all Cursor rules.**  
 > **Source of truth for agents:** `.cursor/rules/*.mdc` (Cursor loads these automatically; update rules first, then refresh this handbook when doing large doc passes).
 
-**Last consolidated:** May 2026 · **Repo:** `npe-usa` · **Production:** [nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)
+**Last consolidated:** June 2026 · **Repo:** `npe-usa` · **Production:** [nationalparksexplorerusa.com](https://www.nationalparksexplorerusa.com)
 
 ---
 
@@ -14,6 +14,7 @@
 3. [Local development](#3-local-development)
 4. [Architecture overview](#4-architecture-overview)
 5. [Frontend page map (all routes)](#5-frontend-page-map-all-routes)
+5b. [Guides & intent landings](#5b-guides--intent-landings)
 6. [Discover & park detail](#6-discover--park-detail)
 7. [Trailie (Plan AI), voice & admin](#7-trailie-plan-ai-voice--admin)
 8. [MCP, ChatGPT & cloud (Render)](#8-mcp-chatgpt--cloud-render)
@@ -40,6 +41,7 @@
 | Park URLs | `/parks/yellowstone-national-park` (slug, not `yell`) |
 | ChatGPT app landing | `/chatgpt` |
 | Claude MCP landing | `/mcp` |
+| Planning guides hub | `/guides` (+ 12 intent landings — §5b) |
 
 **Cursor rules map**
 
@@ -53,6 +55,7 @@
 | `04-discover-and-parks.mdc` | Discover + parks |
 | `05-plan-ai-mcp-and-admin.mdc` | Trailie, admin |
 | `07-frontend-services-layer.mdc` | `src/services/` |
+| `08-guides-and-intent-pages.mdc` | Guides + intent landings |
 
 ---
 
@@ -69,7 +72,7 @@
 ```
 npe-usa/
 ├── package.json          # npm run dev → frontend + backend
-├── next-frontend/        # Next.js App Router (v0.3.0, Node 20)
+├── next-frontend/        # Next.js App Router (v0.4.0, Next 16.x, Node 20)
 ├── server/               # Express + MongoDB + Socket.IO
 ├── mcp-server/           # Python FastMCP → ChatGPT + Claude
 └── docs/                 # Plans, SEO, this handbook
@@ -152,8 +155,8 @@ python -m server.main
 
 ## 5. Frontend page map (all routes)
 
-**Base path:** `next-frontend/src/app/`  
-**Nav (Header):** Explore, Trailie, Events, Blog, Map, Compare, Discover (+ Chat History, Profile when logged in)
+**Base path:** `next-frontend/src/app/` (~**65** `page.jsx` routes)  
+**Nav (Header):** Primary — Explore, Map, Trailie, Blog (+ Home when authed). More — Events, Compare, **Explore by Activity** → `/discover` (`browseHub.js`). Authed more — Chat History, Profile. Footer — Planning Guides → `/guides`.
 
 ### Public marketing
 
@@ -193,7 +196,8 @@ python -m server.main
 | `/discover/topics`, `/discover/topic/[slug]` | By topic |
 | `/discover/states` | All states |
 
-API: `GET /api/discover/catalog`, `detail`, `parks`, `nps-guide`
+API: `GET /api/discover/catalog`, `detail`, `parks`, `nps-guide`  
+**Nav label** for `/discover`: "Explore by Activity" (not "Discover" in the UI).
 
 ### Trailie / Plan AI
 
@@ -239,6 +243,21 @@ Requires JWT + `role: 'admin'`.
 - **Header / Footer** on most pages
 - **VoiceButton** — "Talk to Trailie" (all pages)
 - **Theme** — system / light / dark via CSS variables
+
+---
+
+## 5b. Guides & intent landings
+
+**Cursor rule:** `.cursor/rules/08-guides-and-intent-pages.mdc` (standouts voice, do-not-add UI blocks).
+
+| Type | Config | Routes |
+|------|--------|--------|
+| Editorial guides | `src/data/guides.js` | `/guides`, `/guides/[slug]` (8 slugs) |
+| Intent landings | `intentLandings.js` + `intentLandingsExtended.js` | 12 paths — see rule `08` / `01` for full list |
+
+- **Intent API:** `GET /api/parks/search?q=` + `pinned=`; traits/match copy in `server/src/catalog/traitBuilder.js`, `matchExplanation.js`
+- **Sitemap:** `guides` + all intent paths in `sitemap.ts`
+- **New intent page:** entry in `INTENT_LANDINGS`, thin `app/{path}/page.jsx`, sitemap, `relatedLinks`
 
 ---
 
@@ -378,7 +397,7 @@ MIME: `text/html;profile=mcp-app`
 | Prefix | Highlights |
 |--------|------------|
 | `/api/auth` | signup, login, migrate-chat |
-| `/api/parks` | NPS proxy + enhanced + compare |
+| `/api/parks` | NPS proxy + `GET /search` (traits, pinned) + enhanced + compare |
 | `/api/discover` | catalog, detail, parks, nps-guide |
 | `/api/trips` | TripPlan; shared trip public |
 | `/api/ai` | chat, anonymous, stream, realtime, voice-tool |
@@ -434,6 +453,8 @@ Prefer `next-frontend/src/services/` over raw `fetch` in client components.
 | `tripService.js` | Trips |
 | `blogService.js` | Blog |
 | `userService.js` | Profile, saved parks |
+| `savedEventsService.js` | Saved events |
+| `statsService.js` | Stats endpoints |
 | `discoverApi` | In `lib/discoverApi.js` (SSR) |
 
 **Legacy:** `src/old_pages/` — do not extend.
@@ -450,7 +471,7 @@ Prefer `next-frontend/src/services/` over raw `fetch` in client components.
 | Park slugs | `park-slugs.json` + `parkSlug.js`; `/parks/yell` → full slug |
 | Sitemap | `app/sitemap.ts` |
 | robots.txt | `app/robots.ts` — disallows `/admin`, `/login`, `/plan-ai/shared/`, etc. |
-| Proxy | `src/proxy.js` — auth gates + blog slug 308 redirects |
+| Proxy | `src/proxy.js` — auth gates + blog slug 308 redirects (no `/plan-ai/new`; chat at `/plan-ai`) |
 
 **New public page:** sitemap + metadata + canonical + robots decision.
 
@@ -460,9 +481,11 @@ Prefer `next-frontend/src/services/` over raw `fetch` in client components.
 
 | Area | Documented |
 |------|------------|
-| 51 App Router pages | Yes — §5 |
+| ~65 App Router pages | Yes — §5 + §5b |
 | Express API | Yes — §9 |
 | Discover + parks | Yes — §6 |
+| Guides + intent landings | Yes — §5b, rule `08` |
+| Park search / traits | Yes — §9, §5b |
 | Trailie + voice + admin | Yes — §7 |
 | MCP cloud + ChatGPT + Claude | Yes — §8 |
 | Client services | Yes — §11 |

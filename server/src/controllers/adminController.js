@@ -6,6 +6,8 @@ const Feedback = require('../models/Feedback');
 const AnonymousSession = require('../models/AnonymousSession');
 const SiteSettings = require('../models/SiteSettings');
 const Analytics = require('../models/Analytics');
+const { ANONYMOUS_USER_MESSAGE_LIMIT } = require('../config/anonymousChatLimits');
+const { invalidateSiteSettingsCache } = require('../middleware/siteSettings');
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
@@ -18,10 +20,16 @@ exports.getStats = async (req, res, next) => {
     const totalUsers = await User.countDocuments();
     console.log('Total users found:', totalUsers);
     
-    const activeUsers = await User.countDocuments({
-      lastActiveAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Active in last 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    const activeUsers30d = await User.countDocuments({
+      lastActiveAt: { $gte: thirtyDaysAgo }
     });
-    console.log('Active users found:', activeUsers);
+    const onlineUsers = await User.countDocuments({
+      lastActiveAt: { $gte: fifteenMinutesAgo }
+    });
+    console.log('Active users (30d):', activeUsers30d, 'online (15m):', onlineUsers);
 
     // Get trip plan statistics
     const totalTrips = await TripPlan.countDocuments();
@@ -52,7 +60,9 @@ exports.getStats = async (req, res, next) => {
         totalUsers,
         totalTrips,
         monthlyGrowth: parseFloat(monthlyGrowth),
-        activeUsers
+        activeUsers: activeUsers30d,
+        activeUsers30d,
+        onlineUsers
       }
     };
     
@@ -226,9 +236,22 @@ exports.getAnonymousStats = async (req, res, next) => {
       ? Math.round((convertedSessions / totalSessions) * 100 * 10) / 10
       : 0;
 
-    // Messages that hit the limit (3 user messages)
+    // Sessions that reached the anonymous user message cap
     const hitLimit = await AnonymousSession.countDocuments({
-      'messages.2': { $exists: true } // at least 3 messages
+      $expr: {
+        $gte: [
+          {
+            $size: {
+              $filter: {
+                input: '$messages',
+                as: 'm',
+                cond: { $eq: ['$$m.role', 'user'] }
+              }
+            }
+          },
+          ANONYMOUS_USER_MESSAGE_LIMIT
+        ]
+      }
     });
 
     const hitLimitRate = totalSessions > 0
@@ -583,7 +606,9 @@ exports.getSettings = async (req, res, next) => {
 // @access  Admin only
 exports.updateSettings = async (req, res, next) => {
   try {
-    const settings = await SiteSettings.updateSettings(req.body);
+    const { npsApiKey, openWeatherApiKey, ...safeBody } = req.body;
+    const settings = await SiteSettings.updateSettings(safeBody);
+    invalidateSiteSettingsCache();
     res.status(200).json({
       success: true,
       message: 'Settings updated successfully',
@@ -600,6 +625,7 @@ exports.updateSettings = async (req, res, next) => {
 exports.resetSettings = async (req, res, next) => {
   try {
     const settings = await SiteSettings.resetToDefaults();
+    invalidateSiteSettingsCache();
     res.status(200).json({
       success: true,
       message: 'Settings reset to defaults',
@@ -761,7 +787,7 @@ exports.getTrafficAnalytics = async (req, res, next) => {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const endDate = new Date();
 
-    const [eventCounts, dailyViews] = await Promise.all([
+    const [eventCounts, dailyViewsRaw] = await Promise.all([
       Analytics.getEventCounts(startDate, endDate),
       Analytics.aggregate([
         { $match: { eventType: 'page_view', timestamp: { $gte: startDate, $lte: endDate } } },
@@ -769,6 +795,15 @@ exports.getTrafficAnalytics = async (req, res, next) => {
         { $sort: { _id: 1 } }
       ])
     ]);
+
+    const dailyViews = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const found = dailyViewsRaw.find((d) => d._id === dateStr);
+      dailyViews.push({ _id: dateStr, count: found ? found.count : 0 });
+    }
 
     res.status(200).json({
       success: true,

@@ -10,6 +10,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
 import ScrollToTop from './common/ScrollToTop';
+import AnalyticsPageTracker from './common/AnalyticsPageTracker';
 import { initGA } from '../utils/analytics';
 
 export default function Providers({ children }) {
@@ -42,6 +43,7 @@ export default function Providers({ children }) {
         <ToastProvider>
           <AuthProvider>
             {children}
+            <AnalyticsPageTracker />
             <ScrollToTop />
             <Analytics />
             <SpeedInsights />

@@ -7,24 +7,37 @@ import blogService from '@/services/blogService';
 import imageUploadService from '@/services/imageUploadService';
 import ModernRichTextEditor from '@components/ModernRichTextEditor';
 import TableOfContents from '@components/blog/TableOfContents';
-import AdminRoute from '@components/admin/AdminRoute';
+import AdminShell from '@components/admin/AdminShell';
+import { AdminLoading, AdminSection, AdminBadge } from '@components/admin/AdminUI';
+import { BLOG_CATEGORIES, normalizeBlogCategory } from '@/lib/blogCategories';
 import OptimizedImage from '@components/common/OptimizedImage';
 import {
-  ArrowLeft,
   Save,
   Send,
-  Image as ImageIcon,
-  Calendar,
-  Tag,
   Upload,
   X,
   Plus,
   AlertCircle,
   Check,
   Clock,
-  Trash2
+  Trash2,
+  Eye,
+  ArrowLeft,
 } from '@components/icons';
+import Link from 'next/link';
 import '@/app/admin/blog/ModernBlogEditor.css';
+
+const inputStyle = {
+  backgroundColor: 'var(--surface-hover)',
+  borderWidth: '1px',
+  borderColor: 'var(--border)',
+  color: 'var(--text-primary)',
+};
+
+const btnSecondary =
+  'inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50';
+const btnPrimary =
+  'inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50';
 
 const EMPTY_FORM = {
   title: '',
@@ -42,22 +55,6 @@ const EMPTY_FORM = {
   metaDescription: '',
   seoNoindex: false
 };
-
-const categories = [
-  'Hiking',
-  'Photography',
-  'Wildlife',
-  'Travel Tips',
-  'Park Guides',
-  'Camping',
-  'History',
-  'Conservation',
-  'Fall Travel Blog',
-  'Travel Blogs',
-  'Astrophotography',
-  'National Parks',
-  'Seasonal Guides'
-];
 
 const createSlug = (value) =>
   value
@@ -246,7 +243,7 @@ const BlogPostForm = ({ mode, postId }) => {
           slug: post.slug || '',
           excerpt: post.excerpt || '',
           content: post.content || '',
-          category: post.category || '',
+          category: normalizeBlogCategory(post.category || 'park-guides'),
           tags: post.tags || [],
           featuredImage: post.featuredImage || '',
           featured: post.featured || false,
@@ -262,7 +259,7 @@ const BlogPostForm = ({ mode, postId }) => {
         setImagePreview(post.featuredImage || null);
       } catch (error) {
         showToast('Failed to load post', 'error');
-        router.push('/admin');
+        router.push('/admin/content');
       } finally {
         if (!cancelled) {
           setInitialLoading(false);
@@ -350,7 +347,7 @@ const BlogPostForm = ({ mode, postId }) => {
       metaDescription: formData.metaDescription.trim() || null,
       seoNoindex: Boolean(formData.seoNoindex),
       content: formData.content.trim(),
-      category: formData.category,
+      category: normalizeBlogCategory(formData.category),
       tags: formData.tags,
       featuredImage: formData.featuredImage || null,
       featured: formData.featured,
@@ -586,7 +583,7 @@ const BlogPostForm = ({ mode, postId }) => {
         : isEditMode ? 'Draft updated' : 'Draft saved';
 
       showToast(successMessage, 'success');
-      router.push('/admin');
+      router.push('/admin/content');
     } catch (error) {
       showToast(error.message || 'Failed to save post', 'error');
     } finally {
@@ -609,7 +606,7 @@ const BlogPostForm = ({ mode, postId }) => {
     try {
       await blogService.deletePost(postId);
       showToast('Post deleted successfully', 'success');
-      router.push('/admin');
+      router.push('/admin/content');
     } catch (error) {
       showToast(error.message || 'Failed to delete post', 'error');
     } finally {
@@ -619,133 +616,155 @@ const BlogPostForm = ({ mode, postId }) => {
 
   if (initialLoading) {
     return (
-      <AdminRoute>
-        <div className="modern-blog-editor loading-state">
-          <div className="loading-spinner">
-            <div className="spinner" />
-            <p>Loading post...</p>
-          </div>
-        </div>
-      </AdminRoute>
+      <AdminShell title={isEditMode ? 'Edit post' : 'New post'} subtitle="Loading editor…">
+        <AdminLoading label="Loading post…" />
+      </AdminShell>
     );
   }
 
+  const statusLabel = formData.status === 'published'
+    ? 'Published'
+    : formData.isScheduled && formData.scheduledAt
+      ? 'Scheduled'
+      : 'Draft';
+
+  const statusTone = formData.status === 'published'
+    ? 'success'
+    : formData.isScheduled
+      ? 'info'
+      : 'warning';
+
+  const affiliatePlaceholders = ['{{AFFILIATE_LINK}}', '{{AFFILIATE_URL}}', '[AFFILIATE_LINK]', 'YOUR_AFFILIATE_LINK', '{{REI_LINK}}', '{{BOOKING_LINK}}', '{{RECREATION_GOV_LINK}}'];
+  const affiliateCount = affiliatePlaceholders.filter((p) => (formData.content || '').includes(p)).length;
+
+  const headerActions = (
+    <>
+      <input
+        ref={mdFileInputRef}
+        type="file"
+        accept=".md,.markdown"
+        onChange={handleMarkdownImport}
+        className="hidden"
+        aria-hidden="true"
+      />
+
+      <Link
+        href="/admin/content"
+        className={`${btnSecondary} hidden sm:inline-flex`}
+        style={{ ...inputStyle, color: 'var(--text-secondary)' }}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Content
+      </Link>
+
+      <button
+        type="button"
+        onClick={() => mdFileInputRef.current?.click()}
+        className={btnSecondary}
+        style={{ ...inputStyle, color: 'var(--text-secondary)' }}
+        title="Import a .md article file"
+      >
+        <Upload className="h-4 w-4" />
+        <span className="hidden md:inline">Import .md</span>
+      </button>
+
+      {(autoSaving || savingImage || lastSaved) && (
+        <span
+          className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium"
+          style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)' }}
+        >
+          {autoSaving || savingImage ? (
+            <>
+              <Clock className="h-3.5 w-3.5 animate-spin" />
+              {savingImage ? 'Saving image…' : 'Saving…'}
+            </>
+          ) : (
+            <>
+              <Check className="h-3.5 w-3.5" style={{ color: 'var(--accent-green)' }} />
+              Saved {lastSaved.toLocaleTimeString()}
+            </>
+          )}
+        </span>
+      )}
+
+      {isEditMode && formData.slug && (
+        <Link
+          href={`/blog/${formData.slug}`}
+          target="_blank"
+          className={btnSecondary}
+          style={{ ...inputStyle, color: 'var(--text-secondary)' }}
+          title="Preview on site"
+        >
+          <Eye className="h-4 w-4" />
+          <span className="hidden md:inline">Preview</span>
+        </Link>
+      )}
+
+      {isEditMode && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          className={`${btnSecondary} ${deleteConfirm ? 'ring-2 ring-red-400' : ''}`}
+          style={{ ...inputStyle, color: '#ef4444', borderColor: deleteConfirm ? '#ef4444' : 'var(--border)' }}
+          disabled={loading}
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="hidden sm:inline">{deleteConfirm ? 'Confirm' : 'Delete'}</span>
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={() => handleSubmit('draft')}
+        className={btnSecondary}
+        style={inputStyle}
+        disabled={loading || uploadingImage || savingImage}
+      >
+        <Save className="h-4 w-4" />
+        <span className="hidden sm:inline">Draft</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => handleSubmit('published')}
+        className={btnPrimary}
+        style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+        disabled={loading || uploadingImage || savingImage}
+      >
+        {loading ? <span className="spinner-small" /> : <Send className="h-4 w-4" />}
+        <span>{loading ? 'Saving…' : 'Publish'}</span>
+      </button>
+    </>
+  );
+
   return (
-    <AdminRoute>
-      <div className="modern-blog-editor admin-blog-page">
-        <section className="pt-8 pb-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div
-              className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-                <div className="space-y-3">
-                  <button type="button" onClick={() => router.push('/admin')} className="btn-back" title="Back to Dashboard">
-                    <ArrowLeft size={20} />
-                    <span>Back to Dashboard</span>
-                  </button>
-                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                      {isEditMode ? 'Edit Blog Post' : 'Create Blog Post'}
-                    </h1>
-                    <p className="mt-2 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-                      {isEditMode
-                        ? 'Update content, featured media, and publishing details using the same admin workflow.'
-                        : 'Draft and publish new content using the existing admin layout and publishing controls.'}
-                    </p>
-                  </div>
-                </div>
+    <AdminShell
+      title={isEditMode ? 'Edit post' : 'New post'}
+      subtitle={isEditMode ? 'Update content, SEO, and publishing settings.' : 'Draft and publish a blog article for TrailVerse.'}
+      actions={headerActions}
+    >
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <AdminBadge tone={statusTone}>{statusLabel}</AdminBadge>
+        <AdminBadge tone="neutral">{wordCount} words</AdminBadge>
+        <AdminBadge tone="neutral">{Math.max(1, Math.ceil(wordCount / 200))} min read</AdminBadge>
+        {affiliateCount > 0 && (
+          <AdminBadge tone="warning">
+            {affiliateCount} affiliate placeholder{affiliateCount > 1 ? 's' : ''}
+          </AdminBadge>
+        )}
+      </div>
 
-                <div className="header-actions">
-                  <input
-                    ref={mdFileInputRef}
-                    type="file"
-                    accept=".md,.markdown"
-                    onChange={handleMarkdownImport}
-                    className="hidden"
-                    aria-hidden="true"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => mdFileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-secondary)',
-                    }}
-                    title="Import a .md article file — auto-fills all fields"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Import Markdown
-                  </button>
-
-                  {autoSaving && (
-                    <div className="auto-save-indicator">
-                      <Clock size={16} />
-                      <span>Saving...</span>
-                    </div>
-                  )}
-
-                  {savingImage && (
-                    <div className="auto-save-indicator">
-                      <Clock size={16} />
-                      <span>Saving image...</span>
-                    </div>
-                  )}
-
-                  {lastSaved && !autoSaving && (
-                    <div className="last-saved">
-                      <Check size={16} />
-                      <span>Saved {lastSaved.toLocaleTimeString()}</span>
-                    </div>
-                  )}
-
-                  {isEditMode && (
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      className={`btn-danger ${deleteConfirm ? 'confirm' : ''}`}
-                      disabled={loading}
-                    >
-                      <Trash2 size={18} />
-                      <span>{deleteConfirm ? 'Confirm Delete?' : 'Delete'}</span>
-                    </button>
-                  )}
-
-                  <button type="button" onClick={() => handleSubmit('draft')} className="btn-secondary" disabled={loading || uploadingImage || savingImage}>
-                    <Save size={18} />
-                    <span>Save Draft</span>
-                  </button>
-
-                  <button type="button" onClick={() => handleSubmit('published')} className="btn-primary" disabled={loading || uploadingImage || savingImage}>
-                    {loading ? <div className="spinner-small" /> : <Send size={18} />}
-                    <span>{loading ? (isEditMode ? 'Updating...' : 'Publishing...') : (isEditMode ? 'Update & Publish' : 'Publish')}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="pb-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="editor-layout">
-              <div className="editor-main">
-            <div className="title-section">
+      <div className="blog-editor grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          <AdminSection title="Title & URL" description="Headline and public slug">
+            <div className="space-y-4">
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="Enter your post title..."
-                className={`title-input ${validationErrors.title ? 'error' : ''}`}
+                placeholder="Post title"
+                className={`title-input blog-title-input ${validationErrors.title ? 'error' : ''}`}
                 autoFocus={!isEditMode}
               />
               {validationErrors.title && (
@@ -755,12 +774,12 @@ const BlogPostForm = ({ mode, postId }) => {
                 </div>
               )}
 
-              <div className="slug-section" style={{ marginTop: '0.75rem' }}>
+              <div>
                 <label className="section-label">
                   <span>URL slug</span>
                   {isEditMode && (
                     <span className="char-count" style={{ fontWeight: 400 }}>
-                      Changing slug 301-redirects the old URL
+                      Slug changes 301-redirect the old URL
                     </span>
                   )}
                 </label>
@@ -769,192 +788,180 @@ const BlogPostForm = ({ mode, postId }) => {
                   name="slug"
                   value={formData.slug}
                   onChange={handleChange}
-                  placeholder={formData.title ? createSlug(formData.title) : 'auto-generated-from-title'}
-                  className="title-input"
+                  placeholder={formData.title ? createSlug(formData.title) : 'auto-from-title'}
+                  className="w-full px-4 py-2.5 rounded-xl outline-none text-sm font-mono"
+                  style={inputStyle}
                 />
+                {formData.slug && (
+                  <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
+                    /blog/{formData.slug}
+                  </p>
+                )}
               </div>
             </div>
+          </AdminSection>
 
-            <div className="excerpt-section">
-              <label className="section-label">
-                <span>Excerpt</span>
-                <span className="char-count">{formData.excerpt.length}/300</span>
-              </label>
-              <textarea
-                name="excerpt"
-                value={formData.excerpt}
-                onChange={handleChange}
-                placeholder="Write a brief summary of your post..."
-                className={`excerpt-input ${validationErrors.excerpt ? 'error' : ''}`}
-                maxLength={300}
-                rows={3}
-              />
-              {validationErrors.excerpt && (
-                <div className="validation-error">
-                  <AlertCircle size={16} />
-                  <span>{validationErrors.excerpt}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="excerpt-section">
-              <label className="section-label">
-                <span>SEO meta description</span>
-                <span className="char-count">{formData.metaDescription.length}/160</span>
-              </label>
-              <textarea
-                name="metaDescription"
-                value={formData.metaDescription}
-                onChange={handleChange}
-                placeholder="Optional. Used in Google results; keep under 160 characters."
-                className="excerpt-input"
-                maxLength={160}
-                rows={2}
-              />
-              <label className="section-label" style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  name="seoNoindex"
-                  checked={formData.seoNoindex}
+          <AdminSection title="Summary" description="Card excerpt and search snippet">
+            <div className="space-y-4">
+              <div>
+                <label className="section-label">
+                  <span>Excerpt</span>
+                  <span className="char-count">{formData.excerpt.length}/300</span>
+                </label>
+                <textarea
+                  name="excerpt"
+                  value={formData.excerpt}
                   onChange={handleChange}
+                  placeholder="Brief summary for blog cards and social previews"
+                  className={`excerpt-input ${validationErrors.excerpt ? 'error' : ''}`}
+                  maxLength={300}
+                  rows={3}
                 />
-                <span>Hide from search engines (noindex)</span>
-              </label>
-            </div>
+                {validationErrors.excerpt && (
+                  <div className="validation-error">
+                    <AlertCircle size={16} />
+                    <span>{validationErrors.excerpt}</span>
+                  </div>
+                )}
+              </div>
 
-            <div className="content-section">
-              <label className="section-label">
-                <span>Content</span>
-                <span className="word-count">{wordCount} words</span>
-                {(() => {
-                  const placeholders = ['{{AFFILIATE_LINK}}','{{AFFILIATE_URL}}','[AFFILIATE_LINK]','YOUR_AFFILIATE_LINK','{{REI_LINK}}','{{BOOKING_LINK}}','{{RECREATION_GOV_LINK}}'];
-                  const count = placeholders.filter(p => (formData.content || '').includes(p)).length;
-                  return count > 0 ? (
-                    <span
-                      className="ml-3 text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
-                        color: '#d97706',
-                        border: '1px solid rgba(217, 119, 6, 0.3)'
-                      }}
-                      title="Unresolved affiliate placeholders — replace before publishing"
-                    >
-                      {count} affiliate placeholder{count > 1 ? 's' : ''}
-                    </span>
-                  ) : null;
-                })()}
-              </label>
-              <ModernRichTextEditor
-                value={formData.content}
-                onChange={(content) => updateFormField('content', content)}
-                placeholder="Start writing your amazing content..."
-              />
-              {validationErrors.content && (
-                <div className="validation-error">
-                  <AlertCircle size={16} />
-                  <span>{validationErrors.content}</span>
-                </div>
-              )}
+              <div>
+                <label className="section-label">
+                  <span>Meta description</span>
+                  <span className="char-count">{formData.metaDescription.length}/160</span>
+                </label>
+                <textarea
+                  name="metaDescription"
+                  value={formData.metaDescription}
+                  onChange={handleChange}
+                  placeholder="Optional — shown in Google results"
+                  className="excerpt-input"
+                  maxLength={160}
+                  rows={2}
+                />
+                <label className="flex items-center gap-2 mt-3 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                  <input type="checkbox" name="seoNoindex" checked={formData.seoNoindex} onChange={handleChange} />
+                  Hide from search engines (noindex)
+                </label>
+              </div>
             </div>
+          </AdminSection>
 
-            {formData.content && (
+          <AdminSection
+            title="Body"
+            description="Main article content"
+            action={
+              affiliateCount > 0 ? (
+                <span className="text-xs font-medium" style={{ color: '#d97706' }}>
+                  Replace affiliate placeholders before publishing
+                </span>
+              ) : null
+            }
+          >
+            <ModernRichTextEditor
+              value={formData.content}
+              onChange={(content) => updateFormField('content', content)}
+              placeholder="Start writing…"
+            />
+            {validationErrors.content && (
+              <div className="validation-error mt-3">
+                <AlertCircle size={16} />
+                <span>{validationErrors.content}</span>
+              </div>
+            )}
+          </AdminSection>
+
+          {formData.content && (
+            <AdminSection title="Table of contents" description="Auto-generated from headings">
               <div className="toc-preview">
                 <TableOfContents content={formData.content} />
               </div>
-            )}
-              </div>
+            </AdminSection>
+          )}
+        </div>
 
-              <aside className="editor-sidebar">
-                <div className="sidebar-card">
-              <h3 className="card-title">
-                <ImageIcon size={18} />
-                <span>Featured Image</span>
-              </h3>
-
-              {imagePreview ? (
-                <div className="image-preview">
-                  <OptimizedImage src={imagePreview} alt="Featured" />
-                  <div className="image-preview-actions">
-                    <label className="btn-change-image" title="Change image">
-                      <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                      <Upload size={16} />
-                    </label>
-                    <button type="button" onClick={() => {
+        <aside className="space-y-6 xl:sticky xl:top-24">
+          <AdminSection title="Featured image">
+            {imagePreview ? (
+              <div className="image-preview">
+                <OptimizedImage src={imagePreview} alt="Featured" />
+                <div className="image-preview-actions">
+                  <label className="btn-change-image" title="Change image">
+                    <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                    <Upload size={16} />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setFormData((previous) => ({ ...previous, featuredImage: '' }));
                       setImagePreview(null);
-                    }} className="btn-remove-image" title="Remove image">
-                      <X size={16} />
-                    </button>
-                  </div>
+                    }}
+                    className="btn-remove-image"
+                    title="Remove image"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-              ) : (
-                <label className="image-upload-area">
-                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                  {uploadingImage ? (
-                    <div className="uploading-state">
-                      <div className="spinner" />
-                      <span>Uploading...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload size={32} />
-                      <span className="upload-text">Click to upload</span>
-                      <span className="upload-hint">PNG, JPG, GIF up to 10MB</span>
-                    </>
-                  )}
-                </label>
-              )}
-                </div>
-
-                <div className="sidebar-card">
-              <h3 className="card-title">
-                <Tag size={18} />
-                <span>Category</span>
-              </h3>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className={`category-select ${validationErrors.category ? 'error' : ''}`}
-              >
-                <option value="">Select category</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              {validationErrors.category && (
-                <div className="validation-error">
-                  <AlertCircle size={14} />
-                  <span>{validationErrors.category}</span>
-                </div>
-              )}
-                </div>
-
-                <div className="sidebar-card">
-              <h3 className="card-title">
-                <Tag size={18} />
-                <span>Tags</span>
-              </h3>
-
-              <div className="tag-input-group">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(event) => setNewTag(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                  placeholder="Add tag..."
-                  className="tag-input"
-                />
-                <button type="button" onClick={handleAddTag} className="btn-add-tag" title="Add tag">
-                  <Plus size={16} />
-                </button>
               </div>
+            ) : (
+              <label className="image-upload-area">
+                <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                {uploadingImage ? (
+                  <div className="uploading-state">
+                    <div className="spinner" />
+                    <span>Uploading…</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload size={28} />
+                    <span className="upload-text">Upload image</span>
+                    <span className="upload-hint">PNG, JPG, GIF · up to 10MB</span>
+                  </>
+                )}
+              </label>
+            )}
+          </AdminSection>
 
+          <AdminSection title="Category">
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className={`category-select ${validationErrors.category ? 'error' : ''}`}
+            >
+              <option value="">Select category</option>
+              {Object.entries(BLOG_CATEGORIES).map(([slug, meta]) => (
+                <option key={slug} value={slug}>{meta.name}</option>
+              ))}
+            </select>
+            {validationErrors.category && (
+              <div className="validation-error">
+                <AlertCircle size={14} />
+                <span>{validationErrors.category}</span>
+              </div>
+            )}
+          </AdminSection>
+
+          <AdminSection title="Tags">
+            <div className="tag-input-group">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(event) => setNewTag(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                placeholder="Add tag…"
+                className="tag-input"
+              />
+              <button type="button" onClick={handleAddTag} className="btn-add-tag" title="Add tag">
+                <Plus size={16} />
+              </button>
+            </div>
+            {formData.tags.length > 0 ? (
               <div className="tags-list">
                 {formData.tags.map((tag) => (
                   <span key={tag} className="tag-item">
@@ -965,49 +972,47 @@ const BlogPostForm = ({ mode, postId }) => {
                   </span>
                 ))}
               </div>
-                </div>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No tags yet</p>
+            )}
+          </AdminSection>
 
-                <div className="sidebar-card">
-              <h3 className="card-title">
-                <Calendar size={18} />
-                <span>Publishing</span>
-              </h3>
+          <AdminSection title="Publishing">
+            <label className="checkbox-label">
+              <input type="checkbox" name="featured" checked={formData.featured} onChange={handleChange} />
+              <span>Featured post</span>
+            </label>
 
-              <label className="checkbox-label">
-                <input type="checkbox" name="featured" checked={formData.featured} onChange={handleChange} />
-                <span>Featured Post</span>
-              </label>
+            <label className="checkbox-label">
+              <input type="checkbox" name="isScheduled" checked={formData.isScheduled} onChange={handleChange} />
+              <span>Schedule for later</span>
+            </label>
 
-              <label className="checkbox-label">
-                <input type="checkbox" name="isScheduled" checked={formData.isScheduled} onChange={handleChange} />
-                <span>Schedule for later</span>
-              </label>
-
-              {formData.isScheduled && (
-                <div className="schedule-input">
-                  <input
-                    type="datetime-local"
-                    name="scheduledAt"
-                    value={formData.scheduledAt}
-                    onChange={handleChange}
-                    min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}T${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; })()}
-                    className={validationErrors.scheduledAt ? 'error' : ''}
-                  />
-                  {validationErrors.scheduledAt && (
-                    <div className="validation-error">
-                      <AlertCircle size={14} />
-                      <span>{validationErrors.scheduledAt}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-                </div>
-              </aside>
-            </div>
-          </div>
-        </section>
+            {formData.isScheduled && (
+              <div className="schedule-input">
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  value={formData.scheduledAt}
+                  onChange={handleChange}
+                  min={(() => {
+                    const n = new Date();
+                    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}T${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+                  })()}
+                  className={validationErrors.scheduledAt ? 'error' : ''}
+                />
+                {validationErrors.scheduledAt && (
+                  <div className="validation-error">
+                    <AlertCircle size={14} />
+                    <span>{validationErrors.scheduledAt}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </AdminSection>
+        </aside>
       </div>
-    </AdminRoute>
+    </AdminShell>
   );
 };
 

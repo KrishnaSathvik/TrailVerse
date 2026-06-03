@@ -1,4 +1,5 @@
 const Analytics = require('../models/Analytics');
+const { normalizeClientEvent } = require('../utils/analyticsNormalize');
 const User = require('../models/User');
 const BlogPost = require('../models/BlogPost');
 const Event = require('../models/Event');
@@ -410,11 +411,19 @@ exports.getErrorAnalytics = async (req, res, next) => {
 exports.getPerformanceAnalytics = async (req, res, next) => {
   try {
     const { period = '24h' } = req.query;
-    
-    // Calculate date range
+
     const now = new Date();
-    const startDate = new Date();
-    startDate.setDate(now.getDate() - parseInt(period.replace('h', '')));
+    const startDate = new Date(now);
+
+    if (typeof period === 'string' && period.endsWith('h')) {
+      const hours = parseInt(period.replace('h', ''), 10);
+      startDate.setTime(now.getTime() - hours * 60 * 60 * 1000);
+    } else if (typeof period === 'string' && period.endsWith('d')) {
+      const days = parseInt(period.replace('d', ''), 10);
+      startDate.setDate(now.getDate() - days);
+    } else {
+      startDate.setTime(now.getTime() - 24 * 60 * 60 * 1000);
+    }
 
     // Get API performance metrics
     const apiPerformance = await Analytics.aggregate([
@@ -511,14 +520,14 @@ exports.trackEvents = async (req, res, next) => {
     }
 
     // Process events in batch
-    const analyticsData = events.map(event => ({
-      ...event,
-      sessionId: event.sessionId || sessionId,
-      userId: event.userId || userId,
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.get('User-Agent'),
-      timestamp: new Date(event.timestamp || Date.now())
-    }));
+    const analyticsData = events.map((event) =>
+      normalizeClientEvent(event, {
+        sessionId,
+        userId,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+      })
+    );
 
     // Save to database
     await Analytics.insertMany(analyticsData, { ordered: false });

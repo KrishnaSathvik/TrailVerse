@@ -30,7 +30,8 @@ JWT: `JWT_SECRET`, `JWT_EXPIRE` (default 7d). Token generation: `utils/generateT
 `signup`, `login`, `logout`, `me`, `forgot-password`, `reset-password/:token`, `verify-email/:token`, `migrate-chat` (protect)
 
 ### `/api/parks` + enhanced
-- List, search, `/:parkCode` and sub-resources: alerts, activities, campgrounds, places, tours, webcams, videos, gallery, parkinglots, transit, brochures, permits, facilities
+- List, `/:parkCode` and sub-resources: alerts, activities, campgrounds, places, tours, webcams, videos, gallery, parkinglots, transit, brochures, permits, facilities
+- **Search** (intent landings + MCP): `GET /search?q=` — token match + trait scoring; optional `pinned=` (comma-separated park codes). Match copy: `server/src/catalog/matchExplanation.js`, traits: `traitBuilder.js`, query intent: `queryTraitIntent.js`, pins: `server/data/search-intent-pins.json`
 - Enhanced: `/:parkCode/enhanced`, `weather`, `crowd`, `best-time`, `reviews`
 - Compare: `GET|POST /compare`, `/compare/summary`
 
