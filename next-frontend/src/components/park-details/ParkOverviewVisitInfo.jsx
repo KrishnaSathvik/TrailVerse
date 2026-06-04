@@ -5,6 +5,7 @@ import {
   formatParkFeeCost,
   plainDescription,
   shouldShowOperatingHoursLocationName,
+  sortEntranceFeesForDisplay,
 } from '@/utils/parkVisitInfoUtils';
 
 function SectionHeading({ id, icon: Icon, children }) {
@@ -97,7 +98,7 @@ function FeePassCard({ title, cost, description }) {
 }
 
 export default function ParkOverviewVisitInfo({ park }) {
-  const entranceFees = park?.entranceFees || [];
+  const entranceFees = sortEntranceFeesForDisplay(park?.entranceFees || []);
   const operatingHours = park?.operatingHours || [];
   const entrancePasses = park?.entrancePasses || [];
 

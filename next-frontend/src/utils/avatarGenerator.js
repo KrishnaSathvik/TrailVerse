@@ -175,6 +175,46 @@ const TRAVEL_AVATAR_STYLES = [
   { style: 'micah', theme: 'desert-minimalist', palette: 'desert' }
 ];
 
+/** Face-forward styles for profile picker (excludes identicon, shapes, thumbs, etc.). */
+const PROFILE_DICEBEAR_STYLES = new Set([
+  'adventurer',
+  'adventurer-neutral',
+  'avataaars',
+  'avataaars-neutral',
+  'big-ears',
+  'big-ears-neutral',
+  'big-smile',
+  'croodles',
+  'croodles-neutral',
+  'fun-emoji',
+  'lorelei',
+  'lorelei-neutral',
+  'micah',
+  'miniavs',
+  'notionists',
+  'notionists-neutral',
+  'open-peeps',
+  'personas',
+  'pixel-art',
+  'pixel-art-neutral',
+]);
+
+const PICKER_STYLE_COMBOS =
+  TRAVEL_AVATAR_STYLES.length > 0
+    ? TRAVEL_AVATAR_STYLES.filter((entry) => PROFILE_DICEBEAR_STYLES.has(entry.style))
+    : [{ style: 'adventurer', theme: 'explorer', palette: 'forest' }];
+
+const DICEBEAR_BASE = 'https://api.dicebear.com/9.x';
+const DICEBEAR_SIZE = 256;
+
+/** Default count shown in the profile avatar picker grid */
+export const AVATAR_PICKER_COUNT = 12;
+
+const PROFILE_STYLE_LIST = [...PROFILE_DICEBEAR_STYLES];
+
+let avatarGenerationEpoch = 0;
+let lastGeneratedAvatar = null;
+
 // Boring Avatars variants (temporarily disabled due to SSL certificate issues)
 const BORING_AVATARS_VARIANTS = [
   // 'marble',
@@ -268,6 +308,50 @@ const hashString = (str) => {
 };
 
 /**
+ * Build a DiceBear v9 SVG URL (only supported query params — rotate/scale cause 400s).
+ */
+const buildDiceBearAvatarUrl = ({
+  style,
+  seed,
+  palette = COLOR_PALETTES.forest,
+  size = DICEBEAR_SIZE,
+  radius = 20,
+  flip = false,
+}) => {
+  const validStyle = DICEBEAR_STYLES.includes(style) ? style : 'adventurer';
+  const colors = Array.isArray(palette) ? palette : COLOR_PALETTES.forest;
+  const params = new URLSearchParams({
+    seed: String(seed || 'traveler'),
+    backgroundColor: colors.join(','),
+    size: String(size),
+    radius: String(Math.min(50, Math.max(0, Math.round(radius)))),
+  });
+  if (flip) params.set('flip', 'true');
+  return `${DICEBEAR_BASE}/${validStyle}/svg?${params.toString()}`;
+};
+
+const shuffleWithHash = (items, hashSeed) => {
+  const arr = [...items];
+  let h = hashSeed || 0;
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    h = ((h << 5) - h + i) | 0;
+    const j = Math.abs(h) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+const pickComboForHash = (hash) => PICKER_STYLE_COMBOS[hash % PICKER_STYLE_COMBOS.length];
+
+const pickPaletteForHash = (hash, preferredKey) => {
+  if (preferredKey && COLOR_PALETTES[preferredKey]) {
+    return COLOR_PALETTES[preferredKey];
+  }
+  const keys = Object.keys(COLOR_PALETTES);
+  return COLOR_PALETTES[keys[hash % keys.length]];
+};
+
+/**
  * Generate Boring Avatars URL (modern, colorful alternative)
  * @param {string} seed - Seed for consistent generation
  * @param {string} variant - Avatar variant (marble, beam, pixel, sunset, ring, bauhaus)
@@ -303,7 +387,7 @@ const generateUIAvatar = (name, background = '6366f1', color = 'ffffff') => {
  */
 const generateUniqueSeed = (baseSeed = 'user') => {
   const timestamp = Date.now();
-  const microtime = performance.now();
+  const microtime = typeof performance !== 'undefined' ? performance.now() : timestamp;
   const randomNum = Math.floor(Math.random() * 10000000);
   const randomStr = Math.random().toString(36).substring(2, 15);
   const randomStr2 = Math.random().toString(36).substring(2, 15);
@@ -322,84 +406,10 @@ const generateUniqueSeed = (baseSeed = 'user') => {
  * @returns {string} Random travel-themed avatar URL
  */
 export const generateEmojiAvatar = (email, firstName, lastName, userStats = {}, options = {}) => {
-  const { useBoring = false } = options;
-  
-  // Create unique seed for this avatar with maximum randomness
+  void userStats;
+  void options;
   const baseSeed = email || `${firstName || ''}${lastName || ''}` || 'traveler';
-  const seed = generateUniqueSeed(baseSeed);
-  
-  // Use weighted random selection - NO TEXT AVATARS
-  const randomType = Math.random();
-  
-  // Use DiceBear avatars instead of BoringAvatars (SSL issues)
-  // 70% chance for themed DiceBear
-  if (randomType < 0.7) {
-    const shuffledStyles = [...TRAVEL_AVATAR_STYLES].sort(() => Math.random() - 0.5);
-    const selectedStyle = shuffledStyles[Math.floor(Math.random() * shuffledStyles.length)];
-    
-    const palette = Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-    const shuffledColors = [...palette].sort(() => Math.random() - 0.5);
-    const backgroundColor = shuffledColors.join(',');
-    
-    const params = new URLSearchParams({
-      seed: cleanSeed,
-      backgroundColor,
-      size: '200',
-      radius: Math.floor(Math.random() * 50).toString(),
-      ...(Math.random() > 0.5 && { flip: 'true' })
-    });
-    
-    return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?${params.toString()}`;
-  }
-  
-  // 35% chance for DiceBear with our expanded themes
-  if (randomType < 0.85) {
-    // Shuffle the styles array first for true randomness
-    const shuffledStyles = [...TRAVEL_AVATAR_STYLES].sort(() => Math.random() - 0.5);
-    const selectedStyle = shuffledStyles[Math.floor(Math.random() * shuffledStyles.length)];
-    
-    // Use the palette from the selected style OR pick a random palette for extra variety
-    const useStylePalette = Math.random() > 0.3; // 70% use style palette, 30% random palette
-    const palette = useStylePalette 
-      ? COLOR_PALETTES[selectedStyle.palette]
-      : Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-    
-    const cleanSeed = encodeURIComponent(seed);
-    
-    // Shuffle colors for variety
-    const shuffledColors = [...palette].sort(() => Math.random() - 0.5);
-    const backgroundColor = shuffledColors.join(',');
-    
-    // Build the DiceBear v9 URL with extra randomization
-    const baseUrl = `https://api.dicebear.com/9.x/${selectedStyle.style}/svg`;
-    const params = new URLSearchParams({
-      seed: cleanSeed,
-      backgroundColor,
-      size: '200',
-      radius: Math.floor(Math.random() * 50).toString(),
-      ...(Math.random() > 0.5 && { flip: 'true' }),
-      ...(Math.random() > 0.7 && { rotate: Math.floor(Math.random() * 360).toString() }),
-      ...(Math.random() > 0.8 && { scale: (0.8 + Math.random() * 0.4).toString() })
-    });
-    
-    return `${baseUrl}?${params.toString()}`;
-  }
-  
-  // 15% chance for basic DiceBear styles with random palette
-  const randomStyle = DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)];
-  const randomPalette = Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-  const backgroundColor = randomPalette.join(',');
-  const cleanSeed = encodeURIComponent(seed);
-  
-  const params = new URLSearchParams({
-    seed: cleanSeed,
-    backgroundColor,
-    size: '200',
-    radius: Math.floor(Math.random() * 50).toString(),
-    ...(Math.random() > 0.5 && { flip: 'true' })
-  });
-  
-  return `https://api.dicebear.com/9.x/${randomStyle}/svg?${params.toString()}`;
+  return generateRandomAvatar(baseSeed);
 };
 
 /**
@@ -409,9 +419,11 @@ export const generateEmojiAvatar = (email, firstName, lastName, userStats = {}, 
  * @returns {string} DiceBear avatar URL
  */
 export const generateDiceBearAvatar = (seed, style = 'avataaars') => {
-  const cleanSeed = encodeURIComponent(seed || 'traveler');
-  const colors = COLOR_PALETTES.ocean.join(',');
-  return `https://api.dicebear.com/9.x/${style}/svg?seed=${cleanSeed}&backgroundColor=${colors}&size=200`;
+  return buildDiceBearAvatarUrl({
+    style,
+    seed: seed || 'traveler',
+    palette: COLOR_PALETTES.ocean,
+  });
 };
 
 /**
@@ -420,9 +432,16 @@ export const generateDiceBearAvatar = (seed, style = 'avataaars') => {
  * @returns {string} Travel-themed avataaars URL
  */
 export const generateTravelAvatar = (seed) => {
-  const cleanSeed = encodeURIComponent(seed || 'traveler');
-  const bgColors = COLOR_PALETTES.ocean.join(',');
-  return `https://api.dicebear.com/9.x/avataaars/svg?seed=${cleanSeed}&backgroundColor=${bgColors}&size=200`;
+  const key = seed || 'traveler';
+  const h = hashString(key);
+  const combo = pickComboForHash(h);
+  return buildDiceBearAvatarUrl({
+    style: combo.style,
+    seed: key,
+    palette: pickPaletteForHash(h >> 4, combo.palette),
+    radius: 12 + (h % 28),
+    flip: (h & 1) === 1,
+  });
 };
 
 /**
@@ -431,9 +450,11 @@ export const generateTravelAvatar = (seed) => {
  * @returns {string} Nature-themed personas URL
  */
 export const generateNatureAvatar = (seed) => {
-  const cleanSeed = encodeURIComponent(seed || 'nature-lover');
-  const bgColors = COLOR_PALETTES.forest.join(',');
-  return `https://api.dicebear.com/9.x/personas/svg?seed=${cleanSeed}&backgroundColor=${bgColors}&size=200`;
+  return buildDiceBearAvatarUrl({
+    style: 'personas',
+    seed: seed || 'nature-lover',
+    palette: COLOR_PALETTES.forest,
+  });
 };
 
 /**
@@ -442,9 +463,11 @@ export const generateNatureAvatar = (seed) => {
  * @returns {string} Adventure-themed fun emoji URL
  */
 export const generateAdventureAvatar = (seed) => {
-  const cleanSeed = encodeURIComponent(seed || 'adventurer');
-  const bgColors = COLOR_PALETTES.sunset.join(',');
-  return `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${cleanSeed}&backgroundColor=${bgColors}&size=200`;
+  return buildDiceBearAvatarUrl({
+    style: 'fun-emoji',
+    seed: seed || 'adventurer',
+    palette: COLOR_PALETTES.sunset,
+  });
 };
 
 /**
@@ -542,20 +565,17 @@ export const generateSeasonalAvatar = (seed) => {
     spring: 'spring',
     summer: 'tropical',
     autumn: 'autumn',
-    winter: 'arctic'
+    winter: 'arctic',
   };
-  
-  const palette = COLOR_PALETTES[paletteMap[season]];
-  const uniqueSeed = generateUniqueSeed(seed || 'seasonal-traveler');
-  const cleanSeed = encodeURIComponent(uniqueSeed);
-  
-  // Shuffle colors for variety
-  const shuffledColors = [...palette].sort(() => 0.5 - Math.random());
-  const backgroundColor = shuffledColors.join(',');
-  
-  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
-  
-  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200&radius=${Math.floor(Math.random() * 50)}`;
+  const h = hashString(`${seed || 'seasonal'}-${season}`);
+  const combo = pickComboForHash(h);
+  return buildDiceBearAvatarUrl({
+    style: combo.style,
+    seed: `${seed || 'seasonal-traveler'}-${season}`,
+    palette: COLOR_PALETTES[paletteMap[season]],
+    radius: 10 + (h % 30),
+    flip: (h & 2) === 2,
+  });
 };
 
 /**
@@ -564,21 +584,16 @@ export const generateSeasonalAvatar = (seed) => {
  * @returns {string} Time-based avatar URL
  */
 export const generateDaytimeAvatar = (seed) => {
-  // Use twilight/sunset colors for evening, ocean for day
   const hour = new Date().getHours();
-  const paletteKey = (hour >= 6 && hour < 18) ? 'ocean' : 'twilight';
-  const palette = COLOR_PALETTES[paletteKey];
-  
-  const uniqueSeed = generateUniqueSeed(seed || 'daytime-traveler');
-  const cleanSeed = encodeURIComponent(uniqueSeed);
-  
-  // Shuffle colors for variety
-  const shuffledColors = [...palette].sort(() => 0.5 - Math.random());
-  const backgroundColor = shuffledColors.join(',');
-  
-  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
-  
-  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200&radius=${Math.floor(Math.random() * 50)}`;
+  const paletteKey = hour >= 6 && hour < 18 ? 'ocean' : 'twilight';
+  const h = hashString(`${seed || 'daytime'}-${hour}`);
+  const combo = pickComboForHash(h);
+  return buildDiceBearAvatarUrl({
+    style: combo.style,
+    seed: `${seed || 'daytime-traveler'}-${hour}`,
+    palette: COLOR_PALETTES[paletteKey],
+    radius: 10 + (h % 25),
+  });
 };
 
 /**
@@ -593,91 +608,50 @@ export const generateActivityAvatar = (seed, activity = null) => {
     camping: 'meadow',
     swimming: 'ocean',
     cycling: 'sunset',
-    default: 'earth'
+    default: 'earth',
   };
-  
   const paletteKey = activityPaletteMap[activity] || activityPaletteMap.default;
-  const palette = COLOR_PALETTES[paletteKey];
-  const uniqueSeed = generateUniqueSeed(seed || `${activity || 'activity'}-enthusiast`);
-  const cleanSeed = encodeURIComponent(uniqueSeed);
-  
-  // Shuffle colors for variety
-  const shuffledColors = [...palette].sort(() => 0.5 - Math.random());
-  const backgroundColor = shuffledColors.join(',');
-  
-  const selectedStyle = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
-  
-  return `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200&radius=${Math.floor(Math.random() * 50)}`;
+  const h = hashString(`${seed || 'activity'}-${activity || 'default'}`);
+  const combo = pickComboForHash(h);
+  return buildDiceBearAvatarUrl({
+    style: combo.style,
+    seed: `${seed || 'activity'}-${activity || 'explorer'}`,
+    palette: COLOR_PALETTES[paletteKey],
+    radius: 8 + (h % 32),
+    flip: (h & 4) === 4,
+  });
 };
 
-// Store last generated avatar to prevent immediate repetition
-let lastGeneratedAvatar = null;
-
 /**
- * Generate a random avatar from all available styles (GUARANTEED UNIQUE VERSION)
- * Ensures maximum variety and prevents immediate repetition
- * @param {string} seed - Seed for consistent generation
- * @returns {string} Random avatar URL from visual categories only
+ * One-off random avatar (e.g. guest chat). Intentionally non-deterministic.
  */
 export const generateRandomAvatar = (seed) => {
-  // Generate truly unique seed with maximum randomness
   const uniqueSeed = generateUniqueSeed(seed || 'random');
-  const cleanSeed = encodeURIComponent(uniqueSeed);
-  
   let generatedAvatar = null;
   let attempts = 0;
-  const maxAttempts = 10; // Prevent infinite loops
-  
-  // Keep generating until we get a unique avatar
+  const maxAttempts = 12;
+
   while (!generatedAvatar || (generatedAvatar === lastGeneratedAvatar && attempts < maxAttempts)) {
-    attempts++;
-    
-    // Use DiceBear only (BoringAvatars disabled due to SSL issues)
-    const randomType = Math.random();
-    
-    if (randomType < 0.7) {
-      // 70% chance for DiceBear with our expanded themes
-      const shuffledStyles = [...TRAVEL_AVATAR_STYLES].sort(() => Math.random() - 0.5);
-      const selectedStyle = shuffledStyles[Math.floor(Math.random() * shuffledStyles.length)];
-      
-      // Always use random palette for maximum variety
-      const palette = Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-      const shuffledColors = [...palette].sort(() => Math.random() - 0.5);
-      const backgroundColor = shuffledColors.join(',');
-      
-      const params = new URLSearchParams({
-        seed: cleanSeed + `-${attempts}`,
-        backgroundColor,
-        size: '200',
-        radius: Math.floor(Math.random() * 50).toString(),
-        ...(Math.random() > 0.5 && { flip: 'true' }),
-        ...(Math.random() > 0.7 && { rotate: Math.floor(Math.random() * 360).toString() }),
-        ...(Math.random() > 0.8 && { scale: (0.8 + Math.random() * 0.4).toString() })
-      });
-      
-      generatedAvatar = `https://api.dicebear.com/9.x/${selectedStyle.style}/svg?${params.toString()}`;
-      
-    } else {
-      // 30% chance for basic DiceBear styles with random palette
-      const randomStyle = DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)];
-      const randomPalette = Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-      const backgroundColor = randomPalette.join(',');
-      
-      const params = new URLSearchParams({
-        seed: cleanSeed + `-${attempts}`,
-        backgroundColor,
-        size: '200',
-        radius: Math.floor(Math.random() * 50).toString(),
-        ...(Math.random() > 0.5 && { flip: 'true' })
-      });
-      
-      generatedAvatar = `https://api.dicebear.com/9.x/${randomStyle}/svg?${params.toString()}`;
-    }
+    attempts += 1;
+    const h = hashString(`${uniqueSeed}-${attempts}-${Math.random()}`);
+    const usePicker = h % 10 < 8;
+    const combo = pickComboForHash(h);
+    const style = usePicker
+      ? combo.style
+      : PROFILE_DICEBEAR_STYLES.has(DICEBEAR_STYLES[h % DICEBEAR_STYLES.length])
+        ? DICEBEAR_STYLES[h % DICEBEAR_STYLES.length]
+        : 'adventurer';
+
+    generatedAvatar = buildDiceBearAvatarUrl({
+      style,
+      seed: `${uniqueSeed}-${attempts}`,
+      palette: pickPaletteForHash(h >> 3, usePicker ? combo.palette : null),
+      radius: h % 45,
+      flip: (h & 8) === 8,
+    });
   }
-  
-  // Store the generated avatar to prevent immediate repetition
+
   lastGeneratedAvatar = generatedAvatar;
-  
   return generatedAvatar;
 };
 
@@ -687,6 +661,7 @@ export const generateRandomAvatar = (seed) => {
  */
 export const clearAvatarCache = () => {
   lastGeneratedAvatar = null;
+  avatarGenerationEpoch += 1;
 };
 
 /**
@@ -717,102 +692,81 @@ export const getAvailableThemes = () => {
  * @returns {string} Themed avatar URL
  */
 export const generateThemedAvatar = (seed, style = 'avataaars', palette = 'ocean') => {
-  const cleanSeed = encodeURIComponent(seed || 'themed-avatar');
-  const colors = COLOR_PALETTES[palette] || COLOR_PALETTES.ocean;
-  const backgroundColor = colors.join(',');
-  
-  // Validate style exists
-  const validStyle = DICEBEAR_STYLES.includes(style) ? style : 'avataaars';
-  
-  return `https://api.dicebear.com/9.x/${validStyle}/svg?seed=${cleanSeed}&backgroundColor=${backgroundColor}&size=200`;
+  return buildDiceBearAvatarUrl({
+    style,
+    seed: seed || 'themed-avatar',
+    palette: COLOR_PALETTES[palette] || COLOR_PALETTES.ocean,
+  });
+};
+
+const themeLabelForStyle = (style, paletteKey) => {
+  const combo = PICKER_STYLE_COMBOS.find((entry) => entry.style === style);
+  if (combo?.theme) {
+    return combo.theme.replace(/-/g, ' ');
+  }
+  return paletteKey.replace(/-/g, ' ');
 };
 
 /**
- * Generate a collection of different avatars for the same user (GUARANTEED UNIQUE VERSION)
- * Ensures every avatar is unique and fills all requested slots
+ * Generate a collection of profile-friendly avatars with distinct styles and palettes.
+ * Stable for the same seed until clearAvatarCache() bumps the generation epoch.
  * @param {string} seed - Seed for consistent generation
- * @param {number} count - Number of avatars to generate (default: 5)
- * @returns {Array} Array of avatar objects with url, type, and metadata
+ * @param {number} count - Number of avatars to generate
+ * @returns {Array} Array of avatar objects with url, type, style, and theme
  */
-export const generateAvatarCollection = (seed, count = 5) => {
-  const cleanSeed = seed || 'collection-user';
+export const generateAvatarCollection = (seed, count = AVATAR_PICKER_COUNT) => {
+  const base = String(seed || 'collection-user');
+  const epoch = avatarGenerationEpoch;
+  const usedUrls = new Set();
   const avatars = [];
-  const usedSeeds = new Set(); // Track used seeds to prevent duplicates
-  
-  // Ensure we generate exactly the requested count
-  let generated = 0;
-  const maxAttempts = count * 3; // Prevent infinite loops
-  let attempts = 0;
-  
-  while (generated < count && attempts < maxAttempts) {
-    attempts++;
-    
-    // Randomly choose avatar type for maximum variety
-    const typeRandom = Math.random();
-    let avatarType, avatarData;
-    
-    if (typeRandom < 0.6) {
-      // 60% Themed DiceBear avatars
-      const style = TRAVEL_AVATAR_STYLES[Math.floor(Math.random() * TRAVEL_AVATAR_STYLES.length)];
-      const seedVariation = generateUniqueSeed(`${cleanSeed}-themed-${generated}-${attempts}-${Date.now()}`);
-      
-      // Use random palette for maximum variety
-      const palette = Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-      const shuffledColors = [...palette].sort(() => Math.random() - 0.5);
-      const backgroundColor = shuffledColors.join(',');
-      
-      // Skip if we've used this exact combination
-      const seedKey = `${style.style}-${backgroundColor}`;
-      if (usedSeeds.has(seedKey)) continue;
-      usedSeeds.add(seedKey);
-      
-      avatarType = 'dicebear';
-      avatarData = {
-        url: `https://api.dicebear.com/9.x/${style.style}/svg?seed=${encodeURIComponent(seedVariation)}&backgroundColor=${backgroundColor}&size=200&radius=${Math.floor(Math.random() * 50)}&flip=${Math.random() > 0.5 ? 'true' : 'false'}`,
-        type: avatarType,
-        style: style.style,
-        theme: style.theme
-      };
-      
-    } else {
-      // 40% Basic DiceBear styles
-      const style = DICEBEAR_STYLES[Math.floor(Math.random() * DICEBEAR_STYLES.length)];
-      const randomPalette = Object.values(COLOR_PALETTES)[Math.floor(Math.random() * Object.values(COLOR_PALETTES).length)];
-      const backgroundColor = randomPalette.join(',');
-      const seedVariation = generateUniqueSeed(`${cleanSeed}-basic-${generated}-${attempts}-${Date.now()}`);
-      
-      // Skip if we've used this exact combination
-      const seedKey = `${style}-${backgroundColor}`;
-      if (usedSeeds.has(seedKey)) continue;
-      usedSeeds.add(seedKey);
-      
-      avatarType = 'dicebear';
-      avatarData = {
-        url: `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seedVariation)}&backgroundColor=${backgroundColor}&size=200&radius=${Math.floor(Math.random() * 50)}`,
-        type: avatarType,
-        style: style,
-        theme: 'basic-random'
-      };
+
+  const shuffledStyles = shuffleWithHash(PROFILE_STYLE_LIST, hashString(`${base}|styles|${epoch}`));
+  const paletteKeys = shuffleWithHash(Object.keys(COLOR_PALETTES), hashString(`${base}|palettes|${epoch}`));
+
+  for (let slot = 0; slot < count; slot += 1) {
+    const style = shuffledStyles[slot % shuffledStyles.length];
+    const paletteKey = paletteKeys[slot % paletteKeys.length];
+    const palette = COLOR_PALETTES[paletteKey] || COLOR_PALETTES.forest;
+    const slotHash = hashString(`${base}|${epoch}|${slot}|${style}|${paletteKey}`);
+
+    let url = null;
+    for (let attempt = 0; attempt < 10 && !url; attempt += 1) {
+      const candidate = buildDiceBearAvatarUrl({
+        style,
+        seed: `${base}-${epoch}-${slot}-${attempt}`,
+        palette,
+        size: DICEBEAR_SIZE,
+        radius: 18 + ((slotHash + attempt * 7) % 33),
+        flip: ((slotHash >> attempt) & 1) === 1,
+      });
+      if (!usedUrls.has(candidate)) {
+        url = candidate;
+      }
     }
-    
-    // Add the avatar if it's unique
-    if (avatarData) {
-      avatars.push(avatarData);
-      generated++;
-    }
-  }
-  
-  // If we still don't have enough avatars, generate more using fallback method
-  while (avatars.length < count) {
-    const fallbackAvatar = generateRandomAvatar(`${cleanSeed}-fallback-${avatars.length}-${Date.now()}`);
+
+    if (!url) continue;
+    usedUrls.add(url);
     avatars.push({
-      url: fallbackAvatar,
-      type: 'fallback',
-      style: 'random',
-      theme: 'fallback-random'
+      url,
+      type: 'dicebear',
+      style,
+      theme: themeLabelForStyle(style, paletteKey),
     });
   }
-  
-  // Shuffle the final array for random order
-  return avatars.sort(() => Math.random() - 0.5);
+
+  let fallbackAttempt = 0;
+  while (avatars.length < count && fallbackAttempt < count * 3) {
+    fallbackAttempt += 1;
+    const url = generateRandomAvatar(`${base}-fallback-${epoch}-${avatars.length}-${fallbackAttempt}`);
+    if (usedUrls.has(url)) continue;
+    usedUrls.add(url);
+    avatars.push({
+      url,
+      type: 'dicebear',
+      style: 'random',
+      theme: 'traveler',
+    });
+  }
+
+  return shuffleWithHash(avatars, hashString(`${base}|order|${epoch}`));
 };

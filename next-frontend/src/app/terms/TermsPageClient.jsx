@@ -1,14 +1,11 @@
-"use client";
-import { FileText, Shield, AlertTriangle, CheckCircle } from '@components/icons';
 
 const LAST_UPDATED = 'April 6, 2026';
 
-const TermsPage = () => {
+export default function TermsPageContent() {
   const sections = [
     {
       id: "acceptance",
       title: "Acceptance of Terms",
-      icon: CheckCircle,
       content: (
         <>
           <p className="mb-4">
@@ -25,7 +22,6 @@ const TermsPage = () => {
     {
       id: "license",
       title: "Use License",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">
@@ -45,7 +41,6 @@ const TermsPage = () => {
     {
       id: "accounts",
       title: "User Accounts",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">When creating an account, you agree to:</p>
@@ -64,7 +59,6 @@ const TermsPage = () => {
     {
       id: "ai-services",
       title: "AI Services Disclaimer",
-      icon: AlertTriangle,
       content: (
         <>
           <p className="mb-4">
@@ -83,7 +77,6 @@ const TermsPage = () => {
     {
       id: "content",
       title: "User Content & Reviews",
-      icon: FileText,
       content: (
         <>
           <p className="mb-4">When posting reviews, comments, or content, you:</p>
@@ -115,7 +108,6 @@ const TermsPage = () => {
     {
       id: "prohibited",
       title: "Prohibited Uses",
-      icon: AlertTriangle,
       content: (
         <>
           <p className="mb-4">You may not use TrailVerse to:</p>
@@ -134,7 +126,6 @@ const TermsPage = () => {
     {
       id: "third-party",
       title: "Third-Party Services",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">TrailVerse integrates with third-party services:</p>
@@ -158,7 +149,6 @@ const TermsPage = () => {
     {
       id: "limitation",
       title: "Limitation of Liability",
-      icon: AlertTriangle,
       content: (
         <>
           <p className="mb-4">
@@ -180,7 +170,6 @@ const TermsPage = () => {
     {
       id: "intellectual",
       title: "Intellectual Property",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">
@@ -193,7 +182,6 @@ const TermsPage = () => {
     {
       id: "changes",
       title: "Changes to Terms",
-      icon: FileText,
       content: (
         <>
           <p className="mb-4">
@@ -206,7 +194,6 @@ const TermsPage = () => {
     {
       id: "contact",
       title: "Contact & Support",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">Questions about these Terms?</p>
@@ -239,14 +226,6 @@ const TermsPage = () => {
         {/* Hero Section */}
         <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
-              style={{
-                backgroundColor: 'var(--surface-active)',
-                border: '1px solid var(--border-hover)'
-              }}
-            >
-              <FileText className="h-8 w-8" style={{ color: 'var(--text-primary)' }} />
-            </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
               style={{ color: 'var(--text-primary)' }}
             >
@@ -264,7 +243,6 @@ const TermsPage = () => {
                 color: 'var(--text-primary)'
               }}
             >
-              <FileText className="h-4 w-4" />
               <span>Last updated: {LAST_UPDATED}</span>
             </div>
           </div>
@@ -279,10 +257,7 @@ const TermsPage = () => {
                 borderColor: 'var(--border-hover)'
               }}
             >
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <FileText className="h-6 w-6" style={{ color: 'var(--text-primary)' }} />
+              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                 Terms Summary
               </h2>
               <div className="grid md:grid-cols-3 gap-4 text-sm">
@@ -317,19 +292,9 @@ const TermsPage = () => {
                 }}
               >
                 <div className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{
-                        backgroundColor: 'var(--surface-active)',
-                        border: '1px solid var(--border-hover)'
-                      }}
-                    >
-                      <section.icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
-                    </div>
-                    <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {index + 1}. {section.title}
-                    </h2>
-                  </div>
+                  <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    {index + 1}. {section.title}
+                  </h2>
                   <div style={{ color: 'var(--text-secondary)' }}>
                     {section.content}
                   </div>
@@ -348,13 +313,7 @@ const TermsPage = () => {
                 borderColor: 'var(--accent-orange)'
               }}
             >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: 'var(--accent-orange)' }}
-                >
-                  <AlertTriangle className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
+              <div>
                   <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
                     Important Safety Notice
                   </h3>
@@ -367,7 +326,6 @@ const TermsPage = () => {
                     You are solely responsible for your safety, decisions, and preparedness when visiting parks. 
                     TrailVerse provides information to help plan trips but cannot guarantee accuracy or safety.
                   </p>
-                </div>
               </div>
             </div>
           </div>
@@ -383,7 +341,6 @@ const TermsPage = () => {
                 borderColor: 'var(--border)'
               }}
             >
-              <FileText className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
@@ -403,7 +360,6 @@ const TermsPage = () => {
                   color: 'var(--text-primary)'
                 }}
               >
-                <Shield className="h-5 w-5" />
                 Contact Us
               </a>
             </div>
@@ -412,6 +368,5 @@ const TermsPage = () => {
       </main>
     </>
   );
-};
+}
 
-export default TermsPage;

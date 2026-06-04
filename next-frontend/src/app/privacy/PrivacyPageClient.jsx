@@ -1,14 +1,10 @@
-"use client";
-import { Shield, Lock, Eye, AlertCircle } from '@components/icons';
-
 const LAST_UPDATED = 'April 6, 2026';
 
-const PrivacyPage = () => {
+export default function PrivacyPageContent() {
   const sections = [
     {
       id: "introduction",
       title: "Introduction",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">
@@ -25,7 +21,6 @@ const PrivacyPage = () => {
     {
       id: "collection",
       title: "Information We Collect",
-      icon: Eye,
       content: (
         <>
           <h3 className="text-lg font-semibold mb-3 mt-4">Account & Profile Information</h3>
@@ -57,7 +52,6 @@ const PrivacyPage = () => {
     {
       id: "usage",
       title: "How We Use Your Information",
-      icon: AlertCircle,
       content: (
         <>
           <p className="mb-4">We use collected information to:</p>
@@ -77,7 +71,6 @@ const PrivacyPage = () => {
     {
       id: "sharing",
       title: "Information Sharing",
-      icon: Lock,
       content: (
         <>
           <p className="mb-4 font-semibold">
@@ -96,7 +89,6 @@ const PrivacyPage = () => {
     {
       id: "security",
       title: "Data Security",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">We implement industry-standard security measures:</p>
@@ -116,7 +108,6 @@ const PrivacyPage = () => {
     {
       id: "cookies",
       title: "Cookies & Local Storage",
-      icon: Eye,
       content: (
         <>
           <p className="mb-4">
@@ -138,7 +129,6 @@ const PrivacyPage = () => {
     {
       id: "rights",
       title: "Your Privacy Rights",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">You have the right to:</p>
@@ -164,7 +154,6 @@ const PrivacyPage = () => {
     {
       id: "third-party",
       title: "Third-Party Services",
-      icon: AlertCircle,
       content: (
         <>
           <p className="mb-4">TrailVerse integrates with these third-party services:</p>
@@ -196,7 +185,6 @@ const PrivacyPage = () => {
     {
       id: "retention",
       title: "Data Retention",
-      icon: Lock,
       content: (
         <>
           <p className="mb-4">We retain information as long as necessary to provide services:</p>
@@ -212,7 +200,6 @@ const PrivacyPage = () => {
     {
       id: "children",
       title: "Children's Privacy",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">
@@ -225,7 +212,6 @@ const PrivacyPage = () => {
     {
       id: "changes",
       title: "Policy Updates",
-      icon: AlertCircle,
       content: (
         <>
           <p className="mb-4">
@@ -238,7 +224,6 @@ const PrivacyPage = () => {
     {
       id: "contact",
       title: "Contact Us",
-      icon: Shield,
       content: (
         <>
           <p className="mb-4">
@@ -273,14 +258,6 @@ const PrivacyPage = () => {
         {/* Hero Section */}
         <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6"
-              style={{
-                backgroundColor: 'var(--surface-active)',
-                border: '1px solid var(--border-hover)'
-              }}
-            >
-              <Shield className="h-8 w-8" style={{ color: 'var(--text-primary)' }} />
-            </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
               style={{ color: 'var(--text-primary)' }}
             >
@@ -298,7 +275,6 @@ const PrivacyPage = () => {
                 color: 'var(--text-primary)'
               }}
             >
-              <Lock className="h-4 w-4" />
               <span>Last updated: {LAST_UPDATED}</span>
             </div>
           </div>
@@ -313,10 +289,7 @@ const PrivacyPage = () => {
                 borderColor: 'var(--border-hover)'
               }}
             >
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <Shield className="h-6 w-6" style={{ color: 'var(--text-primary)' }} />
+              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                 Privacy at a Glance
               </h2>
               <div className="grid md:grid-cols-3 gap-4 text-sm">
@@ -351,19 +324,9 @@ const PrivacyPage = () => {
                 }}
               >
                 <div className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{
-                        backgroundColor: 'var(--surface-active)',
-                        border: '1px solid var(--border-hover)'
-                      }}
-                    >
-                      <section.icon className="h-5 w-5" style={{ color: 'var(--text-primary)' }} />
-                    </div>
-                    <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {index + 1}. {section.title}
-                    </h2>
-                  </div>
+                  <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+                    {index + 1}. {section.title}
+                  </h2>
                   <div style={{ color: 'var(--text-secondary)' }}>
                     {section.content}
                   </div>
@@ -383,7 +346,6 @@ const PrivacyPage = () => {
                 borderColor: 'var(--border)'
               }}
             >
-              <Shield className="h-12 w-12 mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
               <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
@@ -403,7 +365,6 @@ const PrivacyPage = () => {
                   color: 'var(--text-primary)'
                 }}
               >
-                <Shield className="h-5 w-5" />
                 Contact Us
               </a>
             </div>
@@ -412,6 +373,4 @@ const PrivacyPage = () => {
       </main>
     </>
   );
-};
-
-export default PrivacyPage;
+}

@@ -1704,33 +1704,15 @@ WEATHER & LIVE INFO RESPONSES:
 
     setIsExportingPDF(true);
     try {
-      const { pdf } = await import('@react-pdf/renderer');
-      const { TripPDFDocument } = await import('../itinerary/TripPDFDocument');
-      const React = await import('react');
-
-      const tripData = {
+      const { exportTripPdf } = await import('@/lib/pdf/exportTripPdf');
+      await exportTripPdf({
         title: formData?.tripTitle || parkName || 'Trip Plan',
         parkName: parkName || formData?.parkName || null,
+        parkCode: formData?.parkCode || null,
+        tripId: currentTripId,
         formData: formData || {},
         plan: currentPlan,
-      };
-
-      const blob = await pdf(
-        React.createElement(TripPDFDocument, { trip: tripData })
-      ).toBlob();
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const fileName = (tripData.title || 'trip-plan')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      a.download = `${fileName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      });
       showToast('Trip plan exported as PDF!', 'success');
     } catch (err) {
       console.error('PDF export error:', err);

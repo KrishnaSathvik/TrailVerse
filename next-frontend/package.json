@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "test:e2e": "npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
-    "lighthouse": "lhci autorun"
+    "lighthouse": "lhci autorun",
+    "audit:ssr": "node scripts/audit-ssr-samples.mjs",
+    "audit:ssr:strict": "node scripts/audit-ssr-samples.mjs --strict"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

@@ -40,7 +40,7 @@ import { useUserReviews } from '@hooks/useUserReviews';
 import { useWebSocket } from '@hooks/useWebSocket';
 import userService from '@/services/userService';
 import { getStoredToken } from '@/services/authService';
-import { getBestAvatar, generateRandomAvatar } from '@utils/avatarGenerator';
+import { getBestAvatar } from '@utils/avatarGenerator';
 import { logEvent } from '@/utils/analytics';
 
 const ProfilePage = () => {
@@ -52,6 +52,13 @@ const ProfilePage = () => {
   const { subscribe, unsubscribe, subscribeToProfile } = useWebSocket();
   // Track when a save is in-progress to suppress the WebSocket echo toast
   const isSavingRef = useRef(false);
+  const suppressProfileEchoUntilRef = useRef(0);
+  const pendingSavedAvatarRef = useRef(null);
+  const isChangingAvatarRef = useRef(false);
+  const isEditingRef = useRef(false);
+  const lastLoadTimeRef = useRef(0);
+  const profileLoadInFlightRef = useRef(false);
+  const userStatsRef = useRef(null);
   const { favorites, removeFavorite, loading: favoritesLoading } = useFavorites();
   const { visitedParks, removeVisited, loading: visitedParksLoading } = useVisitedParks();
   const {
@@ -79,52 +86,92 @@ const ProfilePage = () => {
     }
   }, [user, reviewsLoading, reviewsData, reviewsError]);
 
+  const markLocalProfileWrite = useCallback(() => {
+    suppressProfileEchoUntilRef.current = Date.now() + 8000;
+    isSavingRef.current = true;
+  }, []);
+
+  const scheduleClearLocalProfileWrite = useCallback(() => {
+    setTimeout(() => {
+      isSavingRef.current = false;
+      pendingSavedAvatarRef.current = null;
+    }, 8000);
+  }, []);
+
+  const shouldIgnoreProfileWebSocketEcho = useCallback((data) => {
+    if (!data) return true;
+    if (Date.now() < suppressProfileEchoUntilRef.current) return true;
+    if (isSavingRef.current) return true;
+
+    const incomingAvatar = data.avatar ?? null;
+    if (
+      pendingSavedAvatarRef.current &&
+      incomingAvatar &&
+      incomingAvatar === pendingSavedAvatarRef.current
+    ) {
+      return true;
+    }
+
+    const local = profileDataRef.current;
+    if (!local) return false;
+
+    if (incomingAvatar != null && incomingAvatar !== local.avatar) return false;
+    if (data.firstName != null && data.firstName !== local.firstName) return false;
+    if (data.lastName != null && data.lastName !== local.lastName) return false;
+
+    return incomingAvatar != null || data.firstName != null || data.lastName != null;
+  }, []);
+
   // Setup WebSocket real-time sync for profile updates
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to profile updates
     subscribeToProfile();
 
-    // Handle profile updates from other devices/tabs
     const handleProfileUpdated = (data) => {
-      console.log('[Real-Time] Profile updated:', data);
-      if (data.userId === user._id || data.userId === user.id) {
-        // If this session triggered the save, skip — the save handler
-        // already updates state and shows a success toast.
-        if (isSavingRef.current) return;
+      const myId = String(user._id ?? user.id ?? '');
+      const incomingId = String(data?.userId ?? '');
+      if (!myId || incomingId !== myId) return;
 
-        // Update local state with new avatar
-        updateUser({
-          avatar: data.avatar,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          name: data.name
-        });
+      if (shouldIgnoreProfileWebSocketEcho(data)) return;
 
-        // Update profile data state
-        setProfileData(prev => ({
-          ...prev,
-          avatar: data.avatar,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          avatarVersion: Date.now()
-        }));
+      updateUser({
+        avatar: data.avatar,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        name: data.name,
+      });
 
-        showToast('Profile updated from another device', 'info');
-      }
+      setProfileData((prev) => ({
+        ...prev,
+        avatar: data.avatar ?? prev.avatar,
+        firstName: data.firstName ?? prev.firstName,
+        lastName: data.lastName ?? prev.lastName,
+        avatarVersion: Date.now(),
+      }));
+
+      showToast('Profile updated from another device', 'info');
     };
 
-    // Subscribe to WebSocket events
     subscribe('profileUpdated', handleProfileUpdated);
 
-    // Cleanup
     return () => {
       unsubscribe('profileUpdated', handleProfileUpdated);
     };
-  }, [user, subscribe, unsubscribe, subscribeToProfile, updateUser, showToast]);
+  }, [
+    user,
+    subscribe,
+    unsubscribe,
+    subscribeToProfile,
+    updateUser,
+    showToast,
+    shouldIgnoreProfileWebSocketEcho,
+  ]);
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarPreviewVersion, setAvatarPreviewVersion] = useState(0);
   const [originalAvatar, setOriginalAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastLoadTime, setLastLoadTime] = useState(0);
@@ -143,6 +190,20 @@ const ProfilePage = () => {
       avatar: getBestAvatar(user, {}, 'travel'),
       avatarVersion: Date.now() // Force image reload when avatar changes
     });
+  const profileDataRef = useRef(profileData);
+  const profileLoadedOnceRef = useRef(false);
+
+  useEffect(() => {
+    profileDataRef.current = profileData;
+  }, [profileData]);
+
+  useEffect(() => {
+    isChangingAvatarRef.current = isChangingAvatar;
+  }, [isChangingAvatar]);
+
+  useEffect(() => {
+    isEditingRef.current = isEditing;
+  }, [isEditing]);
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true
@@ -178,6 +239,8 @@ const ProfilePage = () => {
   const [favoriteBlogsCount, setFavoriteBlogsCount] = useState(0);
   const [favoritesSubTab, setFavoritesSubTab] = useState('parks');
 
+  const DEFAULT_PROFILE_TAB = 'account';
+
   const tabs = useMemo(() => [
     { id: 'account', label: 'Account', icon: User },
     { id: 'favorites', label: 'Favorites', icon: Heart },
@@ -188,20 +251,27 @@ const ProfilePage = () => {
   ], []);
   const validTabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
   const activeTab = useMemo(() => {
-    if (!searchParams.has('tab')) return null;
     const requestedTab = searchParams.get('tab');
-    if (!requestedTab || !validTabIds.includes(requestedTab)) return null;
+    if (requestedTab === 'profile') return DEFAULT_PROFILE_TAB;
+    if (!searchParams.has('tab')) return DEFAULT_PROFILE_TAB;
+    if (!requestedTab || !validTabIds.includes(requestedTab)) return DEFAULT_PROFILE_TAB;
     return requestedTab;
   }, [searchParams, validTabIds]);
 
-  // Drop legacy default ?tab=profile (old tab id collided with /profile route)
+  // Keep URL in sync so Account is the default (/profile → /profile?tab=account)
   useEffect(() => {
-    if (searchParams.get('tab') !== 'profile') return;
+    const requestedTab = searchParams.get('tab');
+    const needsCanonicalTab =
+      !searchParams.has('tab') ||
+      requestedTab === 'profile' ||
+      (requestedTab && !validTabIds.includes(requestedTab));
+
+    if (!needsCanonicalTab) return;
+
     const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete('tab');
-    const query = nextParams.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [pathname, router, searchParams]);
+    nextParams.set('tab', DEFAULT_PROFILE_TAB);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }, [pathname, router, searchParams, validTabIds]);
 
   // Debug favoriteBlogsCount changes
   useEffect(() => {
@@ -319,6 +389,21 @@ const ProfilePage = () => {
     return stats;
   }, [favorites, favoriteBlogsCount, savedEvents, visitedParks.length, reviewsData, user, userDataLoaded, calculateTotalDays]);
 
+  useEffect(() => {
+    userStatsRef.current = userStats;
+  }, [userStats]);
+
+  const heroProfileData = useMemo(() => {
+    if (!isChangingAvatar || avatarPreview == null) {
+      return profileData;
+    }
+    return {
+      ...profileData,
+      avatar: avatarPreview,
+      avatarVersion: avatarPreviewVersion,
+    };
+  }, [profileData, isChangingAvatar, avatarPreview, avatarPreviewVersion]);
+
   // Memoized stats array - Only recalculates when userStats or reviewsLoading changes
   const stats = useMemo(() => {
     const statsArray = [
@@ -380,73 +465,91 @@ const ProfilePage = () => {
 
 
   const loadProfileData = useCallback(async (force = false) => {
-    // Never overwrite user edits while they're typing
-    if (isEditing && !force) return;
+    if (isEditingRef.current && !force) return;
+    if (isChangingAvatarRef.current && !force) return;
 
-    // Debounce: Don't make API calls more than once every 5 seconds
     const now = Date.now();
-    if (!force && now - lastLoadTime < 5000) {
+    if (!force && now - lastLoadTimeRef.current < 5000) {
+      return;
+    }
+    if (profileLoadInFlightRef.current && !force) {
       return;
     }
 
-    try {
-      setLoading(true);
-      setLastLoadTime(now);
+    const showFullPageLoader = !profileLoadedOnceRef.current;
+    profileLoadInFlightRef.current = true;
+    lastLoadTimeRef.current = now;
+    setLastLoadTime(now);
 
-      // Get fresh profile data from server
+    try {
+      if (showFullPageLoader) {
+        setLoading(true);
+      }
+
       const userProfile = await userService.getProfile();
 
-      // Update profile data with server data
+      if (isChangingAvatarRef.current && !force) {
+        return;
+      }
+
       const updatedUserData = {
         ...userProfile,
-        email: userProfile.email || user?.email
+        email: userProfile.email || user?.email,
       };
+      const stats = userStatsRef.current || {};
 
-    setProfileData({
-      firstName: userProfile.firstName || user?.name?.split(' ')[0] || '',
-      lastName: userProfile.lastName || user?.name?.split(' ').slice(1).join(' ') || '',
-      email: userProfile.email || user?.email || '',
-      phone: userProfile.phone || '',
-      bio: userProfile.bio || '',
-      website: userProfile.website || '',
-      location: userProfile.location || '',
-      avatar: userProfile.avatar || profileData.avatar || getBestAvatar(updatedUserData, userStats, 'travel'),
-      avatarVersion: Date.now()
-    });
+      setProfileData((prev) => ({
+        firstName: userProfile.firstName || user?.name?.split(' ')[0] || '',
+        lastName: userProfile.lastName || user?.name?.split(' ').slice(1).join(' ') || '',
+        email: userProfile.email || user?.email || '',
+        phone: userProfile.phone || '',
+        bio: userProfile.bio || '',
+        website: userProfile.website || '',
+        location: userProfile.location || '',
+        avatar: userProfile.avatar || prev.avatar || getBestAvatar(updatedUserData, stats, 'travel'),
+        avatarVersion: Date.now(),
+      }));
+      profileLoadedOnceRef.current = true;
     } catch (error) {
       console.error('Error loading profile data:', error);
 
-      // Handle rate limiting gracefully
       if (error.response?.status === 429) {
-        // Only show toast if we haven't shown one recently
-        const now = Date.now();
-        if (now - lastLoadTime > 10000) { // 10 seconds
+        const rateLimitNow = Date.now();
+        if (rateLimitNow - lastLoadTimeRef.current > 10000) {
           showToast('Too many requests. Please wait a moment and try again.', 'warning');
-          setLastLoadTime(now);
+          lastLoadTimeRef.current = rateLimitNow;
+          setLastLoadTime(rateLimitNow);
         }
         return;
       }
 
-      // Fallback to user context data
-    setProfileData({
-      firstName: user?.name?.split(' ')[0] || '',
-      lastName: user?.name?.split(' ').slice(1).join(' ') || '',
-      email: user?.email || '',
-      phone: '',
-      bio: '',
-      website: '',
-      location: '',
-      avatar: user?.avatar || profileData.avatar || getBestAvatar(user, userStats, 'travel'),
-      avatarVersion: Date.now()
-    });
+      if (isChangingAvatarRef.current && !force) {
+        return;
+      }
+
+      const stats = userStatsRef.current || {};
+      setProfileData((prev) => ({
+        firstName: user?.name?.split(' ')[0] || '',
+        lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+        email: user?.email || '',
+        phone: '',
+        bio: '',
+        website: '',
+        location: '',
+        avatar: user?.avatar || prev.avatar || getBestAvatar(user, stats, 'travel'),
+        avatarVersion: Date.now(),
+      }));
       showToast('Failed to load profile data', 'error');
+      profileLoadedOnceRef.current = true;
     } finally {
-      setLoading(false);
+      profileLoadInFlightRef.current = false;
+      if (showFullPageLoader) {
+        setLoading(false);
+      }
     }
-  }, [isEditing, lastLoadTime, profileData.avatar, showToast, user, userStats]);
+  }, [showToast, user]);
 
   useEffect(() => {
-    // Wait for auth to finish validating before deciding to redirect
     if (!userDataLoaded) return;
 
     if (!isAuthenticated) {
@@ -482,14 +585,7 @@ const ProfilePage = () => {
         email: user?.email
       };
 
-      // Only update avatar if user doesn't have one selected
-      if (!profileData.avatar || profileData.avatar.includes('traveler')) {
-        setProfileData(prev => ({
-          ...prev,
-          avatar: getBestAvatar(updatedUserData, stats, 'travel'),
-          avatarVersion: Date.now()
-        }));
-      }
+      if (isChangingAvatarRef.current) return;
     } catch (error) {
       console.error('Error loading user stats:', error);
 
@@ -870,7 +966,7 @@ const ProfilePage = () => {
   const handleSaveProfile = useCallback(async () => {
     try {
       setLoading(true);
-      isSavingRef.current = true;
+      markLocalProfileWrite();
 
       // Prepare profile data for API
     const updateData = {
@@ -910,11 +1006,9 @@ const ProfilePage = () => {
       showToast('Failed to update profile. Please try again.', 'error');
     } finally {
       setLoading(false);
-      // Delay clearing the flag so the WebSocket echo (which arrives async)
-      // is still suppressed even if it arrives slightly after the response.
-      setTimeout(() => { isSavingRef.current = false; }, 2000);
+      scheduleClearLocalProfileWrite();
     }
-  }, [profileData, updateUser, showToast]);
+  }, [profileData, updateUser, showToast, markLocalProfileWrite, scheduleClearLocalProfileWrite]);
 
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false);
@@ -923,15 +1017,10 @@ const ProfilePage = () => {
   }, [loadProfileData]);
 
   const handleTabChange = useCallback((tabId) => {
+    if (activeTab === tabId) return;
     const nextParams = new URLSearchParams(searchParams.toString());
-    if (activeTab === tabId) {
-      nextParams.delete('tab');
-      const query = nextParams.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    } else {
-      nextParams.set('tab', tabId);
-      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-    }
+    nextParams.set('tab', tabId);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
     setIsEditing(false);
     clearErrorStates();
   }, [activeTab, pathname, router, searchParams]);
@@ -969,59 +1058,74 @@ const ProfilePage = () => {
 
   // Avatar change handlers (memoized)
   const handleChangeAvatarStart = useCallback(() => {
+    isChangingAvatarRef.current = true;
     setOriginalAvatar(profileData.avatar);
+    setAvatarPreview(profileData.avatar);
+    setAvatarPreviewVersion(profileData.avatarVersion);
     setIsChangingAvatar(true);
-    const seed = user?.email || user?.firstName || 'traveler';
-    const randomAvatar = generateRandomAvatar(seed);
-    setProfileData(prev => ({
-      ...prev,
-      avatar: randomAvatar,
-      avatarVersion: Date.now()
-    }));
-  }, [profileData.avatar, user]);
+  }, [profileData.avatar, profileData.avatarVersion]);
 
   const handleCancelAvatarChange = useCallback(() => {
-    setProfileData(prev => ({
-      ...prev,
-      avatar: originalAvatar,
-      avatarVersion: Date.now()
-    }));
+    if (isSavingAvatar) return;
+    isChangingAvatarRef.current = false;
+    setAvatarPreview(null);
     setIsChangingAvatar(false);
     setOriginalAvatar(null);
-  }, [originalAvatar]);
+  }, [isSavingAvatar]);
 
-  const handleGenerateNewAvatar = useCallback(() => {
-    const seed = user?.email || user?.firstName || 'traveler';
-    const randomAvatar = generateRandomAvatar(seed);
-    setProfileData(prev => ({
-      ...prev,
-      avatar: randomAvatar,
-      avatarVersion: Date.now()
-    }));
-  }, [user]);
-
-  // New unified avatar change handler
   const handleAvatarChange = useCallback((newAvatar) => {
-    setProfileData(prev => ({
-      ...prev,
-      avatar: newAvatar,
-      avatarVersion: Date.now()
-    }));
+    setAvatarPreview(newAvatar);
+    setAvatarPreviewVersion(Date.now());
   }, []);
 
   const handleSaveAvatar = useCallback(async () => {
+    if (isSavingAvatar) return;
+    const avatarToSave = avatarPreview ?? profileDataRef.current.avatar;
+    if (!avatarToSave) {
+      showToast('Choose a profile photo first.', 'warning');
+      return;
+    }
+    setIsSavingAvatar(true);
+    pendingSavedAvatarRef.current = avatarToSave;
+    markLocalProfileWrite();
     try {
+      const updateData = { avatar: avatarToSave };
+      const updatedProfile = await userService.updateProfile(updateData);
+      const savedAvatar = updatedProfile.avatar || avatarToSave;
+      pendingSavedAvatarRef.current = savedAvatar;
+      updateUser({ avatar: savedAvatar });
+      setProfileData((prev) => {
+        const next = {
+          ...prev,
+          avatar: savedAvatar,
+          avatarVersion: Date.now(),
+        };
+        profileDataRef.current = next;
+        return next;
+      });
+      setAvatarPreview(null);
+      isChangingAvatarRef.current = false;
       setIsChangingAvatar(false);
       setOriginalAvatar(null);
-      const updateData = { avatar: profileData.avatar };
-      const updatedProfile = await userService.updateProfile(updateData);
-      updateUser({ avatar: updatedProfile.avatar });
-      showToast('Avatar saved successfully!', 'success');
+      showToast('Profile photo saved.', 'success');
     } catch (error) {
       console.error('Error saving avatar:', error);
-      showToast('Failed to save avatar. Please try again.', 'error');
+      pendingSavedAvatarRef.current = null;
+      isSavingRef.current = false;
+      suppressProfileEchoUntilRef.current = 0;
+      showToast('Failed to save profile photo. Please try again.', 'error');
+    } finally {
+      setIsSavingAvatar(false);
+      scheduleClearLocalProfileWrite();
     }
-  }, [profileData.avatar, updateUser, showToast]);
+  }, [
+    avatarPreview,
+    updateUser,
+    showToast,
+    isSavingAvatar,
+    markLocalProfileWrite,
+    scheduleClearLocalProfileWrite,
+  ]);
 
   // Memoized handler functions - Prevents unnecessary re-creation (Performance optimization)
   const handleRemoveFavorite = useCallback(async (parkCode) => {
@@ -1063,11 +1167,11 @@ const ProfilePage = () => {
 
           {/* Profile Hero Section - Extracted Component */}
           <ProfileHero
-            profileData={profileData}
+            profileData={heroProfileData}
             isChangingAvatar={isChangingAvatar}
+            isSavingAvatar={isSavingAvatar}
             onChangeAvatarStart={handleChangeAvatarStart}
             onCancelAvatarChange={handleCancelAvatarChange}
-            onGenerateNewAvatar={handleGenerateNewAvatar}
             onSaveAvatar={handleSaveAvatar}
             onAvatarChange={handleAvatarChange}
             user={user}
@@ -1082,7 +1186,7 @@ const ProfilePage = () => {
             onTabChange={handleTabChange}
             sectionLabel="Your profile"
             ariaLabel="Profile sections"
-            className={activeTab ? 'mb-6 sm:mb-8' : 'mb-0'}
+            className="mb-6 sm:mb-8"
             gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"
             showParkBadges={false}
             onKeyDown={handleTabKeyDown}
@@ -1090,8 +1194,6 @@ const ProfilePage = () => {
             getAriaControls={(tab) => `profile-panel-${tab.id}`}
           />
 
-          {/* Main Content Area — hidden until a tab is selected */}
-          {activeTab ? (
           <div className="min-w-0">
               {/* Enhanced Profile Tab */}
               {activeTab === 'account' && (
@@ -1875,7 +1977,6 @@ const ProfilePage = () => {
                 </div>
               )}
           </div>
-          ) : null}
         </div>
       </section>
 

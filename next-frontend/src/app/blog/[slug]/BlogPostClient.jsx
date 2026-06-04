@@ -248,6 +248,17 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
                 description={post.excerpt}
                 image={post.featuredImage}
                 type="article"
+                blogPost={{
+                  slug: post.slug,
+                  title: post.title,
+                  excerpt: post.excerpt,
+                  author: post.author,
+                  category: post.category,
+                  publishedAt: post.publishedAt,
+                  readTime: post.readTime,
+                  featuredImage: post.featuredImage,
+                  content: post.content,
+                }}
               />
             </div>
           </div>

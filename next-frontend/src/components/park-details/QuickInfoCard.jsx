@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, DollarSign, Phone, Globe, MapPin } from '@components/icons';
+import { getPrimaryEntranceFeeSummary } from '@/utils/parkVisitInfoUtils';
 
 const QuickInfoCard = ({ park }) => {
   const infoItems = [
@@ -11,9 +12,7 @@ const QuickInfoCard = ({ park }) => {
     {
       icon: DollarSign,
       label: 'Entrance Fee',
-      value: park.entranceFees?.[0]?.cost > 0 
-        ? `$${park.entranceFees[0].cost}` 
-        : 'Free'
+      value: getPrimaryEntranceFeeSummary(park.entranceFees).price,
     },
     {
       icon: Phone,

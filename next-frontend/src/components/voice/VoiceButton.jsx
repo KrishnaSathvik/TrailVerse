@@ -13,9 +13,15 @@ export default function VoiceButton() {
   const pathname = usePathname();
 
   // Hide on pages where voice chat isn't relevant
-  const hiddenOnChat = pathname?.startsWith('/plan-ai') ||
+  const hiddenOnChat =
+    pathname?.startsWith('/plan-ai') ||
     pathname?.startsWith('/blog') ||
-    pathname?.startsWith('/map');
+    pathname?.startsWith('/map') ||
+    pathname === '/magazine' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/testimonials' ||
+    pathname === '/faq';
 
   // Detect park code from current URL
   const parkCode = (() => {
@@ -96,7 +102,9 @@ export default function VoiceButton() {
         }}
       >
         <Microphone size={24} weight="fill" />
-        <span className="trailie-voice-badge">BETA</span>
+        <span className="trailie-voice-badge" aria-hidden="true">
+          BETA
+        </span>
       </div>
 
       {isOpen && (

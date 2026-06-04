@@ -1,6 +1,6 @@
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
-import PrivacyPageClient from './PrivacyPageClient';
+import PrivacyPageContent from './PrivacyPageClient';
 
 export const metadata = {
   title: 'Privacy Policy — TrailVerse',
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <PrivacyPageClient />
+      <PrivacyPageContent />
       <Footer />
     </div>
   );

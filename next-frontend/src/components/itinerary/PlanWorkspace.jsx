@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, MapPin, Map as MapIcon, Loader2, Check, Plus, ExternalLink } from '@components/icons';
+import { MessageSquare, MapPin, Map as MapIcon, Loader2, Check, Plus, ExternalLink, Download } from '@components/icons';
+import { useToast } from '@/context/ToastContext';
 import Header from '../common/Header';
 import usePlanWorkspace from '../../hooks/usePlanWorkspace';
 import ItineraryMapView, { DAY_COLORS } from './ItineraryMapView';
@@ -19,6 +20,8 @@ function buildDayMapsUrl(day) {
 
 export default function PlanWorkspace({ tripId }) {
   const router = useRouter();
+  const { showToast } = useToast();
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   const {
     trip, days, isLoading, error, saveState, parkCenter,
@@ -115,6 +118,33 @@ export default function PlanWorkspace({ tripId }) {
   const tripTitle = trip?.title || trip?.parkName || 'Untitled Trip';
   const hasStops = days.some(d => d.stops?.length > 0);
 
+  const handleExportPDF = async () => {
+    if (!hasStops) {
+      showToast('Add stops to your plan before exporting as PDF', 'info');
+      return;
+    }
+
+    setIsExportingPDF(true);
+    try {
+      const { exportTripPdf } = await import('@/lib/pdf/exportTripPdf');
+      await exportTripPdf({
+        title: tripTitle,
+        parkName: trip?.parkName || null,
+        parkCode: trip?.parkCode || null,
+        tripId,
+        shareId: trip?.shareId || null,
+        formData: trip?.formData || {},
+        plan: { ...(trip?.plan || {}), days },
+      });
+      showToast('Trip plan exported as PDF!', 'success');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('Failed to export PDF. Please try again.', 'error');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   return (
     <div className="h-dvh flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
@@ -151,6 +181,21 @@ export default function PlanWorkspace({ tripId }) {
                 )}
               </span>
             )}
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              disabled={isExportingPDF || !hasStops}
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition hover:opacity-90 disabled:opacity-50 sm:px-3 sm:text-xs"
+              style={{
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+              title="Export trip as PDF"
+            >
+              <Download className="h-3.5 w-3.5" />
+              {isExportingPDF ? 'Exporting...' : 'PDF'}
+            </button>
             <div
               className="inline-flex items-center rounded-full p-0.5"
               style={{ backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}

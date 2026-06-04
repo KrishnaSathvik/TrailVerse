@@ -21,6 +21,7 @@ import { useCompareParkingLots } from '@/hooks/useCompareParkingLots';
 import { logEvent } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
 import { summarizeCompareParking } from '@/utils/parkingUtils';
+import { pickPrimaryEntranceFee } from '@/utils/parkVisitInfoUtils';
 
 const COMPARE_PRESETS = [
   { label: 'Zion vs Bryce', codes: ['zion', 'brca'] },
@@ -440,13 +441,15 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
   };
 
   const getEntranceFeeInfo = (park) => {
-    const rawFee = park.entranceFee ?? park.entranceFees?.[0]?.cost;
-    const numericFee = Number(rawFee);
+    const primary =
+      pickPrimaryEntranceFee(park.entranceFees) ||
+      (park.entranceFee != null ? { cost: park.entranceFee, title: null } : null);
+    const numericFee = Number(primary?.cost ?? park.entranceFee);
 
     if (Number.isFinite(numericFee) && numericFee > 0) {
       return {
         amount: `$${numericFee.toFixed(0)}`,
-        note: park.entranceFees?.[0]?.title || 'Standard private vehicle rate'
+        note: primary?.title || 'Standard private vehicle rate',
       };
     }
 
@@ -508,7 +511,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
         accessibility: { wheelchairAccessible: true }
       },
       topActivities: selectedPark.activities?.slice(0, 5).map(a => a.name) || [],
-      entranceFee: selectedPark.entranceFees?.[0]?.cost || 0
+      entranceFee: pickPrimaryEntranceFee(selectedPark.entranceFees)?.cost || 0
     };
   });
 

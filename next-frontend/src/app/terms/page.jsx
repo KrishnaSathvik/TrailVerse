@@ -1,6 +1,6 @@
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
-import TermsPageClient from './TermsPageClient';
+import TermsPageContent from './TermsPageClient';
 
 export const metadata = {
   title: 'Terms of Service — TrailVerse',
@@ -26,7 +26,7 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <TermsPageClient />
+      <TermsPageContent />
       <Footer />
     </div>
   );

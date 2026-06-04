@@ -15,6 +15,7 @@ const AvatarUpload = ({
   onUploadComplete,
   className = '',
   showPreview = true,
+  disabled = false,
   maxSize = 5 * 1024 * 1024, // 5MB default
   acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
 }) => {
@@ -27,7 +28,7 @@ const AvatarUpload = ({
   // Handle file drop/selection
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
-    if (!file) return;
+    if (!file || disabled) return;
 
     setError(null);
     setUploading(true);
@@ -72,8 +73,6 @@ const AvatarUpload = ({
         onUploadComplete(uploadResult);
       }
 
-      showToast('Avatar uploaded successfully!', 'success');
-      
     } catch (err) {
       console.error('Avatar upload error:', err);
       setError(err.message);
@@ -81,7 +80,7 @@ const AvatarUpload = ({
     } finally {
       setUploading(false);
     }
-  }, [maxSize, acceptedTypes, onAvatarChange, onUploadComplete, showToast]);
+  }, [maxSize, acceptedTypes, onAvatarChange, onUploadComplete, showToast, disabled]);
 
   // Dropzone configuration
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -123,18 +122,18 @@ const AvatarUpload = ({
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
             : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }
-          ${uploading ? 'opacity-50 cursor-not-allowed' : ''}
+          ${uploading || disabled ? 'opacity-50 cursor-not-allowed' : ''}
         `}
         style={{ color: 'var(--text-primary)' }}
       >
-        <input {...getInputProps()} disabled={uploading} />
+        <input {...getInputProps()} disabled={uploading || disabled} />
         <input
           ref={fileInputRef}
           type="file"
           accept={acceptedTypes.join(',')}
           onChange={handleFileInputChange}
           className="hidden"
-          disabled={uploading}
+          disabled={uploading || disabled}
         />
 
         {uploading ? (

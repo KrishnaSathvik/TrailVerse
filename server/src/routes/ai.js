@@ -21,6 +21,7 @@ const crypto = require('crypto');
 const claudeService = require('../services/claudeService');
 const openaiService = require('../services/openaiService');
 const npsService = require('../services/npsService');
+const { pickPrimaryEntranceFee } = require('../utils/entranceFeeUtils');
 
 // Initialize AI clients
 let anthropic = null;
@@ -2867,8 +2868,8 @@ router.post('/realtime-session', optionalAuth, async (req, res) => {
 
           // Fees
           const fees = park.entranceFees || [];
-          if (fees.length > 0) {
-            const mainFee = fees[0];
+          const mainFee = pickPrimaryEntranceFee(fees);
+          if (mainFee) {
             dataBlock += `\nEntrance fee: $${mainFee.cost} — ${mainFee.title}`;
           }
 
@@ -3117,8 +3118,8 @@ router.post('/voice-tool', async (req, res) => {
         // Keep response concise for voice — model should NOT read all of this
         let text = `${park.fullName}, ${park.states || 'N/A'}`;
 
-        const fees = park.entranceFees || [];
-        if (fees.length > 0) text += `\nFee: $${fees[0].cost}`;
+        const mainFee = pickPrimaryEntranceFee(park.entranceFees || []);
+        if (mainFee) text += `\nFee: $${mainFee.cost}`;
 
         const hours = park.operatingHours || [];
         if (hours.length > 0) {
@@ -3193,10 +3194,10 @@ router.post('/voice-tool', async (req, res) => {
         for (const r of results) {
           if (r.status !== 'fulfilled' || !r.value.park) continue;
           const { park, alerts, weather } = r.value;
-          const fees = park.entranceFees || [];
+          const mainFee = pickPrimaryEntranceFee(park.entranceFees || []);
           text += `${park.fullName}: `;
           if (weather?.current) text += `${Math.round(weather.current.tempF || weather.current.temp)}°F, `;
-          if (fees.length > 0) text += `$${fees[0].cost} entry, `;
+          if (mainFee) text += `$${mainFee.cost} entry, `;
           text += `${alerts.length} alerts\n`;
         }
 
