@@ -18,6 +18,30 @@ import {
 
 const totalSteps = 4;
 
+/** Only block the UI when anonymous localStorage chat shell may need restoring. */
+function getInitialRestoringState(tripId) {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  if (
+    tripId ||
+    params.get('park') ||
+    params.get('chat') === 'true' ||
+    params.has('personalized') ||
+    params.has('newchat') ||
+    params.get('suggest')
+  ) {
+    return false;
+  }
+  try {
+    const saved = localStorage.getItem('planai-chat-state');
+    if (!saved) return false;
+    const parsed = JSON.parse(saved);
+    return !!(parsed.showChat && parsed.chatFormData);
+  } catch {
+    return false;
+  }
+}
+
 const interests = [
   { id: 'hiking', label: 'Hiking', icon: Mountain },
   { id: 'photography', label: 'Photography', icon: Camera },
@@ -45,7 +69,7 @@ export default function usePlanAI(tripId) {
   const [chatFormData, setChatFormData] = useState(null);
   const [selectedParkName, setSelectedParkName] = useState('');
   const [step, setStep] = useState(1);
-  const [isRestoringState, setIsRestoringState] = useState(true);
+  const [isRestoringState, setIsRestoringState] = useState(() => getInitialRestoringState(tripId));
   const [loadingTrip, setLoadingTrip] = useState(false);
   const [showNewTripModal, setShowNewTripModal] = useState(false);
   const [isReturningUser, setIsReturningUser] = useState(false);

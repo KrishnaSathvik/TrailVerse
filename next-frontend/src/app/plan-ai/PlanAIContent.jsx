@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Loader2, Sparkles } from '@components/icons';
+import { Sparkles } from '@components/icons';
 import Header from '@components/common/Header';
+import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
 import MyRecommendationsButton from '@components/plan-ai/MyRecommendationsButton';
@@ -56,14 +57,9 @@ const PlanAIContent = ({ tripId }) => {
 
   if (isRestoringState || loadingTrip) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>
-            {loadingTrip ? 'Loading trip data...' : 'Loading your chat session...'}
-          </p>
-        </div>
-      </div>
+      <PlanAIShell
+        loadingMessage={loadingTrip ? 'Loading trip data...' : 'Loading your chat session...'}
+      />
     );
   }
 
@@ -143,72 +139,52 @@ const PlanAIContent = ({ tripId }) => {
     setHasAppliedQuickFill(true);
   };
 
+  const headerActions = isAuthenticated ? (
+    <div className="flex items-center gap-1.5 sm:gap-2">
+      {uniqueParksCount >= 3 && (
+        <MyRecommendationsButton onClick={handlePersonalizedRecommendations} />
+      )}
+      <button
+        type="button"
+        onClick={handleStartNewChat}
+        title="New Chat"
+        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
+        style={{
+          backgroundColor: 'var(--button-filled-bg)',
+          border: '1px solid var(--border)',
+          color: 'var(--text-primary)',
+          boxShadow: 'var(--shadow)'
+        }}
+      >
+        <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">New Chat</span>
+        <span className="sm:hidden">New</span>
+      </button>
+    </div>
+  ) : null;
+
   return (
-    <div className="h-dvh flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <Header />
-      <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
-        <section className="relative z-30 shrink-0 overflow-visible border-b px-4 py-2 sm:px-6 sm:py-4 lg:px-10 xl:px-12" style={{ borderColor: 'var(--border)' }}>
-          <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p
-                className="text-[11px] font-medium uppercase tracking-[0.18em] sm:text-xs sm:tracking-wider"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Trailie
-              </p>
-              <h1 className="mt-1 truncate text-base font-semibold sm:text-2xl" style={{ color: 'var(--text-primary)' }}>
-                {isPersonalized ? 'My Recommendations' : effectiveParkName || 'Plan Your Trip'}
-              </h1>
-              {isPersonalized && (
-                <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE}
-                </p>
-              )}
-            </div>
-
-            {isAuthenticated && (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {uniqueParksCount >= 3 && (
-                  <MyRecommendationsButton onClick={handlePersonalizedRecommendations} />
-                )}
-                <button
-                  type="button"
-                  onClick={handleStartNewChat}
-                  title="New Chat"
-                  className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
-                  style={{
-                    backgroundColor: 'var(--button-filled-bg)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow)'
-                  }}
-                >
-                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">New Chat</span>
-                  <span className="sm:hidden">New</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <div className="relative z-10 flex flex-1 min-h-0 flex-col overflow-hidden">
-          <TripPlannerChat
-            key={`chat-${newChatKey || tripId || 'default'}`}
-            formData={effectiveFormData}
-            parkName={effectiveParkName}
-            existingTripId={tripId}
-            isPersonalized={isPersonalized}
-            isNewChat={effectiveIsNewChat}
-            suggestText={suggestText}
-            fromChatHistory={fromChatHistory}
-            refreshTrips={refetchUserTrips}
-            onOpenQuickFill={() => setQuickFillOpen(true)}
-            quickFillMessage={quickFillMessage}
-            onQuickFillSent={() => setQuickFillMessage(null)}
-          />
-        </div>
-      </main>
+    <>
+      <PlanAIShell
+        title={isPersonalized ? 'My Recommendations' : effectiveParkName || 'Plan Your Trip'}
+        subtitle={isPersonalized ? MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE : undefined}
+        headerActions={headerActions}
+      >
+        <TripPlannerChat
+          key={`chat-${newChatKey || tripId || 'default'}`}
+          formData={effectiveFormData}
+          parkName={effectiveParkName}
+          existingTripId={tripId}
+          isPersonalized={isPersonalized}
+          isNewChat={effectiveIsNewChat}
+          suggestText={suggestText}
+          fromChatHistory={fromChatHistory}
+          refreshTrips={refetchUserTrips}
+          onOpenQuickFill={() => setQuickFillOpen(true)}
+          quickFillMessage={quickFillMessage}
+          onQuickFillSent={() => setQuickFillMessage(null)}
+        />
+      </PlanAIShell>
 
       <QuickFillModal
         isOpen={quickFillOpen}
@@ -221,7 +197,7 @@ const PlanAIContent = ({ tripId }) => {
         toggleInterest={toggleInterest}
         onApply={handleQuickFillApply}
       />
-    </div>
+    </>
   );
 };
 

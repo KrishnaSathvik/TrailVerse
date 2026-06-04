@@ -5,7 +5,70 @@ const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middlewa
 const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, shouldAppendAnonymousWebSearchUpsell, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
 const { executeParkSearch, formatRankedParksDiscoveryBlock, formatVoiceSearchResult } = require('../services/parkSearchService');
 const { summarizePrimaryIntents } = require('../catalog/queryTraitIntent');
-const { isBroadDiscoveryQuery } = require('../utils/discoveryQuery');
+const { shouldInjectParkDiscovery } = require('../utils/discoveryQuery');
+
+/** Prefer parks from the user's message; response/footer text must not override (e.g. permit footers). */
+function resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser) {
+  if (parkNamesFromUser?.length > 0) {
+    const parksForImages =
+      resolvedMetadata.parksForDisplay?.length > 0
+        ? resolvedMetadata.parksForDisplay
+        : parkNamesFromUser.map((name) => ({
+            parkName: name,
+            parkCode: resolvedMetadata.parkCode,
+            lat: resolvedMetadata.lat,
+            lon: resolvedMetadata.lon,
+          }));
+    return {
+      parkName: parkNamesFromUser[0],
+      parkNames: parkNamesFromUser,
+      parksForImages,
+    };
+  }
+  const responseParks = extractAllParksFromMessage(validatedContent || '');
+  if (responseParks.length > 0) {
+    return {
+      parkName: responseParks[0].parkName,
+      parkNames: responseParks.map((p) => p.parkName),
+      parksForImages: responseParks,
+    };
+  }
+  return {
+    parkName: resolvedMetadata.parkName || null,
+    parkNames: [],
+    parksForImages: [],
+  };
+}
+
+async function finalizeParkImagesAndMetadata({
+  validatedContent,
+  resolvedMetadata,
+  parkNamesFromUser,
+  parkImages,
+  alreadyShownImages,
+  logPrefix,
+}) {
+  const display = resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser);
+  let images = parkImages || [];
+
+  if (!alreadyShownImages && validatedContent) {
+    if (display.parksForImages.length > 0) {
+      images = await fetchMultiParkImages(display.parksForImages, `${logPrefix} Response`);
+    } else if (images.length === 0) {
+      const fallback = extractAllParksFromMessage(validatedContent);
+      if (fallback.length > 0) {
+        images = await fetchMultiParkImages(fallback, `${logPrefix} Post`);
+      }
+    }
+  }
+
+  return {
+    parkName: display.parkName,
+    parkNames: display.parkNames,
+    parkImages: images,
+  };
+}
+
 const { formatFeeFreeBlock } = require('../services/feeFreeDaysService');
 const { extractParkFromMessage, extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
@@ -135,12 +198,39 @@ async function fetchDrivingTimes(points, logPrefix = '[AI]') {
   }
 }
 
-// Helper: fetch images for multiple parks with smart distribution (always 4 total)
+/** Merge image lists by URL (park images first, then gallery). */
+function mergeParkImagePool(...lists) {
+  const seen = new Set();
+  const out = [];
+  for (const list of lists) {
+    for (const img of list || []) {
+      const url = img?.url;
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      out.push(img);
+    }
+  }
+  return out;
+}
+
+/**
+ * Collect up to `need` images for one park — same sources as the park Photos tab.
+ * Gallery API usually has 50+ assets; the /parks?fields=images record often has only 3–7.
+ */
+async function collectParkImagesForChat(parkCode, need) {
+  const [gallery, parkRecord] = await Promise.all([
+    npsService.getParkGalleryPhotos(parkCode),
+    npsService.getParkImages(parkCode),
+  ]);
+  const pool = mergeParkImagePool(gallery, parkRecord);
+  return pool.slice(0, need);
+}
+
+// Helper: fetch images for multiple parks with smart distribution (target 4 total)
 // 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
 async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   if (!parks || parks.length === 0) return [];
 
-  // Calculate distribution: always 4 images total
   const total = 4;
   const parkCount = parks.length;
   const distribution = [];
@@ -152,7 +242,6 @@ async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   } else if (parkCount === 3) {
     distribution.push(2, 1, 1);
   } else {
-    // 4+ parks: 1 each, max 4 parks
     for (let i = 0; i < Math.min(parkCount, total); i++) {
       distribution.push(1);
     }
@@ -164,29 +253,30 @@ async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   await Promise.all(parksToFetch.map(async (park, idx) => {
     const count = distribution[idx];
     try {
-      let images = await npsService.getParkImages(park.parkCode);
-      if (!images || images.length === 0) {
-        images = await npsService.getParkGalleryPhotos(park.parkCode);
-      }
-      if (images && images.length > 0) {
-        const selected = images.slice(0, count).map(img => ({
+      const pool = await collectParkImagesForChat(park.parkCode, count);
+      if (pool.length > 0) {
+        const selected = pool.map((img) => ({
           url: img.url,
           altText: img.altText || img.title,
           title: img.title,
           parkCode: park.parkCode,
-          parkName: park.parkName
+          parkName: park.parkName,
         }));
         allImages.push({ idx, images: selected });
+        if (selected.length < count) {
+          console.warn(
+            `${logPrefix} Only ${selected.length}/${count} images for ${park.parkCode} (NPS pool short)`
+          );
+        }
       }
     } catch (err) {
       console.error(`${logPrefix} Image fetch error for ${park.parkCode}:`, err.message);
     }
   }));
 
-  // Sort by original order and flatten
   allImages.sort((a, b) => a.idx - b.idx);
-  const result = allImages.flatMap(item => item.images);
-  console.log(`${logPrefix} Multi-park images: ${result.length} total for ${parksToFetch.map(p => p.parkCode).join(', ')}`);
+  const result = allImages.flatMap((item) => item.images);
+  console.log(`${logPrefix} Multi-park images: ${result.length} total for ${parksToFetch.map((p) => p.parkCode).join(', ')}`);
   return result;
 }
 
@@ -195,6 +285,53 @@ function autoRouteProvider(messages) {
   const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
   const planningPattern = /\b(plan|itinerary|schedule|day.by.day|morning.*afternoon|hour.by.hour|logistics|detailed\s+(trip|plan|itinerary)|build\s+(me\s+)?(a\s+)?(trip|plan|itinerary))\b/i;
   return planningPattern.test(lastUserMsg) ? 'openai' : 'claude';
+}
+
+/**
+ * Ranked catalog search for open-ended / compare questions (hybrid RAG — owned corpus).
+ * @returns {Promise<boolean>} whether a block was appended
+ */
+async function appendRankedDiscoveryToPrompt({
+  enhancedSystemPrompt,
+  lastUserMessage,
+  namedParkCount,
+  isAnonymous,
+  httpReq,
+  logPrefix,
+}) {
+  if (!shouldInjectParkDiscovery(lastUserMessage, { namedParkCount })) {
+    return { appended: false, prompt: enhancedSystemPrompt };
+  }
+
+  let prompt = enhancedSystemPrompt;
+  try {
+    const discoveryQuery = lastUserMessage.trim().slice(0, 200);
+    const { parks, count } = await executeParkSearch({
+      q: discoveryQuery,
+      limit: 5,
+      req: httpReq,
+      source: isAnonymous ? 'trailie_chat_anon' : 'trailie_chat',
+    });
+    if (count >= 3) {
+      const primaryIntents = summarizePrimaryIntents(discoveryQuery);
+      const block = formatRankedParksDiscoveryBlock(parks, primaryIntents);
+      if (block) {
+        prompt += block;
+        console.log(`${logPrefix} Ranked discovery search injected:`, {
+          query: discoveryQuery.slice(0, 60),
+          count,
+          namedParkCount,
+          intents: primaryIntents.map((i) => `${i.label}:${i.weight}`),
+          top: parks.slice(0, 3).map((p) => p.fullName || p.name),
+        });
+        return { appended: true, prompt };
+      }
+    }
+  } catch (discoveryErr) {
+    console.error(`${logPrefix} Discovery search error:`, discoveryErr.message);
+  }
+
+  return { appended: false, prompt };
 }
 
 // Helper: parse request body and prepare messages, facts, and system prompt
@@ -289,27 +426,39 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   // Extract the last user message for fact fetching
   const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
 
-  // Auto-extract ALL parks from user message
+  // Auto-extract parks from the current user message (message wins over stale session metadata)
   let resolvedMetadata = { ...metadata };
-  let allExtractedParks = [];
+  let allExtractedParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
 
-  if (!resolvedMetadata.parkCode && lastUserMessage) {
-    allExtractedParks = extractAllParksFromMessage(lastUserMessage);
-    if (allExtractedParks.length > 0) {
-      // Use first park for primary metadata (weather coordinates, etc.)
-      resolvedMetadata.parkCode = allExtractedParks[0].parkCode;
-      resolvedMetadata.parkName = resolvedMetadata.parkName || allExtractedParks[0].parkName;
-      resolvedMetadata.lat = resolvedMetadata.lat || allExtractedParks[0].lat;
-      resolvedMetadata.lon = resolvedMetadata.lon || allExtractedParks[0].lon;
-      console.log(`${logPrefix} Parks extracted from message: ${allExtractedParks.map(p => `${p.parkName} (${p.parkCode})`).join(', ')}`);
-    }
-  } else if (resolvedMetadata.parkCode) {
-    // Single park from metadata
-    allExtractedParks = [{ parkCode: resolvedMetadata.parkCode, parkName: resolvedMetadata.parkName || '', lat: resolvedMetadata.lat, lon: resolvedMetadata.lon }];
+  const openEndedDiscovery = shouldInjectParkDiscovery(lastUserMessage, {
+    namedParkCount: allExtractedParks.length,
+  });
+
+  if (allExtractedParks.length > 0) {
+    resolvedMetadata.parkCode = allExtractedParks[0].parkCode;
+    resolvedMetadata.parkName = resolvedMetadata.parkName || allExtractedParks[0].parkName;
+    resolvedMetadata.lat = resolvedMetadata.lat || allExtractedParks[0].lat;
+    resolvedMetadata.lon = resolvedMetadata.lon || allExtractedParks[0].lon;
+    console.log(`${logPrefix} Parks extracted from message: ${allExtractedParks.map(p => `${p.parkName} (${p.parkCode})`).join(', ')}`);
+  } else if (resolvedMetadata.parkCode && !openEndedDiscovery) {
+    allExtractedParks = [{
+      parkCode: resolvedMetadata.parkCode,
+      parkName: resolvedMetadata.parkName || '',
+      lat: resolvedMetadata.lat,
+      lon: resolvedMetadata.lon,
+    }];
+  } else if (openEndedDiscovery) {
+    // Open-ended trip question — do not lock weather/NPS to a stale session park
+    resolvedMetadata.parkCode = null;
+    resolvedMetadata.parkName = null;
+    resolvedMetadata.lat = resolvedMetadata.lat || null;
+    resolvedMetadata.lon = resolvedMetadata.lon || null;
+    console.log(`${logPrefix} Open-ended discovery — cleared session park lock`);
   }
 
-  // Store all park names for frontend display
+  // Store all park names for frontend display (user message — not assistant/footer text)
   const parkNames = allExtractedParks.map(p => p.parkName).filter(Boolean);
+  resolvedMetadata.parksForDisplay = allExtractedParks;
 
   // Detect state park queries (not NPS — no parkCode will exist)
   const isStateParkQuery = !resolvedMetadata.parkCode && /state\s+park/i.test(lastUserMessage);
@@ -353,7 +502,9 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     // Fetch NPS facts for ALL mentioned parks in parallel
     if (allExtractedParks.length > 1) {
       const allNpsResults = await Promise.all(
-        allExtractedParks.map(p => fetchNPSFacts({ parkCode: p.parkCode }).catch(() => null))
+        allExtractedParks.map((p) =>
+          fetchNPSFacts({ parkCode: p.parkCode, parkName: p.parkName, userMessage: lastUserMessage }).catch(() => null)
+        )
       );
       const labeledFacts = allExtractedParks
         .map((p, i) => allNpsResults[i] ? `[${p.parkName}]\n${allNpsResults[i]}` : null)
@@ -375,10 +526,13 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   const alreadyShownImages = messages.some(m =>
     m.role === 'assistant' && m.content?.includes('(Photos shown to user:')
   );
-  if (allExtractedParks.length > 0 && !alreadyShownImages) {
+  // Open-ended discovery: wait for assistant text so images match recommendations.
+  if (allExtractedParks.length > 0 && !alreadyShownImages && !openEndedDiscovery) {
     parkImages = await fetchMultiParkImages(allExtractedParks, logPrefix);
   } else if (alreadyShownImages) {
     console.log(`${logPrefix} Skipping park images — already shown in this conversation`);
+  } else if (openEndedDiscovery) {
+    console.log(`${logPrefix} Deferring park images — open-ended discovery query`);
   }
 
   // Logging-related variables hoisted for return
@@ -436,6 +590,9 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     }
     enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
     enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
+    if (isSpecificPermitOnlyQuery(lastUserMessage)) {
+      enhancedSystemPrompt += `\nPERMIT-ONLY QUESTION: Answer whether the named trail/activity requires a permit. A permit or lottery is NOT a closure — do not say the trail is "closed" or "off-limits" unless an ACTIVE CLOSURE in the data says so. Water-quality cautions are separate; mention in one short sentence at most. Do not list unrelated permits for other trails.`;
+    }
     enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
     if (isNonNpsWithWebSearch) {
       enhancedSystemPrompt += `\nYou CAN generate an [ITINERARY_JSON] block for this destination. Use web search data for logistics, activities, and recommendations. Answer naturally as you would for any travel destination — do NOT mention "NPS" or "National Park Service" unless the user brought it up.\n\n`;
@@ -492,7 +649,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
       enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block if the user asks for an itinerary to a specific destination.`;
       enhancedSystemPrompt += `\nDo NOT say things like "I don't have live data" or "this isn't a national park" — just help them like a knowledgeable travel friend would.`;
-      enhancedSystemPrompt += `\nIf the query is vague (no specific destination), ask what place they want to visit.`;
+      enhancedSystemPrompt += `\nIf the query is vague (no specific destination), suggest 2–3 concrete places that fit what they described — do not only ask them to pick a destination.`;
       enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
     } else {
       // Truly off-topic or vague request
@@ -503,51 +660,38 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
     }
 
-    let rankedDiscoveryBlock = false;
-    if (
-      isTravelRelated(lastUserMessage) &&
-      isBroadDiscoveryQuery(lastUserMessage)
-    ) {
-      try {
-        const discoveryQuery = lastUserMessage.trim().slice(0, 200);
-        const { parks, count } = await executeParkSearch({
-          q: discoveryQuery,
-          limit: 5,
-          req: httpReq,
-          source: isAnonymous ? 'trailie_chat_anon' : 'trailie_chat',
-        });
-        if (count >= 3) {
-          const primaryIntents = summarizePrimaryIntents(discoveryQuery);
-          const block = formatRankedParksDiscoveryBlock(parks, primaryIntents);
-          if (block) {
-            enhancedSystemPrompt += block;
-            rankedDiscoveryBlock = true;
-            console.log(`${logPrefix} Ranked discovery search injected:`, {
-              query: discoveryQuery.slice(0, 60),
-              count,
-              intents: primaryIntents.map((i) => `${i.label}:${i.weight}`),
-              top: parks.slice(0, 3).map((p) => p.fullName || p.name),
-            });
-          }
-        }
-      } catch (discoveryErr) {
-        console.error(`${logPrefix} Discovery search error:`, discoveryErr.message);
-      }
-    }
+  }
 
-    // Fallback: regional candidate list when catalog search did not run
-    if (!rankedDiscoveryBlock) {
-      try {
-        const candidateResult = await getCandidateParks(userCity);
-        const candidateBlock = formatCandidateParksBlock(candidateResult);
-        candidateParksBlock = !!candidateBlock;
-        if (candidateBlock) {
-          enhancedSystemPrompt += candidateBlock;
-          console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
-        }
-      } catch (candidateErr) {
-        console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
+  // Open-ended / compare: ranked catalog (works with or without a session parkCode)
+  let rankedDiscoveryAppended = false;
+  if (openEndedDiscovery && allExtractedParks.length !== 1) {
+    const discoveryResult = await appendRankedDiscoveryToPrompt({
+      enhancedSystemPrompt,
+      lastUserMessage,
+      namedParkCount: allExtractedParks.length,
+      isAnonymous,
+      httpReq,
+      logPrefix,
+    });
+    enhancedSystemPrompt = discoveryResult.prompt;
+    rankedDiscoveryAppended = discoveryResult.appended;
+    if (rankedDiscoveryAppended) {
+      candidateParksBlock = true;
+    }
+  }
+
+  // Regional fallback when catalog search did not produce a block
+  if (!rankedDiscoveryAppended && !resolvedMetadata.parkCode) {
+    try {
+      const candidateResult = await getCandidateParks(userCity);
+      const candidateBlock = formatCandidateParksBlock(candidateResult);
+      candidateParksBlock = !!candidateBlock;
+      if (candidateBlock) {
+        enhancedSystemPrompt += candidateBlock;
+        console.log(`${logPrefix} Candidate parks injected:`, { userCity: userCity?.name || 'none', tiered: !!candidateResult.userCity });
       }
+    } catch (candidateErr) {
+      console.error(`${logPrefix} Candidate parks error:`, candidateErr.message);
     }
   }
 
@@ -761,6 +905,35 @@ function isCompareOrChooseQuery(userMessage = '') {
 function isPermitPlanningQuery(userMessage = '') {
   if (!userMessage) return false;
   return /\b(permit|reservation|timed entry|lottery|recreation\.gov|angels landing|north cascades|wilderness permit)\b/i.test(userMessage);
+}
+
+/** User asked about one trail/activity permit — don't footnote unrelated park permits. */
+function getUserPermitFocusTerms(userMessage = '') {
+  if (!userMessage) return [];
+  const lower = userMessage.toLowerCase();
+  const terms = [];
+  if (/\bnarrows\b/.test(lower)) terms.push('narrows', 'north creek', 'left fork', 'subway');
+  if (/angels landing/.test(lower)) terms.push('angels landing');
+  if (/\bsubway\b/.test(lower) && /zion|north creek/i.test(lower)) terms.push('subway', 'left fork');
+  if (/mystery canyon/.test(lower)) terms.push('mystery canyon');
+  if (/half dome/.test(lower)) terms.push('half dome');
+  if (/wilderness permit|backcountry permit/.test(lower)) terms.push('wilderness', 'backcountry');
+  return [...new Set(terms)];
+}
+
+function permitLineMatchesUserFocus(line, focusTerms) {
+  if (!focusTerms.length) return true;
+  const lower = String(line).toLowerCase();
+  return focusTerms.some((t) => lower.includes(t));
+}
+
+function isSpecificPermitOnlyQuery(userMessage = '') {
+  if (!isPermitPlanningQuery(userMessage)) return false;
+  return (
+    getUserPermitFocusTerms(userMessage).length > 0 &&
+    !isTrailStatusQuery(userMessage) &&
+    !isCompareOrChooseQuery(userMessage)
+  );
 }
 
 /** Day-by-day trip plans — skip Recreation.gov permit inventory footers unless user asked about permits. */
@@ -1000,13 +1173,28 @@ function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
       missedPermits = missedPermits.filter((name) => !/timed entry|day-use/i.test(name));
     }
     missedPermits = missedPermits.filter((name) => !isObscurePermitForFooter(name));
+
+    const permitFocus = getUserPermitFocusTerms(userMessage);
+    if (permitFocus.length > 0) {
+      missedPermits = missedPermits.filter((name) => permitLineMatchesUserFocus(name, permitFocus));
+    }
+
     if (missedPermits.length > 0) {
-      // Format with original lines for context (URLs, types)
-      const missedWithContext = missedPermits.map(name => {
-        const original = permitLines.find(l => l.toLowerCase().includes(name.toLowerCase()));
-        return sanitizePermitLineForFooter(original || name);
-      });
-      warnings.push({ label: 'Permits/reservations to double-check', items: missedWithContext });
+      const seenPermitKeys = new Set();
+      const missedWithContext = missedPermits
+        .map((name) => {
+          const original = permitLines.find((l) => l.toLowerCase().includes(name.toLowerCase()));
+          return sanitizePermitLineForFooter(original || name);
+        })
+        .filter((line) => {
+          const key = line.toLowerCase().replace(/\s+/g, ' ').trim();
+          if (seenPermitKeys.has(key)) return false;
+          seenPermitKeys.add(key);
+          return true;
+        });
+      if (missedWithContext.length > 0) {
+        warnings.push({ label: 'Permits/reservations to double-check', items: missedWithContext });
+      }
     } else if (permits.length > 0) {
       // Permits were mentioned, but check for vague/generic references
       const hasSpecificPermit = permits.some(name => {
@@ -1315,7 +1503,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, userCity, candidateParksBlock, resolvedMetadata, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -1521,13 +1709,14 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       }
     }
 
-    // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
-    if (parkImages.length === 0 && !alreadyShownImages && response.content) {
-      const responseParks = extractAllParksFromMessage(response.content);
-      if (responseParks.length > 0) {
-        parkImages = await fetchMultiParkImages(responseParks, '[AI Post]');
-      }
-    }
+    const displayMeta = await finalizeParkImagesAndMetadata({
+      validatedContent: response.content,
+      resolvedMetadata,
+      parkNamesFromUser: parkNames,
+      parkImages,
+      alreadyShownImages,
+      logPrefix: '[AI]',
+    });
 
     // Structured logging — fire and forget
     const requestEndTime = Date.now();
@@ -1566,7 +1755,19 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       error: null,
     });
 
-    res.json({ data: { ...response, hasLiveData: !!(npsFacts || weatherFacts), parkName: resolvedMetadata.parkName || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] } });
+    res.json({
+      data: {
+        ...response,
+        hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+        hasWebSearch: !!webSearchFacts,
+        parkName: displayMeta.parkName,
+        parkNames: displayMeta.parkNames,
+        confidence,
+        planScore,
+        intent: intent?.primaryIntent || null,
+        parkImages: displayMeta.parkImages,
+      },
+    });
 
   } catch (error) {
     // Structured error logging
@@ -1809,16 +2010,17 @@ ${cleanContent.substring(0, 6000)}`;
             let planScore = null;
             if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
 
-            // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
-            if (parkImages.length === 0 && !alreadyShownImages && validatedContent) {
-              const responseParks = extractAllParksFromMessage(validatedContent);
-              if (responseParks.length > 0) {
-                parkImages = await fetchMultiParkImages(responseParks, '[AI Stream Post]');
-              }
-            }
+            const streamDisplayMeta = await finalizeParkImagesAndMetadata({
+              validatedContent,
+              resolvedMetadata,
+              parkNamesFromUser: parkNames,
+              parkImages,
+              alreadyShownImages,
+              logPrefix: '[AI Stream]',
+            });
 
             console.log('[AI Stream] Sending done event:', { hasItinerary: !!itineraryData, itineraryDays: itineraryData?.days?.length || 0, contentLen: validatedContent?.length || 0 });
-            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: streamDisplayMeta.parkName, parkNames: streamDisplayMeta.parkNames, hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: streamDisplayMeta.parkImages })}\n\n`);
 
             if (itineraryData) {
               const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -1880,15 +2082,16 @@ ${cleanContent.substring(0, 6000)}`;
           let planScore = null;
           if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
 
-          // Post-fetch images if needed
-          if (parkImages.length === 0 && !alreadyShownImages && validatedContent) {
-            const responseParks = extractAllParksFromMessage(validatedContent);
-            if (responseParks.length > 0) {
-              parkImages = await fetchMultiParkImages(responseParks, '[AI Stream Post]');
-            }
-          }
+          const streamFallbackMeta = await finalizeParkImagesAndMetadata({
+            validatedContent,
+            resolvedMetadata,
+            parkNamesFromUser: parkNames,
+            parkImages,
+            alreadyShownImages,
+            logPrefix: '[AI Stream Fallback]',
+          });
 
-          res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+          res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: streamFallbackMeta.parkName, parkNames: streamFallbackMeta.parkNames, hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: streamFallbackMeta.parkImages })}\n\n`);
 
           if (itineraryData) {
             const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -2023,15 +2226,16 @@ ${cleanContent.substring(0, 6000)}`;
         let openaiPlanScore = null;
         if (openaiItineraryData) openaiPlanScore = scoreItinerary(openaiItineraryData, constraints);
 
-        // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
-        if (parkImages.length === 0 && !alreadyShownImages && openaiValidatedContent) {
-          const responseParks = extractAllParksFromMessage(openaiValidatedContent);
-          if (responseParks.length > 0) {
-            parkImages = await fetchMultiParkImages(responseParks, '[AI Stream OpenAI Post]');
-          }
-        }
+        const openaiStreamMeta = await finalizeParkImagesAndMetadata({
+          validatedContent: openaiValidatedContent,
+          resolvedMetadata,
+          parkNamesFromUser: parkNames,
+          parkImages,
+          alreadyShownImages,
+          logPrefix: '[AI Stream OpenAI]',
+        });
 
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-5.4-mini', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [], hasItinerary: !!openaiItineraryData, itineraryData: openaiItineraryData || null, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: parkImages || [] })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-5.4-mini', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: openaiStreamMeta.parkName, parkNames: openaiStreamMeta.parkNames, hasItinerary: !!openaiItineraryData, itineraryData: openaiItineraryData || null, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: openaiStreamMeta.parkImages })}\n\n`);
 
         if (openaiItineraryData) {
           const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
@@ -2436,13 +2640,14 @@ Ready to continue planning? 🚀`,
 
     const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
 
-    // Post-fetch: if no images were pre-fetched and none shown before, extract parks from AI response
-    if (parkImages.length === 0 && !anonAlreadyShownImages && response.content) {
-      const responseParks = extractAllParksFromMessage(response.content);
-      if (responseParks.length > 0) {
-        parkImages = await fetchMultiParkImages(responseParks, '[AI Anon Post]');
-      }
-    }
+    const anonDisplayMeta = await finalizeParkImagesAndMetadata({
+      validatedContent: response.content,
+      resolvedMetadata,
+      parkNamesFromUser: anonParkNames,
+      parkImages,
+      alreadyShownImages: anonAlreadyShownImages,
+      logPrefix: '[AI Anon]',
+    });
 
     // Structured logging — fire and forget
     const anonRequestEndTime = Date.now();
@@ -2491,13 +2696,14 @@ Ready to continue planning? 🚀`,
         messageCount: userMessageCount,
         canSendMore: session.canSendMessage(),
         hasLiveData: !!(npsFacts || weatherFacts),
-        parkName: resolvedMetadata.parkName || null,
+        parkName: anonDisplayMeta.parkName,
+        parkNames: anonDisplayMeta.parkNames,
         hasItinerary: !!anonItineraryData,
         itinerary: anonItineraryData || null,
         confidence: anonConfidence,
         planScore: anonPlanScore,
         intent: anonIntent?.primaryIntent || null,
-        parkImages: parkImages || []
+        parkImages: anonDisplayMeta.parkImages
       }
     });
 

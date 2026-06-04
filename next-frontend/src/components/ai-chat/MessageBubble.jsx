@@ -261,14 +261,26 @@ const MessageBubble = ({
             </div>
           )}
 
-          {/* Park photo gallery — 2×2 grid */}
-          {!isUser && parkImages?.length > 0 && (
+          {/* Park photo gallery — layout matches count (no empty 2×2 cells) */}
+          {!isUser && parkImages?.length > 0 && (() => {
+            const photos = parkImages.slice(0, 4);
+            const gridClass =
+              photos.length === 1
+                ? 'grid-cols-1'
+                : photos.length === 2
+                  ? 'grid-cols-2'
+                  : photos.length === 3
+                    ? 'grid-cols-2'
+                    : 'grid-cols-2';
+            return (
             <>
-              <div className="grid grid-cols-2 gap-1.5 mb-2 rounded-xl overflow-hidden">
-                {parkImages.slice(0, 4).map((img, idx) => (
+              <div className={`grid ${gridClass} gap-1.5 mb-2 rounded-xl overflow-hidden`}>
+                {photos.map((img, idx) => (
                   <div
-                    key={idx}
-                    className="relative aspect-[4/3] overflow-hidden group/img cursor-pointer"
+                    key={`${img.url || 'park'}-${idx}`}
+                    className={`relative aspect-[4/3] overflow-hidden group/img cursor-pointer${
+                      photos.length === 3 && idx === 2 ? ' col-span-2 max-h-40' : ''
+                    }`}
                     style={{ backgroundColor: 'var(--surface-hover)' }}
                     onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
                     role="button"
@@ -281,7 +293,10 @@ const MessageBubble = ({
                       alt={img.altText || img.title || 'Park photo'}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
                       loading="lazy"
-                      onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/og-image-trailverse.jpg';
+                      }}
                     />
                   </div>
                 ))}
@@ -296,7 +311,8 @@ const MessageBubble = ({
                 </button>
               )}
             </>
-          )}
+            );
+          })()}
 
           <div className="prose prose-sm max-w-none"
             style={{

@@ -1,6 +1,19 @@
 const axios = require('axios');
 
 const { getFeeFreeInfo } = require('./feeFreeDaysService');
+const { isTravelRelated: isTravelRelatedQuery } = require('../utils/discoveryQuery');
+const {
+  classifyQueryRegex,
+  resolveSearchCategory,
+} = require('./webSearchClassifier');
+const { summarizeWebResultsForTrailie } = require('./webSearchSummarizer');
+const { rankAndFilterWebResults } = require('../utils/webSearchRelevance');
+const { fetchNpsRoadConditionsFacts, needsNpsRoadConditionsBlock } = require('./npsParkConditionsService');
+const {
+  isClosureCategory,
+  isCautionCategory,
+  isInformationCategory,
+} = require('../utils/npsAlertUtils');
 
 const OWM_KEY = process.env.OPENWEATHER_API_KEY; // server-side key ⚠️ not REACT_APP_*
 const OWM_BASE = 'https://api.openweathermap.org/data/2.5/forecast';
@@ -60,9 +73,10 @@ const STRATEGY = {
   'nps-covered':       { skip: true },
   'history-facts':     { skip: true },
 
-  // LIVE — past-day freshness, authoritative domains
-  'road-conditions':   { primary: 'brave',  domains: ['nps.gov', 'weather.gov'],                   freshness: 'pd', n: 3 },
-  'wildfire-smoke':    { primary: 'brave',  domains: ['inciweb.nwcg.gov', 'nps.gov', 'airnow.gov'], freshness: 'pd', n: 3 },
+  // LIVE — past-week freshness (pd often returns 0 for nps.gov pages indexed older than 24h)
+  'operational-status': { primary: 'brave', domains: ['nps.gov'],                                    freshness: 'pw', n: 5 },
+  'road-conditions':   { primary: 'brave',  domains: ['nps.gov', 'weather.gov'],                   freshness: 'pw', n: 5 },
+  'wildfire-smoke':    { primary: 'brave',  domains: ['inciweb.nwcg.gov', 'nps.gov', 'airnow.gov'], freshness: 'pw', n: 5 },
 
   // RECENT — past-week freshness
   'trail-conditions':  { primary: 'brave',  domains: ['nps.gov', 'alltrails.com'],                 freshness: 'pw', n: 3 },
@@ -72,7 +86,7 @@ const STRATEGY = {
   // LOCAL — Serper Places, no freshness filter
   'local-business':    { primary: 'serper', domains: [],                                            freshness: null, n: 4 },
 
-  // GENERAL — monthly freshness, open web
+  // GENERAL — monthly freshness, open web (retrieval only; summary via OpenAI)
   'planning':          { primary: 'tavily', domains: [],                                            freshness: 'pm', n: 3 }
 };
 
@@ -182,7 +196,7 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
  * @param {Object} params - { parkCode }
  * @returns {Promise<string|null>} Formatted NPS facts or null
  */
-async function fetchNPSFacts({ parkCode }) {
+async function fetchNPSFacts({ parkCode, parkName = null, userMessage = '' }) {
   if (!parkCode) {
     console.log('⚠️ NPS facts skipped: missing parkCode');
     return null;
@@ -229,10 +243,10 @@ async function fetchNPSFacts({ parkCode }) {
       facts.push(`Available Activities: ${topActivities}`);
     }
 
-    // Alerts — split by category
-    const closures = parkAlerts.filter(a => a.category === 'Closure').slice(0, 3);
-    const cautions = parkAlerts.filter(a => a.category === 'Caution').slice(0, 3);
-    const infos = parkAlerts.filter(a => a.category === 'Information').slice(0, 3);
+    // Alerts — NPS API uses "Park Closure", "Caution", "Information" (not always exact "Closure")
+    const closures = parkAlerts.filter((a) => isClosureCategory(a.category)).slice(0, 5);
+    const cautions = parkAlerts.filter((a) => isCautionCategory(a.category)).slice(0, 3);
+    const infos = parkAlerts.filter((a) => isInformationCategory(a.category)).slice(0, 3);
 
     if (closures.length > 0) {
       facts.push('⚠️ ACTIVE CLOSURES:\n' + closures.map(a => `- ${a.title}`).join('\n'));
@@ -291,6 +305,16 @@ async function fetchNPSFacts({ parkCode }) {
       facts.push('Permits: No permit requirements found on Recreation.gov for this park');
     }
 
+    if (needsNpsRoadConditionsBlock(userMessage)) {
+      const roadBlock = await fetchNpsRoadConditionsFacts({
+        parkCode,
+        parkName: parkName || park.fullName,
+        userMessage,
+        parkAlerts,
+      });
+      if (roadBlock) facts.push(roadBlock);
+    }
+
     return facts.filter(Boolean).join('\n\n');
   } catch (error) {
     console.error('NPS facts error:', error.message);
@@ -340,8 +364,11 @@ function enrichQuery(rawQuery, parkName, category) {
   }
 
   const year = new Date().getFullYear();
-  if (category === 'road-conditions' || category === 'wildfire-smoke') {
+  if (category === 'operational-status' || category === 'road-conditions' || category === 'wildfire-smoke') {
     if (!q.includes(String(year))) q = `${q} ${year}`;
+  }
+  if (category === 'operational-status' && !/nps|national park/i.test(q)) {
+    q = `${q} NPS`;
   }
   if (category === 'trail-conditions') {
     if (!/current|latest|now|today/i.test(q)) q = `${q} current conditions`;
@@ -359,47 +386,67 @@ function enrichQuery(rawQuery, parkName, category) {
  * @param {string} userMessage
  * @returns {string} One of the keys in STRATEGY
  */
-function classifyQuery(userMessage) {
+/**
+ * Topics TrailVerse does not answer from NPS live API — use web search (logged-in).
+ */
+function hasNonNpsTravelSignals(userMessage) {
+  if (!userMessage) return false;
   const msg = userMessage.toLowerCase();
 
-  // SKIP buckets — NPS/RIDB already provides authoritative data for these.
-  // Checked first so specific topics don't leak into broader categories.
-  if (/(permit|reservation|timed entry|lottery|campsite|campground|visitor center)/i.test(msg)) {
-    return 'nps-covered';
-  }
-  if (/(history|founded|established|famous|known for|significance|when was)/i.test(msg)) {
-    return 'history-facts';
-  }
-
-  // LIVE buckets — past-day freshness (avoid bare "closed" — e.g. "is Angels Landing open")
+  if (/state\s+park/i.test(msg)) return true;
+  if (/\b(vs\.?|versus|compare|between)\b/.test(msg)) return true;
   if (
-    /(road condition|road closure|road open|road status|construction|detour)/i.test(msg) ||
-    (/\broad\b/i.test(msg) && /\b(closed|closure|closures)\b/i.test(msg))
+    /(?:restaurant|food|\beat\b|dine|dining|cafe|coffee|\bbar\b|hotel|motel|lodge|lodging|cabin|airbnb|\bstay\b|accommodation|gas station|grocery|town|gateway|nearby|outfitter|gear shop|rental|shuttle service|tour company|guide service|booking|availability|price|cost|review|rating)/i.test(
+      msg
+    )
   ) {
-    return 'road-conditions';
+    return true;
   }
-  if (/(wildfire|fire|smoke|air quality|haze|flood)/i.test(msg)) {
-    return 'wildfire-smoke';
+  if (
+    /(road condition|road closure|road open|road status|construction|detour|trail condition|trail report|muddy|washout|wildfire|smoke|air quality|haze|flood)/i.test(
+      msg
+    )
+  ) {
+    return true;
+  }
+  if (/(\bevents?\b|\bfestivals?\b|ranger program|wildflower|bloom|fall color|aurora|northern lights)/i.test(msg)) {
+    return true;
+  }
+  if (/(operational|trail condition|wildfire|\bsmoke\b|air quality)/i.test(msg)) {
+    return true;
+  }
+  if (
+    /(best|which|where|suggest|recommend|options?|ideas?|looking for|trying to find|not sure|help me (pick|choose|decide)|or even|somewhere)/i.test(
+      msg
+    )
+  ) {
+    return true;
+  }
+  if (/\b(swim|swimming|beach|beaches|ocean|coast|coastal|lake|lakes|hot spring|relax|chill|romantic|couple|girlfriend|boyfriend|partner)\b/i.test(msg)) {
+    return true;
+  }
+  if (/\b(current|currently|right now|today|tonight|this week|latest|open now|still closed)\b/i.test(msg)) {
+    return true;
   }
 
-  // RECENT buckets — past-week freshness
-  if (/(trail condition|trail report|muddy|snow|washout|snowpack|icy)/i.test(msg)) {
-    return 'trail-conditions';
-  }
-  if (/(wildflower|bloom|fall color|foliage|rut|migration|salmon run|northern lights|aurora|meteor|bird|fish|forag|mushroom)/i.test(msg)) {
-    return 'wildlife-seasonal';
-  }
-  if (/(event|festival|ranger program)/i.test(msg)) {
-    return 'events';
-  }
+  const category = classifyQueryRegex(userMessage);
+  return !STRATEGY[category]?.skip;
+}
 
-  // LOCAL bucket — Serper Places, no freshness
-  if (/(restaurant|food|eat|dine|dining|cafe|coffee|bar|hotel|motel|lodge|lodging|cabin|airbnb|stay|accommodation|gas station|grocery|store|shop|outfitter|gear|rent|shuttle|tour company|guide service|workshop|class|course|lesson|tour|guided|excursion|experience|operator|kayak|canoe|raft|climb|zipline|horseback|bike|snorkel|dive|surf|ski|paddle)/i.test(msg)) {
-    return 'local-business';
-  }
+/**
+ * Pure NPS live-data questions — no web search.
+ */
+function isNpsAuthoritativeOnly(userMessage) {
+  if (!userMessage || userMessage.trim().length < 8) return false;
+  if (!isTravelRelated(userMessage)) return false;
+  const category = classifyQueryRegex(userMessage);
+  if (!STRATEGY[category]?.skip) return false;
+  return !hasNonNpsTravelSignals(userMessage);
+}
 
-  // Default: general planning (monthly freshness, open web)
-  return 'planning';
+/** Sync regex classification (tests / gating). */
+function classifyQuery(userMessage) {
+  return classifyQueryRegex(userMessage);
 }
 
 /**
@@ -410,26 +457,53 @@ function classifyQuery(userMessage) {
  * @param {string|null} [options.freshness=null] - 'pd' | 'pw' | 'pm' | null
  * @param {string[]} [options.domains=[]] - site: allowlist appended to query
  */
-async function searchBrave(query, { count = 5, freshness = null, domains = [] } = {}) {
-  let q = query;
-  if (domains.length) {
-    q = `${q} (${domains.map(d => `site:${d}`).join(' OR ')})`;
+function buildBraveQuery(query, domains, parkCode) {
+  if (!domains?.length) return query;
+  const code = parkCode ? String(parkCode).toLowerCase() : null;
+  if (code && domains.includes('nps.gov')) {
+    return `${query} site:nps.gov/${code}`;
   }
-  const params = { q, count };
-  if (freshness) params.freshness = freshness;
+  if (domains.length === 1) return `${query} site:${domains[0]}`;
+  return `${query} (${domains.map((d) => `site:${d}`).join(' OR ')})`;
+}
 
-  const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
-    headers: { 'X-Subscription-Token': BRAVE_API_KEY, 'Accept': 'application/json' },
-    params,
-    timeout: 5000
-  });
+async function searchBrave(query, { count = 5, freshness = null, domains = [], parkCode = null } = {}) {
+  const q = buildBraveQuery(query, domains, parkCode);
+  const baseParams = { q, count: Math.min(count, 20) };
 
-  const results = response.data?.web?.results || [];
-  return results.map(r => ({
+  async function runSearch(params) {
+    const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
+      headers: { 'X-Subscription-Token': BRAVE_API_KEY, Accept: 'application/json' },
+      params,
+      timeout: 5000,
+    });
+    return response.data?.web?.results || [];
+  }
+
+  let raw = [];
+  if (freshness) {
+    raw = await runSearch({ ...baseParams, freshness });
+    if (raw.length === 0) {
+      console.log('[WebSearch] Brave freshness filter returned 0 — retrying without freshness');
+      raw = await runSearch(baseParams);
+    }
+  } else {
+    raw = await runSearch(baseParams);
+  }
+
+  // If multi-domain OR query still thin, retry primary domain only (usually nps.gov).
+  if (raw.length < 2 && domains.length > 1) {
+    const fallbackQ = buildBraveQuery(query, [domains[0]], parkCode);
+    const fallbackParams = { q: fallbackQ, count: baseParams.count };
+    const more = await runSearch(freshness ? { ...fallbackParams, freshness } : fallbackParams);
+    if (more.length > raw.length) raw = more;
+  }
+
+  return raw.map((r) => ({
     title: r.title,
     snippet: r.description,
     url: r.url,
-    source: 'brave'
+    source: 'brave',
   }));
 }
 
@@ -492,7 +566,7 @@ async function searchTavily(query, { count = 5, depth = 'basic', domains = [] } 
     query,
     max_results: count,
     search_depth: depth,
-    include_answer: true
+    include_answer: false
   };
   if (domains.length) body.include_domains = domains;
 
@@ -500,7 +574,6 @@ async function searchTavily(query, { count = 5, depth = 'basic', domains = [] } 
     timeout: 7000
   });
 
-  const answer = response.data?.answer || null;
   const results = (response.data?.results || []).map(r => ({
     title: r.title,
     snippet: r.content?.substring(0, 250),
@@ -509,7 +582,7 @@ async function searchTavily(query, { count = 5, depth = 'basic', domains = [] } 
     score: r.score || 0
   }));
 
-  return { answer, results };
+  return { results };
 }
 
 /**
@@ -537,7 +610,8 @@ function deduplicateResults(results) {
  * Strategy:
  *   - LOCAL queries (restaurants, hotels): Serper (Google Places) primary
  *   - REALTIME queries (closures, events): Brave (fresh index) primary
- *   - PLANNING queries (tips, itineraries): Tavily (AI summary) primary
+ *   - PLANNING queries (tips, itineraries): Tavily retrieval primary
+ *   - Digest: OpenAI (TrailVerse) summarizes snippets — never third-party AI answers
  *
  * Each provider call is wrapped in a timeout so a slow provider can't block.
  * Backups only run if the primary returns fewer than PRIMARY_MIN_RESULTS — keeps
@@ -550,12 +624,12 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     return null;
   }
 
-  const category = classifyQuery(userMessage);
-  const strategy = STRATEGY[category];
+  const category = await resolveSearchCategory(userMessage);
+  const strategy = STRATEGY[category] || STRATEGY.planning;
 
-  // SKIP buckets — authoritative NPS/RIDB data already in the prompt.
-  if (strategy.skip) {
-    console.log(`[WebSearch] SKIP | category=${category} (covered by NPS/RIDB)`);
+  // NPS-authoritative only — skip web. Mixed messages (permit + hotel) still search.
+  if (strategy.skip && !hasNonNpsTravelSignals(userMessage)) {
+    console.log(`[WebSearch] SKIP | category=${category} (NPS/RIDB only)`);
     return null;
   }
 
@@ -577,19 +651,19 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
     if (name === 'brave' && BRAVE_API_KEY) {
       return {
         name: 'brave',
-        run: () => searchBrave(query, { count: n, freshness, domains }).then(r => ({ results: r, aiAnswer: null }))
+        run: () => searchBrave(query, { count: n, freshness, domains, parkCode }).then(r => ({ results: r }))
       };
     }
     if (name === 'serper' && SERPER_API_KEY) {
       return {
         name: 'serper',
-        run: () => searchSerper(query, { num: n, domains }).then(r => ({ results: r, aiAnswer: null }))
+        run: () => searchSerper(query, { num: n, domains }).then(r => ({ results: r }))
       };
     }
     if (name === 'tavily' && TAVILY_API_KEY) {
       return {
         name: 'tavily',
-        run: () => searchTavily(query, { count: n, domains }).then(r => ({ results: r.results, aiAnswer: r.answer }))
+        run: () => searchTavily(query, { count: n, domains }).then(r => ({ results: r.results }))
       };
     }
     return null;
@@ -603,7 +677,6 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
 
   if (ordered.length === 0) return null;
 
-  let aiAnswer = null;
   const allResults = [];
   const telemetry = [];
 
@@ -620,7 +693,6 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
   });
   if (pRes.value) {
     allResults.push(...pRes.value.results);
-    if (pRes.value.aiAnswer) aiAnswer = pRes.value.aiAnswer;
   }
 
   // Run backups only if the primary was too thin.
@@ -647,26 +719,40 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
       });
       if (result.value) {
         allResults.push(...result.value.results);
-        if (!aiAnswer && result.value.aiAnswer) aiAnswer = result.value.aiAnswer;
       }
     }
   }
 
-  // Dedup and cap. 4 top results is plenty for the system prompt.
+  // Dedup, relevance-rank, cap. 4 top results is plenty for the system prompt.
   const uniqueResults = deduplicateResults(allResults);
-  const finalResults = uniqueResults.slice(0, 4);
+  const ranked = rankAndFilterWebResults(uniqueResults, {
+    userMessage,
+    parkName,
+    parkCode,
+    category,
+  });
+  const finalResults = ranked.slice(0, 4);
+
+  let trailieDigest = null;
+  if (finalResults.length > 0) {
+    trailieDigest = await summarizeWebResultsForTrailie({
+      userMessage,
+      parkName,
+      category,
+      results: finalResults,
+    });
+  }
 
   console.log(
-    `[WebSearch] done | category=${category} final=${finalResults.length} hasAnswer=${!!aiAnswer} ` +
+    `[WebSearch] done | category=${category} final=${finalResults.length} hasDigest=${!!trailieDigest} ` +
     `providers=${telemetry.map(t => `${t.provider}${t.primary ? '*' : ''}:${t.timedOut ? 'TO' : t.n}@${t.ms}ms`).join(' ')}`
   );
 
-  if (finalResults.length === 0 && !aiAnswer) {
-    // Don't cache total failures — let the next call retry.
+  if (finalResults.length === 0) {
     return null;
   }
 
-  const formatted = formatWebResults(finalResults, aiAnswer, category);
+  const formatted = formatWebResults(finalResults, trailieDigest, category);
   webSearchCache.set(cacheKey, formatted);
   return formatted;
 }
@@ -675,7 +761,7 @@ async function fetchWebSearchFacts({ userMessage, parkName, parkCode }) {
  * Format web search results for injection into the AI system prompt.
  * Groups Google Places separately for local-business readability.
  */
-function formatWebResults(finalResults, aiAnswer, category) {
+function formatWebResults(finalResults, trailieDigest, category) {
   let formatted = `Live Web Search Results (category: ${category})`;
   const providerList = [...new Set(finalResults.map(r => r.source))];
   if (providerList.length) {
@@ -683,8 +769,8 @@ function formatWebResults(finalResults, aiAnswer, category) {
   }
   formatted += ':\n';
 
-  if (aiAnswer) {
-    formatted += `\nAI Summary: ${aiAnswer}\n`;
+  if (trailieDigest) {
+    formatted += `\nTrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):\n${trailieDigest}\n`;
   }
 
   const places = finalResults.filter(r => r.source === 'google-places');
@@ -714,38 +800,18 @@ function formatWebResults(finalResults, aiAnswer, category) {
  * @returns {boolean} Whether the message is about travel or parks
  */
 function isTravelRelated(userMessage) {
-  if (!userMessage) return false;
-
-  // Non-travel topics to reject — don't waste search API calls
-  const offTopicPatterns = /(write me|code|program|script|debug|compile|math|equation|calculate|homework|essay|summarize this article|translate|recipe|cook|stock|invest|crypto|bitcoin|medical|diagnos|symptom|legal advice|lawsuit|politics|election|celebrity|gossip|joke|riddle|poem|story|fiction|game|minecraft|fortnite|anime|movie review|song lyric)/i;
-  if (offTopicPatterns.test(userMessage)) return false;
-
-  // Travel/outdoor/park related topics — green light
-  const travelPatterns = /(park|trail|hike|camp|visit|trip|travel|itinerary|road trip|drive|fly|airport|hotel|lodge|cabin|tent|backpack|scenic|viewpoint|overlook|canyon|mountain|lake|river|waterfall|beach|forest|desert|glacier|wildlife|bear|elk|sunrise|sunset|star|astrophotography|photograph|permit|reservation|entry|fee|ranger|visitor center|campground|trailhead|shuttle|gear|boot|pack|map|route|weather|season|crowd|busy|quiet|shoulder|gateway|town|nearby|restaurant|food|eat|dine|picnic|national|state park|wilderness|outdoor|adventure|explore|nature|forag|mushroom|morel|workshop|class|course|lesson|tour|excursion|activit|experience|fish|kayak|canoe|raft|climb|rappel|zipline|horseback|bike|cycling|bird|birding|snorkel|dive|surf|ski|snowshoe|swim|paddle|guided|instruction)/i;
-  return travelPatterns.test(userMessage);
+  return isTravelRelatedQuery(userMessage);
 }
 
 /**
- * Determine if web search would benefit the user's question
- * @param {string} userMessage - The user's message
- * @returns {boolean} Whether web search should be performed
+ * Logged-in web search policy: NPS API for park-authoritative facts; web for everything else travel-related.
+ * @param {string} userMessage
+ * @returns {boolean}
  */
 function needsWebSearch(userMessage) {
-  if (!userMessage) return false;
-
-  // Trust the classifier: if it identifies any specific category (road, wildfire,
-  // trail, wildlife, events, local-business, or the SKIP buckets), it's clearly a
-  // travel/park-related query. SKIP buckets still short-circuit inside
-  // fetchWebSearchFacts, so this just ensures we don't reject good queries at the gate.
-  const category = classifyQuery(userMessage);
-  if (category !== 'planning') return true;
-
-  // Generic "planning" default — apply the old safety gates to reject off-topic queries
+  if (!userMessage || userMessage.trim().length < 8) return false;
   if (!isTravelRelated(userMessage)) return false;
-
-  // Topics where live web data is especially valuable
-  const webSearchKeywords = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|where to sleep|gas station|grocery|store|shop|tour company|outfitter|guide service|shuttle|transport|road condition|road closure|current|latest|recent|update|2025|2026|2027|event|festival|reservation|booking|permit|availability|price|cost|hour|open|close|schedule|season|crowd|busy|best time|review|recommend|tip|gear|rent|fly|drive|airport|nearby|town|gateway|workshop|class|classes|course|lesson|tour|excursion|activit|experience|guided|instruction|training|company|provider|operator|find|search|look for|check|suggest|where can|who offer|sign up|forag|mushroom|morel|fish|kayak|canoe|raft|climb|zipline|horseback|bike|bird|snorkel|dive|surf|ski|snowshoe|paddle|memorial day|labor day|independence day|july 4|4th of july|fourth of july|veterans day|holiday weekend|long weekend|weekend trip|when to visit|when to go|fee.free|entrance fee|free entrance|spring break|summer vacation|fall foliage|winter trip|shoulder season|family vacation|road trip|which park|what park|compare park)/i;
-  return webSearchKeywords.test(userMessage);
+  return !isNpsAuthoritativeOnly(userMessage);
 }
 
 /**
@@ -765,20 +831,12 @@ function shouldAppendAnonymousWebSearchUpsell(userMessage) {
 
   if (!isTravelRelated(userMessage)) return { append: false };
 
-  if (
-    category === 'nps-covered' ||
-    category === 'history-facts' ||
-    category === 'wildlife-seasonal' ||
-    category === 'events'
-  ) {
+  if (isNpsAuthoritativeOnly(userMessage)) {
     return { append: false };
   }
 
-  if (category === 'planning') {
-    const localOrRoad = /(restaurant|food|eat|dining|hotel|lodge|lodging|stay|accommodation|gas station|grocery|road condition|road closure|price|cost|review|rating|booking|availability|open now|hours|tour company|outfitter|guide service|shuttle)/i.test(
-      userMessage
-    );
-    if (localOrRoad) return { append: true, variant: 'local' };
+  if (hasNonNpsTravelSignals(userMessage)) {
+    return { append: true, variant: 'local' };
   }
 
   return { append: false };
@@ -874,7 +932,7 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
 
     if (shouldFetchNPS) {
       promises.push(
-        fetchNPSFacts({ parkCode }).then(facts => { results.npsFacts = facts; }).catch(err => {
+        fetchNPSFacts({ parkCode, parkName, userMessage }).then(facts => { results.npsFacts = facts; }).catch(err => {
           console.error('[Facts] NPS fetch error:', err.message);
           results.npsFacts = null;
         })
@@ -1124,6 +1182,8 @@ module.exports = {
   needsWebSearch,
   shouldAppendAnonymousWebSearchUpsell,
   isTravelRelated,
+  classifyQuery,
+  resolveSearchCategory,
   extractUserCity,
   getCandidateParks,
   formatCandidateParksBlock,

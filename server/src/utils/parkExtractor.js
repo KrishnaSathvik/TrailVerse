@@ -101,7 +101,8 @@ const PARK_NAME_TO_CODE = new Map([
   ['joshua tree',            { code: 'jotr', lat: 33.873, lon: -115.901 }],
   ['white sands',            { code: 'whsa', lat: 32.779, lon: -106.171 }],
   ['capitol reef',           { code: 'care', lat: 38.367, lon: -111.262 }],
-  ['hot springs',            { code: 'hosp', lat: 34.521, lon: -93.042  }],
+  // Bare "hot springs" omitted — matches activity phrases ("beach or hot springs") and
+  // misroutes weather/NPS/images. Use "hot springs national park" or visit the park by name.
   ['great basin',            { code: 'grba', lat: 38.983, lon: -114.300 }],
   ['mesa verde',             { code: 'meve', lat: 37.230, lon: -108.462 }],
   ['mt rainier',             { code: 'mora', lat: 46.852, lon: -121.726 }],
@@ -154,6 +155,29 @@ const PARK_NAME_TO_CODE = new Map([
 
 // Pre-compute sorted keys (longest first) for greedy matching
 const SORTED_KEYS = [...PARK_NAME_TO_CODE.keys()].sort((a, b) => b.length - a.length);
+
+/**
+ * Short aliases that also describe activities/features — skip unless the user
+ * names the park explicitly (e.g. "hot springs national park").
+ */
+const ACTIVITY_AMBIGUOUS_KEYS = new Set(['hot springs']);
+
+function isActivityPhraseNotPark(message, key) {
+  if (!ACTIVITY_AMBIGUOUS_KEYS.has(key) || !message) return false;
+  const lower = message.toLowerCase();
+  if (/\bhot springs national park\b/.test(lower)) return false;
+  if (
+    /\b(beach|beaches|lake|lakes|ocean|swim|swimming|coast|coastal|cool|relax|chill|couples?)\b/.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+  if (/\b(which|best|where|suggest|recommend|options?|ideas?|or even)\b/.test(lower)) {
+    return true;
+  }
+  return false;
+}
 
 // ── Dynamic NPS Map (lazy-loaded from npsService.getAllParks()) ─────
 
@@ -298,6 +322,7 @@ function extractParkFromMessage(message) {
   // 1. Hardcoded map (always available, includes landmark aliases)
   for (const key of SORTED_KEYS) {
     if (lower.includes(key)) {
+      if (isActivityPhraseNotPark(message, key)) continue;
       const entry = PARK_NAME_TO_CODE.get(key);
       const parkName = key.replace(/\b\w/g, c => c.toUpperCase());
       return { parkCode: entry.code, lat: entry.lat, lon: entry.lon, parkName };
@@ -333,6 +358,7 @@ function extractAllParksFromMessage(message) {
   // 1. Hardcoded map
   for (const key of SORTED_KEYS) {
     if (lower.includes(key)) {
+      if (isActivityPhraseNotPark(message, key)) continue;
       const entry = PARK_NAME_TO_CODE.get(key);
       if (!usedCodes.has(entry.code)) {
         usedCodes.add(entry.code);
