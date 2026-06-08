@@ -3,7 +3,6 @@
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   ArrowRight,
   CheckCircle,
   ChevronDown,
@@ -15,12 +14,12 @@ import {
 } from '@components/icons';
 import ShareButtons from '@/components/common/ShareButtons';
 import Button from '@/components/common/Button';
+import ReturnNavLink from '@/components/common/ReturnNavLink';
 import TableOfContents from '@/components/blog/TableOfContents';
 import GuideCard from '@/components/guides/GuideCard';
 import IntentTopMatches from '@/components/intent/IntentTopMatches';
 import { getIntentLandingByPath } from '@/data/intentLandings';
 import { parkToSlug } from '@/utils/parkSlug';
-import { useReturnNavigation } from '@/hooks/useReturnNavigation';
 
 const surfaceCardStyle = {
   background:
@@ -91,10 +90,6 @@ function IntentFaqAccordion({ items }) {
 }
 
 export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
-  const { backHref, backLabel } = useReturnNavigation({
-    defaultHref: '/guides',
-    defaultLabel: 'All planning guides',
-  });
   const contentRef = useRef(null);
   const relatedLandings = (landing.relatedLinks ?? [])
     .map((link) => getIntentLandingByPath(link.href))
@@ -129,14 +124,11 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
           boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <Link
-          href={backHref}
+        <ReturnNavLink
+          defaultHref="/guides"
+          defaultLabel="All planning guides"
           className="inline-flex items-center gap-2 mb-6 text-sm font-medium transition hover:opacity-80"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {backLabel}
-        </Link>
+        />
 
         {landing.category ? (
           <div className="mb-4">
