@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, Sparkles, Mountain, Heart, Users, Shield } from '@components/icons';
 import { logEvent } from '@/utils/analytics';
+import { NPS_OFFICIAL_FAQ_ANSWER, PARKS_COVERAGE_ANSWER } from '@/lib/npsDisclaimer';
 
 const faqCategories = [
   {
@@ -53,7 +54,7 @@ const faqCategories = [
       },
       {
         question: "Are my AI conversations private?",
-        answer: "Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time."
+        answer: "Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into AI trip planning chats."
       },
       {
         question: "How is TrailVerse different from using ChatGPT alone?",
@@ -67,7 +68,11 @@ const faqCategories = [
     questions: [
       {
         question: "What parks are included?",
-        answer: "TrailVerse includes all 470+ units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, and Preserves. From Yellowstone and Yosemite to hidden gems and historic sites, we cover them all."
+        answer: PARKS_COVERAGE_ANSWER
+      },
+      {
+        question: "Is TrailVerse an official National Park Service website?",
+        answer: NPS_OFFICIAL_FAQ_ANSWER
       },
       {
         question: "How do Google Maps features work?",

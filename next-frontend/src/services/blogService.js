@@ -4,7 +4,7 @@ class BlogService {
   async getAllPosts(params = {}) {
     const result = await enhancedApi.get('/blogs', params, { 
       cacheType: 'blogPosts',
-      ttl: 5 * 60 * 1000 // 5 minutes - reduced for faster updates
+      ttl: 2 * 60 * 1000 // 2 minutes — keep view counts fresh
     });
     return result.data;
   }
@@ -13,7 +13,7 @@ class BlogService {
     const params = { limit, page: 1, featured: true };
     const result = await enhancedApi.get('/blogs', params, { 
       cacheType: 'blogPosts',
-      ttl: 5 * 60 * 1000 // 5 minutes - reduced for faster updates
+      ttl: 2 * 60 * 1000
     });
     return result.data;
   }
@@ -22,7 +22,7 @@ class BlogService {
     const params = { limit, page: 1, sortBy: 'views' };
     const result = await enhancedApi.get('/blogs', params, { 
       cacheType: 'blogPosts',
-      ttl: 5 * 60 * 1000 // 5 minutes - reduced for faster updates
+      ttl: 2 * 60 * 1000
     });
     return result.data;
   }
@@ -30,7 +30,7 @@ class BlogService {
   async getPostBySlug(slug) {
     const result = await enhancedApi.get(`/blogs/${slug}`, {}, { 
       cacheType: 'blogPosts',
-      ttl: 24 * 60 * 60 * 1000 // 24 hours (1 day)
+      ttl: 5 * 60 * 1000 // 5 minutes — views update on each read
     });
     return result.data.data;
   }

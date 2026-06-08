@@ -5,6 +5,11 @@ export const BLOG_CATEGORIES = {
     description:
       'Guides and tips for planning your perfect national park visit — itineraries, permits, packing lists, and budgeting advice.',
   },
+  'national-parks': {
+    name: 'National Parks',
+    description:
+      'Complete visitor guides to iconic national parks — crowds, access, seasons, and what to plan before you go.',
+  },
   'park-guides': {
     name: 'Park Guides',
     description:
@@ -47,7 +52,7 @@ export const LEGACY_BLOG_CATEGORY_TO_SLUG = {
   'Fall Travel Blog': 'seasonal',
   'Travel Blogs': 'trip-planning',
   Astrophotography: 'astrophotography',
-  'National Parks': 'park-guides',
+  'National Parks': 'national-parks',
   'Seasonal Guides': 'seasonal',
 };
 

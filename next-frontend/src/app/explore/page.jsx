@@ -1,4 +1,5 @@
 import Header from '@/components/common/Header';
+import ExploreSeoShell from '@/components/seo/ExploreSeoShell';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
 
@@ -40,9 +41,22 @@ export default async function ExplorePage() {
     getInitialAllParks(),
   ]);
 
+  const nationalParksCount =
+    initialPaginatedData?.total ??
+    (Array.isArray(initialAllParksData?.data)
+      ? initialAllParksData.data.filter((park) =>
+          park.designation?.toLowerCase().includes('national park')
+        ).length
+      : 64);
+  const totalSitesCount = initialAllParksData?.data?.length || initialAllParksData?.total;
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
+      <ExploreSeoShell
+        nationalParksCount={nationalParksCount}
+        totalSitesCount={totalSitesCount}
+      />
       <ExplorePageClient
         initialPaginatedData={initialPaginatedData}
         initialAllParksData={initialAllParksData}

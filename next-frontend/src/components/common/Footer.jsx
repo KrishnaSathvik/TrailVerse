@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { reportHref } from '@/lib/reportLinks';
@@ -15,7 +15,12 @@ const Footer = () => {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const reportFrom = pathname || '/';
-  const { canInstall, canInstallDesktop, isIOS, install, deferredPrompt } = usePWAInstall();
+  const { canInstall, canInstallDesktop, install, deferredPrompt } = usePWAInstall();
+  const [showInstallLink, setShowInstallLink] = useState(false);
+
+  useEffect(() => {
+    setShowInstallLink(canInstall || canInstallDesktop);
+  }, [canInstall, canInstallDesktop]);
 
   const handleInstall = async (e) => {
     e.preventDefault();
@@ -101,8 +106,9 @@ const Footer = () => {
               <li><Link href="/features" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Features</Link></li>
               <li><Link href="/faq" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
               <li><Link href="/testimonials" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Testimonials</Link></li>
+              <li><Link href="/newsletter" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Newsletter</Link></li>
               <li><a href="https://www.nps.gov" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>NPS Official Site</a></li>
-              {(canInstall || canInstallDesktop) && (
+              {showInstallLink && (
                 <li><a href="#" onClick={handleInstall} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Install App</a></li>
               )}
             </ul>
@@ -156,8 +162,10 @@ const Footer = () => {
           className="mt-8 pt-8 border-t"
           style={{ borderColor: 'var(--border)' }}
         >
-          <p className="text-base sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
             &copy; {new Date().getFullYear()} TrailVerse. All rights reserved.
+            <span className="hidden sm:inline"> · </span>
+            <span className="block sm:inline mt-1 sm:mt-0">Not affiliated with the National Park Service.</span>
           </p>
         </div>
       </div>

@@ -14,10 +14,11 @@ import RelatedPosts from '@/components/blog/RelatedPosts';
 import TableOfContents from '@/components/blog/TableOfContents';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
 import blogService from '@/services/blogService';
+import BlogViewCount from '@/components/blog/BlogViewCount';
 import { logBlogView } from '@/utils/analytics';
 import { injectHeadingIdsIntoHtml, parseBlogHeadingsFromHtml } from '@/utils/blogHeadings';
 import { linkifyParkNamesHtml, linkifyUrlsHtml } from '@/utils/parkLinkifier';
-import { Calendar, Clock, Eye, ArrowLeft, BookOpen } from '@components/icons';
+import { Calendar, Clock, ArrowLeft, BookOpen } from '@components/icons';
 import '@/styles/blog-prose.css';
 
 const blogViewSessionKey = (slug) => `tv-blog-view:${slug}`;
@@ -112,6 +113,25 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
       cancelled = true;
     };
   }, [initialPost?.slug, slug]);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    let cancelled = false;
+    blogService.clearBlogCache();
+
+    blogService
+      .getPostBySlug(slug)
+      .then((data) => {
+        if (cancelled || !data || typeof data.views !== 'number') return;
+        setPost((prev) => (prev ? { ...prev, views: data.views } : data));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   useEffect(() => {
     if (!post?.slug || viewTrackedRef.current) {
@@ -239,7 +259,7 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {(post.author && post.author !== 'Admin') ? post.author : 'Krishna'}</span>
               <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /><span>{formatDate(post.publishedAt)}</span></div>
               <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /><span>{post.readTime} min read</span></div>
-              <div className="flex items-center gap-1.5"><Eye className="h-4 w-4" /><span>{post.views?.toLocaleString() || 0} views</span></div>
+              <BlogViewCount views={post.views} className="flex items-center gap-1.5" />
             </div>
             <div className="flex-shrink-0">
               <ShareButtons

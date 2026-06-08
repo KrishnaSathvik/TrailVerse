@@ -4,10 +4,11 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense } fr
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
-  Search, X, MapPin, ArrowRight,
+  Search, X, MapPin, ArrowRight, Info,
   Loader2, SlidersHorizontal, Grid, List, Compass,
   ChevronLeft, ChevronRight, ChevronDown
 } from '@components/icons';
+import { exploreNationalParksFilterHint, exploreSeoSubtitle } from '@/lib/exploreSeoCopy';
 import ParkCard from '@/components/explore/ParkCard';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +23,21 @@ import npsApi from '@/services/npsApi';
 import { saveParkSearchSession } from '@/lib/parkSearchSession';
 import { parkToSlug } from '@/utils/parkSlug';
 import STATE_NAMES from '@/utils/stateNames';
+
+function NationalParksFilterHint({ allSitesCount }) {
+  const hint = exploreNationalParksFilterHint(allSitesCount);
+
+  return (
+    <p
+      className="mt-2 flex items-start gap-2 text-xs leading-relaxed"
+      style={{ color: 'var(--text-tertiary)' }}
+      title={hint}
+    >
+      <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+      <span>{hint}</span>
+    </p>
+  );
+}
 
 const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
   const pathname = usePathname();
@@ -191,8 +207,9 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
   const filteredParks = useMemo(() => {
     let result;
+    const isSearching = Boolean(normalizedSearchTerm);
 
-    if (normalizedSearchTerm) {
+    if (isSearching) {
       if (catalogSearchParks === null) return [];
       result = [...catalogSearchParks];
     } else {
@@ -206,7 +223,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
         return filters.states.some(state => parkStates.includes(state));
       });
 
-      if (filters.nationalParksOnly) {
+      if (filters.nationalParksOnly && !isSearching) {
         const nationalOnly = stateFiltered.filter(park =>
           park.designation && park.designation.toLowerCase().includes('national park')
         );
@@ -215,7 +232,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       } else {
         result = stateFiltered;
       }
-    } else if (filters.nationalParksOnly) {
+    } else if (filters.nationalParksOnly && !isSearching) {
       result = result.filter(park =>
         park.designation && park.designation.toLowerCase().includes('national park')
       );
@@ -349,42 +366,23 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
     [user, isAuthenticated, searchTerm, filters.states]
   );
 
+  useEffect(() => {
+    const subtitle = document.querySelector('#explore-page-hero p');
+    if (!subtitle) return;
+    subtitle.textContent = exploreSeoSubtitle({
+      nationalParksOnly: filters.nationalParksOnly,
+      nationalParksCount: displayedNationalParksCount,
+      totalSitesCount: displayedParksAndSitesCount,
+    });
+  }, [filters.nationalParksOnly, displayedNationalParksCount, displayedParksAndSitesCount]);
+
   return (
     <>
-      {/* Hero/Search Section */}
-      <section className="relative overflow-hidden py-8 sm:py-20">
+      {/* Search & filters — page title/intro is server-rendered in ExploreSeoShell */}
+      <section className="relative overflow-hidden py-4 sm:py-10">
         <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-          <div className="mt-3 sm:mt-6">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <Compass className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-              <span className="text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Explore Parks
-              </span>
-            </div>
-
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Explore National Parks
-            </h1>
-            <p className="text-lg sm:text-xl max-w-3xl"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Discover {filters.nationalParksOnly ? `${displayedNationalParksCount} national parks` : `${displayedParksAndSitesCount} parks and sites`} across America.
-              Find your next adventure with real-time weather, reviews, and smart recommendations.
-            </p>
-          </div>
-
           {/* Search Bar */}
-          <div className="mt-8 max-w-3xl">
+          <div className="max-w-3xl">
             <div className="relative">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
                 style={{ color: 'var(--text-tertiary)' }}
@@ -394,7 +392,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search parks by name, state, or description..."
-                className="w-full pl-14 pr-14 py-5 rounded-2xl text-base font-medium outline-none transition"
+                className="w-full pl-12 pr-12 py-4 sm:pl-14 sm:pr-14 sm:py-5 rounded-2xl text-base font-medium outline-none transition"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -479,6 +477,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                       National Parks Only ({displayedNationalParksCount})
                     </span>
                   </label>
+                  <NationalParksFilterHint allSitesCount={displayedParksAndSitesCount} />
                 </div>
 
                 <div className="mb-6">
@@ -725,13 +724,16 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
               </button>
             </div>
             <div className="space-y-6">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={filters.nationalParksOnly} onChange={(e) => setFilters({ ...filters, nationalParksOnly: e.target.checked })}
-                  className="rounded border-2 w-5 h-5 text-forest-500 focus:ring-forest-500/50" style={{ borderColor: 'var(--border)' }} />
-                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  National Parks Only ({displayedNationalParksCount})
-                </span>
-              </label>
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={filters.nationalParksOnly} onChange={(e) => setFilters({ ...filters, nationalParksOnly: e.target.checked })}
+                    className="rounded border-2 w-5 h-5 text-forest-500 focus:ring-forest-500/50" style={{ borderColor: 'var(--border)' }} />
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    National Parks Only ({displayedNationalParksCount})
+                  </span>
+                </label>
+                <NationalParksFilterHint allSitesCount={displayedParksAndSitesCount} />
+              </div>
               <div>
                 <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
                   STATES {statesLabelCount === null ? '' : `(${statesLabelCount})`}

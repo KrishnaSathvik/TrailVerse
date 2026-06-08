@@ -23,11 +23,15 @@ export function getGenericWelcomeMessage(user) {
 Tell me where you're thinking of going — or just describe the kind of trip you want.`;
 }
 
-/** Park already chosen (Quick Fill, park page, etc.) */
+/** Park already chosen (Quick Fill, park page, landing cards, etc.) */
 export function getParkWelcomeMessage(user, parkName) {
-  return `${greeting(user)} Let's plan **${parkName}**.
+  const park = shortParkName(parkName);
+  const name = displayName(user);
+  const hey = name ? `Hey ${name},` : 'Hey,';
 
-Share when you're going and who's coming — or say **plan it** and I'll draft an itinerary.`;
+  return `${hey} I'm **Trailie** — let's plan **${park}**.
+
+When are you going and how many days do you have? Tell me what you want to do — hikes, scenic drives, wildlife, easy walks — or say **plan it** and I'll map a day-by-day itinerary.`;
 }
 
 /** Shared copy for "My Recommendations" / "For Me" */

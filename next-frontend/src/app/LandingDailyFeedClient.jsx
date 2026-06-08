@@ -47,7 +47,7 @@ export default function LandingDailyFeedClient() {
               Park of the day
             </h2>
             <p className="text-base sm:text-lg mt-2 max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
-              A daily spotlight designed to feel like the rest of your park discovery flow.
+              Today&apos;s park pick with why to go, best season, top activity, and a planning tip.
             </p>
           </div>
         </div>
@@ -82,8 +82,27 @@ export default function LandingDailyFeedClient() {
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white leading-tight mb-3">
                   {dailyFeed.parkOfDay.name}
                 </h3>
-                <p className="text-sm sm:text-base text-white/75 max-w-2xl line-clamp-3">
-                  Explore today&apos;s featured park, then dive deeper into weather, alerts, reviews, and trip planning.
+                {(dailyFeed.parkOfDay.bestTime || dailyFeed.parkOfDay.crowdLevel) && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {dailyFeed.parkOfDay.bestTime ? (
+                      <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-medium text-white/90 bg-white/10 border border-white/15">
+                        Best: {dailyFeed.parkOfDay.bestTime}
+                      </span>
+                    ) : null}
+                    {dailyFeed.parkOfDay.crowdLevel ? (
+                      <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-medium text-white/90 bg-white/10 border border-white/15">
+                        Crowds: {dailyFeed.parkOfDay.crowdLevel}
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+                {dailyFeed.parkOfDay.mustDo?.[0] ? (
+                  <p className="text-sm sm:text-base text-white/80 max-w-2xl line-clamp-2 mb-2">
+                    Don&apos;t miss: {dailyFeed.parkOfDay.mustDo[0]}
+                  </p>
+                ) : null}
+                <p className="text-sm sm:text-base text-white/75 max-w-2xl line-clamp-2">
+                  Check live weather, alerts, and reviews — then plan your visit with Trailie.
                 </p>
               </div>
             </Link>
@@ -108,16 +127,28 @@ export default function LandingDailyFeedClient() {
               <p className="text-lg sm:text-xl leading-relaxed mb-8" style={{ color: 'var(--text-primary)' }}>
                 &ldquo;{dailyFeed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
               </p>
-              <Button
-                href={`/parks/${parkToSlug(dailyFeed.parkOfDay.name)}`}
-                variant="primary"
-                size="lg"
-                icon={ArrowRight}
-                iconPosition="right"
-                className="w-full sm:w-auto"
-              >
-                Explore Today&apos;s Park
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  href={`/parks/${parkToSlug(dailyFeed.parkOfDay.name)}`}
+                  variant="primary"
+                  size="lg"
+                  icon={ArrowRight}
+                  iconPosition="right"
+                  className="w-full sm:w-auto"
+                >
+                  Explore Today&apos;s Park
+                </Button>
+                {dailyFeed.parkOfDay.parkCode ? (
+                  <Button
+                    href={`/plan-ai?park=${encodeURIComponent(dailyFeed.parkOfDay.parkCode)}&name=${encodeURIComponent(dailyFeed.parkOfDay.name)}`}
+                    variant="secondary"
+                    size="lg"
+                    className="w-full sm:w-auto"
+                  >
+                    Plan with Trailie
+                  </Button>
+                ) : null}
+              </div>
             </div>
           </div>
         ) : (

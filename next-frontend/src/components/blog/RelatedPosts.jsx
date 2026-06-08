@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Clock, Eye } from '@components/icons';
+import { ArrowRight, Clock } from '@components/icons';
+import BlogViewCount from './BlogViewCount';
 import OptimizedImage from '../common/OptimizedImage';
 import blogService from '../../services/blogService';
 
@@ -180,12 +181,7 @@ const RelatedPostCard = ({ post, index }) => {
                 {post.readTime} min
               </span>
             )}
-            {post.views !== undefined && (
-              <span className="flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {post.views.toLocaleString()}
-              </span>
-            )}
+            <BlogViewCount views={post.views} />
           </div>
           
           <span 

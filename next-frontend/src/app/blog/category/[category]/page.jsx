@@ -4,29 +4,16 @@ import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
-import { BLOG_CATEGORIES, normalizeBlogCategory } from '@/lib/blogCategories';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
+import BlogCard from '@/components/blog/BlogCard';
+import BlogCategoryNav from '@/components/blog/BlogCategoryNav';
+import { BLOG_CATEGORIES, blogCategoryLabel } from '@/lib/blogCategories';
+import { getBlogCategoriesServer, getBlogPostsServer } from '@/lib/blogApi';
 
 const CATEGORIES = BLOG_CATEGORIES;
 
-async function getPostsByCategory(categoryName) {
-  try {
-    const res = await fetch(`${API_URL}/blogs?limit=50`, { next: { revalidate: 3600 } });
-    if (!res.ok) return [];
-    const json = await res.json();
-    const posts = json.data || json.blogs || json || [];
-    if (!Array.isArray(posts)) return [];
-    // Filter by category field or tags containing the category name
-    return posts.filter(post => {
-      const postCategory = normalizeBlogCategory(post.category);
-      const postTags = (post.tags || []).map(t => t.toLowerCase().replace(/\s+/g, '-'));
-      return postCategory === categoryName || postTags.includes(categoryName);
-    });
-  } catch {
-    return [];
-  }
+async function getPostsByCategory(categorySlug) {
+  const result = await getBlogPostsServer({ category: categorySlug, limit: 50, page: 1 });
+  return result.data || [];
 }
 
 export async function generateStaticParams() {
@@ -59,7 +46,19 @@ export default async function BlogCategoryPage({ params }) {
   const cat = CATEGORIES[category];
   if (!cat) notFound();
 
-  const posts = await getPostsByCategory(category);
+  const [posts, categoriesData] = await Promise.all([
+    getPostsByCategory(category),
+    getBlogCategoriesServer(),
+  ]);
+
+  const navCategories = [
+    { id: 'all', label: 'Blog Home' },
+    ...((categoriesData.data || []).map((row) => ({
+      id: row._id,
+      label: row.label || blogCategoryLabel(row._id),
+      count: row.count,
+    }))),
+  ];
 
   // CollectionPage schema
   const collectionSchema = {
@@ -84,8 +83,8 @@ export default async function BlogCategoryPage({ params }) {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
         <main className="pt-16">
-          <section className="py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
+          <section className="py-12 px-4 sm:px-6 lg:px-10 xl:px-12">
+            <div className="max-w-[92rem] mx-auto">
               <nav className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
                 <Link href="/" style={{ color: 'var(--text-secondary)' }}>Home</Link>
                 <span className="mx-2">/</span>
@@ -93,79 +92,36 @@ export default async function BlogCategoryPage({ params }) {
                 <span className="mx-2">/</span>
                 <span style={{ color: 'var(--text-primary)' }}>{cat.name}</span>
               </nav>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
                 {cat.name}
               </h1>
-              <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg mb-6 max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
                 {cat.description}
               </p>
+              <p className="text-sm mb-8" style={{ color: 'var(--text-tertiary)' }}>
+                {posts.length} {posts.length === 1 ? 'article' : 'articles'}
+              </p>
 
-              {/* Category nav */}
-              <div className="flex flex-wrap gap-2 mb-10">
-                {Object.entries(CATEGORIES).map(([slug, c]) => (
-                  <Link
-                    key={slug}
-                    href={`/blog/category/${slug}`}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium transition"
-                    style={{
-                      backgroundColor: slug === category ? 'var(--accent-green)' : 'var(--surface)',
-                      color: slug === category ? 'white' : 'var(--text-secondary)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    {c.name}
-                  </Link>
-                ))}
-              </div>
+              <BlogCategoryNav categories={navCategories} activeId={category} />
 
               {posts.length === 0 ? (
-                <div className="text-center py-16">
+                <div className="text-center py-16 mt-10">
                   <p className="text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
                     No articles in this category yet — check back soon.
                   </p>
                   <Button variant="success" size="sm" href="/blog">Browse all articles</Button>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {posts.map(post => (
-                    <Link
-                      key={post._id || post.slug}
-                      href={`/blog/${post.slug}`}
-                      className="group flex gap-4 rounded-2xl p-4 transition hover:shadow-md"
-                      style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                    >
-                      {post.featuredImage && (
-                        <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden">
-                          <img
-                            src={post.featuredImage}
-                            alt={post.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h2 className="font-semibold text-base mb-1 group-hover:underline" style={{ color: 'var(--text-primary)' }}>
-                          {post.title}
-                        </h2>
-                        {post.excerpt && (
-                          <p className="text-sm line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                            {post.excerpt}
-                          </p>
-                        )}
-                        {post.publishedAt && (
-                          <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                            {new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-10">
+                  {posts.map((post) => (
+                    <BlogCard key={post._id || post.slug} post={post} />
                   ))}
                 </div>
               )}
-            </div>
 
-            <div className="mt-10">
-              <NewsletterWidget source="blog-category" category={category} />
+              <div className="mt-12">
+                <NewsletterWidget source="blog-category" category={category} />
+              </div>
             </div>
           </section>
         </main>

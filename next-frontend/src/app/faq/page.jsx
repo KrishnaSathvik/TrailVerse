@@ -2,6 +2,7 @@ import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import Button from '@/components/common/Button';
 import FAQAccordionClient from './FAQAccordionClient';
+import { NPS_OFFICIAL_FAQ_ANSWER, PARKS_COVERAGE_ANSWER } from '@/lib/npsDisclaimer';
 
 export const metadata = {
   title: 'FAQ — National Park Trip Planning & TrailVerse Features',
@@ -104,7 +105,7 @@ const faqStructuredData = {
       name: 'Are my AI conversations private?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time.'
+        text: 'Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into AI trip planning chats.'
       }
     },
     {
@@ -120,7 +121,15 @@ const faqStructuredData = {
       name: 'What parks are included?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'TrailVerse includes all 470+ units of the National Park System, including National Parks, Monuments, Historic Sites, Battlefields, Seashores, Lakeshores, Recreation Areas, and Preserves. From Yellowstone and Yosemite to hidden gems and historic sites, we cover them all.'
+        text: PARKS_COVERAGE_ANSWER
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'Is TrailVerse an official National Park Service website?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: NPS_OFFICIAL_FAQ_ANSWER
       }
     },
     {

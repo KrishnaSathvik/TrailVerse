@@ -13,16 +13,26 @@ import { getBlogPostsServer } from '@/lib/blogApi';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 import {
   LANDING_HERO_BADGE,
+  LANDING_HERO_HEADLINE,
+  LANDING_HERO_HEADLINE_ACCENT,
   LANDING_HERO_META_DESCRIPTION,
   LANDING_HERO_SUBTITLE,
+  LANDING_HERO_PRIMARY_CTA,
+  LANDING_PAGE_TITLE,
 } from '@/lib/landingHeroCopy';
 
 export const metadata = {
+  title: LANDING_PAGE_TITLE,
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com',
   },
   description: LANDING_HERO_META_DESCRIPTION,
   openGraph: {
+    title: LANDING_PAGE_TITLE,
+    description: LANDING_HERO_META_DESCRIPTION,
+  },
+  twitter: {
+    title: LANDING_PAGE_TITLE,
     description: LANDING_HERO_META_DESCRIPTION,
   },
 };
@@ -44,15 +54,6 @@ async function getAllParks() {
 
 const featuredParkCodes = ['yell', 'yose', 'grca', 'zion', 'glac', 'acad'];
 
-function truncateDescription(text, maxLength = 100) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-
-  const trimmed = text.slice(0, maxLength);
-  const lastSpace = trimmed.lastIndexOf(' ');
-  return `${(lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed).trim()}…`;
-}
-
 export default async function LandingPage() {
   const [allParks, popularBlogsData] = await Promise.all([
     getAllParks(),
@@ -68,39 +69,50 @@ export default async function LandingPage() {
       <Header />
 
       <main>
-        <section className="relative z-30 w-full overflow-x-hidden min-h-[22rem] sm:min-h-[26rem] md:min-h-[28rem] lg:min-h-[30rem]">
+        <section className="relative z-10 w-full overflow-hidden min-h-[28rem] sm:min-h-[32rem] lg:min-h-[36rem]">
           <Image
             src="/background23.png"
             alt=""
             fill
             priority
-            className="object-cover"
-            style={{ objectPosition: 'center 25%' }}
+            className="object-cover brightness-[0.92] saturate-[1.08]"
+            style={{ objectPosition: 'center 40%' }}
             sizes="100vw"
           />
-          <div className="absolute inset-0 z-[1] bg-black/50" />
-          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14 xl:px-12">
-            <div className="w-full max-w-[92rem] mx-auto text-center">
-              <div className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 sm:px-5 sm:py-2.5 backdrop-blur-md mb-4 sm:mb-5 shadow-lg bg-black/30 border border-white/10">
-                <IconGlyph name="Route" className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: 'var(--accent-green)' }} />
-                <span className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-white/90" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{LANDING_HERO_BADGE}</span>
-              </div>
+          <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
+          <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_0%,rgba(0,0,0,0.35)_100%)]" />
+          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-16 lg:px-10 lg:py-20">
+            <div className="w-full max-w-3xl mx-auto text-center">
+              <p className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm">
+                <IconGlyph name="Mountain" className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
+                {LANDING_HERO_BADGE}
+              </p>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl tracking-tight mb-4 sm:mb-5 text-white w-full text-center" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, lineHeight: '1', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>
-                Discover America&apos;s <br className="hidden sm:block" />
-                <span style={{ color: 'var(--accent-green)', textShadow: '0 2px 8px rgba(0,0,0,0.7), 0 0 30px rgba(0,0,0,0.4)' }}>National Parks.</span>
+              <h1
+                className="animate-fade-in mb-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.1]"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                {LANDING_HERO_HEADLINE}
+                <span className="block text-[var(--accent-green)]">{LANDING_HERO_HEADLINE_ACCENT}</span>
               </h1>
 
-              <p className="text-sm sm:text-base md:text-lg font-medium leading-relaxed text-white max-w-2xl mx-auto mb-6 sm:mb-7" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+              <p className="animate-fade-in mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-white/80 text-balance sm:text-base">
                 {LANDING_HERO_SUBTITLE}
               </p>
 
-              <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-                <Link href="/plan-ai" className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 backdrop-blur-md" style={{ backgroundColor: 'var(--accent-green)' }}>
+              <div className="animate-fade-in flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+                <Link
+                  href="/plan-ai"
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-black/30 transition hover:brightness-110"
+                  style={{ backgroundColor: 'var(--accent-green)' }}
+                >
                   <IconGlyph name="Sparkles" className="h-4 w-4" style={{ color: '#fff' }} />
-                  Ask Trailie
+                  {LANDING_HERO_PRIMARY_CTA}
                 </Link>
-                <Link href={BROWSE_HUB_PATH} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-white/90 transition-all hover:bg-black/60 bg-black/40 border border-white/10 backdrop-blur-md">
+                <Link
+                  href={BROWSE_HUB_PATH}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/15"
+                >
                   <IconGlyph name="Compass" className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
                   {BROWSE_HUB_NAV_LABEL}
                 </Link>
@@ -109,7 +121,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="relative z-20 px-4 sm:px-6 lg:px-10 xl:px-12 pt-8 sm:pt-10 pb-2 overflow-visible" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section className="relative z-20 px-4 sm:px-6 lg:px-10 xl:px-12 pt-6 sm:pt-8 pb-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-[92rem] mx-auto">
             <div className="relative mx-auto w-full max-w-3xl">
               <LandingSearchClient />
@@ -135,32 +147,51 @@ export default async function LandingPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {featuredParks.map((park, index) => (
-                <Link
-                  key={park.parkCode}
-                  href={`/parks/${parkToSlug(park.fullName)}`}
-                  className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                  style={{ aspectRatio: '16/11', boxShadow: 'var(--shadow-lg)' }}
-                >
-                  <Image
-                    src={park.images?.[0]?.url || '/og-image-trailverse.jpg'}
-                    alt={park.fullName}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    priority={index < 2}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <IconGlyph name="MapPin" className="h-3.5 w-3.5 text-white/70" />
-                      <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{park.states}</span>
+              {featuredParks.map((park, index) => {
+                const parkSlug = parkToSlug(park.fullName);
+                const parkUrl = `/parks/${parkSlug}`;
+                const planUrl = `/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`;
+
+                return (
+                  <article
+                    key={park.parkCode}
+                    className="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                    style={{ aspectRatio: '16/11', boxShadow: 'var(--shadow-lg)' }}
+                  >
+                    <Image
+                      src={park.images?.[0]?.url || '/og-image-trailverse.jpg'}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                      priority={index < 2}
+                    />
+                    <Link
+                      href={parkUrl}
+                      className="absolute inset-0 z-[1]"
+                      aria-label={`View ${park.fullName}`}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none z-[2]" />
+                    <div className="absolute bottom-0 left-0 right-0 z-10 p-5 sm:p-6 pointer-events-none">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IconGlyph name="MapPin" className="h-3.5 w-3.5 text-white/70" />
+                        <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{park.states}</span>
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-semibold text-white leading-tight">{park.fullName}</h3>
+                      <div className="mt-3 pointer-events-auto">
+                        <Link
+                          href={planUrl}
+                          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                          style={{ backgroundColor: 'var(--accent-green)' }}
+                        >
+                          <IconGlyph name="Sparkles" className="h-3.5 w-3.5" />
+                          Plan with Trailie
+                        </Link>
+                      </div>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white leading-tight mb-1">{park.fullName}</h3>
-                    <p className="text-sm text-white/60 line-clamp-2 hidden sm:block">{truncateDescription(park.description)}</p>
-                  </div>
-                </Link>
-              ))}
+                  </article>
+                );
+              })}
             </div>
 
             <div className="mt-6 sm:hidden">

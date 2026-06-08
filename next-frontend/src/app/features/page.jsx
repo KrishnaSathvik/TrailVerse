@@ -43,7 +43,7 @@ const jsonLd = JSON.stringify({
       price: '0',
       priceCurrency: 'USD',
     },
-    featureList: 'AI Trip Planning, Interactive Maps, Real-Time Weather, Itinerary Builder, PDF Export, Park Comparison, Community Reviews, Event Calendar',
+    featureList: 'AI Trip Planning, Trailie Voice, Interactive Maps, Real-Time Weather, Itinerary Builder, PDF Export, Park Comparison, Community Reviews, Event Calendar, ChatGPT App, Claude MCP',
   },
   publisher: {
     '@type': 'Organization',

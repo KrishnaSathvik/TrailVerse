@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
+import { NPS_DISCLAIMER } from '@/lib/npsDisclaimer';
 
 export const metadata = {
   title: 'About Krishna — The Story Behind TrailVerse',
@@ -27,8 +28,8 @@ const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'trailverseteam@gm
 
 const stats = [
   { value: '17', label: 'Parks Visited', detail: 'Across 23 states', icon: 'Mountain' },
-  { value: '379', label: 'Reviews Written', detail: '67M+ views', icon: 'MapPin' },
-  { value: '6,589', label: 'Photos Shared', detail: '64.5M+ views', icon: 'Camera' },
+  { value: '379', label: 'Reviews Written', detail: '72M+ views', icon: 'MapPin' },
+  { value: '6,589', label: 'Photos Shared', detail: '69,004,058 views', icon: 'Camera' },
   { value: '6', label: 'Years Experience', detail: 'And counting', icon: 'Award' },
 ];
 
@@ -64,7 +65,7 @@ const socialLinks = [
   ['Image', 'Unsplash', 'https://unsplash.com/@astrobykrishna', '25+ Astrophotography shots'],
   ['Play', 'TikTok', 'https://www.tiktok.com/@travelswithkrishna', '@travelswithkrishna'],
   ['Pinterest', 'Pinterest', 'https://pin.it/2N6K1Iz', 'Travel Inspiration'],
-  ['Map', 'Google Maps Level 8', 'https://www.google.com/maps/contrib/118219629305553937668', 'Level 8 • 67M+ views'],
+  ['Map', 'Google Maps Level 8', 'https://www.google.com/maps/contrib/118219629305553937668', 'Level 8 • 72M+ views'],
   ['Mail', 'Email', `mailto:${contactEmail}`, contactEmail],
 ];
 
@@ -133,8 +134,14 @@ export default function AboutPage() {
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6" style={{ color: 'var(--text-primary)' }}>
                     Hey, I&apos;m Krishna
                   </h1>
-                  <p className="text-lg leading-relaxed mb-6" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-lg leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+                    I built TrailVerse to help travelers avoid the messy part of park planning: scattered tabs, outdated conditions, confusing alerts, and half-finished itineraries.
+                  </p>
+                  <p className="text-lg leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
                     I&apos;m Krishna, a Nikon Z6ii astrophotographer and Google Maps Level 8 contributor who has explored 17 National Parks across 23 states. TrailVerse is the all-in-one trip planning tool I always wished existed while planning my own park adventures.
+                  </p>
+                  <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--text-tertiary)' }}>
+                    {NPS_DISCLAIMER}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <CTAButton href="/plan-ai"><span className="inline-flex items-center gap-2"><IconGlyph name="Sparkles" className="h-4 w-4" />Try Trailie</span></CTAButton>

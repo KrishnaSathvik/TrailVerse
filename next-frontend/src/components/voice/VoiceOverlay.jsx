@@ -123,19 +123,9 @@ export default function VoiceOverlay({ parkCode, pagePath, onClose }) {
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
               TrailVerse
             </p>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold tracking-wide" style={{ color: 'var(--accent-orange, #f97316)' }}>
-                VOICE BETA
-              </span>
-              {parkCode && (
-                <>
-                  <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>&middot;</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    {parkFullName}
-                  </span>
-                </>
-              )}
-            </div>
+            <p className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              {parkCode ? parkFullName : 'Talk to Trailie'}
+            </p>
           </div>
         </div>
         <button

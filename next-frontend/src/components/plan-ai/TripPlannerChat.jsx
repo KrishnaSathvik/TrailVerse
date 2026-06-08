@@ -679,11 +679,16 @@ const TripPlannerChat = ({
   // Clean up expired sessions and restore anonymous session on mount
   useEffect(() => {
     cleanupExpiredSessions();
-    
+
     if (isAnonymous && !isAuthenticated) {
+      // Park deep links should start fresh with a park-specific welcome
+      if (parkName) {
+        setAnonymousRestoreStatus('empty');
+        return;
+      }
       restoreAnonymousSession();
     }
-  }, [isAnonymous, isAuthenticated, restoreAnonymousSession, cleanupExpiredSessions]);
+  }, [isAnonymous, isAuthenticated, parkName, restoreAnonymousSession, cleanupExpiredSessions]);
 
   // Draft guest avatar before first API response — same URL after refresh until session links it
   useEffect(() => {
@@ -791,6 +796,10 @@ const TripPlannerChat = ({
         console.log('🔄 Loading existing trip from URL:', existingTripId);
         loadExistingTrip(existingTripId);
       } else {
+        if (formData?.parkCode && !parkName && !isNewChat && !isPersonalized && !suggestText) {
+          return;
+        }
+
         // Wait for anonymous session restore before showing welcome (avoids flash)
         if (isAnonymous && !isAuthenticated && anonymousRestoreStatus === 'pending') {
           return;
@@ -816,7 +825,17 @@ const TripPlannerChat = ({
         showWelcomeMessage();
       }
     }
-  }, [providersLoaded, existingTripId, isStartingFresh, isNewChat, isPersonalized, isAnonymous, isAuthenticated, anonymousRestoreStatus]);
+  }, [
+    providersLoaded,
+    existingTripId,
+    isStartingFresh,
+    isNewChat,
+    isPersonalized,
+    isAnonymous,
+    isAuthenticated,
+    anonymousRestoreStatus,
+    parkName,
+  ]);
 
   // Auto-send Quick Fill summary when applied
   useEffect(() => {

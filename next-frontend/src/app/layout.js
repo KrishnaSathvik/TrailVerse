@@ -5,6 +5,7 @@ import Providers from "../components/Providers";
 import GoogleMapsLoader from "../components/maps/GoogleMapsLoader";
 import VoiceButton from "../components/voice/VoiceButton";
 import { indexablePageRobots } from "@/lib/seo";
+import { THEME_INIT_SCRIPT } from "@/lib/themeInitScript";
 
 const JSON_LD = {
   '@context': 'https://schema.org',
@@ -12,7 +13,7 @@ const JSON_LD = {
   name: 'TrailVerse',
   url: 'https://www.nationalparksexplorerusa.com',
   description:
-    "Explore America's 470+ National Parks with AI-powered trip planning, real-time weather, interactive maps, and community reviews.",
+    "Explore 470+ U.S. parks, monuments, and historic sites with AI trip planning, live alerts, weather, maps, and community reviews.",
   potentialAction: {
     '@type': 'SearchAction',
     target: {
@@ -31,9 +32,9 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "TrailVerse — Explore America's 470+ National Parks & Sites",
+  title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
   applicationName: "TrailVerse",
-  description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning. Free to explore — no account needed.",
+  description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and AI trip planning with Trailie. Free to explore — no account needed.",
   manifest: "/manifest.json",
   metadataBase: new URL("https://www.nationalparksexplorerusa.com"),
   robots: indexablePageRobots,
@@ -43,8 +44,8 @@ export const metadata = {
     statusBarStyle: "default",
   },
   openGraph: {
-    title: "TrailVerse — Explore America's 470+ National Parks & Sites",
-    description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning. Free to explore — no account needed.",
+    title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
+    description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and AI trip planning with Trailie. Free to explore — no account needed.",
     url: "https://www.nationalparksexplorerusa.com",
     siteName: "TrailVerse",
     type: "website",
@@ -53,14 +54,14 @@ export const metadata = {
         url: "/og-image-trailverse.jpg",
         width: 1200,
         height: 630,
-        alt: "TrailVerse — Explore America's National Parks",
+        alt: "TrailVerse — Explore U.S. parks and public lands",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "TrailVerse — Explore America's 470+ National Parks & Sites",
-    description: "Explore America's 470+ National Parks, Monuments & Historic Sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI-powered trip planning.",
+    title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
+    description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and AI trip planning with Trailie.",
     images: ["/og-image-trailverse.jpg"],
   },
 };
@@ -70,15 +71,16 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
-      <head>
-        <script
+      <body className="min-h-full flex flex-col font-sans">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
+        <Script
           id="json-ld"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
-      </head>
-      <body className="min-h-full flex flex-col font-sans">
-        <Script id="theme-init" strategy="beforeInteractive" src="/theme-init.js" />
         {gaId && (
           <>
             <Script

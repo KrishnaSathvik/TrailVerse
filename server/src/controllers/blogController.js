@@ -4,6 +4,11 @@ const Subscriber = require('../models/Subscriber');
 const emailService = require('../services/resendEmailService');
 const { getScheduledPostsInfo } = require('../services/schedulerService');
 const { clearCache } = require('../middleware/cache');
+const {
+  normalizeBlogCategory,
+  blogCategoryLabel,
+  categoryValuesForSlug,
+} = require('../utils/blogCategories');
 
 // @desc    Get all blog posts with pagination
 // @route   GET /api/blogs
@@ -27,7 +32,8 @@ exports.getAllPosts = async (req, res, next) => {
     const query = { status };
 
     if (category) {
-      query.category = category;
+      const values = categoryValuesForSlug(category);
+      query.category = values.length === 1 ? values[0] : { $in: values };
     }
 
     if (tag) {
@@ -370,19 +376,35 @@ exports.deletePost = async (req, res, next) => {
 // @access  Public
 exports.getBlogCategories = async (req, res, next) => {
   try {
-    const [categories, totalCount] = await Promise.all([
+    const [rawCategories, totalCount] = await Promise.all([
       BlogPost.aggregate([
         { $match: { status: 'published' } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
       ]),
-      BlogPost.countDocuments({ status: 'published' })
+      BlogPost.countDocuments({ status: 'published' }),
     ]);
-    
+
+    const merged = new Map();
+    for (const row of rawCategories) {
+      const slug = normalizeBlogCategory(row._id);
+      const existing = merged.get(slug);
+      if (existing) {
+        existing.count += row.count;
+      } else {
+        merged.set(slug, {
+          _id: slug,
+          label: blogCategoryLabel(row._id),
+          count: row.count,
+        });
+      }
+    }
+
+    const categories = [...merged.values()].sort((a, b) => b.count - a.count);
+
     res.status(200).json({
       success: true,
       data: categories,
-      totalCount
+      totalCount,
     });
   } catch (error) {
     next(error);

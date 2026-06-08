@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getAllParkSlugs } from '@/lib/parkApi';
 import { GUIDES } from '@/data/guides';
 import { INTENT_LANDINGS } from '@/data/intentLandings';
+import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 const API_URL =
@@ -125,5 +126,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
+  const compareLastModified = new Date('2026-06-01');
+  const compareRoutes: MetadataRoute.Sitemap = COMPARE_LANDINGS.map((landing) => ({
+    url: `${BASE_URL}/compare/${landing.slug}`,
+    lastModified: compareLastModified,
+    changeFrequency: 'monthly' as const,
+    priority: 0.75,
+  }));
+
+  return [...staticRoutes, ...compareRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
 }

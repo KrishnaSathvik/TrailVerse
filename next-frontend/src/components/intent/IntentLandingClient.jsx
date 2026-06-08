@@ -20,6 +20,7 @@ import GuideCard from '@/components/guides/GuideCard';
 import IntentTopMatches from '@/components/intent/IntentTopMatches';
 import { getIntentLandingByPath } from '@/data/intentLandings';
 import { parkToSlug } from '@/utils/parkSlug';
+import { useReturnNavigation } from '@/hooks/useReturnNavigation';
 
 const surfaceCardStyle = {
   background:
@@ -90,6 +91,10 @@ function IntentFaqAccordion({ items }) {
 }
 
 export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
+  const { backHref, backLabel } = useReturnNavigation({
+    defaultHref: '/guides',
+    defaultLabel: 'All planning guides',
+  });
   const contentRef = useRef(null);
   const relatedLandings = (landing.relatedLinks ?? [])
     .map((link) => getIntentLandingByPath(link.href))
@@ -125,12 +130,12 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
         }}
       >
         <Link
-          href="/guides"
+          href={backHref}
           className="inline-flex items-center gap-2 mb-6 text-sm font-medium transition hover:opacity-80"
           style={{ color: 'var(--text-secondary)' }}
         >
           <ArrowLeft className="h-4 w-4" />
-          All planning guides
+          {backLabel}
         </Link>
 
         {landing.category ? (

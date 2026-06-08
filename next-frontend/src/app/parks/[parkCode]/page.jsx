@@ -10,6 +10,7 @@ import {
 } from '@/lib/parkSeo';
 import { parkToSlug, findCorrectSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
 
 export const revalidate = 300; // 5 minutes — park data includes dynamic NPS content
@@ -185,6 +186,13 @@ export default async function ParkPage({ params }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <ParkSeoOverview
+        park={park}
+        parkSlug={parkSlug}
+        seoLeadLine={seoLeadLine}
+        stateHubSlug={stateHubSlug}
+        relatedParks={relatedParks}
       />
       <ParkDetailClient
         initialData={data}

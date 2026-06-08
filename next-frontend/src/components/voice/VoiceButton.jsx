@@ -102,9 +102,6 @@ export default function VoiceButton() {
         }}
       >
         <Microphone size={24} weight="fill" />
-        <span className="trailie-voice-badge" aria-hidden="true">
-          BETA
-        </span>
       </div>
 
       {isOpen && (

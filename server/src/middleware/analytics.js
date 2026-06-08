@@ -2,12 +2,20 @@ const Analytics = require('../models/Analytics');
 const { v4: uuidv4 } = require('uuid');
 const { hoistAnalyticsFields } = require('../utils/analyticsNormalize');
 
-// Generate session ID if not exists
+// Session ID for analytics — Express has no express-session, so req.session is usually undefined.
 const generateSessionId = (req) => {
-  if (!req.session?.sessionId) {
-    req.session.sessionId = uuidv4();
+  if (req.session?.sessionId) return req.session.sessionId;
+
+  const header =
+    req.get('x-session-id') ||
+    req.get('x-trailverse-session') ||
+    req.get('x-anonymous-id');
+  if (header) return String(header).slice(0, 128);
+
+  if (!req._analyticsSessionId) {
+    req._analyticsSessionId = uuidv4();
   }
-  return req.session.sessionId;
+  return req._analyticsSessionId;
 };
 
 // Extract device info from user agent

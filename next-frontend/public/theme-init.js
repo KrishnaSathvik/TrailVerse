@@ -1,5 +1,5 @@
 /**
- * Reference copy — production uses inline script from src/lib/themeInitScript.js in layout <head>.
+ * Reference copy — keep in sync with src/lib/themeInitScript.js (inline in layout <head>).
  * Keep both in sync. Sets .light / .dark on <html> before first paint.
  */
 (function () {

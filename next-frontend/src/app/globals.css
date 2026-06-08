@@ -678,20 +678,6 @@ section {
   transform: scale(0.96);
 }
 
-.trailie-voice-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: var(--accent-orange, #f97316);
-  color: #fff;
-  padding: 1px 5px;
-  border-radius: 6px;
-  line-height: 1.4;
-}
-
 /* Mic orb */
 .voice-mic-ring {
   position: relative;

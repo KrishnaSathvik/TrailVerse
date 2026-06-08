@@ -20,7 +20,7 @@ import {
   Sun, Moon, Star,
   ExternalLink, Loader2, Sparkles, Clock,
   Wind, Droplets, Eye as EyeIcon, Check, ChevronDown,
-  AlertTriangle, Shield, Info, Compare
+  AlertTriangle, Shield, Info
 } from '@components/icons';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
@@ -723,18 +723,22 @@ const DailyFeedPage = () => {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      <section className="relative w-full overflow-hidden min-h-[17.5rem] sm:min-h-[24rem] md:h-[68vh] md:max-h-[44rem]">
+      <section className="relative w-full overflow-hidden min-h-[26rem] sm:min-h-[24rem] md:h-[68vh] md:max-h-[44rem]">
         <OptimizedImage
           src={park?.image || '/background1.png'}
           alt={park?.name || 'Park of the Day'}
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/80 sm:from-black/50 sm:via-black/35 sm:to-black/90" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-t from-black/95 via-black/80 to-transparent sm:hidden"
+          aria-hidden="true"
+        />
 
-        <div className="relative z-10 px-4 sm:px-6 lg:px-10 xl:px-12 py-4 sm:py-8 md:flex md:min-h-full md:flex-col md:justify-end md:pb-10 lg:pb-12">
+        <div className="relative z-10 flex min-h-[26rem] flex-col justify-end px-4 pb-6 pt-8 sm:min-h-[24rem] sm:justify-start sm:px-6 sm:py-8 sm:pt-8 lg:px-10 xl:px-12 md:flex md:min-h-full md:justify-end md:pb-10 lg:pb-12">
           <div className="max-w-[92rem] mx-auto w-full">
             <div className="max-w-5xl xl:max-w-6xl">
-              <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+              <div className="mb-5 flex flex-wrap items-center gap-2 sm:mb-4">
                 <div
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border"
                   style={{
@@ -772,37 +776,44 @@ const DailyFeedPage = () => {
                 </div>
               </div>
 
-              <h1
-                className="text-2xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight leading-[1.2] drop-shadow-lg mb-1.5 sm:mb-3"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                {park?.name}
-              </h1>
-              <p className="text-base sm:text-2xl font-medium text-white/90 mb-1.5 sm:mb-3">
-                Your daily briefing
-              </p>
-              <p className="hidden sm:block text-sm sm:text-lg max-w-3xl text-white/78 mb-5 sm:mb-6">
-                Weather, sky conditions, active alerts, and practical recommendations for today&apos;s featured park.
-              </p>
+              <div className="space-y-2.5 sm:space-y-3">
+                <h1
+                  className="text-[1.65rem] font-semibold text-white tracking-tight leading-[1.15] [text-shadow:0_2px_18px_rgba(0,0,0,0.65)] sm:text-5xl sm:leading-[1.2] lg:text-6xl sm:drop-shadow-lg"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  {park?.name}
+                </h1>
+                <p className="text-[0.95rem] font-medium text-white/95 [text-shadow:0_1px_12px_rgba(0,0,0,0.55)] sm:text-2xl sm:text-white/90 sm:[text-shadow:none]">
+                  Your daily briefing
+                </p>
+                <p className="max-w-3xl text-sm leading-relaxed text-white/90 text-pretty [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] sm:text-lg sm:text-white/78 sm:leading-normal sm:text-balance sm:[text-shadow:none]">
+                  <span className="sm:hidden">
+                    Weather, alerts, and tips for today&apos;s featured park.
+                  </span>
+                  <span className="hidden sm:inline">
+                    Weather, sky conditions, active alerts, and practical recommendations for today&apos;s featured park.
+                  </span>
+                </p>
+              </div>
 
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
+              <div className="mt-6 flex flex-col gap-3 sm:mt-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Button
                   onClick={() => router.push(parkHref)}
                   variant="primary"
                   size="md"
                   icon={ExternalLink}
                   iconPosition="right"
-                  className="w-full sm:w-auto justify-center"
+                  className="w-full justify-center sm:w-auto"
                 >
                   View Park Details
                 </Button>
-                <div className="contents lg:hidden">
+                <div className="hidden sm:contents lg:hidden">
                   <Button
                     onClick={() => router.push(`/plan-ai?park=${encodeURIComponent(park?.parkCode || 'unknown')}&name=${encodeURIComponent(park?.name || 'Park')}`)}
                     variant="secondary"
                     size="md"
                     icon={CalendarDots}
-                    className="backdrop-blur w-full sm:w-auto justify-center"
+                    className="w-full justify-center backdrop-blur sm:w-auto"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
                       borderWidth: '1px',
@@ -811,21 +822,6 @@ const DailyFeedPage = () => {
                     }}
                   >
                     Plan with Trailie
-                  </Button>
-                  <Button
-                    onClick={() => router.push(`/compare?park=${encodeURIComponent(park?.parkCode || '')}`)}
-                    variant="secondary"
-                    size="md"
-                    icon={Compare}
-                    className="backdrop-blur w-full sm:w-auto justify-center"
-                    style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      borderWidth: '1px',
-                      borderColor: 'rgba(255, 255, 255, 0.18)',
-                      color: 'white'
-                    }}
-                  >
-                    Compare Parks
                   </Button>
                 </div>
               </div>

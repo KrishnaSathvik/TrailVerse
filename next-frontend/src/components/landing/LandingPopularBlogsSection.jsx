@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import IconGlyph from '@/components/common/IconGlyph';
+import BlogViewCount from '@/components/blog/BlogViewCount';
 
 function formatCategory(category) {
   if (!category) return 'Blog';
@@ -86,9 +87,7 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
                 )}
                 <div className="flex items-center gap-4 text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
                   {post.readTime ? <span>{post.readTime} min read</span> : null}
-                  {typeof post.views === 'number' ? (
-                    <span>{post.views.toLocaleString()} views</span>
-                  ) : null}
+                  <BlogViewCount views={post.views} className="inline-flex items-center gap-1" />
                 </div>
               </div>
             </Link>

@@ -549,11 +549,11 @@ const ParkDetailInner = ({
 
                 <div className="space-y-3 mb-3">
                   <div className="w-full">
-                    <h1 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-[1.05] drop-shadow-lg"
+                    <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-[1.05] drop-shadow-lg"
                       title={park.fullName}
                     >
                       {park.fullName}
-                    </h1>
+                    </h2>
                   </div>
 
                   <div className="space-y-3">

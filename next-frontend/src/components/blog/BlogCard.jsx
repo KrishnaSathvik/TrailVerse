@@ -1,7 +1,11 @@
+'use client';
+
 import React, { memo } from 'react';
 import Link from 'next/link';
 import { Clock, Tag } from '@components/icons';
 import OptimizedImage from '../common/OptimizedImage';
+import BlogViewCount from './BlogViewCount';
+import { blogCategoryLabel } from '@/lib/blogCategories';
 
 const BlogCard = memo(({ post }) => {
   return (
@@ -33,7 +37,7 @@ const BlogCard = memo(({ post }) => {
             className="text-xs font-medium uppercase tracking-wider"
             style={{ color: 'var(--accent-blue)' }}
           >
-            {post.category}
+            {blogCategoryLabel(post.category)}
           </span>
         </div>
 
@@ -60,10 +64,13 @@ const BlogCard = memo(({ post }) => {
           <div className="flex items-center gap-3 text-xs"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {post.readTime} min
-            </span>
+            {post.readTime ? (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {post.readTime} min
+              </span>
+            ) : null}
+            <BlogViewCount views={post.views} />
           </div>
         </div>
       </div>

@@ -22,12 +22,7 @@ import { logEvent } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
 import { summarizeCompareParking } from '@/utils/parkingUtils';
 import { pickPrimaryEntranceFee } from '@/utils/parkVisitInfoUtils';
-
-const COMPARE_PRESETS = [
-  { label: 'Zion vs Bryce', codes: ['zion', 'brca'] },
-  { label: 'Yellowstone vs Grand Teton', codes: ['yell', 'grte'] },
-  { label: 'Yosemite vs Sequoia', codes: ['yose', 'seki'] },
-];
+import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
 /** Default picker list — search still queries all parks from useAllParks */
 const COMPARE_FEATURED_PARK_CODES = [
@@ -315,16 +310,6 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
       router.replace(nextUrl, { scroll: false });
     }
   }, [selectedParks, router]);
-
-  const applyPreset = (codes) => {
-    if (!allParks?.length) return;
-    const parks = codes.map(resolveParkByCode).filter(Boolean).slice(0, maxParks);
-    if (parks.length >= 2) {
-      setSelectedParks(parks);
-      setShowSelector(false);
-      logEvent('Compare', 'preset', parks.map((p) => p.parkCode).join(','));
-    }
-  };
 
   const copyComparisonLink = async () => {
     if (selectedParks.length < 2 || typeof window === 'undefined') return;
@@ -691,12 +676,11 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              {COMPARE_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => applyPreset(preset.codes)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium transition"
+              {COMPARE_LANDINGS.map((preset) => (
+                <Link
+                  key={preset.slug}
+                  href={`/compare/${preset.slug}`}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition hover:opacity-80"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -705,7 +689,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                   }}
                 >
                   {preset.label}
-                </button>
+                </Link>
               ))}
             </div>
 
@@ -860,7 +844,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                       <>
                         {!isSearchingParks && (
                           <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--text-tertiary)' }}>
-                            Popular parks and sites below. Search to browse all 470+ units.
+                            Popular parks and sites below. Search to browse all 470+ parks and sites.
                           </p>
                         )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">

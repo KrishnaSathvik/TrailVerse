@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  Search,
   X,
   Clock,
   BookOpen,
@@ -15,33 +14,41 @@ import {
 } from '@components/icons';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import BlogCard from '@/components/blog/BlogCard';
+import BlogViewCount from '@/components/blog/BlogViewCount';
 import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
-import { logSearch, logEvent } from '@/utils/analytics';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
+import BlogCategoryNav from '@/components/blog/BlogCategoryNav';
 import { reportHref } from '@/lib/reportLinks';
 
-const BlogSkeleton = () => (
-  <div className="space-y-10">
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)] gap-6">
-      <div className="rounded-3xl h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
-      <div className="grid gap-4">
-        <div className="rounded-3xl h-[12.5rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
-        <div className="rounded-3xl h-[12.5rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+const ARCHIVE_PAGE_SIZE = 9;
+
+const HubSkeleton = () => (
+  <div className="space-y-14">
+    {[0, 1].map((section) => (
+      <div key={section}>
+        <div className="h-8 w-48 rounded-2xl animate-pulse mb-6" style={{ backgroundColor: 'var(--surface)' }} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="rounded-[2rem] h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          <div className="rounded-[2rem] h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+        </div>
       </div>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} className="rounded-2xl h-80 animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
-      ))}
-    </div>
+    ))}
   </div>
 );
 
-const FeaturedLeadCard = ({ post }) => (
+const ArchiveSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {Array.from({ length: 6 }).map((_, index) => (
+      <div key={index} className="rounded-2xl h-80 animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+    ))}
+  </div>
+);
+
+const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
   <Link
     href={`/blog/${post.slug}`}
-    className="group relative min-h-[26rem] rounded-[2rem] overflow-hidden block"
+    className="group relative min-h-[22rem] sm:min-h-[26rem] rounded-[2rem] overflow-hidden block"
     style={{
       backgroundColor: 'var(--surface)',
       borderWidth: '1px',
@@ -50,15 +57,15 @@ const FeaturedLeadCard = ({ post }) => (
   >
     <OptimizedImage src={post.featuredImage} alt={post.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-    <div className="relative h-full flex flex-col justify-end p-8">
+    <div className="relative h-full flex flex-col justify-end p-6 sm:p-8">
       <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur mb-4">
-        Featured Story
+        {badge}
       </span>
-      <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-4 max-w-2xl">{post.title}</h2>
-      <p className="text-white/80 text-base md:text-lg max-w-2xl line-clamp-3 mb-6">{post.excerpt}</p>
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3 sm:mb-4 max-w-2xl">{post.title}</h2>
+      <p className="text-white/80 text-sm sm:text-base md:text-lg max-w-2xl line-clamp-3 mb-4 sm:mb-6">{post.excerpt}</p>
       <div className="flex items-center gap-4 text-sm text-white/80">
         <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{post.readTime} min</span>
-        <span className="flex items-center gap-1"><Eye className="h-4 w-4" />{post.views?.toLocaleString() || 0}</span>
+        <BlogViewCount views={post.views} className="flex items-center gap-1" />
       </div>
     </div>
   </Link>
@@ -66,10 +73,16 @@ const FeaturedLeadCard = ({ post }) => (
 
 const BLOG_PATH = '/blog';
 
+function mapCategories(categoriesData) {
+  return (categoriesData.data || []).map((category) => ({
+    id: category._id,
+    label: category.label || category._id,
+    count: category.count,
+  }));
+}
+
 const BlogContent = ({ initialData }) => {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTag, setSelectedTag] = useState(initialData?.initialTag || '');
   const [currentPage, setCurrentPage] = useState(1);
   const [posts, setPosts] = useState(initialData?.posts || []);
@@ -79,24 +92,39 @@ const BlogContent = ({ initialData }) => {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(initialData?.totalPages || 1);
-  const [postsPerPage, setPostsPerPage] = useState(6);
-  const [totalPosts, setTotalPosts] = useState(initialData?.totalPosts || 0);
   const resultsAnchorRef = useRef(null);
   const shouldScrollToResultsRef = useRef(false);
   const hasSkippedInitialFetch = useRef(Boolean(initialData));
+
+  const showArchive = Boolean(selectedTag);
+  const heroFeaturedPosts = featuredPosts.slice(0, 2);
 
   useEffect(() => {
     setSelectedTag(initialData?.initialTag || '');
   }, [initialData?.initialTag]);
 
   useEffect(() => {
-    const updatePostsPerPage = () => {
-      setPostsPerPage(window.innerWidth < 768 ? 3 : 9);
+    let cancelled = false;
+
+    const refreshFromApi = async () => {
+      blogService.clearBlogCache();
+      try {
+        const [featuredData, popularData] = await Promise.all([
+          blogService.getFeaturedPosts(2),
+          blogService.getPopularPosts(2),
+        ]);
+        if (cancelled) return;
+        setFeaturedPosts(featuredData.data || []);
+        setPopularPosts((popularData.data || []).slice(0, 2));
+      } catch {
+        // background refresh
+      }
     };
 
-    updatePostsPerPage();
-    window.addEventListener('resize', updatePostsPerPage);
-    return () => window.removeEventListener('resize', updatePostsPerPage);
+    refreshFromApi();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -112,47 +140,29 @@ const BlogContent = ({ initialData }) => {
       try {
         const [categoriesData, featuredData, popularData] = await Promise.all([
           blogService.getBlogCategories(),
-          blogService.getFeaturedPosts(3),
-          blogService.getPopularPosts(2)
+          blogService.getFeaturedPosts(2),
+          blogService.getPopularPosts(2),
         ]);
 
-        const nextFeaturedPosts = featuredData.data || [];
-        const nextPopularPosts = (popularData.data || []).slice(0, 2);
+        setCategories(mapCategories(categoriesData));
+        setFeaturedPosts(featuredData.data || []);
+        setPopularPosts((popularData.data || []).slice(0, 2));
 
-        setCategories([
-          { id: 'all', label: 'All Posts', count: categoriesData.totalCount || 0 },
-          ...(categoriesData.data || []).map((category) => ({
-            id: category._id,
-            label: category._id,
-            count: category.count
-          }))
-        ]);
-        setFeaturedPosts(nextFeaturedPosts);
-        setPopularPosts(nextPopularPosts);
+        if (!selectedTag) {
+          setPosts([]);
+          setTotalPages(1);
+          return;
+        }
 
-        const shouldDeduplicateCollections = !searchTerm && selectedCategory === 'all' && currentPage === 1;
-        const hiddenIds = new Set([
-          ...nextFeaturedPosts.map((post) => post._id),
-          ...nextPopularPosts.map((post) => post._id)
-        ]);
         const params = {
           page: currentPage,
-          limit: shouldDeduplicateCollections ? postsPerPage + hiddenIds.size : postsPerPage
+          limit: ARCHIVE_PAGE_SIZE,
+          tag: selectedTag,
         };
-        if (selectedCategory !== 'all') {
-          params.category = selectedCategory;
-          logEvent('Blog', 'category_filter', selectedCategory);
-        }
-        if (searchTerm) {
-          params.search = searchTerm;
-          logSearch(searchTerm, 0, 'blog');
-        }
-        if (selectedTag) params.tag = selectedTag;
 
         const data = await blogService.getAllPosts(params);
         setPosts(data.data || []);
-        setTotalPages(Math.max(1, Math.ceil((data.total || 0) / postsPerPage)));
-        setTotalPosts(data.total || 0);
+        setTotalPages(Math.max(1, Math.ceil((data.total || 0) / ARCHIVE_PAGE_SIZE)));
       } catch {
         setError('Failed to load blog posts. Please try again later.');
       } finally {
@@ -161,7 +171,7 @@ const BlogContent = ({ initialData }) => {
     };
 
     fetchData();
-  }, [currentPage, postsPerPage, searchTerm, selectedCategory, selectedTag]);
+  }, [currentPage, selectedTag]);
 
   useEffect(() => {
     if (!shouldScrollToResultsRef.current || loading) {
@@ -170,25 +180,13 @@ const BlogContent = ({ initialData }) => {
 
     shouldScrollToResultsRef.current = false;
     resultsAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [loading, selectedCategory, selectedTag, currentPage]);
+  }, [loading, selectedTag, currentPage]);
 
   const clearTagFilter = () => {
     setSelectedTag('');
     setCurrentPage(1);
     router.replace(BLOG_PATH, { scroll: false });
   };
-
-  const shouldDeduplicateCollections = !searchTerm && selectedCategory === 'all' && currentPage === 1;
-
-  const visiblePosts = shouldDeduplicateCollections
-    ? posts.filter(
-        (post) =>
-          !featuredPosts.some((featuredPost) => featuredPost._id === post._id) &&
-          !popularPosts.some((popularPost) => popularPost._id === post._id)
-      ).slice(0, postsPerPage)
-    : posts;
-
-  const visibleResultsLabel = visiblePosts.length === 1 ? 'article' : 'articles';
 
   return (
     <>
@@ -215,52 +213,23 @@ const BlogContent = ({ initialData }) => {
             <p className="text-lg sm:text-xl max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
               Expert guides, travel tips, and inspiring stories from America&apos;s national parks.
             </p>
-
-
-
           </div>
 
-          <div className="mt-8 max-w-3xl">
-            <div className="relative">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(event) => {
-                  setSearchTerm(event.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder="Search articles..."
-                className="w-full pl-14 pr-14 py-4 rounded-2xl text-base font-medium outline-none transition"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-              {searchTerm && (
-                <Button
-                  onClick={() => setSearchTerm('')}
-                  variant="ghost"
-                  size="sm"
-                  icon={X}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 p-1"
-                  style={{ color: 'var(--text-tertiary)' }}
-                />
-              )}
+          {categories.length > 0 && (
+            <div className="mt-8">
+              <BlogCategoryNav categories={categories} activeId={null} />
             </div>
-          </div>
+          )}
         </div>
       </section>
 
       <section className="pb-24">
         <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           {loading ? (
-            <BlogSkeleton />
+            showArchive ? <ArchiveSkeleton /> : <HubSkeleton />
           ) : (
             <>
-              {!searchTerm && selectedCategory === 'all' && featuredPosts.length > 0 && (
+              {!showArchive && heroFeaturedPosts.length > 0 && (
                 <div className="mb-14">
                   <div className="flex items-center gap-2 mb-6">
                     <Star className="h-5 w-5" style={{ color: 'var(--accent-blue)' }} />
@@ -268,58 +237,46 @@ const BlogContent = ({ initialData }) => {
                       Featured Stories
                     </h2>
                   </div>
-                  <FeaturedLeadCard post={featuredPosts[0]} />
-                </div>
-              )}
-
-              {!searchTerm && selectedCategory === 'all' && popularPosts.length > 0 && (
-                <div className="mb-12 rounded-[2rem] p-6 sm:p-8" style={{ backgroundColor: 'var(--surface)' }}>
-                  <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Eye className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-                        <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Popular Posts</h2>
-                      </div>
-                      <p className="text-sm sm:text-base mt-1" style={{ color: 'var(--text-secondary)' }}>
-                        Most-read stories right now.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {popularPosts.map((post) => (
-                      <BlogCard key={post._id} post={post} />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {heroFeaturedPosts.map((post) => (
+                      <FeaturedLeadCard key={post._id} post={post} />
                     ))}
                   </div>
                 </div>
               )}
 
-              <div ref={resultsAnchorRef} className="mb-8 overflow-x-auto pb-2 scrollbar-hide">
-                <div className="flex gap-2">
-                  {categories.map((category) => (
-                    <Button
-                      key={category.id}
-                      onClick={() => {
-                        shouldScrollToResultsRef.current = true;
-                        setSelectedCategory(category.id);
-                        setCurrentPage(1);
-                      }}
-                      variant={selectedCategory === category.id ? 'secondary' : 'ghost'}
-                      size="md"
-                      className="whitespace-nowrap"
-                    >
-                      <span className="text-sm">{category.label}</span>
-                      <span className="ml-2 text-xs opacity-75">({category.count})</span>
-                    </Button>
-                  ))}
+              {!showArchive && popularPosts.length > 0 && (
+                <div className="mb-14">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
+                    <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                      Popular Posts
+                    </h2>
+                  </div>
+                  <p className="text-sm sm:text-base mb-6" style={{ color: 'var(--text-secondary)' }}>
+                    Most-read stories right now.
+                  </p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {popularPosts.map((post) => (
+                      <FeaturedLeadCard key={post._id} post={post} badge="Popular" />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {selectedTag && (
+              <div ref={resultsAnchorRef} />
+
+              {showArchive && selectedTag && (
                 <div className="mb-6 flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                     Filtered by tag:
                   </span>
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">#{selectedTag}</span>
+                  <span
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{ backgroundColor: 'var(--surface-active)', color: 'var(--text-primary)' }}
+                  >
+                    #{selectedTag}
+                  </span>
                   <Button
                     onClick={() => {
                       shouldScrollToResultsRef.current = true;
@@ -334,80 +291,75 @@ const BlogContent = ({ initialData }) => {
                 </div>
               )}
 
-              <div className="mb-6">
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  Showing {visiblePosts.length} {visibleResultsLabel}
-                  {totalPosts !== visiblePosts.length ? ` of ${totalPosts}` : ''}
-                </p>
-              </div>
-
-              {error ? (
-                <div className="text-center py-24">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                    <X className="h-8 w-8 text-red-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Something went wrong</h3>
-                  <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{error}</p>
-                  <Button onClick={() => window.location.reload()} variant="secondary" size="md">Try Again</Button>
-                </div>
-              ) : visiblePosts.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
-                    {visiblePosts.map((post) => (
-                      <BlogCard key={post._id} post={post} />
-                    ))}
-                  </div>
-
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        onClick={() => setCurrentPage((previous) => previous - 1)}
-                        disabled={currentPage === 1}
-                        variant="secondary"
-                        size="sm"
-                        icon={ChevronLeft}
-                      />
-
-                      {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => {
-                            setCurrentPage(page);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className={`px-4 py-2 rounded-full text-sm font-semibold transition ${currentPage === page ? 'ring-2' : ''}`}
-                          style={{
-                            backgroundColor: currentPage === page ? 'var(--surface-active)' : 'var(--surface)',
-                            borderWidth: '1px',
-                            borderColor: currentPage === page ? 'var(--border-hover)' : 'var(--border)',
-                            color: 'var(--text-primary)',
-                            boxShadow: currentPage === page ? 'var(--shadow-lg)' : 'var(--shadow)'
-                          }}
-                        >
-                          {page}
-                        </button>
-                      ))}
-
-                      <Button
-                        onClick={() => setCurrentPage((previous) => previous + 1)}
-                        disabled={currentPage === totalPages}
-                        variant="secondary"
-                        size="sm"
-                        icon={ChevronRight}
-                      />
+              {showArchive && (
+                error ? (
+                  <div className="text-center py-24">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                      <X className="h-8 w-8 text-red-600" />
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-24">
-                  <Search className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
-                  <p className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No articles found</p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Try adjusting your search or filters.</p>
-                </div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Something went wrong</h3>
+                    <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>{error}</p>
+                    <Button onClick={() => window.location.reload()} variant="secondary" size="md">Try Again</Button>
+                  </div>
+                ) : posts.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+                      {posts.map((post) => (
+                        <BlogCard key={post._id} post={post} />
+                      ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          onClick={() => setCurrentPage((previous) => previous - 1)}
+                          disabled={currentPage === 1}
+                          variant="secondary"
+                          size="sm"
+                          icon={ChevronLeft}
+                        />
+
+                        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold transition ${currentPage === page ? 'ring-2' : ''}`}
+                            style={{
+                              backgroundColor: currentPage === page ? 'var(--surface-active)' : 'var(--surface)',
+                              borderWidth: '1px',
+                              borderColor: currentPage === page ? 'var(--border-hover)' : 'var(--border)',
+                              color: 'var(--text-primary)',
+                              boxShadow: currentPage === page ? 'var(--shadow-lg)' : 'var(--shadow)'
+                            }}
+                          >
+                            {page}
+                          </button>
+                        ))}
+
+                        <Button
+                          onClick={() => setCurrentPage((previous) => previous + 1)}
+                          disabled={currentPage === totalPages}
+                          variant="secondary"
+                          size="sm"
+                          icon={ChevronRight}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-24">
+                    <BookOpen className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--text-tertiary)' }} />
+                    <p className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No articles found</p>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Browse by category above or clear the tag filter.</p>
+                  </div>
+                )
               )}
             </>
           )}
-          {/* Data Report Callout */}
+
           <a
             href={reportHref('/reports/national-parks-2025.html', { from: BLOG_PATH })}
             className="block mt-12 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
@@ -441,7 +393,6 @@ const BlogContent = ({ initialData }) => {
             </div>
           </a>
 
-          {/* Crowd Calendar Callout */}
           <a
             href={reportHref('/reports/when-to-go', { from: BLOG_PATH })}
             className="block mt-4 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
@@ -475,13 +426,11 @@ const BlogContent = ({ initialData }) => {
             </div>
           </a>
 
-          {/* Newsletter */}
           <div className="mt-6 mb-8">
             <NewsletterWidget source="blog-listing" />
           </div>
         </div>
       </section>
-
     </>
   );
 };

@@ -3,7 +3,7 @@ import { getApiBaseUrl } from './apiBase';
 export async function getBlogCategoriesServer() {
   try {
     const response = await fetch(`${getApiBaseUrl()}/blogs/categories`, {
-      next: { revalidate: 300 }
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {
@@ -27,7 +27,7 @@ export async function getBlogPostsServer(params = {}) {
     });
 
     const response = await fetch(`${getApiBaseUrl()}/blogs?${query.toString()}`, {
-      next: { revalidate: 300 }
+      next: { revalidate: 60 }
     });
 
     if (!response.ok) {

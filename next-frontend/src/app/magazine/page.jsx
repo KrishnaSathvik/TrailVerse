@@ -3,14 +3,14 @@ import Link from 'next/link';
 export const metadata = {
   title: 'TrailVerse Magazine — Issue 01 | Spring 2026',
   description:
-    'Explore every feature of TrailVerse — AI trip planning, interactive map, park comparisons, itinerary builder, daily nature feed, and more. 470+ national parks, one platform.',
+    'A readable tour of TrailVerse — Trailie and Voice, map with campgrounds and scenic places, full park pages, compare, planning guides, crowd calendar, ChatGPT app, Claude, and more across 470+ parks.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/magazine',
   },
   openGraph: {
     title: 'TrailVerse Magazine — Issue 01',
     description:
-      'Your universe of national parks exploration. Trailie trip planner, interactive map, compare parks, itinerary builder, and more.',
+      'Issue 01 — Trailie, Voice, map, browse by activity, planning guides, crowd calendar, ChatGPT and Claude, and the full park toolkit.',
     url: 'https://www.nationalparksexplorerusa.com/magazine',
     siteName: 'TrailVerse',
     type: 'website',
@@ -19,7 +19,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'TrailVerse Magazine — Issue 01',
     description:
-      'Interactive magazine showcasing TrailVerse features for planning trips across 470+ national parks.',
+      'Interactive magazine — 21 spreads covering TrailVerse planning tools, map, AI, and integrations across 470+ national parks.',
   },
 };
 
@@ -40,8 +40,8 @@ export default function MagazinePage() {
               TrailVerse Magazine — Issue 01
             </h1>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Spring 2026 · Your universe of national parks exploration — AI planning, maps,
-              compare, itineraries, and more across 470+ parks and sites.
+              Spring 2026 · 21 spreads — Trailie, Voice, map, browse by activity, planning guides,
+              crowd calendar, ChatGPT, Claude, and the full park toolkit.
             </p>
           </div>
           <Link
@@ -49,7 +49,7 @@ export default function MagazinePage() {
             className="text-sm font-semibold underline-offset-2 hover:underline"
             style={{ color: 'var(--accent-green)' }}
           >
-            Open full-screen magazine
+            Read full screen
           </Link>
         </div>
       </header>

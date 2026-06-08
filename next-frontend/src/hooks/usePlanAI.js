@@ -18,28 +18,12 @@ import {
 
 const totalSteps = 4;
 
-/** Only block the UI when anonymous localStorage chat shell may need restoring. */
-function getInitialRestoringState(tripId) {
-  if (typeof window === 'undefined') return false;
-  const params = new URLSearchParams(window.location.search);
-  if (
-    tripId ||
-    params.get('park') ||
-    params.get('chat') === 'true' ||
-    params.has('personalized') ||
-    params.has('newchat') ||
-    params.get('suggest')
-  ) {
-    return false;
+/** SSR-safe: only use searchParams here — never window/localStorage (hydration mismatch). */
+function getInitialRestoringState(tripId, searchParams) {
+  if (!tripId && searchParams.get('park') && searchParams.get('name')) {
+    return true;
   }
-  try {
-    const saved = localStorage.getItem('planai-chat-state');
-    if (!saved) return false;
-    const parsed = JSON.parse(saved);
-    return !!(parsed.showChat && parsed.chatFormData);
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 const interests = [
@@ -69,7 +53,9 @@ export default function usePlanAI(tripId) {
   const [chatFormData, setChatFormData] = useState(null);
   const [selectedParkName, setSelectedParkName] = useState('');
   const [step, setStep] = useState(1);
-  const [isRestoringState, setIsRestoringState] = useState(() => getInitialRestoringState(tripId));
+  const [isRestoringState, setIsRestoringState] = useState(() =>
+    getInitialRestoringState(tripId, searchParams)
+  );
   const [loadingTrip, setLoadingTrip] = useState(false);
   const [showNewTripModal, setShowNewTripModal] = useState(false);
   const [isReturningUser, setIsReturningUser] = useState(false);
@@ -194,29 +180,29 @@ export default function usePlanAI(tripId) {
       return;
     }
 
-    if (parkCode && parkName && allParks) {
-      const selectedPark = allParks.find(p => p.parkCode === parkCode);
+    if (parkCode && parkName) {
+      const selectedPark = allParks?.find(p => p.parkCode === parkCode);
+      const coordinates = selectedPark
+        ? {
+            lat: parseFloat(selectedPark.latitude),
+            lon: parseFloat(selectedPark.longitude)
+          }
+        : null;
+
+      localStorage.removeItem('planai-chat-state');
       setSelectedParkName(parkName);
 
-      // Pre-fill form data with park info including coordinates
       setFormData(prev => ({
         ...prev,
         parkCode,
-        coordinates: selectedPark ? {
-          lat: parseFloat(selectedPark.latitude),
-          lon: parseFloat(selectedPark.longitude)
-        } : null
+        coordinates
       }));
 
-      // Auto-advance to chat with park context (but don't pre-fill trip details)
       const defaultFormData = {
         parkCode,
-        coordinates: selectedPark ? {
-          lat: parseFloat(selectedPark.latitude),
-          lon: parseFloat(selectedPark.longitude)
-        } : null,
-        startDate: '', // Let user provide this
-        endDate: '', // Let user provide this
+        coordinates,
+        startDate: '',
+        endDate: '',
         groupSize: 1,
         budget: '',
         interests: [],
@@ -227,6 +213,7 @@ export default function usePlanAI(tripId) {
       setChatFormData(defaultFormData);
       setShowChat(true);
       setStep(4);
+      setIsRestoringState(false);
     } else if (showChatDirectly && tripId) {
       // If chat=true parameter is present and we have a tripId, load trip data from backend and show chat directly
       loadTripFromBackend(tripId);
@@ -331,9 +318,12 @@ export default function usePlanAI(tripId) {
       setUniqueParksCount(uniqueParks.size);
     }
 
-    // Skip the rest if we're loading a specific trip or have URL parameters
-    if (tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
+    // Park deep link: park-context effect owns isRestoringState — don't clear early here
+    if (tripId || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
       setIsRestoringState(false);
+      return;
+    }
+    if (searchParams.get('park') && searchParams.get('name')) {
       return;
     }
 
