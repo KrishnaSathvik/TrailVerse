@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, ChevronDown } from '@components/icons';
 import ThemeSwitcher from './ThemeSwitcher';
-import { useIsClient } from '@/hooks/useIsClient';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 
 /** SSR/hydration-safe skeleton — matches ThemeSwitcher showLabel toggle size. */
@@ -72,14 +71,21 @@ const Header = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const isClient = useIsClient();
-  const showAuthChrome = isClient && authReady;
+  const [hasMounted, setHasMounted] = useState(false);
 
-  const primaryNavItems = isAuthenticated
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  const showAuthChrome = hasMounted && authReady;
+  // Guest nav on server + first client paint; auth nav only after mount (avoids hydration mismatch).
+  const showAuthenticatedNav = hasMounted && isAuthenticated;
+
+  const primaryNavItems = showAuthenticatedNav
     ? [AUTH_HOME_NAV_ITEM, ...CORE_PRIMARY_NAV_ITEMS]
     : GUEST_PRIMARY_NAV_ITEMS;
 
-  const moreNavItems = isAuthenticated
+  const moreNavItems = showAuthenticatedNav
     ? [BLOG_NAV_ITEM, ...SECONDARY_NAV_ITEMS, ...AUTH_MORE_NAV_ITEMS]
     : SECONDARY_NAV_ITEMS;
 
@@ -94,7 +100,7 @@ const Header = () => {
   const isLandingPage = pathname === '/';
 
   const inlineNavItems = isLandingPage
-    ? (isAuthenticated ? LANDING_MOBILE_INLINE_ITEMS_AUTH : LANDING_MOBILE_INLINE_ITEMS_GUEST)
+    ? (showAuthenticatedNav ? LANDING_MOBILE_INLINE_ITEMS_AUTH : LANDING_MOBILE_INLINE_ITEMS_GUEST)
     : primaryNavItems;
 
   const currentMoreNavItems = isLandingPage
@@ -107,7 +113,7 @@ const Header = () => {
   const isMoreActive = (items = moreNavItems) => items.some((item) => isActive(item.path));
 
   const mobileNavItemClassName = (active) =>
-    `inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1.5 text-[0.8125rem] font-medium leading-none transition sm:px-2.5 sm:text-sm ${
+    `inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium leading-none transition sm:px-3 sm:text-[0.9375rem] ${
       active ? 'font-semibold' : 'hover:bg-black/5 dark:hover:bg-white/5'
     }`;
 
@@ -221,7 +227,7 @@ const Header = () => {
       aria-controls="more-navigation-menu-mobile"
     >
       More
-      <ChevronDown className={`h-3.5 w-3.5 transition-transform lg:h-3 lg:w-3 ${moreMenuOpen ? 'rotate-180' : ''}`} />
+      <ChevronDown className={`h-4 w-4 transition-transform lg:h-3 lg:w-3 ${moreMenuOpen ? 'rotate-180' : ''}`} />
     </button>
   );
 
@@ -248,7 +254,7 @@ const Header = () => {
             className="mt-1 border-t px-1 pt-2"
             style={{ borderColor: 'var(--border)' }}
           >
-            {isClient ? <ThemeSwitcher variant="segmented" /> : null}
+            {hasMounted ? <ThemeSwitcher variant="segmented" /> : null}
           </div>
         )}
 
@@ -347,7 +353,7 @@ const Header = () => {
 
           <div className="hidden shrink-0 items-center justify-end justify-self-end lg:flex lg:w-auto">
             <div className="flex items-center gap-3">
-              {isClient ? (
+              {hasMounted ? (
                 <>
                   <ThemeSwitcher showLabel />
                   {showAuthChrome ? (

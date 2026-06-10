@@ -96,7 +96,9 @@ describe('Header mobile navigation', () => {
 
     const mobileNav = within(screen.getByTestId('mobile-inline-nav'));
 
-    expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    });
     expect(mobileNav.getByRole('link', { name: 'Blog' })).toBeInTheDocument();
     expect(mobileNav.getByRole('link', { name: 'Events' })).toBeInTheDocument();
     expect(mobileNav.queryByRole('link', { name: 'Map' })).not.toBeInTheDocument();
@@ -122,7 +124,9 @@ describe('Header mobile navigation', () => {
     render(<Header />);
 
     const mobileNav = within(screen.getByTestId('mobile-inline-nav'));
-    expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    });
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
     await userEvent.click(mobileNav.getByRole('button', { name: /more/i }));
 
