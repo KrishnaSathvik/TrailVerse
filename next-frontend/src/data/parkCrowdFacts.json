@@ -1,0 +1,380 @@
+{
+  "acad": {
+    "permitSystem": "Cadillac Summit vehicle reservation May 20–Oct 25",
+    "peakMonth": "August",
+    "visits2025": 4079318,
+    "state": "Maine"
+  },
+  "arch": {
+    "permitSystem": "No park-wide timed entry in 2026 (Devils Garden campground & Fiery Furnace permits still apply)",
+    "peakMonth": "May",
+    "visits2025": 1511740,
+    "state": "Utah"
+  },
+  "badl": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 1139361,
+    "state": "South Dakota"
+  },
+  "bibe": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 568104,
+    "state": "Texas"
+  },
+  "bisc": {
+    "permitSystem": "None required",
+    "peakMonth": "May",
+    "visits2025": 486567,
+    "state": "Florida"
+  },
+  "blca": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 250086,
+    "state": "Colorado"
+  },
+  "brca": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 1967367,
+    "state": "Utah"
+  },
+  "cany": {
+    "permitSystem": "None required",
+    "peakMonth": "May",
+    "visits2025": 796057,
+    "state": "Utah"
+  },
+  "care": {
+    "permitSystem": "None required",
+    "peakMonth": "May",
+    "visits2025": 1388476,
+    "state": "Utah"
+  },
+  "cave": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 410778,
+    "state": "New Mexico"
+  },
+  "chis": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 227186,
+    "state": "California"
+  },
+  "cong": {
+    "permitSystem": "None required",
+    "peakMonth": "May",
+    "visits2025": 287833,
+    "state": "South Carolina"
+  },
+  "crla": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 632242,
+    "state": "Oregon"
+  },
+  "cuva": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 3025325,
+    "state": "Ohio"
+  },
+  "dena": {
+    "permitSystem": "None required for general entry (bus permits for park road)",
+    "peakMonth": "August",
+    "visits2025": 543300,
+    "state": "Alaska"
+  },
+  "deva": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 1320134,
+    "state": "California / Nevada"
+  },
+  "drto": {
+    "permitSystem": "None required",
+    "peakMonth": "May",
+    "visits2025": 89355,
+    "state": "Florida"
+  },
+  "ever": {
+    "permitSystem": "None required",
+    "peakMonth": "February",
+    "visits2025": 778198,
+    "state": "Florida"
+  },
+  "gaar": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 14923,
+    "state": "Alaska"
+  },
+  "glac": {
+    "permitSystem": "No vehicle reservation in 2026; Logan Pass shuttle ticket Jul–Labor Day for some alpine hikes",
+    "peakMonth": "July",
+    "visits2025": 3136557,
+    "state": "Montana"
+  },
+  "glba": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 740044,
+    "state": "Alaska"
+  },
+  "grba": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 161210,
+    "state": "Nevada"
+  },
+  "grca": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 4430653,
+    "state": "Arizona"
+  },
+  "grsa": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 432498,
+    "state": "Colorado"
+  },
+  "grsm": {
+    "permitSystem": "None required",
+    "peakMonth": "October",
+    "visits2025": 11527939,
+    "state": "Tennessee / North Carolina"
+  },
+  "grte": {
+    "permitSystem": "No timed entry in 2026 — popular lots fill by mid-morning in summer",
+    "peakMonth": "July",
+    "visits2025": 3800648,
+    "state": "Wyoming"
+  },
+  "gumo": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 206423,
+    "state": "Texas"
+  },
+  "hale": {
+    "permitSystem": "Sunrise timed-entry required year-round",
+    "peakMonth": "July",
+    "visits2025": 853711,
+    "state": "Hawaii"
+  },
+  "havo": {
+    "permitSystem": "None required",
+    "peakMonth": "December",
+    "visits2025": 1877854,
+    "state": "Hawaii"
+  },
+  "hosp": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 2494611,
+    "state": "Arkansas"
+  },
+  "indu": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 2629497,
+    "state": "Indiana"
+  },
+  "isro": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 29091,
+    "state": "Michigan"
+  },
+  "jeff": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 2209028,
+    "state": "Missouri"
+  },
+  "jotr": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 2932644,
+    "state": "California"
+  },
+  "katm": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 34479,
+    "state": "Alaska"
+  },
+  "kefj": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 425369,
+    "state": "Alaska"
+  },
+  "kica": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 779791,
+    "state": "California"
+  },
+  "kova": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 7786,
+    "state": "Alaska"
+  },
+  "lacl": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 19778,
+    "state": "Alaska"
+  },
+  "lavo": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 504777,
+    "state": "California"
+  },
+  "maca": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 660734,
+    "state": "Kentucky"
+  },
+  "meve": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 463130,
+    "state": "Colorado"
+  },
+  "mora": {
+    "permitSystem": "No timed entry in 2026 — parking management only",
+    "peakMonth": "July",
+    "visits2025": 1635342,
+    "state": "Washington"
+  },
+  "neri": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 1958440,
+    "state": "West Virginia"
+  },
+  "noca": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 46925,
+    "state": "Washington"
+  },
+  "npsa": {
+    "permitSystem": "None required",
+    "peakMonth": "April",
+    "visits2025": 43258,
+    "state": "American Samoa"
+  },
+  "olym": {
+    "permitSystem": "None required",
+    "peakMonth": "August",
+    "visits2025": 3584187,
+    "state": "Washington"
+  },
+  "pefo": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 315951,
+    "state": "Arizona"
+  },
+  "pinn": {
+    "permitSystem": "None required",
+    "peakMonth": "April",
+    "visits2025": 343208,
+    "state": "California"
+  },
+  "redw": {
+    "permitSystem": "None required",
+    "peakMonth": "June",
+    "visits2025": 1202480,
+    "state": "California"
+  },
+  "romo": {
+    "permitSystem": "Timed entry May 22–mid-Oct (certain hours; Bear Lake corridor rules differ)",
+    "peakMonth": "July",
+    "visits2025": 4171431,
+    "state": "Colorado"
+  },
+  "sagu": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 847749,
+    "state": "Arizona"
+  },
+  "sequ": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 1378337,
+    "state": "California"
+  },
+  "shen": {
+    "permitSystem": "Old Rag day-use ticket Mar–Nov (Old Rag trails only; not whole park)",
+    "peakMonth": "October",
+    "visits2025": 1682152,
+    "state": "Virginia"
+  },
+  "thro": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 729893,
+    "state": "North Dakota"
+  },
+  "viis": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 471074,
+    "state": "U.S. Virgin Islands"
+  },
+  "voya": {
+    "permitSystem": "None required",
+    "peakMonth": "August",
+    "visits2025": 206326,
+    "state": "Minnesota"
+  },
+  "whsa": {
+    "permitSystem": "None required",
+    "peakMonth": "March",
+    "visits2025": 659742,
+    "state": "New Mexico"
+  },
+  "wica": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 606258,
+    "state": "South Dakota"
+  },
+  "wrst": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 108840,
+    "state": "Alaska"
+  },
+  "yell": {
+    "permitSystem": "None required",
+    "peakMonth": "July",
+    "visits2025": 4762988,
+    "state": "Wyoming / Montana / Idaho"
+  },
+  "yose": {
+    "permitSystem": "No park-wide timed entry in 2026 — arrive early for parking",
+    "peakMonth": "July",
+    "visits2025": 4278413,
+    "state": "California"
+  },
+  "zion": {
+    "permitSystem": "Canyon shuttle Mar–Nov (no ticket); Angels Landing permit required year-round",
+    "peakMonth": "June",
+    "visits2025": 4984525,
+    "state": "Utah"
+  }
+}
