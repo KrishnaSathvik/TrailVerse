@@ -5,13 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { reportHref } from '@/lib/reportLinks';
 import { Mail, Instagram, Facebook, Map } from '@components/icons';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import SyncStatus from './SyncStatus';
 
 const Footer = () => {
-  useTheme();
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const reportFrom = pathname || '/';
@@ -35,9 +33,9 @@ const Footer = () => {
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-5 lg:gap-8">
           {/* Brand */}
-          <div>
+          <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <img
                 src="/logo.png"
@@ -98,15 +96,18 @@ const Footer = () => {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Quick Links</h3>
             <ul className="space-y-2 text-base sm:text-sm">
-              <li><Link href="/plan-ai" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Talk with Trailie</Link></li>
+              <li><Link href="/plan-ai" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Plan with Trailie</Link></li>
               <li><Link href="/explore" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Explore Parks</Link></li>
               <li><Link href="/features" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Features</Link></li>
               <li><Link href="/faq" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
               <li><Link href="/testimonials" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Testimonials</Link></li>
               <li><Link href="/newsletter" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Newsletter</Link></li>
+              {!isAuthenticated && (
+                <li><Link href="/signup" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Sign up</Link></li>
+              )}
               <li><a href="https://www.nps.gov" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>NPS Official Site</a></li>
               {showInstallLink && (
                 <li><a href="#" onClick={handleInstall} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Install App</a></li>
@@ -115,7 +116,7 @@ const Footer = () => {
           </div>
 
           {/* Resources */}
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Resources</h3>
             <ul className="space-y-2 text-base sm:text-sm">
               <li><Link href="/blog" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Blog</Link></li>
@@ -130,7 +131,7 @@ const Footer = () => {
           </div>
 
           {/* Reports */}
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Reports</h3>
             <ul className="space-y-2 text-base sm:text-sm">
               <li><a href={reportHref('/reports/national-parks-2025.html', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>2025 Park Report</a></li>
@@ -139,18 +140,17 @@ const Footer = () => {
           </div>
 
           {/* Contact */}
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Contact</h3>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-              <a
-                href="mailto:trailverseteam@gmail.com"
-                className="text-base sm:text-sm transition hover:opacity-80"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                trailverseteam@gmail.com
-              </a>
-            </div>
+            <a
+              href="mailto:trailverseteam@gmail.com"
+              className="inline-flex items-center gap-2 text-sm transition hover:opacity-80"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <Mail className="h-4 w-4 shrink-0" />
+              <span className="lg:hidden">Email us</span>
+              <span className="hidden lg:inline">trailverseteam@gmail.com</span>
+            </a>
 
             {/* Sync Status - Only show for authenticated users */}
             {isAuthenticated && <SyncStatus />}

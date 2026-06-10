@@ -3,7 +3,13 @@ import { Sun, Moon, Monitor, ChevronDown, Check } from '@components/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { logEvent } from '../../utils/analytics';
 
-const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
+const SEGMENTED_THEMES = [
+  { id: 'system', label: 'System', icon: Monitor },
+  { id: 'light', label: 'Light', icon: Sun },
+  { id: 'dark', label: 'Dark', icon: Moon },
+];
+
+const ThemeSwitcher = ({ showLabel = false, compact = false, variant }) => {
   const { theme, setTheme: rawSetTheme, isDark } = useTheme();
   const setTheme = (newTheme) => { logEvent('Theme', 'toggle', newTheme); rawSetTheme(newTheme); };
   const [showMenu, setShowMenu] = useState(false);
@@ -21,6 +27,81 @@ const ThemeSwitcher = ({ showLabel = false, compact = false }) => {
 
   const currentTheme = themes.find(t => t.id === theme);
   const CurrentIcon = currentTheme?.icon || Monitor;
+
+  if (variant === 'segmented') {
+    if (!mounted) {
+      return (
+        <div className="flex w-fit items-center gap-3" aria-hidden="true">
+          <span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Theme
+          </span>
+          <div
+            className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--surface)',
+            }}
+          >
+            {SEGMENTED_THEMES.map((themeOption) => {
+              const Icon = themeOption.icon;
+              return (
+                <span
+                  key={themeOption.id}
+                  className="flex h-8 w-8 items-center justify-center rounded-full"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex w-fit items-center gap-3">
+        <span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Theme
+        </span>
+        <div
+          className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--surface)',
+          }}
+          role="radiogroup"
+          aria-label="Theme"
+        >
+          {SEGMENTED_THEMES.map((themeOption) => {
+            const Icon = themeOption.icon;
+            const isActive = theme === themeOption.id;
+
+            return (
+              <button
+                key={themeOption.id}
+                type="button"
+                role="radio"
+                aria-checked={isActive}
+                aria-label={themeOption.label}
+                onClick={() => setTheme(themeOption.id)}
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
+                  isActive ? 'ring-1' : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                  borderColor: isActive ? 'var(--border)' : 'transparent',
+                  color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                }}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   // Compact switch-based theme toggler
   if (compact) {

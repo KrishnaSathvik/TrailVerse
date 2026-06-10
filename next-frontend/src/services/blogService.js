@@ -1,4 +1,5 @@
 import enhancedApi from './enhancedApi';
+import { normalizeBlogCategory } from '@/lib/blogCategories';
 
 class BlogService {
   async getAllPosts(params = {}) {
@@ -118,8 +119,9 @@ class BlogService {
       const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 5, page: 1 }, cacheOpts);
       const posts = (result.data?.data || []).filter(isParkSpecific);
 
-      const astro = posts.find(p => p.category === 'Astrophotography') || null;
-      const guide = posts.find(p => p.category !== 'Astrophotography') || null;
+      const isAstroPost = (post) => normalizeBlogCategory(post?.category) === 'astrophotography';
+      const astro = posts.find(isAstroPost) || null;
+      const guide = posts.find((p) => !isAstroPost(p)) || null;
 
       return { guide, astro };
     } catch {

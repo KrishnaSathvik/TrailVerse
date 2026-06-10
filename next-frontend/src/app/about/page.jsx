@@ -22,6 +22,9 @@ export const metadata = {
     description: 'TrailVerse was built by Krishna, a traveler who visited 17+ national parks across 23 states.',
     images: ['/og-image-trailverse.jpg'],
   },
+  alternates: {
+    canonical: 'https://www.nationalparksexplorerusa.com/about',
+  },
 };
 
 const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'trailverseteam@gmail.com';

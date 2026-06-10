@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { getBestAvatar } from '../../utils/avatarGenerator';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logReviewCreate } from '../../utils/analytics';
 
 const ReviewSection = ({
   parkCode,
@@ -245,6 +245,7 @@ const ReviewSection = ({
       }, selectedImages);
       
       showToast('Review submitted successfully!', 'success');
+      logReviewCreate(parkCode, null, selectedImages.length > 0);
       setShowReviewForm(false);
       setNewReview({ rating: 5, title: '', comment: '', visitYear: new Date().getFullYear(), userName: '' });
       setSelectedImages([]);

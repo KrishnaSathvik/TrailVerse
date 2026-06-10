@@ -1,5 +1,4 @@
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import EventsPageClient from './EventsPageClient';
 import { getDefaultEventMonthRange, getEventsServer } from '@/lib/eventsApi';
 
@@ -35,7 +34,6 @@ export default async function EventsPage() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <EventsPageClient initialData={initialData} />
-      <Footer />
     </div>
   );
 }

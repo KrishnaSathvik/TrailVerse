@@ -9,6 +9,7 @@ import {
   TESTIMONIALS_SECTION_TITLE,
   TESTIMONIALS_SECTION_SUBTITLE
 } from './testimonialsCopy';
+import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
 
 function TestimonialAttribution({ testimonial }) {
   if (testimonial.sourceUrl) {
@@ -178,11 +179,13 @@ const TestimonialsSection = ({
   showTitle = true,
   refreshTrigger = 0,
   searchTerm = '',
-  showEmptyMessage = false
+  showEmptyMessage = false,
+  initialTestimonials,
 }) => {
   const { showToast } = useToast();
-  const [testimonials, setTestimonials] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const hasServerData = initialTestimonials !== undefined;
+  const [testimonials, setTestimonials] = useState(initialTestimonials ?? []);
+  const [loading, setLoading] = useState(!hasServerData);
   const [mobileIndex, setMobileIndex] = useState(0);
   const [desktopPage, setDesktopPage] = useState(0);
 
@@ -198,8 +201,9 @@ const TestimonialsSection = ({
     : testimonials;
 
   useEffect(() => {
+    if (hasServerData) return;
     loadTestimonials();
-  }, [featured, limit, refreshTrigger]);
+  }, [featured, limit, refreshTrigger, hasServerData]);
 
   const loadTestimonials = async () => {
     try {
@@ -277,10 +281,10 @@ const TestimonialsSection = ({
 
   if (loading) {
     return (
-      <div className="py-16">
+      <div className={LANDING_SECTION}>
         <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           {showTitle && (
-            <div className="text-center mb-12">
+            <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
               <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                 {TESTIMONIALS_SECTION_TITLE}
               </h2>
@@ -363,10 +367,10 @@ const TestimonialsSection = ({
   }
 
   return (
-    <div className="py-16">
+    <div className={LANDING_SECTION}>
       <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
         {showTitle && (
-          <div className="text-center mb-12">
+          <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               {TESTIMONIALS_SECTION_TITLE}
             </h2>

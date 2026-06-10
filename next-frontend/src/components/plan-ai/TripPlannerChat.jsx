@@ -15,7 +15,7 @@ import conversationService from '../../services/conversationService';
 import aiService from '../../services/aiService';
 import api from '../../services/api';
 import feedbackService from '../../services/feedbackService';
-import { logAIChat } from '../../utils/analytics';
+import { logAIFeedback, logAIChat, logPlanAiSessionStart, logTripShareCreated } from '../../utils/analytics';
 import { truncatePlainText } from '@/utils/stripMarkdown';
 import ChatInput from '../ai-chat/ChatInput';
 import MessageBubble from '../ai-chat/MessageBubble';
@@ -151,6 +151,7 @@ const TripPlannerChat = ({
   const userSentMessageRef = useRef(false);
   const personalizedSentRef = useRef(false);
   const personalizedInitRef = useRef(false);
+  const sessionStartTrackedRef = useRef(false);
 
   const chatStatus = isAnonymous
     ? null
@@ -192,6 +193,15 @@ const TripPlannerChat = ({
     }
     lastMessageCountRef.current = messages.length;
   }, [messages.length, isGenerating]);
+
+  useEffect(() => {
+    if (sessionStartTrackedRef.current) return;
+    sessionStartTrackedRef.current = true;
+    logPlanAiSessionStart({
+      userType: isAuthenticated ? 'authenticated' : 'anonymous',
+      parkCode: formData?.parkCode || null,
+    });
+  }, [isAuthenticated, formData?.parkCode]);
 
   // Helper functions that need to be defined before loadExistingTrip
   const calculateDays = () => {
@@ -1787,6 +1797,10 @@ WEATHER & LIVE INFO RESPONSES:
         const url = `${window.location.origin}/plan-ai/shared/${id}`;
         setShareUrl(url);
         setShowShareModal(true);
+        logTripShareCreated({
+          tripId: currentTripId,
+          parkCode: formData?.parkCode || null,
+        });
       } else {
         showToast('Failed to generate share link', 'error');
       }
@@ -2253,7 +2267,11 @@ WEATHER & LIVE INFO RESPONSES:
                       });
 
                       await feedbackService.submitFeedback(feedbackData);
-                      
+                      logAIFeedback({
+                        feedback: type,
+                        conversationId: currentTripId,
+                      });
+
                       console.log('✅ Feedback submitted successfully!');
                       
                       // No toast - visual feedback (blue/red button) is enough

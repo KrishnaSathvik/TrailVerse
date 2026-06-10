@@ -1,6 +1,8 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect, useEffect, useRef } from 'react';
+import { useServerInsertedHTML } from 'next/navigation';
 import { getStoredToken } from '../services/authService';
+import { setThemeCookie } from '../lib/themeCookie';
 
 const ThemeContext = createContext();
 
@@ -12,56 +14,104 @@ export const useTheme = () => {
   return context;
 };
 
-function readResolvedThemeFromDocument() {
-  if (typeof document === 'undefined') return 'light';
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-}
-
-export const ThemeProvider = ({ children }) => {
-  // Match SSR: never read document/localStorage during initial render (theme-init.js runs before React).
-  const [theme, setTheme] = useState('system');
-  const [resolvedTheme, setResolvedTheme] = useState('light');
-
-  // Sync with theme-init.js + localStorage after hydration.
-  useEffect(() => {
+function getStoredThemePreference() {
+  try {
     const saved = localStorage.getItem('theme');
     if (saved === 'light' || saved === 'dark' || saved === 'system') {
-      setTheme(saved);
+      return saved;
     }
-    setResolvedTheme(readResolvedThemeFromDocument());
-  }, []);
+  } catch {
+    // ignore
+  }
+  return 'system';
+}
 
-  // Apply theme to document (sync with theme-init.js; avoid redundant class churn)
-  useEffect(() => {
-    const root = window.document.documentElement;
+function readInitialResolvedTheme() {
+  if (typeof document === 'undefined') return 'light';
+  if (document.documentElement.classList.contains('dark')) return 'dark';
+  if (document.documentElement.classList.contains('light')) return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
-    let effectiveTheme = theme;
-    if (theme === 'system') {
-      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
+function resolveEffectiveTheme(themePreference) {
+  if (themePreference === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return themePreference;
+}
+
+function applyThemeClasses(effectiveTheme) {
+  const root = document.documentElement;
+  if (!root.classList.contains(effectiveTheme)) {
+    root.classList.remove('light', 'dark');
+    root.classList.add(effectiveTheme);
+  }
+  root.style.colorScheme = effectiveTheme;
+  const bg = effectiveTheme === 'dark' ? '#0A0E0F' : '#FEFCF9';
+  root.style.backgroundColor = bg;
+  if (document.body) {
+    document.body.style.backgroundColor = bg;
+    document.body.style.color = effectiveTheme === 'dark' ? '#FFFFFF' : '#2D2B28';
+  }
+}
+
+function enableThemeTransitions() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.documentElement.classList.add('theme-ready');
+    });
+  });
+}
+
+export const ThemeProvider = ({
+  children,
+  initialTheme = 'system',
+  initialResolvedTheme = 'light',
+}) => {
+  useServerInsertedHTML(() => <script src="/theme-init.js" suppressHydrationWarning />);
+
+  const [theme, setTheme] = useState(initialTheme);
+  const [resolvedTheme, setResolvedTheme] = useState(initialResolvedTheme);
+  const hasHydratedTheme = useRef(false);
+
+  // Before paint: read localStorage once, then keep document + state in sync.
+  useLayoutEffect(() => {
+    let themePreference = theme;
+
+    if (!hasHydratedTheme.current) {
+      themePreference = getStoredThemePreference();
+      hasHydratedTheme.current = true;
+      if (themePreference !== theme) {
+        setTheme(themePreference);
+      }
     }
 
-    if (!root.classList.contains(effectiveTheme)) {
-      root.classList.remove('light', 'dark');
-      root.classList.add(effectiveTheme);
-    }
-    root.style.colorScheme = effectiveTheme;
+    const effectiveTheme = resolveEffectiveTheme(themePreference);
+    applyThemeClasses(effectiveTheme);
     setResolvedTheme(effectiveTheme);
-    localStorage.setItem('theme', theme);
+
+    try {
+      localStorage.setItem('theme', themePreference);
+    } catch {
+      // ignore
+    }
+
+    setThemeCookie(themePreference);
+
+    if (!document.documentElement.classList.contains('theme-ready')) {
+      enableThemeTransitions();
+    }
   }, [theme]);
 
   // Listen for system theme changes
   useEffect(() => {
-    if (theme !== 'system') return;
+    if (theme !== 'system') return undefined;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e) => {
-      const newTheme = e.matches ? 'dark' : 'light';
-      const root = window.document.documentElement;
-      root.classList.remove('light', 'dark');
-      root.classList.add(newTheme);
+
+    const handleChange = (event) => {
+      const newTheme = event.matches ? 'dark' : 'light';
+      applyThemeClasses(newTheme);
       setResolvedTheme(newTheme);
     };
 
@@ -71,37 +121,29 @@ export const ThemeProvider = ({ children }) => {
 
   // Setup WebSocket real-time sync for preferences
   useEffect(() => {
-    // Check if user is logged in by checking localStorage token
     const token = getStoredToken();
-    if (!token) return;
+    if (!token) return undefined;
 
-    // Dynamically import WebSocket service to avoid circular dependency
     let cleanupFunction = null;
-    
+
     import('../services/websocketService').then((module) => {
       const websocketService = module.default;
-      
-      // Subscribe to preferences channel
+
       websocketService.subscribeToPreferences();
 
-      // Handle preferences updated from another device/tab
       const handlePreferencesUpdated = (preferences) => {
-        console.log('[Real-Time] Preferences updated:', preferences);
         if (preferences.theme && preferences.theme !== theme) {
           setTheme(preferences.theme);
         }
       };
 
-      // Subscribe to WebSocket event
       websocketService.on('preferencesUpdated', handlePreferencesUpdated);
 
-      // Store cleanup function
       cleanupFunction = () => {
         websocketService.off('preferencesUpdated', handlePreferencesUpdated);
       };
     });
 
-    // Cleanup
     return () => {
       if (cleanupFunction) cleanupFunction();
     };

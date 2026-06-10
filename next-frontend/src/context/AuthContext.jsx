@@ -1,14 +1,22 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import authService, { AUTH_SESSION_EXPIRED_EVENT } from '../services/authService';
+import authService, { AUTH_SESSION_EXPIRED_EVENT, AUTH_TOKEN_COOKIE } from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
 import { invalidateCache } from '../utils/cacheUtils';
-import { logEvent } from '../utils/analytics';
+import { logAnonymousChatMigrated, logEvent, logLoginPromptShown } from '../utils/analytics';
 import LoginModal from '../components/auth/LoginModal';
 
 const AuthContext = createContext();
 const ANONYMOUS_CHAT_MIGRATION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 const SESSION_EXPIRED_MESSAGE = 'Your session expired. Please sign in again.';
+
+const extractAuthUser = (payload) => {
+  if (!payload || typeof payload !== 'object') return null;
+  if (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+    return payload.data;
+  }
+  return payload;
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -18,7 +26,8 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children, initialAuthHint = false }) => {
+  // Start null on server and first client paint — localStorage is read in useEffect only (SSR/hydration safe).
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userDataLoaded, setUserDataLoaded] = useState(false);
@@ -26,6 +35,7 @@ export const AuthProvider = ({ children }) => {
   const [authTransition, setAuthTransition] = useState({ active: false, message: '' });
 
   const showLoginPrompt = (message = 'Please sign in to continue') => {
+    logLoginPromptShown(message);
     setAuthModal({ isOpen: true, message });
   };
   
@@ -65,6 +75,7 @@ export const AuthProvider = ({ children }) => {
       const migrationData = await migrationResponse.json();
       localStorage.removeItem(storageKey);
       localStorage.removeItem('anonymousSession');
+      logAnonymousChatMigrated();
       console.log(successMessage, migrationData.data.tripId);
       redirectToTrip(migrationData.data.tripId);
       return true;
@@ -172,10 +183,10 @@ export const AuthProvider = ({ children }) => {
 
       
       if (token && storedUser) {
-        console.log('✅ AuthContext: Restoring user from localStorage');
-        // Immediately restore user from localStorage for better UX
-        setUser(storedUser);
-        // Mark as loaded if storedUser has createdAt
+        if (!user) {
+          console.log('✅ AuthContext: Restoring user from localStorage');
+          setUser(storedUser);
+        }
         setUserDataLoaded(!!storedUser.createdAt);
         
         // Then validate token with server in background
@@ -183,33 +194,34 @@ export const AuthProvider = ({ children }) => {
 
           const response = await authService.getMe();
           console.log('✅ AuthContext: Server validation successful');
-          console.log('✅ AuthContext: Full server response:', response);
-          console.log('✅ AuthContext: Server response data:', response.data);
-          console.log('✅ AuthContext: Server response data.data:', response.data.data);
-          // Update user with fresh data from server
-          setUser(response.data);
-          // Mark as fully loaded with server data
-          setUserDataLoaded(true);
-          // Update localStorage with fresh data
-          localStorage.setItem('user', JSON.stringify(response.data));
-          console.log('✅ AuthContext: Updated localStorage with fresh user data');
+          const freshUser = extractAuthUser(response);
+          if (freshUser) {
+            console.log('✅ AuthContext: Full server response:', response);
+            // Update user with fresh data from server
+            setUser(freshUser);
+            // Mark as fully loaded with server data
+            setUserDataLoaded(true);
+            // Update localStorage with fresh data
+            localStorage.setItem('user', JSON.stringify(freshUser));
+            console.log('✅ AuthContext: Updated localStorage with fresh user data');
           
-          // Invalidate daily feed cache to ensure fresh data for the restored user
-          if (response.data?._id) {
-            console.log('🔄 AuthContext: Invalidating daily feed cache for restored user');
-            invalidateCache.dailyFeed(response.data._id);
-          }
+            // Invalidate daily feed cache to ensure fresh data for the restored user
+            if (freshUser?._id) {
+              console.log('🔄 AuthContext: Invalidating daily feed cache for restored user');
+              invalidateCache.dailyFeed(freshUser._id);
+            }
           
-          // Migrate legacy localStorage trips to database
-          if (response.data._id || response.data.id) {
-            const userId = response.data._id || response.data.id;
-            migrateLegacyTrips(userId).then(result => {
-              if (result.migrated > 0) {
-                console.log(`✅ AuthContext: Migrated ${result.migrated} legacy trips to database`);
-              }
-            }).catch(err => {
-              console.error('❌ AuthContext: Error migrating trips:', err);
-            });
+            // Migrate legacy localStorage trips to database
+            if (freshUser._id || freshUser.id) {
+              const userId = freshUser._id || freshUser.id;
+              migrateLegacyTrips(userId).then(result => {
+                if (result.migrated > 0) {
+                  console.log(`✅ AuthContext: Migrated ${result.migrated} legacy trips to database`);
+                }
+              }).catch(err => {
+                console.error('❌ AuthContext: Error migrating trips:', err);
+              });
+            }
           }
         } catch (error) {
           console.log('❌ AuthContext: Server validation failed');
@@ -260,12 +272,16 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, rememberMe = false) => {
     const response = await authService.login(email, password, rememberMe);
+    const loggedInUser = extractAuthUser(response);
 
-    setUser(response.data);
-    setUserDataLoaded(true);
-    if (response.data?._id) {
-      console.log('🔄 AuthContext: Invalidating daily feed cache for new user');
-      invalidateCache.dailyFeed(response.data._id);
+    if (loggedInUser) {
+      setUser(loggedInUser);
+      setUserDataLoaded(true);
+      setLoading(false);
+      if (loggedInUser?._id) {
+        console.log('🔄 AuthContext: Invalidating daily feed cache for new user');
+        invalidateCache.dailyFeed(loggedInUser._id);
+      }
     }
 
     const redirectedToChat = await migrateAnonymousChat(response.token);
@@ -302,11 +318,12 @@ export const AuthProvider = ({ children }) => {
     // Store in localStorage and Set dual-strategy cookie
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
-    document.cookie = `trailverse_auth_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+    document.cookie = `${AUTH_TOKEN_COOKIE}=${token}; path=/; max-age=604800; SameSite=Lax`;
     
     // Update state immediately
     setUser(userData);
     setUserDataLoaded(true);
+    setLoading(false);
 
     const redirectedToChat = await migrateAnonymousChat(token);
     if (redirectedToChat) {
@@ -329,7 +346,10 @@ export const AuthProvider = ({ children }) => {
     setUserAfterVerification,
     authTransition,
     clearAuthTransition,
-    isAuthenticated: !!user,
+    // Optimistic while validating: local user and/or auth cookie from SSR (keeps Home in header on refresh).
+    isAuthenticated: !!user || (loading && initialAuthHint),
+    // User-specific chrome (admin link, logout) — only after client has resolved user (avoids SSR hydration mismatch).
+    authReady: !loading && !!user,
     showLoginPrompt,
     closeLoginPrompt
   };

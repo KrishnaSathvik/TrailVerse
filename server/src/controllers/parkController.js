@@ -576,6 +576,27 @@ exports.getParkBrochures = async (req, res, next) => {
   }
 };
 
+// @desc    Get park planning snapshot + FAQ (live NPS, crowd, permits)
+// @route   GET /api/parks/:parkCode/planning
+// @access  Public
+exports.getParkPlanning = async (req, res, next) => {
+  try {
+    const { parkCode } = req.params;
+    const park = await npsService.getParkByCode(parkCode);
+
+    if (!park) {
+      return res.status(404).json({ success: false, error: 'Park not found' });
+    }
+
+    const { buildParkPlanningContent } = require('../services/parkPlanningService');
+    const data = await buildParkPlanningContent(park);
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get park permits/reservations from Recreation.gov RIDB API
 // @route   GET /api/parks/:parkCode/permits
 // @access  Public

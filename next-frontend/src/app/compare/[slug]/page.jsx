@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import CompareLandingSeo from '@/components/compare/CompareLandingSeo';
 import ComparePageClient from '../ComparePageClient';
 import { COMPARE_LANDINGS, getCompareLanding } from '@/data/compareLandings';
@@ -53,7 +52,6 @@ export default async function CompareLandingPage({ params }) {
       <Header />
       <CompareLandingSeo landing={landing} />
       <ComparePageClient initialParkCodes={landing.codes} />
-      <Footer />
     </div>
   );
 }

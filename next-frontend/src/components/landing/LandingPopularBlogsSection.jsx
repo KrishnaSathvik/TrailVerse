@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import IconGlyph from '@/components/common/IconGlyph';
 import BlogViewCount from '@/components/blog/BlogViewCount';
+import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
 
 function formatCategory(category) {
   if (!category) return 'Blog';
@@ -18,11 +19,11 @@ export default function LandingPopularBlogsSection({ posts = [] }) {
 
   return (
     <section
-      className="relative z-0 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12"
+      className={LANDING_SECTION}
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       <div className="max-w-[92rem] mx-auto">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-10">
+        <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
           <div>
             <div
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1"

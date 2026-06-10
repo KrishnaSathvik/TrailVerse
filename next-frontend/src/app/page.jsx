@@ -7,17 +7,18 @@ import LandingDailyFeedClient from './LandingDailyFeedClient';
 import LandingPopularBlogsSection from '@/components/landing/LandingPopularBlogsSection';
 import TestimonialsSection from '@/components/testimonials/TestimonialsSection';
 import IconGlyph from '@/components/common/IconGlyph';
-import { parkToSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { getBlogPostsServer } from '@/lib/blogApi';
-import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
+import LandingHeroCta from './LandingHeroCta';
+import LandingFeaturedParks from './LandingFeaturedParks';
+import { getLandingDailyFeedServer, getLandingTestimonialsServer } from '@/lib/landingApi';
+import { LANDING_SECTION, LANDING_SECTION_HEADER_MB, LANDING_SECTION_X } from '@/lib/landingLayout';
 import {
   LANDING_HERO_BADGE,
   LANDING_HERO_HEADLINE,
   LANDING_HERO_HEADLINE_ACCENT,
   LANDING_HERO_META_DESCRIPTION,
   LANDING_HERO_SUBTITLE,
-  LANDING_HERO_PRIMARY_CTA,
   LANDING_PAGE_TITLE,
 } from '@/lib/landingHeroCopy';
 
@@ -55,9 +56,11 @@ async function getAllParks() {
 const featuredParkCodes = ['yell', 'yose', 'grca', 'zion', 'glac', 'acad'];
 
 export default async function LandingPage() {
-  const [allParks, popularBlogsData] = await Promise.all([
+  const [allParks, popularBlogsData, landingTestimonials, landingDailyFeed] = await Promise.all([
     getAllParks(),
     getBlogPostsServer({ limit: 2, page: 1, sortBy: 'views' }),
+    getLandingTestimonialsServer(3),
+    getLandingDailyFeedServer(),
   ]);
   const popularBlogs = popularBlogsData?.data || [];
   const featuredParks = featuredParkCodes
@@ -69,7 +72,7 @@ export default async function LandingPage() {
       <Header />
 
       <main>
-        <section className="relative z-10 w-full overflow-hidden min-h-[28rem] sm:min-h-[32rem] lg:min-h-[36rem]">
+        <section className="relative z-10 w-full overflow-hidden min-h-[24rem] sm:min-h-[32rem] lg:min-h-[36rem]">
           <Image
             src="/background23.png"
             alt=""
@@ -81,7 +84,7 @@ export default async function LandingPage() {
           />
           <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
           <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_0%,rgba(0,0,0,0.35)_100%)]" />
-          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-16 lg:px-10 lg:py-20">
+          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16 lg:px-10 lg:py-20">
             <div className="w-full max-w-3xl mx-auto text-center">
               <p className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm">
                 <IconGlyph name="Mountain" className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
@@ -96,27 +99,11 @@ export default async function LandingPage() {
                 <span className="block text-[var(--accent-green)]">{LANDING_HERO_HEADLINE_ACCENT}</span>
               </h1>
 
-              <p className="animate-fade-in mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-white/80 text-balance sm:text-base">
+              <p className="animate-fade-in mx-auto mb-6 max-w-2xl text-sm leading-relaxed text-white/80 text-balance sm:mb-8 sm:text-base">
                 {LANDING_HERO_SUBTITLE}
               </p>
 
-              <div className="animate-fade-in flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-                <Link
-                  href="/plan-ai"
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-black/30 transition hover:brightness-110"
-                  style={{ backgroundColor: 'var(--accent-green)' }}
-                >
-                  <IconGlyph name="Sparkles" className="h-4 w-4" style={{ color: '#fff' }} />
-                  {LANDING_HERO_PRIMARY_CTA}
-                </Link>
-                <Link
-                  href={BROWSE_HUB_PATH}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/15"
-                >
-                  <IconGlyph name="Compass" className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-                  {BROWSE_HUB_NAV_LABEL}
-                </Link>
-              </div>
+              <LandingHeroCta />
             </div>
           </div>
         </section>
@@ -129,9 +116,9 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="relative z-0 pt-8 sm:pt-10 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <section className={`relative z-0 pt-6 sm:pt-8 pb-0 ${LANDING_SECTION_X}`} style={{ backgroundColor: 'var(--bg-primary)' }}>
           <div className="max-w-[92rem] mx-auto">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-10">
+            <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                   <IconGlyph name="Mountain" className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
@@ -146,53 +133,7 @@ export default async function LandingPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {featuredParks.map((park, index) => {
-                const parkSlug = parkToSlug(park.fullName);
-                const parkUrl = `/parks/${parkSlug}`;
-                const planUrl = `/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`;
-
-                return (
-                  <article
-                    key={park.parkCode}
-                    className="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
-                    style={{ aspectRatio: '16/11', boxShadow: 'var(--shadow-lg)' }}
-                  >
-                    <Image
-                      src={park.images?.[0]?.url || '/og-image-trailverse.jpg'}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                      priority={index < 2}
-                    />
-                    <Link
-                      href={parkUrl}
-                      className="absolute inset-0 z-[1]"
-                      aria-label={`View ${park.fullName}`}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none z-[2]" />
-                    <div className="absolute bottom-0 left-0 right-0 z-10 p-5 sm:p-6 pointer-events-none">
-                      <div className="flex items-center gap-2 mb-2">
-                        <IconGlyph name="MapPin" className="h-3.5 w-3.5 text-white/70" />
-                        <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{park.states}</span>
-                      </div>
-                      <h3 className="text-lg sm:text-xl font-semibold text-white leading-tight">{park.fullName}</h3>
-                      <div className="mt-3 pointer-events-auto">
-                        <Link
-                          href={planUrl}
-                          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
-                          style={{ backgroundColor: 'var(--accent-green)' }}
-                        >
-                          <IconGlyph name="Sparkles" className="h-3.5 w-3.5" />
-                          Plan with Trailie
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+            <LandingFeaturedParks parks={featuredParks} />
 
             <div className="mt-6 sm:hidden">
               <Link
@@ -206,13 +147,13 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <LandingDailyFeedClient />
+        <LandingDailyFeedClient initialDailyFeed={landingDailyFeed} />
 
         <LandingPopularBlogsSection posts={popularBlogs} />
 
-        <TestimonialsSection limit={3} />
+        <TestimonialsSection limit={3} initialTestimonials={landingTestimonials} />
 
-        <div className="pb-16 sm:pb-20 px-4 sm:px-6 text-center">
+        <div className="pt-4 pb-10 sm:pb-12 px-4 sm:px-6 text-center">
           <Link
             href="/testimonials"
             className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"

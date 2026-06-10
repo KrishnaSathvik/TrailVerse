@@ -7,7 +7,7 @@ import { useParkRatings } from '../../hooks/useParkRatings';
 import { htmlToPlainText } from '../../utils/htmlUtils';
 import { parkToSlug } from '../../utils/parkSlug';
 import { getParkSearchSession, saveParkSearchSession } from '../../lib/parkSearchSession';
-import { logSearchResultClick } from '../../utils/analytics';
+import { logParkCardClick } from '../../utils/analytics';
 
 const DEFAULT_PARK_IMAGE = '/og-image-trailverse.jpg';
 
@@ -85,7 +85,7 @@ const ExploreGridCard = ({ park, rating, priority = false, onNavigate }) => (
     }}
   >
     <div
-      className="relative h-56 overflow-hidden"
+      className="relative h-56 overflow-hidden xl:h-44"
       style={{ backgroundColor: 'var(--surface-hover)' }}
     >
       <Image
@@ -93,20 +93,20 @@ const ExploreGridCard = ({ park, rating, priority = false, onNavigate }) => (
         alt={park.fullName}
         fill
         priority={priority}
-        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
         className="object-cover group-hover:scale-110 transition-transform duration-500"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
     </div>
-    <div className="p-6">
+    <div className="p-6 xl:p-4">
       <h3
-        className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-forest-500 transition"
+        className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-forest-500 transition xl:mb-1.5 xl:text-base"
         style={{ color: 'var(--text-primary)' }}
       >
         {park.fullName}
       </h3>
       <p
-        className="text-sm line-clamp-3 mb-4"
+        className="text-sm line-clamp-3 mb-4 xl:mb-3 xl:line-clamp-2 xl:text-[0.8125rem]"
         style={{ color: park.matchReason ? 'var(--accent-green)' : 'var(--text-secondary)' }}
       >
         {park.matchReason || htmlToPlainText(park.description || '').slice(0, 160)}
@@ -132,7 +132,17 @@ const ExploreGridCard = ({ park, rating, priority = false, onNavigate }) => (
   </Link>
 );
 
-const ParkCard = memo(({ park, onSave, isSaved = false, showReviews = true, viewMode, rating: ratingProp, index = 0 }) => {
+const ParkCard = memo(({
+  park,
+  onSave,
+  isSaved = false,
+  showReviews = true,
+  viewMode,
+  rating: ratingProp,
+  index = 0,
+  analyticsSurface = null,
+  intentSlug = null,
+}) => {
   const { data: parkRatings } = useParkRatings();
   const parkRating = ratingProp ?? parkRatings?.[park.parkCode];
   const hasReviews = (parkRating?.totalReviews || 0) > 0;
@@ -146,13 +156,23 @@ const ParkCard = memo(({ park, onSave, isSaved = false, showReviews = true, view
   );
 
   const handleNavigate = useCallback(() => {
+    if (analyticsSurface) {
+      logParkCardClick({
+        parkCode: park.parkCode,
+        parkName: park.fullName,
+        surface: analyticsSurface,
+        position: index + 1,
+        intentSlug,
+      });
+      return;
+    }
     const session = getParkSearchSession();
     if (!session?.searchTerm) return;
     saveParkSearchSession({
       ...session,
       clickedParkCode: park.parkCode,
     });
-    logSearchResultClick({
+    logParkCardClick({
       searchTerm: session.searchTerm,
       searchId: session.searchId,
       parkCode: park.parkCode,
@@ -160,7 +180,7 @@ const ParkCard = memo(({ park, onSave, isSaved = false, showReviews = true, view
       surface: session.surface || 'explore',
       position: index + 1,
     });
-  }, [park, index]);
+  }, [park, index, analyticsSurface, intentSlug]);
 
   if (viewMode === 'list') {
     return <ExploreListCard park={park} rating={parkRating} onNavigate={handleNavigate} />;

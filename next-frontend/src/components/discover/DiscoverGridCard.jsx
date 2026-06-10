@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ActivityIcon } from '@/lib/discoverActivityIcons';
 import { StateIcon } from '@/lib/discoverStateIcons';
 import { recordDiscoverVisit } from './RecentChips';
+import { logDiscoverClick } from '@/utils/analytics';
 
 export default function DiscoverGridCard({
   href,
@@ -19,6 +20,7 @@ export default function DiscoverGridCard({
   const handleClick = () => {
     if (dimension && slug) {
       recordDiscoverVisit({ dimension, slug, label });
+      logDiscoverClick({ dimension, slug, label });
     }
   };
 

@@ -18,6 +18,9 @@ const api = axios.create({
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
+/** HTTP-only mirror of JWT — read on server for SSR auth hints (see AuthProvider). */
+export const AUTH_TOKEN_COOKIE = 'trailverse_auth_token';
+
 export const AUTH_SESSION_EXPIRED_EVENT = 'authSessionExpired';
 
 const AUTH_ROUTES_SKIP_SESSION_EXPIRY = [
@@ -72,7 +75,7 @@ const persistAuth = (token, user, rememberMe) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 
   // Remember Me controls cookie duration: 30 days vs session-only
-  const cookieParts = [`trailverse_auth_token=${token}`, 'path=/', 'SameSite=Lax'];
+  const cookieParts = [`${AUTH_TOKEN_COOKIE}=${token}`, 'path=/', 'SameSite=Lax'];
   if (rememberMe) {
     cookieParts.push('max-age=2592000');
   }
@@ -174,7 +177,7 @@ class AuthService {
     if (typeof window !== 'undefined') {
       websocketService.disconnect();
     }
-    document.cookie = "trailverse_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = `${AUTH_TOKEN_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     // Clear admin authentication flags
     localStorage.removeItem('adminAuthenticated');
     localStorage.removeItem('adminEmail');

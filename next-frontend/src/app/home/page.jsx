@@ -23,7 +23,6 @@ import {
   AlertTriangle, Shield, Info
 } from '@components/icons';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import Button from '@/components/common/Button';
 import dailyFeedService from '@/services/dailyFeedService';
@@ -924,7 +923,6 @@ const DailyFeedPage = () => {
           </Card>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

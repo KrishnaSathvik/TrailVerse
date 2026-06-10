@@ -12,6 +12,7 @@ const ShareButtons = ({
   type = 'default',
   showPrint = null,
   blogPost = null,
+  heroOverlay = false,
 }) => {
   const { showToast } = useToast();
   const [showMoreOptions, setShowMoreOptions] = useState(false);
@@ -198,9 +199,21 @@ const ShareButtons = ({
     const isArticleStyle = type === 'article';
     const buttonLabel = isArticleStyle ? 'Share Article' : 'Share Park';
     const menuLabel = isArticleStyle ? 'Share This Article' : 'Share This Park';
+    const heroButtonStyle = heroOverlay
+      ? {
+          backgroundColor: 'rgba(255, 255, 255, 0.12)',
+          borderWidth: '1px',
+          borderColor: 'rgba(255, 255, 255, 0.35)',
+          color: '#fff',
+        }
+      : {
+          backgroundColor: 'var(--surface)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+        };
 
     return (
-      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+      <div className={`flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center ${heroOverlay ? 'shrink-0' : ''}`}>
         <div className="relative w-full sm:w-auto sm:flex-shrink-0">
           <Button
             onClick={async () => {
@@ -220,11 +233,7 @@ const ShareButtons = ({
             size="sm"
             icon={Share2}
             className="backdrop-blur w-full sm:w-auto sm:flex-shrink-0"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-            }}
+            style={heroButtonStyle}
             title={menuLabel}
           >
             {buttonLabel}

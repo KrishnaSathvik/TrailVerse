@@ -77,7 +77,7 @@ describe('AuthContext', () => {
     const storedUser = { id: '123', name: 'Stored User', createdAt: '2024-01-01T00:00:00Z' };
     authService.getCurrentUser.mockReturnValue(storedUser);
     authService.getToken.mockReturnValue('mock-token');
-    authService.getMe.mockResolvedValue({ data: storedUser });
+    authService.getMe.mockResolvedValue({ success: true, data: storedUser });
 
     render(
       <AuthProvider>
@@ -86,10 +86,13 @@ describe('AuthContext', () => {
     );
 
     await waitFor(() => {
+      expect(screen.getByTestId('user')).toHaveTextContent(JSON.stringify(storedUser));
       expect(screen.getByTestId('authenticated')).toHaveTextContent('Authenticated');
     });
 
-    expect(screen.getByTestId('user')).toHaveTextContent(JSON.stringify(storedUser));
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('Not Loading');
+    });
   });
 
   it('delegates signup without authenticating the user', async () => {
@@ -115,7 +118,7 @@ describe('AuthContext', () => {
 
   it('logs the user in and updates authentication state', async () => {
     const user = { id: '123', name: 'Test User' };
-    authService.login.mockResolvedValue({ data: user, token: 'mock-token' });
+    authService.login.mockResolvedValue({ success: true, data: user, token: 'mock-token' });
 
     render(
       <AuthProvider>
@@ -142,7 +145,7 @@ describe('AuthContext', () => {
     const user = { id: '123', name: 'Test User' };
     authService.getCurrentUser.mockReturnValue(user);
     authService.getToken.mockReturnValue('mock-token');
-    authService.getMe.mockResolvedValue({ data: user });
+    authService.getMe.mockResolvedValue({ success: true, data: user });
 
     render(
       <AuthProvider>

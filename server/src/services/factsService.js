@@ -814,6 +814,15 @@ function needsWebSearch(userMessage) {
   return !isNpsAuthoritativeOnly(userMessage);
 }
 
+/** Day-by-day trip plans — NPS + weather facts suffice; skip web-search signup footer. */
+function isItineraryPlanningQuery(userMessage) {
+  if (!userMessage) return false;
+  return (
+    /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|things to do)\b/i.test(userMessage) ||
+    /\b\d{1,2}\s*[- ]?day\b/i.test(userMessage)
+  );
+}
+
 /**
  * Anonymous chat only — append the web-search signup footer when live web data
  * would genuinely help. Narrower than needsWebSearch() (which also gates fetching).
@@ -821,6 +830,10 @@ function needsWebSearch(userMessage) {
  */
 function shouldAppendAnonymousWebSearchUpsell(userMessage) {
   if (!userMessage) return { append: false };
+
+  if (isItineraryPlanningQuery(userMessage)) {
+    return { append: false };
+  }
 
   const category = classifyQuery(userMessage);
 

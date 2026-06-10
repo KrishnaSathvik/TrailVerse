@@ -1,5 +1,4 @@
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import ComparePageSeo from './ComparePageSeo';
 import ComparePageClient from './ComparePageClient';
 
@@ -26,7 +25,6 @@ export default async function ComparePage({ searchParams }) {
       <Header />
       <ComparePageSeo />
       <ComparePageClient initialParkCodes={initialParkCodes} />
-      <Footer />
     </div>
   );
 }

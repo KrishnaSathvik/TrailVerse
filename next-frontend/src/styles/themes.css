@@ -28,10 +28,76 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
+/* Hardcoded first-paint backgrounds (mirrors former inline theme-critical style) */
+html.dark,
+html.dark body {
+  background-color: #0A0E0F !important;
+  color: #fff !important;
+}
+
+html.light,
+html.light body {
+  background-color: #FEFCF9 !important;
+  color: #2D2B28 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light),
+  html:not(.light) body {
+    background-color: #0A0E0F !important;
+    color: #fff !important;
+  }
+}
+
 html.theme-loading *,
 html.theme-loading *::before,
-html.theme-loading *::after {
+html.theme-loading *::after,
+html:not(.theme-ready) *,
+html:not(.theme-ready) *::before,
+html:not(.theme-ready) *::after {
   transition: none !important;
+}
+
+/* System dark OS: full token set before theme-init runs (explicit .light wins) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --bg-primary: #0A0E0F;
+    --bg-secondary: #131719;
+    --bg-tertiary: #1A1F21;
+    --surface: rgba(255, 255, 255, 0.05);
+    --surface-hover: rgba(255, 255, 255, 0.10);
+    --surface-active: rgba(255, 255, 255, 0.15);
+    --button-filled-bg: #131719;
+    --button-filled-hover: #1A1F21;
+    --border: rgba(255, 255, 255, 0.10);
+    --border-hover: rgba(255, 255, 255, 0.20);
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(255, 255, 255, 0.85);
+    --text-tertiary: rgba(255, 255, 255, 0.60);
+    --accent-green: #059669;
+    --accent-green-dark: #047857;
+    --accent-green-light: rgba(5, 150, 105, 0.18);
+    --accent-blue: #0ea5e9;
+    --accent-orange: #f97316;
+    --error: #ef4444;
+    --error-red: #ef4444;
+    --warning: #f59e0b;
+    --skeleton: rgba(255, 255, 255, 0.12);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  }
+
+  html:not(.light) {
+    background-color: #0A0E0F;
+  }
+
+  html:not(.light) body {
+    background-color: #0A0E0F;
+    color: #FFFFFF;
+  }
 }
 
 /* Dark Theme */
@@ -122,12 +188,11 @@ html.theme-loading *::after {
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* Smooth transitions for theme changes */
-body {
+html.theme-ready body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-* {
+html.theme-ready *:not([data-button-component="true"]):not([data-button-component="true"] *) {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 

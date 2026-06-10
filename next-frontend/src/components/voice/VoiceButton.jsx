@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Microphone, X } from '@components/icons';
 import VoiceOverlay from './VoiceOverlay';
 import { slugToParkCode } from '@/utils/parkSlug';
+import { logVoiceSessionStart } from '@/utils/analytics';
 
 export default function VoiceButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function VoiceButton() {
 
   function openVoice() {
     dismissHint();
+    logVoiceSessionStart({ parkCode });
     setSessionKey(k => k + 1);
     setIsOpen(true);
   }

@@ -37,8 +37,25 @@ const nextConfig = {
         permanent: true,
       }));
 
+    // "&" → "and" in slugs; Google often indexes the variant with "and" dropped
+    // (e.g. denali-national-park-preserve → denali-national-park-and-preserve)
+    const parkSlugAndRedirects = parkSlugsData
+      .filter(p => p.fullName)
+      .map(p => {
+        const correctSlug = nameToSlug(p.fullName);
+        const badSlug = correctSlug.replace(/-and-/g, '-').replace(/-and$/g, '');
+        if (badSlug === correctSlug) return null;
+        return {
+          source: `/parks/${badSlug}`,
+          destination: `/parks/${correctSlug}`,
+          permanent: true,
+        };
+      })
+      .filter(Boolean);
+
     return [
       ...parkRedirects,
+      ...parkSlugAndRedirects,
 
       // Legacy route redirects (old Vite-era routes that Google indexed)
       { source: '/park/:slug', destination: '/parks/:slug', permanent: true },
@@ -47,6 +64,7 @@ const nextConfig = {
       { source: '/search', destination: '/explore', permanent: true },
       { source: '/parks', destination: '/explore', permanent: true },
       { source: '/activity', destination: '/explore', permanent: true },
+      { source: '/blog/', destination: '/blog', permanent: true },
 
       // Guide slug rename (2026 metadata pack)
       {

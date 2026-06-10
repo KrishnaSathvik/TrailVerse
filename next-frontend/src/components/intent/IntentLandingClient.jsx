@@ -20,6 +20,7 @@ import GuideCard from '@/components/guides/GuideCard';
 import IntentTopMatches from '@/components/intent/IntentTopMatches';
 import { getIntentLandingByPath } from '@/data/intentLandings';
 import { parkToSlug } from '@/utils/parkSlug';
+import { logCtaClick } from '@/utils/analytics';
 
 const surfaceCardStyle = {
   background:
@@ -274,6 +275,12 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
                     <Link
                       key={link.href}
                       href={link.href}
+                      onClick={() => logCtaClick({
+                        ctaId: 'intent_tool_link',
+                        label: link.label,
+                        surface: 'intent_landing',
+                        destination: link.href,
+                      })}
                       className="group flex items-center gap-4 rounded-2xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5"
                       style={{
                         backgroundColor: 'var(--surface)',

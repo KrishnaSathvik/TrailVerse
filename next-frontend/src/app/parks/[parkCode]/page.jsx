@@ -10,6 +10,11 @@ import {
 } from '@/lib/parkSeo';
 import { parkToSlug, findCorrectSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import {
+  getParkPlanningFaq,
+  getParkPlanningSnapshot,
+  hydratePlanningFaq,
+} from '@/lib/parkPlanningContent';
 import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
 
@@ -162,7 +167,7 @@ export default async function ParkPage({ params }) {
   let relatedParks = [];
   if (park.states) {
     try {
-      const allRes = await fetch(`${getApiBaseUrl()}/parks?all=true&nationalParksOnly=true`, {
+      const allRes = await fetch(`${getApiBaseUrl()}/parks?all=true`, {
         next: { revalidate: 86400 },
       });
       if (allRes.ok) {
@@ -174,11 +179,31 @@ export default async function ParkPage({ params }) {
             p.parkCode !== park.parkCode &&
             parkStates.some((st) => p.states?.includes(st))
         );
-        relatedParks = sortRelatedParks(candidates, park.parkCode).slice(0, 4);
+        relatedParks = sortRelatedParks(candidates, park).slice(0, 4);
       }
     } catch {
       // Non-critical — just skip related parks
     }
+  }
+
+  let planningSnapshot = getParkPlanningSnapshot(park, parkSlug);
+  const alertCount = Array.isArray(data?.alerts) ? data.alerts.length : 0;
+  let planningFaqItems = getParkPlanningFaq(park, parkSlug, planningSnapshot, alertCount);
+
+  try {
+    const planningRes = await fetch(`${getApiBaseUrl()}/parks/${park.parkCode}/planning`, {
+      next: { revalidate: 300 },
+    });
+    if (planningRes.ok) {
+      const planningJson = await planningRes.json();
+      const planningData = planningJson.data;
+      if (planningData?.snapshot) {
+        planningSnapshot = planningData.snapshot;
+        planningFaqItems = hydratePlanningFaq(planningData.faqItems ?? [], park, parkSlug);
+      }
+    }
+  } catch {
+    // Non-critical — keep park-field fallback computed above
   }
 
   return (
@@ -200,6 +225,8 @@ export default async function ParkPage({ params }) {
         relatedParks={relatedParks}
         seoLeadLine={seoLeadLine}
         stateHubSlug={stateHubSlug}
+        planningSnapshot={planningSnapshot}
+        planningFaqItems={planningFaqItems}
       />
     </>
   );

@@ -1,7 +1,12 @@
-import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
+import {
+  McpConnectorCopyButton,
+  TrackedCtaLink,
+} from '@/components/distribution/DistributionTrackedLink';
+
+const DIST_CHANNEL = 'mcp';
 
 export const metadata = {
   title: 'TrailVerse for Claude — MCP Integration',
@@ -138,14 +143,17 @@ export default function MCPPage() {
               real itineraries &mdash; for all 470+ NPS sites.
             </p>
 
-            <a
+            <TrackedCtaLink
+              channel={DIST_CHANNEL}
+              ctaId="hero_install"
+              label="Install in Claude"
               href="#install"
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               style={{ backgroundColor: 'var(--accent-green)' }}
             >
               <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
               Install in Claude
-            </a>
+            </TrackedCtaLink>
           </div>
         </section>
 
@@ -513,6 +521,16 @@ export default function MCPPage() {
                 >
                   {MCP_URL}
                 </div>
+                <McpConnectorCopyButton
+                  mcpUrl={MCP_URL}
+                  className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition hover:opacity-90"
+                  style={{
+                    backgroundColor: 'var(--accent-green)',
+                    color: '#fff',
+                  }}
+                >
+                  Copy connector URL
+                </McpConnectorCopyButton>
               </div>
 
               {/* Claude Code */}
@@ -571,9 +589,16 @@ export default function MCPPage() {
 
             <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
               Using ChatGPT instead?{' '}
-              <Link href="/chatgpt" className="underline underline-offset-2" style={{ color: 'var(--text-secondary)' }}>
+              <TrackedCtaLink
+                channel={DIST_CHANNEL}
+                ctaId="cross_link_chatgpt"
+                label="Open the TrailVerse ChatGPT app"
+                href="/chatgpt"
+                className="underline underline-offset-2"
+                style={{ color: 'var(--text-secondary)' }}
+              >
                 Open the TrailVerse ChatGPT app
-              </Link>
+              </TrackedCtaLink>
             </p>
           </div>
         </section>
@@ -711,20 +736,33 @@ export default function MCPPage() {
               </p>
               <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
                 Using ChatGPT instead?{' '}
-                <Link href="/chatgpt" className="underline underline-offset-2" style={{ color: 'var(--text-secondary)' }}>
+                <TrackedCtaLink
+                  channel={DIST_CHANNEL}
+                  ctaId="footer_cross_link_chatgpt"
+                  label="Open the TrailVerse ChatGPT app"
+                  href="/chatgpt"
+                  className="underline underline-offset-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Open the TrailVerse ChatGPT app
-                </Link>
+                </TrackedCtaLink>
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
+                <TrackedCtaLink
+                  channel={DIST_CHANNEL}
+                  ctaId="footer_install"
+                  label="Install Now"
                   href="#install"
                   className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                   style={{ backgroundColor: 'var(--accent-green)' }}
                 >
                   <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
                   Install Now
-                </a>
-                <Link
+                </TrackedCtaLink>
+                <TrackedCtaLink
+                  channel={DIST_CHANNEL}
+                  ctaId="footer_explore_parks"
+                  label="Explore Parks"
                   href="/explore"
                   className="inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition"
                   style={{
@@ -739,7 +777,7 @@ export default function MCPPage() {
                     <IconGlyph name="Compass" className="h-4 w-4" />
                     Explore Parks
                   </span>
-                </Link>
+                </TrackedCtaLink>
               </div>
             </div>
           </div>

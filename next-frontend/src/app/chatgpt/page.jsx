@@ -1,7 +1,9 @@
-import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
+import { TrackedCtaLink, TrackedOutboundLink } from '@/components/distribution/DistributionTrackedLink';
+
+const DIST_CHANNEL = 'chatgpt';
 
 export const metadata = {
   title: 'TrailVerse for ChatGPT — National Park Planner App',
@@ -141,16 +143,17 @@ export default function ChatGPTPage() {
               and AI itineraries for 470+ parks &mdash; right from the official app listing.
             </p>
 
-            <a
+            <TrackedOutboundLink
+              channel={DIST_CHANNEL}
+              ctaId="hero_start_chat"
+              label="Start chat"
               href={CHATGPT_APP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               style={{ backgroundColor: 'var(--accent-green)' }}
             >
               <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
               Start chat
-            </a>
+            </TrackedOutboundLink>
           </div>
         </section>
 
@@ -229,15 +232,16 @@ export default function ChatGPTPage() {
                 {[
                   <>
                     Open the{' '}
-                    <a
+                    <TrackedOutboundLink
+                      channel={DIST_CHANNEL}
+                      ctaId="install_step_app_link"
+                      label="TrailVerse app on ChatGPT"
                       href={CHATGPT_APP_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="font-semibold underline underline-offset-2"
                       style={{ color: 'var(--accent-green)' }}
                     >
                       TrailVerse app on ChatGPT
-                    </a>{' '}
+                    </TrackedOutboundLink>{' '}
                     (sign in if prompted)
                   </>,
                   <>Click <strong>Start chat</strong> on the app page</>,
@@ -246,9 +250,15 @@ export default function ChatGPTPage() {
                   </>,
                   <>
                     For unlimited planning on the full site, continue at{' '}
-                    <Link href="/plan-ai" className="font-semibold underline underline-offset-2">
+                    <TrackedCtaLink
+                      channel={DIST_CHANNEL}
+                      ctaId="install_step_plan_ai"
+                      label="Trailie AI Planner"
+                      href="/plan-ai"
+                      className="font-semibold underline underline-offset-2"
+                    >
                       Trailie AI Planner
-                    </Link>
+                    </TrackedCtaLink>
                   </>,
                 ].map((step, i) => (
                   <li key={i} className="flex gap-3">
@@ -270,36 +280,45 @@ export default function ChatGPTPage() {
                 is rate-limited; park search, details, compare, and events have generous limits.
               </p>
 
-              <a
+              <TrackedOutboundLink
+                channel={DIST_CHANNEL}
+                ctaId="install_start_chat"
+                label="Start chat"
                 href={CHATGPT_APP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent-green)' }}
               >
                 <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
                 Start chat
-              </a>
+              </TrackedOutboundLink>
 
               <p className="text-xs mt-4 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
                 Can&rsquo;t open the listing? Browse{' '}
-                <a
+                <TrackedOutboundLink
+                  channel={DIST_CHANNEL}
+                  ctaId="apps_directory_fallback"
+                  label="ChatGPT Apps"
                   href={CHATGPT_APPS_DIRECTORY}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="underline underline-offset-2"
                 >
                   ChatGPT Apps
-                </a>{' '}
+                </TrackedOutboundLink>{' '}
                 and search <strong>TrailVerse</strong>, or type <strong>@TrailVerse</strong> in a new chat.
               </p>
             </div>
 
             <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
               Prefer Claude?{' '}
-              <Link href="/mcp" className="underline underline-offset-2" style={{ color: 'var(--text-secondary)' }}>
+              <TrackedCtaLink
+                channel={DIST_CHANNEL}
+                ctaId="cross_link_mcp"
+                label="Install TrailVerse via MCP for Claude"
+                href="/mcp"
+                className="underline underline-offset-2"
+                style={{ color: 'var(--text-secondary)' }}
+              >
                 Install TrailVerse via MCP for Claude
-              </Link>
+              </TrackedCtaLink>
             </p>
           </div>
         </section>
@@ -404,9 +423,9 @@ export default function ChatGPTPage() {
                   Free to use in ChatGPT. Trip planning is rate-limited to 5 requests per 48 hours;
                   park details, search, compare, and events have generous shared limits. Unlimited
                   planning is available on{' '}
-                  <Link href="/plan-ai" className="underline underline-offset-2">
+                  <TrackedCtaLink channel={DIST_CHANNEL} ctaId="faq_plan_ai" label="Trailie" href="/plan-ai" className="underline underline-offset-2">
                     nationalparksexplorerusa.com
-                  </Link>
+                  </TrackedCtaLink>
                   .
                 </p>
               </div>
@@ -438,17 +457,21 @@ export default function ChatGPTPage() {
                 from 470+ NPS sites.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
+                <TrackedOutboundLink
+                  channel={DIST_CHANNEL}
+                  ctaId="footer_start_chat"
+                  label="Start chat"
                   href={CHATGPT_APP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                   style={{ backgroundColor: 'var(--accent-green)' }}
                 >
                   <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
                   Start chat
-                </a>
-                <Link
+                </TrackedOutboundLink>
+                <TrackedCtaLink
+                  channel={DIST_CHANNEL}
+                  ctaId="footer_explore_parks"
+                  label="Explore Parks"
                   href="/explore"
                   className="inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition"
                   style={{
@@ -463,7 +486,7 @@ export default function ChatGPTPage() {
                     <IconGlyph name="Compass" className="h-4 w-4" />
                     Explore Parks
                   </span>
-                </Link>
+                </TrackedCtaLink>
               </div>
             </div>
           </div>

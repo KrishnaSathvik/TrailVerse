@@ -15,6 +15,9 @@ export const metadata = {
     description: 'Read expert guides, travel tips, and adventure stories about America\'s National Parks.',
     images: ['/og-image-trailverse.jpg'],
   },
+  alternates: {
+    canonical: 'https://www.nationalparksexplorerusa.com/blog',
+  },
 };
 
 export default function BlogLayout({ children }) {

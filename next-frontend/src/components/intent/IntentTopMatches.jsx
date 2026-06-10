@@ -90,7 +90,15 @@ export default function IntentTopMatches({ landing, initialParks = [] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6">
       {parks.map((park, index) => (
-        <ParkCard key={park.parkCode} park={park} viewMode="grid" index={index} showReviews={false} />
+        <ParkCard
+          key={park.parkCode}
+          park={park}
+          viewMode="grid"
+          index={index}
+          showReviews={false}
+          analyticsSurface="intent_landing"
+          intentSlug={landing.path}
+        />
       ))}
     </div>
   );

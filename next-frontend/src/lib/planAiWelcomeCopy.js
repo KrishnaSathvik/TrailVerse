@@ -178,8 +178,8 @@ export function getParkPlanVisitCta({
   }
 
   return {
-    title: `Not sure where to start at ${park}?`,
-    body: `Tell me when you're going and what you want to do — I'll map hikes, drives, and must-see stops into a day-by-day ${parkName} plan.`,
+    title: `Build your ${park} itinerary`,
+    body: `Tell Trailie your dates, pace, and interests — get a day-by-day ${parkName} plan with hikes, drives, and must-see stops.`,
     button: `Plan ${park} with Trailie`,
   };
 }

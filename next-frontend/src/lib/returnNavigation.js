@@ -42,7 +42,9 @@ export function backLabelForPath(path) {
     pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
   if (match) return match[1];
-  if (pathname.startsWith('/parks/')) return 'Park';
+  if (pathname.startsWith('/parks/') && !pathname.startsWith('/parks/state/')) {
+    return 'Park details';
+  }
   return 'TrailVerse';
 }
 

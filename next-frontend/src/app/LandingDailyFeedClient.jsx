@@ -9,30 +9,37 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import dailyFeedService from '@/services/dailyFeedService';
 import { parkToSlug } from '@/utils/parkSlug';
 import { getFeedDateKey } from '@/utils/dailyFeedDate';
+import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
+import { logCtaClick } from '@/utils/analytics';
 
-export default function LandingDailyFeedClient() {
+export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
   const feedDate = getFeedDateKey();
 
-  const { data: dailyFeed, isLoading } = useQuery({
+  const { data: dailyFeed, isLoading, isFetched } = useQuery({
     queryKey: ['landingDailyFeed', feedDate],
     queryFn: async () => {
       const feed = await dailyFeedService.getDailyFeed().catch(() => null);
       if (!feed?.parkOfDay) return null;
       return { parkOfDay: feed.parkOfDay, natureFact: feed.natureFact };
     },
+    initialData: initialDailyFeed ?? undefined,
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
-    refetchOnMount: true,
+    refetchOnMount: initialDailyFeed == null,
   });
 
-  if (!isLoading && !(dailyFeed?.parkOfDay && dailyFeed?.natureFact)) {
+  const feed = dailyFeed ?? initialDailyFeed;
+  const showSkeleton = isLoading && !feed;
+  const shouldHide = isFetched && !(feed?.parkOfDay && feed?.natureFact);
+
+  if (shouldHide) {
     return null;
   }
 
   return (
-    <section className="relative z-10 py-16 sm:py-20 px-4 sm:px-6 lg:px-10 xl:px-12" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <section className={LANDING_SECTION} style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-[92rem] mx-auto">
-        <div className="flex items-end justify-between mb-10">
+        <div className={`flex items-end justify-between ${LANDING_SECTION_HEADER_MB}`}>
           <div>
             <div
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1"
@@ -52,16 +59,23 @@ export default function LandingDailyFeedClient() {
           </div>
         </div>
 
-        {dailyFeed?.parkOfDay && dailyFeed?.natureFact ? (
+        {feed?.parkOfDay && feed?.natureFact ? (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch">
             <Link
-              href={`/parks/${parkToSlug(dailyFeed.parkOfDay.name)}`}
+              href={`/parks/${parkToSlug(feed.parkOfDay.name)}`}
               className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
               style={{ minHeight: '28rem', boxShadow: 'var(--shadow-lg)' }}
+              onClick={() => logCtaClick({
+                ctaId: 'park_of_day',
+                label: feed.parkOfDay.name,
+                surface: 'landing_daily_feed',
+                destination: `/parks/${parkToSlug(feed.parkOfDay.name)}`,
+                parkCode: feed.parkOfDay.parkCode || null,
+              })}
             >
               <OptimizedImage
-                src={dailyFeed.parkOfDay.image || '/background1.png'}
-                alt={dailyFeed.parkOfDay.name}
+                src={feed.parkOfDay.image || '/background1.png'}
+                alt={feed.parkOfDay.name}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
@@ -73,32 +87,32 @@ export default function LandingDailyFeedClient() {
                 <ArrowRight className="h-4 w-4 text-white" />
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                {dailyFeed.parkOfDay.states && (
+                {feed.parkOfDay.states && (
                   <div className="flex items-center gap-2 mb-3">
                     <MapPin className="h-3.5 w-3.5 text-white/70" />
-                    <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{dailyFeed.parkOfDay.states}</span>
+                    <span className="text-xs font-medium text-white/70 uppercase tracking-wider">{feed.parkOfDay.states}</span>
                   </div>
                 )}
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white leading-tight mb-3">
-                  {dailyFeed.parkOfDay.name}
+                  {feed.parkOfDay.name}
                 </h3>
-                {(dailyFeed.parkOfDay.bestTime || dailyFeed.parkOfDay.crowdLevel) && (
+                {(feed.parkOfDay.bestTime || feed.parkOfDay.crowdLevel) && (
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {dailyFeed.parkOfDay.bestTime ? (
+                    {feed.parkOfDay.bestTime ? (
                       <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-medium text-white/90 bg-white/10 border border-white/15">
-                        Best: {dailyFeed.parkOfDay.bestTime}
+                        Best: {feed.parkOfDay.bestTime}
                       </span>
                     ) : null}
-                    {dailyFeed.parkOfDay.crowdLevel ? (
+                    {feed.parkOfDay.crowdLevel ? (
                       <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-medium text-white/90 bg-white/10 border border-white/15">
-                        Crowds: {dailyFeed.parkOfDay.crowdLevel}
+                        Crowds: {feed.parkOfDay.crowdLevel}
                       </span>
                     ) : null}
                   </div>
                 )}
-                {dailyFeed.parkOfDay.mustDo?.[0] ? (
+                {feed.parkOfDay.mustDo?.[0] ? (
                   <p className="text-sm sm:text-base text-white/80 max-w-2xl line-clamp-2 mb-2">
-                    Don&apos;t miss: {dailyFeed.parkOfDay.mustDo[0]}
+                    Don&apos;t miss: {feed.parkOfDay.mustDo[0]}
                   </p>
                 ) : null}
                 <p className="text-sm sm:text-base text-white/75 max-w-2xl line-clamp-2">
@@ -125,11 +139,11 @@ export default function LandingDailyFeedClient() {
                 </span>
               </div>
               <p className="text-lg sm:text-xl leading-relaxed mb-8" style={{ color: 'var(--text-primary)' }}>
-                &ldquo;{dailyFeed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
+                &ldquo;{feed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  href={`/parks/${parkToSlug(dailyFeed.parkOfDay.name)}`}
+                  href={`/parks/${parkToSlug(feed.parkOfDay.name)}`}
                   variant="primary"
                   size="lg"
                   icon={ArrowRight}
@@ -138,9 +152,9 @@ export default function LandingDailyFeedClient() {
                 >
                   Explore Today&apos;s Park
                 </Button>
-                {dailyFeed.parkOfDay.parkCode ? (
+                {feed.parkOfDay.parkCode ? (
                   <Button
-                    href={`/plan-ai?park=${encodeURIComponent(dailyFeed.parkOfDay.parkCode)}&name=${encodeURIComponent(dailyFeed.parkOfDay.name)}`}
+                    href={`/plan-ai?park=${encodeURIComponent(feed.parkOfDay.parkCode)}&name=${encodeURIComponent(feed.parkOfDay.name)}`}
                     variant="secondary"
                     size="lg"
                     className="w-full sm:w-auto"

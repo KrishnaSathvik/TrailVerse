@@ -1,261 +1,246 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
-import analyticsService from '../services/analyticsService';
+import { useCallback } from 'react';
+import {
+  emitProductEvent,
+  getAnalyticsSessionId,
+  isAnalyticsAllowed,
+  logAIChat,
+  logBlogView,
+  logError,
+  logEventRegister,
+  logEventView,
+  logParkView,
+  logReviewCreate,
+  logSearch,
+  logUserAction,
+  logUserLogin,
+  logUserLogout,
+  logUserSignup,
+  optInAnalytics,
+  optOutAnalytics,
+  trackCustomEvent,
+  trackImageUpload,
+  trackParkSave,
+} from '@/utils/analytics';
 
-// Main analytics hook
+/** Analytics hook — delegates to utils/analytics (GA4 + MongoDB + Vercel). */
 export const useAnalytics = () => {
-  const location = useLocation();
-  const previousLocation = useRef();
+  const track = useCallback((eventType, eventCategory, metadata = {}) => {
+    emitProductEvent({
+      vercelName: String(eventType).replace(/\s+/g, '_').toLowerCase(),
+      eventType,
+      eventCategory,
+      metadata,
+    });
+  }, []);
 
-  // Track page views on route changes
-  useEffect(() => {
-    if (previousLocation.current !== location.pathname) {
-      analyticsService.trackPageView();
-      previousLocation.current = location.pathname;
-    }
-  }, [location]);
+  const trackUserAction = useCallback((actionType, metadata = {}) => {
+    logUserAction(actionType, metadata.details || actionType, metadata);
+  }, []);
+
+  const trackSearch = useCallback((searchTerm, resultCount = 0, searchType = 'general') => {
+    logSearch(searchTerm, resultCount, searchType);
+  }, []);
+
+  const trackParkViewCb = useCallback((parkCode, parkName) => {
+    logParkView(parkCode, parkName);
+  }, []);
+
+  const trackParkSaveCb = useCallback((parkCode, parkName) => {
+    trackParkSave(parkCode, parkName);
+  }, []);
+
+  const trackBlogViewCb = useCallback((blogId, blogTitle) => {
+    logBlogView(blogTitle, blogId);
+  }, []);
+
+  const trackEventViewCb = useCallback((eventId, eventTitle) => {
+    logEventView(eventTitle, eventId);
+  }, []);
+
+  const trackEventRegisterCb = useCallback((eventId, eventTitle) => {
+    logEventRegister(eventId, eventTitle);
+  }, []);
+
+  const trackReviewCreateCb = useCallback((parkCode, reviewId) => {
+    logReviewCreate(parkCode, reviewId);
+  }, []);
+
+  const trackAIChatCb = useCallback((message, responseTime = 0, success = true) => {
+    logAIChat(message, responseTime, success);
+  }, []);
+
+  const trackImageUploadCb = useCallback((imageCount, category = 'general') => {
+    trackImageUpload(imageCount, category);
+  }, []);
+
+  const trackErrorCb = useCallback((errorMessage, errorCode = 'CLIENT_ERROR') => {
+    logError(errorCode, errorMessage, typeof window !== 'undefined' ? window.location.pathname : null);
+  }, []);
+
+  const trackCustomEventCb = useCallback((eventName, metadata = {}) => {
+    trackCustomEvent(eventName, metadata);
+  }, []);
 
   return {
-    track: analyticsService.track.bind(analyticsService),
-    trackUserAction: analyticsService.trackUserAction.bind(analyticsService),
-    trackSearch: analyticsService.trackSearch.bind(analyticsService),
-    trackParkView: analyticsService.trackParkView.bind(analyticsService),
-    trackParkSave: analyticsService.trackParkSave.bind(analyticsService),
-    trackBlogView: analyticsService.trackBlogView.bind(analyticsService),
-    trackEventView: analyticsService.trackEventView.bind(analyticsService),
-    trackEventRegister: analyticsService.trackEventRegister.bind(analyticsService),
-    trackReviewCreate: analyticsService.trackReviewCreate.bind(analyticsService),
-    trackAIChat: analyticsService.trackAIChat.bind(analyticsService),
-    trackImageUpload: analyticsService.trackImageUpload.bind(analyticsService),
-    trackError: analyticsService.trackError.bind(analyticsService),
-    trackCustomEvent: analyticsService.trackCustomEvent.bind(analyticsService)
+    track,
+    trackUserAction,
+    trackSearch,
+    trackParkView: trackParkViewCb,
+    trackParkSave: trackParkSaveCb,
+    trackBlogView: trackBlogViewCb,
+    trackEventView: trackEventViewCb,
+    trackEventRegister: trackEventRegisterCb,
+    trackReviewCreate: trackReviewCreateCb,
+    trackAIChat: trackAIChatCb,
+    trackImageUpload: trackImageUploadCb,
+    trackError: trackErrorCb,
+    trackCustomEvent: trackCustomEventCb,
   };
 };
 
-// Hook for tracking user interactions
 export const useUserActionTracking = (actionType, metadata = {}) => {
   const trackAction = useCallback(() => {
-    analyticsService.trackUserAction(actionType, metadata);
+    logUserAction(actionType, metadata.details || actionType, metadata);
   }, [actionType, metadata]);
-
   return trackAction;
 };
 
-// Hook for tracking search events
 export const useSearchTracking = () => {
-  const trackSearch = useCallback((searchTerm, resultCount = 0, searchType = 'general') => {
-    analyticsService.trackSearch(searchTerm, resultCount, searchType);
+  return useCallback((searchTerm, resultCount = 0, searchType = 'general') => {
+    logSearch(searchTerm, resultCount, searchType);
   }, []);
-
-  return trackSearch;
 };
 
-// Hook for tracking content views
 export const useContentViewTracking = () => {
-  const trackParkView = useCallback((parkCode, parkName) => {
-    analyticsService.trackParkView(parkCode, parkName);
-  }, []);
-
-  const trackBlogView = useCallback((blogId, blogTitle) => {
-    analyticsService.trackBlogView(blogId, blogTitle);
-  }, []);
-
-  const trackEventView = useCallback((eventId, eventTitle) => {
-    analyticsService.trackEventView(eventId, eventTitle);
-  }, []);
-
-  return {
-    trackParkView,
-    trackBlogView,
-    trackEventView
-  };
+  const trackParkViewCb = useCallback((parkCode, parkName) => logParkView(parkCode, parkName), []);
+  const trackBlogViewCb = useCallback((blogId, blogTitle) => logBlogView(blogTitle, blogId), []);
+  const trackEventViewCb = useCallback((eventId, eventTitle) => logEventView(eventTitle, eventId), []);
+  return { trackParkView: trackParkViewCb, trackBlogView: trackBlogViewCb, trackEventView: trackEventViewCb };
 };
 
-// Hook for tracking engagement events
 export const useEngagementTracking = () => {
-  const trackParkSave = useCallback((parkCode, parkName) => {
-    analyticsService.trackParkSave(parkCode, parkName);
-  }, []);
-
-  const trackEventRegister = useCallback((eventId, eventTitle) => {
-    analyticsService.trackEventRegister(eventId, eventTitle);
-  }, []);
-
-  const trackReviewCreate = useCallback((parkCode, reviewId) => {
-    analyticsService.trackReviewCreate(parkCode, reviewId);
-  }, []);
-
+  const trackParkSaveCb = useCallback((parkCode, parkName) => trackParkSave(parkCode, parkName), []);
+  const trackEventRegisterCb = useCallback((eventId, eventTitle) => logEventRegister(eventId, eventTitle), []);
+  const trackReviewCreateCb = useCallback((parkCode, reviewId) => logReviewCreate(parkCode, reviewId), []);
   return {
-    trackParkSave,
-    trackEventRegister,
-    trackReviewCreate
+    trackParkSave: trackParkSaveCb,
+    trackEventRegister: trackEventRegisterCb,
+    trackReviewCreate: trackReviewCreateCb,
   };
 };
 
-// Hook for tracking AI interactions
 export const useAITracking = () => {
-  const trackAIChat = useCallback((conversationId, messageCount, provider = 'claude') => {
-    analyticsService.trackAIChat(conversationId, messageCount, provider);
+  return useCallback((message, responseTime = 0, success = true) => {
+    logAIChat(message, responseTime, success);
   }, []);
-
-  return { trackAIChat };
 };
 
-// Hook for tracking file uploads
 export const useUploadTracking = () => {
-  const trackImageUpload = useCallback((imageCount, category = 'general') => {
-    analyticsService.trackImageUpload(imageCount, category);
+  return useCallback((imageCount, category = 'general') => {
+    trackImageUpload(imageCount, category);
   }, []);
-
-  return { trackImageUpload };
 };
 
-// Hook for tracking errors
 export const useErrorTracking = () => {
-  const trackError = useCallback((errorMessage, errorCode = 'CLIENT_ERROR', stack = null) => {
-    analyticsService.trackError(errorMessage, errorCode, stack);
+  return useCallback((errorMessage, errorCode = 'CLIENT_ERROR') => {
+    logError(errorCode, errorMessage, typeof window !== 'undefined' ? window.location.pathname : null);
   }, []);
-
-  return { trackError };
 };
 
-// Hook for tracking performance
 export const usePerformanceTracking = () => {
   const trackPerformance = useCallback((metric, value, unit = 'ms') => {
-    analyticsService.trackPerformance(metric, value, unit);
+    emitProductEvent({
+      vercelName: 'performance_metric',
+      eventType: 'performance',
+      eventCategory: 'technical',
+      metadata: { metric, value, unit },
+    });
   }, []);
 
   const trackPageLoadTime = useCallback(() => {
-    analyticsService.trackPageLoadTime();
+    if (typeof window === 'undefined' || !window.performance?.timing) return;
+    const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
+    if (loadTime > 0) {
+      emitProductEvent({
+        vercelName: 'page_load_time',
+        eventType: 'performance',
+        eventCategory: 'technical',
+        metadata: { loadTime },
+      });
+    }
   }, []);
 
   const trackApiCall = useCallback((endpoint, method, duration, statusCode) => {
-    analyticsService.trackApiCall(endpoint, method, duration, statusCode);
+    emitProductEvent({
+      vercelName: 'api_call',
+      eventType: 'api_call',
+      eventCategory: 'technical',
+      metadata: { endpoint, method, duration, statusCode },
+    });
   }, []);
 
-  return {
-    trackPerformance,
-    trackPageLoadTime,
-    trackApiCall
-  };
+  return { trackPerformance, trackPageLoadTime, trackApiCall };
 };
 
-// Hook for tracking custom events
 export const useCustomEventTracking = () => {
-  const trackCustomEvent = useCallback((eventName, metadata = {}) => {
-    analyticsService.trackCustomEvent(eventName, metadata);
+  return useCallback((eventName, metadata = {}) => {
+    trackCustomEvent(eventName, metadata);
   }, []);
-
-  return { trackCustomEvent };
 };
 
-// Hook for managing analytics state
 export const useAnalyticsState = () => {
-  const initialize = useCallback(() => {
-    analyticsService.initialize();
-  }, []);
-
-  const setUserId = useCallback((userId) => {
-    analyticsService.setUserId(userId);
-  }, []);
-
-  const trackUserSignup = useCallback((userId) => {
-    analyticsService.trackUserSignup(userId);
-  }, []);
-
-  const trackUserLogin = useCallback((userId) => {
-    analyticsService.trackUserLogin(userId);
-  }, []);
-
-  const trackUserLogout = useCallback(() => {
-    analyticsService.trackUserLogout();
-  }, []);
-
-  const optOut = useCallback(() => {
-    analyticsService.optOut();
-  }, []);
-
-  const optIn = useCallback(() => {
-    analyticsService.optIn();
-  }, []);
-
-  const isEnabled = analyticsService.isTrackingEnabled();
-  const sessionId = analyticsService.getSessionId();
-  const userId = analyticsService.getUserId();
+  const initialize = useCallback(() => {}, []);
+  const setUserId = useCallback(() => {}, []);
+  const trackUserSignupCb = useCallback((userId) => logUserSignup(userId), []);
+  const trackUserLoginCb = useCallback((userId) => logUserLogin(userId), []);
+  const trackUserLogoutCb = useCallback(() => logUserLogout(), []);
+  const optOut = useCallback(() => optOutAnalytics(), []);
+  const optIn = useCallback(() => optInAnalytics(), []);
 
   return {
     initialize,
     setUserId,
-    trackUserSignup,
-    trackUserLogin,
-    trackUserLogout,
+    trackUserSignup: trackUserSignupCb,
+    trackUserLogin: trackUserLoginCb,
+    trackUserLogout: trackUserLogoutCb,
     optOut,
     optIn,
-    isEnabled,
-    sessionId,
-    userId
+    isEnabled: isAnalyticsAllowed(),
+    sessionId: getAnalyticsSessionId(),
+    userId: null,
   };
 };
 
-// Hook for tracking form interactions
 export const useFormTracking = (formName) => {
   const trackFormStart = useCallback(() => {
-    analyticsService.trackUserAction('form_start', { formName });
+    logUserAction('form_start', formName, { formName });
   }, [formName]);
 
   const trackFormComplete = useCallback((success = true, metadata = {}) => {
-    analyticsService.trackUserAction('form_complete', {
-      formName,
-      success,
-      ...metadata
-    });
+    logUserAction('form_complete', formName, { formName, success, ...metadata });
   }, [formName]);
 
   const trackFormError = useCallback((errorMessage, fieldName = null) => {
-    analyticsService.trackUserAction('form_error', {
-      formName,
-      errorMessage,
-      fieldName
-    });
+    logUserAction('form_error', formName, { formName, errorMessage, fieldName });
   }, [formName]);
 
   const trackFieldInteraction = useCallback((fieldName, action = 'focus') => {
-    analyticsService.trackUserAction('form_field_interaction', {
-      formName,
-      fieldName,
-      action
-    });
+    logUserAction('form_field_interaction', fieldName, { formName, fieldName, action });
   }, [formName]);
 
-  return {
-    trackFormStart,
-    trackFormComplete,
-    trackFormError,
-    trackFieldInteraction
-  };
+  return { trackFormStart, trackFormComplete, trackFormError, trackFieldInteraction };
 };
 
-// Hook for tracking navigation
 export const useNavigationTracking = () => {
   const trackNavigation = useCallback((from, to, method = 'click') => {
-    analyticsService.trackUserAction('navigation', {
-      from,
-      to,
-      method
-    });
+    logUserAction('navigation', `${from}→${to}`, { from, to, method });
   }, []);
 
   const trackExternalLink = useCallback((url, linkText = null) => {
-    analyticsService.trackUserAction('external_link', {
-      url,
-      linkText
-    });
+    logUserAction('external_link', url, { url, linkText });
   }, []);
 
-  return {
-    trackNavigation,
-    trackExternalLink
-  };
+  return { trackNavigation, trackExternalLink };
 };
 
 export default useAnalytics;

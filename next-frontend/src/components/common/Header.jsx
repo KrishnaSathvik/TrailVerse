@@ -1,22 +1,40 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, X, LogOut, ChevronDown } from '@components/icons';
+import { LogOut, ChevronDown } from '@components/icons';
 import ThemeSwitcher from './ThemeSwitcher';
+import { useIsClient } from '@/hooks/useIsClient';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
 
-const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
+/** SSR/hydration-safe skeleton — matches ThemeSwitcher showLabel toggle size. */
+function DesktopThemeTogglePlaceholder() {
+  return (
+    <button
+      type="button"
+      className="relative inline-flex h-8 w-14 shrink-0 items-center rounded-full"
+      style={{ backgroundColor: '#e5e7eb', border: '1px solid var(--border)' }}
+      aria-hidden="true"
+      tabIndex={-1}
+    >
+      <span className="inline-block h-6 w-6 translate-x-1 transform rounded-full bg-white" />
+    </button>
+  );
+}
 
-const PRIMARY_NAV_ITEMS = [
+const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
+const BLOG_NAV_ITEM = { path: '/blog', label: 'Blog' };
+const EVENTS_NAV_ITEM = { path: '/events', label: 'Events' };
+
+const CORE_PRIMARY_NAV_ITEMS = [
   { path: '/explore', label: 'Explore' },
   { path: '/map', label: 'Map' },
   { path: '/plan-ai', label: 'Trailie' },
-  { path: '/blog', label: 'Blog' },
 ];
+
+const GUEST_PRIMARY_NAV_ITEMS = [...CORE_PRIMARY_NAV_ITEMS, BLOG_NAV_ITEM];
 
 const SECONDARY_NAV_ITEMS = [
   { path: '/events', label: 'Events' },
@@ -29,20 +47,40 @@ const AUTH_MORE_NAV_ITEMS = [
   { path: '/profile', label: 'Profile' },
 ];
 
+const LANDING_MOBILE_MORE_ITEMS = [
+  { path: '/map', label: 'Map' },
+  { path: '/plan-ai', label: 'Trailie' },
+];
+
+const LANDING_MOBILE_INLINE_ITEMS_GUEST = [
+  { path: '/explore', label: 'Explore' },
+  BLOG_NAV_ITEM,
+  EVENTS_NAV_ITEM,
+];
+
+const LANDING_MOBILE_INLINE_ITEMS_AUTH = [
+  AUTH_HOME_NAV_ITEM,
+  { path: '/explore', label: 'Explore' },
+  BLOG_NAV_ITEM,
+  EVENTS_NAV_ITEM,
+];
+
+const LANDING_MOBILE_MORE_EXCLUDED_PATHS = new Set(['/blog', '/events']);
+
 const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, authReady, user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const isClient = useIsClient();
+  const showAuthChrome = isClient && authReady;
 
   const primaryNavItems = isAuthenticated
-    ? [AUTH_HOME_NAV_ITEM, ...PRIMARY_NAV_ITEMS]
-    : PRIMARY_NAV_ITEMS;
+    ? [AUTH_HOME_NAV_ITEM, ...CORE_PRIMARY_NAV_ITEMS]
+    : GUEST_PRIMARY_NAV_ITEMS;
 
   const moreNavItems = isAuthenticated
-    ? [...SECONDARY_NAV_ITEMS, ...AUTH_MORE_NAV_ITEMS]
+    ? [BLOG_NAV_ITEM, ...SECONDARY_NAV_ITEMS, ...AUTH_MORE_NAV_ITEMS]
     : SECONDARY_NAV_ITEMS;
 
   const isActive = (path) => {
@@ -53,12 +91,32 @@ const Header = () => {
     return pathname === path;
   };
 
-  const isMoreActive = () => moreNavItems.some((item) => isActive(item.path));
+  const isLandingPage = pathname === '/';
 
-  const navLinkClassName = (active) =>
-    `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
-      active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'
+  const inlineNavItems = isLandingPage
+    ? (isAuthenticated ? LANDING_MOBILE_INLINE_ITEMS_AUTH : LANDING_MOBILE_INLINE_ITEMS_GUEST)
+    : primaryNavItems;
+
+  const currentMoreNavItems = isLandingPage
+    ? [
+        ...LANDING_MOBILE_MORE_ITEMS,
+        ...moreNavItems.filter((item) => !LANDING_MOBILE_MORE_EXCLUDED_PATHS.has(item.path)),
+      ]
+    : moreNavItems;
+
+  const isMoreActive = (items = moreNavItems) => items.some((item) => isActive(item.path));
+
+  const mobileNavItemClassName = (active) =>
+    `inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1.5 text-[0.8125rem] font-medium leading-none transition sm:px-2.5 sm:text-sm ${
+      active ? 'font-semibold' : 'hover:bg-black/5 dark:hover:bg-white/5'
     }`;
+
+  const navLinkClassName = (active, { mobileInline = false } = {}) =>
+    mobileInline
+      ? mobileNavItemClassName(active)
+      : `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
+          active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'
+        }`;
 
   const navLinkStyle = (active) => ({
     backgroundColor: active ? 'var(--surface)' : 'transparent',
@@ -78,7 +136,7 @@ const Header = () => {
     }
   };
 
-  const renderNavLink = (item, { onClick } = {}) => {
+  const renderNavLink = (item, { onClick, mobileInline = false } = {}) => {
     const active = isActive(item.path);
 
     return (
@@ -86,10 +144,33 @@ const Header = () => {
         key={item.path}
         href={item.path}
         onClick={onClick}
-        className={navLinkClassName(active)}
+        className={navLinkClassName(active, { mobileInline })}
         style={navLinkStyle(active)}
         onMouseEnter={(event) => handleNavLinkHover(event, active)}
         onMouseLeave={(event) => handleNavLinkLeave(event, active)}
+      >
+        {item.label}
+      </Link>
+    );
+  };
+
+  const renderMoreMenuLink = (item, onClick) => {
+    const active = isActive(item.path);
+
+    return (
+      <Link
+        key={item.path}
+        href={item.path}
+        onClick={onClick}
+        className={`block rounded-xl px-3 py-3 text-base font-medium transition lg:py-2.5 lg:text-sm ${
+          active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
+        }`}
+        style={{
+          backgroundColor: active ? 'var(--surface)' : 'transparent',
+          borderColor: active ? 'var(--border)' : 'transparent',
+          color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        }}
+        role="menuitem"
       >
         {item.label}
       </Link>
@@ -101,270 +182,130 @@ const Header = () => {
     router.push('/');
   };
 
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
-    setMobileMoreOpen(false);
-  };
-  const openMobileMenu = () => {
-    setMobileMoreOpen(isMoreActive());
-    setMobileMenuOpen(true);
-  };
   const closeMoreMenu = () => setMoreMenuOpen(false);
-  const canUsePortal = typeof document !== 'undefined';
 
   useEffect(() => {
     setMoreMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!mobileMenuOpen) {
-      const scrollY = document.body.dataset.mobileNavScrollY || '0';
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.width = '';
-      document.body.classList.remove('mobile-nav-open');
-      document.documentElement.classList.remove('mobile-nav-open');
-      delete document.body.dataset.mobileNavScrollY;
-      window.scrollTo(0, Number(scrollY));
-      return;
-    }
-
-    const scrollY = window.scrollY;
-    document.body.dataset.mobileNavScrollY = String(scrollY);
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-    document.body.classList.add('mobile-nav-open');
-    document.documentElement.classList.add('mobile-nav-open');
+    if (!moreMenuOpen) return undefined;
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
-        setMobileMenuOpen(false);
+        setMoreMenuOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleEscape);
 
     return () => {
-      const savedScrollY = document.body.dataset.mobileNavScrollY || '0';
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.width = '';
-      document.body.classList.remove('mobile-nav-open');
-      document.documentElement.classList.remove('mobile-nav-open');
-      delete document.body.dataset.mobileNavScrollY;
-      window.scrollTo(0, Number(savedScrollY));
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [mobileMenuOpen]);
+  }, [moreMenuOpen]);
 
-  const mobileMenu = canUsePortal && mobileMenuOpen
-    ? createPortal(
+  const renderMoreButton = ({ active = isMoreActive() } = {}) => (
+    <button
+      type="button"
+      onClick={() => setMoreMenuOpen((open) => !open)}
+      className={`${mobileNavItemClassName(active)} lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
+        active ? 'lg:font-semibold lg:ring-1' : ''
+      }`}
+      style={{
+        backgroundColor: active ? 'var(--surface)' : 'transparent',
+        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        borderColor: active ? 'var(--border)' : 'transparent',
+      }}
+      aria-expanded={moreMenuOpen}
+      aria-haspopup="menu"
+      aria-controls="more-navigation-menu-mobile"
+    >
+      More
+      <ChevronDown className={`h-3.5 w-3.5 transition-transform lg:h-3 lg:w-3 ${moreMenuOpen ? 'rotate-180' : ''}`} />
+    </button>
+  );
+
+  const renderMoreDropdown = (align = 'center', items = moreNavItems) => (
+    moreMenuOpen ? (
       <div
-        className="lg:hidden fixed inset-0 z-[2147483647] transition-all duration-300 pointer-events-auto overflow-hidden"
-        style={{ backgroundColor: 'var(--bg-primary)' }}
-        aria-hidden={!mobileMenuOpen}
+        id={align === 'right' ? 'more-navigation-menu-mobile' : 'more-navigation-menu-desktop'}
+        className={`min-w-[12rem] rounded-2xl border p-2 shadow-xl ${
+          align === 'right'
+            ? 'absolute right-0 top-full z-[70] mt-2 lg:hidden'
+            : 'absolute left-1/2 top-full z-20 mt-2 hidden -translate-x-1/2 lg:block'
+        }`}
+        style={{
+          backgroundColor: 'var(--bg-primary)',
+          borderColor: 'var(--border)',
+        }}
+        role="menu"
+        onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
-          className="absolute inset-0 bg-black/45 transition-opacity duration-300 opacity-100"
-          onClick={closeMobileMenu}
-          aria-label="Close navigation menu"
-        />
+        {items.map((item) => renderMoreMenuLink(item, closeMoreMenu))}
 
-        <aside
-          id="mobile-navigation"
-          className="fixed inset-y-0 left-0 h-[100dvh] min-h-[100dvh] w-[min(20rem,84vw)] max-w-[20rem] overflow-hidden overscroll-none border-r transition-transform duration-300 ease-out translate-x-0"
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            borderColor: 'var(--border)',
-            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.22)'
-          }}
-        >
-          <div className="flex h-full flex-col">
-            <div
-              className="flex items-center justify-between border-b px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))]"
-              style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--bg-primary)'
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <img
-                  src="/logo.png"
-                  alt="TrailVerse Logo"
-                  className="h-10 w-10 rounded-xl object-contain"
-                />
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--accent-green)' }}>
-                    Menu
-                  </p>
-                  <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    TrailVerse
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 transition"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-                aria-label="Close sidebar"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div
-              className="flex-1 overflow-y-auto px-4 py-4"
-              style={{ backgroundColor: 'var(--bg-primary)' }}
-            >
-              <div
-                className="mb-6 rounded-2xl border p-3"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <ThemeSwitcher showLabel />
-              </div>
-
-              <p
-                className="mb-3 px-1 text-[11px] font-semibold uppercase tracking-[0.24em]"
-                style={{ color: 'var(--text-tertiary)' }}
-              >
-                Navigation
-              </p>
-              <div className="grid gap-2">
-                {primaryNavItems.map((item) =>
-                  renderNavLink(item, { onClick: closeMobileMenu })
-                )}
-              </div>
-
-              <div className="mt-6">
-                <button
-                  type="button"
-                  onClick={() => setMobileMoreOpen((open) => !open)}
-                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3.5 text-left text-base font-medium transition ${isMoreActive() ? 'ring-1' : ''}`}
-                  style={{
-                    backgroundColor: isMoreActive() ? 'var(--surface)' : 'transparent',
-                    borderColor: isMoreActive() ? 'var(--border)' : 'transparent',
-                    color: isMoreActive() ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  }}
-                  aria-expanded={mobileMoreOpen}
-                >
-                  <span>More</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${mobileMoreOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {mobileMoreOpen && (
-                  <div className="mt-2 grid gap-2 border-l pl-3" style={{ borderColor: 'var(--border)' }}>
-                    {moreNavItems.map((item) =>
-                      renderNavLink(item, { onClick: closeMobileMenu })
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div
-              className="border-t px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-4"
-              style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--bg-primary)'
-              }}
-            >
-              {isAuthenticated ? (
-                <div className="grid gap-2">
-                  {user?.role === 'admin' && (
-                    <Link
-                      href="/admin"
-                      onClick={closeMobileMenu}
-                      className="w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition"
-                      style={{
-                        backgroundColor: 'transparent',
-                        color: 'var(--text-secondary)'
-                      }}
-                    >
-                      Admin
-                    </Link>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)'
-                    }}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              ) : null}
-            </div>
+        {align === 'right' && (
+          <div
+            className="mt-1 border-t px-1 pt-2"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            {isClient ? <ThemeSwitcher variant="segmented" /> : null}
           </div>
-        </aside>
-      </div>,
-      document.body
-    )
-    : null;
+        )}
+
+        {align === 'right' && showAuthChrome && (
+          <div
+            className="mt-1 border-t px-1 pt-2"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                closeMoreMenu();
+                handleLogout();
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-base font-medium transition hover:bg-black/5 dark:hover:bg-white/5 lg:py-2.5 lg:text-sm"
+              style={{ color: 'var(--text-secondary)' }}
+              role="menuitem"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              Log out
+            </button>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
 
   return (
     <header
-      className="sticky top-0 z-50 border-b backdrop-blur-xl"
+      className="sticky top-0 z-50 overflow-visible border-b backdrop-blur-xl"
       style={{
         backgroundColor: 'var(--bg-primary)',
         borderColor: 'var(--border)',
         color: 'var(--text-primary)',
       }}
     >
-      <nav className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-        <div className="flex h-16 items-center justify-between gap-4 lg:grid lg:h-[4.25rem] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
-          <div className="flex min-w-0 items-center gap-3 lg:justify-self-start">
-            <button
-              type="button"
-              onClick={openMobileMenu}
-              className="lg:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)',
-              }}
-              aria-label="Open sidebar"
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-navigation"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+      <nav className="relative max-w-[92rem] mx-auto px-2 sm:px-6 lg:px-10 xl:px-12">
+        {moreMenuOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-[60] bg-black/10 lg:bg-transparent"
+            onClick={closeMoreMenu}
+            aria-label="Close more menu"
+          />
+        )}
 
-            <Link href="/" className="flex min-w-0 items-center gap-3 group">
+        <div className="grid h-16 w-full grid-cols-[auto_1fr_auto] items-center gap-x-1 lg:h-[4.25rem] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4">
+          <div className="flex shrink-0 items-center justify-self-start">
+            <Link href="/" className="flex items-center gap-2.5 group" aria-label="TrailVerse home">
               <img
                 src="/logo.png"
-                alt="TrailVerse Logo"
-                className="hidden h-10 w-10 shrink-0 rounded-xl object-contain transition-transform group-hover:scale-105 lg:block"
+                alt=""
+                aria-hidden="true"
+                className="h-9 w-9 shrink-0 rounded-lg object-contain transition-transform group-hover:scale-105 sm:h-10 sm:w-10 lg:h-10 lg:w-10 lg:rounded-xl"
               />
               <span
-                className="truncate text-xl lg:text-[1.25rem] font-bold tracking-tighter"
+                className="hidden truncate text-[1.25rem] font-bold tracking-tighter lg:block"
                 style={{ color: 'var(--text-primary)' }}
               >
                 TrailVerse
@@ -372,104 +313,75 @@ const Header = () => {
             </Link>
           </div>
 
-          <div className="hidden lg:flex items-center justify-center gap-2 lg:justify-self-center">
-            {primaryNavItems.map((item) => renderNavLink(item))}
+          <div
+            className="flex min-w-0 items-center justify-center lg:justify-self-center"
+            aria-label="Primary navigation"
+          >
+            <div
+              className="flex min-w-0 max-w-full items-center gap-0.5 lg:hidden"
+              data-testid="mobile-inline-nav"
+            >
+              <div className="flex min-w-0 items-center overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex w-max items-center gap-0.5">
+                  {inlineNavItems.map((item) =>
+                    renderNavLink(item, { mobileInline: true })
+                  )}
+                </div>
+              </div>
 
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setMoreMenuOpen((open) => !open)}
-                className={`inline-flex items-center gap-1 rounded-full px-4 py-2.5 text-[0.9375rem] font-medium transition ${
-                  isMoreActive() ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-                style={{
-                  backgroundColor: isMoreActive() ? 'var(--surface)' : 'transparent',
-                  color: isMoreActive() ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  borderColor: isMoreActive() ? 'var(--border)' : 'transparent',
-                }}
-                aria-expanded={moreMenuOpen}
-                aria-haspopup="menu"
-              >
-                More
-                <ChevronDown className={`h-3 w-3 transition-transform ${moreMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
+              <div className="relative shrink-0">
+                {renderMoreButton({ active: isMoreActive(currentMoreNavItems) })}
+                {renderMoreDropdown('right', currentMoreNavItems)}
+              </div>
+            </div>
 
-              {moreMenuOpen && (
-                <>
-                  <button
-                    type="button"
-                    className="fixed inset-0 z-10"
-                    onClick={closeMoreMenu}
-                    aria-label="Close more menu"
-                  />
-                  <div
-                    className="absolute left-1/2 top-full z-20 mt-2 min-w-[12rem] -translate-x-1/2 rounded-2xl border p-2 shadow-xl"
-                    style={{
-                      backgroundColor: 'var(--bg-primary)',
-                      borderColor: 'var(--border)',
-                    }}
-                    role="menu"
-                  >
-                    {moreNavItems.map((item) => {
-                      const active = isActive(item.path);
+            <div className="hidden items-center justify-center gap-2 lg:flex">
+              {inlineNavItems.map((item) => renderNavLink(item))}
 
-                      return (
-                        <Link
-                          key={item.path}
-                          href={item.path}
-                          onClick={closeMoreMenu}
-                          className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                            active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                          }`}
-                          style={{
-                            backgroundColor: active ? 'var(--surface)' : 'transparent',
-                            borderColor: active ? 'var(--border)' : 'transparent',
-                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          }}
-                          role="menuitem"
-                        >
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              <div className="relative">
+                {renderMoreButton({ active: isMoreActive(currentMoreNavItems) })}
+                {renderMoreDropdown('center', currentMoreNavItems)}
+              </div>
             </div>
           </div>
 
-          <div className="hidden lg:flex items-center justify-end gap-3 lg:justify-self-end">
-            <ThemeSwitcher showLabel />
-
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                {user?.role === 'admin' && (
-                  <Link
-                    href="/admin"
-                    className="text-sm font-medium transition"
-                    style={{ color: 'var(--text-secondary)' }}
-                    onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
-                    onMouseLeave={(e) => { e.target.style.color = 'var(--text-secondary)'; }}
-                  >
-                    Admin
-                  </Link>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full transition"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
-                  onMouseLeave={(e) => { e.target.style.color = 'var(--text-tertiary)'; }}
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </div>
-            ) : null}
+          <div className="hidden shrink-0 items-center justify-end justify-self-end lg:flex lg:w-auto">
+            <div className="flex items-center gap-3">
+              {isClient ? (
+                <>
+                  <ThemeSwitcher showLabel />
+                  {showAuthChrome ? (
+                    <div className="flex items-center gap-3">
+                      {user.role === 'admin' && (
+                        <Link
+                          href="/admin"
+                          className="text-sm font-medium transition"
+                          style={{ color: 'var(--text-secondary)' }}
+                          onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
+                          onMouseLeave={(e) => { e.target.style.color = 'var(--text-secondary)'; }}
+                        >
+                          Admin
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-3 py-2 rounded-full transition"
+                        style={{ color: 'var(--text-tertiary)' }}
+                        onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
+                        onMouseLeave={(e) => { e.target.style.color = 'var(--text-tertiary)'; }}
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <DesktopThemeTogglePlaceholder />
+              )}
+            </div>
           </div>
         </div>
       </nav>
-
-      {mobileMenu}
     </header>
   );
 };

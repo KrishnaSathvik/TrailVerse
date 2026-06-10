@@ -6,7 +6,6 @@ import {
   ArrowLeft, MapPin, Clock, Calendar, ExternalLink, Tag, Dog, Accessibility, Mountain
 } from '@components/icons';
 import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import Button from '@/components/common/Button';
 import ShareButtons from '@/components/common/ShareButtons';
@@ -374,8 +373,6 @@ const ActivityDetailClient = ({ activity, parkCode, activityId }) => {
           )}
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 };

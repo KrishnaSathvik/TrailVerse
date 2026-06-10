@@ -1,4 +1,4 @@
-const { needsWebSearch, classifyQuery } = require('../factsService');
+const { needsWebSearch, classifyQuery, shouldAppendAnonymousWebSearchUpsell } = require('../factsService');
 
 describe('factsService web search policy (NPS vs web)', () => {
   test('NPS-authoritative only — no web', () => {
@@ -27,6 +27,16 @@ describe('factsService web search policy (NPS vs web)', () => {
   test('non-travel — no web', () => {
     expect(needsWebSearch('write me python code')).toBe(false);
     expect(needsWebSearch('hi')).toBe(false);
+  });
+
+  test('anonymous upsell skips pure itinerary planning', () => {
+    const itinerary =
+      'Plan a 3-day itinerary for Grand Canyon National Park in October for two adults who like moderate hikes.';
+    expect(shouldAppendAnonymousWebSearchUpsell(itinerary)).toEqual({ append: false });
+    expect(shouldAppendAnonymousWebSearchUpsell('good restaurants and hotels near Zion')).toEqual({
+      append: true,
+      variant: 'local',
+    });
   });
 
   test('classifyQuery avoids substring false positives', () => {

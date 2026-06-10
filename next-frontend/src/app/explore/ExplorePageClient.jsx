@@ -52,6 +52,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('name');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showStateFilter, setShowStateFilter] = useState(false);
 
   const hasMounted = useRef(false);
   const lastAppliedUrlSearch = useRef(null);
@@ -95,7 +96,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
   useEffect(() => {
     const updateParksPerPage = () => {
-      setParksPerPage(window.innerWidth < 640 ? 6 : 12);
+      setParksPerPage(window.innerWidth >= 1280 ? 16 : 12);
     };
     updateParksPerPage();
     window.addEventListener('resize', updateParksPerPage);
@@ -125,10 +126,13 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       if (showSortDropdown && !event.target.closest('.sort-dropdown-container')) {
         setShowSortDropdown(false);
       }
+      if (showStateFilter && !event.target.closest('.state-filter-container')) {
+        setShowStateFilter(false);
+      }
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [showSortDropdown]);
+  }, [showSortDropdown, showStateFilter]);
 
   const normalizedSearchTerm = searchTerm.trim();
   const debouncedSearchTerm = useDebounce(normalizedSearchTerm, 300);
@@ -412,10 +416,8 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="mt-8 flex flex-wrap items-center gap-6 text-sm"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+          {/* Quick stats — mobile/tablet (desktop uses unified toolbar below) */}
+          <div className="mt-8 flex flex-wrap items-center gap-6 text-sm lg:hidden" style={{ color: 'var(--text-secondary)' }}>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span>
@@ -429,12 +431,13 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
             )}
             {activeFiltersCount > 0 && (
               <button
+                type="button"
                 onClick={clearAllFilters}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white/5 transition"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
-                  borderColor: 'var(--border)'
+                  borderColor: 'var(--border)',
                 }}
               >
                 <X className="h-3 w-3" />
@@ -448,121 +451,261 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       {/* Main Content */}
       <section className="pb-24">
         <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters - Desktop */}
-            <aside className="hidden lg:block lg:w-80 flex-shrink-0">
-              <div className="sticky top-24 rounded-2xl p-6 backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
+          {/* Mobile toolbar — original layout */}
+          <div className="mb-6 flex items-center justify-between lg:hidden">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowFilters(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition"
+                style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Filters</h3>
-                </div>
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="text-sm">Filters</span>
+                {activeFiltersCount > 0 && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-forest-500 text-white">{activeFiltersCount}</span>
+                )}
+              </button>
 
-                <div className="mb-6">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.nationalParksOnly}
-                      onChange={(e) => setFilters({ ...filters, nationalParksOnly: e.target.checked })}
-                      className="rounded border-2 w-5 h-5 text-forest-500 focus:ring-forest-500/50 transition"
-                      style={{ borderColor: 'var(--border)' }}
-                    />
-                    <span className="text-sm font-medium group-hover:text-forest-400 transition"
-                      style={{ color: 'var(--text-primary)' }}
+              <div className="relative sort-dropdown-container">
+                <button
+                  type="button"
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition"
+                  style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                >
+                  <span>{sortBy === 'name' ? 'Sort by Name' : 'Sort by State'}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} style={{ color: 'var(--text-tertiary)' }} />
+                </button>
+
+                {showSortDropdown && (
+                  <div
+                    className="absolute top-full left-0 z-50 mt-2 min-w-[180px] overflow-hidden rounded-xl shadow-xl"
+                    style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setSortBy('name'); setShowSortDropdown(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
+                      style={{ backgroundColor: sortBy === 'name' ? 'var(--bg-tertiary)' : 'transparent', color: sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                     >
-                      National Parks Only ({displayedNationalParksCount})
-                    </span>
-                  </label>
-                  <NationalParksFilterHint allSitesCount={displayedParksAndSitesCount} />
-                </div>
-
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    States {statesLabelCount === null ? '' : `(${statesLabelCount})`}
-                  </h4>
-                  <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                    {!hasFullParksData && (
-                      <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading states...</p>
-                    )}
-                    {hasFullParksData && uniqueStates.map(state => (
-                      <label key={state} className="flex items-center gap-2 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={filters.states.includes(state)}
-                          onChange={() => toggleStateFilter(state)}
-                          className="rounded border-2 w-4 h-4 text-forest-500 focus:ring-forest-500/50"
-                          style={{ borderColor: 'var(--border)' }}
-                        />
-                        <span className="text-sm group-hover:text-forest-400 transition" style={{ color: 'var(--text-secondary)' }}>
-                          {STATE_NAMES[state] || state}
-                        </span>
-                      </label>
-                    ))}
+                      Sort by Name
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSortBy('state'); setShowSortDropdown(false); }}
+                      className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
+                      style={{ backgroundColor: sortBy === 'state' ? 'var(--bg-tertiary)' : 'transparent', color: sortBy === 'state' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                    >
+                      Sort by State
+                    </button>
                   </div>
+                )}
+              </div>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2">
+              {[
+                { key: 'grid', label: 'Grid', Icon: Grid },
+                { key: 'list', label: 'List', Icon: List },
+              ].map(({ key, label, Icon }) => {
+                const isActive = viewMode === key;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setViewMode(key)}
+                    className="inline-flex min-w-[96px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                      borderColor: isActive ? 'var(--border-hover)' : 'var(--border)',
+                      color: 'var(--text-primary)',
+                      boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)',
+                    }}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop unified toolbar */}
+          <div
+            className="mb-6 hidden rounded-2xl p-3 sm:p-4 lg:block"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+            }}
+          >
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, nationalParksOnly: !prev.nationalParksOnly }))}
+                  className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition lg:inline-flex"
+                  style={{
+                    backgroundColor: filters.nationalParksOnly ? 'var(--surface-active)' : 'var(--bg-primary)',
+                    borderWidth: '1px',
+                    borderColor: filters.nationalParksOnly ? 'var(--border-hover)' : 'var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                  aria-pressed={filters.nationalParksOnly}
+                >
+                  National Parks
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    {displayedNationalParksCount}
+                  </span>
+                </button>
+
+                <div className="relative state-filter-container hidden lg:block">
+                  <button
+                    type="button"
+                    onClick={() => setShowStateFilter((open) => !open)}
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition"
+                    style={{
+                      backgroundColor: filters.states.length > 0 ? 'var(--accent-green-light)' : 'var(--bg-primary)',
+                      borderWidth: '1px',
+                      borderColor: filters.states.length > 0 ? 'var(--accent-green)' : 'var(--border)',
+                      color: filters.states.length > 0 ? 'var(--accent-green)' : 'var(--text-primary)',
+                    }}
+                    aria-expanded={showStateFilter}
+                  >
+                    States
+                    {filters.states.length > 0 && (
+                      <span className="rounded-full bg-forest-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                        {filters.states.length}
+                      </span>
+                    )}
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showStateFilter ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showStateFilter && (
+                    <div
+                      className="absolute left-0 top-full z-50 mt-2 max-h-72 w-72 overflow-y-auto rounded-2xl p-3 shadow-xl"
+                      style={{
+                        backgroundColor: 'var(--bg-primary)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)',
+                      }}
+                    >
+                      {!hasFullParksData && (
+                        <p className="px-2 py-1 text-sm" style={{ color: 'var(--text-tertiary)' }}>Loading states...</p>
+                      )}
+                      {hasFullParksData && uniqueStates.map((state) => (
+                        <label
+                          key={state}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.states.includes(state)}
+                            onChange={() => toggleStateFilter(state)}
+                            className="h-4 w-4 rounded border-2 text-forest-500 focus:ring-forest-500/50"
+                            style={{ borderColor: 'var(--border)' }}
+                          />
+                          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            {STATE_NAMES[state] || state}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <Link
                   href={BROWSE_HUB_PATH}
-                  className="mt-2 inline-flex text-sm font-medium hover:opacity-90"
+                  className="hidden text-sm font-medium hover:opacity-90 lg:inline-flex"
                   style={{ color: 'var(--accent-green)' }}
                 >
                   {BROWSE_HUB_CTA_LABEL} →
                 </Link>
               </div>
-            </aside>
 
-            {/* Main Content Area */}
-            <div className="flex-1 min-w-0">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+              <p
+                className="hidden shrink-0 text-center text-sm tabular-nums lg:block lg:flex-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {resultsRangeStart}–{resultsRangeEnd} of {resultsTotal} parks
+                {calculatedTotalPages > 1 ? ` · Page ${currentPage} of ${calculatedTotalPages}` : ''}
+              </p>
+
+              <div className="flex items-center justify-between gap-2 sm:justify-end lg:shrink-0">
+                <div className="relative sort-dropdown-container">
                   <button
-                    onClick={() => setShowFilters(true)}
-                    className="lg:hidden flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition"
-                    style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    type="button"
+                    onClick={() => setShowSortDropdown(!showSortDropdown)}
+                    className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition"
+                    style={{
+                      backgroundColor: 'var(--bg-primary)',
+                      borderWidth: '1px',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
                   >
-                    <SlidersHorizontal className="h-4 w-4" />
-                    <span className="text-sm">Filters</span>
-                    {activeFiltersCount > 0 && (
-                      <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-forest-500 text-white">{activeFiltersCount}</span>
-                    )}
+                    <span className="hidden sm:inline">{sortBy === 'name' ? 'Sort by Name' : 'Sort by State'}</span>
+                    <span className="sm:hidden">Sort</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}
+                      style={{ color: 'var(--text-tertiary)' }}
+                    />
                   </button>
 
-                  <div className="relative sort-dropdown-container">
-                    <button
-                      onClick={() => setShowSortDropdown(!showSortDropdown)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition backdrop-blur"
-                      style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                  {showSortDropdown && (
+                    <div
+                      className="absolute right-0 top-full z-50 mt-2 min-w-[180px] overflow-hidden rounded-xl shadow-xl"
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        borderWidth: '1px',
+                        borderColor: 'var(--border)',
+                      }}
                     >
-                      <span>{sortBy === 'name' ? 'Sort by Name' : 'Sort by State'}</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} style={{ color: 'var(--text-tertiary)' }} />
-                    </button>
-
-                    {showSortDropdown && (
-                      <div className="absolute top-full left-0 mt-2 min-w-[180px] z-50 rounded-xl overflow-hidden backdrop-blur-xl"
-                        style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.2)' }}
+                      <button
+                        type="button"
+                        onClick={() => { setSortBy('name'); setShowSortDropdown(false); }}
+                        className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: sortBy === 'name' ? 'var(--bg-tertiary)' : 'transparent',
+                          color: sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        }}
                       >
-                        <button onClick={() => { setSortBy('name'); setShowSortDropdown(false); }}
-                          className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
-                          style={{ backgroundColor: sortBy === 'name' ? 'var(--surface-active)' : 'transparent', color: sortBy === 'name' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-                        >Sort by Name</button>
-                        <button onClick={() => { setSortBy('state'); setShowSortDropdown(false); }}
-                          className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
-                          style={{ backgroundColor: sortBy === 'state' ? 'var(--surface-active)' : 'transparent', color: sortBy === 'state' ? 'var(--text-primary)' : 'var(--text-secondary)' }}
-                        >Sort by State</button>
-                      </div>
-                    )}
-                  </div>
+                        Sort by Name
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSortBy('state'); setShowSortDropdown(false); }}
+                        className="w-full px-4 py-2.5 text-left text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: sortBy === 'state' ? 'var(--bg-tertiary)' : 'transparent',
+                          color: sortBy === 'state' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        }}
+                      >
+                        Sort by State
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <div className="hidden sm:flex items-center gap-2">
+                <div
+                  className="inline-flex rounded-xl p-1"
+                  style={{ backgroundColor: 'var(--bg-primary)', borderWidth: '1px', borderColor: 'var(--border)' }}
+                  role="group"
+                  aria-label="View mode"
+                >
                   {[
-                    { key: 'grid', label: 'Grid', Icon: Grid },
-                    { key: 'list', label: 'List', Icon: List },
+                    { key: 'grid', label: 'Grid view', Icon: Grid },
+                    { key: 'list', label: 'List view', Icon: List },
                   ].map(({ key, label, Icon }) => {
                     const isActive = viewMode === key;
 
@@ -571,25 +714,35 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                         key={key}
                         type="button"
                         onClick={() => setViewMode(key)}
-                        className="inline-flex min-w-[96px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+                        aria-pressed={isActive}
+                        aria-label={label}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition"
                         style={{
-                          backgroundColor: 'var(--surface)',
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                          borderColor: isActive ? 'var(--border-hover)' : 'var(--border)',
-                          color: 'var(--text-primary)',
-                          boxShadow: isActive ? 'var(--shadow-lg)' : 'var(--shadow)',
+                          backgroundColor: isActive ? 'var(--surface-active)' : 'transparent',
+                          color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
                         }}
                       >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        <span>{label}</span>
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="hidden sm:inline">{key === 'grid' ? 'Grid' : 'List'}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
+            </div>
 
-              {showParksLoading && (
+            <div
+              className="hidden items-start gap-2 border-t pt-3 lg:flex"
+              style={{ borderColor: 'var(--border)' }}
+            >
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
+                {exploreNationalParksFilterHint(displayedParksAndSitesCount)}
+              </p>
+            </div>
+          </div>
+
+          {showParksLoading && (
                 <div className="flex items-center justify-center py-24">
                   <div className="text-center">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-forest-500" />
@@ -627,7 +780,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
               {!showParksLoading && !error && filteredParks.length > 0 && (
                 <>
-                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
+                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4' : 'space-y-4'}>
                     {currentParks.map((park, index) => (
                       <ParkCard key={park.parkCode} park={park} viewMode={viewMode} rating={parkRatings?.[park.parkCode]} index={index} />
                     ))}
@@ -671,8 +824,6 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                   )}
                 </>
               )}
-            </div>
-          </div>
         </div>
       </section>
 

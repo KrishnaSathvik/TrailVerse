@@ -13,7 +13,12 @@ import ScrollToTop from './common/ScrollToTop';
 import AnalyticsPageTracker from './common/AnalyticsPageTracker';
 import { initGA } from '../utils/analytics';
 
-export default function Providers({ children }) {
+export default function Providers({
+  children,
+  initialAuthHint = false,
+  initialTheme = 'system',
+  initialResolvedTheme = 'light',
+}) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -39,9 +44,9 @@ export default function Providers({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <IconContext.Provider value={{ size: 20, weight: 'regular' }}>
-      <ThemeProvider>
+      <ThemeProvider initialTheme={initialTheme} initialResolvedTheme={initialResolvedTheme}>
         <ToastProvider>
-          <AuthProvider>
+          <AuthProvider initialAuthHint={initialAuthHint}>
             {children}
             <AnalyticsPageTracker />
             <ScrollToTop />

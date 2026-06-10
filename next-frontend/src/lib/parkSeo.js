@@ -127,14 +127,54 @@ export function buildParkSeoLeadLine(park, parkSlug) {
   return hook;
 }
 
-/** Prefer Tier A neighbors when picking related parks. */
-export function sortRelatedParks(candidates, currentParkCode) {
-  return [...candidates].sort((a, b) => {
-    const aSlug = parkToSlug(a.fullName);
-    const bSlug = parkToSlug(b.fullName);
-    const aTier = isTierAPark(aSlug) ? 0 : 1;
-    const bTier = isTierAPark(bSlug) ? 0 : 1;
-    if (aTier !== bTier) return aTier - bTier;
-    return (a.fullName || '').localeCompare(b.fullName || '');
-  });
+function normalizeDesignation(parkOrDesignation) {
+  if (typeof parkOrDesignation === 'string') {
+    return parkOrDesignation.trim().toLowerCase();
+  }
+  const fromField = parkOrDesignation?.designation?.trim().toLowerCase();
+  if (fromField) return fromField;
+  const name = parkOrDesignation?.fullName?.toLowerCase() || '';
+  if (name.includes('national park')) return 'national park';
+  if (name.includes('national monument')) return 'national monument';
+  if (name.includes('national historic site')) return 'national historic site';
+  if (name.includes('national historical park')) return 'national historical park';
+  if (name.includes('national recreation area')) return 'national recreation area';
+  return '';
+}
+
+function designationsMatch(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.includes('national park') && b.includes('national park')) return true;
+  return false;
+}
+
+/**
+ * Rank same-state park suggestions: same designation → Tier A → name.
+ * @param {object[]} candidates
+ * @param {object | string} currentPark — park object or parkCode (legacy)
+ */
+export function sortRelatedParks(candidates, currentPark) {
+  const currentCode = (
+    typeof currentPark === 'string' ? currentPark : currentPark?.parkCode
+  )?.toLowerCase();
+  const currentDesignation = normalizeDesignation(
+    typeof currentPark === 'string' ? '' : currentPark
+  );
+
+  return [...candidates]
+    .filter((p) => p.parkCode?.toLowerCase() !== currentCode)
+    .sort((a, b) => {
+      const aSame = designationsMatch(normalizeDesignation(a), currentDesignation) ? 0 : 1;
+      const bSame = designationsMatch(normalizeDesignation(b), currentDesignation) ? 0 : 1;
+      if (aSame !== bSame) return aSame - bSame;
+
+      const aSlug = parkToSlug(a.fullName);
+      const bSlug = parkToSlug(b.fullName);
+      const aTier = isTierAPark(aSlug) ? 0 : 1;
+      const bTier = isTierAPark(bSlug) ? 0 : 1;
+      if (aTier !== bTier) return aTier - bTier;
+
+      return (a.fullName || '').localeCompare(b.fullName || '');
+    });
 }

@@ -8,7 +8,7 @@ import {
   Globe, Navigation, Info, Mountain, Camera, Tent, Utensils,
   Wifi, Calendar, Star, MapPinCheck, AlertTriangle,
   Shield, ExternalLink, Route, Map as MapIcon, Monitor, Play, Car, ChevronRight,
-  BookOpen, Download, FileText, Ticket, Compare, Landmark, Bus
+  BookOpen, Download, FileText, Ticket, Landmark, Bus
 } from '@components/icons';
 import { parkToSlug } from '@/utils/parkSlug';
 import { reportHref } from '@/lib/reportLinks';
@@ -17,7 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useVisitedParks } from '@/hooks/useVisitedParks';
-import { logParkView, logUserAction } from '@/utils/analytics';
+import { logCtaClick, logParkEngagement, logParkTabView, logParkView, logUserAction } from '@/utils/analytics';
 import { getParkSearchSession } from '@/lib/parkSearchSession';
 import { processHtmlContent, htmlToPlainText } from '@/utils/htmlUtils';
 import Header from '@/components/common/Header';
@@ -39,9 +39,14 @@ import {
 import ShareButtons from '@/components/common/ShareButtons';
 import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
-import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import { getParkPlanVisitCta } from '@/lib/planAiWelcomeCopy';
+import { hrefWithFrom } from '@/lib/returnNavigation';
+import { hasCrowdCalendar } from '@/lib/crowdCalendar';
+import ParkPlanOverviewSection from '@/components/park-details/ParkPlanOverviewSection';
+import ParkPlanningFaqSection from '@/components/park-details/ParkPlanningFaqSection';
 import blogService from '@/services/blogService';
+import { useParkExploreCache } from '@/hooks/useParkExploreCache';
+import { filterVisibleExploreTabs } from '@/lib/parkExploreTabs';
 import { parkHasGtfs } from '@/lib/gtfsParks';
 import {
   getTransitOperatingStyles,
@@ -80,6 +85,8 @@ const ParkDetailInner = ({
   relatedParks = [],
   seoLeadLine = null,
   stateHubSlug = null,
+  planningSnapshot = null,
+  planningFaqItems = [],
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -92,7 +99,7 @@ const ParkDetailInner = ({
   const npsParkCode = initialData?.park?.parkCode || parkCode;
   const showTransitTab = parkHasGtfs(npsParkCode);
 
-  const tabs = [
+  const allTabs = useMemo(() => [
     { id: 'overview', label: 'Overview', icon: Info },
     { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
     { id: 'places', label: 'What to See', icon: MapPinCheck },
@@ -108,11 +115,8 @@ const ParkDetailInner = ({
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'videos', label: 'Videos', icon: Play },
     { id: 'webcams', label: 'Webcams', icon: Monitor },
-    { id: 'reviews', label: 'Reviews', icon: Star }
-  ];
-  const validTabIds = tabs.map((tab) => tab.id);
-  const requestedTab = searchParams.get('tab');
-  const activeTab = validTabIds.includes(requestedTab) ? requestedTab : 'overview';
+    { id: 'reviews', label: 'Reviews', icon: Star },
+  ], [showTransitTab]);
   const [activeActivityTab, setActiveActivityTab] = useState('All');
   const [expandedActivityList, setExpandedActivityList] = useState(() => new Set());
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -133,51 +137,57 @@ const ParkDetailInner = ({
   const [permits, setPermits] = useState(() => (Array.isArray(permitsFromSsr) ? permitsFromSsr : []));
   const [permitsReady, setPermitsReady] = useState(() => Array.isArray(permitsFromSsr));
 
-  // Lazy-loading hook for tab data
-  const useTabData = (tabParkCode, endpoint, enabled) => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-      if (!enabled || data !== null) return;
-      setLoading(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ||
-        (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-          ? 'http://localhost:5001/api'
-          : 'https://trailverse.onrender.com/api');
-      fetch(`${apiUrl}/parks/${tabParkCode}/${endpoint}`)
-        .then(res => res.json())
-        .then(json => { setData(json?.data ?? null); setLoading(false); })
-        .catch(() => { setData(null); setLoading(false); });
-    }, [tabParkCode, endpoint, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    return { data, loading };
-  };
-
-  // Use the NPS park code (e.g. "arch") for API calls, not the URL slug (e.g. "arches-national-park")
-  // (If initialData parkCode exists, it will already be the NPS code.)
   const npsParkCodeForApi = park?.parkCode || npsParkCode;
+  const { cache: exploreCache, ready: exploreReady, loading: exploreLoading } = useParkExploreCache(npsParkCodeForApi);
 
-  const { data: activities, loading: activitiesLoading } = useTabData(npsParkCodeForApi, 'activities', activeTab === 'activities');
-  const { data: campgrounds, loading: campgroundsLoading } = useTabData(npsParkCodeForApi, 'campgrounds', activeTab === 'camping');
-  const { data: places, loading: placesLoading } = useTabData(npsParkCodeForApi, 'places', activeTab === 'places');
-  const { data: tours, loading: toursLoading } = useTabData(npsParkCodeForApi, 'tours', activeTab === 'tours');
-  const { data: visitorCenters, loading: visitorCentersLoading } = useTabData(
-    npsParkCodeForApi,
-    'visitorcenters',
-    activeTab === 'visitorcenters'
+  const alertCount = alerts?.length || 0;
+  const permitCount = permits.length;
+
+  const tabs = useMemo(
+    () => filterVisibleExploreTabs(allTabs, {
+      alertCount,
+      permitCount,
+      exploreReady,
+      exploreCache,
+      showTransitTab,
+    }),
+    [allTabs, alertCount, permitCount, exploreReady, exploreCache, showTransitTab]
   );
-  const { data: parkingLots, loading: parkingLoading } = useTabData(npsParkCodeForApi, 'parkinglots', activeTab === 'parking');
-  const { data: webcams, loading: webcamsLoading } = useTabData(npsParkCodeForApi, 'webcams', activeTab === 'webcams');
-  const { data: videos, loading: videosLoading } = useTabData(npsParkCodeForApi, 'videos', activeTab === 'videos');
-  const { data: galleryPhotos, loading: galleryLoading } = useTabData(npsParkCodeForApi, 'gallery', activeTab === 'photos');
-  const { data: facilities, loading: facilitiesLoading } = useTabData(npsParkCodeForApi, 'facilities', activeTab === 'facilities');
-  const { data: brochureData, loading: brochuresLoading } = useTabData(npsParkCodeForApi, 'brochures', activeTab === 'brochures');
-  const { data: transitData, loading: transitLoading } = useTabData(
-    npsParkCodeForApi,
-    'transit',
-    activeTab === 'transit'
-  );
+
+  const validTabIds = tabs.map((tab) => tab.id);
+  const requestedTab = searchParams.get('tab');
+  const activeTab = useMemo(() => {
+    if (!requestedTab) return 'overview';
+    if (validTabIds.includes(requestedTab)) return requestedTab;
+    if (!exploreReady && requestedTab !== 'overview') return requestedTab;
+    return 'overview';
+  }, [requestedTab, validTabIds, exploreReady]);
+
+  const activities = exploreCache?.activities ?? null;
+  const campgrounds = exploreCache?.campgrounds ?? null;
+  const places = exploreCache?.places ?? null;
+  const tours = exploreCache?.tours ?? null;
+  const visitorCenters = exploreCache?.visitorcenters ?? null;
+  const parkingLots = exploreCache?.parkinglots ?? null;
+  const webcams = exploreCache?.webcams ?? null;
+  const videos = exploreCache?.videos ?? null;
+  const galleryPhotos = exploreCache?.gallery ?? null;
+  const facilities = exploreCache?.facilities ?? null;
+  const brochureData = exploreCache?.brochures ?? null;
+  const transitData = exploreCache?.transit ?? null;
+
+  const activitiesLoading = exploreLoading && activities === null;
+  const campgroundsLoading = exploreLoading && campgrounds === null;
+  const placesLoading = exploreLoading && places === null;
+  const toursLoading = exploreLoading && tours === null;
+  const visitorCentersLoading = exploreLoading && visitorCenters === null;
+  const parkingLoading = exploreLoading && parkingLots === null;
+  const webcamsLoading = exploreLoading && webcams === null;
+  const videosLoading = exploreLoading && videos === null;
+  const galleryLoading = exploreLoading && galleryPhotos === null;
+  const facilitiesLoading = exploreLoading && facilities === null;
+  const brochuresLoading = exploreLoading && brochureData === null;
+  const transitLoading = exploreLoading && transitData === null;
 
   // Eagerly fetch permits for tab badge (SSR may omit permits until /details includes RIDB)
   useEffect(() => {
@@ -257,6 +267,15 @@ const ParkDetailInner = ({
     }
   }, [park, parkCode]);
 
+  const lastTrackedTab = useRef(null);
+  useEffect(() => {
+    if (!park || !activeTab) return;
+    const code = (park.parkCode || parkCode || '').toLowerCase();
+    if (lastTrackedTab.current === activeTab) return;
+    lastTrackedTab.current = activeTab;
+    logParkTabView(code, activeTab);
+  }, [park, parkCode, activeTab]);
+
   useEffect(() => {
     if (parkCode && park?.fullName) {
       blogService.getParkGuides(parkCode, park.fullName).then(setParkGuides);
@@ -296,6 +315,13 @@ const ParkDetailInner = ({
       setActiveFacilityTab('All');
     }
   };
+
+  useEffect(() => {
+    if (!exploreReady) return;
+    const requested = searchParams.get('tab');
+    if (!requested || validTabIds.includes(requested)) return;
+    handleTabChange('overview');
+  }, [exploreReady, searchParams, validTabIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToOverviewSection = (sectionId) => {
     handleTabChange('overview');
@@ -345,6 +371,34 @@ const ParkDetailInner = ({
     [user, isAuthenticated, park?.fullName, isVisited, isSaved]
   );
 
+  const parkSlug = useMemo(() => parkToSlug(park?.fullName || ''), [park?.fullName]);
+
+  const relatedParksViewAllHref = useMemo(() => {
+    const qs = searchParams.toString();
+    const returnPath = qs ? `${pathname}?${qs}` : pathname;
+    const base = stateHubSlug
+      ? `/parks/state/${stateHubSlug}`
+      : `/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`;
+    return hrefWithFrom(base, returnPath);
+  }, [pathname, searchParams, stateHubSlug, park.states]);
+
+  const showCrowdCalendar = hasCrowdCalendar(park);
+
+  const planAiHref = `/plan-ai?park=${encodeURIComponent(npsParkCode)}&name=${encodeURIComponent(park?.fullName || '')}`;
+
+  const handlePlanWithTrailie = () => {
+    logCtaClick({
+      ctaId: 'park_overview_plan_trailie',
+      label: parkPlanCta.button,
+      surface: 'park_plan_overview',
+      destination: planAiHref,
+      parkCode: npsParkCode,
+    });
+    router.push(planAiHref);
+  };
+
+  const compareHref = `/compare?park=${encodeURIComponent(park.parkCode)}`;
+
   const handleSavePark = async () => {
     if (!isAuthenticated) {
       showLoginPrompt('Log in to save parks to your favorites');
@@ -356,7 +410,7 @@ const ParkDetailInner = ({
       if (isSaved) {
         await removeFavorite(npsParkCode);
         showToast('Removed from favorites', 'success');
-        logUserAction('favorite_removed', `Park: ${park.fullName}`, isAuthenticated?.user?.id);
+        logParkEngagement({ action: 'favorite_remove', parkCode: npsParkCode, parkName: park.fullName });
       } else {
         if (!park?.fullName) {
           showToast('Park data not loaded yet', 'error');
@@ -368,7 +422,7 @@ const ParkDetailInner = ({
           imageUrl: park.images?.[0]?.url || ''
         });
         showToast('Added to favorites', 'success');
-        logUserAction('favorite_added', `Park: ${park.fullName}`, isAuthenticated?.user?.id);
+        logParkEngagement({ action: 'favorite_add', parkCode: npsParkCode, parkName: park.fullName });
       }
     } catch (error) {
       if (error.response?.status === 400 && error.response?.data?.error === 'Park already in favorites') {
@@ -392,7 +446,7 @@ const ParkDetailInner = ({
     try {
       if (isVisited) {
         await removeVisited(npsParkCode);
-        logUserAction('visited_removed', park?.fullName);
+        logParkEngagement({ action: 'visited_remove', parkCode: npsParkCode, parkName: park?.fullName });
       } else {
         await markAsVisited(
           npsParkCode,
@@ -402,7 +456,7 @@ const ParkDetailInner = ({
           park?.images?.[0]?.url || '',
           null
         );
-        logUserAction('visited_added', park?.fullName);
+        logParkEngagement({ action: 'visited_add', parkCode: npsParkCode, parkName: park?.fullName });
         if (
           !userHasReviewed &&
           !hasSeenVisitedReviewPrompt(npsParkCode)
@@ -556,55 +610,53 @@ const ParkDetailInner = ({
                     </h2>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="w-full">
-                      <Button
-                        onClick={handleMarkVisited}
-                        disabled={markingAsVisited || removingVisited}
-                        variant={isVisited ? 'success' : 'secondary'}
-                        size="sm"
-                        icon={isVisited ? MapPinCheck : MapPin}
-                        className="backdrop-blur w-full sm:w-auto"
-                        style={{
-                          backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                          borderWidth: '1px',
-                          borderColor: isVisited ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.3)',
-                          opacity: (markingAsVisited || removingVisited) ? 0.6 : 1
-                        }}
-                        title={isVisited ? "Remove from visited" : "Mark as visited"}
-                      >
-                        <span className="hidden sm:inline truncate">{isVisited ? 'Visited' : 'Mark as Visited'}</span>
-                        <span className="sm:hidden truncate">{isVisited ? 'Visited' : 'Mark Visited'}</span>
-                      </Button>
-                    </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 lg:gap-3">
+                    <Button
+                      onClick={handleMarkVisited}
+                      disabled={markingAsVisited || removingVisited}
+                      variant={isVisited ? 'success' : 'secondary'}
+                      size="sm"
+                      icon={isVisited ? MapPinCheck : MapPin}
+                      className="backdrop-blur w-full sm:w-auto shrink-0"
+                      style={{
+                        backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.12)',
+                        borderWidth: '1px',
+                        borderColor: isVisited ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.35)',
+                        color: '#fff',
+                        opacity: (markingAsVisited || removingVisited) ? 0.6 : 1,
+                      }}
+                      title={isVisited ? 'Remove from visited' : 'Mark as visited'}
+                    >
+                      {isVisited ? 'Visited' : 'Mark as Visited'}
+                    </Button>
 
-                    <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
-                      <Button
-                        onClick={handleSavePark}
-                        disabled={savingPark}
-                        variant={isSaved ? 'danger' : 'secondary'}
-                        size="sm"
-                        icon={Heart}
-                        className="backdrop-blur w-full sm:w-auto sm:flex-shrink-0"
-                        style={{
-                          backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                          borderWidth: '1px',
-                          borderColor: isSaved ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.3)'
-                        }}
-                        title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
-                      >
-                        <span className="truncate">{isSaved ? 'Favorited' : 'Favorite'}</span>
-                      </Button>
+                    <Button
+                      onClick={handleSavePark}
+                      disabled={savingPark}
+                      variant={isSaved ? 'danger' : 'secondary'}
+                      size="sm"
+                      icon={Heart}
+                      className="backdrop-blur w-full sm:w-auto shrink-0"
+                      style={{
+                        backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255, 255, 255, 0.12)',
+                        borderWidth: '1px',
+                        borderColor: isSaved ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.35)',
+                        color: '#fff',
+                      }}
+                      title={isSaved ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      {isSaved ? 'Favorited' : 'Favorite'}
+                    </Button>
 
-                      <ShareButtons
-                        url={typeof window !== 'undefined' ? window.location.href : `https://www.nationalparksexplorerusa.com/parks/${parkCode}`}
-                        title={park.fullName}
-                        description={park.description}
-                        image={park.images?.[0]?.url}
-                        type="park"
-                        showPrint={false}
-                      />
-                    </div>
+                    <ShareButtons
+                      url={typeof window !== 'undefined' ? window.location.href : `https://www.nationalparksexplorerusa.com/parks/${parkCode}`}
+                      title={park.fullName}
+                      description={park.description}
+                      image={park.images?.[0]?.url}
+                      type="park"
+                      showPrint={false}
+                      heroOverlay
+                    />
                   </div>
                 </div>
               </div>
@@ -753,6 +805,16 @@ const ParkDetailInner = ({
                 </div>
               </div>
 
+              <ParkPlanOverviewSection
+                parkName={park.fullName}
+                parkCode={npsParkCode}
+                snapshot={planningSnapshot}
+                planCta={parkPlanCta}
+                onPlan={handlePlanWithTrailie}
+                compareHref={compareHref}
+              />
+
+              {tabs.length > 1 && (
               <ParkExploreTabs
                 tabs={tabs}
                 activeTab={activeTab}
@@ -761,6 +823,7 @@ const ParkDetailInner = ({
                 permitCount={permits.length}
                 reviewCount={reviewCount}
               />
+              )}
 
                 {/* Tab Content */}
                 <div className="rounded-2xl p-4 sm:p-6 lg:p-8 backdrop-blur"
@@ -807,7 +870,7 @@ const ParkDetailInner = ({
                       {activitiesLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!activitiesLoading && activities !== null && activities.length > 0 ? (
+                      {!activitiesLoading && activities !== null && activities.length > 0 && (
                         (() => {
                           const filteredActivities = filterActivitiesByContent(activities, 'all');
 
@@ -1060,10 +1123,6 @@ const ParkDetailInner = ({
                             </div>
                           );
                         })()
-                      ) : !activitiesLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No things to do listed for this park yet.
-                        </p>
                       )}
                     </div>
                   )}
@@ -1078,7 +1137,7 @@ const ParkDetailInner = ({
                       {campgroundsLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!campgroundsLoading && campgrounds !== null && campgrounds.length > 0 ? (
+                      {!campgroundsLoading && campgrounds !== null && campgrounds.length > 0 && (
                         <div className="space-y-6">
                           {campgrounds.map((campground, index) => (
                             <div
@@ -1264,10 +1323,6 @@ const ParkDetailInner = ({
                             </div>
                           ))}
                         </div>
-                      ) : !campgroundsLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No campgrounds information available
-                        </p>
                       )}
                     </div>
                   )}
@@ -1472,11 +1527,6 @@ const ParkDetailInner = ({
                           </>
                         );
                       })()}
-                      {!facilitiesLoading && (!facilities || facilities.length === 0) && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No facility information available for this park.
-                        </p>
-                      )}
                     </div>
                   )}
 
@@ -1495,7 +1545,7 @@ const ParkDetailInner = ({
                       {galleryLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!galleryLoading && allPhotos.length > 0 ? (
+                      {!galleryLoading && allPhotos.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {allPhotos.map((image, index) => (
                             <button
@@ -1517,10 +1567,6 @@ const ParkDetailInner = ({
                             </button>
                           ))}
                         </div>
-                      ) : !galleryLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No photos available
-                        </p>
                       )}
                     </div>
                   )}
@@ -1540,7 +1586,7 @@ const ParkDetailInner = ({
                       {videosLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!videosLoading && videos !== null && videos.length > 0 ? (
+                      {!videosLoading && videos !== null && videos.length > 0 && (
                         <div className="space-y-6">
                           {videos.map((video, index) => {
                             const durationMin = video.durationMs ? Math.round(video.durationMs / 60000) : null;
@@ -1604,10 +1650,6 @@ const ParkDetailInner = ({
                             );
                           })}
                         </div>
-                      ) : !videosLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No videos available
-                        </p>
                       )}
                     </div>
                   )}
@@ -1622,7 +1664,7 @@ const ParkDetailInner = ({
                       {placesLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!placesLoading && places !== null && places.length > 0 ? (
+                      {!placesLoading && places !== null && places.length > 0 && (
                         (() => {
                           const renderPlaceCard = (place, index) => {
                             const description = htmlToPlainText(
@@ -1813,10 +1855,6 @@ const ParkDetailInner = ({
                             </div>
                           );
                         })()
-                      ) : !placesLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No places information available
-                        </p>
                       )}
                     </div>
                   )}
@@ -1832,7 +1870,7 @@ const ParkDetailInner = ({
                       {visitorCentersLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!visitorCentersLoading && visitorCenters !== null && visitorCenters.length > 0 ? (
+                      {!visitorCentersLoading && visitorCenters !== null && visitorCenters.length > 0 && (
                         <div className="space-y-6">
                           {visitorCenters.map((center, index) => {
                             const img = center.images?.[0];
@@ -1973,10 +2011,6 @@ const ParkDetailInner = ({
                             );
                           })}
                         </div>
-                      ) : !visitorCentersLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No visitor center information available for this park yet.
-                        </p>
                       )}
                     </div>
                   )}
@@ -1991,7 +2025,7 @@ const ParkDetailInner = ({
                       {toursLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!toursLoading && tours !== null && tours.length > 0 ? (
+                      {!toursLoading && tours !== null && tours.length > 0 && (
                         <div className="space-y-6">
                           {tours.map((tour, index) => (
                             <div
@@ -2115,10 +2149,6 @@ const ParkDetailInner = ({
                             </div>
                           ))}
                         </div>
-                      ) : !toursLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No tours information available
-                        </p>
                       )}
                     </div>
                   )}
@@ -2142,7 +2172,7 @@ const ParkDetailInner = ({
                       {parkingLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!parkingLoading && parkingLots !== null && parkingLots.length > 0 ? (
+                      {!parkingLoading && parkingLots !== null && parkingLots.length > 0 && (
                         <div className="space-y-6">
                           {parkingLots.map((lot, index) => {
                             const accessibility = lot.accessibility;
@@ -2336,10 +2366,6 @@ const ParkDetailInner = ({
                             );
                           })}
                         </div>
-                      ) : !parkingLoading && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No parking lot information available from NPS for this park. Check the getting-here section above or the official park website for access and parking guidance.
-                        </p>
                       )}
                     </div>
                   )}
@@ -2354,7 +2380,7 @@ const ParkDetailInner = ({
                       {webcamsLoading && (
                         <ParkTabSpinner />
                       )}
-                      {!webcamsLoading && webcams !== null && webcams.length > 0 ? (
+                      {!webcamsLoading && webcams !== null && webcams.length > 0 && (
                         <div className="space-y-6">
                           {webcams.map((cam, index) => {
                             const img = getWebcamImage(cam);
@@ -2493,10 +2519,6 @@ const ParkDetailInner = ({
                             );
                           })}
                         </div>
-                      ) : !webcamsLoading && webcams !== null && (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No webcams information available
-                        </p>
                       )}
                     </div>
                   )}
@@ -2509,9 +2531,10 @@ const ParkDetailInner = ({
                         Brochures & Maps
                       </h2>
 
-                      {brochuresLoading ? (
+                      {brochuresLoading && (
                         <ParkTabSpinner />
-                      ) : brochureData?.brochures?.length > 0 ? (
+                      )}
+                      {!brochuresLoading && brochureData?.brochures?.length > 0 && (
                         <div className="space-y-4">
                           {brochureData.brochures.map((brochure, index) => (
                             <div
@@ -2582,10 +2605,6 @@ const ParkDetailInner = ({
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No brochures available for this park.
-                        </p>
                       )}
                     </div>
                   )}
@@ -2606,9 +2625,10 @@ const ParkDetailInner = ({
                         Shuttles & Ferries
                       </h2>
 
-                      {transitLoading ? (
+                      {transitLoading && (
                         <ParkTabSpinner />
-                      ) : transitData?.hasGtfs && Array.isArray(transitData?.feeds) && transitData.feeds.length > 0 ? (
+                      )}
+                      {!transitLoading && transitData?.hasGtfs && Array.isArray(transitData?.feeds) && transitData.feeds.length > 0 && (
                         <div className="space-y-4">
                           {transitData.feeds.map((feed, idx) => (
                             <div
@@ -2890,10 +2910,6 @@ const ParkDetailInner = ({
                           ))}
 
                         </div>
-                      ) : (
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                          No transit information available for this park.
-                        </p>
                       )}
                     </div>
                   )}
@@ -3074,7 +3090,7 @@ const ParkDetailInner = ({
 
               {/* Park Guides Section — all guides together */}
               <div className="space-y-3">
-                {/* Crowd Calendar */}
+                {showCrowdCalendar && (
                 <a
                   href={reportHref('/reports/when-to-go', {
                     park: park.parkCode?.toUpperCase(),
@@ -3100,6 +3116,38 @@ const ParkDetailInner = ({
                     View Calendar <ChevronRight className="h-3.5 w-3.5" />
                   </span>
                 </a>
+                )}
+
+                {/* Planning guides hub */}
+                <Link
+                  href="/guides"
+                  onClick={() => logCtaClick({
+                    ctaId: 'park_sidebar_planning_guides',
+                    label: 'Planning guides',
+                    surface: 'park_sidebar_guides',
+                    destination: '/guides',
+                    parkCode: npsParkCode,
+                  })}
+                  className="block rounded-2xl p-4 sm:p-5 transition hover:shadow-lg group"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderWidth: '1px',
+                    borderColor: 'var(--border)',
+                  }}
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent-blue)' }}>
+                    Planning Guides
+                  </span>
+                  <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
+                    National park trip planning
+                  </h4>
+                  <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Tool comparisons, permits, AI tips, and ranked park lists.
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
+                    View Guides <ChevronRight className="h-3.5 w-3.5" />
+                  </span>
+                </Link>
 
                 {/* Blog Guide */}
                 {parkGuides.guide && (
@@ -3153,57 +3201,31 @@ const ParkDetailInner = ({
                   </a>
                 )}
               </div>
-
-              {/* Plan Trip CTA — below guides */}
-              <div
-                className="rounded-2xl p-4 sm:p-6 backdrop-blur text-left"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="flex items-start gap-4 mb-4">
-                  <TrailieAvatar className="!h-12 !w-12 shrink-0" />
-                  <div className="min-w-0">
-                    <p
-                      className="text-[11px] font-semibold uppercase tracking-[0.24em]"
-                      style={{ color: 'var(--accent-green)' }}
-                    >
-                      Trailie
-                    </p>
-                    <h3 className="text-lg sm:text-xl font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
-                      {parkPlanCta.title}
-                    </h3>
-                  </div>
-                </div>
-                <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                  {parkPlanCta.body}
-                </p>
-                <Button
-                  onClick={() => router.push(`/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`)}
-                  variant="secondary"
-                  size="lg"
-                  icon={Calendar}
-                  className="w-full"
-                >
-                  {parkPlanCta.button}
-                </Button>
-                <Button
-                  onClick={() => router.push(`/compare?park=${encodeURIComponent(park.parkCode)}`)}
-                  variant="ghost"
-                  size="md"
-                  icon={Compare}
-                  className="mt-3 w-full"
-                >
-                  Compare with other parks
-                </Button>
-              </div>
             </aside>
           </div>
         </div>
       </section>
 
+      {planningFaqItems.length > 0 && (
+        <section
+          className="py-10 sm:py-12 lg:py-14"
+          style={{
+            backgroundColor: 'var(--surface-hover)',
+            borderTopWidth: '1px',
+            borderColor: 'var(--border)',
+          }}
+          aria-label="Park planning questions"
+        >
+          <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+            <ParkPlanningFaqSection
+              faqItems={planningFaqItems}
+              parkCode={npsParkCode}
+              parkName={park.fullName}
+              alertCount={alerts?.length || 0}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Related Parks */}
       {relatedParks.length > 0 && (
@@ -3218,7 +3240,7 @@ const ParkDetailInner = ({
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>You Might Also Like</h2>
               </div>
               <Link
-                href={stateHubSlug ? `/parks/state/${stateHubSlug}` : `/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
+                href={relatedParksViewAllHref}
                 className="hidden sm:flex items-center gap-1.5 font-semibold text-sm hover:underline"
                 style={{ color: 'var(--accent-green)' }}
               >
@@ -3259,7 +3281,7 @@ const ParkDetailInner = ({
 
             <div className="mt-6 sm:hidden">
               <Link
-                href={stateHubSlug ? `/parks/state/${stateHubSlug}` : `/explore?state=${encodeURIComponent(park.states?.split(',')[0]?.trim() || '')}`}
+                href={relatedParksViewAllHref}
                 className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
                 style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
@@ -3289,7 +3311,14 @@ const ParkDetailInner = ({
   );
 };
 
-export default function ParkDetailClient({ relatedParks, seoLeadLine, stateHubSlug, ...props }) {
+export default function ParkDetailClient({
+  relatedParks,
+  seoLeadLine,
+  stateHubSlug,
+  planningSnapshot,
+  planningFaqItems,
+  ...props
+}) {
   return (
     <Suspense>
       <ParkDetailInner
@@ -3297,6 +3326,8 @@ export default function ParkDetailClient({ relatedParks, seoLeadLine, stateHubSl
         relatedParks={relatedParks}
         seoLeadLine={seoLeadLine}
         stateHubSlug={stateHubSlug}
+        planningSnapshot={planningSnapshot}
+        planningFaqItems={planningFaqItems}
       />
     </Suspense>
   );
