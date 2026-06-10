@@ -34,6 +34,7 @@ const blogPostSchema = new mongoose.Schema({
     type: String,
     enum: [
       'trip-planning',
+      'national-parks',
       'park-guides',
       'gear-packing',
       'seasonal',
