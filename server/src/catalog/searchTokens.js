@@ -44,8 +44,15 @@ function tokenizeParkSearchQuery(q) {
 }
 
 function haystackMatchesToken(haystack, token) {
+  if (!token) return false;
   const needles = [token, ...(TOKEN_ALIASES[token] || [])];
-  return needles.some((needle) => haystack.includes(needle));
+  const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
+
+  return needles.some(
+    (needle) =>
+      words.some((word) => word === needle || word.startsWith(needle)) ||
+      (needle.length >= 4 && haystack.includes(needle))
+  );
 }
 
 module.exports = {

@@ -3,9 +3,33 @@ const router = express.Router();
 const { protect, optionalAuth } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
 const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, shouldAppendAnonymousWebSearchUpsell, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
-const { executeParkSearch, formatRankedParksDiscoveryBlock, formatVoiceSearchResult } = require('../services/parkSearchService');
+const {
+  executeParkSearch,
+  formatRankedParksDiscoveryBlock,
+  formatVoiceSearchResult,
+  DISCOVERY_RESPONSE_FORMAT_BLOCK,
+  DISCOVERY_REFINEMENT_CLOSE_BLOCK,
+  DISCOVERY_REFINEMENT_FOLLOWUP_BLOCK,
+} = require('../services/parkSearchService');
 const { summarizePrimaryIntents } = require('../catalog/queryTraitIntent');
-const { shouldInjectParkDiscovery } = require('../utils/discoveryQuery');
+const {
+  shouldInjectParkDiscovery,
+  isHeadToHeadCompareQuery,
+  isDiscoveryRefinementReply,
+  buildDiscoverySearchQuery,
+} = require('../utils/discoveryQuery');
+const { shouldAttachParkImages } = require('../utils/parkImagePolicy');
+
+const STREAM_POST_PROCESS_OPTIONS = {
+  enableConflictRetry: false,
+  enableRegeneration: false,
+  enableItineraryFallbackExtraction: false,
+};
+const { isGenericClosureAlert } = require('../utils/npsAlertUtils');
+const {
+  formatTrailverseLinksBlock,
+  formatTrailverseVerifyFooter,
+} = require('../utils/trailverseParkLinks');
 
 /** Prefer parks from the user's message; response/footer text must not override (e.g. permit footers). */
 function resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser) {
@@ -46,20 +70,22 @@ async function finalizeParkImagesAndMetadata({
   parkNamesFromUser,
   parkImages,
   alreadyShownImages,
+  attachParkImages = false,
   logPrefix,
 }) {
   const display = resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser);
-  let images = parkImages || [];
 
-  if (!alreadyShownImages && validatedContent) {
-    if (display.parksForImages.length > 0) {
-      images = await fetchMultiParkImages(display.parksForImages, `${logPrefix} Response`);
-    } else if (images.length === 0) {
-      const fallback = extractAllParksFromMessage(validatedContent);
-      if (fallback.length > 0) {
-        images = await fetchMultiParkImages(fallback, `${logPrefix} Post`);
-      }
-    }
+  if (!attachParkImages || alreadyShownImages || !validatedContent) {
+    return {
+      parkName: display.parkName,
+      parkNames: display.parkNames,
+      parkImages: [],
+    };
+  }
+
+  let images = parkImages || [];
+  if (images.length === 0 && display.parksForImages.length > 0) {
+    images = await fetchMultiParkImages(display.parksForImages, `${logPrefix} Response`);
   }
 
   return {
@@ -76,10 +102,15 @@ const AnonymousSession = require('../models/AnonymousSession');
 const Favorite = require('../models/Favorite');
 const VisitedPark = require('../models/VisitedPark');
 const { generateAnonymousIdFromRequest } = require('../utils/anonymousIdGenerator');
+const {
+  buildAnonymousConversionMessage,
+  buildGuestChatPublicUrl,
+} = require('../utils/guestChatUrl');
 const { extractItineraryJSON, validateItineraryFeasibility } = require('../utils/extractItineraryJSON');
 const { parseConstraints, preflightCheck, buildConstraintBlock, validateItineraryConstraints, detectHypothetical, detectConflicts, detectIntent } = require('../utils/constraintEngine');
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
+const { streamRawLLMToSse } = require('../services/aiProviderStream');
 const crypto = require('crypto');
 const claudeService = require('../services/claudeService');
 const openaiService = require('../services/openaiService');
@@ -228,6 +259,29 @@ async function collectParkImagesForChat(parkCode, need) {
 
 // Helper: fetch images for multiple parks with smart distribution (target 4 total)
 // 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
+async function saveStreamItineraryToTrip(req, itineraryData) {
+  if (!itineraryData) return;
+  const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
+  if (!tripId) return;
+  try {
+    const TripPlan = require('../models/TripPlan');
+    await TripPlan.findByIdAndUpdate(tripId, {
+      plan: {
+        type: 'itinerary',
+        version: 1,
+        generatedAt: new Date().toISOString(),
+        createdFrom: 'ai',
+        parkName: req.body.metadata?.parkName || null,
+        parkCode: req.body.metadata?.parkCode || null,
+        ...itineraryData,
+      },
+    });
+    console.log(`[AI Stream] Itinerary saved to TripPlan ${tripId}`);
+  } catch (saveErr) {
+    console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
+  }
+}
+
 async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   if (!parks || parks.length === 0) return [];
 
@@ -280,6 +334,83 @@ async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
   return result;
 }
 
+/** Client session context from body.systemPrompt or legacy messages[0].role=system */
+function extractClientSystemContext(systemPrompt, messages = []) {
+  const fromBody = typeof systemPrompt === 'string' ? systemPrompt.trim() : '';
+  if (fromBody) return fromBody;
+  const fromMessages = messages.find((m) => m.role === 'system')?.content;
+  return typeof fromMessages === 'string' ? fromMessages.trim() : '';
+}
+
+/** Trip history / prefs from frontend getAIContext() */
+function formatMetadataAiContext(metadata = {}) {
+  const ctx = metadata.aiContext;
+  if (!ctx || typeof ctx !== 'object') return '';
+
+  const parts = ['\n\n--- TRIP HISTORY (saved plans & preferences) ---'];
+  if (ctx.totalTrips) parts.push(`- Saved trip plans: ${ctx.totalTrips}`);
+  if (Array.isArray(ctx.topInterests) && ctx.topInterests.length > 0) {
+    parts.push(`- Top interests: ${ctx.topInterests.join(', ')}`);
+  }
+  if (ctx.preferredBudget) parts.push(`- Preferred budget: ${ctx.preferredBudget}`);
+  if (ctx.preferredFitness) parts.push(`- Preferred fitness: ${ctx.preferredFitness}`);
+  if (Array.isArray(ctx.favoriteParks) && ctx.favoriteParks.length > 0) {
+    parts.push(`- Frequently planned parks (codes): ${ctx.favoriteParks.join(', ')}`);
+  }
+  if (Array.isArray(ctx.recentParks) && ctx.recentParks.length > 0) {
+    parts.push(
+      `- Recently planned: ${ctx.recentParks.map((p) => p.name || p.code).filter(Boolean).join(', ')}`
+    );
+  }
+  parts.push(
+    'Use only when directly relevant to the question. Do NOT inventory their history on generic discovery asks.'
+  );
+  parts.push('--- END TRIP HISTORY ---');
+  return parts.join('\n');
+}
+
+function buildBaseSystemPrompt(provider, systemPrompt, messages, metadata = {}) {
+  const defaultPrompt =
+    provider === 'openai' ? openaiService.systemPrompt : claudeService.defaultSystemPrompt;
+  const clientContext = extractClientSystemContext(systemPrompt, messages);
+  const aiContextBlock = formatMetadataAiContext(metadata);
+  let prompt = defaultPrompt;
+  if (clientContext) {
+    prompt += `\n\n--- SESSION CONTEXT ---\n${clientContext}\n--- END SESSION CONTEXT ---\n`;
+  }
+  if (aiContextBlock) {
+    prompt += aiContextBlock;
+  }
+  return prompt;
+}
+
+const PERSONALIZATION_MODE_RULES = `
+--- PERSONALIZATION MODE (My Recommendations) ---
+The user opened My Recommendations. Follow these rules:
+
+FIRST RESPONSE (only when this is their first message in this thread):
+- Under ~90 words
+- Optional first-name greeting once — skip if the question is already specific
+- One line that you'll use saved trips/favorites for ideas (not live booking data)
+- At most ONE history detail if natural — never count trips or inventory parks
+- End with exactly ONE clarifying question (length, region, vibe, or season)
+- Do NOT list destinations yet
+
+AFTER they reply:
+- Recommend 2–3 destinations they have not visited, with brief why-each
+- Reference past trips only when it strengthens the pick
+--- END PERSONALIZATION MODE ---
+`;
+
+const HEAD_TO_HEAD_COMPARE_BLOCK = `
+--- HEAD-TO-HEAD COMPARE ---
+The user named specific parks to compare. Use LIVE TRAILVERSE DATA for those parks only.
+- First sentence MUST pick a winner (see DECISION AUTHORITY rules).
+- Do NOT introduce other parks from catalog search or training data.
+- Keep under 350 words. No ranked shortlists.
+--- END HEAD-TO-HEAD COMPARE ---
+`;
+
 // Helper: auto-route provider based on last user message content
 function autoRouteProvider(messages) {
   const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
@@ -293,32 +424,35 @@ function autoRouteProvider(messages) {
  */
 async function appendRankedDiscoveryToPrompt({
   enhancedSystemPrompt,
-  lastUserMessage,
+  discoveryQuery,
   namedParkCount,
   isAnonymous,
   httpReq,
   logPrefix,
+  allowRefinement = false,
 }) {
-  if (!shouldInjectParkDiscovery(lastUserMessage, { namedParkCount })) {
+  const injectDiscovery =
+    shouldInjectParkDiscovery(discoveryQuery, { namedParkCount }) || allowRefinement;
+  if (!injectDiscovery) {
     return { appended: false, prompt: enhancedSystemPrompt };
   }
 
   let prompt = enhancedSystemPrompt;
   try {
-    const discoveryQuery = lastUserMessage.trim().slice(0, 200);
+    const searchQuery = (discoveryQuery || '').trim().slice(0, 200);
     const { parks, count } = await executeParkSearch({
-      q: discoveryQuery,
+      q: searchQuery,
       limit: 5,
       req: httpReq,
       source: isAnonymous ? 'trailie_chat_anon' : 'trailie_chat',
     });
     if (count >= 3) {
-      const primaryIntents = summarizePrimaryIntents(discoveryQuery);
-      const block = formatRankedParksDiscoveryBlock(parks, primaryIntents);
+      const primaryIntents = summarizePrimaryIntents(searchQuery);
+      const block = formatRankedParksDiscoveryBlock(parks, primaryIntents, searchQuery);
       if (block) {
         prompt += block;
         console.log(`${logPrefix} Ranked discovery search injected:`, {
-          query: discoveryQuery.slice(0, 60),
+          query: searchQuery.slice(0, 60),
           count,
           namedParkCount,
           intents: primaryIntents.map((i) => `${i.label}:${i.weight}`),
@@ -424,15 +558,19 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   const filteredMessages = messages.filter(m => m.role !== 'system');
 
   // Extract the last user message for fact fetching
-  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+  const lastUserMessage = [...filteredMessages].reverse().find(m => m.role === 'user')?.content || '';
 
   // Auto-extract parks from the current user message (message wins over stale session metadata)
   let resolvedMetadata = { ...metadata };
   let allExtractedParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
 
-  const openEndedDiscovery = shouldInjectParkDiscovery(lastUserMessage, {
-    namedParkCount: allExtractedParks.length,
-  });
+  const discoveryRefinement = isDiscoveryRefinementReply(filteredMessages);
+  const discoverySearchQuery = buildDiscoverySearchQuery(filteredMessages);
+
+  const openEndedDiscovery =
+    shouldInjectParkDiscovery(lastUserMessage, {
+      namedParkCount: allExtractedParks.length,
+    }) || discoveryRefinement;
 
   if (allExtractedParks.length > 0) {
     resolvedMetadata.parkCode = allExtractedParks[0].parkCode;
@@ -453,7 +591,9 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     resolvedMetadata.parkName = null;
     resolvedMetadata.lat = resolvedMetadata.lat || null;
     resolvedMetadata.lon = resolvedMetadata.lon || null;
-    console.log(`${logPrefix} Open-ended discovery — cleared session park lock`);
+    console.log(
+      `${logPrefix} Open-ended discovery${discoveryRefinement ? ' (refinement follow-up)' : ''} — cleared session park lock`
+    );
   }
 
   // Store all park names for frontend display (user message — not assistant/footer text)
@@ -519,16 +659,18 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
 
-  // Fetch park images (only once per chat, distributed across all mentioned parks)
-  // The frontend appends "(Photos shown to user: ...)" to assistant messages,
-  // so we can check conversation history to avoid sending images again.
+  // Park photos only when the question calls for visuals or a focused single-park plan.
   let parkImages = [];
   const alreadyShownImages = messages.some(m =>
     m.role === 'assistant' && m.content?.includes('(Photos shown to user:')
   );
-  // Open-ended discovery: wait for assistant text so images match recommendations.
-  if (allExtractedParks.length > 0 && !alreadyShownImages && !openEndedDiscovery) {
+  const attachParkImages = shouldAttachParkImages(lastUserMessage, {
+    namedParkCount: allExtractedParks.length,
+  });
+  if (attachParkImages && allExtractedParks.length > 0 && !alreadyShownImages && !openEndedDiscovery) {
     parkImages = await fetchMultiParkImages(allExtractedParks, logPrefix);
+  } else if (!attachParkImages) {
+    console.log(`${logPrefix} Skipping park images — not requested for this query`);
   } else if (alreadyShownImages) {
     console.log(`${logPrefix} Skipping park images — already shown in this conversation`);
   } else if (openEndedDiscovery) {
@@ -538,12 +680,8 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   // Logging-related variables hoisted for return
   let candidateParksBlock = false;
 
-  // Build enhanced system prompt with facts
-  // Use the full persona prompt from the appropriate service when no custom prompt is provided
-  const defaultPrompt = provider === 'openai'
-    ? openaiService.systemPrompt
-    : claudeService.defaultSystemPrompt;
-  let enhancedSystemPrompt = systemPrompt || defaultPrompt;
+  // Base persona (Claude vs OpenAI) + client session context from systemPrompt body
+  let enhancedSystemPrompt = buildBaseSystemPrompt(provider, systemPrompt, messages, metadata);
 
   // Fee-free block hoisted to top of assembled prompt — models attend most to
   // the start and end of long prompts (lost-in-the-middle effect). Placing this
@@ -567,7 +705,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     if (webSearchFacts) {
       available.push('live web search');
     } else if (webSearchUnavailable && !skipWebSearchForGuest) {
-      missing.push('web search (temporarily unavailable — qualify answers as typically and cite nps.gov)');
+      missing.push('web search (temporarily unavailable — qualify answers as typically and link the TrailVerse park page)');
     } else {
       missing.push(skipWebSearchForGuest ? 'web search (requires sign-up)' : 'web search');
     }
@@ -579,7 +717,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       if (isNonNpsWithWebSearch) {
         enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')}`;
       } else {
-        enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and direct users to nps.gov.`;
+        enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and link the TrailVerse park page (see TRAILVERSE LINKS below), not nps.gov.`;
       }
       if (skipWebSearchForGuest && missing.some((m) => m.includes('web search'))) {
         enhancedSystemPrompt += `\nGUEST ACCOUNT — WEB SEARCH: Do NOT say you lack live restaurant, hotel, trail condition, road, or air-quality data in your reply. Answer from general knowledge like a well-traveled friend. A short sign-up note for live web search is added automatically after your message when relevant — do not duplicate it.`;
@@ -588,7 +726,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
         enhancedSystemPrompt += `\nWEB SEARCH UNAVAILABLE: Live web search timed out or returned no results for this query. Do NOT invent current prices, hours, or closure status from training data. Qualify logistics as "typically" or "check official sources" and prioritize NPS data above when present.`;
       }
     }
-    enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "The Narrows is closed right now due to cyanobacteria" or "No timed entry required this year"). Users trust you; you don't need to label your source every time.`;
+    enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "Toxic cyanobacteria is active in the Virgin River — don't swallow the water" or "No timed entry required this year"). Do NOT call a cyanobacteria advisory a trail closure unless an ACTIVE CLOSURE alert says the trail is closed. Users trust you; you don't need to label your source every time.`;
     enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
     if (isSpecificPermitOnlyQuery(lastUserMessage)) {
       enhancedSystemPrompt += `\nPERMIT-ONLY QUESTION: Answer whether the named trail/activity requires a permit. A permit or lottery is NOT a closure — do not say the trail is "closed" or "off-limits" unless an ACTIVE CLOSURE in the data says so. Water-quality cautions are separate; mention in one short sentence at most. Do not list unrelated permits for other trails.`;
@@ -596,8 +734,15 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
     if (isNonNpsWithWebSearch) {
       enhancedSystemPrompt += `\nYou CAN generate an [ITINERARY_JSON] block for this destination. Use web search data for logistics, activities, and recommendations. Answer naturally as you would for any travel destination — do NOT mention "NPS" or "National Park Service" unless the user brought it up.\n\n`;
+    } else if (webSearchFacts) {
+      enhancedSystemPrompt += `\nLIVE WEB SEARCH IS ACTIVE: Synthesize NPS + web search below into a direct answer. Answer as TrailVerse live data — do NOT punt with "check nps.gov", "visit conditions.htm", or "call the park" when the live block already supports your reply. Link the TrailVerse park page if users need more detail.\n`;
+      enhancedSystemPrompt += `Do NOT invent closures, permits, or conditions not listed in the live block.\n\n`;
     } else {
-      enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, say "check nps.gov for the latest."\n\n`;
+      enhancedSystemPrompt += `\nDo NOT invent closures, permits, or conditions not listed here. If something is NOT in this data, link the TrailVerse park page for live alerts — do not punt to nps.gov.\n\n`;
+    }
+
+    if (allExtractedParks.length > 0) {
+      enhancedSystemPrompt += formatTrailverseLinksBlock(allExtractedParks);
     }
 
     if (npsFacts) {
@@ -618,7 +763,8 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     enhancedSystemPrompt += `\nLive data for ${parkLabel} is COMPLETELY UNAVAILABLE right now (APIs may be down).`;
     enhancedSystemPrompt += `\nDATA AVAILABLE: none`;
     enhancedSystemPrompt += `\nDATA MISSING: NPS alerts/closures/permits, weather forecast, web search`;
-    enhancedSystemPrompt += `\nYou MUST tell the user: "I don't have real-time data for ${parkLabel} right now — my suggestions are based on general knowledge. Verify current conditions, closures, and permits at nps.gov before your trip."`;
+    enhancedSystemPrompt += formatTrailverseLinksBlock(allExtractedParks.length > 0 ? allExtractedParks : [{ parkCode: resolvedMetadata.parkCode, parkName: parkLabel }]);
+    enhancedSystemPrompt += `\nYou MUST tell the user: "I don't have real-time data for ${parkLabel} right now — my suggestions are based on general knowledge. Check live conditions on TrailVerse before your trip." Link the TrailVerse park page — not nps.gov.`;
     enhancedSystemPrompt += `\nDo NOT present training-data knowledge as current facts. Qualify everything as "typically" or "generally."`;
     enhancedSystemPrompt += `\n--- END NOTICE ---\n`;
   } else if (!resolvedMetadata.parkCode) {
@@ -662,21 +808,34 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
 
   }
 
-  // Open-ended / compare: ranked catalog (works with or without a session parkCode)
+  const headToHeadCompare = isHeadToHeadCompareQuery(lastUserMessage, allExtractedParks.length);
+  if (headToHeadCompare) {
+    enhancedSystemPrompt += HEAD_TO_HEAD_COMPARE_BLOCK;
+    console.log(`${logPrefix} Head-to-head compare mode — skipping catalog discovery`);
+  }
+
+  // Open-ended discovery only when no parks are named in the message
   let rankedDiscoveryAppended = false;
-  if (openEndedDiscovery && allExtractedParks.length !== 1) {
+  if (openEndedDiscovery && allExtractedParks.length === 0) {
     const discoveryResult = await appendRankedDiscoveryToPrompt({
       enhancedSystemPrompt,
-      lastUserMessage,
+      discoveryQuery: discoverySearchQuery,
       namedParkCount: allExtractedParks.length,
       isAnonymous,
       httpReq,
       logPrefix,
+      allowRefinement: discoveryRefinement,
     });
     enhancedSystemPrompt = discoveryResult.prompt;
     rankedDiscoveryAppended = discoveryResult.appended;
     if (rankedDiscoveryAppended) {
       candidateParksBlock = true;
+      if (discoveryRefinement) {
+        enhancedSystemPrompt += DISCOVERY_REFINEMENT_FOLLOWUP_BLOCK;
+      } else {
+        enhancedSystemPrompt += DISCOVERY_RESPONSE_FORMAT_BLOCK;
+        enhancedSystemPrompt += DISCOVERY_REFINEMENT_CLOSE_BLOCK;
+      }
     }
   }
 
@@ -782,7 +941,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
 2. Do NOT include any live data citations in your scenario plan. The live data block above is REFERENCE ONLY — do not surface it to the user.
 3. Structure your response as a SINGLE scenario plan under the user's assumed conditions. Do NOT show a "real conditions" section followed by a "scenario" section — that causes confusion. Just plan for the scenario.
 4. If the scenario makes certain permits/reservations irrelevant (e.g., area is closed), do NOT mention them.
-5. You may briefly note at the END: "Note: This plan assumes [scenario condition]. Check nps.gov for current real-world conditions." — ONE sentence, nothing more.
+5. You may briefly note at the END: "Note: This plan assumes [scenario condition]. See current real-world conditions on TrailVerse." — ONE sentence, nothing more.
 6. Do NOT pad with unrelated real-world details, closure lists, or weather data that contradicts the scenario.
 --- END SCENARIO MODE ---\n`;
     console.log(`${logPrefix} Hypothetical detected:`, hypothetical.scenarioDescription);
@@ -805,16 +964,24 @@ CRITICAL ISOLATION RULES — follow these exactly:
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, lastMsg };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {
-  if (!userContext) return enhancedSystemPrompt;
+  if (!userContext) {
+    return personalizedRecommendations
+      ? enhancedSystemPrompt + PERSONALIZATION_MODE_RULES
+      : enhancedSystemPrompt;
+  }
   let prompt = enhancedSystemPrompt + userContext;
-  if (!personalizedRecommendations) {
+  if (personalizedRecommendations) {
+    prompt += PERSONALIZATION_MODE_RULES;
+  } else {
     prompt += `\n\nGENERAL CHAT MODE (NOT "My Recommendations"):
 - Answer the user's actual question first
+- Do NOT open with "Hey {name}" or profile callouts on generic discovery questions
 - Do NOT inventory their past parks, quote trip counts, or open with "two questions before I suggest anything"
+- Do NOT say "your profile says", "since you love", or "you've already been to" unless they asked for personalized picks
 - Only reference favorites or visit history when directly relevant to what they asked`;
   }
   return prompt;
@@ -864,9 +1031,9 @@ async function buildUserContext(user) {
     parts.push(`- Home location`);
     parts.push(``);
     parts.push(`If your recommendation depends on an unknown attribute, ask one clarifying question instead of assuming.`);
-    parts.push(`NEVER say "your profile says...", "based on your travel style...", or "as a solo traveler..." for any unknown attribute.`);
-    parts.push(`Only reference Known facts listed above.`);
-    parts.push(`Address the user by their first name in your first response.`);
+    parts.push(`NEVER say "your profile says...", "based on your travel style...", "since you love...", or "as a solo traveler..." for any unknown attribute.`);
+    parts.push(`Only reference Known facts listed above when directly relevant — not on every reply.`);
+    parts.push(`Do NOT open with a first-name greeting on generic discovery or factual questions.`);
     parts.push(`--- END USER CONTEXT ---`);
 
     return parts.join('\n');
@@ -1114,7 +1281,7 @@ function stripRedundantLiveDataDisclaimers(content) {
 }
 
 // Helper: post-response validation — checks if AI addressed critical NPS constraints
-function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
+function validateCriticalAlerts(responseContent, npsFacts, userMessage = '', parksForLinks = []) {
   if (!npsFacts || !responseContent) return null;
 
   const responseLower = responseContent.toLowerCase();
@@ -1122,6 +1289,7 @@ function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
   const lodgingDiningOnly = isLodgingDiningQuery(userMessage);
   const skipCautionFooter =
     lodgingDiningOnly || isEventsQuery(userMessage) || isLogisticsOrAccessQuery(userMessage);
+  const skipClosureFooter = skipCautionFooter;
 
   const safetyAlreadyCovered = responseAlreadyCoversSafety(responseLower, userMessage);
   const compareQuery = isCompareOrChooseQuery(userMessage);
@@ -1136,11 +1304,14 @@ function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
       isWildlifeSafetyQuery(userMessage) ||
       isEventsQuery(userMessage));
 
-  // 1. Active closures
-  const closures = dedupeAlertLines(extractAllNPSSectionItems(npsFacts, '⚠️ ACTIVE CLOSURES:'));
-  const missedClosures = closures.filter(c => !alertMentioned(c, responseLower));
-  if (missedClosures.length > 0) {
-    warnings.push({ label: 'Active closures', items: missedClosures });
+  // 1. Active closures — skip for lodging/logistics/events; drop generic NPS section titles
+  if (!skipClosureFooter) {
+    const closures = dedupeAlertLines(extractAllNPSSectionItems(npsFacts, '⚠️ ACTIVE CLOSURES:'))
+      .filter((c) => !isGenericClosureAlert(c));
+    const missedClosures = closures.filter((c) => !alertMentioned(c, responseLower));
+    if (missedClosures.length > 0) {
+      warnings.push({ label: 'Active closures', items: missedClosures });
+    }
   }
 
   // 2. Cautions — skip if reply already gave multiple safety callouts (avoid redundant footer)
@@ -1216,7 +1387,7 @@ function validateCriticalAlerts(responseContent, npsFacts, userMessage = '') {
     result += `\n**${w.label}:**`;
     result += w.items.map(item => `\n- ${item}`).join('');
   }
-  result += '\n\n_Verify at [nps.gov](https://www.nps.gov) before your trip._';
+  result += formatTrailverseVerifyFooter(parksForLinks);
   return result;
 }
 
@@ -1240,11 +1411,13 @@ async function processAssistantResponse({
   enhancedSystemPrompt,
   augmentedMessages,
   req,
+  parksForLinks = [],
   options = {},
 }) {
   const {
     enableConflictRetry = true,
     enableRegeneration = true,
+    enableItineraryFallbackExtraction = true,
     appendAnonymousWebUpsell = false,
     isTrustedMcp = false,
     logPrefix = '[AI]',
@@ -1297,6 +1470,7 @@ async function processAssistantResponse({
   let { cleanContent, itineraryData } = extractItineraryJSON(response.content);
 
   if (
+    enableItineraryFallbackExtraction &&
     !itineraryData &&
     /\b(plan|itinerary|trip)\b/i.test(lastMsg) &&
     /day\s*[1-9]|day\s*one|day\s*two|morning.*afternoon|## .*day\b/i.test(cleanContent)
@@ -1335,13 +1509,10 @@ ${cleanContent.substring(0, 6000)}`;
     if (!allowNonNpsItinerary) {
       console.log(`${logPrefix} Itinerary stripped — no park or travel destination detected`);
       itineraryData = null;
-      cleanContent +=
-        '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
     }
   }
 
   const isConflictResponse = hasConflicts && /\*\*\s*option\s*[ab12]/i.test(cleanContent);
-  const alertWarning = validateCriticalAlerts(cleanContent, npsFacts, lastMsg);
   let constraintIssues =
     itineraryData && !isConflictResponse
       ? validateItineraryConstraints(itineraryData, constraints)
@@ -1454,17 +1625,8 @@ ${cleanContent.substring(0, 6000)}`;
     }
   }
 
-  if (alertWarning) cleanContent += alertWarning;
-  if (correctionSummary) {
-    cleanContent += correctionSummary;
-  } else if (feasibilityIssues.length > 0) {
-    cleanContent += `\n\n---\n⏱️ **Schedule feasibility notice:**\n${feasibilityIssues.map((w) => `- ${w}`).join('\n')}\n_Consider adjusting your itinerary for a more realistic pace._`;
-  }
-
-  if (confidence.level !== 'high') {
-    cleanContent += `\n\n${confidence.level === 'low' ? '⚠️' : 'ℹ️'} **Plan confidence: ${confidence.level}** — ${confidence.level === 'low' ? 'This plan needed significant changes. Consider adjusting your preferences or ask me to regenerate.' : 'Minor adjustments were made to match your constraints.'}`;
-  }
-
+  // Alert/correction/confidence footers omitted — model weaves facts inline.
+  // Anonymous web-search upsell kept: product CTA for guests on lodging/local queries.
   const webSearchUpsell =
     appendAnonymousWebUpsell && !isTrustedMcp
       ? shouldAppendAnonymousWebSearchUpsell(lastMsg)
@@ -1472,12 +1634,9 @@ ${cleanContent.substring(0, 6000)}`;
 
   if (webSearchUpsell.append) {
     cleanContent = stripRedundantLiveDataDisclaimers(cleanContent);
-  }
-
-  response.content = cleanContent;
-
-  if (webSearchUpsell.append) {
-    response.content += buildWebSearchUpsellSuffix(webSearchUpsell.variant);
+    response.content = cleanContent + buildWebSearchUpsellSuffix(webSearchUpsell.variant);
+  } else {
+    response.content = cleanContent;
   }
 
   const planScore = itineraryData ? scoreItinerary(itineraryData, constraints) : null;
@@ -1503,7 +1662,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -1513,7 +1672,8 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
 
     // Inject user context for personalized responses
     const personalizedRecommendations = req.body.metadata?.personalizedRecommendations === true;
-    const userContext = await buildUserContext(req.user);
+    const skipUserContext = req.body.metadata?.skipUserContext === true;
+    const userContext = skipUserContext ? '' : await buildUserContext(req.user);
     enhancedSystemPrompt = appendUserContextToPrompt(
       enhancedSystemPrompt,
       userContext,
@@ -1670,6 +1830,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       enhancedSystemPrompt,
       augmentedMessages,
       req,
+      parksForLinks: allExtractedParks,
       options: {
         enableConflictRetry: true,
         enableRegeneration: true,
@@ -1715,6 +1876,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       parkNamesFromUser: parkNames,
       parkImages,
       alreadyShownImages,
+      attachParkImages,
       logPrefix: '[AI]',
     });
 
@@ -1830,452 +1992,531 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
 
 // Streaming chat endpoint — SSE for authenticated users
 router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
+  const requestStartTime = Date.now();
   try {
     console.log('[AI] Stream chat request received:', {
       provider: req.body.provider,
       messageCount: req.body.messages?.length,
       hasMetadata: !!req.body.metadata,
-      metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, resolvedMetadata, parkNames, noParkDetected, constraints, preflightResult, hypothetical, intent, parkImages, alreadyShownImages, lastMsg } = await prepareChatContext(req.body, '[AI Stream]', { req });
+    let {
+      provider,
+      model,
+      temperature,
+      top_p,
+      maxTokens,
+      enhancedSystemPrompt,
+      augmentedMessages,
+      npsFacts,
+      weatherFacts,
+      webSearchFacts,
+      feeFreeFacts,
+      resolvedMetadata,
+      parkNames,
+      allExtractedParks,
+      noParkDetected,
+      constraints,
+      preflightResult,
+      hypothetical,
+      conflicts,
+      intent,
+      parkImages,
+      alreadyShownImages,
+      attachParkImages,
+      lastMsg,
+    } = await prepareChatContext(req.body, '[AI Stream]', { req });
 
-    // Pre-flight BLOCKER — stop before SSE
     if (preflightResult.blockers.length > 0) {
-      const blockerMsg = preflightResult.blockers.map(b => `- ${b}`).join('\n');
-      return res.json({ data: { content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`, provider: 'system' } });
+      const blockerMsg = preflightResult.blockers.map((b) => `- ${b}`).join('\n');
+      return res.json({
+        data: {
+          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
+          provider: 'system',
+        },
+      });
     }
 
-    // Inject user context for personalized responses
     const personalizedRecommendations = req.body.metadata?.personalizedRecommendations === true;
-    const userContext = await buildUserContext(req.user);
+    const skipUserContext = req.body.metadata?.skipUserContext === true;
+    const userContext = skipUserContext ? '' : await buildUserContext(req.user);
     enhancedSystemPrompt = appendUserContextToPrompt(
       enhancedSystemPrompt,
       userContext,
       personalizedRecommendations
     );
 
-    // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    // Send thinking event so frontend can show what data sources are being used
     const dataSources = [];
     if (npsFacts) dataSources.push('nps');
     if (weatherFacts) dataSources.push('weather');
     if (webSearchFacts) dataSources.push('web');
-    res.write(`data: ${JSON.stringify({ type: 'thinking', sources: dataSources, parkName: resolvedMetadata.parkName || null, parkNames: parkNames || [] })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'thinking',
+        sources: dataSources,
+        parkName: resolvedMetadata.parkName || null,
+        parkNames: parkNames || [],
+      })}\n\n`
+    );
+    if (typeof res.flush === 'function') res.flush();
 
-    // Fallback: resolve 'auto' or unknown providers to claude
-    if (provider !== 'claude' && provider !== 'openai') {
-      provider = anthropic ? 'claude' : 'openai';
+    const streamResult = await streamRawLLMToSse(res, {
+      anthropic,
+      openai,
+      provider,
+      model,
+      temperature,
+      maxTokens,
+      top_p,
+      enhancedSystemPrompt,
+      augmentedMessages,
+    });
+
+    if (!streamResult?.fullContent) {
+      res.end();
+      return;
     }
 
-    try {
-      if (provider === 'claude') {
-        if (!anthropic) {
-          res.write(`data: ${JSON.stringify({ type: 'error', message: 'Claude API key not configured' })}\n\n`);
-          return res.end();
-        }
+    let response = {
+      content: streamResult.fullContent,
+      provider: streamResult.provider,
+      model: streamResult.model,
+      usage: streamResult.usage,
+    };
 
-        const stream = await anthropic.messages.create({
-          model: model || 'claude-sonnet-4-6',
-          max_tokens: maxTokens,
-          temperature: temperature,
-          system: enhancedSystemPrompt,
-          messages: augmentedMessages,
-          stream: true
+    const processed = await processAssistantResponse({
+      response,
+      lastMsg,
+      npsFacts,
+      webSearchFacts,
+      noParkDetected,
+      constraints,
+      conflicts,
+      hypothetical,
+      provider: response.provider,
+      model: response.model,
+      maxTokens,
+      temperature,
+      top_p,
+      enhancedSystemPrompt,
+      augmentedMessages,
+      req,
+      parksForLinks: allExtractedParks,
+      options: {
+        ...STREAM_POST_PROCESS_OPTIONS,
+        logPrefix: '[AI Stream]',
+      },
+    });
+
+    response.content = processed.cleanContent;
+
+    const displayMeta = await finalizeParkImagesAndMetadata({
+      validatedContent: response.content,
+      resolvedMetadata,
+      parkNamesFromUser: parkNames,
+      parkImages,
+      alreadyShownImages,
+      attachParkImages,
+      logPrefix: '[AI Stream]',
+    });
+
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'done',
+        content: response.content,
+        provider: response.provider,
+        model: response.model,
+        hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+        hasWebSearch: !!webSearchFacts,
+        parkName: displayMeta.parkName,
+        parkNames: displayMeta.parkNames,
+        hasItinerary: !!processed.itineraryData,
+        itineraryData: processed.itineraryData || null,
+        confidence: processed.confidence,
+        planScore: processed.planScore,
+        intent: intent?.primaryIntent || null,
+        parkImages: displayMeta.parkImages,
+      })}\n\n`
+    );
+    res.end();
+
+    void saveStreamItineraryToTrip(req, processed.itineraryData);
+
+    const requestEndTime = Date.now();
+    extractParksMentioned(response.content || '')
+      .then((parksMentioned) => {
+        logAIRequest({
+          endpoint: 'chat-stream',
+          userId: req.user?.id || null,
+          provider: response.provider,
+          model: response.model,
+          durationMs: requestEndTime - requestStartTime,
+          promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
+          blocks: {
+            npsFacts: !!npsFacts,
+            weatherFacts: !!weatherFacts,
+            webSearch: !!webSearchFacts,
+            feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
+            constraints: constraints.hasConstraints,
+            preflight: { blockers: preflightResult.blockers.length, warnings: preflightResult.warnings.length },
+            conflicts: conflicts.length,
+            hypothetical: hypothetical.isHypothetical,
+            intent: intent?.primaryIntent || null,
+            userContext: !!req.user,
+          },
+          park: resolvedMetadata.parkCode
+            ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName }
+            : null,
+          messageCount: augmentedMessages.length,
+          promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
+          tokens: response.usage || null,
+          response: {
+            length: response.content?.length || 0,
+            hasItinerary: !!processed.itineraryData,
+            parksMentioned,
+          },
+          error: null,
         });
-
-        let fullContent = '';
-        let doneEventSent = false;
-        for await (const chunk of stream) {
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            fullContent += chunk.delta.text;
-            res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk.delta.text })}\n\n`);
-          }
-          if (chunk.type === 'message_stop') {
-            console.log('[AI Stream] message_stop received, fullContent length:', fullContent.length);
-            doneEventSent = true;
-            let { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
-
-            // Fallback: if this looks like a planning response but no JSON block, extract it
-            if (!itineraryData && /\b(plan|itinerary|trip)\b/i.test(lastMsg) && /day\s*[1-9]|day\s*one|day\s*two|morning.*afternoon|## .*day\b/i.test(cleanContent)) {
-              try {
-                console.log('[AI Stream] Planning response missing JSON block — running fallback extraction');
-                const extractionPrompt = `Extract the structured itinerary from this trip plan text. Return ONLY a valid JSON object (no markdown, no explanation) in this format:
-{"days":[{"id":"day-1","dayNumber":1,"label":"Day 1 — label","stops":[{"id":"s1-1","order":0,"type":"trail|landmark|campground|visitor_center|restaurant|lodging|custom","name":"Stop Name","note":"brief note","startTime":"08:00","duration":60,"latitude":0.0,"longitude":0.0,"difficulty":"easy|moderate|strenuous","why":"why this stop fits","drivingTimeFromPreviousMin":0}]}]}
-
-Include latitude/longitude (estimate if needed), duration in minutes, and difficulty for trails. Here is the plan text:
-
-${cleanContent.substring(0, 6000)}`;
-
-                const extractedJSON = await claudeService.chat([{ role: 'user', content: extractionPrompt }], 'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.');
-                const jsonMatch = extractedJSON.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                  const parsed = JSON.parse(jsonMatch[0]);
-                  if (parsed.days && Array.isArray(parsed.days) && parsed.days.length > 0) {
-                    itineraryData = parsed;
-                    console.log(`[AI Stream] Fallback extraction successful: ${parsed.days.length} days, ${parsed.days.reduce((s, d) => s + (d.stops?.length || 0), 0)} stops`);
-                  }
-                }
-              } catch (extractErr) {
-                console.log('[AI Stream] Fallback extraction failed:', extractErr.message);
-              }
-            }
-
-            // Hard gate: strip itinerary if no park/destination was detected
-            if (noParkDetected && itineraryData) {
-              const allowNonNpsItinerary = webSearchFacts || isTravelRelated(lastMsg);
-              if (!allowNonNpsItinerary) {
-                console.log('[AI Stream] Itinerary stripped — no park or travel destination detected');
-                itineraryData = null;
-                const gateNotice = '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
-                cleanContent += gateNotice;
-                res.write(`data: ${JSON.stringify({ type: 'chunk', content: gateNotice })}\n\n`);
-              } else {
-                console.log('[AI Stream] Non-NPS itinerary allowed — travel query with web search context');
-              }
-            }
-
-            // ── Validate + Correct + Confidence (no regeneration for streaming) ──
-            let validatedContent = cleanContent;
-            const alertWarning = validateCriticalAlerts(cleanContent, npsFacts, lastMsg);
-            let constraintIssues = itineraryData ? validateItineraryConstraints(itineraryData, constraints) : [];
-            let feasibilityIssues = itineraryData ? validateItineraryFeasibility(itineraryData) : [];
-
-            let correctionSummary = '';
-            let confidence = { level: 'high', score: 1.0 };
-
-            if (itineraryData && constraintIssues.length > 0) {
-              let currentItinerary = itineraryData;
-              let allCorrections = [];
-              let totalRemoved = 0;
-              const originalCount = itineraryData.days.reduce((sum, d) => sum + (d.stops?.length || 0), 0);
-
-              for (let pass = 1; pass <= 2; pass++) {
-                const issues = pass === 1 ? constraintIssues : validateItineraryConstraints(currentItinerary, constraints);
-                if (issues.length === 0) break;
-
-                const result = correctItinerary(currentItinerary, constraints, issues, npsFacts, {
-                  isHypothetical: hypothetical?.isHypothetical || false,
-                  pass
-                });
-
-                currentItinerary = result.correctedItinerary;
-                allCorrections.push(...result.corrections);
-                totalRemoved += result.removedCount;
-
-                if (result.tooAggressive) break;
-              }
-
-              itineraryData = currentItinerary;
-              confidence = computeConfidence(allCorrections, totalRemoved, originalCount);
-
-              if (allCorrections.length > 0) {
-                correctionSummary = `\n\n---\n📍 **Adjusted to fit your constraints:**\n${allCorrections.map(c => `- ${c}`).join('\n')}`;
-                console.log('[AI Stream] Corrections applied:', allCorrections);
-              }
-
-              const postIssues = validateItineraryFeasibility(currentItinerary);
-              if (postIssues.length > 0) {
-                correctionSummary += `\n\n⏱️ **After adjustment:**\n${postIssues.map(w => `- ${w}`).join('\n')}`;
-              }
-            }
-
-            // Append warnings + corrections
-            if (alertWarning) {
-              validatedContent += alertWarning;
-              res.write(`data: ${JSON.stringify({ type: 'chunk', content: alertWarning })}\n\n`);
-            }
-
-            if (correctionSummary) {
-              validatedContent += correctionSummary;
-              res.write(`data: ${JSON.stringify({ type: 'chunk', content: correctionSummary })}\n\n`);
-            } else if (feasibilityIssues.length > 0) {
-              const feasibilityNote = `\n\n---\n⏱️ **Schedule feasibility notice:**\n${feasibilityIssues.map(w => `- ${w}`).join('\n')}\n_Consider adjusting your itinerary for a more realistic pace._`;
-              validatedContent += feasibilityNote;
-              res.write(`data: ${JSON.stringify({ type: 'chunk', content: feasibilityNote })}\n\n`);
-            }
-
-            if (confidence.level !== 'high') {
-              const confNote = `\n\n${confidence.level === 'low' ? '⚠️' : 'ℹ️'} **Plan confidence: ${confidence.level}** — ${confidence.level === 'low' ? 'This plan needed significant changes. Consider adjusting your preferences or ask me to regenerate.' : 'Minor adjustments were made to match your constraints.'}`;
-              validatedContent += confNote;
-              res.write(`data: ${JSON.stringify({ type: 'chunk', content: confNote })}\n\n`);
-            }
-
-            // Score the itinerary
-            let planScore = null;
-            if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
-
-            const streamDisplayMeta = await finalizeParkImagesAndMetadata({
-              validatedContent,
-              resolvedMetadata,
-              parkNamesFromUser: parkNames,
-              parkImages,
-              alreadyShownImages,
-              logPrefix: '[AI Stream]',
-            });
-
-            console.log('[AI Stream] Sending done event:', { hasItinerary: !!itineraryData, itineraryDays: itineraryData?.days?.length || 0, contentLen: validatedContent?.length || 0 });
-            res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: streamDisplayMeta.parkName, parkNames: streamDisplayMeta.parkNames, hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: streamDisplayMeta.parkImages })}\n\n`);
-
-            if (itineraryData) {
-              const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
-              if (tripId) {
-                try {
-                  const TripPlan = require('../models/TripPlan');
-                  await TripPlan.findByIdAndUpdate(tripId, {
-                    plan: {
-                      type: 'itinerary',
-                      version: 1,
-                      generatedAt: new Date().toISOString(),
-                      createdFrom: 'ai',
-                      parkName: req.body.metadata?.parkName || null,
-                      parkCode: req.body.metadata?.parkCode || null,
-                      ...itineraryData
-                    }
-                  });
-                  console.log(`[AI Stream] Corrected itinerary saved to TripPlan ${tripId}`);
-                } catch (saveErr) {
-                  console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
-                }
-              }
-            }
-          }
-        }
-
-        // Fallback: if message_stop was never emitted, process after loop ends
-        if (!doneEventSent && fullContent) {
-          console.log('[AI Stream] message_stop not received — processing after loop');
-          let { cleanContent, itineraryData } = extractItineraryJSON(fullContent);
-
-          // Fallback itinerary extraction
-          if (!itineraryData && /\b(plan|itinerary|trip)\b/i.test(lastMsg) && /day\s*[1-9]|day\s*one|day\s*two|morning.*afternoon|## .*day\b/i.test(cleanContent)) {
-            try {
-              console.log('[AI Stream] Planning response missing JSON block — running fallback extraction');
-              const extractionPrompt = `Extract the structured itinerary from this trip plan text. Return ONLY a valid JSON object (no markdown, no explanation) in this format:
-{"days":[{"id":"day-1","dayNumber":1,"label":"Day 1 — label","stops":[{"id":"s1-1","order":0,"type":"trail|landmark|campground|visitor_center|restaurant|lodging|custom","name":"Stop Name","note":"brief note","startTime":"08:00","duration":60,"latitude":0.0,"longitude":0.0,"difficulty":"easy|moderate|strenuous","why":"why this stop fits","drivingTimeFromPreviousMin":0}]}]}
-
-Include latitude/longitude (estimate if needed), duration in minutes, and difficulty for trails. Here is the plan text:
-
-${cleanContent.substring(0, 6000)}`;
-
-              const extractedJSON = await claudeService.chat([{ role: 'user', content: extractionPrompt }], 'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.');
-              const jsonMatch = extractedJSON.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                if (parsed.days && Array.isArray(parsed.days) && parsed.days.length > 0) {
-                  itineraryData = parsed;
-                  console.log(`[AI Stream] Fallback extraction successful: ${parsed.days.length} days, ${parsed.days.reduce((s, d) => s + (d.stops?.length || 0), 0)} stops`);
-                }
-              }
-            } catch (extractErr) {
-              console.log('[AI Stream] Fallback extraction failed:', extractErr.message);
-            }
-          }
-
-          let validatedContent = cleanContent;
-          let confidence = { level: 'high', score: 1.0 };
-          let planScore = null;
-          if (itineraryData) planScore = scoreItinerary(itineraryData, constraints);
-
-          const streamFallbackMeta = await finalizeParkImagesAndMetadata({
-            validatedContent,
-            resolvedMetadata,
-            parkNamesFromUser: parkNames,
-            parkImages,
-            alreadyShownImages,
-            logPrefix: '[AI Stream Fallback]',
-          });
-
-          res.write(`data: ${JSON.stringify({ type: 'done', content: validatedContent, provider: 'claude', model: model || 'claude-sonnet-4-6', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: streamFallbackMeta.parkName, parkNames: streamFallbackMeta.parkNames, hasItinerary: !!itineraryData, itineraryData: itineraryData || null, confidence, planScore, intent: intent?.primaryIntent || null, parkImages: streamFallbackMeta.parkImages })}\n\n`);
-
-          if (itineraryData) {
-            const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
-            if (tripId) {
-              try {
-                const TripPlan = require('../models/TripPlan');
-                await TripPlan.findByIdAndUpdate(tripId, {
-                  plan: {
-                    type: 'itinerary',
-                    version: 1,
-                    generatedAt: new Date().toISOString(),
-                    createdFrom: 'ai',
-                    parkName: req.body.metadata?.parkName || null,
-                    parkCode: req.body.metadata?.parkCode || null,
-                    ...itineraryData
-                  }
-                });
-                console.log(`[AI Stream] Corrected itinerary saved to TripPlan ${tripId}`);
-              } catch (saveErr) {
-                console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
-              }
-            }
-          }
-        }
-      } else if (provider === 'openai') {
-        if (!openai) {
-          res.write(`data: ${JSON.stringify({ type: 'error', message: 'OpenAI API key not configured' })}\n\n`);
-          return res.end();
-        }
-
-        const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
-
-        const stream = await openai.chat.completions.create({
-          model: model || 'gpt-5.4-mini',
-          messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-          temperature: temperature,
-          max_completion_tokens: maxTokens,
-          stream: true
-        });
-
-        let fullContent = '';
-        for await (const chunk of stream) {
-          const text = chunk.choices[0]?.delta?.content || '';
-          if (text) {
-            fullContent += text;
-            res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
-          }
-        }
-        let { cleanContent: openaiCleanContent, itineraryData: openaiItineraryData } = extractItineraryJSON(fullContent);
-
-        // Hard gate: strip itinerary if no park/destination was detected
-        if (noParkDetected && openaiItineraryData) {
-          const allowNonNpsItinerary = webSearchFacts || isTravelRelated(lastMsg);
-          if (!allowNonNpsItinerary) {
-            console.log('[AI Stream] Itinerary stripped — no park or travel destination detected (OpenAI)');
-            openaiItineraryData = null;
-            const gateNotice = '\n\n---\n📍 **To get a detailed itinerary, please specify a destination you\'re planning to visit.** I can help with national parks, state parks, and other outdoor destinations.';
-            openaiCleanContent += gateNotice;
-            res.write(`data: ${JSON.stringify({ type: 'chunk', content: gateNotice })}\n\n`);
-          } else {
-            console.log('[AI Stream] Non-NPS itinerary allowed — travel query with web search context (OpenAI)');
-          }
-        }
-
-        // ── Validate + Correct + Confidence (no regeneration for streaming) ──
-        let openaiValidatedContent = openaiCleanContent;
-        const openaiAlertWarning = validateCriticalAlerts(openaiCleanContent, npsFacts, lastMsg);
-        let openaiConstraintIssues = openaiItineraryData ? validateItineraryConstraints(openaiItineraryData, constraints) : [];
-        let openaiFeaIssues = openaiItineraryData ? validateItineraryFeasibility(openaiItineraryData) : [];
-
-        let openaiCorrectionSummary = '';
-        let openaiConfidence = { level: 'high', score: 1.0 };
-
-        if (openaiItineraryData && openaiConstraintIssues.length > 0) {
-          let currentItinerary = openaiItineraryData;
-          let allCorrections = [];
-          let totalRemoved = 0;
-          const originalCount = openaiItineraryData.days.reduce((sum, d) => sum + (d.stops?.length || 0), 0);
-
-          for (let pass = 1; pass <= 2; pass++) {
-            const issues = pass === 1 ? openaiConstraintIssues : validateItineraryConstraints(currentItinerary, constraints);
-            if (issues.length === 0) break;
-
-            const result = correctItinerary(currentItinerary, constraints, issues, npsFacts, {
-              isHypothetical: hypothetical?.isHypothetical || false,
-              pass
-            });
-
-            currentItinerary = result.correctedItinerary;
-            allCorrections.push(...result.corrections);
-            totalRemoved += result.removedCount;
-
-            if (result.tooAggressive) break;
-          }
-
-          openaiItineraryData = currentItinerary;
-          openaiConfidence = computeConfidence(allCorrections, totalRemoved, originalCount);
-
-          if (allCorrections.length > 0) {
-            openaiCorrectionSummary = `\n\n---\n📍 **Adjusted to fit your constraints:**\n${allCorrections.map(c => `- ${c}`).join('\n')}`;
-            console.log('[AI Stream] OpenAI corrections applied:', allCorrections);
-          }
-
-          const postIssues = validateItineraryFeasibility(currentItinerary);
-          if (postIssues.length > 0) {
-            openaiCorrectionSummary += `\n\n⏱️ **After adjustment:**\n${postIssues.map(w => `- ${w}`).join('\n')}`;
-          }
-        }
-
-        // Append warnings + corrections
-        if (openaiAlertWarning) {
-          openaiValidatedContent += openaiAlertWarning;
-          res.write(`data: ${JSON.stringify({ type: 'chunk', content: openaiAlertWarning })}\n\n`);
-        }
-
-        if (openaiCorrectionSummary) {
-          openaiValidatedContent += openaiCorrectionSummary;
-          res.write(`data: ${JSON.stringify({ type: 'chunk', content: openaiCorrectionSummary })}\n\n`);
-        } else if (openaiFeaIssues.length > 0) {
-          const openaiFeaNote = `\n\n---\n⏱️ **Schedule feasibility notice:**\n${openaiFeaIssues.map(w => `- ${w}`).join('\n')}\n_Consider adjusting your itinerary for a more realistic pace._`;
-          openaiValidatedContent += openaiFeaNote;
-          res.write(`data: ${JSON.stringify({ type: 'chunk', content: openaiFeaNote })}\n\n`);
-        }
-
-        if (openaiConfidence.level !== 'high') {
-          const confNote = `\n\n${openaiConfidence.level === 'low' ? '⚠️' : 'ℹ️'} **Plan confidence: ${openaiConfidence.level}** — ${openaiConfidence.level === 'low' ? 'This plan needed significant changes. Consider adjusting your preferences or ask me to regenerate.' : 'Minor adjustments were made to match your constraints.'}`;
-          openaiValidatedContent += confNote;
-          res.write(`data: ${JSON.stringify({ type: 'chunk', content: confNote })}\n\n`);
-        }
-
-        // Score the itinerary
-        let openaiPlanScore = null;
-        if (openaiItineraryData) openaiPlanScore = scoreItinerary(openaiItineraryData, constraints);
-
-        const openaiStreamMeta = await finalizeParkImagesAndMetadata({
-          validatedContent: openaiValidatedContent,
-          resolvedMetadata,
-          parkNamesFromUser: parkNames,
-          parkImages,
-          alreadyShownImages,
-          logPrefix: '[AI Stream OpenAI]',
-        });
-
-        res.write(`data: ${JSON.stringify({ type: 'done', content: openaiValidatedContent, provider: 'openai', model: model || 'gpt-5.4-mini', hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts), hasWebSearch: !!webSearchFacts, parkName: openaiStreamMeta.parkName, parkNames: openaiStreamMeta.parkNames, hasItinerary: !!openaiItineraryData, itineraryData: openaiItineraryData || null, confidence: openaiConfidence, planScore: openaiPlanScore, intent: intent?.primaryIntent || null, parkImages: openaiStreamMeta.parkImages })}\n\n`);
-
-        if (openaiItineraryData) {
-          const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
-          if (tripId) {
-            try {
-              const TripPlan = require('../models/TripPlan');
-              await TripPlan.findByIdAndUpdate(tripId, {
-                plan: {
-                  type: 'itinerary',
-                  version: 1,
-                  generatedAt: new Date().toISOString(),
-                  createdFrom: 'ai',
-                  parkName: req.body.metadata?.parkName || null,
-                  parkCode: req.body.metadata?.parkCode || null,
-                  ...openaiItineraryData
-                }
-              });
-              console.log(`[AI Stream] OpenAI corrected itinerary saved to TripPlan ${tripId}`);
-            } catch (saveErr) {
-              console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
-            }
-          }
-        }
-      } else {
-        res.write(`data: ${JSON.stringify({ type: 'error', message: 'Invalid provider. Use "claude" or "openai"' })}\n\n`);
-      }
-
-      res.end();
-    } catch (error) {
-      console.error('[AI Stream] Streaming error:', error.message);
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-      res.end();
-    }
+      })
+      .catch(() => {});
   } catch (error) {
-    // prepareChatContext validation error (headers not yet sent)
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      return res.end();
+    }
     console.error('[AI Stream] Setup error:', error.message);
     if (error.statusCode === 400) {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({ error: 'Failed to start AI stream', details: error.message });
+  }
+});
+
+
+// Anonymous streaming chat — SSE for guests (same 5-message limit as chat-anonymous)
+router.post('/chat-anonymous-stream', async (req, res) => {
+  let anonymousId;
+  const requestStartTime = Date.now();
+  try {
+    console.log('[AI] Anonymous stream request received:', {
+      provider: req.body.provider,
+      messageCount: req.body.messages?.length,
+      hasClientAnonymousId: !!req.body.anonymousId,
+    });
+
+    let {
+      messages = [],
+      provider = 'auto',
+      model,
+      temperature = 0.4,
+      top_p = 0.9,
+      maxTokens = 8000,
+      systemPrompt,
+      metadata = {},
+      anonymousId: clientAnonymousId,
+    } = req.body;
+
+    if (!provider || provider === 'auto') {
+      provider = autoRouteProvider(messages);
+      console.log(`[AI] Anonymous stream auto-routed to provider: ${provider}`);
+    }
+
+    let ipAddress;
+    let userAgent;
+    let browserFingerprint;
+
+    if (clientAnonymousId) {
+      anonymousId = clientAnonymousId;
+      const requestData = generateAnonymousIdFromRequest(req);
+      ipAddress = requestData.ipAddress;
+      userAgent = requestData.userAgent;
+      browserFingerprint = requestData.browserFingerprint;
+    } else {
+      const requestData = generateAnonymousIdFromRequest(req);
+      anonymousId = requestData.anonymousId;
+      ipAddress = requestData.ipAddress;
+      userAgent = requestData.userAgent;
+      browserFingerprint = requestData.browserFingerprint;
+    }
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required' });
+    }
+
+    const sessionData = {
+      ipAddress,
+      userAgent,
+      browserFingerprint,
+      parkName: metadata.parkName || 'General Planning',
+      parkCode: metadata.parkCode,
+      formData: metadata.formData || {},
+    };
+
+    let session = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+
+    const lastUserMessage = messages[messages.length - 1];
+    if (lastUserMessage && lastUserMessage.role === 'user') {
+      session = await session.addMessage({
+        role: 'user',
+        content: lastUserMessage.content,
+        timestamp: new Date(),
+      });
+      session = await AnonymousSession.findOne({ anonymousId });
+    }
+
+    if (!req.isTrustedMcp && !session.canSendMessage()) {
+      const lastUserMessageContent = lastUserMessage?.content || '';
+      const guestChatUrl = buildGuestChatPublicUrl(session.anonymousId);
+      const conversionContent = buildAnonymousConversionMessage({
+        anonymousId: session.anonymousId,
+        lastUserMessageContent,
+      });
+
+      const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
+
+      return res.json({
+        data: {
+          content: conversionContent,
+          provider: 'system',
+          model: 'conversion',
+          isConversionMessage: true,
+          anonymousId: session.anonymousId,
+          messageCount: userMessageCount,
+          canSendMore: false,
+          guestChatUrl,
+        },
+      });
+    }
+
+    const ctx = await prepareChatContext(
+      { messages, provider, model, temperature, top_p, maxTokens, systemPrompt, metadata },
+      '[AI Anon Stream]',
+      { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp, req }
+    );
+
+    let {
+      provider: ctxProvider,
+      model: ctxModel,
+      temperature: ctxTemperature,
+      top_p: ctxTopP,
+      maxTokens: ctxMaxTokens,
+      enhancedSystemPrompt,
+      augmentedMessages,
+      npsFacts,
+      weatherFacts,
+      webSearchFacts,
+      feeFreeFacts,
+      userCity: anonUserCity,
+      candidateParksBlock: anonCandidateParksBlock,
+      resolvedMetadata,
+      parkNames: anonParkNames,
+      noParkDetected: anonNoParkDetected,
+      constraints: anonConstraints,
+      preflightResult: anonPreflightResult,
+      hypothetical: anonHypothetical,
+      conflicts: anonConflicts,
+      intent: anonIntent,
+      parkImages,
+      alreadyShownImages: anonAlreadyShownImages,
+      attachParkImages: anonAttachParkImages,
+      allExtractedParks,
+      lastMsg,
+    } = ctx;
+
+    provider = ctxProvider;
+    if (ctxModel) model = ctxModel;
+    temperature = ctxTemperature;
+    top_p = ctxTopP;
+    maxTokens = ctxMaxTokens;
+
+    if (anonPreflightResult.blockers.length > 0) {
+      const blockerMsg = anonPreflightResult.blockers.map((b) => `- ${b}`).join('\n');
+      return res.json({
+        data: {
+          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
+          provider: 'system',
+          anonymousId: session.anonymousId,
+          messageCount: session.messages.filter((m) => m.role === 'user').length,
+          canSendMore: session.canSendMessage(),
+        },
+      });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const dataSources = [];
+    if (npsFacts) dataSources.push('nps');
+    if (weatherFacts) dataSources.push('weather');
+    if (webSearchFacts) dataSources.push('web');
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'thinking',
+        sources: dataSources,
+        parkName: resolvedMetadata.parkName || null,
+        parkNames: anonParkNames || [],
+      })}\n\n`
+    );
+
+    const streamResult = await streamRawLLMToSse(res, {
+      anthropic,
+      openai,
+      provider,
+      model,
+      temperature,
+      maxTokens,
+      top_p,
+      enhancedSystemPrompt,
+      augmentedMessages,
+    });
+
+    if (!streamResult?.fullContent) {
+      res.end();
+      return;
+    }
+
+    let response = {
+      content: streamResult.fullContent,
+      provider: streamResult.provider,
+      model: streamResult.model,
+      usage: streamResult.usage,
+    };
+
+    const processed = await processAssistantResponse({
+      response,
+      lastMsg,
+      npsFacts,
+      webSearchFacts,
+      noParkDetected: anonNoParkDetected,
+      constraints: anonConstraints,
+      conflicts: anonConflicts,
+      hypothetical: anonHypothetical,
+      provider: response.provider,
+      model: response.model,
+      maxTokens,
+      temperature,
+      top_p,
+      enhancedSystemPrompt,
+      augmentedMessages,
+      req,
+      parksForLinks: allExtractedParks,
+      options: {
+        ...STREAM_POST_PROCESS_OPTIONS,
+        appendAnonymousWebUpsell: true,
+        isTrustedMcp: !!req.isTrustedMcp,
+        logPrefix: '[AI Anon Stream]',
+      },
+    });
+
+    response.content = processed.cleanContent;
+
+    const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
+
+    const anonDisplayMeta = await finalizeParkImagesAndMetadata({
+      validatedContent: response.content,
+      resolvedMetadata,
+      parkNamesFromUser: anonParkNames,
+      parkImages,
+      alreadyShownImages: anonAlreadyShownImages,
+      attachParkImages: anonAttachParkImages,
+      logPrefix: '[AI Anon Stream]',
+    });
+
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'done',
+        content: response.content,
+        provider: response.provider,
+        model: response.model,
+        hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+        hasWebSearch: !!webSearchFacts,
+        parkName: anonDisplayMeta.parkName,
+        parkNames: anonDisplayMeta.parkNames,
+        hasItinerary: !!processed.itineraryData,
+        itineraryData: processed.itineraryData || null,
+        confidence: processed.confidence,
+        planScore: processed.planScore,
+        intent: anonIntent?.primaryIntent || null,
+        parkImages: anonDisplayMeta.parkImages,
+        anonymousId: session.anonymousId,
+        messageCount: userMessageCount,
+        canSendMore: session.canSendMessage(),
+      })}\n\n`
+    );
+    res.end();
+
+    const anonRequestEndTime = Date.now();
+    void session
+      .addMessage({
+        role: 'assistant',
+        content: response.content,
+        provider: response.provider,
+        model: response.model,
+        responseTime: Date.now() - session.lastActivity,
+      })
+      .catch((err) => console.error('[AI Anon Stream] Session save error:', err.message));
+
+    extractParksMentioned(response.content || '')
+      .then((anonParksMentioned) => {
+        logAIRequest({
+          endpoint: 'chat-anonymous-stream',
+          userId: null,
+          provider: response.provider,
+          model: response.model,
+          durationMs: anonRequestEndTime - requestStartTime,
+          promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
+          blocks: {
+            npsFacts: !!npsFacts,
+            weatherFacts: !!weatherFacts,
+            webSearch: !!webSearchFacts,
+            feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
+            candidateParks: anonCandidateParksBlock,
+            constraints: anonConstraints.hasConstraints,
+            preflight: { blockers: anonPreflightResult.blockers.length, warnings: anonPreflightResult.warnings.length },
+            conflicts: anonConflicts.length,
+            hypothetical: anonHypothetical.isHypothetical,
+            intent: anonIntent?.primaryIntent || null,
+            userContext: false,
+          },
+          park: resolvedMetadata.parkCode ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName } : null,
+          cityDetected: anonUserCity?.name || null,
+          messageCount: augmentedMessages.length,
+          promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
+          tokens: response.usage || null,
+          response: {
+            length: response.content?.length || 0,
+            hasItinerary: !!processed.itineraryData,
+            mentionsFeeFree: /fee.free|free\s+entrance/i.test(response.content || ''),
+            parksMentioned: anonParksMentioned,
+          },
+          error: null,
+        });
+      })
+      .catch(() => {});
+  } catch (error) {
+    logAIRequest({
+      endpoint: 'chat-anonymous-stream',
+      userId: null,
+      provider: req.body.provider || 'unknown',
+      model: req.body.model || null,
+      durationMs: Date.now() - requestStartTime,
+      error: error.message,
+    });
+
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
+      return res.end();
+    }
+
+    console.error('[AI Anon Stream] Error:', error.message);
+    return res.status(500).json({ error: 'Failed to start anonymous AI stream', details: error.message });
   }
 });
 
@@ -2363,45 +2604,25 @@ router.post('/chat-anonymous', async (req, res) => {
 
     // Check if user can send more messages BEFORE processing the AI request
     if (!req.isTrustedMcp && !session.canSendMessage()) {
-      // User has exceeded message limit, return conversion message
       const lastUserMessageContent = lastUserMessage?.content || '';
-
-      const conversionMessage = {
-        role: 'assistant',
-        content: `Hey traveler! 👋
-
-Thanks for your follow-up message about "${lastUserMessageContent}". I'd love to help you plan more amazing adventures, but as an unauthenticated user, you can only send 5 messages.
-
-You have two options to continue:
-
-🚀 **Create an Account (Recommended)**
-• Send unlimited messages
-• Save your trip plans
-• Access your conversation history
-• Get personalized recommendations
-
-⏰ **Wait 48 Hours (Free)**
-• Get 5 fresh messages automatically
-• No account required
-• Completely free
-• Session resets automatically
-
-Ready to continue planning? 🚀`,
-        timestamp: new Date(),
-        isConversionMessage: true
-      };
+      const guestChatUrl = buildGuestChatPublicUrl(session.anonymousId);
+      const conversionContent = buildAnonymousConversionMessage({
+        anonymousId: session.anonymousId,
+        lastUserMessageContent,
+      });
 
       const userMessageCount = session.messages.filter(msg => msg.role === 'user').length;
 
       return res.json({
         data: {
-          content: conversionMessage.content,
+          content: conversionContent,
           provider: 'system',
           model: 'conversion',
           isConversionMessage: true,
           anonymousId: session.anonymousId,
           messageCount: userMessageCount,
-          canSendMore: false
+          canSendMore: false,
+          guestChatUrl,
         }
       });
     }
@@ -2436,6 +2657,8 @@ Ready to continue planning? 🚀`,
       intent: anonIntent,
       parkImages,
       alreadyShownImages: anonAlreadyShownImages,
+      attachParkImages: anonAttachParkImages,
+      allExtractedParks,
       lastMsg,
     } = ctx;
 
@@ -2616,6 +2839,7 @@ Ready to continue planning? 🚀`,
       enhancedSystemPrompt,
       augmentedMessages,
       req,
+      parksForLinks: allExtractedParks,
       options: {
         enableConflictRetry: true,
         enableRegeneration: true,
@@ -2646,6 +2870,7 @@ Ready to continue planning? 🚀`,
       parkNamesFromUser: anonParkNames,
       parkImages,
       alreadyShownImages: anonAlreadyShownImages,
+      attachParkImages: anonAttachParkImages,
       logPrefix: '[AI Anon]',
     });
 
@@ -2798,7 +3023,10 @@ router.get('/session-status/:anonymousId', async (req, res) => {
       isConverted: session.isConverted,
       lastActivity: session.lastActivity,
       parkName: session.parkName,
+      parkCode: session.parkCode || null,
+      formData: session.formData || {},
       messages: chatMessages,
+      guestChatUrl: buildGuestChatPublicUrl(session.anonymousId),
     });
   } catch (error) {
     console.error('Error checking session status:', error);

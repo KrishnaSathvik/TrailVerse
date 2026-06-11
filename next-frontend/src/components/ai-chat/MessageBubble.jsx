@@ -135,10 +135,14 @@ const MessageBubble = ({
   initialFeedback = null, // Initial feedback state from database ('up' or 'down')
   hideActions = false,
   compact = false,
+  dense = false,
   linkifyParks = true,
+  isStreaming = false,
   hasLiveData = false,
+  hasWebSearch = false,
   liveDataParks = [],
-  parkImages = []
+  parkImages = [],
+  afterContent = null,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -156,9 +160,10 @@ const MessageBubble = ({
   }, [initialFeedback]);
 
   const markdownBody = (message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd();
+  const shouldLinkifyParks = linkifyParks && !isStreaming && !isUser;
   const markdownContent = isUser
     ? message
-    : (linkifyParks ? linkifyParkNames(markdownBody) : markdownBody);
+    : (shouldLinkifyParks ? linkifyParkNames(markdownBody) : markdownBody);
 
   const handleCopy = () => {
     if (!message) return;
@@ -197,7 +202,9 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`flex items-start gap-3 sm:gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'} group ${compact ? 'mb-2 sm:mb-3' : 'mb-5 sm:mb-7'}`}
+      className={`flex items-start ${dense ? 'gap-2' : 'gap-3 sm:gap-4'} ${isUser ? 'flex-row-reverse' : 'flex-row'} group ${
+        dense ? 'mb-1.5 sm:mb-2' : compact ? 'mb-2 sm:mb-3' : 'mb-5 sm:mb-7'
+      }`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       role="group"
@@ -206,7 +213,9 @@ const MessageBubble = ({
       {/* Avatar */}
       {isUser ? (
         <div
-          className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-gray-200"
+          className={`flex-shrink-0 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-gray-200 ${
+            dense ? 'h-8 w-8' : 'h-9 w-9 sm:h-10 sm:w-10'
+          }`}
           style={{
             backgroundColor: 'var(--surface)',
             marginTop: '2px',
@@ -224,7 +233,7 @@ const MessageBubble = ({
           )}
         </div>
       ) : (
-        <TrailieAvatar />
+        <TrailieAvatar className={dense ? '!h-8 !w-8' : undefined} />
       )}
 
       {/* Message Content */}
@@ -232,7 +241,11 @@ const MessageBubble = ({
         <div className="flex flex-col gap-1.5">
           <div
             className={`inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] backdrop-blur-sm chat-message-bubble ${
-              compact ? 'px-3.5 py-2.5 sm:px-4 sm:py-3' : 'px-4 py-3.5 sm:px-5 sm:py-4'
+              dense
+                ? 'px-3 py-2 sm:px-3.5 sm:py-2.5'
+                : compact
+                  ? 'px-3.5 py-2.5 sm:px-4 sm:py-3'
+                  : 'px-4 py-3.5 sm:px-5 sm:py-4'
             } ${
               isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
@@ -251,13 +264,16 @@ const MessageBubble = ({
           >
 
           {/* Live data indicator — inside bubble */}
-          {!isUser && hasLiveData && liveDataParks.length > 0 && (
+          {!isUser && (hasLiveData || hasWebSearch) && (
             <div
               className="flex items-center gap-1.5 mb-3 pb-2.5 border-b text-[11px] font-medium"
               style={{ borderColor: 'var(--border)', color: 'var(--accent-green)' }}
             >
               <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
-              <span>Live data · {liveDataParks.join(', ')}</span>
+              <span>
+                {hasWebSearch ? 'Live web search' : 'Live NPS data'}
+                {liveDataParks.length > 0 ? ` · ${liveDataParks.join(', ')}` : ''}
+              </span>
             </div>
           )}
 
@@ -494,7 +510,16 @@ const MessageBubble = ({
             >
               {markdownContent}
             </ReactMarkdown>
+            {!isUser && isStreaming && markdownContent && (
+              <span
+                className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
+                style={{ backgroundColor: 'var(--accent-green)' }}
+                aria-hidden="true"
+              />
+            )}
           </div>
+
+          {!isUser && afterContent}
 
           {/* Actions (assistant only) */}
           {!isUser && !hideActions && (

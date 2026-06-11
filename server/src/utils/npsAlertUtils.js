@@ -31,6 +31,17 @@ function isRoadRelatedAlert(alert, userMessage = '') {
   return false;
 }
 
+/** NPS alert titles that are section headers, not a specific closure the user must act on. */
+function isGenericClosureAlert(alertText = '') {
+  const lower = String(alertText).toLowerCase().trim();
+  if (!lower) return true;
+  if (/^critical backcountry updates/i.test(lower)) return true;
+  if (/backcountry updates?\s*\/?\s*closures?$/i.test(lower)) return true;
+  if (/updates?\s*\/\s*closures?$/i.test(lower) && lower.length < 72) return true;
+  if (/^check (the )?nps (website|site)/i.test(lower)) return true;
+  return false;
+}
+
 function formatAlertLine(alert) {
   const title = (alert.title || 'Alert').trim();
   const desc = (alert.description || '').trim().replace(/\s+/g, ' ');
@@ -43,5 +54,6 @@ module.exports = {
   isCautionCategory,
   isInformationCategory,
   isRoadRelatedAlert,
+  isGenericClosureAlert,
   formatAlertLine,
 };

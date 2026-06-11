@@ -14,6 +14,8 @@
     "test:web-search": "jest src/services/__tests__/webSearchClassifier.test.js src/services/__tests__/factsWebSearchPolicy.test.js src/services/__tests__/factsWebSearch.live.test.js",
     "test:web-search:live": "node scripts/test-web-search-live.js",
     "test:web-search:full": "node scripts/test-web-search-live.js --full",
+    "verify:trailie-live": "node scripts/verify-trailie-live-responses.js --save-report",
+    "verify:plan-ai-flows": "node scripts/test-plan-ai-flows.js",
     "test:email": "node test-email-system.js",
     "test:email-simple": "node test-simple-email.js",
     "test:email-routes": "node test-email-routes.js",

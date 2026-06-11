@@ -2,6 +2,19 @@
  * Map search queries → trait intent weights for hybrid ranking.
  */
 const { tokenizeParkSearchQuery, TOKEN_ALIASES } = require('./searchTokens');
+const {
+  COOL_SUMMER_PARK_CODES,
+  HOT_SUMMER_PARK_CODES,
+  COOL_LAKE_BEACH_SUMMER_CODES,
+  MOUNTAIN_SCENIC_DRIVE_CODES,
+  CLASSIC_COUPLES_COAST_CODES,
+  REMOTE_LOGISTICS_PARK_CODES,
+  queryWantsLakesOrBeaches,
+  queryWantsCouplesOcean,
+  queryWantsNationalParksOnly,
+  queryWantsCoolSummerWeather,
+} = require('./discoverySearchPolicy');
+const { parkHasOceanCoastAccess } = require('./coastGeography');
 
 /** Query token (or alias) → trait weights */
 const QUERY_TO_TRAITS = {
@@ -104,6 +117,13 @@ const QUERY_TO_TRAITS = {
   accessible: { accessibility: 1, familyFriendly: 0.55, scenic: 0.55, relaxing: 0.45 },
   accessibility: { accessibility: 1, familyFriendly: 0.5, scenic: 0.5 },
   wheelchair: { accessibility: 1, familyFriendly: 0.5, scenic: 0.45 },
+  cool: { coolSummer: 1, mountains: 0.75, lake: 0.45, winter: 0.35 },
+  cooler: { coolSummer: 1, mountains: 0.8, lake: 0.5 },
+  chilly: { coolSummer: 0.95, mountains: 0.7, winter: 0.4 },
+  mild: { coolSummer: 0.85, mountains: 0.55, relaxing: 0.4 },
+  july: { summerVisit: 0.9, mountains: 0.45, lake: 0.4, water: 0.35 },
+  summer: { summerVisit: 0.85, lake: 0.35, mountains: 0.35 },
+  beaches: { ocean: 0.85, water: 0.75, lake: 0.35, relaxing: 0.4 },
   vibes: {},
 };
 
@@ -236,6 +256,31 @@ const PHRASE_INTENT_WEIGHTS = [
       scenic: 0.4,
     },
   },
+  {
+    phrases: [
+      'cool weather',
+      'cooler weather',
+      'beat the heat',
+      'escape the heat',
+      'not too hot',
+      'avoid the heat',
+    ],
+    weights: {
+      coolSummer: 1,
+      mountains: 0.8,
+      lake: 0.5,
+      winter: 0.3,
+    },
+  },
+  {
+    phrases: ['in july', 'july trip', 'july visit', 'visit in july', 'for july'],
+    weights: {
+      summerVisit: 1,
+      mountains: 0.55,
+      lake: 0.45,
+      water: 0.4,
+    },
+  },
 ];
 
 /**
@@ -296,9 +341,26 @@ function scoreTraitIntent(park, intent) {
   const entries = Object.entries(intent);
   if (entries.length === 0) return 0;
 
+  const wantsOcean = (intent.ocean || 0) >= 0.5;
+  const hasOceanAccess = parkHasOceanCoastAccess(park);
+
+  const oceanPrimary = (intent.ocean || 0) >= 0.85;
+
   return entries.reduce((sum, [trait, weight]) => {
+    if (trait === 'ocean' && wantsOcean && !hasOceanAccess) {
+      return sum;
+    }
+    let effectiveWeight = weight;
+    if (
+      oceanPrimary &&
+      trait !== 'ocean' &&
+      trait !== 'romantic' &&
+      ['scenic', 'relaxing', 'water', 'lake', 'nature', 'hiking'].includes(trait)
+    ) {
+      effectiveWeight *= 0.55;
+    }
     const parkTrait = traits[trait] || 0;
-    return sum + parkTrait * weight;
+    return sum + parkTrait * effectiveWeight;
   }, 0);
 }
 
@@ -327,9 +389,10 @@ function isWeakTripDestination(park) {
   return false;
 }
 
-function applyIntentAdjustments(score, park, intent) {
+function applyIntentAdjustments(score, park, intent, query = '') {
   const traits = park.traits || {};
   let adjusted = score;
+  const code = (park.id || '').toLowerCase();
 
   const wantsQuiet =
     (intent.relaxing || 0) >= 0.85 &&
@@ -369,6 +432,80 @@ function applyIntentAdjustments(score, park, intent) {
     adjusted *= 0.82;
   }
 
+  const wantsCoolSummer =
+    (intent.coolSummer || 0) >= 0.7 ||
+    ((intent.summerVisit || 0) >= 0.7 && (intent.coolSummer || 0) >= 0.5);
+
+  const wantsOcean = (intent.ocean || 0) >= 0.7;
+  if (wantsOcean) {
+    const oceanTrait = traits.ocean || 0;
+    if (oceanTrait < 0.15) {
+      adjusted *= 0.3;
+    } else if (oceanTrait >= 0.55) {
+      adjusted *= 1.3;
+    } else if (oceanTrait >= 0.25) {
+      adjusted *= 1.12;
+    } else {
+      adjusted *= 0.75;
+    }
+  }
+
+  if (wantsCoolSummer) {
+    if (HOT_SUMMER_PARK_CODES.has(code)) {
+      adjusted *= 0.42;
+    }
+    if (COOL_SUMMER_PARK_CODES.has(code)) {
+      adjusted *= 1.18;
+    }
+    const lat = park.location?.lat;
+    if (lat != null && lat >= 44) {
+      adjusted *= 1.08;
+    }
+    if (lat != null && lat < 36 && (traits.mountains || 0) < 0.55) {
+      adjusted *= 0.78;
+    }
+    if ((traits.mountains || 0) >= 0.65) {
+      adjusted *= 1.06;
+    }
+  }
+
+  const lakesBeachesTrip =
+    queryWantsLakesOrBeaches(query) &&
+    queryWantsCoolSummerWeather(query) &&
+    queryWantsNationalParksOnly(query);
+
+  if (lakesBeachesTrip) {
+    if (code === 'crla') {
+      adjusted *= 1.55;
+    } else if (code === 'olym') {
+      adjusted *= 1.38;
+    } else if (code === 'acad') {
+      adjusted *= 1.18;
+    } else if (COOL_LAKE_BEACH_SUMMER_CODES.has(code)) {
+      adjusted *= 1.1;
+    }
+    if (code === 'grsa') {
+      adjusted *= 0.72;
+    }
+    if (
+      MOUNTAIN_SCENIC_DRIVE_CODES.has(code) &&
+      (traits.ocean || 0) < 0.4
+    ) {
+      adjusted *= code === 'glac' ? 0.86 : 0.9;
+    }
+  }
+
+  if (queryWantsCouplesOcean(query)) {
+    if (code === 'acad' || code === 'olym') {
+      adjusted *= 1.42;
+    } else if (CLASSIC_COUPLES_COAST_CODES.has(code)) {
+      adjusted *= 1.12;
+    }
+    if (REMOTE_LOGISTICS_PARK_CODES.has(code)) {
+      adjusted *= code === 'chis' || code === 'wrst' || code === 'glba' ? 0.55 : 0.78;
+    }
+  }
+
   return adjusted;
 }
 
@@ -381,6 +518,11 @@ const PHRASE_INTENT_LABELS = {
   beginner: 'beginners',
   quiet: 'quiet',
   sunset: 'sunset',
+  'cool weather': 'cool summer weather',
+  'cooler weather': 'cool summer weather',
+  'beat the heat': 'cool summer weather',
+  'in july': 'July visit',
+  'july trip': 'July visit',
 };
 
 /**

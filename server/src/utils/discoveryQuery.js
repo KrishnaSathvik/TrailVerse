@@ -75,8 +75,8 @@ function isOpenEndedDestinationQuery(message, options = {}) {
   if (text.length < 8) return false;
   if (isSpecificItineraryRequest(text)) return false;
 
-  // Compare / shortlist — catalog ranking helps even without generic travel keywords
-  if (namedParkCount >= 2) return true;
+  // Head-to-head compare (2+ parks named) uses live NPS per park — not catalog discovery
+  if (namedParkCount >= 2) return false;
 
   if (!isTravelRelated(text)) return false;
   if (namedParkCount === 0) return true;
@@ -95,6 +95,20 @@ function shouldInjectParkDiscovery(message, options = {}) {
   return isOpenEndedDestinationQuery(message, options);
 }
 
+/**
+ * User named 2+ parks and wants a pick between them (not open-ended "where should I go?").
+ * @param {string} message
+ * @param {number} [namedParkCount]
+ * @returns {boolean}
+ */
+function isHeadToHeadCompareQuery(message, namedParkCount = 0) {
+  const text = normalizeMessage(message);
+  if (namedParkCount < 2 || text.length < 8) return false;
+  return /\b(versus|vs\.?|compare|comparison|between|which\s+(one|is\s+better|park)|better\s+for|or\s+\w+.*\bor\b)\b/i.test(
+    text
+  );
+}
+
 /** @deprecated Use isOpenEndedDestinationQuery — kept for older tests/callers */
 function isBroadDiscoveryQuery(message) {
   return isOpenEndedDestinationQuery(message, { namedParkCount: 0 });
@@ -105,12 +119,111 @@ function isOpenEndedTravelQuestion(message, options = {}) {
   return isOpenEndedDestinationQuery(message, options);
 }
 
+function getConversationTurns(messages) {
+  if (!Array.isArray(messages)) return [];
+  return messages.filter((m) => m.role === 'user' || m.role === 'assistant');
+}
+
+function findPriorDiscoveryUserQuery(messages) {
+  const turns = getConversationTurns(messages);
+  for (let i = turns.length - 2; i >= 0; i -= 1) {
+    if (turns[i].role !== 'user') continue;
+    const text = turns[i].content || '';
+    if (isOpenEndedDestinationQuery(text, { namedParkCount: 0 })) {
+      return text;
+    }
+  }
+  return null;
+}
+
+function getPriorAssistantMessage(messages) {
+  const turns = getConversationTurns(messages);
+  const lastUserIdx = turns.findLastIndex((m) => m.role === 'user');
+  if (lastUserIdx <= 0) return '';
+  for (let i = lastUserIdx - 1; i >= 0; i -= 1) {
+    if (turns[i].role === 'assistant') return turns[i].content || '';
+    if (turns[i].role === 'user') break;
+  }
+  return '';
+}
+
+function looksLikeNewDiscoveryQuestion(message) {
+  const text = normalizeMessage(message);
+  if (!text) return false;
+  return (
+    /\b(best|which|top|recommend|suggest|ideas? for)\b/i.test(text) &&
+    /\b(national\s+)?parks?\b/i.test(text)
+  );
+}
+
+function userMessageHasRefinementConstraints(message) {
+  const text = normalizeMessage(message);
+  if (text.length < 4) return false;
+  const lower = text.toLowerCase();
+  if (/\b\d+\s*(-)?\s*days?\b/.test(lower)) return true;
+  if (/\b(weekend|long weekend|a week|one week|10 days|two weeks)\b/.test(lower)) return true;
+  if (
+    /\b(fly|flying|flight|flights|road\s*trip|drive\s+only|driving\s+only|okay\s+with\s+flying|open\s+to\s+flying|prefer\s+not\s+to\s+fly|no\s+flights?)\b/.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+  if (/\b(solo|just me|couple|two of us|family|with kids|group of)\b/.test(lower)) return true;
+  if (/\b(from|near|based in|starting (from|in)|live in|i'?m in|we'?re in)\s+[a-z]/i.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * User answered logistics after an open-ended discovery answer (location, days, fly/drive).
+ * @param {Array<{ role: string, content?: string }>} messages
+ * @returns {boolean}
+ */
+function isDiscoveryRefinementReply(messages) {
+  if (!Array.isArray(messages) || messages.length < 3) return false;
+
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
+  if (!userMessageHasRefinementConstraints(lastUser)) return false;
+  if (looksLikeNewDiscoveryQuestion(lastUser)) return false;
+  if (isSpecificItineraryRequest(lastUser)) return false;
+
+  const priorDiscoveryQuery = findPriorDiscoveryUserQuery(messages);
+  if (!priorDiscoveryQuery) return false;
+
+  const priorAssistant = getPriorAssistantMessage(messages);
+  if (!priorAssistant || priorAssistant.length < 100) return false;
+
+  return true;
+}
+
+/**
+ * @param {Array<{ role: string, content?: string }>} messages
+ * @returns {string|null}
+ */
+function buildDiscoverySearchQuery(messages) {
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
+  if (isDiscoveryRefinementReply(messages)) {
+    const prior = findPriorDiscoveryUserQuery(messages);
+    if (prior) {
+      return `${prior} ${lastUser}`.trim().slice(0, 200);
+    }
+  }
+  return lastUser.trim().slice(0, 200);
+}
+
 module.exports = {
   isTravelRelated,
   isOffTopic,
   isSpecificItineraryRequest,
   isOpenEndedDestinationQuery,
   shouldInjectParkDiscovery,
+  isHeadToHeadCompareQuery,
   isBroadDiscoveryQuery,
   isOpenEndedTravelQuestion,
+  isDiscoveryRefinementReply,
+  findPriorDiscoveryUserQuery,
+  buildDiscoverySearchQuery,
+  userMessageHasRefinementConstraints,
 };

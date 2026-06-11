@@ -3,6 +3,12 @@
  */
 const path = require('path');
 const pinsByIntent = require(path.join(__dirname, '../../data/search-intent-pins.json'));
+const {
+  queryWantsCouplesOcean,
+  queryWantsLakesOrBeaches,
+  queryWantsCoolSummerWeather,
+  queryWantsNationalParksOnly,
+} = require('../catalog/discoverySearchPolicy');
 
 function detectSearchIntents(q) {
   const lower = String(q || '').toLowerCase();
@@ -23,6 +29,16 @@ function resolveSearchPinsFromQuery(q) {
 
   const flags = detectSearchIntents(q);
   const ordered = [];
+
+  if (queryWantsCouplesOcean(q)) {
+    ordered.push('acad', 'olym', 'bisc', 'viis');
+  } else if (
+    queryWantsLakesOrBeaches(q) &&
+    queryWantsCoolSummerWeather(q) &&
+    queryWantsNationalParksOnly(q)
+  ) {
+    ordered.push('olym', 'crla', 'acad', 'glac');
+  }
 
   if (flags.quiet && flags.couples) {
     ordered.push(...(pinsByIntent.quiet || []).slice(0, 4));

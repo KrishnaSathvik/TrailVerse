@@ -56,6 +56,15 @@ export const notifySessionExpiredIfNeeded = (error) => {
 export const getStoredToken = () =>
   localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 
+/** Bearer token for fetch() — localStorage first, then auth cookie fallback. */
+export const getAuthBearerToken = () => {
+  const stored = getStoredToken();
+  if (stored) return stored;
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)trailverse_auth_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
 export const getStoredUser = () =>
   localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
 

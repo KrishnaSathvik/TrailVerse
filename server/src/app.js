@@ -144,6 +144,9 @@ app.use(compression({
     if (req.headers['x-no-compression']) {
       return false;
     }
+    if (/\/ai\/chat(-anonymous)?-stream$/.test(req.path || '')) {
+      return false;
+    }
     return compression.filter(req, res);
   },
   level: 6, // Compression level (0-9)

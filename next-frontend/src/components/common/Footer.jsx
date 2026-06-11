@@ -122,7 +122,7 @@ const Footer = () => {
               <li><Link href="/blog" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Blog</Link></li>
               <li><Link href="/guides" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Planning Guides</Link></li>
               <li><Link href="/about" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link></li>
-              <li><Link href="/magazine" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Magazine</Link></li>
+              <li><Link href="/trailie-demo" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Trailie Demo</Link></li>
               <li><Link href="/chatgpt" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>ChatGPT App</Link></li>
               <li><Link href="/mcp" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>MCP for Claude</Link></li>
               <li><Link href="/privacy" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Privacy Policy</Link></li>
@@ -130,12 +130,13 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Reports */}
+          {/* Publications */}
           <div className="min-w-0">
-            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Reports</h3>
+            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Publications</h3>
             <ul className="space-y-2 text-base sm:text-sm">
               <li><a href={reportHref('/reports/national-parks-2025.html', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>2025 Park Report</a></li>
               <li><a href={reportHref('/reports/when-to-go', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Crowd Calendar</a></li>
+              <li><Link href="/magazine" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Magazine</Link></li>
             </ul>
           </div>
 

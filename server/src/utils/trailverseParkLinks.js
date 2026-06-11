@@ -1,0 +1,94 @@
+/**
+ * TrailVerse park page URLs for AI prompts and response footers.
+ * Prefer these over raw nps.gov links when TrailVerse already surfaces live NPS data.
+ */
+
+function getTrailVerseWebBase() {
+  const raw =
+    process.env.WEBSITE_URL ||
+    process.env.CLIENT_URL ||
+    'https://www.nationalparksexplorerusa.com';
+  return raw.replace(/\/$/, '');
+}
+
+function slugFromFullName(fullName) {
+  if (!fullName) return '';
+  return fullName
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
+
+/**
+ * @param {{ parkCode?: string, parkName?: string }} park
+ * @param {{ tab?: string }} [options]
+ */
+function buildParkPageUrl(park, options = {}) {
+  const base = getTrailVerseWebBase();
+  const slug = slugFromFullName(park.parkName) || (park.parkCode || '').toLowerCase();
+  if (!slug) return `${base}/explore`;
+  const tab = options.tab ? `?tab=${encodeURIComponent(options.tab)}` : '';
+  return `${base}/parks/${slug}${tab}`;
+}
+
+/**
+ * Inject into the live-data prompt so the model links TrailVerse, not nps.gov.
+ * @param {Array<{ parkCode?: string, parkName?: string }>} parks
+ */
+function formatTrailverseLinksBlock(parks = []) {
+  const unique = [];
+  const seen = new Set();
+  for (const park of parks) {
+    if (!park?.parkName && !park?.parkCode) continue;
+    const key = (park.parkCode || park.parkName || '').toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(park);
+  }
+  if (unique.length === 0) return '';
+
+  const lines = [
+    '',
+    '--- TRAILVERSE LINKS (use these — not nps.gov) ---',
+    'TrailVerse already shows live NPS alerts, weather, permits, and park details. When users need more detail or you link a park, use TrailVerse URLs below.',
+    'Brand the source as TrailVerse live data (e.g. "TrailVerse shows…", "live alerts on TrailVerse…") — not "check nps.gov" or conditions.htm.',
+    'Recreation.gov / booking URLs from the live block are fine for reservations. Do not replace those with TrailVerse.',
+  ];
+
+  for (const park of unique) {
+    const label = park.parkName || park.parkCode;
+    lines.push(`[${label}](${buildParkPageUrl(park)})`);
+    lines.push(`  Alerts & closures: ${buildParkPageUrl(park, { tab: 'alerts' })}`);
+    lines.push(`  Permits: ${buildParkPageUrl(park, { tab: 'permits' })}`);
+    lines.push(`  Plan with Trailie: ${getTrailVerseWebBase()}/plan-ai?parkCode=${(park.parkCode || '').toLowerCase()}`);
+  }
+
+  lines.push('--- END TRAILVERSE LINKS ---', '');
+  return lines.join('\n');
+}
+
+/**
+ * Footer CTA when alert validation adds a safety note.
+ * @param {Array<{ parkCode?: string, parkName?: string }>} parks
+ */
+function formatTrailverseVerifyFooter(parks = []) {
+  const base = getTrailVerseWebBase();
+  const primary = parks.find((p) => p?.parkName || p?.parkCode);
+  if (!primary) {
+    return `\n\n_See live park data on [TrailVerse](${base}/explore) before your trip._`;
+  }
+  const label = primary.parkName || primary.parkCode;
+  const url = buildParkPageUrl(primary, { tab: 'alerts' });
+  return `\n\n_See live alerts and permits for [${label} on TrailVerse](${url})._`;
+}
+
+module.exports = {
+  getTrailVerseWebBase,
+  slugFromFullName,
+  buildParkPageUrl,
+  formatTrailverseLinksBlock,
+  formatTrailverseVerifyFooter,
+};

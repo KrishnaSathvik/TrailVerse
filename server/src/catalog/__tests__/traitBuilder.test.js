@@ -178,6 +178,18 @@ describe('traitBuilder', () => {
     expect(traits.water).toBeGreaterThan(0);
   });
 
+  test('indiana dunes on Lake Michigan does not score ocean from coast/beach language', () => {
+    const traits = buildParkTraits({
+      description:
+        "Lake Michigan's might has influenced Indiana Dunes. Wind and waves shaped the land along 15 miles of Indiana coast with beaches and dunes.",
+      activities: ['Hiking', 'Swimming', 'Beachcombing'],
+      category: 'national_park',
+    });
+    expect(traits.ocean || 0).toBe(0);
+    expect(traits.lake).toBeGreaterThan(0);
+    expect(traits.water).toBeGreaterThan(0);
+  });
+
   test('great lakes national lakeshore does not score ocean from coastal language', () => {
     const traits = buildParkTraits({
       description:

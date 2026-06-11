@@ -1,0 +1,222 @@
+{
+  "version": 7,
+  "source": "http://127.0.0.1:5001/api/ai/chat + /ai/chat-anonymous",
+  "captureMode": "mixed-live",
+  "generatedAt": "2026-06-11T19:07:27.991Z",
+  "scenarios": [
+    {
+      "id": "discover-july-follow-up",
+      "label": "Discover",
+      "chatTitle": "Cool July parks",
+      "multiTurn": true,
+      "question": "What are the best national parks to visit in July with cool weather, lakes or beaches?",
+      "answer": "For cool summer temps with actual water access, **Olympic National Park** is your best pick. It's the rare park that gives you everything at once — rugged Pacific coastline (Ruby Beach and Rialto Beach are stunning), alpine lakes, and old-growth rainforest, all in one place. July highs hover around 65°F on the coast, and the crowds, while real, are manageable compared to the Utah parks. The tradeoff: it's a big park and you'll need a car to connect the ecosystems — plan on driving between the coast, Hoh Rainforest, and Hurricane Ridge.\n\nQuick heads up — July 4th weekend (July 3–5) is fee-free at all NPS sites, so if your trip lands then, you're getting in free.\n\nA few strong alternates worth knowing:\n\n- **Acadia National Park** (ME) — Jordan Pond, Sand Beach (yes, actual swimming beach), and the carriage roads make this the most \"complete\" East Coast option. Peak busy in July but mornings before 8am are golden.\n- **Crater Lake National Park** (OR) — The bluest water you've ever seen. No swimming in the lake itself, but the scenery is unreal and July is one of the few months the rim road is fully open. Very chill vibe.\n- **Glacier National Park** (MT) — Stunning alpine lakes (Lake McDonald, St. Mary) with actual swimming. Caveat: Going-to-the-Sun Road only fully opens mid-July, lodging books out months ahead, and it's extremely crowded in peak summer.\n\nSkip Great Sand Dunes for this trip — the creek that feeds Medano Lake dries up by July, so the \"beach\" experience largely disappears.\n\n**To personalize this:**\n- Where are you starting from? (city or region)\n- How many days do you have?\n- Road trip only, or okay flying?\n\nWith those details I can reorder these picks based on what's actually drivable vs. worth flying into.",
+      "turns": [
+        {
+          "question": "What are the best national parks to visit in July with cool weather, lakes or beaches?",
+          "answer": "For cool summer temps with actual water access, **Olympic National Park** is your best pick. It's the rare park that gives you everything at once — rugged Pacific coastline (Ruby Beach and Rialto Beach are stunning), alpine lakes, and old-growth rainforest, all in one place. July highs hover around 65°F on the coast, and the crowds, while real, are manageable compared to the Utah parks. The tradeoff: it's a big park and you'll need a car to connect the ecosystems — plan on driving between the coast, Hoh Rainforest, and Hurricane Ridge.\n\nQuick heads up — July 4th weekend (July 3–5) is fee-free at all NPS sites, so if your trip lands then, you're getting in free.\n\nA few strong alternates worth knowing:\n\n- **Acadia National Park** (ME) — Jordan Pond, Sand Beach (yes, actual swimming beach), and the carriage roads make this the most \"complete\" East Coast option. Peak busy in July but mornings before 8am are golden.\n- **Crater Lake National Park** (OR) — The bluest water you've ever seen. No swimming in the lake itself, but the scenery is unreal and July is one of the few months the rim road is fully open. Very chill vibe.\n- **Glacier National Park** (MT) — Stunning alpine lakes (Lake McDonald, St. Mary) with actual swimming. Caveat: Going-to-the-Sun Road only fully opens mid-July, lodging books out months ahead, and it's extremely crowded in peak summer.\n\nSkip Great Sand Dunes for this trip — the creek that feeds Medano Lake dries up by July, so the \"beach\" experience largely disappears.\n\n**To personalize this:**\n- Where are you starting from? (city or region)\n- How many days do you have?\n- Road trip only, or okay flying?\n\nWith those details I can reorder these picks based on what's actually drivable vs. worth flying into.",
+          "metadata": {
+            "hasLiveData": false,
+            "hasWebSearch": false,
+            "showsGuestUpsell": false,
+            "captureAs": "authenticated",
+            "parkNames": [
+              "Crater Lake National Park",
+              "Olympic National Park",
+              "Glacier National Park",
+              "Acadia National Park",
+              "Great Sand Dunes"
+            ],
+            "provider": "claude",
+            "model": "claude-sonnet-4-6"
+          }
+        },
+        {
+          "question": "Starting from Boston, 5 days, fine with flying.",
+          "answer": "Go with **Acadia National Park** — it's the obvious call here. 4-hour drive from Boston (no flight needed, saves you half a day), and in July it delivers exactly what you asked for: cool temps (highs around 65-70°F), Jordan Pond, Sand Beach, and some of the best coastal scenery in the country. July is busy but mornings before 8am are genuinely peaceful.\n\n**5 days at Acadia is the sweet spot** — enough time to do the carriage roads, hit the summit of Cadillac Mountain at sunrise, swim at Sand Beach, kayak around Bar Harbor, and still have a lazy afternoon on the rocks at Thunder Hole. You won't feel rushed.\n\nThe one thing to know: Bar Harbor gets *packed* with cruise ship tourists midday. Hit the popular spots early, retreat to town for lunch after noon when the crowds thin, and you're golden.\n\nIf you want to fly instead and go bigger, **Olympic National Park** is still my top alternate — fly into Seattle (SEA), rent a car, and you've got 5 days of coastline, rainforest, and alpine lakes with cooler temps than Acadia. The tradeoff is more driving between ecosystems and a pricier trip overall.\n\nCrater Lake is a harder sell for 5 days from Boston — fly into Portland or Eugene, then it's still 2.5 hours south, and the park itself is spectacular but compact. You'd burn a day each way traveling.\n\n**Acadia wins for your constraints** — closest, coolest, most diverse, and no flight required.",
+          "metadata": {
+            "hasLiveData": false,
+            "hasWebSearch": false,
+            "showsGuestUpsell": false,
+            "captureAs": "authenticated",
+            "parkNames": [
+              "Acadia National Park",
+              "Olympic National Park"
+            ],
+            "provider": "claude",
+            "model": "claude-sonnet-4-6"
+          }
+        }
+      ],
+      "metadata": {
+        "hasLiveData": false,
+        "hasWebSearch": false,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkNames": [
+          "Crater Lake National Park",
+          "Olympic National Park",
+          "Glacier National Park",
+          "Acadia National Park",
+          "Great Sand Dunes"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T19:07:27.984Z",
+      "sourceNote": "live authenticated chat (2-turn refinement)"
+    },
+    {
+      "id": "compare-zion-bryce",
+      "label": "Compare",
+      "chatTitle": "Zion vs Bryce",
+      "question": "Zion vs Bryce for first-time visitors in October — which should we pick?",
+      "answer": "Go with Bryce — October is its absolute sweet spot, and it edges out Zion for first-timers specifically because of the crowd situation.\n\nOctober at Bryce is genuinely magical. The summer rush has cleared out, aspens are turning gold against the red hoodoos, and you'll actually be able to stop and stare without 200 people behind you. Sunrise Point and Sunset Point deliver the iconic amphitheater views with room to breathe. The Navajo Loop + Queen's Garden combo (3 miles round trip, 521ft gain, ~2hrs, Moderate) is the perfect first-timer trail — you descend into the hoodoos, walk among them, and loop back up. Weather this week looks ideal: highs in the low-to-mid 70s Thursday and Friday, with light rain possible Saturday.\n\nZion in October is still busy — it's one of the busiest months of the year there, actually. Parking fills by mid-morning, the shuttle lines get long, and the Virgin River has active toxic cyanobacteria right now (don't swallow the water if you wade). Angels Landing is also closed through June 12, so that's off the table for now. Zion is spectacular, but it rewards visitors who know how to navigate it — not ideal for a first trip in a high-traffic month.\n\n**The tradeoff:** Bryce sits at 8,000+ feet, so October nights get cold (lows around 50°F this week). Layer up and you're fine. Zion's lower elevation makes it warmer and more comfortable for casual walking — but that's not enough to flip the pick.\n\nOne bonus: if you're visiting on **October 27**, that's Theodore Roosevelt's Birthday — a fee-free entrance day at all NPS sites. You won't pay the $35 entrance fee at either park that day.\n\n**Bryce for the first visit. Save Zion for when you can plan around it.**",
+      "metadata": {
+        "hasLiveData": true,
+        "hasWebSearch": false,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkName": "Zion vs Bryce",
+        "parkNames": [
+          "Bryce",
+          "Zion"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T18:59:57.735Z",
+      "sourceNote": "live authenticated chat"
+    },
+    {
+      "id": "couples-ocean",
+      "label": "Couples trip",
+      "chatTitle": "Ocean & shoreline",
+      "question": "Best national parks for a couples getaway with ocean views and easy shoreline walks?",
+      "answer": "**Acadia** is your top pick for a couples ocean getaway — Bar Harbor is charming, the carriage roads are perfect for a leisurely stroll together, and the views from Cadillac Mountain at sunrise are genuinely romantic. The Ocean Path trail (4.4mi round trip, flat, paved) hugs the rocky Atlantic coastline and is one of the most scenic easy walks in the entire park system. No strenuous hiking required to feel like you've earned something special.\n\nIf Acadia feels too far, **Olympic** on the Washington coast is a strong alternative — Ruby Beach and Rialto Beach are dramatic, driftwood-strewn stretches that feel like the edge of the world. The Hoh Rain Forest is a mossy, ethereal detour that makes the trip feel like two parks in one. Flat beach walks, no crowds compared to Acadia.\n\nTwo more worth knowing:\n\n- **Virgin Islands NP** — snorkeling, turquoise water, white sand beaches. Trunk Bay is one of the most beautiful beaches in the US. Fly into St. Thomas, short ferry to St. John. Best for couples who want a beach vacation with a national park stamp on it.\n- **Biscayne NP** — right outside Miami, almost entirely underwater. Best experienced by boat or kayak. Unique, but less of a \"walk the shoreline\" experience and more of a water-activity park.\n\n**To personalize this:**\n- Where are you starting from? (city or region)\n- How many days do you have?\n- Road trip only, or okay flying?\n\nWith those details I can reorder these picks by drive time vs. fly-in and tell you which one actually makes sense for your trip.",
+      "metadata": {
+        "hasLiveData": false,
+        "hasWebSearch": false,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkName": "Ocean & shoreline",
+        "parkNames": [
+          "Cadillac Mountain",
+          "Shenandoah",
+          "Biscayne",
+          "Olympic",
+          "Virgin Islands"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T19:00:09.033Z",
+      "sourceNote": "live authenticated chat"
+    },
+    {
+      "id": "yellowstone-itinerary",
+      "label": "Itinerary",
+      "chatTitle": "Yellowstone · 4 days",
+      "question": "Plan a 4-day Yellowstone itinerary in September for two adults who like wildlife and moderate hikes.",
+      "answer": "Heads up — September 17 is a fee-free entrance day at all NPS sites, so if your Yellowstone dates overlap that, you won’t pay the park entrance fee. For your 4-day window, moderate fitness, and wildlife focus, Yellowstone is a strong fit as long as we keep hikes moderate and build the days around dawn and dusk animal movement.\n\n## Logistics Summary\n- **Trip length:** 4 days, which fits cleanly without overstuffing the schedule.\n- **Driving:** If you’re flying in, the smartest airport is **Bozeman Yellowstone International (BZN)** for the north/central loop, or **Jackson Hole (JAC)** if you want to pair the south end with Grand Teton later. For this Yellowstone-only plan, BZN is the easier base.\n- **Park access:** **Vehicle entrance reservation is not needed**.\n- **Fees:** $35 per private vehicle, unless your dates hit the fee-free day.\n- **Crowds:** September is still busy enough that you’ll want to be at major wildlife pullouts and trailheads **before 7:00 AM**.\n- **Wildlife caution:** Elk with calves are extremely dangerous. Keep your distance, especially at dawn when animals are most active.\n- **Road note:** There are traffic delays at the **Gardner River High Bridge**, so don’t build a tight morning schedule around that corridor.\n- **Closures:** Some trails, backcountry campsites, and fishing areas are temporarily closed. I’d avoid backcountry-dependent plans and stick to frontcountry hikes and drives.\n\n## Where to Stay\nSince you prefer a lodge, the best fit is to stay inside the park if you can get it:\n- **Grant Village** or **Canyon** if you want a central base for moving around the park.\n- **Bridge Bay** if you want easier access to Yellowstone Lake and the east side.\n- **Madison** if you want the west side and easier access to wildlife corridors near the Madison River.\n\nHonestly, for a 4-day wildlife trip, **Canyon or Grant Village** is the smart play. They cut down on daily driving.\n\n## 4-Day Yellowstone Itinerary\n\n### Day 1 — Arrival, Mammoth area, and north-range wildlife\n**Morning**\n- Arrive in the park by late morning or early afternoon.\n- Stop first at **Albright Visitor Center** to check road conditions, current wildlife activity, and any campground/lodge updates.\n- Then head to **Mammoth Hot Springs** for a low-effort first walk and to get oriented.\n\n**Afternoon**\n- Drive the **Mammoth to Lamar Valley** corridor slowly with binoculars out.\n- Spend time at pullouts rather than trying to “cover” the whole valley fast. This is where patience pays off.\n- Keep your eyes on open meadows and river edges for elk, bison, pronghorn, and possibly bears at distance.\n\n**Evening**\n- Stay out for dusk in **Lamar Valley**. That’s your best wildlife window of the day.\n- Return to your lodge after dark only if you’re comfortable with wildlife-aware driving.\n\n**Hike**\n- **Mammoth Terraces loop / boardwalk walk** — easy, short, and good for a first day. No need to push mileage on arrival day.\n\n**Dinner**\n- Eat at your lodge or nearby park dining if available. Don’t plan a long off-park dinner run on day one.\n\n### Day 2 — Lamar Valley sunrise, Tower area, and a moderate hike\n**Morning**\n- Be in **Lamar Valley before sunrise**.\n- Spend 2–3 hours scanning the valley floor and river bends. This is the best shot for wolves, bears, bison, and elk.\n- Bring binoculars and a spotting scope if you have one.\n\n**Late morning**\n- Drive toward **Tower Junction** and stop for a short break.\n- If conditions are calm, do a moderate hike in the area.\n\n**Recommended hike**\n- **Trout Lake Trail** — about **1.2 miles round trip**, roughly **100 ft gain**, **~1 hour**, **Easy to Moderate** depending on footing. It’s a good wildlife-adjacent walk without overcommitting your legs.\n- If you want a slightly longer option and conditions are good, keep it to another **moderate** trail in the Tower area rather than anything strenuous.\n\n**Afternoon**\n- Rest during the warmest part of the day.\n- Use this block for a scenic drive, lunch, and a slow wildlife sweep rather than another hike.\n\n**Evening**\n- Return to a Lamar or Hayden-area pullout for dusk viewing.\n- This is the day to be disciplined: don’t chase every sighting. Pick one corridor and sit still.\n\n**Dinner**\n- Lodge dinner or picnic-style meal back at the room if you’ve been out late.\n\n### Day 3 — Hayden Valley, Yellowstone Lake, and geothermal contrast\n**Morning**\n- Head to **Hayden Valley** at first light.\n- This is one of the best places in the park for bison, elk, coyotes, and sometimes bears.\n- Stay in the car or at pullouts unless you’re on a designated trail.\n\n**Late morning**\n- Move south toward **Yellowstone Lake** and the West Thumb area.\n- This gives you a change of scenery without forcing a hard hike.\n\n**Recommended hike**\n- **West Thumb Geyser Basin boardwalk** — short, flat, and ideal for a moderate-energy day.\n- If you want a real trail instead of just a boardwalk, keep it to a **short, moderate lakeshore or basin-area walk** and avoid anything that turns into a long backcountry day.\n\n**Afternoon**\n- Take a break at the lodge or do a slow scenic drive.\n- This is a good day to reset gear, charge batteries, and rest your legs.\n\n**Evening**\n- Go back out for dusk in **Hayden Valley** or along the lake shore.\n- Wildlife tends to move again as light softens.\n\n**Dinner**\n- Stay near your lodging base. Yellowstone days get better when you’re not burning time on dinner logistics.\n\n### Day 4 — Geyser basin morning, then departure\n**Morning**\n- Start early at **Old Faithful / Upper Geyser Basin** if you want one classic Yellowstone geothermal stop.\n- Keep this light and efficient. The goal is to see the icon without sacrificing your wildlife trip.\n\n**Optional hike**\n- **Biscuit Basin / boardwalk loop** or another short basin walk — flat, easy, and low effort.\n- Skip any longer or exposed trail options; they don’t match your moderate-fitness cap as well as the wildlife corridors do.\n\n**Midday**\n- Grab lunch and begin your exit.\n- If you’re driving out through the north or west side, leave buffer time for traffic and the Gardner River delay area.\n\n**Afternoon**\n- Depart the park with one last slow drive if time allows.\n- If you’ve got a late flight, use the extra time for a final wildlife scan rather than squeezing in another hike.\n\n## Wildlife Strategy That Actually Works\n- **Best windows:** sunrise and the last 2 hours before dark.\n- **Best places:** Lamar Valley, Hayden Valley, Mammoth area meadows, and river corridors.\n- **What to bring:** binoculars, a spotting scope if you own one, bear spray, layers, water, snacks, and a headlamp for pre-dawn starts.\n- **Safety:** stay far back from elk and bison, especially cows with calves. Don’t stop in the road where you’ll block traffic or create a hazard.\n- **Food storage:** keep all food secured; don’t leave anything scented in the car overnight if you’re staying in a lodge with shared parking.\n\n## Don’t Forget\n- Bear spray\n- Binoculars\n- Warm layers for cold September mornings\n- Rain shell\n- Refillable water bottle\n- Snacks/picnic lunch\n- Headlamp\n- Camera with a zoom lens if you have one\n- Park pass or fee payment method\n- Lodge confirmation and check-in details\n\n## Backup Plan If Weather Turns\nIf it’s windy, cold, or visibility is poor, lean harder into:\n- Mammoth boardwalks\n- West Thumb boardwalk\n- Old Faithful basin walks\n- Visitor center time\n- Slow scenic driving with frequent pullouts\n\nThat keeps the trip productive without forcing risky or exhausting hikes.",
+      "metadata": {
+        "hasLiveData": true,
+        "hasWebSearch": false,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkName": "Yellowstone · 4 days",
+        "parkNames": [
+          "Yellowstone"
+        ],
+        "provider": "openai",
+        "model": "gpt-5.4-mini"
+      },
+      "capturedAt": "2026-06-11T19:00:37.974Z",
+      "sourceNote": "live authenticated chat"
+    },
+    {
+      "id": "narrows-permit",
+      "label": "Permits",
+      "chatTitle": "The Narrows · Zion",
+      "question": "Do I need a permit to hike The Narrows top-down in Zion?",
+      "answer": "Yes — the top-down Narrows route requires a permit through the Zion Left Fork / Subway-style canyoneering lottery system... actually, let me be precise here.\n\nThe top-down Narrows (from Chamberlain's Ranch) requires a **canyoneering/overnight permit** through the [Zion National Park Canyoneering Daily Lottery](https://www.recreation.gov/permits/4251918). It's a different permit than the bottom-up walk from the Temple of Sinawava, which is free and needs nothing.\n\nOne heads-up: toxic cyanobacteria is currently active in the Virgin River — don't swallow the water and avoid submerging your face. Doesn't close the route, just something to know before you're wading chest-deep.\n\nCheck the [Narrows permits tab](http://localhost:3000/parks/zion-national-park?tab=permits) on TrailVerse for current lottery windows and availability.",
+      "metadata": {
+        "hasLiveData": true,
+        "hasWebSearch": false,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkName": "The Narrows · Zion",
+        "parkNames": [
+          "The Narrows"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T19:00:44.282Z",
+      "sourceNote": "live authenticated chat"
+    },
+    {
+      "id": "angels-landing",
+      "label": "Open today?",
+      "chatTitle": "Angels Landing · Zion",
+      "question": "Is Angels Landing open right now in Zion National Park?",
+      "answer": "No — Angels Landing is closed right now. The trail is shut down until June 12, 2026, so you've got just one more day to wait.\n\nGood news: it reopens tomorrow. When you go, you'll need a permit — grab it through the [Angels Landing Summer permit](https://www.recreation.gov/permits/4675324) on Recreation.gov before you show up. These go fast, so don't wait.\n\nWeather's looking great for the weekend — clear skies, highs in the mid-80s, low humidity. Just note there's no timed-entry system at Zion right now, which means no crowd control. Parking lots fill by 9am, so get there before 7am if you want a spot. Also heads up: Stage 2 fire restrictions are in effect, and there's toxic cyanobacteria in the Virgin River — don't swallow the water.",
+      "metadata": {
+        "hasLiveData": true,
+        "hasWebSearch": false,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkName": "Angels Landing · Zion",
+        "parkNames": [
+          "Zion National Park"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T19:00:50.754Z",
+      "sourceNote": "live authenticated chat"
+    },
+    {
+      "id": "auth-jackson-lodging",
+      "label": "Jackson Hole",
+      "chatTitle": "Hotels & dinner · Grand Teton",
+      "question": "Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?",
+      "answer": "For hotels, **Jackson Lake Lodge** is my top pick — it's actually inside the park, so you wake up to Teton views without fighting traffic. The rooms aren't cheap but the location is unbeatable. If you want more amenities and a livelier scene, **Hotel Terra Jackson Hole** in Teton Village is the move — Italian restaurant on-site, rooftop spa, and a polished mountain-chic vibe. **Wyoming Inn** in Jackson town is the practical pick if you want walkability and a solid restaurant without the resort price tag (they run a town shuttle too, which matters since downtown parking is a nightmare).\n\nQuick note: September 17 is a fee-free entrance day for all NPS sites — no $35 entrance fee that day, which is a nice bonus if you're timing a park visit.\n\nFor dinner, **Dornan's Pizza & Pasta** inside the park is the insider move — eat on the deck with direct Teton views, casual atmosphere, surprisingly good wine shop attached. In Jackson town, the **Four Seasons in Teton Village** has a fine dining option if you want a splurge night. For a more local feel, hit the Jackson town square area — better energy than the resort corridor.\n\nSeptember is honestly the sweet spot for Grand Teton — crowds drop noticeably after Labor Day, fall color starts showing up mid-month, and the weather is crisp and clear (expect highs in the low-to-mid 60s this time of year). Book lodging early though — the good in-park options fill up fast even in shoulder season.",
+      "metadata": {
+        "hasLiveData": true,
+        "hasWebSearch": true,
+        "showsGuestUpsell": false,
+        "captureAs": "authenticated",
+        "parkName": "Hotels & dinner · Grand Teton",
+        "parkNames": [
+          "Grand Teton National Park"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T19:01:05.912Z",
+      "sourceNote": "live authenticated chat"
+    },
+    {
+      "id": "guest-local-tips",
+      "label": "West Yellowstone",
+      "chatTitle": "Eat & stay (no account)",
+      "question": "Where should we eat and stay in West Yellowstone before entering the park?",
+      "answer": "West Yellowstone is a solid base — small town but punches above its weight for food and lodging.\n\n**For food**, the local favorite is the Slippery Otter Pub — burgers, beer, and a lively vibe after a long park day. For breakfast before an early start, Running Bear Pancake House is the go-to (get there early, it fills up fast). If you want something quick and cheap, the Yellowstone Pizza Company is reliable.\n\n**For lodging**, it depends on your style:\n\n- **Best mid-range hotel**: Kelly Inn West Yellowstone — clean, comfortable, walking distance to everything, and they're used to early-rising park guests\n- **Best splurge**: Yellowstone Hot Springs Lodge area properties or the Marriott Autograph Collection's Greystone Inn if you want something polished\n- **Best budget**: Lazy G Motel — no frills, but solid and cheap for a place you're just sleeping at\n\nOne insider tip: **book lodging ASAP if you haven't already.** West Yellowstone in summer is essentially sold out by April. The town is tiny and demand is massive — Yellowstone pulled nearly 5 million visitors in 2024.\n\nAlso heads up — there's a traffic delay at Gardner River High Bridge right now, so depending on which entrance you're using, factor in extra time on your first morning. No vehicle reservation needed to enter the park this year, but that means no crowd control either. Parking lots at popular spots like Old Faithful fill by 9am. Aim to be through the gate by 7am.\n\n---\n\n🔍 **Want live prices and ratings?** Sign up free to unlock live web search for hotels, restaurants, and current road conditions.",
+      "metadata": {
+        "hasLiveData": true,
+        "hasWebSearch": false,
+        "showsGuestUpsell": true,
+        "captureAs": "anonymous",
+        "parkName": "Eat & stay (no account)",
+        "parkNames": [
+          "Yellowstone"
+        ],
+        "provider": "claude",
+        "model": "claude-sonnet-4-6"
+      },
+      "capturedAt": "2026-06-11T19:01:16.898Z",
+      "sourceNote": "live anonymous chat"
+    }
+  ]
+}

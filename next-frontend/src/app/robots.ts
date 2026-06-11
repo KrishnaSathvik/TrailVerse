@@ -23,6 +23,7 @@ export default function robots(): MetadataRoute.Robots {
         '/offline',
         '/verify-email',
         '/plan-ai/shared/',
+        '/plan-ai/guest/',
       ],
     },
     sitemap: 'https://www.nationalparksexplorerusa.com/sitemap.xml',

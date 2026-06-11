@@ -803,15 +803,37 @@ function isTravelRelated(userMessage) {
   return isTravelRelatedQuery(userMessage);
 }
 
+function isHeadToHeadCompareQuery(userMessage) {
+  if (!userMessage) return false;
+  return /\b(vs\.?|versus)\b/i.test(userMessage);
+}
+
 /**
- * Logged-in web search policy: NPS API for park-authoritative facts; web for everything else travel-related.
+ * Logged-in web search policy: NPS + catalog for park picks, compare, permits, and open/closed;
+ * web search only for logistics that need live off-NPS sources (restaurants, hotels, roads, etc.).
  * @param {string} userMessage
  * @returns {boolean}
  */
 function needsWebSearch(userMessage) {
   if (!userMessage || userMessage.trim().length < 8) return false;
   if (!isTravelRelated(userMessage)) return false;
-  return !isNpsAuthoritativeOnly(userMessage);
+  if (isItineraryPlanningQuery(userMessage)) return false;
+  if (isNpsAuthoritativeOnly(userMessage)) return false;
+  if (isOpenEndedParkDiscoveryQuery(userMessage)) return false;
+  if (isHeadToHeadCompareQuery(userMessage)) return false;
+
+  if (
+    isPermitOrReservationQuery(userMessage) &&
+    !/\b(restaurant|hotel|lodging|motel|stay|eat|dining|gateway|airbnb)\b/i.test(userMessage)
+  ) {
+    return false;
+  }
+
+  const category = classifyQuery(userMessage);
+  // Trail/attraction open-closed — NPS alerts suffice; roads still use web.
+  if (category === 'operational-status' && !/\broad\b/i.test(userMessage)) return false;
+
+  return true;
 }
 
 /** Day-by-day trip plans — NPS + weather facts suffice; skip web-search signup footer. */
@@ -823,9 +845,33 @@ function isItineraryPlanningQuery(userMessage) {
   );
 }
 
+function isOpenEndedParkDiscoveryQuery(userMessage) {
+  if (!userMessage) return false;
+  if (
+    /\b(restaurant|hotel|lodging|motel|eat|dining|dinner|stay|airbnb|gateway town|spots?)\b/i.test(
+      userMessage
+    )
+  ) {
+    return false;
+  }
+  if (/\b(vs\.?|versus)\b/i.test(userMessage)) return false;
+
+  return (
+    /\b(best|which|top|recommend|suggest|ideas? for)\b/i.test(userMessage) &&
+    (/\b(national\s+)?parks?\b/i.test(userMessage) ||
+      /\b(visit|getaway|vibes?)\b/i.test(userMessage) ||
+      /\b(couples?|families|first[- ]?timers|photography)\b/i.test(userMessage))
+  );
+}
+
+function isPermitOrReservationQuery(userMessage) {
+  if (!userMessage) return false;
+  return /\b(permit|reservation|lottery|timed[- ]?entry|pass required)\b/i.test(userMessage);
+}
+
 /**
- * Anonymous chat only — append the web-search signup footer when live web data
- * would genuinely help. Narrower than needsWebSearch() (which also gates fetching).
+ * Guest signup CTA — only for live-web logistics (hotels, restaurants, roads).
+ * Not for park discovery, compare, permits, or NPS-only questions.
  * @returns {{ append: boolean, variant?: 'local'|'road'|'trail'|'conditions' }}
  */
 function shouldAppendAnonymousWebSearchUpsell(userMessage) {
@@ -835,22 +881,20 @@ function shouldAppendAnonymousWebSearchUpsell(userMessage) {
     return { append: false };
   }
 
+  if (isOpenEndedParkDiscoveryQuery(userMessage)) {
+    return { append: false };
+  }
+
+  if (isPermitOrReservationQuery(userMessage)) {
+    return { append: false };
+  }
+
   const category = classifyQuery(userMessage);
 
   if (category === 'local-business') return { append: true, variant: 'local' };
   if (category === 'road-conditions') return { append: true, variant: 'road' };
   if (category === 'trail-conditions') return { append: true, variant: 'trail' };
   if (category === 'wildfire-smoke') return { append: true, variant: 'conditions' };
-
-  if (!isTravelRelated(userMessage)) return { append: false };
-
-  if (isNpsAuthoritativeOnly(userMessage)) {
-    return { append: false };
-  }
-
-  if (hasNonNpsTravelSignals(userMessage)) {
-    return { append: true, variant: 'local' };
-  }
 
   return { append: false };
 }

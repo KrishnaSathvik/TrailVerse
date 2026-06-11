@@ -470,6 +470,15 @@ export const generateAdventureAvatar = (seed) => {
   });
 };
 
+/** Fixed guest avatar for the Trailie marketing demo (lorelei + forest greens). */
+export const generateDemoGuestAvatar = () =>
+  buildDiceBearAvatarUrl({
+    style: 'lorelei',
+    seed: 'trailverse-demo-guest',
+    palette: COLOR_PALETTES.forest,
+    radius: 50,
+  });
+
 /**
  * Get the best avatar based on user data and preferences (IMPROVED)
  * @param {Object} user - User object with email, firstName, lastName

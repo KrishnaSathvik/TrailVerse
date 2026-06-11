@@ -177,12 +177,18 @@ function buildParkTraits(park) {
     .map((a) => String(a).toLowerCase())
     .join(' ');
 
+  const lakeShore = isLakeShoreContext(description, category);
+
   for (const [trait, signals] of Object.entries(TRAIT_SIGNALS)) {
     const descKeywords = descriptionKeywordsForTrait(trait, description, category);
     if (textHasAny(description, descKeywords)) {
       bumpTrait(traits, trait, TRAIT_BUMP);
     }
-    if (activitiesHaveAny(activityText, signals.activities)) {
+    if (
+      signals.activities &&
+      !(trait === 'ocean' && lakeShore) &&
+      activitiesHaveAny(activityText, signals.activities)
+    ) {
       bumpTrait(traits, trait, ACTIVITY_BUMP);
     }
     if (signals.categories?.includes(category)) {

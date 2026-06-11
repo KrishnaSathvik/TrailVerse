@@ -10,6 +10,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useTrips } from '@hooks/useTrips';
 import tripService from '@/services/tripService';
+import {
+  clearAnonymousBrowseContext,
+  clearFormState,
+  clearTempChatState,
+  getFormState,
+  hasActivePlanAiConversation,
+  saveFormState
+} from '@/services/tripHistoryService';
 import api from '@/services/api';
 import {
   ANONYMOUS_SESSION_MAX_AGE_MS,
@@ -17,6 +25,18 @@ import {
 } from '@/lib/anonymousChatLimits';
 
 const totalSteps = 4;
+
+const emptyChatFormData = () => ({
+  parkCode: '',
+  coordinates: null,
+  startDate: '',
+  endDate: '',
+  groupSize: 1,
+  budget: '',
+  interests: [],
+  fitnessLevel: '',
+  accommodation: ''
+});
 
 /** SSR-safe: only use searchParams here — never window/localStorage (hydration mismatch). */
 function getInitialRestoringState(tripId, searchParams) {
@@ -65,8 +85,6 @@ export default function usePlanAI(tripId) {
   const [deletingTripId, setDeletingTripId] = useState(null);
   const [restoringTripId, setRestoringTripId] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
-  const [showLimitDialog, setShowLimitDialog] = useState(false);
-  const [timeUntilReset, setTimeUntilReset] = useState(null);
   const [suggestText, setSuggestText] = useState('');
 
   const [formData, setFormData] = useState({
@@ -120,19 +138,7 @@ export default function usePlanAI(tripId) {
 
     // Handle personalized recommendations
     if (isPersonalized) {
-      const defaultFormData = {
-        parkCode: '',
-        coordinates: null,
-        startDate: '',
-        endDate: '',
-        groupSize: 1,
-        budget: '',
-        interests: [],
-        fitnessLevel: '',
-        accommodation: ''
-      };
-
-      setChatFormData(defaultFormData);
+      setChatFormData(emptyChatFormData());
       setShowChat(true);
       setStep(4);
       return;
@@ -140,19 +146,7 @@ export default function usePlanAI(tripId) {
 
     // Handle new chat
     if (isNewChat) {
-      const defaultFormData = {
-        parkCode: '',
-        coordinates: null,
-        startDate: '',
-        endDate: '',
-        groupSize: 1,
-        budget: '',
-        interests: [],
-        fitnessLevel: '',
-        accommodation: ''
-      };
-
-      setChatFormData(defaultFormData);
+      setChatFormData(emptyChatFormData());
       setShowChat(true);
       setStep(4);
       return;
@@ -162,18 +156,7 @@ export default function usePlanAI(tripId) {
     const suggest = searchParams.get('suggest');
     if (suggest) {
       setSuggestText(suggest);
-      const defaultFormData = {
-        parkCode: '',
-        coordinates: null,
-        startDate: '',
-        endDate: '',
-        groupSize: 1,
-        budget: '',
-        interests: [],
-        fitnessLevel: '',
-        accommodation: ''
-      };
-      setChatFormData(defaultFormData);
+      setChatFormData(emptyChatFormData());
       setSelectedParkName('');
       setShowChat(true);
       setStep(4);
@@ -189,7 +172,7 @@ export default function usePlanAI(tripId) {
           }
         : null;
 
-      localStorage.removeItem('planai-chat-state');
+      clearTempChatState();
       setSelectedParkName(parkName);
 
       setFormData(prev => ({
@@ -217,96 +200,47 @@ export default function usePlanAI(tripId) {
     } else if (showChatDirectly && tripId) {
       // If chat=true parameter is present and we have a tripId, load trip data from backend and show chat directly
       loadTripFromBackend(tripId);
+    } else if (!tripId) {
+      // Generic /plan-ai — do not resurrect park-only browse from earlier "Plan with Trailie" clicks
+      setSuggestText('');
+      if (hasActivePlanAiConversation()) {
+        const savedFormState = getFormState();
+        if (savedFormState?.chatFormData) {
+          setChatFormData(savedFormState.chatFormData);
+          setSelectedParkName(savedFormState.selectedParkName || '');
+        }
+      } else {
+        setChatFormData(emptyChatFormData());
+        setSelectedParkName('');
+        clearFormState();
+        clearAnonymousBrowseContext();
+      }
+      setShowChat(true);
+      setStep(4);
+      setIsRestoringState(false);
     }
   }, [searchParams, allParks, tripId, showToast, router, loadTripFromBackend]);
 
-  // Check if anonymous user has reached message limit (early check)
+  // Guest resume: restore park context only when the anonymous session has real messages
   useEffect(() => {
-    if (!isPublicAccess || tripId || searchParams.get('park') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
-      return;
+    if (isAuthenticated || searchParams.get('park')) return;
+    if (!hasActivePlanAiConversation()) return;
+
+    try {
+      const raw = localStorage.getItem('anonymousSession');
+      if (!raw) return;
+      const session = JSON.parse(raw);
+      if ((session.messageCount || 0) <= 0) return;
+      if (session.parkName) {
+        setSelectedParkName(session.parkName);
+      }
+      if (session.formData && typeof session.formData === 'object') {
+        setChatFormData(session.formData);
+      }
+    } catch {
+      // ignore invalid session JSON
     }
-
-    const checkAnonymousLimit = async () => {
-      try {
-        const savedSession = localStorage.getItem('anonymousSession');
-        if (savedSession) {
-          const sessionData = JSON.parse(savedSession);
-          const sessionAge = Date.now() - sessionData.timestamp;
-          const maxAge = ANONYMOUS_SESSION_MAX_AGE_MS;
-
-          if (sessionAge < maxAge && isAnonymousLimitReached(sessionData)) {
-            // Validate with backend
-            if (sessionData.anonymousId) {
-              try {
-                const response = await api.get(`/ai/session-status/${sessionData.anonymousId}`, {}, { skipCache: true });
-                const { canSendMore, messageCount } = response.data;
-
-                sessionData.canSendMore = canSendMore;
-                sessionData.messageCount = messageCount;
-                localStorage.setItem('anonymousSession', JSON.stringify(sessionData));
-
-                if (isAnonymousLimitReached({ canSendMore, messageCount })) {
-                  setShowLimitDialog(true);
-                  // Calculate time until reset
-                  const timeRemaining = maxAge - sessionAge;
-                  if (timeRemaining > 0) {
-                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                    setTimeUntilReset(`${hours}h ${minutes}m`);
-                  }
-                }
-              } catch (error) {
-                console.error('Error validating session:', error);
-                // Fallback to localStorage check
-                setShowLimitDialog(true);
-                const timeRemaining = maxAge - sessionAge;
-                if (timeRemaining > 0) {
-                  const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-                  const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                  setTimeUntilReset(`${hours}h ${minutes}m`);
-                }
-              }
-            } else {
-              setShowLimitDialog(true);
-              const timeRemaining = maxAge - sessionAge;
-              if (timeRemaining > 0) {
-                const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                setTimeUntilReset(`${hours}h ${minutes}m`);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking anonymous limit:', error);
-      }
-    };
-
-    checkAnonymousLimit();
-
-    // Update timer every minute
-    const timerInterval = setInterval(() => {
-      const savedSession = localStorage.getItem('anonymousSession');
-      if (savedSession && showLimitDialog) {
-        const sessionData = JSON.parse(savedSession);
-        const sessionAge = Date.now() - sessionData.timestamp;
-        const maxAge = ANONYMOUS_SESSION_MAX_AGE_MS;
-        const timeRemaining = maxAge - sessionAge;
-
-        if (timeRemaining > 0) {
-          const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-          const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-          setTimeUntilReset(`${hours}h ${minutes}m`);
-        } else {
-          // Time expired, hide dialog
-          setShowLimitDialog(false);
-          setTimeUntilReset(null);
-        }
-      }
-    }, 60 * 1000);
-
-    return () => clearInterval(timerInterval);
-  }, [isPublicAccess, tripId, searchParams, showLimitDialog]);
+  }, [isAuthenticated, searchParams]);
 
   // Load trip history and check if user is returning
   useEffect(() => {
@@ -327,7 +261,7 @@ export default function usePlanAI(tripId) {
       return;
     }
 
-    const savedState = localStorage.getItem('planai-chat-state');
+    const savedFormState = getFormState();
 
     // Load trip history and check if user is returning
     if (user) {
@@ -351,47 +285,29 @@ export default function usePlanAI(tripId) {
         setUniqueParksCount(0);
       }
 
-      // DON'T restore chat state on page refresh
-      // Users should always land on the main Plan AI page
-      // They can continue conversations by clicking "Continue Chat" from history
-      if (savedState) {
-        // Clear the saved state since we're not restoring it
-        localStorage.removeItem('planai-chat-state');
-        // Cleared saved chat state - user will start on main page
-      }
-
+      // Active conversation cache (planai-chat-state) is owned by TripPlannerChat.
       setIsRestoringState(false);
     } else {
-      // No user logged in
-      if (savedState) {
-        try {
-          const parsedState = JSON.parse(savedState);
-          if (parsedState.showChat && parsedState.chatFormData) {
-            setShowChat(parsedState.showChat);
-            setChatFormData(parsedState.chatFormData);
-            setSelectedParkName(parsedState.selectedParkName || '');
-            // Restored chat state from localStorage
-          }
-        } catch (error) {
-          console.error('Error loading saved chat state:', error);
-          localStorage.removeItem('planai-chat-state');
-        }
+      // Guests: restore form context only when a real chat exists (not welcome-only park browse)
+      if (
+        hasActivePlanAiConversation() &&
+        savedFormState?.showChat &&
+        savedFormState.chatFormData
+      ) {
+        setShowChat(savedFormState.showChat);
+        setChatFormData(savedFormState.chatFormData);
+        setSelectedParkName(savedFormState.selectedParkName || '');
       }
       setIsRestoringState(false);
     }
   }, [user, userTrips, tripId, searchParams, router]);
 
-  // Save state to localStorage whenever it changes
+  // Persist form wizard state only for real chats — never park-only browse with no messages
   useEffect(() => {
-    if (showChat && chatFormData) {
-      const stateToSave = {
-        showChat,
-        chatFormData,
-        selectedParkName
-      };
-      localStorage.setItem('planai-chat-state', JSON.stringify(stateToSave));
-    } else {
-      localStorage.removeItem('planai-chat-state');
+    if (showChat && chatFormData && hasActivePlanAiConversation()) {
+      saveFormState({ showChat, chatFormData, selectedParkName });
+    } else if (!hasActivePlanAiConversation()) {
+      clearFormState();
     }
   }, [showChat, chatFormData, selectedParkName]);
 
@@ -529,7 +445,8 @@ export default function usePlanAI(tripId) {
 
   const handleBackToForm = () => {
     // Always return to main Plan AI page (unified page)
-    localStorage.removeItem('planai-chat-state');
+    clearTempChatState();
+    clearFormState();
     setShowChat(false);
     setChatFormData(null);
     setStep(1);
@@ -540,40 +457,23 @@ export default function usePlanAI(tripId) {
 
   const handleStartNewChat = () => {
     // Start generic AI chat without park context
-    const defaultFormData = {
-      parkCode: '',
-      coordinates: null,
-      startDate: '',
-      endDate: '',
-      groupSize: 1,
+    setChatFormData({
+      ...emptyChatFormData(),
       budget: 'moderate',
-      interests: [],
       fitnessLevel: 'moderate',
       accommodation: 'camping'
-    };
-    setChatFormData(defaultFormData);
+    });
     setSelectedParkName('');
     setShowChat(true);
     // Clear saved session so restoration doesn't override the new chat
-    localStorage.removeItem('planai-chat-state');
+    clearTempChatState();
     // Use unique timestamp to force URL change even if already on ?newchat=true
     router.replace('/plan-ai?newchat=' + Date.now());
   };
 
   const handlePersonalizedRecommendations = () => {
     // Navigate to chat with personalized flag for personalized welcome
-    const defaultFormData = {
-      parkCode: '',
-      coordinates: null,
-      startDate: '',
-      endDate: '',
-      groupSize: 1,
-      budget: '',
-      interests: [],
-      fitnessLevel: '',
-      accommodation: ''
-    };
-    setChatFormData(defaultFormData);
+    setChatFormData(emptyChatFormData());
     setShowChat(true);
     router.replace('/plan-ai?personalized=' + Date.now());
   };
@@ -656,7 +556,7 @@ export default function usePlanAI(tripId) {
     // State
     showChat, chatFormData, selectedParkName, step, isRestoringState, loadingTrip,
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
-    deletingTripId, restoringTripId, activeTab, showLimitDialog, timeUntilReset,
+    deletingTripId, restoringTripId, activeTab,
     formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory,
     newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,

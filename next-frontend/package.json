@@ -14,7 +14,9 @@
     "test:e2e:headed": "npx playwright test --headed",
     "lighthouse": "lhci autorun",
     "audit:ssr": "node scripts/audit-ssr-samples.mjs",
-    "audit:ssr:strict": "node scripts/audit-ssr-samples.mjs --strict"
+    "audit:ssr:strict": "node scripts/audit-ssr-samples.mjs --strict",
+    "capture:trailie-demo": "node scripts/capture-trailie-demo-responses.mjs",
+    "verify:trailie-demo": "node scripts/verify-trailie-demo-accuracy.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

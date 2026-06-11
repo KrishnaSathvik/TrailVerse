@@ -34,6 +34,7 @@ export function buildLlmsTxt() {
   lines.push('## Trip planning & AI');
   lines.push('');
   lines.push(`- [Plan with Trailie (web)](${BASE}/plan-ai): Free AI trip chat with live NPS data; optional account for saved trips.`);
+  lines.push(`- [Trailie interactive demo](${BASE}/trailie-demo): Replay recorded sample chats (July parks, couples trips, permits, closures) before opening the live planner.`);
   lines.push(`- [TrailVerse ChatGPT app](${BASE}/chatgpt): Install guide — plan trips, park details, compare, search, events inside ChatGPT.`);
   lines.push(`- [Claude MCP connector](${BASE}/mcp): Install guide for Claude Desktop / claude.ai — connector URL \`${MCP}\`.`);
   lines.push(`- [Compare parks](${BASE}/compare): Side-by-side comparison of 2–4 parks (weather, crowds, activities).`);

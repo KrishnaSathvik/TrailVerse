@@ -13,6 +13,9 @@ import tripService from './tripService';
 
 const LEGACY_TRIP_HISTORY_KEY = 'npe_usa_trip_history';
 const TEMP_CHAT_STATE_KEY = 'planai-chat-state';
+/** Legacy form wizard state — separate from active chat conversation cache */
+const FORM_STATE_KEY = 'planai-form-state';
+const ANONYMOUS_SESSION_KEY = 'anonymousSession';
 const USER_PREFERENCES_KEY = 'npe_usa_user_preferences';
 const MIGRATION_FLAG_KEY = 'trips_migrated_to_db';
 
@@ -132,6 +135,75 @@ export const clearTempChatState = () => {
     console.error('[TripHistory] Error clearing temp chat state:', error);
   }
 };
+
+export const saveFormState = (formState) => {
+  try {
+    localStorage.setItem(FORM_STATE_KEY, JSON.stringify(formState));
+  } catch (error) {
+    console.error('[TripHistory] Error saving form state:', error);
+  }
+};
+
+export const getFormState = () => {
+  try {
+    const state = localStorage.getItem(FORM_STATE_KEY);
+    return state ? JSON.parse(state) : null;
+  } catch (error) {
+    console.error('[TripHistory] Error getting form state:', error);
+    return null;
+  }
+};
+
+export const clearFormState = () => {
+  try {
+    localStorage.removeItem(FORM_STATE_KEY);
+  } catch (error) {
+    console.error('[TripHistory] Error clearing form state:', error);
+  }
+};
+
+/** True when the user has a real in-progress chat worth restoring (not welcome-only browse). */
+export const hasActivePlanAiConversation = () => {
+  try {
+    const temp = getTempChatState();
+    if (temp?.currentTripId) return true;
+    if (Array.isArray(temp?.messages) && temp.messages.length >= 2) return true;
+
+    const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
+    if (raw) {
+      const session = JSON.parse(raw);
+      if ((session.messageCount || 0) > 0) return true;
+      if (session.anonymousId && Array.isArray(temp?.messages) && temp.messages.length > 0) {
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error('[TripHistory] Error checking active conversation:', error);
+  }
+  return false;
+};
+
+/** Drop park-only browse context from anonymous session when user never sent a message. */
+export const clearAnonymousBrowseContext = () => {
+  try {
+    const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
+    if (!raw) return;
+    const session = JSON.parse(raw);
+    if ((session.messageCount || 0) > 0) return;
+    delete session.parkName;
+    delete session.formData;
+    localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(session));
+  } catch (error) {
+    console.error('[TripHistory] Error clearing anonymous browse context:', error);
+  }
+};
+
+/** Rehydrate message timestamps after JSON round-trip through localStorage */
+export const normalizeStoredMessages = (messages = []) =>
+  messages.map((msg) => ({
+    ...msg,
+    timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+  }));
 
 /**
  * Update user preferences (for AI context)
@@ -316,6 +388,12 @@ export const tripHistoryService = {
   saveTempChatState,
   getTempChatState,
   clearTempChatState,
+  saveFormState,
+  getFormState,
+  clearFormState,
+  hasActivePlanAiConversation,
+  clearAnonymousBrowseContext,
+  normalizeStoredMessages,
   updateUserPreferences,
   getUserPreferences,
   getAIContext,

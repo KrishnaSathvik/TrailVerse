@@ -168,6 +168,8 @@ import {
   MicrophoneIcon,
   DotsSixVerticalIcon,
   SnowflakeIcon,
+  SpeakerSimpleHighIcon,
+  SpeakerSimpleSlashIcon,
 } from '@phosphor-icons/react';
 
 export const ArrowLeft = createAppIcon(ArrowLeftIcon);
@@ -345,3 +347,5 @@ export const Cookie = createAppIcon(CookieIcon);
 export const Microphone = createAppIcon(MicrophoneIcon);
 export const GripVertical = createAppIcon(DotsSixVerticalIcon);
 export const Snowflake = createAppIcon(SnowflakeIcon);
+export const Volume2 = createAppIcon(SpeakerSimpleHighIcon);
+export const VolumeOff = createAppIcon(SpeakerSimpleSlashIcon);

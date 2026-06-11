@@ -8,6 +8,7 @@ export const LANDING_HERO_SUBTITLE =
   'Choose where to go, when to visit, and what actually fits your days. TrailVerse brings the research together, and Trailie helps turn it into a plan.';
 
 export const LANDING_HERO_PRIMARY_CTA = 'Plan with Trailie';
+export const LANDING_HERO_DEMO_CTA = 'View Trailie demo';
 
 export const LANDING_HERO_META_DESCRIPTION =
   'Plan U.S. national park trips with live weather, alerts, maps, park comparison, and AI itineraries from Trailie — 470+ parks on TrailVerse.';

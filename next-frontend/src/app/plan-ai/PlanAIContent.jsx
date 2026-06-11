@@ -2,15 +2,13 @@
 
 import React, { useState } from 'react';
 import { Sparkles } from '@components/icons';
-import Header from '@components/common/Header';
 import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
 import MyRecommendationsButton from '@components/plan-ai/MyRecommendationsButton';
-import SignupPromptPanel from '@components/plan-ai/SignupPromptPanel';
-import { SIGNUP_PROMPT_REASONS } from '@/lib/planAiSignupPrompts';
 import { MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE } from '@/lib/planAiWelcomeCopy';
 import usePlanAI from '@hooks/usePlanAI';
+import { useAutoTrailieCompletionSound } from '@/hooks/useTrailieCompletionSound';
 
 const defaultFormData = {
   parkCode: '',
@@ -28,8 +26,6 @@ const PlanAIContent = ({ tripId }) => {
   const {
     isRestoringState,
     loadingTrip,
-    showLimitDialog,
-    timeUntilReset,
     chatFormData,
     setChatFormData,
     selectedParkName,
@@ -54,54 +50,13 @@ const PlanAIContent = ({ tripId }) => {
   const [quickFillOpen, setQuickFillOpen] = useState(false);
   const [quickFillMessage, setQuickFillMessage] = useState(null);
   const [hasAppliedQuickFill, setHasAppliedQuickFill] = useState(!!tripId || !!fromChatHistory);
+  const { playCompletion, prime: primeCompletionSound } = useAutoTrailieCompletionSound();
 
   if (isRestoringState || loadingTrip) {
     return (
       <PlanAIShell
         loadingMessage={loadingTrip ? 'Loading trip data...' : 'Loading your chat session...'}
       />
-    );
-  }
-
-  if (showLimitDialog) {
-    const storeReturnToChat = () => {
-      const saved = localStorage.getItem('anonymousSession');
-      let anonymousId;
-      try {
-        anonymousId = saved ? JSON.parse(saved).anonymousId : undefined;
-      } catch {
-        anonymousId = undefined;
-      }
-      localStorage.setItem('returnToChat', JSON.stringify({
-        anonymousId,
-        parkName: selectedParkName,
-        formData: chatFormData || formData,
-        messages: [],
-        timestamp: Date.now(),
-      }));
-    };
-
-    return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <Header />
-        <section className="flex flex-1 items-center justify-center py-16 sm:py-20">
-          <div className="max-w-md mx-auto px-4 sm:px-6 w-full">
-            <SignupPromptPanel
-              reason={SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT}
-              parkName={selectedParkName}
-              onSignup={() => {
-                storeReturnToChat();
-                window.location.href = '/signup';
-              }}
-              onLogin={() => {
-                storeReturnToChat();
-                window.location.href = '/login';
-              }}
-              timeUntilReset={timeUntilReset}
-            />
-          </div>
-        </section>
-      </div>
     );
   }
 
@@ -171,7 +126,7 @@ const PlanAIContent = ({ tripId }) => {
         headerActions={headerActions}
       >
         <TripPlannerChat
-          key={`chat-${newChatKey || tripId || 'default'}`}
+          key={`chat-${newChatKey || tripId || effectiveFormData.parkCode || suggestText || 'generic'}`}
           formData={effectiveFormData}
           parkName={effectiveParkName}
           existingTripId={tripId}
@@ -183,6 +138,8 @@ const PlanAIContent = ({ tripId }) => {
           onOpenQuickFill={() => setQuickFillOpen(true)}
           quickFillMessage={quickFillMessage}
           onQuickFillSent={() => setQuickFillMessage(null)}
+          playCompletionSound={playCompletion}
+          primeCompletionSound={primeCompletionSound}
         />
       </PlanAIShell>
 

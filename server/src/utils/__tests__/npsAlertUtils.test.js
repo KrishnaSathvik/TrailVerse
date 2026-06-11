@@ -1,5 +1,6 @@
 const {
   isClosureCategory,
+  isGenericClosureAlert,
   isRoadRelatedAlert,
 } = require('../npsAlertUtils');
 
@@ -8,6 +9,11 @@ describe('npsAlertUtils', () => {
     expect(isClosureCategory('Park Closure')).toBe(true);
     expect(isClosureCategory('Closure')).toBe(true);
     expect(isClosureCategory('Caution')).toBe(false);
+  });
+
+  test('isGenericClosureAlert flags boilerplate NPS section titles', () => {
+    expect(isGenericClosureAlert('Critical Backcountry Updates/Closures')).toBe(true);
+    expect(isGenericClosureAlert('Angels Landing Trail is closed')).toBe(false);
   });
 
   test('isRoadRelatedAlert matches GTSR alert', () => {

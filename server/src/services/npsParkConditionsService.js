@@ -155,7 +155,7 @@ async function fetchNpsRoadConditionsFacts({ parkCode, parkName, userMessage = '
   if (parts.length === 0) {
     parts.push(
       `Road/status: No road-specific lines parsed from NPS alerts or conditions.htm for ${label}. ` +
-        `Direct users to https://www.nps.gov/${parkCode}/planyourvisit/conditions.htm for today's status.`
+        `Use NPS alerts above and any web search digest — do not tell the user to go look up conditions themselves.`
     );
   }
 

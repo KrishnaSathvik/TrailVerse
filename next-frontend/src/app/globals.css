@@ -278,8 +278,13 @@ body.mobile-nav-open {
     font-size: 16px !important;
   }
   
-  /* Chat interface mobile optimizations - ABSOLUTE FULL WIDTH */
-  .chat-message-bubble {
+  /* Chat bubbles — user shrinks to content; assistant can use more width */
+  .chat-message-bubble--user {
+    max-width: calc(100vw - 5.5rem) !important;
+    width: fit-content !important;
+  }
+
+  .chat-message-bubble--assistant {
     max-width: calc(100vw - 40px) !important;
   }
   
@@ -350,9 +355,14 @@ body.mobile-nav-open {
   }
 }
 
-/* Desktop optimizations */
+/* Desktop chat bubbles */
 @media (min-width: 641px) {
-  .chat-message-bubble {
+  .chat-message-bubble--user {
+    max-width: min(78%, 36rem) !important;
+    width: fit-content !important;
+  }
+
+  .chat-message-bubble--assistant {
     max-width: 80% !important;
   }
 }

@@ -23,9 +23,10 @@ import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
-import SignupPromptPanel from './SignupPromptPanel';
+import GuestLimitMessageExtras from './GuestLimitMessageExtras';
+import { buildGuestLimitIntro } from '@/lib/guestLimitMessage';
 import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
-import { ANONYMOUS_MESSAGE_LIMIT, isAnonymousLimitReached } from '@/lib/anonymousChatLimits';
+import { ANONYMOUS_MESSAGE_LIMIT } from '@/lib/anonymousChatLimits';
 import {
   SIGNUP_PROMPT_REASONS,
   getSignupPrompt,
@@ -87,7 +88,9 @@ const TripPlannerChat = ({
   onOpenQuickFill = null,
   fromChatHistory = false,
   quickFillMessage = null,
-  onQuickFillSent = null
+  onQuickFillSent = null,
+  playCompletionSound = null,
+  primeCompletionSound = null,
 }) => {
   const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
@@ -132,6 +135,10 @@ const TripPlannerChat = ({
   const [anonymousRestoreStatus, setAnonymousRestoreStatus] = useState(
     () => (!isAuthenticated ? 'pending' : 'n/a')
   );
+  /** pending | restored | empty | n/a — gates welcome until authed session cache/DB restore */
+  const [authRestoreStatus, setAuthRestoreStatus] = useState(
+    () => (isAuthenticated ? 'pending' : 'n/a')
+  );
   const [timeUntilReset, setTimeUntilReset] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [saveState, setSaveState] = useState('idle');
@@ -145,6 +152,12 @@ const TripPlannerChat = ({
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
+  const messagesRef = useRef(messages);
+  const currentTripIdRef = useRef(currentTripId);
+  const currentPlanRef = useRef(currentPlan);
+  messagesRef.current = messages;
+  currentTripIdRef.current = currentTripId;
+  currentPlanRef.current = currentPlan;
   const savingInProgressRef = useRef(false);
   const previousExistingTripIdRef = useRef(existingTripId);
   const lastMessageCountRef = useRef(0);
@@ -152,6 +165,7 @@ const TripPlannerChat = ({
   const personalizedSentRef = useRef(false);
   const personalizedInitRef = useRef(false);
   const sessionStartTrackedRef = useRef(false);
+  const parkContextRef = useRef(null);
 
   const chatStatus = isAnonymous
     ? null
@@ -327,14 +341,13 @@ const TripPlannerChat = ({
       return;
     }
     
-    const savedState = localStorage.getItem('planai-chat-state');
-    
-    if (savedState) {
+    const tempState = tripHistoryService.getTempChatState();
+
+    if (tempState?.currentTripId || tempState?.messages?.length >= 2) {
       setIsRestoredSession(true);
       console.log('🔄 Restored session detected');
-      // Session restoration runs silently in background - no toast notification
     }
-    
+
     // Load trip history for the user
     if (user) {
       tripService.getUserTrips(user.id).then(response => {
@@ -344,19 +357,6 @@ const TripPlannerChat = ({
         console.error('Error loading trip history:', error);
         setTripHistory([]);
       });
-      
-      // If no existingTripId but we have a saved state, try to restore the current conversation
-      if (!existingTripId && savedState) {
-        try {
-          const parsedState = JSON.parse(savedState);
-          if (parsedState.currentTripId) {
-            console.log('🔄 Restoring session from localStorage:', parsedState.currentTripId);
-            loadExistingTrip(parsedState.currentTripId);
-          }
-        } catch (error) {
-          console.error('Error parsing saved state:', error);
-        }
-      }
     }
   }, [user, existingTripId, loadExistingTrip, isStartingFresh]); // Added isStartingFresh dependency
 
@@ -668,7 +668,14 @@ const TripPlannerChat = ({
           setAnonymousRestoreStatus('restored');
           console.log('🔄 Restored anonymous chat history:', status.messages.length, 'messages');
         } else {
-          setAnonymousRestoreStatus('empty');
+          const temp = tripHistoryService.getTempChatState();
+          if (temp?.messages?.length >= 2) {
+            setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
+            setAnonymousRestoreStatus('restored');
+            console.log('🔄 Restored anonymous chat from local cache:', temp.messages.length, 'messages');
+          } else {
+            setAnonymousRestoreStatus('empty');
+          }
         }
       } else {
         setAnonymousRestoreStatus('empty');
@@ -686,13 +693,146 @@ const TripPlannerChat = ({
     }
   }, [isAnonymous, isAuthenticated, validateSessionWithBackend, mapServerMessagesToUi]);
 
+  const persistSessionToStorage = useCallback((tripId, msgs, plan) => {
+    if (!msgs || msgs.length < 2) return;
+    tripHistoryService.saveTempChatState({
+      currentTripId: tripId || null,
+      messages: msgs,
+      plan: plan || null,
+      provider: 'auto',
+    });
+  }, []);
+
+  // Restore logged-in session from local cache or DB when returning to /plan-ai
+  useEffect(() => {
+    if (!isAuthenticated || existingTripId || isNewChat || isPersonalized || isStartingFresh) {
+      if (isAuthenticated && (existingTripId || isNewChat || isPersonalized)) {
+        setAuthRestoreStatus('n/a');
+      }
+      return;
+    }
+
+    let cancelled = false;
+    setAuthRestoreStatus('pending');
+
+    const restoreAuthSession = async () => {
+      const temp = tripHistoryService.getTempChatState();
+
+      if (temp?.messages?.length >= 2) {
+        if (cancelled) return;
+        setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
+        if (temp.currentTripId) setCurrentTripId(temp.currentTripId);
+        if (temp.plan) setCurrentPlan(temp.plan);
+        setAuthRestoreStatus('restored');
+        return;
+      }
+
+      if (temp?.currentTripId) {
+        await loadExistingTrip(temp.currentTripId);
+        if (!cancelled) setAuthRestoreStatus('restored');
+        return;
+      }
+
+      if (!cancelled) setAuthRestoreStatus('empty');
+    };
+
+    restoreAuthSession().catch((error) => {
+      console.error('Error restoring authenticated session:', error);
+      if (!cancelled) setAuthRestoreStatus('empty');
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    existingTripId,
+    isNewChat,
+    isPersonalized,
+    isStartingFresh,
+    loadExistingTrip,
+  ]);
+
+  // Keep conversation cache in sync for SPA navigation (not only after auto-save)
+  useEffect(() => {
+    if (isStartingFresh || isNewChat || isPersonalized) return;
+    if (messages.length < 2) return;
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      persistSessionToStorage(currentTripId, messages, currentPlan);
+    }, 400);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [
+    messages,
+    currentTripId,
+    currentPlan,
+    isStartingFresh,
+    isNewChat,
+    isPersonalized,
+    persistSessionToStorage,
+  ]);
+
+  // Flush cache when leaving the page via client navigation
+  useEffect(() => {
+    return () => {
+      const msgs = messagesRef.current || [];
+      const hasUserMessages = msgs.some(
+        (m) => m.role === 'user' && !m.hiddenFromUi
+      );
+
+      persistSessionToStorage(
+        currentTripIdRef.current,
+        msgs,
+        currentPlanRef.current
+      );
+
+      // Welcome-only park browse — do not leave stale park context for the next visit
+      if (!hasUserMessages && msgs.length <= 1) {
+        tripHistoryService.clearFormState();
+        tripHistoryService.clearAnonymousBrowseContext();
+      }
+    };
+  }, [persistSessionToStorage]);
+
+  // Re-show limit card in-thread when guest returns after a 6th attempt (not stored server-side)
+  useEffect(() => {
+    if (!isAnonymous || isAuthenticated || canSendMore) return;
+    if (messages.some((m) => m.isConversionMessage)) return;
+    if (messageCount <= ANONYMOUS_MESSAGE_LIMIT) return;
+
+    setMessages((prev) => {
+      if (prev.some((m) => m.isConversionMessage)) return prev;
+      return [
+        ...prev,
+        {
+          id: `guest-limit-${Date.now()}`,
+          role: 'assistant',
+          content: buildGuestLimitIntro({ timeUntilReset, parkName }),
+          timestamp: new Date(),
+          provider: 'system',
+          model: 'conversion',
+          isConversionMessage: true,
+        },
+      ];
+    });
+  }, [isAnonymous, isAuthenticated, canSendMore, messageCount, messages, timeUntilReset, parkName]);
+
   // Clean up expired sessions and restore anonymous session on mount
   useEffect(() => {
     cleanupExpiredSessions();
 
     if (isAnonymous && !isAuthenticated) {
-      // Park deep links should start fresh with a park-specific welcome
-      if (parkName) {
+      // Park deep links (?park=&name=) start fresh — but guest resume links keep stored session
+      const storedSession = readStoredAnonymousSession();
+      if (parkName && !storedSession?.anonymousId) {
         setAnonymousRestoreStatus('empty');
         return;
       }
@@ -773,6 +913,49 @@ const TripPlannerChat = ({
     previousExistingTripIdRef.current = existingTripId;
   }, [existingTripId, isNewChat, isPersonalized]);
 
+  // When park / trip context changes with no user messages yet, refresh the welcome (not stale copy)
+  useEffect(() => {
+    if (isStartingFresh || existingTripId || isNewChat || isPersonalized) return;
+
+    const parkContextKey = [
+      formData?.parkCode || '',
+      parkName || '',
+      suggestText || '',
+    ].join('|');
+
+    if (parkContextRef.current === null) {
+      parkContextRef.current = parkContextKey;
+      return;
+    }
+    if (parkContextRef.current === parkContextKey) return;
+    parkContextRef.current = parkContextKey;
+
+    const hasUserMessages = messages.some(
+      (m) => m.role === 'user' && !m.hiddenFromUi
+    );
+    if (hasUserMessages) return;
+    if (!providersLoaded) return;
+    if (isAnonymous && !isAuthenticated && anonymousRestoreStatus === 'pending') return;
+    if (isAuthenticated && authRestoreStatus === 'pending') return;
+
+    showWelcomeMessage();
+  }, [
+    formData?.parkCode,
+    parkName,
+    suggestText,
+    messages,
+    isStartingFresh,
+    existingTripId,
+    isNewChat,
+    isPersonalized,
+    providersLoaded,
+    isAnonymous,
+    isAuthenticated,
+    anonymousRestoreStatus,
+    authRestoreStatus,
+    showWelcomeMessage,
+  ]);
+
   // Initialize chat after providers are loaded
   useEffect(() => {
     console.log('🔄 Chat initialization useEffect triggered:', {
@@ -818,19 +1001,23 @@ const TripPlannerChat = ({
           return;
         }
 
-        // Check if we're restoring a session before showing welcome message
-        const savedState = localStorage.getItem('planai-chat-state');
-        if (savedState) {
-          try {
-            const parsedState = JSON.parse(savedState);
-            if (parsedState.currentTripId) {
-              loadExistingTrip(parsedState.currentTripId);
-              return; // Don't show welcome message if we're restoring
-            }
-          } catch (error) {
-            console.error('Error parsing saved state in initialization:', error);
-          }
+        if (isAuthenticated && authRestoreStatus === 'pending') {
+          return;
         }
+        if (isAuthenticated && authRestoreStatus === 'restored') {
+          return;
+        }
+
+        // Check if we're restoring a session before showing welcome message
+        const tempState = tripHistoryService.getTempChatState();
+        if (tempState?.messages?.length >= 2) {
+          return;
+        }
+        if (tempState?.currentTripId) {
+          loadExistingTrip(tempState.currentTripId);
+          return;
+        }
+
         // Only show welcome message if we're not restoring a session
         showWelcomeMessage();
       }
@@ -844,6 +1031,7 @@ const TripPlannerChat = ({
     isAnonymous,
     isAuthenticated,
     anonymousRestoreStatus,
+    authRestoreStatus,
     parkName,
   ]);
 
@@ -888,6 +1076,8 @@ const TripPlannerChat = ({
     const { hiddenFromUi = false } = options;
     if (!messageText.trim() || isGenerating) return;
 
+    primeCompletionSound?.();
+
     console.log('🔄 handleSendMessage called:', {
       messageText: messageText.trim(),
       currentTripId,
@@ -898,31 +1088,6 @@ const TripPlannerChat = ({
     if (providers.length === 0) {
       showToast('No AI providers available. Please configure API keys.', 'error');
       return;
-    }
-
-    // For anonymous users, validate session before sending
-    if (isAnonymous && anonymousId) {
-      try {
-        const sessionStatus = await validateSessionWithBackend(anonymousId);
-        if (!sessionStatus) {
-          showToast('Unable to validate session. Please try again.', 'error');
-          return;
-        }
-        if (
-          !sessionStatus.canSendMore ||
-          isAnonymousLimitReached({
-            canSendMore: sessionStatus.canSendMore,
-            messageCount: sessionStatus.messageCount,
-          })
-        ) {
-          showToast('You have reached your 5 message limit. Please create an account to continue.', 'error');
-          return;
-        }
-      } catch (error) {
-        console.error('Error validating session before sending message:', error);
-        showToast('Unable to validate session. Please try again.', 'error');
-        return;
-      }
     }
 
     // Abort any existing request
@@ -952,8 +1117,7 @@ const TripPlannerChat = ({
       // Build context for AI
       const userContext = user ? await tripHistoryService.getAIContext(user.id) : null;
       
-      // Build system prompt
-      const systemPrompt = buildSystemPrompt(userContext, isPersonalized);
+      const sessionContext = buildClientSessionContext(userContext, isPersonalized);
 
       const requestMetadata = {
         parkCode: formData.parkCode,
@@ -962,6 +1126,7 @@ const TripPlannerChat = ({
         lon: formData.coordinates?.lon,
         formData,
         personalizedRecommendations: isPersonalized,
+        aiContext: userContext || null,
       };
       // Build conversation history — include image context so AI can
       // answer follow-up questions about the photos it shared
@@ -978,54 +1143,137 @@ const TripPlannerChat = ({
           return { role: msg.role, content };
         });
 
-      // Build messages array with system prompt first
       const msgs = [
-        { role: 'system', content: systemPrompt },
         ...conversationHistory,
         { role: 'user', content: messageText.trim() }
       ];
 
-      // Call appropriate AI service based on authentication status
+      // Stream responses for guests and logged-in users
       let data;
-      let streamAssistantId = null;
-      if (isAnonymous) {
-        data = await aiService.chatAnonymous({
-          messages: msgs,
-          provider: 'auto',
-          temperature: 0.4,
-          top_p: 0.9,
-          max_tokens: 8000,
-          signal: controller.signal,
-          metadata: requestMetadata,
-          anonymousId: anonymousId  // Send existing anonymousId if available
-        });
-        
-        // Update anonymous session info
-        if (data.anonymousId) {
-          setAnonymousId(data.anonymousId);
-        }
-        if (data.messageCount !== undefined) {
-          setMessageCount(data.messageCount);
-        }
-        if (data.canSendMore !== undefined) {
-          setCanSendMore(data.canSendMore);
-        }
-        
-        // Save session data to localStorage
-        saveAnonymousSession({
-          anonymousId: data.anonymousId,
-          messageCount: data.messageCount,
-          canSendMore: data.canSendMore
-        });
-      } else {
-        // Use streaming for authenticated users
-        let streamedContent = '';
-        let streamStarted = false;
-        streamAssistantId = Date.now() + 1;
+      let streamedContent = '';
+      let streamStarted = false;
+      const streamAssistantId = Date.now() + 1;
 
-        try {
+      const applyAnonymousSessionFromResult = (result) => {
+        if (!isAnonymous || !result) return;
+        if (result.anonymousId) setAnonymousId(result.anonymousId);
+        if (result.messageCount !== undefined) setMessageCount(result.messageCount);
+        if (result.canSendMore !== undefined) setCanSendMore(result.canSendMore);
+        if (result.anonymousId) {
+          saveAnonymousSession({
+            anonymousId: result.anonymousId,
+            messageCount: result.messageCount,
+            canSendMore: result.canSendMore,
+          });
+        }
+      };
+
+      const streamCallbacks = {
+        onThinking: (thinkingData) => {
+          const { sources, parkName: sourcePark, parkNames: sourceParks } = thinkingData;
+          setThinkingSources(sources || []);
+          const parks = sourceParks?.length > 0 ? sourceParks.join(', ') : (sourcePark || parkName || 'the park');
+          if (sources?.includes('web')) {
+            setThinkingMessage(`Searching the web for live info about ${parks}...`);
+          } else if (sources?.includes('nps') && sources?.includes('weather')) {
+            setThinkingMessage(`Fetching live park data & weather for ${parks}...`);
+          } else if (sources?.includes('nps')) {
+            setThinkingMessage(`Fetching live park data for ${parks}...`);
+          } else if (sources?.includes('weather')) {
+            setThinkingMessage(`Checking weather forecast for ${parks}...`);
+          } else {
+            setThinkingMessage('Preparing your response...');
+          }
+        },
+        onChunk: (chunk) => {
+          streamedContent += chunk;
+          const currentContent = streamedContent;
+          if (!streamStarted) {
+            streamStarted = true;
+            setIsGenerating(false);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: streamAssistantId,
+                role: 'assistant',
+                content: currentContent,
+                timestamp: new Date(),
+                provider: 'auto',
+                isStreaming: true,
+              },
+            ]);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === streamAssistantId ? { ...m, content: currentContent } : m
+              )
+            );
+          }
+        },
+        onDone: (result) => {
+          data = {
+            content: result.content,
+            provider: result.provider,
+            model: result.model,
+            hasLiveData: result.hasLiveData,
+            parkName: result.parkName,
+            parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
+            hasItinerary: result.hasItinerary || false,
+            itineraryData: result.itineraryData || result.itinerary || null,
+            parkImages: result.parkImages || [],
+            anonymousId: result.anonymousId,
+            messageCount: result.messageCount,
+            canSendMore: result.canSendMore,
+            isConversionMessage: result.isConversionMessage,
+          };
+          applyAnonymousSessionFromResult(result);
+
+          if (result.isConversionMessage || !streamStarted) {
+            return;
+          }
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamAssistantId
+                ? {
+                    ...m,
+                    content: result.content,
+                    provider: result.provider,
+                    model: result.model,
+                    isStreaming: false,
+                    hasLiveData: result.hasLiveData,
+                    parkName: result.parkName,
+                    parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
+                    hasItinerary: result.hasItinerary || false,
+                    parkImages: result.parkImages || [],
+                  }
+                : m
+            )
+          );
+        },
+        onError: (err) => {
+          console.error('Stream error:', err);
+        },
+      };
+
+      try {
+        if (isAnonymous) {
+          await aiService.chatAnonymousStream({
+            messages: msgs,
+            systemPrompt: sessionContext,
+            provider: 'auto',
+            temperature: 0.4,
+            top_p: 0.9,
+            max_tokens: 8000,
+            signal: controller.signal,
+            metadata: requestMetadata,
+            anonymousId,
+            ...streamCallbacks,
+          });
+        } else {
           await aiService.chatStream({
             messages: msgs,
+            systemPrompt: sessionContext,
             provider: 'auto',
             temperature: 0.4,
             top_p: 0.9,
@@ -1036,79 +1284,37 @@ const TripPlannerChat = ({
               ...requestMetadata,
               userId: user?.id,
             },
-            onThinking: (thinkingData) => {
-              const { sources, parkName: sourcePark, parkNames: sourceParks } = thinkingData;
-              setThinkingSources(sources || []);
-              const parks = sourceParks?.length > 0 ? sourceParks.join(', ') : (sourcePark || parkName || 'the park');
-              if (sources?.includes('web')) {
-                setThinkingMessage(`Searching the web for live info about ${parks}...`);
-              } else if (sources?.includes('nps') && sources?.includes('weather')) {
-                setThinkingMessage(`Fetching live park data & weather for ${parks}...`);
-              } else if (sources?.includes('nps')) {
-                setThinkingMessage(`Fetching live park data for ${parks}...`);
-              } else if (sources?.includes('weather')) {
-                setThinkingMessage(`Checking weather forecast for ${parks}...`);
-              } else {
-                setThinkingMessage('Preparing your response...');
-              }
-            },
-            onChunk: (chunk) => {
-              streamedContent += chunk;
-              const currentContent = streamedContent;
-              if (!streamStarted) {
-                // Add assistant message on first chunk so no empty bubble shows
-                streamStarted = true;
-                setIsGenerating(false);
-                setMessages(prev => [...prev, {
-                  id: streamAssistantId,
-                  role: 'assistant',
-                  content: currentContent,
-                  timestamp: new Date(),
-                  provider: 'auto',
-                  isStreaming: true
-                }]);
-              } else {
-                setMessages(prev => prev.map(m =>
-                  m.id === streamAssistantId
-                    ? { ...m, content: currentContent }
-                    : m
-                ));
-              }
-            },
-            onDone: (result) => {
-              data = {
-                content: result.content,
-                provider: result.provider,
-                model: result.model,
-                hasLiveData: result.hasLiveData,
-                parkName: result.parkName,
-                parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
-                hasItinerary: result.hasItinerary || false,
-                itineraryData: result.itineraryData || null,
-                parkImages: result.parkImages || []
-              };
-              setMessages(prev => prev.map(m =>
-                m.id === streamAssistantId
-                  ? { ...m, content: result.content, provider: result.provider, model: result.model, isStreaming: false, hasLiveData: result.hasLiveData, parkName: result.parkName, parkNames: result.parkNames || (result.parkName ? [result.parkName] : []), hasItinerary: result.hasItinerary || false, parkImages: result.parkImages || [] }
-                  : m
-              ));
-            },
-            onError: (err) => {
-              console.error('Stream error:', err);
-            }
+            ...streamCallbacks,
           });
-        } catch (streamErr) {
-          if (streamErr.name === 'AbortError') throw streamErr;
-          console.error('Streaming failed, falling back to non-streaming:', streamErr.message);
         }
+      } catch (streamErr) {
+        if (streamErr.name === 'AbortError') throw streamErr;
+        console.error('Streaming failed, falling back to non-streaming:', streamErr.message);
+      }
 
-        // Fallback: if streaming did not produce a result, use regular non-streaming call
-        if (!data) {
-          // Remove the incomplete streaming message
-          setMessages(prev => prev.filter(m => m.id !== streamAssistantId));
-          setIsGenerating(true);
+      if (!data) {
+        if (streamStarted) {
+          setMessages((prev) => prev.filter((m) => m.id !== streamAssistantId));
+        }
+        setIsGenerating(true);
+
+        if (isAnonymous) {
+          data = await aiService.chatAnonymous({
+            messages: msgs,
+            systemPrompt: sessionContext,
+            provider: 'auto',
+            temperature: 0.4,
+            top_p: 0.9,
+            max_tokens: 8000,
+            signal: controller.signal,
+            metadata: requestMetadata,
+            anonymousId,
+          });
+          applyAnonymousSessionFromResult(data);
+        } else {
           data = await aiService.chat({
             messages: msgs,
+            systemPrompt: sessionContext,
             provider: 'auto',
             temperature: 0.4,
             top_p: 0.9,
@@ -1118,7 +1324,7 @@ const TripPlannerChat = ({
             metadata: {
               ...requestMetadata,
               userId: user?.id,
-            }
+            },
           });
         }
       }
@@ -1141,15 +1347,18 @@ const TripPlannerChat = ({
         const assistantMessage = {
           id: Date.now() + 1,
           role: 'assistant',
-          content: data.content,
+          content: buildGuestLimitIntro({ timeUntilReset, parkName }),
           timestamp: new Date(),
           provider: data.provider,
           model: data.model,
           responseTime: responseTime,
-          isConversionMessage: true
+          isConversionMessage: true,
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+        setIsGenerating(false);
+        setThinkingStartTime(null);
+        if (data.content) playCompletionSound?.();
         return; // Don't continue with normal processing
       }
 
@@ -1159,8 +1368,11 @@ const TripPlannerChat = ({
       // Build the assistant message for saving DIRECTLY (not inside setMessages callback,
       // because React 18 batching may defer the updater function when other updates are pending,
       // which would leave updatedMessagesForSave as null).
+      const usedStreaming = streamStarted && !data.isConversionMessage;
+      const assistantMessageId = usedStreaming ? streamAssistantId : Date.now() + 1;
+
       const assistantMessageForSave = {
-        id: isAnonymous ? Date.now() + 1 : streamAssistantId,
+        id: assistantMessageId,
         role: 'assistant',
         content: data.content,
         timestamp: new Date(),
@@ -1180,28 +1392,30 @@ const TripPlannerChat = ({
 
       // Still update React state for the UI (adds responseTime, clears isStreaming)
       setMessages(prev => {
-        return isAnonymous
-          ? [
-              ...prev,
-              {
-                id: assistantMessageForSave.id,
-                role: 'assistant',
-                content: data.content,
-                timestamp: new Date(),
-                provider: data.provider,
-                model: data.model,
-                responseTime,
-                hasLiveData: data.hasLiveData,
-                parkName: data.parkName,
-                hasItinerary: data.hasItinerary || false,
-                parkImages: data.parkImages || []
-              }
-            ]
-          : prev.map(msg =>
-              msg.id === streamAssistantId
-                ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName, hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [] }
-                : msg
-            );
+        if (usedStreaming) {
+          return prev.map(msg =>
+            msg.id === streamAssistantId
+              ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName, hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [] }
+              : msg
+          );
+        }
+
+        return [
+          ...prev,
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: data.content,
+            timestamp: new Date(),
+            provider: data.provider,
+            model: data.model,
+            responseTime,
+            hasLiveData: data.hasLiveData,
+            parkName: data.parkName,
+            hasItinerary: data.hasItinerary || false,
+            parkImages: data.parkImages || []
+          }
+        ];
       });
 
       // Check if response contains a complete trip plan and build the plan object
@@ -1238,6 +1452,7 @@ const TripPlannerChat = ({
 
       setIsGenerating(false);
       setThinkingStartTime(null);
+      if (data?.content) playCompletionSound?.();
 
     } catch (error) {
       // Log detailed error information for debugging
@@ -1361,75 +1576,19 @@ const TripPlannerChat = ({
     return text;
   };
 
-  const buildSystemPrompt = (userContext, isPersonalizedMode = false) => {
+  /** Session context merged server-side with Trailie persona (not a replacement system prompt). */
+  const buildClientSessionContext = (userContext, isPersonalizedMode = false) => {
     const days = calculateDays();
-    
+
     const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // 0-based to 1-based
+    const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
     const currentSeason = getCurrentSeason(currentMonth);
-    
-    let prompt = `You are TrailVerse AI, an expert US travel assistant with comprehensive knowledge of travel destinations across the United States. You're passionate about helping people discover amazing places and experiences throughout America.
 
-## IMPORTANT - Scope Restrictions:
-**You answer questions about ALL US travel destinations including:**
-- **National Parks** (63 official National Parks)
-- **State Parks** and **Regional Parks**
-- **Local attractions** (farms, pumpkin patches, festivals, markets)
-- **Cities and towns** (downtown areas, neighborhoods, local culture)
-- **Beaches, lakes, rivers, and coastal areas**
-- **Mountains, forests, deserts, and natural areas**
-- **Theme parks, museums, and entertainment venues**
-- **Historic sites, monuments, and cultural attractions**
-- **Food scenes, breweries, wineries, and local dining**
-- **Events, festivals, and seasonal activities**
-- **Road trips and multi-destination itineraries**
-- **Accommodations, dining, and local amenities**
-- **Weather, seasons, and best times to visit**
-- **Travel logistics, transportation, and planning**
-
-**You CANNOT answer questions about:**
-- **International destinations** (outside the United States)
-- **Non-travel topics** (coding, math, general knowledge, politics, etc.)
-
-**If asked about international travel or non-travel topics, politely redirect:**
-"I specialize in US travel destinations and experiences. I can help you discover amazing places across America, from National Parks to local farms, cities to beaches, and everything in between. What US destination or experience are you interested in exploring?"
-
-## Your Expertise:
-- **Destination Recommendations**: Matching places to interests, seasons, and travel preferences
-- **Detailed Itineraries**: Day-by-day plans with activities, lodging, and dining
-- **Local Insights**: Hidden gems, local favorites, and authentic experiences
-- **Activity Suggestions**: Hiking, scenic drives, cultural experiences, food tours, festivals
-- **Practical Guidance**: Access, timing, logistics, and local tips
-- **Safety & Preparation**: Weather considerations, essential gear, and travel safety
-
-## Response Style:
-- **Enthusiastic & Encouraging**: Share your passion for travel and discovery
-- **Structured & Clear**: Use headers, bullet points, and organized sections
-- **Practical & Actionable**: Provide specific, implementable advice
-- **Safety-Conscious**: Always include relevant safety considerations
-- **Personalized**: Adapt to user's interests, experience, and travel style
-
-## Response Format:
-- Use **markdown formatting** for better readability
-- Keep responses visually clean and easy to scan without relying on emojis
-- Structure with **clear headers** and **bullet points**
-- Provide **specific recommendations** with reasoning
-- Include **practical tips** and **pro tips** where relevant
-
-## Context Awareness:
-- Consider the user's trip dates, group size, interests, and travel style
-- Reference specific destination features, seasons, and local conditions
-- Provide location-specific advice and recommendations
-- Suggest activities appropriate for the user's interests and experience level
-- Include local tips, hidden gems, and authentic experiences
-
-Remember: You're not just providing information - you're inspiring and enabling amazing travel experiences across America! Help users discover everything from National Parks to local farms, from big cities to small towns, and all the incredible destinations in between.
-
-You are helping plan ${suggestText ? `a multi-park road trip to ${suggestText}` : `a trip to ${parkName}`}. You have extensive knowledge about all aspects of travel, national parks, weather, activities, logistics, and trip planning.${suggestText ? `
+    let prompt = `You are helping plan ${suggestText ? `a multi-park road trip to ${suggestText}` : parkName ? `a trip to ${parkName}` : 'a US outdoor trip'}.${suggestText ? `
 
 ROAD TRIP CONTEXT:
-This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. All your responses should be focused on planning a multi-park road trip covering these specific destinations. When the user asks about "the road trip" or "planning", they mean this specific multi-park itinerary.` : ''}
+This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.` : ''}
 
 CURRENT CONTEXT:
 - Today's date: ${currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1444,7 +1603,7 @@ TRIP DETAILS:
 - Group: ${formData.groupSize} people
 - Budget: ${formData.budget}
 - Fitness: ${formData.fitnessLevel}
-- Interests: ${formData.interests.join(', ')}
+- Interests: ${(formData.interests || []).join(', ') || 'not specified'}
 - Accommodation: ${formData.accommodation}`;
 
     if (userContext && userContext.totalTrips > 0) {
@@ -1461,117 +1620,15 @@ TRIP DETAILS:
       if (!isPersonalizedMode) {
         prompt += `\n\nGENERAL CHAT MODE (NOT "My Recommendations"):
 - Answer the user's actual question first
-- Do NOT inventory their past parks, quote trip counts, or open with profiling questions
-- Only reference this history when directly relevant to what they asked`;
+- Do NOT open with profile callouts on generic discovery questions
+- Do NOT inventory their past parks or quote trip counts
+- Only reference this history when directly relevant`;
       }
     }
 
     if (isPersonalizedMode) {
-      if (userContext && userContext.totalTrips > 0) {
-        prompt += `\n\nPERSONALIZATION MODE — ACTIVE:
-The user clicked "My Recommendations" expecting tailored suggestions over time. Follow these rules:
-
-FIRST RESPONSE (this turn only — this is the ONLY visible message; no separate welcome was shown):
-- Keep it under ~90 words in a single message
-- Greet them by first name once
-- Include one short line: you'll use their past trips, saved parks, and favorites for ideas (not live booking data)
-- Reference at most ONE known detail from their history if natural — never count trips or inventory parks ("10 parks", "solid range", etc.)
-- End with exactly ONE clarifying question (trip length, region, vibe, or season) — never two or more
-- Do NOT list destinations, rankings, or "top picks" yet — wait for their answer
-
-AFTER they reply:
-- Recommend 2-3 destinations they haven't visited yet, with brief why-each fits their pattern and interests
-- Reference past trips when relevant; consider the current season (${getCurrentSeason(new Date().getMonth() + 1)})
-- Suggest parks that complement ones they've already visited; offer variety when their history is one-note`;
-      } else {
-        prompt += `\n\nPERSONALIZATION MODE — NEW USER:
-You are in personalized recommendation mode, but this user has no trip history yet. Help them build a travel profile:
-- FIRST RESPONSE: one warm line plus 1-2 quick questions about travel style (e.g., "Do you prefer rugged backcountry or scenic drives with easy access?") — no destination list yet
-- AFTER they answer: suggest a few diverse starter destinations
-- Keep it conversational and low-pressure — help them discover what they like`;
-      }
+      prompt += `\n\nMy Recommendations mode is active (server will apply personalization rules).`;
     }
-
-    prompt += `\n\nEXPERTISE & CAPABILITIES:
-You are a comprehensive travel expert with deep knowledge in:
-- National Parks, State Parks, and Regional Parks
-- Local attractions (farms, pumpkin patches, festivals, markets)
-- Cities and towns (downtown areas, neighborhoods, local culture)
-- Beaches, lakes, rivers, and coastal areas
-- Mountains, forests, deserts, and natural areas
-- Theme parks, museums, and entertainment venues
-- Historic sites, monuments, and cultural attractions
-- Food scenes, breweries, wineries, and local dining
-- Events, festivals, and seasonal activities
-- Weather patterns, seasonal conditions, and climate data
-- Travel logistics, transportation, and accommodation
-- Budget planning, costs, and money-saving tips
-- Safety, permits, regulations, and requirements
-- Photography, wildlife viewing, and outdoor activities
-- Local culture, history, and hidden gems
-- Gear recommendations and packing lists
-- Route planning and navigation
-- Group dynamics and family-friendly options
-
-INSTRUCTIONS:
-- Be intelligent, confident, and comprehensive in your responses
-- When the user provides trip details (dates, interests, budget, group size) and asks for an itinerary or plan, **generate a complete day-by-day itinerary immediately** — do NOT ask clarifying questions or list concerns first. Include any warnings/tips within the plan itself.
-- Only ask 1–2 concise clarifying questions if the request genuinely lacks key info (no dates, no destination, or very vague).
-For clearly scoped questions, answer directly and concisely.
-- Be conversational, helpful, and match the user's question style
-- For simple questions, give direct, concise answers
-- For complex requests, use detailed formatting with headings and structure
-- Use formatting only when it adds value - don't over-format simple answers
-- Use bullet points (-) for lists when helpful
-- Use bold text (**text**) for key information when relevant
-- Use italics (*text*) for emphasis when needed
-- Use plain language and structured formatting rather than emojis
-- Be practical and realistic
-- Ask clarifying questions if needed
-- Remember context from the conversation
-- Provide specific times, locations, and activities when relevant
-- Consider the group size and fitness level in recommendations
-- Structure information logically - use headings and sections only for complex topics
-- Make responses appropriate to the question asked
-
-RESPONSE INTELLIGENCE:
-- Simple questions = Simple, direct answers
-- Complex planning requests = Detailed, structured responses with formatting
-- Don't use templates or over-formatting for basic questions
-- Match the user's communication style and question complexity
-- Be context-aware: understand what the user is really asking for
-- Provide actionable, specific advice based on your expertise
-- Always be helpful and solution-oriented
-
-TRAVEL EXPERTISE:
-- Be helpful and practical; when you're unsure or need specifics (permits, road/area closures, live weather), ask a brief clarifying question first or state typical conditions as "typical/average" and avoid exact now-casts
-- You have comprehensive knowledge about weather, seasons, conditions, and planning
-- You can provide detailed information about any aspect of travel including National Parks, State Parks, local farms, cities, beaches, and all US destinations
-- You can give specific advice about what to expect during different seasons and months
-- You can recommend clothing, gear, and preparation based on weather and season
-- You can share historical weather data, seasonal averages, and typical conditions
-- You can help with all aspects of trip planning including weather considerations
-- You can recommend local farms, pumpkin patches, festivals, markets, and seasonal activities
-- You can suggest city attractions, downtown areas, local culture, and urban experiences
-- You can provide information about beaches, lakes, rivers, and coastal areas
-- You can recommend theme parks, museums, entertainment venues, and cultural attractions
-- You can suggest food scenes, breweries, wineries, and local dining experiences
-- Be confident and helpful - you have extensive knowledge about all US travel destinations and experiences
-
-WEATHER & LIVE INFO RESPONSES:
-- If provided LIVE FACTS in system messages (NPS/Weather), use them as ground truth
-- If info is not in LIVE FACTS, state typical/average guidance and suggest official sources
-- Do not invent closures, permits, or exact weather not present in LIVE FACTS
-- Provide seasonal/typical guidance when helpful, clearly labeled as averages
-- If the user asks for "current/tomorrow/next week" weather or closures, say you don't have live data and suggest where to check (NPS alerts, official park site, NOAA) unless the conversation already provided those facts
-- Never invent specific temperatures, warnings, permits, or closure statuses
-- Use the CURRENT CONTEXT information above to provide accurate seasonal information
-- When asked about weather, provide helpful seasonal information and typical conditions for the current time of year
-- For "next week" or "tomorrow" questions, give typical conditions for the current season and month
-- For "current" weather questions, provide seasonal averages and what to expect for the current time of year
-- Always reference the current date and season when providing weather information
-- Always be helpful and provide useful weather information for trip planning
-- Be accurate about current dates and seasons - don't make up incorrect dates`;
 
     prompt += formatItineraryForPrompt(currentPlan);
 
@@ -1780,11 +1837,6 @@ WEATHER & LIVE INFO RESPONSES:
     router.push('/signup');
   };
 
-  const handleLoginRedirect = () => {
-    storeReturnToChat();
-    router.push('/login');
-  };
-
   const handleShare = async () => {
     if (!currentTripId || currentTripId.startsWith('temp-') || !isAuthenticated) return;
 
@@ -1879,6 +1931,7 @@ WEATHER & LIVE INFO RESPONSES:
           console.log('🔄 Refreshing trips list to update message count');
           refreshTrips();
         }
+        persistSessionToStorage(currentTripId, messagesToSave, planToSave);
       } else {
         // Create new trip in database
         console.log('🆕 Creating NEW trip in database:', {
@@ -1907,25 +1960,13 @@ WEATHER & LIVE INFO RESPONSES:
           console.log('🔄 Refreshing trips list after new chat created');
           refreshTrips();
         }
-      }
 
-      // Also save to temp state for page refresh persistence
-      tripHistoryService.saveTempChatState({
-        currentTripId,
-        messages: messagesToSave,
-        plan: planToSave,
-        provider: 'auto'
-      });
+        persistSessionToStorage(newTripId, messagesToSave, planToSave);
+      }
       setSaveState('saved');
     } catch (error) {
       console.error('Error auto-saving conversation:', error);
-      // Still save to temp state even if database save fails
-      tripHistoryService.saveTempChatState({
-        currentTripId,
-        messages: messagesToSave,
-        plan: planToSave,
-        provider: 'auto'
-      });
+      persistSessionToStorage(currentTripId, messagesToSave, planToSave);
       setSaveState('idle');
     } finally {
       savingInProgressRef.current = false;
@@ -2076,29 +2117,11 @@ WEATHER & LIVE INFO RESPONSES:
     );
   }
 
-  // Show warning message if user has exhausted their 5 messages (never for authenticated users)
-  if (isAnonymous && !isAuthenticated && !canSendMore && isAnonymousLimitReached({ canSendMore, messageCount })) {
-    return (
-      <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="flex flex-1 items-center justify-center p-4 sm:p-8">
-          <div className="w-full max-w-md">
-            <SignupPromptPanel
-              reason={SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT}
-              parkName={parkName}
-              onSignup={handleSignupRedirect}
-              onLogin={handleLoginRedirect}
-              timeUntilReset={timeUntilReset}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
       style={{ backgroundColor: 'var(--bg-primary)' }}
+      onPointerDownCapture={() => primeCompletionSound?.()}
     >
       {/* Chat Messages - Responsive width */}
       <div
@@ -2116,13 +2139,23 @@ WEATHER & LIVE INFO RESPONSES:
                 message.hiddenFromUi ? null : (
                 <React.Fragment key={`${message.id || message._id || index}-${user?.id || 'anonymous'}-${avatarVersion}`}>
                 <MessageBubble
-                  message={message.content}
+                  message={
+                    message.isConversionMessage
+                      ? message.content || buildGuestLimitIntro({ timeUntilReset, parkName })
+                      : message.content
+                  }
                   isUser={message.role === 'user'}
                   timestamp={message.timestamp}
                   hideActions={
-                    isWelcomeState &&
+                    message.isConversionMessage ||
+                    (isWelcomeState &&
                     message.role === 'assistant' &&
-                    index === 0
+                    index === 0)
+                  }
+                  afterContent={
+                    message.isConversionMessage ? (
+                      <GuestLimitMessageExtras onSignup={handleSignupRedirect} />
+                    ) : null
                   }
                   compact={
                     isWelcomeState &&
@@ -2134,8 +2167,9 @@ WEATHER & LIVE INFO RESPONSES:
                       isWelcomeState &&
                       message.role === 'assistant' &&
                       index === 0
-                    )
+                    ) && !message.isStreaming
                   }
+                  isStreaming={Boolean(message.isStreaming)}
                   userAvatar={message.role === 'user' ? (() => {
                     // Anonymous users: use the session-stable random avatar
                     if (!user) {
@@ -2376,19 +2410,6 @@ WEATHER & LIVE INFO RESPONSES:
             </svg>
             New messages
           </button>
-        </div>
-      )}
-
-      {/* Conversion Message for Anonymous Users */}
-      {isAnonymous && !isAuthenticated && (!canSendMore || messages.some(msg => msg.isConversionMessage)) && (
-        <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-          <SignupPromptPanel
-            reason={SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT}
-            parkName={parkName}
-            headingLevel="h3"
-            onSignup={handleSignupRedirect}
-            onLogin={handleLoginRedirect}
-          />
         </div>
       )}
 

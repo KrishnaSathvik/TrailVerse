@@ -7,15 +7,27 @@ describe('factsService web search policy (NPS vs web)', () => {
     expect(needsWebSearch('How do I book a campsite at Yosemite?')).toBe(false);
   });
 
-  test('non-NPS travel — web', () => {
+  test('park discovery and compare — NPS/catalog only, no web', () => {
     expect(
       needsWebSearch(
         'so which is best to visit in July for cool summer vibes with lakes or beach'
       )
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      needsWebSearch(
+        'Best national parks for a couples getaway with ocean views and easy shoreline walks?'
+      )
+    ).toBe(false);
+    expect(needsWebSearch('Zion vs Bryce for first timers')).toBe(false);
+    expect(needsWebSearch('Is Angels Landing open right now in Zion National Park?')).toBe(false);
+  });
+
+  test('logistics and roads — web', () => {
     expect(needsWebSearch('good restaurants and hotels near Zion')).toBe(true);
     expect(needsWebSearch('is the road to Glacier open today')).toBe(true);
-    expect(needsWebSearch('Zion vs Bryce for first timers')).toBe(true);
+    expect(
+      needsWebSearch('Best hotels and dinner spots in Jackson Hole near Grand Teton National Park?')
+    ).toBe(true);
   });
 
   test('mixed NPS + non-NPS — web', () => {
@@ -29,14 +41,34 @@ describe('factsService web search policy (NPS vs web)', () => {
     expect(needsWebSearch('hi')).toBe(false);
   });
 
-  test('anonymous upsell skips pure itinerary planning', () => {
+  test('itinerary planning — NPS + weather only, no web', () => {
     const itinerary =
       'Plan a 3-day itinerary for Grand Canyon National Park in October for two adults who like moderate hikes.';
+    expect(needsWebSearch(itinerary)).toBe(false);
     expect(shouldAppendAnonymousWebSearchUpsell(itinerary)).toEqual({ append: false });
     expect(shouldAppendAnonymousWebSearchUpsell('good restaurants and hotels near Zion')).toEqual({
       append: true,
       variant: 'local',
     });
+  });
+
+  test('anonymous upsell skips discovery, compare, couples, and permits', () => {
+    expect(
+      shouldAppendAnonymousWebSearchUpsell(
+        'best national parks to visit in July with cool weather lakes or beaches'
+      )
+    ).toEqual({ append: false });
+    expect(
+      shouldAppendAnonymousWebSearchUpsell(
+        'Best national parks for a couples getaway with ocean views and easy shoreline walks?'
+      )
+    ).toEqual({ append: false });
+    expect(shouldAppendAnonymousWebSearchUpsell('Zion vs Bryce for first timers')).toEqual({
+      append: false,
+    });
+    expect(
+      shouldAppendAnonymousWebSearchUpsell('Do I need a permit to hike The Narrows top-down in Zion?')
+    ).toEqual({ append: false });
   });
 
   test('classifyQuery avoids substring false positives', () => {

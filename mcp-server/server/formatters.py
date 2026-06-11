@@ -894,14 +894,22 @@ def _search_framing_sentence(query: str | None, park_count: int) -> str:
         goals.append("easier trails and low-stress planning")
     if re.search(r"\b(photography|photo spots?|scenic shots?)\b", q):
         goals.append("views and photo-friendly landscapes")
+    if re.search(r"\bnational\s+parks?\b", q) and not re.search(
+        r"\b(lakeshores?|seashores?|monuments?)\b", q
+    ):
+        goals.append("National Park designations only")
+    if re.search(
+        r"\b(cool|cooler|beat the heat|escape the heat|mild)\b", q
+    ) and re.search(r"\b(july|summer|june|august)\b", q):
+        goals.append("cooler summer weather")
     if not goals:
         return (
             f"TrailVerse ranked **{park_count}** NPS sites from live data. "
-            "Best fits first; more options below."
+            "Lead with your top pick, then 2–4 strong alternates from the list below."
         )
     return (
         f"TrailVerse ranked **{park_count}** parks for **{', '.join(goals)}**. "
-        "Top five below; more matches after that."
+        "Lead with one clear recommendation, then a few alternates — not a flat dump."
     )
 
 
@@ -914,12 +922,27 @@ def _search_headline(query: str | None) -> str:
     return headline[0].upper() + headline[1:] if headline else "NPS sites for you"
 
 
+_PARK_LOGISTICS_NOTES: dict[str, str] = {
+    "wrst": "Alaska bush country — usually fly or long drive from Anchorage; multi-day trip.",
+    "glba": "Southeast Alaska — most visitors arrive by cruise or floatplane.",
+    "katm": "Alaska interior — bush plane or long drive; short summer window.",
+    "dena": "Alaska — one road in; book lodges and transit early.",
+    "isro": "Lake Superior island — ferry or seaplane; reserve boats early.",
+    "chis": "California islands — boat or plane from Ventura/Oxnard only.",
+    "dryv": "Florida Keys reef — boat or seaplane; check weather.",
+    "glac": "Going-to-the-Sun Road opens mid-summer only; lodging books early.",
+}
+
+
 def _search_park_block(p: dict[str, Any], rank: int) -> list[str]:
     """One park entry for search tool text — complete enough to send as the user reply."""
     pname = p.get("name", "Unknown")
     states = p.get("states") or ""
     state_bit = f" ({states})" if states else ""
-    lines = [f"### {rank}. {pname}{state_bit}"]
+    code = (p.get("parkCode") or "").lower()
+    logistics = _PARK_LOGISTICS_NOTES.get(code)
+    title_suffix = " · Logistics" if logistics else ""
+    lines = [f"### {rank}. {pname}{state_bit}{title_suffix}"]
     match_reason = p.get("matchReason")
     summary = p.get("summary") or ""
     if match_reason:
@@ -929,6 +952,8 @@ def _search_park_block(p: dict[str, Any], rank: int) -> list[str]:
             lines.append(match_reason)
     elif summary:
         lines.append(summary)
+    if logistics:
+        lines.append(f"**Planning:** {logistics}")
     link_parts = []
     if p.get("link"):
         link_parts.append(f"[Details on TrailVerse]({p['link']})")

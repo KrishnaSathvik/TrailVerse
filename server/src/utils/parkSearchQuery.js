@@ -9,17 +9,23 @@ const {
   tokenizeParkSearchQuery,
   haystackMatchesToken,
 } = require('../catalog/searchTokens');
+const { parkHaystackMatchesWaterToken } = require('../catalog/coastGeography');
 
 function scoreParkForTokens(park, queryTokens) {
   const haystack = buildSearchHaystack(park);
   return queryTokens.reduce(
-    (total, token) => total + (haystackMatchesToken(haystack, token) ? 1 : 0),
+    (total, token) =>
+      total +
+      (parkHaystackMatchesWaterToken(park, haystack, token, haystackMatchesToken)
+        ? 1
+        : 0),
     0
   );
 }
 
 const KEYWORD_WEIGHT = 1;
 const TRAIT_WEIGHT = 2.5;
+const NAME_PREFIX_WEIGHT = 12;
 const MIN_TRAIT_ONLY_SCORE = 0.35;
 
 const {
@@ -29,6 +35,12 @@ const {
   summarizePrimaryIntents,
 } = require('../catalog/queryTraitIntent');
 const { buildMatchExplanation } = require('../catalog/matchExplanation');
+const { applyDiscoveryQueryFilters } = require('../catalog/discoverySearchPolicy');
+const {
+  tokenizeNameSearchQuery,
+  scoreParkNamePrefix,
+  parkNameMatchesAllTokens,
+} = require('../catalog/parkNameSearch');
 
 /**
  * Hybrid rank: keyword token overlap + trait intent fit.
@@ -40,7 +52,8 @@ function attachSearchMatch(park, traitIntent, queryTokens, query) {
     park,
     traitIntent,
     queryTokens,
-    primaryIntents
+    primaryIntents,
+    query
   );
   park.searchMatch = explanation;
   return park;
@@ -82,33 +95,46 @@ function applyPinnedParksToResults(rankedParks, catalog, pinnedCodes, q) {
 }
 
 function rankParksByHybridSearch(parks, traitIntent, queryTokens, query) {
+  const nameTokens = tokenizeNameSearchQuery(query);
+  const hasTraitIntent = Object.keys(traitIntent || {}).length > 0;
+
   return parks
     .map((park) => {
       const keywordScore = scoreParkForTokens(park, queryTokens);
       const traitScore = scoreTraitIntent(park, traitIntent);
+      const namePrefixScore = scoreParkNamePrefix(park, nameTokens);
       let total =
-        keywordScore * KEYWORD_WEIGHT + traitScore * TRAIT_WEIGHT;
-      total = applyIntentAdjustments(total, park, traitIntent);
-      return { park, keywordScore, traitScore, total };
+        keywordScore * KEYWORD_WEIGHT +
+        traitScore * TRAIT_WEIGHT +
+        namePrefixScore * NAME_PREFIX_WEIGHT;
+      total = applyIntentAdjustments(total, park, traitIntent, query);
+      return { park, keywordScore, traitScore, namePrefixScore, total };
     })
-    .filter(
-      ({ keywordScore, traitScore }) =>
-        keywordScore > 0 || traitScore >= MIN_TRAIT_ONLY_SCORE
-    )
+    .filter(({ keywordScore, traitScore, namePrefixScore }) => {
+      if (namePrefixScore > 0) return true;
+      if (hasTraitIntent) {
+        return keywordScore > 0 || traitScore >= MIN_TRAIT_ONLY_SCORE;
+      }
+      if (nameTokens.length > 0) {
+        return false;
+      }
+      return keywordScore > 0 || traitScore >= MIN_TRAIT_ONLY_SCORE;
+    })
     .sort((a, b) => b.total - a.total)
     .map(({ park }) => attachSearchMatch(park, traitIntent, queryTokens, query));
 }
 
 function filterParksBySearchQuery(parks, q) {
+  const scopedParks = applyDiscoveryQueryFilters(parks, q);
   const query = q.toLowerCase().trim();
   const queryTokens = tokenizeParkSearchQuery(q);
   const traitIntent = buildTraitIntentFromQuery(q);
 
   if (queryTokens.length === 0) {
     if (Object.keys(traitIntent).length > 0) {
-      return rankParksByHybridSearch(parks, traitIntent, queryTokens, q);
+      return rankParksByHybridSearch(scopedParks, traitIntent, queryTokens, q);
     }
-    return parks
+    return scopedParks
       .filter((park) => {
         const haystack = buildSearchHaystack(park);
         return haystack.includes(query);
@@ -116,7 +142,7 @@ function filterParksBySearchQuery(parks, q) {
       .map((park) => attachSearchMatch(park, traitIntent, queryTokens, q));
   }
 
-  return rankParksByHybridSearch(parks, traitIntent, queryTokens, q);
+  return rankParksByHybridSearch(scopedParks, traitIntent, queryTokens, q);
 }
 
 module.exports = {

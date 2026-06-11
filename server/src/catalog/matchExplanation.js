@@ -3,6 +3,10 @@
  */
 const { buildSearchHaystack } = require('./canonicalPark');
 const { haystackMatchesToken } = require('./searchTokens');
+const {
+  tokenizeNameSearchQuery,
+  parkNameMatchesAllTokens,
+} = require('./parkNameSearch');
 const { getParkMatchBlurb } = require('./parkMatchBlurbs');
 
 /** Short labels only for generic fallback (max 2 traits). */
@@ -129,27 +133,10 @@ function buildNaturalMatchReason(park, matchedTraits, primaryIntents) {
   return 'Matches what you searched for.';
 }
 
-/** States/territories with Atlantic, Pacific, or Gulf access (excludes Great Lakes–only). */
-const OCEAN_COAST_STATES = new Set([
-  'AK', 'AL', 'AS', 'CA', 'CT', 'DE', 'FL', 'GA', 'GU', 'HI', 'LA', 'MA', 'MD', 'ME',
-  'MP', 'MS', 'NC', 'NH', 'NJ', 'NY', 'OR', 'PA', 'PR', 'RI', 'SC', 'TX', 'VA', 'VI', 'WA',
-]);
-
-/**
- * @param {import('./canonicalPark').CanonicalPark} park
- * @returns {boolean}
- */
-function parkHasOceanCoastAccess(park) {
-  const category = (park.category || '').toLowerCase();
-  if (category === 'national_seashore') return true;
-
-  const states = (park.states || '')
-    .split(',')
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean);
-
-  return states.some((s) => OCEAN_COAST_STATES.has(s));
-}
+const {
+  OCEAN_COAST_STATES,
+  parkHasOceanCoastAccess,
+} = require('./coastGeography');
 
 /**
  * Drop geographically impossible trait labels (e.g. ocean views for Wyoming).
@@ -169,9 +156,10 @@ function filterGeographicTraits(park, matchedTraits) {
  * @param {Record<string, number>} traitIntent
  * @param {string[]} queryTokens
  * @param {{ label: string, weight: number }[]} [primaryIntents]
+ * @param {string} [query]
  * @returns {{ matchReason: string, matchedTraits: string[] }}
  */
-function buildMatchExplanation(park, traitIntent, queryTokens = [], primaryIntents = []) {
+function buildMatchExplanation(park, traitIntent, queryTokens = [], primaryIntents = [], query = '') {
   const traits = park.traits || {};
   const intentEntries = Object.entries(traitIntent || {});
 
@@ -186,6 +174,15 @@ function buildMatchExplanation(park, traitIntent, queryTokens = [], primaryInten
     .sort((a, b) => b.combined - a.combined);
 
   let matchedTraits = scoredTraits.map(({ trait }) => trait);
+
+  const nameTokens = tokenizeNameSearchQuery(query || queryTokens.join(' '));
+
+  if (matchedTraits.length === 0 && nameTokens.length > 0 && parkNameMatchesAllTokens(park, nameTokens)) {
+    return {
+      matchReason: `Name matches "${nameTokens.join(' ')}".`,
+      matchedTraits: [],
+    };
+  }
 
   if (matchedTraits.length === 0 && queryTokens.length > 0) {
     const haystack = buildSearchHaystack(park);

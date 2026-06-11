@@ -26,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/discover/states`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
     { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/plan-ai`, lastModified: new Date('2026-05-01'), changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/trailie-demo`, lastModified: new Date('2026-06-11'), changeFrequency: 'weekly', priority: 0.75 },
     { url: `${BASE_URL}/testimonials`, lastModified: new Date('2026-05-01'), changeFrequency: 'weekly', priority: 0.5 },
     // Monthly/rarely-changing content
     { url: `${BASE_URL}/map`, lastModified: new Date('2026-05-01'), changeFrequency: 'monthly', priority: 0.7 },
