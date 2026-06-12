@@ -111,6 +111,11 @@ const { parseConstraints, preflightCheck, buildConstraintBlock, validateItinerar
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
 const { streamRawLLMToSse } = require('../services/aiProviderStream');
+const {
+  setSseHeaders,
+  writeSseEvent,
+  attachClientDisconnectAbort,
+} = require('../utils/sseStream');
 const crypto = require('crypto');
 const claudeService = require('../services/claudeService');
 const openaiService = require('../services/openaiService');
@@ -2046,89 +2051,94 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       personalizedRecommendations
     );
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
+    const { signal, cleanup } = attachClientDisconnectAbort(req);
+    try {
+      setSseHeaders(res);
 
-    const dataSources = [];
-    if (npsFacts) dataSources.push('nps');
-    if (weatherFacts) dataSources.push('weather');
-    if (webSearchFacts) dataSources.push('web');
-    res.write(
-      `data: ${JSON.stringify({
+      const dataSources = [];
+      if (npsFacts) dataSources.push('nps');
+      if (weatherFacts) dataSources.push('weather');
+      if (webSearchFacts) dataSources.push('web');
+      writeSseEvent(res, {
         type: 'thinking',
         sources: dataSources,
         parkName: resolvedMetadata.parkName || null,
         parkNames: parkNames || [],
-      })}\n\n`
-    );
-    if (typeof res.flush === 'function') res.flush();
+      });
 
-    const streamResult = await streamRawLLMToSse(res, {
-      anthropic,
-      openai,
-      provider,
-      model,
-      temperature,
-      maxTokens,
-      top_p,
-      enhancedSystemPrompt,
-      augmentedMessages,
-    });
+      const streamResult = await streamRawLLMToSse(res, {
+        anthropic,
+        openai,
+        provider,
+        model,
+        temperature,
+        maxTokens,
+        top_p,
+        enhancedSystemPrompt,
+        augmentedMessages,
+        signal,
+      });
 
-    if (!streamResult?.fullContent) {
-      res.end();
-      return;
-    }
+      if (signal.aborted || streamResult?.aborted) {
+        res.end();
+        return;
+      }
 
-    let response = {
-      content: streamResult.fullContent,
-      provider: streamResult.provider,
-      model: streamResult.model,
-      usage: streamResult.usage,
-    };
+      if (!streamResult?.fullContent) {
+        res.end();
+        return;
+      }
 
-    const processed = await processAssistantResponse({
-      response,
-      lastMsg,
-      npsFacts,
-      webSearchFacts,
-      noParkDetected,
-      constraints,
-      conflicts,
-      hypothetical,
-      provider: response.provider,
-      model: response.model,
-      maxTokens,
-      temperature,
-      top_p,
-      enhancedSystemPrompt,
-      augmentedMessages,
-      req,
-      parksForLinks: allExtractedParks,
-      options: {
-        ...STREAM_POST_PROCESS_OPTIONS,
+      let response = {
+        content: streamResult.fullContent,
+        provider: streamResult.provider,
+        model: streamResult.model,
+        usage: streamResult.usage,
+      };
+
+      const processed = await processAssistantResponse({
+        response,
+        lastMsg,
+        npsFacts,
+        webSearchFacts,
+        noParkDetected,
+        constraints,
+        conflicts,
+        hypothetical,
+        provider: response.provider,
+        model: response.model,
+        maxTokens,
+        temperature,
+        top_p,
+        enhancedSystemPrompt,
+        augmentedMessages,
+        req,
+        parksForLinks: allExtractedParks,
+        options: {
+          ...STREAM_POST_PROCESS_OPTIONS,
+          logPrefix: '[AI Stream]',
+        },
+      });
+
+      response.content = processed.cleanContent;
+
+      const displayMeta = await finalizeParkImagesAndMetadata({
+        validatedContent: response.content,
+        resolvedMetadata,
+        parkNamesFromUser: parkNames,
+        parkImages,
+        alreadyShownImages,
+        attachParkImages,
         logPrefix: '[AI Stream]',
-      },
-    });
+      });
 
-    response.content = processed.cleanContent;
+      const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
+      const contentUnchanged = processed.cleanContent === strippedStreamContent;
 
-    const displayMeta = await finalizeParkImagesAndMetadata({
-      validatedContent: response.content,
-      resolvedMetadata,
-      parkNamesFromUser: parkNames,
-      parkImages,
-      alreadyShownImages,
-      attachParkImages,
-      logPrefix: '[AI Stream]',
-    });
-
-    res.write(
-      `data: ${JSON.stringify({
+      writeSseEvent(res, {
         type: 'done',
-        content: response.content,
+        contentUnchanged,
+        ...(contentUnchanged ? {} : { content: response.content }),
         provider: response.provider,
         model: response.model,
         hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
@@ -2141,49 +2151,51 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         planScore: processed.planScore,
         intent: intent?.primaryIntent || null,
         parkImages: displayMeta.parkImages,
-      })}\n\n`
-    );
-    res.end();
+      });
+      res.end();
 
-    void saveStreamItineraryToTrip(req, processed.itineraryData);
+      void saveStreamItineraryToTrip(req, processed.itineraryData);
 
-    const requestEndTime = Date.now();
-    extractParksMentioned(response.content || '')
-      .then((parksMentioned) => {
-        logAIRequest({
-          endpoint: 'chat-stream',
-          userId: req.user?.id || null,
-          provider: response.provider,
-          model: response.model,
-          durationMs: requestEndTime - requestStartTime,
-          promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
-          blocks: {
-            npsFacts: !!npsFacts,
-            weatherFacts: !!weatherFacts,
-            webSearch: !!webSearchFacts,
-            feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
-            constraints: constraints.hasConstraints,
-            preflight: { blockers: preflightResult.blockers.length, warnings: preflightResult.warnings.length },
-            conflicts: conflicts.length,
-            hypothetical: hypothetical.isHypothetical,
-            intent: intent?.primaryIntent || null,
-            userContext: !!req.user,
-          },
-          park: resolvedMetadata.parkCode
-            ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName }
-            : null,
-          messageCount: augmentedMessages.length,
-          promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
-          tokens: response.usage || null,
-          response: {
-            length: response.content?.length || 0,
-            hasItinerary: !!processed.itineraryData,
-            parksMentioned,
-          },
-          error: null,
-        });
-      })
-      .catch(() => {});
+      const requestEndTime = Date.now();
+      extractParksMentioned(response.content || '')
+        .then((parksMentioned) => {
+          logAIRequest({
+            endpoint: 'chat-stream',
+            userId: req.user?.id || null,
+            provider: response.provider,
+            model: response.model,
+            durationMs: requestEndTime - requestStartTime,
+            promptHash: crypto.createHash('sha256').update(enhancedSystemPrompt).digest('hex').slice(0, 12),
+            blocks: {
+              npsFacts: !!npsFacts,
+              weatherFacts: !!weatherFacts,
+              webSearch: !!webSearchFacts,
+              feeFree: !!(feeFreeFacts && feeFreeFacts.hasOverlap),
+              constraints: constraints.hasConstraints,
+              preflight: { blockers: preflightResult.blockers.length, warnings: preflightResult.warnings.length },
+              conflicts: conflicts.length,
+              hypothetical: hypothetical.isHypothetical,
+              intent: intent?.primaryIntent || null,
+              userContext: !!req.user,
+            },
+            park: resolvedMetadata.parkCode
+              ? { code: resolvedMetadata.parkCode, name: resolvedMetadata.parkName }
+              : null,
+            messageCount: augmentedMessages.length,
+            promptTokenEstimate: Math.round(enhancedSystemPrompt.length / 4),
+            tokens: response.usage || null,
+            response: {
+              length: response.content?.length || 0,
+              hasItinerary: !!processed.itineraryData,
+              parksMentioned,
+            },
+            error: null,
+          });
+        })
+        .catch(() => {});
+    } finally {
+      cleanup();
+    }
   } catch (error) {
     if (res.headersSent) {
       res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
@@ -2347,92 +2359,98 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       });
     }
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
+    const { signal, cleanup } = attachClientDisconnectAbort(req);
+    try {
+      setSseHeaders(res);
 
-    const dataSources = [];
-    if (npsFacts) dataSources.push('nps');
-    if (weatherFacts) dataSources.push('weather');
-    if (webSearchFacts) dataSources.push('web');
-    res.write(
-      `data: ${JSON.stringify({
+      const dataSources = [];
+      if (npsFacts) dataSources.push('nps');
+      if (weatherFacts) dataSources.push('weather');
+      if (webSearchFacts) dataSources.push('web');
+      writeSseEvent(res, {
         type: 'thinking',
         sources: dataSources,
         parkName: resolvedMetadata.parkName || null,
         parkNames: anonParkNames || [],
-      })}\n\n`
-    );
+      });
 
-    const streamResult = await streamRawLLMToSse(res, {
-      anthropic,
-      openai,
-      provider,
-      model,
-      temperature,
-      maxTokens,
-      top_p,
-      enhancedSystemPrompt,
-      augmentedMessages,
-    });
+      const streamResult = await streamRawLLMToSse(res, {
+        anthropic,
+        openai,
+        provider,
+        model,
+        temperature,
+        maxTokens,
+        top_p,
+        enhancedSystemPrompt,
+        augmentedMessages,
+        signal,
+      });
 
-    if (!streamResult?.fullContent) {
-      res.end();
-      return;
-    }
+      if (signal.aborted || streamResult?.aborted) {
+        res.end();
+        return;
+      }
 
-    let response = {
-      content: streamResult.fullContent,
-      provider: streamResult.provider,
-      model: streamResult.model,
-      usage: streamResult.usage,
-    };
+      if (!streamResult?.fullContent) {
+        res.end();
+        return;
+      }
 
-    const processed = await processAssistantResponse({
-      response,
-      lastMsg,
-      npsFacts,
-      webSearchFacts,
-      noParkDetected: anonNoParkDetected,
-      constraints: anonConstraints,
-      conflicts: anonConflicts,
-      hypothetical: anonHypothetical,
-      provider: response.provider,
-      model: response.model,
-      maxTokens,
-      temperature,
-      top_p,
-      enhancedSystemPrompt,
-      augmentedMessages,
-      req,
-      parksForLinks: allExtractedParks,
-      options: {
-        ...STREAM_POST_PROCESS_OPTIONS,
-        appendAnonymousWebUpsell: true,
-        isTrustedMcp: !!req.isTrustedMcp,
+      let response = {
+        content: streamResult.fullContent,
+        provider: streamResult.provider,
+        model: streamResult.model,
+        usage: streamResult.usage,
+      };
+
+      const processed = await processAssistantResponse({
+        response,
+        lastMsg,
+        npsFacts,
+        webSearchFacts,
+        noParkDetected: anonNoParkDetected,
+        constraints: anonConstraints,
+        conflicts: anonConflicts,
+        hypothetical: anonHypothetical,
+        provider: response.provider,
+        model: response.model,
+        maxTokens,
+        temperature,
+        top_p,
+        enhancedSystemPrompt,
+        augmentedMessages,
+        req,
+        parksForLinks: allExtractedParks,
+        options: {
+          ...STREAM_POST_PROCESS_OPTIONS,
+          appendAnonymousWebUpsell: true,
+          isTrustedMcp: !!req.isTrustedMcp,
+          logPrefix: '[AI Anon Stream]',
+        },
+      });
+
+      response.content = processed.cleanContent;
+
+      const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
+
+      const anonDisplayMeta = await finalizeParkImagesAndMetadata({
+        validatedContent: response.content,
+        resolvedMetadata,
+        parkNamesFromUser: anonParkNames,
+        parkImages,
+        alreadyShownImages: anonAlreadyShownImages,
+        attachParkImages: anonAttachParkImages,
         logPrefix: '[AI Anon Stream]',
-      },
-    });
+      });
 
-    response.content = processed.cleanContent;
+      const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
+      const contentUnchanged = processed.cleanContent === strippedStreamContent;
 
-    const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
-
-    const anonDisplayMeta = await finalizeParkImagesAndMetadata({
-      validatedContent: response.content,
-      resolvedMetadata,
-      parkNamesFromUser: anonParkNames,
-      parkImages,
-      alreadyShownImages: anonAlreadyShownImages,
-      attachParkImages: anonAttachParkImages,
-      logPrefix: '[AI Anon Stream]',
-    });
-
-    res.write(
-      `data: ${JSON.stringify({
+      writeSseEvent(res, {
         type: 'done',
-        content: response.content,
+        contentUnchanged,
+        ...(contentUnchanged ? {} : { content: response.content }),
         provider: response.provider,
         model: response.model,
         hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
@@ -2448,25 +2466,24 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         anonymousId: session.anonymousId,
         messageCount: userMessageCount,
         canSendMore: session.canSendMessage(),
-      })}\n\n`
-    );
-    res.end();
+      });
+      res.end();
 
-    const anonRequestEndTime = Date.now();
-    void session
-      .addMessage({
-        role: 'assistant',
-        content: response.content,
-        provider: response.provider,
-        model: response.model,
-        responseTime: Date.now() - session.lastActivity,
-      })
-      .catch((err) => console.error('[AI Anon Stream] Session save error:', err.message));
+      const anonRequestEndTime = Date.now();
+      void session
+        .addMessage({
+          role: 'assistant',
+          content: response.content,
+          provider: response.provider,
+          model: response.model,
+          responseTime: Date.now() - session.lastActivity,
+        })
+        .catch((err) => console.error('[AI Anon Stream] Session save error:', err.message));
 
-    extractParksMentioned(response.content || '')
-      .then((anonParksMentioned) => {
-        logAIRequest({
-          endpoint: 'chat-anonymous-stream',
+      extractParksMentioned(response.content || '')
+        .then((anonParksMentioned) => {
+          logAIRequest({
+            endpoint: 'chat-anonymous-stream',
           userId: null,
           provider: response.provider,
           model: response.model,
@@ -2498,8 +2515,11 @@ router.post('/chat-anonymous-stream', async (req, res) => {
           },
           error: null,
         });
-      })
-      .catch(() => {});
+        })
+        .catch(() => {});
+    } finally {
+      cleanup();
+    }
   } catch (error) {
     logAIRequest({
       endpoint: 'chat-anonymous-stream',

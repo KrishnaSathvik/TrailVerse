@@ -19,7 +19,7 @@ export default function TrailieDemoPage() {
                 Trailie demo — AI national park trip planning
               </h1>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-pretty" style={{ color: 'var(--text-secondary)' }}>
-                Pick a sample below to see how Trailie answers.
+                Four recorded samples — see how Trailie answers real trip questions.
               </p>
             </header>
 

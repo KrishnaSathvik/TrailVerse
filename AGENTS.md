@@ -15,6 +15,15 @@
 | `.cursor/rules/06-mcp-chatgpt-cloud.mdc` | **MCP on Render, ChatGPT App Directory, Claude, widgets** |
 | `.cursor/rules/07-frontend-services-layer.mdc` | `src/services/` API clients |
 | `.cursor/rules/08-guides-and-intent-pages.mdc` | Planning guides hub, intent landings, standouts copy |
+| `.cursor/rules/09-blog-publish-workflow.mdc` | **Publish park/astro blogs, no-email, featured, gradual view bumps** |
+
+## Blog publish (quick ref)
+
+When user says **publish blog / astro / same flow / bump views gradually** → read **`09-blog-publish-workflow.mdc`**.
+
+- No email: set `notificationSentAt` on publish  
+- Astro date: park guide + 2 days (unless user gives a date)  
+- Views: `server/scripts/bump-recent-blog-views.js --apply` (not full library bump)
 
 ## External AI distribution
 

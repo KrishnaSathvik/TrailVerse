@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sparkles } from '@components/icons';
 import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
@@ -45,12 +45,18 @@ const PlanAIContent = ({ tripId }) => {
     uniqueParksCount,
     isAuthenticated,
     fromChatHistory,
+    askText,
     newChatKey
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
   const [quickFillMessage, setQuickFillMessage] = useState(null);
   const [hasAppliedQuickFill, setHasAppliedQuickFill] = useState(!!tripId || !!fromChatHistory);
+  const [initialAskMessage, setInitialAskMessage] = useState(askText || null);
   const { playCompletion, prime: primeCompletionSound } = useAutoTrailieCompletionSound();
+
+  useEffect(() => {
+    if (askText) setInitialAskMessage(askText);
+  }, [askText]);
 
   if (isRestoringState || loadingTrip) {
     return (
@@ -138,6 +144,8 @@ const PlanAIContent = ({ tripId }) => {
           onOpenQuickFill={() => setQuickFillOpen(true)}
           quickFillMessage={quickFillMessage}
           onQuickFillSent={() => setQuickFillMessage(null)}
+          initialAskMessage={initialAskMessage}
+          onInitialAskSent={() => setInitialAskMessage(null)}
           playCompletionSound={playCompletion}
           primeCompletionSound={primeCompletionSound}
         />

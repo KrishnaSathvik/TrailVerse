@@ -256,6 +256,22 @@ body.mobile-nav-open {
   display: none;  /* Safari and Chrome */
 }
 
+/* Header mobile nav — CSS-only active state (no inline styles; avoids SSR/client style drift) */
+.header-mobile-nav-item {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.header-mobile-nav-item[aria-current='page'],
+.header-mobile-nav-item.header-mobile-nav-item--active {
+  border-color: var(--border);
+  background-color: var(--surface-hover);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 /* Mobile-specific chat interface improvements */
 @media (max-width: 640px) {
   /* Ensure chat input doesn't get cut off on mobile */

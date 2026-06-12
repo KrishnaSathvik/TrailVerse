@@ -66,8 +66,12 @@ const LANDING_MOBILE_INLINE_ITEMS_AUTH = [
 
 const LANDING_MOBILE_MORE_EXCLUDED_PATHS = new Set(['/blog', '/events']);
 
+/** Stable class string — active visuals via .header-mobile-nav-item CSS + aria-current. */
+const MOBILE_NAV_ITEM_CLASS =
+  'header-mobile-nav-item inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-solid px-2.5 py-2 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10';
+
 const Header = () => {
-  const { isAuthenticated, authReady, user, logout } = useAuth();
+  const { isAuthenticated, authReady, initialAuthHint, user, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -78,8 +82,10 @@ const Header = () => {
   }, []);
 
   const showAuthChrome = hasMounted && authReady;
-  // Guest nav on server + first client paint; auth nav only after mount (avoids hydration mismatch).
-  const showAuthenticatedNav = hasMounted && isAuthenticated;
+  // SSR + first paint: cookie hint only. After mount: full client auth state.
+  const showAuthenticatedNav = hasMounted
+    ? isAuthenticated
+    : Boolean(initialAuthHint && isAuthenticated);
 
   const primaryNavItems = showAuthenticatedNav
     ? [AUTH_HOME_NAV_ITEM, ...CORE_PRIMARY_NAV_ITEMS]
@@ -112,14 +118,9 @@ const Header = () => {
 
   const isMoreActive = (items = moreNavItems) => items.some((item) => isActive(item.path));
 
-  const mobileNavItemClassName = (active) =>
-    `inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-medium leading-none transition sm:px-3 sm:text-[0.9375rem] ${
-      active ? 'font-semibold' : 'hover:bg-black/5 dark:hover:bg-white/5'
-    }`;
-
   const navLinkClassName = (active, { mobileInline = false } = {}) =>
     mobileInline
-      ? mobileNavItemClassName(active)
+      ? MOBILE_NAV_ITEM_CLASS
       : `block w-full rounded-xl px-4 py-3.5 text-left text-base font-medium transition lg:inline-block lg:w-auto lg:rounded-full lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
           active ? 'ring-1' : 'hover:bg-black/5 dark:hover:bg-white/5 lg:hover:bg-black/5 lg:dark:hover:bg-white/5'
         }`;
@@ -151,9 +152,13 @@ const Header = () => {
         href={item.path}
         onClick={onClick}
         className={navLinkClassName(active, { mobileInline })}
-        style={navLinkStyle(active)}
-        onMouseEnter={(event) => handleNavLinkHover(event, active)}
-        onMouseLeave={(event) => handleNavLinkLeave(event, active)}
+        {...(mobileInline
+          ? { 'aria-current': active ? 'page' : undefined }
+          : {
+              style: navLinkStyle(active),
+              onMouseEnter: (event) => handleNavLinkHover(event, active),
+              onMouseLeave: (event) => handleNavLinkLeave(event, active),
+            })}
       >
         {item.label}
       </Link>
@@ -210,18 +215,16 @@ const Header = () => {
     };
   }, [moreMenuOpen]);
 
-  const renderMoreButton = ({ active = isMoreActive() } = {}) => (
+  const renderMoreButton = ({ active = isMoreActive(), mobile = false } = {}) => (
     <button
       type="button"
       onClick={() => setMoreMenuOpen((open) => !open)}
-      className={`${mobileNavItemClassName(active)} lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
-        active ? 'lg:font-semibold lg:ring-1' : ''
+      className={`${MOBILE_NAV_ITEM_CLASS} ${mobile && active ? 'header-mobile-nav-item--active' : ''} lg:px-4 lg:py-2.5 lg:text-[0.9375rem] ${
+        !mobile && active ? 'lg:font-semibold lg:ring-1' : ''
       }`}
-      style={{
-        backgroundColor: active ? 'var(--surface)' : 'transparent',
-        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-        borderColor: active ? 'var(--border)' : 'transparent',
-      }}
+      {...(mobile
+        ? {}
+        : { style: navLinkStyle(active) })}
       aria-expanded={moreMenuOpen}
       aria-haspopup="menu"
       aria-controls="more-navigation-menu-mobile"
@@ -336,7 +339,7 @@ const Header = () => {
               </div>
 
               <div className="relative shrink-0">
-                {renderMoreButton({ active: isMoreActive(currentMoreNavItems) })}
+                {renderMoreButton({ active: isMoreActive(currentMoreNavItems), mobile: true })}
                 {renderMoreDropdown('right', currentMoreNavItems)}
               </div>
             </div>

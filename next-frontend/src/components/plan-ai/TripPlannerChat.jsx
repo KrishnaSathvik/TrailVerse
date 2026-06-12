@@ -40,6 +40,7 @@ import {
   getRoadTripWelcomeMessage,
   MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE,
 } from '@/lib/planAiWelcomeCopy';
+import { stripItineraryJsonForDisplay } from '@/utils/streamDisplayContent';
 
 const ANONYMOUS_SESSION_KEY = 'anonymousSession';
 const ANONYMOUS_GUEST_AVATAR_KEY = 'anonymousGuestAvatar';
@@ -89,6 +90,8 @@ const TripPlannerChat = ({
   fromChatHistory = false,
   quickFillMessage = null,
   onQuickFillSent = null,
+  initialAskMessage = null,
+  onInitialAskSent = null,
   playCompletionSound = null,
   primeCompletionSound = null,
 }) => {
@@ -111,6 +114,15 @@ const TripPlannerChat = ({
   const [currentTripId, setCurrentTripId] = useState(existingTripId);
   const [providers, setProviders] = useState([]);
   const abortControllerRef = useRef(null);
+  const streamFlushRafRef = useRef(null);
+  const rawStreamedContentRef = useRef('');
+
+  const cancelStreamFlush = useCallback(() => {
+    if (streamFlushRafRef.current != null) {
+      cancelAnimationFrame(streamFlushRafRef.current);
+      streamFlushRafRef.current = null;
+    }
+  }, []);
   const [providersLoaded, setProvidersLoaded] = useState(false);
   const [thinkingMessage, setThinkingMessage] = useState('Thinking...');
   const [thinkingStartTime, setThinkingStartTime] = useState(null);
@@ -164,6 +176,7 @@ const TripPlannerChat = ({
   const userSentMessageRef = useRef(false);
   const personalizedSentRef = useRef(false);
   const personalizedInitRef = useRef(false);
+  const initialAskSentRef = useRef(false);
   const sessionStartTrackedRef = useRef(false);
   const parkContextRef = useRef(null);
 
@@ -705,8 +718,8 @@ const TripPlannerChat = ({
 
   // Restore logged-in session from local cache or DB when returning to /plan-ai
   useEffect(() => {
-    if (!isAuthenticated || existingTripId || isNewChat || isPersonalized || isStartingFresh) {
-      if (isAuthenticated && (existingTripId || isNewChat || isPersonalized)) {
+    if (!isAuthenticated || existingTripId || isNewChat || isPersonalized || isStartingFresh || initialAskMessage) {
+      if (isAuthenticated && (existingTripId || isNewChat || isPersonalized || initialAskMessage)) {
         setAuthRestoreStatus('n/a');
       }
       return;
@@ -750,6 +763,7 @@ const TripPlannerChat = ({
     isNewChat,
     isPersonalized,
     isStartingFresh,
+    initialAskMessage,
     loadExistingTrip,
   ]);
 
@@ -830,6 +844,10 @@ const TripPlannerChat = ({
     cleanupExpiredSessions();
 
     if (isAnonymous && !isAuthenticated) {
+      if (initialAskMessage) {
+        setAnonymousRestoreStatus('empty');
+        return;
+      }
       // Park deep links (?park=&name=) start fresh — but guest resume links keep stored session
       const storedSession = readStoredAnonymousSession();
       if (parkName && !storedSession?.anonymousId) {
@@ -838,7 +856,7 @@ const TripPlannerChat = ({
       }
       restoreAnonymousSession();
     }
-  }, [isAnonymous, isAuthenticated, parkName, restoreAnonymousSession, cleanupExpiredSessions]);
+  }, [isAnonymous, isAuthenticated, parkName, initialAskMessage, restoreAnonymousSession, cleanupExpiredSessions]);
 
   // Draft guest avatar before first API response — same URL after refresh until session links it
   useEffect(() => {
@@ -1044,6 +1062,47 @@ const TripPlannerChat = ({
     }
   }, [quickFillMessage, providersLoaded, providers.length]);
 
+  // Deep link from demo / marketing (?ask=) — welcome first, then send once
+  useEffect(() => {
+    if (
+      !initialAskMessage ||
+      initialAskSentRef.current ||
+      isPersonalized ||
+      isNewChat ||
+      existingTripId ||
+      providersLoaded === false ||
+      providers.length === 0 ||
+      isGenerating
+    ) {
+      return;
+    }
+
+    const welcomeReady =
+      messages.length >= 1 &&
+      messages.some((m) => m.role === 'assistant') &&
+      !messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
+
+    if (!welcomeReady) return;
+
+    initialAskSentRef.current = true;
+    const timer = setTimeout(() => {
+      handleSendMessage(initialAskMessage);
+      onInitialAskSent?.();
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [
+    initialAskMessage,
+    isPersonalized,
+    isNewChat,
+    existingTripId,
+    providersLoaded,
+    providers.length,
+    isGenerating,
+    messages,
+    onInitialAskSent,
+  ]);
+
   // Auto-send first message in personalized mode only (never on regular New Chat)
   useEffect(() => {
     if (
@@ -1150,9 +1209,10 @@ const TripPlannerChat = ({
 
       // Stream responses for guests and logged-in users
       let data;
-      let streamedContent = '';
       let streamStarted = false;
       const streamAssistantId = Date.now() + 1;
+      rawStreamedContentRef.current = '';
+      cancelStreamFlush();
 
       const applyAnonymousSessionFromResult = (result) => {
         if (!isAnonymous || !result) return;
@@ -1186,33 +1246,48 @@ const TripPlannerChat = ({
           }
         },
         onChunk: (chunk) => {
-          streamedContent += chunk;
-          const currentContent = streamedContent;
-          if (!streamStarted) {
-            streamStarted = true;
-            setIsGenerating(false);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: streamAssistantId,
-                role: 'assistant',
-                content: currentContent,
-                timestamp: new Date(),
-                provider: 'auto',
-                isStreaming: true,
-              },
-            ]);
-          } else {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === streamAssistantId ? { ...m, content: currentContent } : m
-              )
-            );
+          rawStreamedContentRef.current += chunk;
+
+          const applyStreamContent = () => {
+            streamFlushRafRef.current = null;
+            const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
+            if (!streamStarted) {
+              streamStarted = true;
+              setIsGenerating(false);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: streamAssistantId,
+                  role: 'assistant',
+                  content: displayContent,
+                  timestamp: new Date(),
+                  provider: 'auto',
+                  isStreaming: true,
+                },
+              ]);
+            } else {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamAssistantId ? { ...m, content: displayContent } : m
+                )
+              );
+            }
+          };
+
+          if (streamFlushRafRef.current == null) {
+            streamFlushRafRef.current = requestAnimationFrame(applyStreamContent);
           }
         },
         onDone: (result) => {
+          cancelStreamFlush();
+
+          const resolvedContent = result.contentUnchanged
+            ? stripItineraryJsonForDisplay(rawStreamedContentRef.current)
+            : (result.content ?? stripItineraryJsonForDisplay(rawStreamedContentRef.current));
+
           data = {
-            content: result.content,
+            content: resolvedContent,
+            contentUnchanged: result.contentUnchanged === true,
             provider: result.provider,
             model: result.model,
             hasLiveData: result.hasLiveData,
@@ -1237,7 +1312,7 @@ const TripPlannerChat = ({
               m.id === streamAssistantId
                 ? {
                     ...m,
-                    content: result.content,
+                    ...(result.contentUnchanged ? {} : { content: resolvedContent }),
                     provider: result.provider,
                     model: result.model,
                     isStreaming: false,
@@ -1468,7 +1543,7 @@ const TripPlannerChat = ({
       });
       
       if (error.name === 'AbortError') {
-        // Request was cancelled, don't show error
+        cancelStreamFlush();
         return;
       }
       

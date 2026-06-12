@@ -13,11 +13,15 @@ async function streamRawLLMToSse(res, {
   top_p,
   enhancedSystemPrompt,
   augmentedMessages,
+  signal,
 }) {
   let fullContent = '';
   let usage = null;
   let resolvedProvider = provider;
   let resolvedModel = model;
+  let aborted = false;
+
+  const isAborted = () => signal?.aborted === true;
 
   if (resolvedProvider !== 'claude' && resolvedProvider !== 'openai') {
     resolvedProvider = anthropic ? 'claude' : 'openai';
@@ -30,16 +34,23 @@ async function streamRawLLMToSse(res, {
     }
 
     resolvedModel = model || 'claude-sonnet-4-6';
-    const stream = await anthropic.messages.create({
-      model: resolvedModel,
-      max_tokens: maxTokens,
-      temperature,
-      system: enhancedSystemPrompt,
-      messages: augmentedMessages,
-      stream: true,
-    });
+    const stream = await anthropic.messages.create(
+      {
+        model: resolvedModel,
+        max_tokens: maxTokens,
+        temperature,
+        system: enhancedSystemPrompt,
+        messages: augmentedMessages,
+        stream: true,
+      },
+      signal ? { signal } : undefined
+    );
 
     for await (const chunk of stream) {
+      if (isAborted()) {
+        aborted = true;
+        break;
+      }
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
         fullContent += chunk.delta.text;
         res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk.delta.text })}\n\n`);
@@ -54,16 +65,23 @@ async function streamRawLLMToSse(res, {
 
     resolvedModel = model || 'gpt-5.4-mini';
     const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
-    const stream = await openai.chat.completions.create({
-      model: resolvedModel,
-      messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-      temperature,
-      max_completion_tokens: maxTokens,
-      top_p,
-      stream: true,
-    });
+    const stream = await openai.chat.completions.create(
+      {
+        model: resolvedModel,
+        messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
+        temperature,
+        max_completion_tokens: maxTokens,
+        top_p,
+        stream: true,
+      },
+      signal ? { signal } : undefined
+    );
 
     for await (const chunk of stream) {
+      if (isAborted()) {
+        aborted = true;
+        break;
+      }
       const text = chunk.choices[0]?.delta?.content || '';
       if (text) {
         fullContent += text;
@@ -76,11 +94,20 @@ async function streamRawLLMToSse(res, {
     return null;
   }
 
+  if (isAborted()) {
+    aborted = true;
+  }
+
+  if (aborted) {
+    return { fullContent, provider: resolvedProvider, model: resolvedModel, usage, aborted: true };
+  }
+
   return {
     fullContent,
     provider: resolvedProvider,
     model: resolvedModel,
     usage,
+    aborted: false,
   };
 }
 

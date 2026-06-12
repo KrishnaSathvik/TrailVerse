@@ -81,14 +81,6 @@ const SCENARIOS = [
     metadata: { skipUserContext: true },
   },
   {
-    id: 'couples-ocean',
-    label: 'Couples trip',
-    chatTitle: 'Ocean & shoreline',
-    question:
-      'Best national parks for a couples getaway with ocean views and easy shoreline walks?',
-    metadata: { skipUserContext: true },
-  },
-  {
     id: 'yellowstone-itinerary',
     label: 'Itinerary',
     chatTitle: 'Yellowstone · 4 days',
@@ -111,36 +103,13 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'narrows-permit',
-    label: 'Permits',
-    chatTitle: 'The Narrows · Zion',
-    question: 'Do I need a permit to hike The Narrows top-down in Zion?',
-    metadata: { parkCode: 'zion', parkName: 'Zion National Park', skipUserContext: true },
-  },
-  {
-    id: 'angels-landing',
-    label: 'Open today?',
-    chatTitle: 'Angels Landing · Zion',
-    question: 'Is Angels Landing open right now in Zion National Park?',
-    metadata: { parkCode: 'zion', parkName: 'Zion National Park', skipUserContext: true },
-  },
-  {
     id: 'auth-jackson-lodging',
-    label: 'Jackson Hole',
+    label: 'Hotels & dinner',
     chatTitle: 'Hotels & dinner · Grand Teton',
     expectsWebSearch: true,
     question:
       'Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?',
     metadata: { parkCode: 'grte', parkName: 'Grand Teton National Park', skipUserContext: true },
-  },
-  {
-    id: 'guest-local-tips',
-    label: 'West Yellowstone',
-    chatTitle: 'Eat & stay (no account)',
-    captureAs: 'anonymous',
-    expectsGuestUpsell: true,
-    question: 'Where should we eat and stay in West Yellowstone before entering the park?',
-    metadata: { parkCode: 'yell', parkName: 'Yellowstone National Park', skipUserContext: true },
   },
 ];
 

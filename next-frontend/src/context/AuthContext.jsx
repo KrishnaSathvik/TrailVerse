@@ -346,6 +346,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
     setUserAfterVerification,
     authTransition,
     clearAuthTransition,
+    initialAuthHint,
     // Optimistic while validating: local user and/or auth cookie from SSR (keeps Home in header on refresh).
     isAuthenticated: !!user || (loading && initialAuthHint),
     // User-specific chrome (admin link, logout) — only after client has resolved user (avoids SSR hydration mismatch).

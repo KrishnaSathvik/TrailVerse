@@ -21,7 +21,11 @@
     "test:email-routes": "node test-email-routes.js",
     "setup:email": "node scripts/setup-email-system.js",
     "preview:email": "node preview-blog-email.js",
-    "migrate:email": "node scripts/migrate-email-preferences.js"
+    "migrate:email": "node scripts/migrate-email-preferences.js",
+    "bump:blog-views": "node scripts/bump-blog-views.js",
+    "bump:blog-views:apply": "node scripts/bump-blog-views.js --apply",
+    "bump:blog-recent": "node scripts/bump-recent-blog-views.js",
+    "bump:blog-recent:apply": "node scripts/bump-recent-blog-views.js --apply"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

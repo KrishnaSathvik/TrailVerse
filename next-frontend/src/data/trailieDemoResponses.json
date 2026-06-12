@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "source": "http://127.0.0.1:5001/api/ai/chat + /ai/chat-anonymous",
   "captureMode": "mixed-live",
   "generatedAt": "2026-06-11T19:07:27.991Z",
@@ -89,31 +89,6 @@
       "sourceNote": "live authenticated chat"
     },
     {
-      "id": "couples-ocean",
-      "label": "Couples trip",
-      "chatTitle": "Ocean & shoreline",
-      "question": "Best national parks for a couples getaway with ocean views and easy shoreline walks?",
-      "answer": "**Acadia** is your top pick for a couples ocean getaway — Bar Harbor is charming, the carriage roads are perfect for a leisurely stroll together, and the views from Cadillac Mountain at sunrise are genuinely romantic. The Ocean Path trail (4.4mi round trip, flat, paved) hugs the rocky Atlantic coastline and is one of the most scenic easy walks in the entire park system. No strenuous hiking required to feel like you've earned something special.\n\nIf Acadia feels too far, **Olympic** on the Washington coast is a strong alternative — Ruby Beach and Rialto Beach are dramatic, driftwood-strewn stretches that feel like the edge of the world. The Hoh Rain Forest is a mossy, ethereal detour that makes the trip feel like two parks in one. Flat beach walks, no crowds compared to Acadia.\n\nTwo more worth knowing:\n\n- **Virgin Islands NP** — snorkeling, turquoise water, white sand beaches. Trunk Bay is one of the most beautiful beaches in the US. Fly into St. Thomas, short ferry to St. John. Best for couples who want a beach vacation with a national park stamp on it.\n- **Biscayne NP** — right outside Miami, almost entirely underwater. Best experienced by boat or kayak. Unique, but less of a \"walk the shoreline\" experience and more of a water-activity park.\n\n**To personalize this:**\n- Where are you starting from? (city or region)\n- How many days do you have?\n- Road trip only, or okay flying?\n\nWith those details I can reorder these picks by drive time vs. fly-in and tell you which one actually makes sense for your trip.",
-      "metadata": {
-        "hasLiveData": false,
-        "hasWebSearch": false,
-        "showsGuestUpsell": false,
-        "captureAs": "authenticated",
-        "parkName": "Ocean & shoreline",
-        "parkNames": [
-          "Cadillac Mountain",
-          "Shenandoah",
-          "Biscayne",
-          "Olympic",
-          "Virgin Islands"
-        ],
-        "provider": "claude",
-        "model": "claude-sonnet-4-6"
-      },
-      "capturedAt": "2026-06-11T19:00:09.033Z",
-      "sourceNote": "live authenticated chat"
-    },
-    {
       "id": "yellowstone-itinerary",
       "label": "Itinerary",
       "chatTitle": "Yellowstone · 4 days",
@@ -135,50 +110,8 @@
       "sourceNote": "live authenticated chat"
     },
     {
-      "id": "narrows-permit",
-      "label": "Permits",
-      "chatTitle": "The Narrows · Zion",
-      "question": "Do I need a permit to hike The Narrows top-down in Zion?",
-      "answer": "Yes — the top-down Narrows route requires a permit through the Zion Left Fork / Subway-style canyoneering lottery system... actually, let me be precise here.\n\nThe top-down Narrows (from Chamberlain's Ranch) requires a **canyoneering/overnight permit** through the [Zion National Park Canyoneering Daily Lottery](https://www.recreation.gov/permits/4251918). It's a different permit than the bottom-up walk from the Temple of Sinawava, which is free and needs nothing.\n\nOne heads-up: toxic cyanobacteria is currently active in the Virgin River — don't swallow the water and avoid submerging your face. Doesn't close the route, just something to know before you're wading chest-deep.\n\nCheck the [Narrows permits tab](http://localhost:3000/parks/zion-national-park?tab=permits) on TrailVerse for current lottery windows and availability.",
-      "metadata": {
-        "hasLiveData": true,
-        "hasWebSearch": false,
-        "showsGuestUpsell": false,
-        "captureAs": "authenticated",
-        "parkName": "The Narrows · Zion",
-        "parkNames": [
-          "The Narrows"
-        ],
-        "provider": "claude",
-        "model": "claude-sonnet-4-6"
-      },
-      "capturedAt": "2026-06-11T19:00:44.282Z",
-      "sourceNote": "live authenticated chat"
-    },
-    {
-      "id": "angels-landing",
-      "label": "Open today?",
-      "chatTitle": "Angels Landing · Zion",
-      "question": "Is Angels Landing open right now in Zion National Park?",
-      "answer": "No — Angels Landing is closed right now. The trail is shut down until June 12, 2026, so you've got just one more day to wait.\n\nGood news: it reopens tomorrow. When you go, you'll need a permit — grab it through the [Angels Landing Summer permit](https://www.recreation.gov/permits/4675324) on Recreation.gov before you show up. These go fast, so don't wait.\n\nWeather's looking great for the weekend — clear skies, highs in the mid-80s, low humidity. Just note there's no timed-entry system at Zion right now, which means no crowd control. Parking lots fill by 9am, so get there before 7am if you want a spot. Also heads up: Stage 2 fire restrictions are in effect, and there's toxic cyanobacteria in the Virgin River — don't swallow the water.",
-      "metadata": {
-        "hasLiveData": true,
-        "hasWebSearch": false,
-        "showsGuestUpsell": false,
-        "captureAs": "authenticated",
-        "parkName": "Angels Landing · Zion",
-        "parkNames": [
-          "Zion National Park"
-        ],
-        "provider": "claude",
-        "model": "claude-sonnet-4-6"
-      },
-      "capturedAt": "2026-06-11T19:00:50.754Z",
-      "sourceNote": "live authenticated chat"
-    },
-    {
       "id": "auth-jackson-lodging",
-      "label": "Jackson Hole",
+      "label": "Hotels & dinner",
       "chatTitle": "Hotels & dinner · Grand Teton",
       "question": "Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?",
       "answer": "For hotels, **Jackson Lake Lodge** is my top pick — it's actually inside the park, so you wake up to Teton views without fighting traffic. The rooms aren't cheap but the location is unbeatable. If you want more amenities and a livelier scene, **Hotel Terra Jackson Hole** in Teton Village is the move — Italian restaurant on-site, rooftop spa, and a polished mountain-chic vibe. **Wyoming Inn** in Jackson town is the practical pick if you want walkability and a solid restaurant without the resort price tag (they run a town shuttle too, which matters since downtown parking is a nightmare).\n\nQuick note: September 17 is a fee-free entrance day for all NPS sites — no $35 entrance fee that day, which is a nice bonus if you're timing a park visit.\n\nFor dinner, **Dornan's Pizza & Pasta** inside the park is the insider move — eat on the deck with direct Teton views, casual atmosphere, surprisingly good wine shop attached. In Jackson town, the **Four Seasons in Teton Village** has a fine dining option if you want a splurge night. For a more local feel, hit the Jackson town square area — better energy than the resort corridor.\n\nSeptember is honestly the sweet spot for Grand Teton — crowds drop noticeably after Labor Day, fall color starts showing up mid-month, and the weather is crisp and clear (expect highs in the low-to-mid 60s this time of year). Book lodging early though — the good in-park options fill up fast even in shoulder season.",
@@ -196,27 +129,6 @@
       },
       "capturedAt": "2026-06-11T19:01:05.912Z",
       "sourceNote": "live authenticated chat"
-    },
-    {
-      "id": "guest-local-tips",
-      "label": "West Yellowstone",
-      "chatTitle": "Eat & stay (no account)",
-      "question": "Where should we eat and stay in West Yellowstone before entering the park?",
-      "answer": "West Yellowstone is a solid base — small town but punches above its weight for food and lodging.\n\n**For food**, the local favorite is the Slippery Otter Pub — burgers, beer, and a lively vibe after a long park day. For breakfast before an early start, Running Bear Pancake House is the go-to (get there early, it fills up fast). If you want something quick and cheap, the Yellowstone Pizza Company is reliable.\n\n**For lodging**, it depends on your style:\n\n- **Best mid-range hotel**: Kelly Inn West Yellowstone — clean, comfortable, walking distance to everything, and they're used to early-rising park guests\n- **Best splurge**: Yellowstone Hot Springs Lodge area properties or the Marriott Autograph Collection's Greystone Inn if you want something polished\n- **Best budget**: Lazy G Motel — no frills, but solid and cheap for a place you're just sleeping at\n\nOne insider tip: **book lodging ASAP if you haven't already.** West Yellowstone in summer is essentially sold out by April. The town is tiny and demand is massive — Yellowstone pulled nearly 5 million visitors in 2024.\n\nAlso heads up — there's a traffic delay at Gardner River High Bridge right now, so depending on which entrance you're using, factor in extra time on your first morning. No vehicle reservation needed to enter the park this year, but that means no crowd control either. Parking lots at popular spots like Old Faithful fill by 9am. Aim to be through the gate by 7am.\n\n---\n\n🔍 **Want live prices and ratings?** Sign up free to unlock live web search for hotels, restaurants, and current road conditions.",
-      "metadata": {
-        "hasLiveData": true,
-        "hasWebSearch": false,
-        "showsGuestUpsell": true,
-        "captureAs": "anonymous",
-        "parkName": "Eat & stay (no account)",
-        "parkNames": [
-          "Yellowstone"
-        ],
-        "provider": "claude",
-        "model": "claude-sonnet-4-6"
-      },
-      "capturedAt": "2026-06-11T19:01:16.898Z",
-      "sourceNote": "live anonymous chat"
     }
   ]
 }

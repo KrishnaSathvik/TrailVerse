@@ -5,13 +5,14 @@ import userEvent from '@testing-library/user-event';
 import Header from '../Header';
 
 const mockUseAuth = vi.fn();
+const mockUsePathname = vi.fn(() => '/');
 
 vi.mock('next/link', () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/',
+  usePathname: () => mockUsePathname(),
   useRouter: () => ({
     push: vi.fn(),
   }),
@@ -44,9 +45,11 @@ vi.mock('@components/icons', () => ({
 describe('Header mobile navigation', () => {
   beforeEach(() => {
     vi.stubGlobal('scrollTo', vi.fn());
+    mockUsePathname.mockReturnValue('/');
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       authReady: false,
+      initialAuthHint: false,
       user: null,
       logout: vi.fn(),
       loading: false,
@@ -64,6 +67,35 @@ describe('Header mobile navigation', () => {
     expect(mobileNav.queryByRole('link', { name: 'Map' })).not.toBeInTheDocument();
     expect(mobileNav.queryByRole('link', { name: 'Trailie' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'TrailVerse home' })).toBeInTheDocument();
+  });
+
+  it('shows auth mobile nav immediately when SSR auth cookie hint is present', () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      authReady: false,
+      initialAuthHint: true,
+      user: null,
+      logout: vi.fn(),
+      loading: true,
+    });
+
+    render(<Header />);
+
+    const mobileNav = within(screen.getByTestId('mobile-inline-nav'));
+    expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+  });
+
+  it('marks the current mobile nav link as selected', () => {
+    mockUsePathname.mockReturnValue('/explore');
+
+    render(<Header />);
+
+    const exploreLink = within(screen.getByTestId('mobile-inline-nav')).getByRole('link', {
+      name: 'Explore',
+    });
+    expect(exploreLink).toHaveAttribute('aria-current', 'page');
+    expect(exploreLink.className).toContain('header-mobile-nav-item');
+    expect(exploreLink).not.toHaveAttribute('style');
   });
 
   it('opens the mobile more menu with secondary links', async () => {
@@ -87,6 +119,7 @@ describe('Header mobile navigation', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       authReady: true,
+      initialAuthHint: true,
       user: { role: 'user' },
       logout: vi.fn(),
       loading: false,
@@ -116,6 +149,7 @@ describe('Header mobile navigation', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       authReady: false,
+      initialAuthHint: true,
       user: null,
       logout: vi.fn(),
       loading: true,
@@ -138,6 +172,7 @@ describe('Header mobile navigation', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       authReady: true,
+      initialAuthHint: true,
       user: { role: 'user' },
       logout: vi.fn(),
       loading: false,

@@ -1,16 +1,47 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { Microphone, X } from '@components/icons';
 import VoiceOverlay from './VoiceOverlay';
 import { slugToParkCode } from '@/utils/parkSlug';
 import { logVoiceSessionStart } from '@/utils/analytics';
 
+const VOICE_HINT_DISMISSED_KEY = 'trailie-voice-hint-dismissed';
+const LEGACY_VOICE_HINT_SESSION_KEY = 'trailie-voice-hint';
+
+function isVoiceHintDismissed() {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    if (localStorage.getItem(VOICE_HINT_DISMISSED_KEY) === '1') return true;
+    // Migrate one-time from old session-only key
+    if (sessionStorage.getItem(LEGACY_VOICE_HINT_SESSION_KEY) === '1') {
+      localStorage.setItem(VOICE_HINT_DISMISSED_KEY, '1');
+      sessionStorage.removeItem(LEGACY_VOICE_HINT_SESSION_KEY);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
+function persistVoiceHintDismissed() {
+  try {
+    localStorage.setItem(VOICE_HINT_DISMISSED_KEY, '1');
+    sessionStorage.removeItem(LEGACY_VOICE_HINT_SESSION_KEY);
+  } catch {
+    // Ignore storage failures (private mode, quota, etc.)
+  }
+}
+
 export default function VoiceButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
   const [showHint, setShowHint] = useState(false);
+  const hintTimerRef = useRef(null);
   const pathname = usePathname();
 
   // Hide on pages where voice chat isn't relevant
@@ -31,21 +62,42 @@ export default function VoiceButton() {
     return null;
   })();
 
-  // Show hint tooltip for first-time visitors (once per session)
+  // Show hint once for first-time visitors; persist dismiss in localStorage.
   useEffect(() => {
-    if (hiddenOnChat) return;
-    const seen = sessionStorage.getItem('trailie-voice-hint');
-    if (!seen) {
-      const timer = setTimeout(() => setShowHint(true), 3000);
-      return () => clearTimeout(timer);
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
     }
+
+    if (hiddenOnChat || isVoiceHintDismissed()) {
+      setShowHint(false);
+      return undefined;
+    }
+
+    hintTimerRef.current = setTimeout(() => {
+      hintTimerRef.current = null;
+      if (!isVoiceHintDismissed()) {
+        setShowHint(true);
+      }
+    }, 3000);
+
+    return () => {
+      if (hintTimerRef.current) {
+        clearTimeout(hintTimerRef.current);
+        hintTimerRef.current = null;
+      }
+    };
   }, [hiddenOnChat]);
 
   if (hiddenOnChat) return null;
 
   function dismissHint() {
+    if (hintTimerRef.current) {
+      clearTimeout(hintTimerRef.current);
+      hintTimerRef.current = null;
+    }
+    persistVoiceHintDismissed();
     setShowHint(false);
-    sessionStorage.setItem('trailie-voice-hint', '1');
   }
 
   function openVoice() {

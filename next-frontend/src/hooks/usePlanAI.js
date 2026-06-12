@@ -101,6 +101,7 @@ export default function usePlanAI(tripId) {
   const isPersonalized = searchParams.has('personalized');
   const isNewChat = searchParams.has('newchat');
   const fromChatHistory = searchParams.get('chat') === 'true';
+  const askText = searchParams.get('ask')?.trim() || '';
 
   // Load trip data - always from database (no more localStorage trips)
   const loadTripFromBackend = useCallback(async (tripId) => {
@@ -149,6 +150,18 @@ export default function usePlanAI(tripId) {
       setChatFormData(emptyChatFormData());
       setShowChat(true);
       setStep(4);
+      return;
+    }
+
+    // Deep link from Trailie demo — open chat and auto-send the sample question
+    const ask = searchParams.get('ask')?.trim();
+    if (ask) {
+      clearTempChatState();
+      setChatFormData(emptyChatFormData());
+      setSelectedParkName('');
+      setShowChat(true);
+      setStep(4);
+      setIsRestoringState(false);
       return;
     }
 
@@ -253,7 +266,7 @@ export default function usePlanAI(tripId) {
     }
 
     // Park deep link: park-context effect owns isRestoringState — don't clear early here
-    if (tripId || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest')) {
+    if (tripId || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest') || searchParams.get('ask')) {
       setIsRestoringState(false);
       return;
     }
@@ -557,8 +570,8 @@ export default function usePlanAI(tripId) {
     showChat, chatFormData, selectedParkName, step, isRestoringState, loadingTrip,
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab,
-    formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory,
-    newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || '',
+    formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory, askText,
+    newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || searchParams.get('ask') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,
 
     // Setters
