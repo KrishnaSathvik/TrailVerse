@@ -1,84 +1,17 @@
-import React, { useState } from 'react';
-import { Download, Share2, X } from '@components/icons';
-import { usePWAInstall } from '../../hooks/usePWAInstall';
+import React from 'react';
+import { X } from '@components/icons';
 
-/**
- * PWA Install Button - Always visible footer button for installing the app
- * Shows on mobile devices when app is not already installed
- */
-const PWAInstallButton = () => {
-  const { canInstall, isIOS, install, deferredPrompt } = usePWAInstall();
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
-  const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
-
-  if (!canInstall) {
-    return null;
-  }
-
-  const handleInstall = async (e) => {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-
-    try {
-      if (isIOS) {
-        setShowIOSInstructions(true);
-      } else {
-        if (deferredPrompt) {
-          await install();
-        } else {
-          setShowAndroidInstructions(true);
-        }
-      }
-    } catch (error) {
-      console.error('Error installing app:', error);
-    }
-  };
-
-  const closeModal = () => {
-    setShowIOSInstructions(false);
-    setShowAndroidInstructions(false);
-  };
-
-  const Icon = isIOS ? Share2 : Download;
-
-  return (
-    <>
-      {/* Floating button — mobile only */}
-      <button
-        onClick={handleInstall}
-        className="fixed bottom-24 right-5 z-40 inline-flex md:hidden items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold transition hover:opacity-90 hover:scale-105 active:scale-95"
-        style={{
-          backgroundColor: 'var(--accent-green)',
-          color: 'white',
-          boxShadow: '0 8px 24px rgba(34, 197, 94, 0.35), 0 2px 8px rgba(0, 0, 0, 0.12)',
-          cursor: 'pointer'
-        }}
-        aria-label="Install TrailVerse app"
-      >
-        <Icon className="h-5 w-5" />
-      </button>
-
-      {(showIOSInstructions || showAndroidInstructions) && (
-        <InstallInstructionsModal
-          isIOS={showIOSInstructions}
-          onClose={closeModal}
-        />
-      )}
-    </>
-  );
-};
-
-const InstallInstructionsModal = ({ isIOS, onClose }) => {
+const PWAInstallInstructionsModal = ({ isIOS, onClose }) => {
   const steps = isIOS
     ? [
         { text: 'Tap the', emphasis: 'Share', suffix: 'button at the bottom of your screen' },
         { text: 'Scroll down and tap', emphasis: '"Add to Home Screen"' },
-        { text: 'Tap', emphasis: '"Add"', suffix: 'to confirm' }
+        { text: 'Tap', emphasis: '"Add"', suffix: 'to confirm' },
       ]
     : [
         { text: 'Tap the', emphasis: 'Menu', suffix: 'button (three dots) in your browser' },
         { text: 'Look for', emphasis: '"Install App"', suffix: 'or "Add to Home Screen"' },
-        { text: 'Tap', emphasis: '"Install"', suffix: 'to confirm' }
+        { text: 'Tap', emphasis: '"Install"', suffix: 'to confirm' },
       ];
 
   return (
@@ -94,19 +27,17 @@ const InstallInstructionsModal = ({ isIOS, onClose }) => {
           backgroundColor: 'var(--surface)',
           borderWidth: '1px',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-xl)'
+          boxShadow: 'var(--shadow-xl)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-start justify-between p-5 pb-0">
           <div className="flex items-center gap-3">
-            <div
-              className="h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)' }}
-            >
-              <Download className="h-5 w-5" style={{ color: 'var(--accent-green)' }} />
-            </div>
+            <img
+              src="/android-chrome-192x192.png"
+              alt="TrailVerse"
+              className="h-11 w-11 rounded-xl object-cover flex-shrink-0"
+            />
             <div>
               <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                 Install TrailVerse
@@ -126,7 +57,6 @@ const InstallInstructionsModal = ({ isIOS, onClose }) => {
           </button>
         </div>
 
-        {/* Steps */}
         <div className="p-5 space-y-3">
           {steps.map((step, index) => (
             <div
@@ -135,14 +65,14 @@ const InstallInstructionsModal = ({ isIOS, onClose }) => {
               style={{
                 backgroundColor: 'var(--surface-hover)',
                 borderWidth: '1px',
-                borderColor: 'var(--border)'
+                borderColor: 'var(--border)',
               }}
             >
               <div
                 className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
                 style={{
                   backgroundColor: 'var(--accent-green)',
-                  color: 'white'
+                  color: 'white',
                 }}
               >
                 {index + 1}
@@ -159,7 +89,6 @@ const InstallInstructionsModal = ({ isIOS, onClose }) => {
           ))}
         </div>
 
-        {/* Footer */}
         <div
           className="p-5 pt-3 border-t"
           style={{ borderColor: 'var(--border)' }}
@@ -169,7 +98,7 @@ const InstallInstructionsModal = ({ isIOS, onClose }) => {
             className="w-full px-4 py-3 rounded-xl text-sm font-semibold transition hover:opacity-90"
             style={{
               backgroundColor: 'var(--accent-green)',
-              color: 'white'
+              color: 'white',
             }}
           >
             Got it
@@ -180,4 +109,4 @@ const InstallInstructionsModal = ({ isIOS, onClose }) => {
   );
 };
 
-export default PWAInstallButton;
+export default PWAInstallInstructionsModal;

@@ -7,14 +7,16 @@ import { reportHref } from '@/lib/reportLinks';
 import { Mail, Instagram, Facebook, Map } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
+import PWAInstallInstructionsModal from './PWAInstallInstructionsModal';
 import SyncStatus from './SyncStatus';
 
 const Footer = () => {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const reportFrom = pathname || '/';
-  const { canInstall, canInstallDesktop, install, deferredPrompt } = usePWAInstall();
+  const { canInstall, canInstallDesktop, isIOS, install, deferredPrompt } = usePWAInstall();
   const [showInstallLink, setShowInstallLink] = useState(false);
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
 
   useEffect(() => {
     setShowInstallLink(canInstall || canInstallDesktop);
@@ -24,6 +26,10 @@ const Footer = () => {
     e.preventDefault();
     if (deferredPrompt) {
       await install();
+      return;
+    }
+    if (isIOS || canInstall) {
+      setShowInstallInstructions(true);
     }
   };
 
@@ -171,6 +177,12 @@ const Footer = () => {
         </div>
       </div>
 
+      {showInstallInstructions && (
+        <PWAInstallInstructionsModal
+          isIOS={isIOS}
+          onClose={() => setShowInstallInstructions(false)}
+        />
+      )}
     </footer>
   );
 };

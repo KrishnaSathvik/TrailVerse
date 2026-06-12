@@ -1,1 +1,32 @@
-{"name":"TrailVerse","short_name":"TrailVerse","description":"Your Universe of National Parks Exploration - AI-powered trip planning for America's 470+ National Parks, Monuments, Historic Sites, and protected areas","icons":[{"src":"/android-chrome-192x192.png","sizes":"192x192","type":"image/png"},{"src":"/android-chrome-512x512.png","sizes":"512x512","type":"image/png"}],"theme_color":"#10b981","background_color":"#0A0E0F","display":"standalone","start_url":"/","categories":["travel","lifestyle"]}
+{
+  "id": "/",
+  "short_name": "TrailVerse",
+  "name": "TrailVerse — National Parks Explorer",
+  "description": "Explore 470+ U.S. parks, monuments, and historic sites with AI trip planning, live weather, maps, and more.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#059669",
+  "background_color": "#0A0E0F",
+  "categories": ["travel", "lifestyle"]
+}
