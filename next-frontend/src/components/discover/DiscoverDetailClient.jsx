@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, MapPin, ExternalLink, Loader2 } from '@components/icons';
+import { Calendar, MapPin, ExternalLink } from '@components/icons';
+import DotSpinner from '@/components/common/DotSpinner';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ParkCard from '@/components/explore/ParkCard';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import DiscoverPagination from './DiscoverPagination';
@@ -15,6 +17,7 @@ import { DISCOVER_EVENT_CATEGORIES } from '@/lib/discoverEvents';
 import ExpandableDescription from './ExpandableDescription';
 import DiscoverHubHeader from './DiscoverHubHeader';
 import DiscoverNpsGuideSection from './DiscoverNpsGuideSection';
+import DiscoverAboutSection from './DiscoverAboutSection';
 import { useSavedEvents } from '@/hooks/useSavedEvents';
 import { useAuth } from '@/context/AuthContext';
 
@@ -94,83 +97,11 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
 
         <DiscoverNpsGuideSection guide={detail.npsGuide} />
 
-        {detail.about && (detail.about.summary || detail.about.snippets?.length > 0) && (
-          <section className="mb-10 rounded-2xl p-6" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
-            <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              {detail.about.title}
-            </h2>
-            {detail.about.summary && (
-              <div className="mb-4">
-                <ExpandableDescription
-                  text={detail.about.summary}
-                  className="text-base leading-relaxed whitespace-pre-line"
-                />
-              </div>
-            )}
-            {detail.about.snippets?.length > 0 && (
-              <ul className="space-y-4">
-                {detail.about.snippets
-                  .filter((snippet) => {
-                    const text = (snippet.description || snippet.excerpt || '').trim();
-                    return text.length >= 20;
-                  })
-                  .map((snippet) => (
-                    <li
-                      key={`${snippet.title}-${snippet.parkCode}`}
-                      className="border-t pt-4 first:border-0 first:pt-0"
-                      style={{ borderColor: 'var(--border)' }}
-                    >
-                      <div className="flex gap-4">
-                        {snippet.image && (
-                          <div
-                            className="relative shrink-0 rounded-xl overflow-hidden"
-                            style={{ width: '7.5rem', height: '5.25rem', borderWidth: '1px', borderColor: 'var(--border)' }}
-                          >
-                            <OptimizedImage
-                              src={snippet.image}
-                              alt={snippet.imageAlt || snippet.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                            {snippet.title}
-                            {snippet.parkName && (
-                              <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>
-                                {' '}
-                                · {snippet.parkName}
-                              </span>
-                            )}
-                          </p>
-                          <ExpandableDescription
-                            text={snippet.description || snippet.excerpt}
-                            className="text-sm mt-1 leading-relaxed whitespace-pre-line"
-                          />
-                          {snippet.url && (
-                            <a
-                              href={snippet.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs font-medium mt-2"
-                              style={{ color: 'var(--accent-green)' }}
-                            >
-                              View on NPS.gov
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-            )}
-          </section>
-        )}
+        <DiscoverAboutSection about={detail.about} />
 
         {detailFetching && !isFetched && !detail?.about && (
           <p className="text-sm mb-6 flex items-center gap-2" style={{ color: 'var(--text-tertiary)' }}>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <DotSpinner size={16} label="Loading NPS details" />
             Loading NPS details…
           </p>
         )}
@@ -219,7 +150,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               Programs & experiences
             </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 items-stretch gap-4">
               {detail.programs.map((program) => {
                 const park = programParkSlug(program.parkCode);
                 const parkHref = park
@@ -228,49 +159,69 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
                 const programText =
                   program.description ||
                   (program.shortDescription ? htmlToPlainText(program.shortDescription) : null);
+                const programImage = program.image || park?.images?.[0]?.url || null;
+                const programImageAlt = program.imageAlt || program.title;
 
                 return (
                   <article
                     key={program.id || program.title}
-                    className="rounded-2xl p-4 transition hover:-translate-y-0.5"
+                    className="flex h-full flex-col rounded-2xl overflow-hidden transition hover:-translate-y-0.5"
                     style={{
                       backgroundColor: 'var(--surface)',
                       borderWidth: '1px',
                       borderColor: 'var(--border)'
                     }}
                   >
-                    <Link
-                      href={parkHref || '#'}
-                      target={program.url && !park ? '_blank' : undefined}
-                      rel={program.url && !park ? 'noopener noreferrer' : undefined}
-                      className="block"
-                    >
-                      <p className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
-                        {program.title}
-                      </p>
-                      {program.parkName && (
-                        <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>
-                          {program.parkName}
-                        </p>
-                      )}
-                    </Link>
-                    {programText && (
-                      <ExpandableDescription
-                        text={programText}
-                        collapsedChars={320}
-                        className="text-sm leading-relaxed whitespace-pre-line"
-                      />
+                    {programImage && (
+                      <Link
+                        href={parkHref || '#'}
+                        target={program.url && !park ? '_blank' : undefined}
+                        rel={program.url && !park ? 'noopener noreferrer' : undefined}
+                        className="block shrink-0"
+                      >
+                        <div className="relative aspect-[16/10] w-full">
+                          <OptimizedImage
+                            src={programImage}
+                            alt={programImageAlt}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </Link>
                     )}
-                    <Link
-                      href={parkHref || program.url || '#'}
-                      target={program.url && !park ? '_blank' : undefined}
-                      rel={program.url && !park ? 'noopener noreferrer' : undefined}
-                      className="inline-flex items-center gap-1 text-xs font-medium mt-2"
-                      style={{ color: 'var(--accent-green)' }}
-                    >
-                      View
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
+                    <div className="flex flex-1 flex-col p-4">
+                      <Link
+                        href={parkHref || '#'}
+                        target={program.url && !park ? '_blank' : undefined}
+                        rel={program.url && !park ? 'noopener noreferrer' : undefined}
+                        className="block"
+                      >
+                        <p className="font-semibold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
+                          {program.title}
+                        </p>
+                        {program.parkName && (
+                          <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>
+                            {program.parkName}
+                          </p>
+                        )}
+                      </Link>
+                      {programText && (
+                        <ExpandableDescription
+                          text={programText}
+                          collapsedLines={4}
+                          className="text-sm leading-relaxed whitespace-pre-line"
+                        />
+                      )}
+                      <Link
+                        href={parkHref || program.url || '#'}
+                        target={program.url && !park ? '_blank' : undefined}
+                        rel={program.url && !park ? 'noopener noreferrer' : undefined}
+                        className="inline-flex items-center gap-1 text-xs font-medium mt-auto pt-3"
+                        style={{ color: 'var(--accent-green)' }}
+                      >
+                        View
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
                   </article>
                 );
               })}
@@ -380,7 +331,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
 
           {(parksLoading && page === 1 && !parks.length) || (isFetching && !parks.length) ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--accent-green)' }} />
+              <LoadingSpinner size="md" />
             </div>
           ) : parks.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)' }}>No parks match this filter.</p>

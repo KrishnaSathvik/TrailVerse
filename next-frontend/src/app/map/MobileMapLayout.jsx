@@ -9,7 +9,8 @@ import { useMapCampgrounds } from '@hooks/useMapCampgrounds';
 import { useMapPlaces } from '@hooks/useMapPlaces';
 import { useParkRatings } from '@hooks/useParkRatings';
 import { parkToSlug } from '@/utils/parkSlug';
-import { Loader2 } from '@components/icons';
+import { signalNavigation } from '@/lib/navigationProgress';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import MapCanvas from './MapCanvas';
 import CampgroundPreviewCard from './CampgroundPreviewCard';
 import PlacePreviewCard from './PlacePreviewCard';
@@ -38,10 +39,12 @@ export default function MobileMapLayout() {
   };
 
   const goToParkCamping = (campground) => {
+    signalNavigation();
     router.push(`/parks/${parkToSlug(campground.parkName)}?tab=camping`);
   };
 
   const goToParkPlaces = (place) => {
+    signalNavigation();
     router.push(`/parks/${parkToSlug(place.parkName)}?tab=places`);
   };
 
@@ -51,8 +54,7 @@ export default function MobileMapLayout() {
         <Header />
         <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
           <div className="text-center">
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-emerald-600" />
-            <p style={{ color: 'var(--text-secondary)' }}>Loading parks...</p>
+            <LoadingSpinner size="lg" text="Loading parks…" />
           </div>
         </div>
       </div>
@@ -113,7 +115,10 @@ export default function MobileMapLayout() {
               park={mapState.selectedPark}
               rating={getRating(mapState.selectedPark.parkCode)}
               onClose={mapState.clearSelection}
-              onViewDetails={() => router.push(`/parks/${parkToSlug(mapState.selectedPark.fullName)}`)}
+              onViewDetails={() => {
+                signalNavigation();
+                router.push(`/parks/${parkToSlug(mapState.selectedPark.fullName)}`);
+              }}
               onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
               compact
             />

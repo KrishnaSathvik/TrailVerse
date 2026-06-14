@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { IconContext } from '@phosphor-icons/react';
@@ -10,6 +10,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
 import ScrollToTop from './common/ScrollToTop';
+import NavigationProgress from './common/NavigationProgress';
 import AnalyticsPageTracker from './common/AnalyticsPageTracker';
 import { initGA } from '../utils/analytics';
 
@@ -48,6 +49,9 @@ export default function Providers({
         <ToastProvider>
           <AuthProvider initialAuthHint={initialAuthHint}>
             {children}
+            <Suspense fallback={null}>
+              <NavigationProgress />
+            </Suspense>
             <AnalyticsPageTracker />
             <ScrollToTop />
             <Analytics />

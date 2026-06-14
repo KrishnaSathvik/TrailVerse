@@ -214,6 +214,11 @@ function buildRelatedBySharedParks(items, indexById, { limit = 8 } = {}) {
 
 const ABOUT_SNIPPET_MAX_CHARS = 2400;
 
+function programIdentity(program) {
+  if (program?.id != null && program.id !== '') return String(program.id);
+  return `${(program.title || '').toLowerCase()}|${(program.parkCode || '').toLowerCase()}`;
+}
+
 function buildAboutFromNps(programs, activityTitle) {
   const snippets = [];
   const seen = new Set();
@@ -230,6 +235,7 @@ function buildAboutFromNps(programs, activityTitle) {
         ? `${text.slice(0, ABOUT_SNIPPET_MAX_CHARS).trim()}…`
         : text;
     snippets.push({
+      id: program.id || null,
       title: program.title,
       parkName: program.parkName,
       parkCode: program.parkCode,
@@ -247,6 +253,13 @@ function buildAboutFromNps(programs, activityTitle) {
     snippets: snippets.slice(0, 5),
     source: 'nps-thingstodo'
   };
+}
+
+function excludeProgramsInAbout(programs, about) {
+  if (!about?.snippets?.length) return programs;
+
+  const aboutKeys = new Set(about.snippets.map((snippet) => programIdentity(snippet)));
+  return programs.filter((program) => !aboutKeys.has(programIdentity(program)));
 }
 
 function buildTypeCounts(allParks) {
@@ -587,6 +600,17 @@ async function getDetail(dimension, slug) {
 
   const parksPageSize = 12;
 
+  const mappedPrograms = programs.map(({ longDescription, shortDescription, activityTags, ...rest }) => {
+    const raw = longDescription || shortDescription || '';
+    const description = stripHtml(raw);
+    return {
+      ...rest,
+      description: description || null
+    };
+  });
+
+  const programsForPage = excludeProgramsInAbout(mappedPrograms, about);
+
   return {
     dimension,
     slug,
@@ -602,14 +626,7 @@ async function getDetail(dimension, slug) {
       title: editorial.featuredTitle || `Featured parks for ${title.toLowerCase()}`,
       parks: featuredParks
     },
-    programs: programs.map(({ longDescription, shortDescription, activityTags, ...rest }) => {
-      const raw = longDescription || shortDescription || '';
-      const description = stripHtml(raw);
-      return {
-        ...rest,
-        description: description || null
-      };
-    }),
+    programs: programsForPage,
     relatedContent,
     parksPagination: {
       page: 1,

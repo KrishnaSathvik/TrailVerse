@@ -10,7 +10,7 @@ function PlanAIPage() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<PlanAIShell loadingMessage="Loading trip planner..." />}>
+    <Suspense fallback={<PlanAIShell />}>
       <PlanAIPage />
     </Suspense>
   );

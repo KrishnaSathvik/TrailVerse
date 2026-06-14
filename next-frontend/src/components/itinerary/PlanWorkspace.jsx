@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, MapPin, Map as MapIcon, Loader2, Check, Plus, ExternalLink, Download } from '@components/icons';
+import { MessageSquare, MapPin, Map as MapIcon, Check, Plus, ExternalLink, Download } from '@components/icons';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useToast } from '@/context/ToastContext';
 import Header from '../common/Header';
 import usePlanWorkspace from '../../hooks/usePlanWorkspace';
@@ -94,10 +95,7 @@ export default function PlanWorkspace({ tripId }) {
     return (
       <div className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" style={{ color: 'var(--accent-green)' }} />
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading your trip...</p>
-        </div>
+        <LoadingSpinner size="md" text="Loading your trip…" />
       </div>
     );
   }

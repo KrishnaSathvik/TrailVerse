@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import DotSpinner from './DotSpinner';
 
 const Button = ({
   children,
@@ -198,12 +199,7 @@ const Button = ({
 
   const content = (
     <>
-      {loading && (
-        <div 
-          className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" 
-          unselectable="on"
-        />
-      )}
+      {loading && <DotSpinner size={16} label="Loading" />}
       {!loading && Icon && iconPosition === 'left' && iconElement}
       <span 
         className="button-text-no-select"

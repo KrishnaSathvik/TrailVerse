@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2 } from '@components/icons';
+import LoadingSpinner from '@components/common/LoadingSpinner';
 import Header from '@components/common/Header';
 
 /**
@@ -48,14 +48,11 @@ export default function PlanAIShell({
 
         <div className="relative z-10 flex flex-1 min-h-0 flex-col overflow-hidden">
           {children ?? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
-              <Loader2 className="h-7 w-7 animate-spin" style={{ color: 'var(--text-tertiary)' }} />
-              {loadingMessage && (
-                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                  {loadingMessage}
-                </p>
-              )}
-            </div>
+            loadingMessage ? (
+              <div className="flex flex-1 flex-col items-center justify-center px-4">
+                <LoadingSpinner size="md" text={loadingMessage} />
+              </div>
+            ) : null
           )}
         </div>
       </main>

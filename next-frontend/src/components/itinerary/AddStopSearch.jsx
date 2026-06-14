@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, MapPin, Mountain, Tent, Home, Utensils, Clock, Loader2, ChevronLeft, Plus } from '@components/icons';
+import { Search, X, MapPin, Mountain, Tent, Home, Utensils, Clock, ChevronLeft, Plus } from '@components/icons';
+import Spinner from '../common/Spinner';
 import { getApiBaseUrl } from '../../lib/apiBase';
 
 const STOP_TYPES = [
@@ -306,7 +307,7 @@ export default function AddStopSearch({ onSelect, onClose }) {
 
               {isLoadingSub ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--accent-green)' }} />
+                  <Spinner size={20} />
                 </div>
               ) : subResults.length > 0 ? (
                 <div className="space-y-2">
@@ -405,8 +406,9 @@ export default function AddStopSearch({ onSelect, onClose }) {
                   onKeyDown={e => e.key === 'Escape' && onClose()}
                 />
                 {isSearching && (
-                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin"
-                    style={{ color: 'var(--text-tertiary)' }} />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <Spinner size={16} />
+                  </span>
                 )}
               </div>
 

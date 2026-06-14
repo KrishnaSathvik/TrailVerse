@@ -56,6 +56,20 @@ function readStoredAnonymousSession() {
   }
 }
 
+function getInitialAnonymousRestoreStatus(isAuthenticated) {
+  if (isAuthenticated) return 'n/a';
+  const session = readStoredAnonymousSession();
+  if (!session?.anonymousId && !(session?.messageCount > 0)) return 'empty';
+  return 'pending';
+}
+
+function getInitialAuthRestoreStatus(isAuthenticated) {
+  if (!isAuthenticated) return 'n/a';
+  const temp = tripHistoryService.getTempChatState();
+  if (!temp?.messages?.length && !temp?.currentTripId) return 'empty';
+  return 'pending';
+}
+
 function readStoredGuestAvatarUrl() {
   if (typeof window === 'undefined') return null;
   try {
@@ -145,11 +159,11 @@ const TripPlannerChat = ({
   const [isSessionRestored, setIsSessionRestored] = useState(false);
   /** pending | restored | empty | n/a — gates welcome message until anon history is loaded */
   const [anonymousRestoreStatus, setAnonymousRestoreStatus] = useState(
-    () => (!isAuthenticated ? 'pending' : 'n/a')
+    () => getInitialAnonymousRestoreStatus(isAuthenticated)
   );
   /** pending | restored | empty | n/a — gates welcome until authed session cache/DB restore */
   const [authRestoreStatus, setAuthRestoreStatus] = useState(
-    () => (isAuthenticated ? 'pending' : 'n/a')
+    () => getInitialAuthRestoreStatus(isAuthenticated)
   );
   const [timeUntilReset, setTimeUntilReset] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);

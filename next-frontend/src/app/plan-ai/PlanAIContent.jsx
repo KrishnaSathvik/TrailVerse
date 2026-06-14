@@ -24,7 +24,6 @@ const defaultFormData = {
 
 const PlanAIContent = ({ tripId }) => {
   const {
-    isRestoringState,
     loadingTrip,
     chatFormData,
     setChatFormData,
@@ -58,11 +57,9 @@ const PlanAIContent = ({ tripId }) => {
     if (askText) setInitialAskMessage(askText);
   }, [askText]);
 
-  if (isRestoringState || loadingTrip) {
+  if (loadingTrip) {
     return (
-      <PlanAIShell
-        loadingMessage={loadingTrip ? 'Loading trip data...' : 'Loading your chat session...'}
-      />
+      <PlanAIShell loadingMessage="Loading trip data…" />
     );
   }
 

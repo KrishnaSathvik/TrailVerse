@@ -13,6 +13,7 @@ import {
 import AdminShell from '@components/admin/AdminShell';
 import { StatCard } from '@components/admin/AdminAnalyticsPanels';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function AdminOverviewPage() {
   const { stats, recentActivity, loading, refreshing, fetchData } = useAdminDashboard();
@@ -20,7 +21,7 @@ export default function AdminOverviewPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="h-12 w-12 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

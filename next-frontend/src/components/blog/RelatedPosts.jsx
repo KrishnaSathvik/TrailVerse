@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Clock } from '@components/icons';
 import BlogViewCount from './BlogViewCount';
 import OptimizedImage from '../common/OptimizedImage';
+import LoadingSpinner from '../common/LoadingSpinner';
 import blogService from '../../services/blogService';
 
 const RelatedPosts = ({ currentPostId, category, tags = [], isPublic = false }) => {
@@ -32,7 +33,7 @@ const RelatedPosts = ({ currentPostId, category, tags = [], isPublic = false }) 
     return (
       <section className="mt-16 pt-16" style={{ borderTop: '1px solid var(--border)' }}>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--accent-green)' }}></div>
+          <LoadingSpinner size="md" />
         </div>
       </section>
     );

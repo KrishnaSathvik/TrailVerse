@@ -16,10 +16,8 @@ export default function ExpandableDescription({
   const contentRef = useRef(null);
 
   useLayoutEffect(() => {
-    if (expanded || !collapsedLines) {
-      setIsTruncated(false);
-      return;
-    }
+    if (!collapsedLines || expanded) return;
+
     const el = contentRef.current;
     if (!el) return;
     setIsTruncated(el.scrollHeight > el.clientHeight + 1);
@@ -28,7 +26,7 @@ export default function ExpandableDescription({
   if (!text) return null;
 
   const needsCharToggle = !collapsedLines && text.length > collapsedChars;
-  const needsLineToggle = Boolean(collapsedLines) && isTruncated;
+  const needsLineToggle = Boolean(collapsedLines) && (isTruncated || expanded);
   const needsToggle = needsCharToggle || needsLineToggle;
 
   const displayText =

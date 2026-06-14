@@ -3,12 +3,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchBar from '@/components/explore/SearchBar';
-import { ChevronRight, Mountain, Loader2 } from '@components/icons';
+import { ChevronRight, Mountain } from '@components/icons';
+import DotSpinner from '@/components/common/DotSpinner';
 import { logSearch, logSearchResultClick } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
 import { useDebounce } from '@/hooks/useDebounce';
 import npsApi from '@/services/npsApi';
 import { saveParkSearchSession } from '@/lib/parkSearchSession';
+import { signalNavigation } from '@/lib/navigationProgress';
 
 export default function LandingSearchClient({ variant = 'default' }) {
   const router = useRouter();
@@ -90,6 +92,7 @@ export default function LandingSearchClient({ variant = 'default' }) {
     logSearch(debouncedQuery || searchQuery, searchResults.length, 'landing', {
       searchId: lastSearchId,
     });
+    signalNavigation();
     router.push(`/parks/${parkToSlug(park.fullName)}`);
     setSearchFocused(false);
   };
@@ -132,7 +135,7 @@ export default function LandingSearchClient({ variant = 'default' }) {
 
           {searchLoading ? (
             <div className="flex items-center justify-center gap-2 px-5 py-10" style={{ color: 'var(--text-secondary)' }}>
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <DotSpinner size={20} label="Searching parks" />
               <span className="text-sm">Finding parks for you…</span>
             </div>
           ) : searchResults.length > 0 ? (

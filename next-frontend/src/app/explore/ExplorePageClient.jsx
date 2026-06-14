@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   Search, X, MapPin, ArrowRight, Info,
-  Loader2, SlidersHorizontal, Grid, List, Compass,
+  SlidersHorizontal, Grid, List, Compass,
   ChevronLeft, ChevronRight, ChevronDown
 } from '@components/icons';
 import { exploreNationalParksFilterHint, exploreSeoSubtitle } from '@/lib/exploreSeoCopy';
 import ParkCard from '@/components/explore/ParkCard';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import { useAuth } from '@/context/AuthContext';
 import { getExploreMobilePlanCta } from '@/lib/planAiWelcomeCopy';
@@ -744,10 +745,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
 
           {showParksLoading && (
                 <div className="flex items-center justify-center py-24">
-                  <div className="text-center">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-forest-500" />
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading parks...</p>
-                  </div>
+                  <LoadingSpinner size="lg" text="Loading parks…" />
                 </div>
               )}
 

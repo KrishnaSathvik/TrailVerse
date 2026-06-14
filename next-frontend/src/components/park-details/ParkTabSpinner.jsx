@@ -1,13 +1,11 @@
 import React from 'react';
+import DotSpinner from '@/components/common/DotSpinner';
 
 /** Centered loading spinner used across park detail tabs. */
 export default function ParkTabSpinner() {
   return (
     <div className="flex justify-center py-12">
-      <div
-        className="h-8 w-8 border-2 border-t-transparent rounded-full animate-spin"
-        style={{ borderColor: 'var(--text-tertiary)', borderTopColor: 'transparent' }}
-      />
+      <DotSpinner size={32} label="Loading tab content" />
     </div>
   );
 }

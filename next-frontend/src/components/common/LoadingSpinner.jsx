@@ -1,39 +1,43 @@
 import React from 'react';
-import { Loader2 } from '@components/icons';
+import DotSpinner from './DotSpinner';
 
-const LoadingSpinner = ({ 
-  size = 'md', 
-  text = '', 
+const SIZE_MAP = {
+  sm: 20,
+  md: 32,
+  lg: 48,
+  xl: 64,
+};
+
+/**
+ * Standard TrailVerse loading block — dot spinner with optional label.
+ * Use for page sections, modals, and centered wait states.
+ */
+const LoadingSpinner = ({
+  size = 'md',
+  text = '',
   fullScreen = false,
-  color = 'var(--text-primary)'
+  className = '',
+  label = 'Loading',
 }) => {
-  const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
-    xl: 'h-16 w-16'
-  };
+  const pixelSize = typeof size === 'number' ? size : SIZE_MAP[size] || SIZE_MAP.md;
 
   const spinner = (
-    <div className="flex flex-col items-center justify-center gap-3">
-      <Loader2 
-        className={`${sizeClasses[size]} animate-spin`}
-        style={{ color }}
-      />
-      {text && (
-        <p className="text-sm font-medium"
-          style={{ color: 'var(--text-secondary)' }}
-        >
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+      <DotSpinner size={pixelSize} label={label} />
+      {text ? (
+        <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
           {text}
         </p>
-      )}
+      ) : null}
     </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center"
+      <div
+        className="fixed inset-0 z-[150] flex items-center justify-center"
         style={{ backgroundColor: 'var(--bg-primary)' }}
+        aria-busy="true"
       >
         {spinner}
       </div>

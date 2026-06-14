@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Search, MapPin, Check, X, ArrowRight, Loader2 } from '@components/icons';
+import { Search, MapPin, Check, X, ArrowRight } from '@components/icons';
+import Spinner from '../common/Spinner';
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -219,7 +220,7 @@ export default function AddPlaceInput({
           {selectedPlace ? (
             <Check className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
           ) : loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" style={{ color: 'var(--text-secondary)' }} />
+            <Spinner size={16} />
           ) : (
             <Search className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
           )}

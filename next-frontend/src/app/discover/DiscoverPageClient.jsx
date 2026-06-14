@@ -4,7 +4,7 @@ import DiscoverSection from '@/components/discover/DiscoverSection';
 import DiscoverGridCard from '@/components/discover/DiscoverGridCard';
 import { useDiscoverCatalog } from '@/hooks/useDiscoverCatalog';
 import { BROWSE_HUB_DESCRIPTION, BROWSE_HUB_HEADLINE } from '@/lib/browseHub';
-import { Loader2 } from '@components/icons';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const PREVIEW = 6;
 
@@ -15,7 +15,7 @@ export default function DiscoverPageClient({ initialCatalog }) {
   if (isLoading && !data) {
     return (
       <div className="flex justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--accent-green)' }} />
+        <LoadingSpinner size="md" />
       </div>
     );
   }

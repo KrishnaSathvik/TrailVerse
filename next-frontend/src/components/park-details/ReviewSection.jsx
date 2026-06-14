@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Star, ThumbsUp, MoreVertical, Plus, MessageSquare,
-  Camera, X, Upload, AlertCircle, Loader2, Edit, Trash2
+  Camera, X, Upload, AlertCircle, Edit, Trash2
 } from '@components/icons';
+import Spinner from '../common/Spinner';
 import { useQueryClient } from '@tanstack/react-query';
 import PhotoLightbox from '../common/PhotoLightbox';
 import ParkTabSpinner from './ParkTabSpinner';
@@ -672,7 +673,7 @@ const ReviewSection = ({
               >
                 {uploadingImages ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner size={16} />
                     <span>Uploading...</span>
                   </>
                 ) : (
@@ -904,7 +905,7 @@ const ReviewSection = ({
                     >
                       {uploadingImages ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Spinner size={16} />
                           <span>Updating...</span>
                         </>
                       ) : (

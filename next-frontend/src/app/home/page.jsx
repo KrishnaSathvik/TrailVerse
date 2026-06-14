@@ -18,11 +18,12 @@ import {
 } from '@phosphor-icons/react';
 import {
   Sun, Moon, Star,
-  ExternalLink, Loader2, Sparkles, Clock,
+  ExternalLink, Sparkles, Clock,
   Wind, Droplets, Eye as EyeIcon, Check, ChevronDown,
   AlertTriangle, Shield, Info
 } from '@components/icons';
 import Header from '@/components/common/Header';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import Button from '@/components/common/Button';
 import dailyFeedService from '@/services/dailyFeedService';
@@ -675,10 +676,7 @@ const DailyFeedPage = () => {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
         <div className="flex items-center justify-center py-32">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
-            <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Loading your daily feed…</p>
-          </div>
+          <LoadingSpinner size="md" text="Loading your daily feed…" />
         </div>
       </div>
     );

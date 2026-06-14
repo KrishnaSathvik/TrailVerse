@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredToken, getStoredUser } from '@/services/authService';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const AdminRoute = ({ children }) => {
   const router = useRouter();
@@ -38,10 +39,7 @@ const AdminRoute = ({ children }) => {
   if (loading || !isAdminAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin mx-auto mb-4" />
-          <p style={{ color: 'var(--text-secondary)' }}>Verifying admin access...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Verifying admin access…" />
       </div>
     );
   }

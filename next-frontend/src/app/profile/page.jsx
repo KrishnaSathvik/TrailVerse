@@ -19,6 +19,8 @@ import {
   Eye, EyeOff, CheckCircle, AlertCircle, Lock
 } from '@components/icons';
 import Header from '@components/common/Header';
+import LoadingSpinner from '@components/common/LoadingSpinner';
+import Spinner from '@components/common/Spinner';
 import Button from '@components/common/Button';
 // import OptimizedImage from '@components/common/OptimizedImage';
 import SavedParks from '@components/profile/SavedParks';
@@ -1145,7 +1147,7 @@ const ProfilePage = () => {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </div>
     );
@@ -1510,10 +1512,7 @@ const ProfilePage = () => {
                     <>
                       {favoritesLoading ? (
                         <div className="flex items-center justify-center py-12">
-                          <div
-                            className="animate-spin rounded-full h-8 w-8 border-b-2"
-                            style={{ borderColor: 'var(--accent-green)' }}
-                          ></div>
+                          <Spinner size={32} />
                           <span className="ml-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
                             Loading your favorite parks...
                           </span>
@@ -1576,10 +1575,7 @@ const ProfilePage = () => {
 
                     {visitedParksLoading ? (
                       <div className="flex items-center justify-center py-12">
-                        <div
-                          className="animate-spin rounded-full h-8 w-8 border-b-2"
-                          style={{ borderColor: 'var(--accent-green)' }}
-                        ></div>
+                        <Spinner size={32} />
                         <span className="ml-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
                           Loading your visited parks...
                         </span>
@@ -1769,10 +1765,7 @@ const ProfilePage = () => {
                         }}
                       >
                         <div className="text-sm font-medium flex items-center gap-2">
-                          <div
-                            className="animate-spin rounded-full h-4 w-4 border-b-2"
-                            style={{ borderColor: 'var(--accent-blue)' }}
-                          ></div>
+                          <Spinner size={16} />
                           Saving email preferences...
                         </div>
                       </div>
@@ -1908,10 +1901,7 @@ const ProfilePage = () => {
                         }}
                       >
                         <div className="text-sm font-medium flex items-center gap-2">
-                          <div
-                            className="animate-spin rounded-full h-4 w-4 border-b-2"
-                            style={{ borderColor: 'var(--accent-blue)' }}
-                          ></div>
+                          <Spinner size={16} />
                           Processing...
                         </div>
                       </div>

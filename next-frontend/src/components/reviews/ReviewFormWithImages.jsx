@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { 
   Star, Camera, X, Upload, AlertCircle, 
-  Loader2, Image as ImageIcon, Trash2 
+  Image as ImageIcon, Trash2
 } from '@components/icons';
+import Spinner from '../common/Spinner';
 import { useToast } from '../../context/ToastContext';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import reviewService from '../../services/reviewService';
@@ -372,7 +373,7 @@ const ReviewFormWithImages = ({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner size={16} />
                 <span>{existingReview ? 'Updating...' : 'Submitting...'}</span>
               </>
             ) : (

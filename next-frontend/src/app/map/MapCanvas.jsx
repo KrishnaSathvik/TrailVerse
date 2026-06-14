@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Loader2, MapPin } from '@components/icons';
+import { MapPin } from '@components/icons';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import {
   getCampgroundMarkerColors,
   getPlaceMarkerColors,
@@ -647,10 +648,7 @@ export default function MapCanvas({
           className="absolute inset-0 flex items-center justify-center"
           style={{ backgroundColor: isDark ? PARK_MAP_DARK_LOADING_BG : PARK_MAP_LOADING_BG }}
         >
-          <div className="text-center">
-            <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-emerald-700" />
-            <p style={{ color: 'var(--text-secondary)' }}>Loading map...</p>
-          </div>
+          <LoadingSpinner size="lg" text="Loading map…" />
         </div>
       )}
 

@@ -8,6 +8,7 @@ import {
   AlertCircle, Grid
 } from '@components/icons';
 import Button from '@/components/common/Button';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { useEvents, useEventSummary } from '@/hooks/useEvents';
 import { useAllParks } from '@/hooks/useParks';
@@ -610,9 +611,8 @@ const EventsPage = ({ initialData }) => {
 
               {/* Loading State */}
               {isLoading && (
-                <div className="text-center py-24">
-                  <Sparkles className="h-12 w-12 animate-spin mx-auto mb-4 text-purple-500" />
-                  <p style={{ color: 'var(--text-secondary)' }}>Loading events...</p>
+                <div className="py-24">
+                  <LoadingSpinner size="lg" text="Loading events…" />
                 </div>
               )}
 

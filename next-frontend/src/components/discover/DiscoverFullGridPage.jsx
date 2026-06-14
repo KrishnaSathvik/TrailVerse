@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Loader2 } from '@components/icons';
+import { ArrowLeft } from '@components/icons';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DiscoverGridCard from './DiscoverGridCard';
 import { BROWSE_HUB_PATH, BROWSE_HUB_TITLE } from '@/lib/browseHub';
 
@@ -91,7 +92,7 @@ export default function DiscoverFullGridPage({
 
         {loading && !items.length ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--accent-green)' }} />
+            <LoadingSpinner size="md" />
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

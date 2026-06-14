@@ -11,6 +11,7 @@ import {
 } from '@components/icons';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import OptimizedImage from '@/components/common/OptimizedImage';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { useVisitedParks } from '@/hooks/useVisitedParks';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -827,12 +828,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
 
                   <div className="overflow-y-auto max-h-[calc(80vh-140px)] p-4 sm:p-6">
                     {isLoading ? (
-                      <div className="text-center py-12">
-                        <Mountain className="h-12 w-12 animate-pulse mx-auto mb-4"
-                          style={{ color: 'var(--text-tertiary)' }}
-                        />
-                        <p style={{ color: 'var(--text-secondary)' }}>Loading parks...</p>
-                      </div>
+                      <LoadingSpinner size="md" text="Loading parks…" />
                     ) : availableParks.length === 0 ? (
                       <div className="text-center py-12">
                         <Search className="h-12 w-12 mx-auto mb-4"
@@ -896,11 +892,8 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
           {/* Comparison Table */}
           {selectedParks.length >= 2 ? (
             isComparisonLoading ? (
-              <div className="text-center py-12">
-                <Mountain className="h-12 w-12 animate-pulse mx-auto mb-4"
-                  style={{ color: 'var(--text-tertiary)' }}
-                />
-                <p style={{ color: 'var(--text-secondary)' }}>Loading enhanced comparison data...</p>
+              <div className="py-12">
+                <LoadingSpinner size="md" text="Loading comparison data…" />
               </div>
             ) : (
               <div className="space-y-4">

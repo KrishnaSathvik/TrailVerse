@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export const adminCard = {
   backgroundColor: 'var(--surface)',
@@ -12,9 +13,8 @@ export const adminCard = {
 
 export function AdminLoading({ label = 'Loading…' }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 gap-4">
-      <div className="h-11 w-11 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin" />
-      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</p>
+    <div className="py-24">
+      <LoadingSpinner size="md" text={label} />
     </div>
   );
 }

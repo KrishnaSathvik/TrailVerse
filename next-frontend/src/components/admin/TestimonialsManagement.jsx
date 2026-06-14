@@ -14,6 +14,7 @@ import {
   AdminEmptyState,
   AdminSection,
   adminCard,
+  AdminLoading,
 } from '@components/admin/AdminUI';
 
 const TestimonialsManagement = ({ embedded = false, refreshKey = 0, onStatsChange }) => {
@@ -146,11 +147,7 @@ const TestimonialsManagement = ({ embedded = false, refreshKey = 0, onStatsChang
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 border-4 border-forest-500/30 border-t-forest-500 rounded-full animate-spin" />
-      </div>
-    );
+    return <AdminLoading label="Loading testimonials…" />;
   }
 
   return (

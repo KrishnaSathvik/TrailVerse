@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from '@components/icons';
 import MessageBubble from '@components/ai-chat/MessageBubble';
+import TypingIndicator from '@components/ai-chat/TypingIndicator';
+import DemoChatComposer from '@/components/trailie-demo/DemoChatComposer';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import { DEMO_GUEST_AVATAR } from '@/components/trailie-demo/DemoUserAvatar';
 import {
@@ -38,12 +40,34 @@ function normalizeScenario(item) {
 const SCENARIOS = demoData.scenarios.map(normalizeScenario);
 const DEMO_CACHE_VERSION = demoData.version;
 
+/** Bump when demo playback behavior changes so stale localStorage transcripts are ignored. */
+const DEMO_PLAYBACK_CACHE_VERSION = `${demoData.version}-playback-v6`;
+
+const PHASE = {
+  IDLE: 'idle',
+  TYPING_QUESTION: 'typing-question',
+  THINKING: 'thinking',
+  COMPLETE: 'complete',
+};
+
+const CHAR_MS_BASE = 32;
+const CHAR_MS_SPACE = 46;
+const CHAR_MS_PUNCT = 72;
+const THINKING_MS = 1000;
+const TURN_GAP_MS = 700;
+
 const DEMO_CTA = {
   title: 'Plan your own trip',
   body: 'Ask Trailie anything — add follow-ups, save your itinerary, or chat by voice. Share your dates and where you’re starting from so the advice fits your trip.',
   accountNote: 'Guests get 5 free messages. Sign up to save trips and download a PDF.',
   button: 'Open Trailie',
 };
+
+function typingDelayMs(char) {
+  if (char === ' ' || char === '\n') return CHAR_MS_SPACE;
+  if (/[.,!?;:]/.test(char)) return CHAR_MS_PUNCT;
+  return CHAR_MS_BASE;
+}
 
 export default function TrailieInteractiveDemo({
   className = '',
@@ -52,25 +76,59 @@ export default function TrailieInteractiveDemo({
   autoPlay = true,
 }) {
   const [activeIndex, setActiveIndex] = useState(() =>
-    readTrailieDemoLastActiveIndex(DEMO_CACHE_VERSION, SCENARIOS.length)
+    readTrailieDemoLastActiveIndex(DEMO_PLAYBACK_CACHE_VERSION, SCENARIOS.length)
   );
+  const [phase, setPhase] = useState(PHASE.IDLE);
   const [completedTurns, setCompletedTurns] = useState([]);
+  const [typedQuestion, setTypedQuestion] = useState('');
+  const [sentQuestion, setSentQuestion] = useState('');
+  const [turnMetadata, setTurnMetadata] = useState(null);
+  const timersRef = useRef([]);
+  const playbackTokenRef = useRef(0);
   const chatScrollRef = useRef(null);
-  const lastScrollAtRef = useRef(0);
-  const scenarioCacheRef = useRef(loadTrailieDemoScenarioMap(DEMO_CACHE_VERSION));
+  const scenarioCacheRef = useRef(loadTrailieDemoScenarioMap(DEMO_PLAYBACK_CACHE_VERSION));
 
-  const scenario = SCENARIOS[activeIndex];
-
-  const scrollChatToTop = useCallback((force = false) => {
-    const now = Date.now();
-    if (!force && now - lastScrollAtRef.current < 100) return;
-    lastScrollAtRef.current = now;
-
+  const scrollChatToTop = useCallback(() => {
     requestAnimationFrame(() => {
       const el = chatScrollRef.current;
       if (!el) return;
       el.scrollTo({ top: 0, behavior: 'instant' });
     });
+  }, []);
+
+  const scrollChatToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      const el = chatScrollRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+  }, []);
+
+  /** Multi-turn follow-ups (Discover turn 2+) need scroll; single-turn stays pinned to top. */
+  const scrollForTurn = useCallback(
+    (scenarioIndex, turnIndex) => {
+      const item = SCENARIOS[scenarioIndex];
+      const isFollowUp = (item?.turns?.length ?? 0) > 1 && turnIndex >= 1;
+      if (isFollowUp) {
+        scrollChatToBottom();
+      } else {
+        scrollChatToTop();
+      }
+    },
+    [scrollChatToBottom, scrollChatToTop]
+  );
+
+  const scenario = SCENARIOS[activeIndex];
+
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
+
+  const schedule = useCallback((fn, ms) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+    return id;
   }, []);
 
   const turnsToCache = useCallback((item) => {
@@ -82,33 +140,102 @@ export default function TrailieInteractiveDemo({
     }));
   }, []);
 
-  const showScenario = useCallback(
-    (index) => {
-      const item = SCENARIOS[index];
-      if (!item) return;
+  const resetPlaybackState = useCallback(() => {
+    playbackTokenRef.current += 1;
+    clearTimers();
+    setPhase(PHASE.IDLE);
+    setTypedQuestion('');
+    setSentQuestion('');
+    setTurnMetadata(null);
+  }, [clearTimers]);
 
-      const turns = turnsToCache(item);
-      setActiveIndex(index);
-      setCompletedTurns(turns);
-      scenarioCacheRef.current.set(item.id, turns);
-      persistTrailieDemoScenario(DEMO_CACHE_VERSION, item.id, turns, index);
-      persistTrailieDemoActiveIndex(DEMO_CACHE_VERSION, index);
-      scrollChatToTop(true);
+  const playTurn = useCallback(
+    (scenarioIndex, nextTurnIndex, token) => {
+      const item = SCENARIOS[scenarioIndex];
+      const turn = item?.turns?.[nextTurnIndex];
+      if (!item || !turn || token !== playbackTokenRef.current) return;
+
+      setPhase(PHASE.TYPING_QUESTION);
+      setTypedQuestion('');
+      setSentQuestion('');
+      setTurnMetadata(turn.metadata);
+      scrollForTurn(scenarioIndex, nextTurnIndex);
+
+      let charIndex = 0;
+
+      const finishTyping = () => {
+        if (token !== playbackTokenRef.current) return;
+
+        setTypedQuestion('');
+        setSentQuestion(turn.question);
+        setPhase(PHASE.THINKING);
+        scrollForTurn(scenarioIndex, nextTurnIndex);
+
+        schedule(() => {
+          if (token !== playbackTokenRef.current) return;
+
+          setSentQuestion('');
+          setCompletedTurns((prev) => [
+            ...prev,
+            {
+              question: turn.question,
+              answer: turn.answer,
+              metadata: turn.metadata,
+            },
+          ]);
+
+          if (nextTurnIndex + 1 < item.turns.length) {
+            schedule(() => {
+              if (token !== playbackTokenRef.current) return;
+              playTurn(scenarioIndex, nextTurnIndex + 1, token);
+            }, TURN_GAP_MS);
+          } else {
+            const cachedTurns = turnsToCache(item);
+            scenarioCacheRef.current.set(item.id, cachedTurns);
+            persistTrailieDemoScenario(DEMO_PLAYBACK_CACHE_VERSION, item.id, cachedTurns, scenarioIndex);
+            setPhase(PHASE.COMPLETE);
+          }
+          scrollForTurn(scenarioIndex, nextTurnIndex);
+        }, THINKING_MS);
+      };
+
+      const typeNext = () => {
+        if (token !== playbackTokenRef.current) return;
+
+        charIndex += 1;
+        const char = turn.question[charIndex - 1];
+        setTypedQuestion(turn.question.slice(0, charIndex));
+
+        if (charIndex < turn.question.length) {
+          schedule(typeNext, typingDelayMs(char));
+        } else {
+          finishTyping();
+        }
+      };
+
+      schedule(typeNext, nextTurnIndex === 0 ? 400 : 550);
     },
-    [turnsToCache, scrollChatToTop]
+    [schedule, scrollForTurn, turnsToCache]
   );
 
   const runScenario = useCallback(
     (index) => {
       const item = SCENARIOS[index];
       if (!item) return;
-      showScenario(index);
+
+      resetPlaybackState();
+      const token = playbackTokenRef.current;
+      setActiveIndex(index);
+      persistTrailieDemoActiveIndex(DEMO_PLAYBACK_CACHE_VERSION, index);
+      setCompletedTurns([]);
+      scrollChatToTop();
+      playTurn(index, 0, token);
     },
-    [showScenario]
+    [playTurn, resetPlaybackState, scrollChatToTop]
   );
 
   const handleSelectScenario = (index) => {
-    if (index === activeIndex && completedTurns.length > 0) return;
+    if (index === activeIndex && phase !== PHASE.IDLE && phase !== PHASE.COMPLETE) return;
     runScenario(index);
   };
 
@@ -116,12 +243,20 @@ export default function TrailieInteractiveDemo({
     if (autoPlay) {
       runScenario(activeIndex);
     }
+    return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + strict-mode remount
   }, []);
 
-  useEffect(() => {
-    scrollChatToTop(true);
-  }, [completedTurns.length, activeIndex, scrollChatToTop]);
+  const isTyping = phase === PHASE.TYPING_QUESTION;
+  const isThinking = phase === PHASE.THINKING;
+  const showChat = completedTurns.length > 0 || isTyping || isThinking;
+
+  const thinkingLabel = useMemo(() => {
+    const meta = turnMetadata;
+    if (meta?.hasWebSearch) return 'Searching live web results...';
+    if (meta?.hasLiveData) return 'Pulling NPS live data...';
+    return 'Trailie is thinking...';
+  }, [turnMetadata]);
 
   return (
     <div className={`w-full min-w-0 ${className}`}>
@@ -192,42 +327,70 @@ export default function TrailieInteractiveDemo({
         </div>
 
         <div
-          ref={chatScrollRef}
-          className="min-h-0 max-h-full flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y px-3.5 py-4 sm:px-6 sm:py-5"
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            WebkitOverflowScrolling: 'touch',
-          }}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          style={{ backgroundColor: 'var(--bg-primary)' }}
         >
-          {completedTurns.length === 0 ? (
-            <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Select a sample above to see Trailie&apos;s reply.
-            </p>
-          ) : (
-            <div className="w-full min-w-0 space-y-4 sm:space-y-5">
-              {completedTurns.map((turn, index) => (
-                <div key={`turn-${index}`} className="space-y-4 sm:space-y-5">
-                  <MessageBubble
-                    message={turn.question}
-                    isUser
-                    hideActions
-                    compact
-                    userAvatar={DEMO_GUEST_AVATAR}
-                  />
-                  <MessageBubble
-                    message={turn.answer}
-                    isUser={false}
-                    hideActions
-                    linkifyParks
-                    compact
-                    hasLiveData={turn.metadata?.hasLiveData}
-                    hasWebSearch={turn.metadata?.hasWebSearch}
-                    liveDataParks={[]}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <div
+            ref={chatScrollRef}
+            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y px-3.5 py-4 sm:px-6 sm:py-5"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {!showChat ? (
+              <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Select a sample above to see Trailie&apos;s reply.
+              </p>
+            ) : (
+              <div className="w-full min-w-0 space-y-4 sm:space-y-5">
+                {completedTurns.map((turn, index) => (
+                  <div key={`turn-${index}`} className="space-y-4 sm:space-y-5">
+                    <MessageBubble
+                      message={turn.question}
+                      isUser
+                      hideActions
+                      compact
+                      userAvatar={DEMO_GUEST_AVATAR}
+                    />
+                    <MessageBubble
+                      message={turn.answer}
+                      isUser={false}
+                      hideActions
+                      linkifyParks
+                      compact
+                      hasLiveData={turn.metadata?.hasLiveData}
+                      hasWebSearch={turn.metadata?.hasWebSearch}
+                      liveDataParks={[]}
+                    />
+                  </div>
+                ))}
+
+                {isThinking && sentQuestion && (
+                  <>
+                    <MessageBubble
+                      message={sentQuestion}
+                      isUser
+                      hideActions
+                      compact
+                      userAvatar={DEMO_GUEST_AVATAR}
+                    />
+                    <TypingIndicator
+                      text={thinkingLabel}
+                      sources={turnMetadata?.hasWebSearch ? ['web'] : undefined}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div
+            className="shrink-0 border-t px-3.5 py-3 sm:px-6 sm:py-4"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
+          >
+            <DemoChatComposer
+              value={typedQuestion}
+              isTyping={isTyping}
+            />
+          </div>
         </div>
       </div>
 

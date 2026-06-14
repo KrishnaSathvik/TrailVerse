@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, Loader2 } from '@components/icons';
+import { X, AlertTriangle } from '@components/icons';
+import Spinner from '../common/Spinner';
 import { useToast } from '../../context/ToastContext';
 import reviewService from '../../services/reviewService';
 
@@ -75,7 +76,7 @@ const DeleteConfirmationModal = ({ review, isOpen, onClose, onSuccess }) => {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner size={16} />
                   <span>Deleting...</span>
                 </>
               ) : (

@@ -5,7 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import authService from '@/services/authService';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
-import { CheckCircle, XCircle, Loader2, Sparkles, ArrowRight } from '@components/icons';
+import { CheckCircle, XCircle, Sparkles, ArrowRight } from '@components/icons';
+import DotSpinner from '@/components/common/DotSpinner';
+import Spinner from '@/components/common/Spinner';
 import { logEvent } from '@/utils/analytics';
 
 const VerifyEmailPage = () => {
@@ -151,10 +153,7 @@ const VerifyEmailPage = () => {
                   className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
                   style={{ backgroundColor: 'var(--accent-green-light)' }}
                 >
-                  <Loader2 
-                    className="h-8 w-8 animate-spin" 
-                    style={{ color: 'var(--accent-green)' }} 
-                  />
+                  <DotSpinner size={32} label="Verifying email" />
                 </div>
                 <h2 className="text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
                   Verifying your email...
@@ -190,10 +189,7 @@ const VerifyEmailPage = () => {
                 </p>
                 
                 <div className="flex items-center justify-center gap-2 mb-6">
-                  <Loader2 
-                    className="h-5 w-5 animate-spin" 
-                    style={{ color: 'var(--accent-green)' }} 
-                  />
+                  <Spinner size={20} />
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {authTransition.active ? 'Moving your chat into your account...' : 'Taking you to explore...'}
                   </span>
@@ -268,7 +264,7 @@ const VerifyEmailPage = () => {
                       >
                         {resendingEmail ? (
                           <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Spinner size={16} className="mr-2" />
                             Sending...
                           </>
                         ) : (

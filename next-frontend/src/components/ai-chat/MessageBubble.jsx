@@ -238,9 +238,11 @@ const MessageBubble = ({
 
       {/* Message Content */}
       <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
-        <div className="flex flex-col gap-1.5">
+        <div className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : ''}`}>
           <div
-            className={`inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] backdrop-blur-sm chat-message-bubble ${
+            className={`${isUser ? 'w-fit' : 'inline-block'} max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] backdrop-blur-sm chat-message-bubble ${
+              isUser ? 'chat-message-bubble--user' : 'chat-message-bubble--assistant'
+            } ${
               dense
                 ? 'px-3 py-2 sm:px-3.5 sm:py-2.5'
                 : compact
@@ -510,6 +512,13 @@ const MessageBubble = ({
             >
               {markdownContent}
             </ReactMarkdown>
+            {isUser && isStreaming && markdownContent && (
+              <span
+                className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
+                style={{ backgroundColor: 'var(--accent-green)' }}
+                aria-hidden="true"
+              />
+            )}
             {!isUser && isStreaming && markdownContent && (
               <span
                 className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"

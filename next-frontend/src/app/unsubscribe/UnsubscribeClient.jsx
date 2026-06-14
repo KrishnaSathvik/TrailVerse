@@ -4,8 +4,10 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Mail, Shield, CheckCircle, XCircle, AlertTriangle,
-  ArrowLeft, Settings, Bell, BellOff, Loader2
+  ArrowLeft, Settings, Bell, BellOff
 } from '@components/icons';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import Spinner from '@/components/common/Spinner';
 import Button from '@/components/common/Button';
 import { logEvent } from '@/utils/analytics';
 
@@ -196,10 +198,7 @@ const UnsubscribeContent = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>Loading email preferences...</p>
-        </div>
+        <LoadingSpinner size="md" text="Loading email preferences…" />
       </div>
     );
   }
@@ -363,7 +362,7 @@ const UnsubscribeContent = () => {
                 className="w-full"
               >
                 {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Spinner size={16} className="mr-2" />
                 ) : (
                   <BellOff className="w-4 h-4 mr-2" />
                 )}
@@ -377,7 +376,7 @@ const UnsubscribeContent = () => {
                 className="w-full"
               >
                 {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Spinner size={16} className="mr-2" />
                 ) : (
                   <Bell className="w-4 h-4 mr-2" />
                 )}
@@ -495,7 +494,7 @@ const UnsubscribeContent = () => {
                 className="w-full"
               >
                 {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Spinner size={16} className="mr-2" />
                 ) : (
                   <CheckCircle className="w-4 h-4 mr-2" />
                 )}
@@ -535,10 +534,7 @@ export default function UnsubscribeClient() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: 'var(--accent-green)' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
-        </div>
+        <LoadingSpinner size="md" text="Loading…" />
       </div>
     }>
       <UnsubscribeContent />

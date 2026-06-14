@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ParkCard from '@/components/explore/ParkCard';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { mergeFeaturedParks } from '@/lib/intentLandingApi';
 
 /**
@@ -51,15 +52,20 @@ export default function IntentTopMatches({ landing, initialParks = [] }) {
 
   if (status === 'loading' || status === 'idle') {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-80 rounded-2xl animate-pulse"
-            style={{ backgroundColor: 'var(--surface-hover)' }}
-            aria-hidden="true"
-          />
-        ))}
+      <div className="space-y-8">
+        <div className="flex justify-center py-6">
+          <LoadingSpinner size="md" text="Loading park matches…" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-80 rounded-2xl animate-pulse"
+              style={{ backgroundColor: 'var(--surface-hover)' }}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
       </div>
     );
   }
