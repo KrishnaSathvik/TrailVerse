@@ -22,3 +22,25 @@ export function truncatePlainText(text, maxLen = 140) {
   if (cleaned.length <= maxLen) return cleaned;
   return `${cleaned.slice(0, maxLen - 3).replace(/\s+\S*$/, '')}...`;
 }
+
+/**
+ * Close dangling markdown delimiters while SSE is still streaming so partial
+ * tokens render as formatted text instead of literal ** or __.
+ */
+export function stabilizeStreamingMarkdown(text = '') {
+  if (!text) return '';
+
+  let output = text;
+
+  const boldDoubleStar = (output.match(/\*\*/g) || []).length;
+  if (boldDoubleStar % 2 === 1) {
+    output += '**';
+  }
+
+  const boldUnderscore = (output.match(/__/g) || []).length;
+  if (boldUnderscore % 2 === 1) {
+    output += '__';
+  }
+
+  return output;
+}

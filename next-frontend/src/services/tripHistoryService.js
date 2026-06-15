@@ -162,20 +162,42 @@ export const clearFormState = () => {
   }
 };
 
+/** Anonymous session id when guest has sent at least one message (stable chat remount key). */
+export function getGuestAnonymousSessionId() {
+  try {
+    const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if ((session.messageCount || 0) > 0 && session.anonymousId) {
+      return session.anonymousId;
+    }
+  } catch (error) {
+    console.error('[TripHistory] Error reading guest session id:', error);
+  }
+  return null;
+}
+
+/** True when guest should resume an existing thread instead of entry-specific welcome. */
+export const guestHasResumableAnonymousChat = () => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(getGuestAnonymousSessionId());
+};
+
+/** True when messages include at least one user turn (hidden personalized kickoff counts). */
+export const conversationHasUserMessages = (messages = []) =>
+  Array.isArray(messages) && messages.some((m) => m.role === 'user');
+
 /** True when the user has a real in-progress chat worth restoring (not welcome-only browse). */
 export const hasActivePlanAiConversation = () => {
   try {
     const temp = getTempChatState();
     if (temp?.currentTripId) return true;
-    if (Array.isArray(temp?.messages) && temp.messages.length >= 2) return true;
+    if (conversationHasUserMessages(temp?.messages)) return true;
 
     const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
     if (raw) {
       const session = JSON.parse(raw);
       if ((session.messageCount || 0) > 0) return true;
-      if (session.anonymousId && Array.isArray(temp?.messages) && temp.messages.length > 0) {
-        return true;
-      }
     }
   } catch (error) {
     console.error('[TripHistory] Error checking active conversation:', error);
@@ -392,6 +414,9 @@ export const tripHistoryService = {
   getFormState,
   clearFormState,
   hasActivePlanAiConversation,
+  conversationHasUserMessages,
+  getGuestAnonymousSessionId,
+  guestHasResumableAnonymousChat,
   clearAnonymousBrowseContext,
   normalizeStoredMessages,
   updateUserPreferences,

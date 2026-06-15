@@ -32,7 +32,9 @@ const {
 } = require('../utils/trailverseParkLinks');
 
 /** Prefer parks from the user's message; response/footer text must not override (e.g. permit footers). */
-function resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser) {
+function resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser, options = {}) {
+  const { openEndedDiscovery = false } = options;
+
   if (parkNamesFromUser?.length > 0) {
     const parksForImages =
       resolvedMetadata.parksForDisplay?.length > 0
@@ -49,6 +51,15 @@ function resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkName
       parksForImages,
     };
   }
+
+  if (openEndedDiscovery) {
+    return {
+      parkName: null,
+      parkNames: [],
+      parksForImages: [],
+    };
+  }
+
   const responseParks = extractAllParksFromMessage(validatedContent || '');
   if (responseParks.length > 0) {
     return {
@@ -71,9 +82,12 @@ async function finalizeParkImagesAndMetadata({
   parkImages,
   alreadyShownImages,
   attachParkImages = false,
+  openEndedDiscovery = false,
   logPrefix,
 }) {
-  const display = resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser);
+  const display = resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkNamesFromUser, {
+    openEndedDiscovery,
+  });
 
   if (!attachParkImages || alreadyShownImages || !validatedContent) {
     return {
@@ -417,6 +431,13 @@ The user named specific parks to compare. Use LIVE TRAILVERSE DATA for those par
 --- END HEAD-TO-HEAD COMPARE ---
 `;
 
+const SINGLE_PARK_PLAN_BLOCK = `
+--- SINGLE-PARK PLANNING ---
+The user already chose one destination. Do NOT open with "Recommendation: [park name]" — that label is for compare/choose questions only.
+Open with a Logistics Summary or go straight into the day-by-day plan.
+--- END SINGLE-PARK PLANNING ---
+`;
+
 // Helper: auto-route provider based on last user message content
 function autoRouteProvider(messages) {
   const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
@@ -735,7 +756,13 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     enhancedSystemPrompt += `\nYou MUST use this data as your primary source. Weave live facts naturally into your answer — don't use robotic prefixes like "📍 Current NPS data shows...". Just state the fact directly (e.g., "Toxic cyanobacteria is active in the Virgin River — don't swallow the water" or "No timed entry required this year"). Do NOT call a cyanobacteria advisory a trail closure unless an ACTIVE CLOSURE alert says the trail is closed. Users trust you; you don't need to label your source every time.`;
     enhancedSystemPrompt += `\nCRITICAL — PERMITS, CAMPGROUNDS & RESERVATIONS: Only state what the data below explicitly says. Do NOT add booking windows, release dates, sell-out times, seasonal date ranges, or reservation tips from your training knowledge — these change frequently and your training data is likely outdated. If the data lists a permit name and URL, mention the name and link the URL. Do NOT add specifics like "required May–September" or "reservations open 14 days out at 7am" unless that exact text appears in the data below.`;
     if (isSpecificPermitOnlyQuery(lastUserMessage)) {
-      enhancedSystemPrompt += `\nPERMIT-ONLY QUESTION: Answer whether the named trail/activity requires a permit. A permit or lottery is NOT a closure — do not say the trail is "closed" or "off-limits" unless an ACTIVE CLOSURE in the data says so. Water-quality cautions are separate; mention in one short sentence at most. Do not list unrelated permits for other trails.`;
+      enhancedSystemPrompt += `\nPERMIT-ONLY QUESTION: Answer whether the named trail/activity requires a permit. A permit or lottery is NOT a closure — do not say the trail is "closed" or "off-limits" unless an ACTIVE CLOSURE in the data says so. Water-quality cautions are separate; mention in one short sentence at most. Do not list unrelated permits for other trails. Do not start with one trail's permit and self-correct ("wait, actually") — answer the trail the user named.`;
+      if (/\bnarrows\b/i.test(lastUserMessage) && /top[- ]?down/i.test(lastUserMessage)) {
+        enhancedSystemPrompt += `\nZION NARROWS TOP-DOWN: 16-mile through-hike from Chamberlain's Ranch — NOT the Subway (Left Fork) and NOT the bottom-up day hike from Temple of Sinawava. Do not mention the Subway.`;
+      }
+    }
+    if (isTrailStatusQuery(lastUserMessage)) {
+      enhancedSystemPrompt += `\nTRAIL OPEN/CLOSED: Check ACTIVE CLOSURES in the live data first. If the named trail is closed there, lead with closed — do not open with "yes, it's open." Permit or lottery requirements are separate; state closure status before permits.`;
     }
     enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
     if (isNonNpsWithWebSearch) {
@@ -818,6 +845,11 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   if (headToHeadCompare) {
     enhancedSystemPrompt += HEAD_TO_HEAD_COMPARE_BLOCK;
     console.log(`${logPrefix} Head-to-head compare mode — skipping catalog discovery`);
+  } else if (
+    allExtractedParks.length === 1 &&
+    /\b(plan|itinerary|trip|\d+[\s-]?days?|day[\s-]?trip|weekend in|things to do)\b/i.test(lastUserMessage)
+  ) {
+    enhancedSystemPrompt += SINGLE_PARK_PLAN_BLOCK;
   }
 
   // Open-ended discovery only when no parks are named in the message
@@ -970,7 +1002,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, lastMsg };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, lastMsg };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {
@@ -1085,7 +1117,10 @@ function getUserPermitFocusTerms(userMessage = '') {
   if (!userMessage) return [];
   const lower = userMessage.toLowerCase();
   const terms = [];
-  if (/\bnarrows\b/.test(lower)) terms.push('narrows', 'north creek', 'left fork', 'subway');
+  if (/\bnarrows\b/.test(lower)) {
+    terms.push('narrows');
+    if (/top[- ]?down/.test(lower)) terms.push('north creek', 'chamberlain', 'through');
+  }
   if (/angels landing/.test(lower)) terms.push('angels landing');
   if (/\bsubway\b/.test(lower) && /zion|north creek/i.test(lower)) terms.push('subway', 'left fork');
   if (/mystery canyon/.test(lower)) terms.push('mystery canyon');
@@ -1673,7 +1708,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -1888,6 +1923,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       parkImages,
       alreadyShownImages,
       attachParkImages,
+      openEndedDiscovery,
       logPrefix: '[AI]',
     });
 
@@ -2011,55 +2047,63 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       hasMetadata: !!req.body.metadata,
     });
 
-    let {
-      provider,
-      model,
-      temperature,
-      top_p,
-      maxTokens,
-      enhancedSystemPrompt,
-      augmentedMessages,
-      npsFacts,
-      weatherFacts,
-      webSearchFacts,
-      feeFreeFacts,
-      resolvedMetadata,
-      parkNames,
-      allExtractedParks,
-      noParkDetected,
-      constraints,
-      preflightResult,
-      hypothetical,
-      conflicts,
-      intent,
-      parkImages,
-      alreadyShownImages,
-      attachParkImages,
-      lastMsg,
-    } = await prepareChatContext(req.body, '[AI Stream]', { req });
-
-    if (preflightResult.blockers.length > 0) {
-      const blockerMsg = preflightResult.blockers.map((b) => `- ${b}`).join('\n');
-      return res.json({
-        data: {
-          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
-          provider: 'system',
-        },
-      });
-    }
-
-    const personalizedRecommendations = req.body.metadata?.personalizedRecommendations === true;
-    const skipUserContext = req.body.metadata?.skipUserContext === true;
-    const userContext = skipUserContext ? '' : await buildUserContext(req.user);
-    enhancedSystemPrompt = appendUserContextToPrompt(
-      enhancedSystemPrompt,
-      userContext,
-      personalizedRecommendations
-    );
-
     const { signal, cleanup } = attachClientDisconnectAbort(req);
     try {
       setSseHeaders(res);
+      writeSseEvent(res, {
+        type: 'thinking',
+        sources: [],
+        parkName: req.body.metadata?.parkName || null,
+        parkNames: [],
+      });
+
+      let {
+        provider,
+        model,
+        temperature,
+        top_p,
+        maxTokens,
+        enhancedSystemPrompt,
+        augmentedMessages,
+        npsFacts,
+        weatherFacts,
+        webSearchFacts,
+        feeFreeFacts,
+        resolvedMetadata,
+        parkNames,
+        allExtractedParks,
+        noParkDetected,
+        constraints,
+        preflightResult,
+        hypothetical,
+        conflicts,
+        intent,
+        parkImages,
+        alreadyShownImages,
+        attachParkImages,
+        openEndedDiscovery,
+        lastMsg,
+      } = await prepareChatContext(req.body, '[AI Stream]', { req });
+
+      if (preflightResult.blockers.length > 0) {
+        const blockerMsg = preflightResult.blockers.map((b) => `- ${b}`).join('\n');
+        writeSseEvent(res, {
+          type: 'done',
+          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
+          provider: 'system',
+        });
+        res.end();
+        return;
+      }
+
+      const personalizedRecommendations = req.body.metadata?.personalizedRecommendations === true;
+      const skipUserContext = req.body.metadata?.skipUserContext === true;
+      const userContext = skipUserContext ? '' : await buildUserContext(req.user);
+      enhancedSystemPrompt = appendUserContextToPrompt(
+        enhancedSystemPrompt,
+        userContext,
+        personalizedRecommendations
+      );
 
       const dataSources = [];
       if (npsFacts) dataSources.push('nps');
@@ -2070,6 +2114,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         sources: dataSources,
         parkName: resolvedMetadata.parkName || null,
         parkNames: parkNames || [],
+        parkImages: attachParkImages ? parkImages : [],
       });
 
       const streamResult = await streamRawLLMToSse(res, {
@@ -2135,6 +2180,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         parkImages,
         alreadyShownImages,
         attachParkImages,
+        openEndedDiscovery,
         logPrefix: '[AI Stream]',
       });
 
@@ -2311,63 +2357,72 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       });
     }
 
-    const ctx = await prepareChatContext(
-      { messages, provider, model, temperature, top_p, maxTokens, systemPrompt, metadata },
-      '[AI Anon Stream]',
-      { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp, req }
-    );
-
-    let {
-      provider: ctxProvider,
-      model: ctxModel,
-      temperature: ctxTemperature,
-      top_p: ctxTopP,
-      maxTokens: ctxMaxTokens,
-      enhancedSystemPrompt,
-      augmentedMessages,
-      npsFacts,
-      weatherFacts,
-      webSearchFacts,
-      feeFreeFacts,
-      userCity: anonUserCity,
-      candidateParksBlock: anonCandidateParksBlock,
-      resolvedMetadata,
-      parkNames: anonParkNames,
-      noParkDetected: anonNoParkDetected,
-      constraints: anonConstraints,
-      preflightResult: anonPreflightResult,
-      hypothetical: anonHypothetical,
-      conflicts: anonConflicts,
-      intent: anonIntent,
-      parkImages,
-      alreadyShownImages: anonAlreadyShownImages,
-      attachParkImages: anonAttachParkImages,
-      allExtractedParks,
-      lastMsg,
-    } = ctx;
-
-    provider = ctxProvider;
-    if (ctxModel) model = ctxModel;
-    temperature = ctxTemperature;
-    top_p = ctxTopP;
-    maxTokens = ctxMaxTokens;
-
-    if (anonPreflightResult.blockers.length > 0) {
-      const blockerMsg = anonPreflightResult.blockers.map((b) => `- ${b}`).join('\n');
-      return res.json({
-        data: {
-          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
-          provider: 'system',
-          anonymousId: session.anonymousId,
-          messageCount: session.messages.filter((m) => m.role === 'user').length,
-          canSendMore: session.canSendMessage(),
-        },
-      });
-    }
-
     const { signal, cleanup } = attachClientDisconnectAbort(req);
     try {
       setSseHeaders(res);
+      writeSseEvent(res, {
+        type: 'thinking',
+        sources: [],
+        parkName: metadata.parkName || null,
+        parkNames: [],
+      });
+
+      const ctx = await prepareChatContext(
+        { messages, provider, model, temperature, top_p, maxTokens, systemPrompt, metadata },
+        '[AI Anon Stream]',
+        { isAnonymous: true, isTrustedMcp: !!req.isTrustedMcp, req }
+      );
+
+      let {
+        provider: ctxProvider,
+        model: ctxModel,
+        temperature: ctxTemperature,
+        top_p: ctxTopP,
+        maxTokens: ctxMaxTokens,
+        enhancedSystemPrompt,
+        augmentedMessages,
+        npsFacts,
+        weatherFacts,
+        webSearchFacts,
+        feeFreeFacts,
+        userCity: anonUserCity,
+        candidateParksBlock: anonCandidateParksBlock,
+        resolvedMetadata,
+        parkNames: anonParkNames,
+        noParkDetected: anonNoParkDetected,
+        constraints: anonConstraints,
+        preflightResult: anonPreflightResult,
+        hypothetical: anonHypothetical,
+        conflicts: anonConflicts,
+        intent: anonIntent,
+        parkImages,
+        alreadyShownImages: anonAlreadyShownImages,
+        attachParkImages: anonAttachParkImages,
+        openEndedDiscovery: anonOpenEndedDiscovery,
+        allExtractedParks,
+        lastMsg,
+      } = ctx;
+
+      provider = ctxProvider;
+      if (ctxModel) model = ctxModel;
+      temperature = ctxTemperature;
+      top_p = ctxTopP;
+      maxTokens = ctxMaxTokens;
+
+      if (anonPreflightResult.blockers.length > 0) {
+        const blockerMsg = anonPreflightResult.blockers.map((b) => `- ${b}`).join('\n');
+        const userMessageCount = session.messages.filter((msg) => msg.role === 'user').length;
+        writeSseEvent(res, {
+          type: 'done',
+          content: `📍 **Can't plan this trip yet:**\n${blockerMsg}\n\nAdjust your dates or destination and try again.`,
+          provider: 'system',
+          anonymousId: session.anonymousId,
+          messageCount: userMessageCount,
+          canSendMore: session.canSendMessage(),
+        });
+        res.end();
+        return;
+      }
 
       const dataSources = [];
       if (npsFacts) dataSources.push('nps');
@@ -2378,6 +2433,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         sources: dataSources,
         parkName: resolvedMetadata.parkName || null,
         parkNames: anonParkNames || [],
+        parkImages: anonAttachParkImages ? parkImages : [],
       });
 
       const streamResult = await streamRawLLMToSse(res, {
@@ -2447,6 +2503,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         parkImages,
         alreadyShownImages: anonAlreadyShownImages,
         attachParkImages: anonAttachParkImages,
+        openEndedDiscovery: anonOpenEndedDiscovery,
         logPrefix: '[AI Anon Stream]',
       });
 
@@ -2684,6 +2741,7 @@ router.post('/chat-anonymous', async (req, res) => {
       parkImages,
       alreadyShownImages: anonAlreadyShownImages,
       attachParkImages: anonAttachParkImages,
+      openEndedDiscovery: anonOpenEndedDiscovery,
       allExtractedParks,
       lastMsg,
     } = ctx;
@@ -2897,6 +2955,7 @@ router.post('/chat-anonymous', async (req, res) => {
       parkImages,
       alreadyShownImages: anonAlreadyShownImages,
       attachParkImages: anonAttachParkImages,
+      openEndedDiscovery: anonOpenEndedDiscovery,
       logPrefix: '[AI Anon]',
     });
 

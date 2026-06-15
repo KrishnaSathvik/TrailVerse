@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { User, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
 import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 import { linkifyParkNames } from '@/utils/parkLinkifier';
+import { stabilizeStreamingMarkdown } from '@/utils/stripMarkdown';
 
 
 const ImageLightbox = ({ images, initialIndex, onClose }) => {
@@ -161,10 +162,11 @@ const MessageBubble = ({
   }, [initialFeedback]);
 
   const markdownBody = (message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd();
+  const renderBody = !isUser && isStreaming ? stabilizeStreamingMarkdown(markdownBody) : markdownBody;
   const shouldLinkifyParks = linkifyParks && !isStreaming && !isUser;
   const markdownContent = isUser
     ? message
-    : (shouldLinkifyParks ? linkifyParkNames(markdownBody) : markdownBody);
+    : (shouldLinkifyParks ? linkifyParkNames(renderBody) : renderBody);
 
   const handleCopy = () => {
     if (!message) return;
@@ -281,59 +283,6 @@ const MessageBubble = ({
               </span>
             </div>
           )}
-
-          {/* Park photo gallery — layout matches count (no empty 2×2 cells) */}
-          {!isUser && parkImages?.length > 0 && (() => {
-            const photos = parkImages.slice(0, 4);
-            const gridClass =
-              photos.length === 1
-                ? 'grid-cols-1'
-                : photos.length === 2
-                  ? 'grid-cols-2'
-                  : photos.length === 3
-                    ? 'grid-cols-2'
-                    : 'grid-cols-2';
-            return (
-            <>
-              <div className={`grid ${gridClass} gap-1.5 mb-2 rounded-xl overflow-hidden`}>
-                {photos.map((img, idx) => (
-                  <div
-                    key={`${img.url || 'park'}-${idx}`}
-                    className={`relative aspect-[4/3] overflow-hidden group/img cursor-pointer${
-                      photos.length === 3 && idx === 2 ? ' col-span-2 max-h-40' : ''
-                    }`}
-                    style={{ backgroundColor: 'var(--surface-hover)' }}
-                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View photo: ${img.altText || img.title || 'Park photo'}`}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { setLightboxIndex(idx); setLightboxOpen(true); } }}
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.altText || img.title || 'Park photo'}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/og-image-trailverse.jpg';
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {parkImages.length > 4 && (
-                <button
-                  onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
-                  className="text-xs font-medium mb-2 transition-colors"
-                  style={{ color: 'var(--accent-green)' }}
-                >
-                  View all {parkImages.length} photos
-                </button>
-              )}
-            </>
-            );
-          })()}
 
           <div className="prose prose-sm max-w-none"
             style={{
@@ -453,7 +402,7 @@ const MessageBubble = ({
                 
                 // Inline images — render as styled cards instead of raw inline
                 img: ({ src, alt }) => {
-                  // Skip if this image is already shown in the parkImages grid above
+                  // Skip if this image is already shown in the parkImages grid below
                   if (parkImages?.length > 0 && parkImages.some(pi => pi.url === src)) return null;
                   return (
                     <img
@@ -530,6 +479,59 @@ const MessageBubble = ({
               />
             )}
           </div>
+
+          {/* Park photos — after text so streaming copy isn't pushed down when images arrive */}
+          {!isUser && parkImages?.length > 0 && (() => {
+            const photos = parkImages.slice(0, 4);
+            const gridClass =
+              photos.length === 1
+                ? 'grid-cols-1'
+                : photos.length === 2
+                  ? 'grid-cols-2'
+                  : photos.length === 3
+                    ? 'grid-cols-2'
+                    : 'grid-cols-2';
+            return (
+            <>
+              <div className={`mt-3 grid ${gridClass} gap-1.5 rounded-xl overflow-hidden`}>
+                {photos.map((img, idx) => (
+                  <div
+                    key={`${img.url || 'park'}-${idx}`}
+                    className={`relative aspect-[4/3] overflow-hidden group/img cursor-pointer${
+                      photos.length === 3 && idx === 2 ? ' col-span-2 max-h-40' : ''
+                    }`}
+                    style={{ backgroundColor: 'var(--surface-hover)' }}
+                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View photo: ${img.altText || img.title || 'Park photo'}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { setLightboxIndex(idx); setLightboxOpen(true); } }}
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.altText || img.title || 'Park photo'}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/og-image-trailverse.jpg';
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              {parkImages.length > 4 && (
+                <button
+                  onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
+                  className="mt-2 text-xs font-medium transition-colors"
+                  style={{ color: 'var(--accent-green)' }}
+                >
+                  View all {parkImages.length} photos
+                </button>
+              )}
+            </>
+            );
+          })()}
 
           {!isUser && afterContent}
 

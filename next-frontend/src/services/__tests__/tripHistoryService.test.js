@@ -17,6 +17,13 @@ describe('hasActivePlanAiConversation', () => {
     expect(hasActivePlanAiConversation()).toBe(false);
   });
 
+  it('returns false when temp chat only has a welcome assistant message', () => {
+    saveTempChatState({
+      messages: [{ role: 'assistant', content: 'Welcome' }],
+    });
+    expect(hasActivePlanAiConversation()).toBe(false);
+  });
+
   it('returns true when temp chat has a real back-and-forth', () => {
     saveTempChatState({
       messages: [

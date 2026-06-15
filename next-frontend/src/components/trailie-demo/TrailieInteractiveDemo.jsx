@@ -221,7 +221,7 @@ export default function TrailieInteractiveDemo({
             Live Trailie demo
           </h2>
           <p className="mt-2 text-sm sm:text-base leading-relaxed text-pretty" style={{ color: 'var(--text-secondary)' }}>
-            Recorded from Trailie chat. Pick a sample question below.
+            Pick a sample below — cool July parks, Zion vs Bryce, a Yellowstone itinerary, or Jackson Hole stays.
           </p>
         </div>
       )}

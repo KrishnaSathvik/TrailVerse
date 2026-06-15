@@ -1285,7 +1285,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                           View Details →
                         </Link>
                         <Link
-                          href={`/plan-ai?park=${park.parkCode}&name=${encodeURIComponent(park.fullName)}`}
+                          href={`/plan-ai?from=compare&park=${park.parkCode}&name=${encodeURIComponent(park.fullName)}`}
                           className="px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:brightness-110 text-center"
                           style={{
                             backgroundColor: 'var(--accent-green-dark)',

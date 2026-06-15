@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { tripHistoryService } from '../../services/tripHistoryService';
+import { tripHistoryService, conversationHasUserMessages } from '../../services/tripHistoryService';
 import tripService from '../../services/tripService';
 import conversationService from '../../services/conversationService';
 import aiService from '../../services/aiService';
@@ -34,12 +34,10 @@ import {
   getSavePromptReasonFromMessages,
 } from '@/lib/planAiSignupPrompts';
 import {
-  getGenericWelcomeMessage,
-  getParkWelcomeMessage,
-  getPersonalizedWelcomeMessage,
-  getRoadTripWelcomeMessage,
   MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE,
+  resolvePlanAiWelcomeMessage,
 } from '@/lib/planAiWelcomeCopy';
+import { derivePlanAiHeaderMeta, PLAN_AI_ENTRY } from '@/lib/planAiHeaderMeta';
 import { stripItineraryJsonForDisplay } from '@/utils/streamDisplayContent';
 
 const ANONYMOUS_SESSION_KEY = 'anonymousSession';
@@ -99,6 +97,7 @@ const TripPlannerChat = ({
   isPersonalized = false,
   isNewChat = false,
   suggestText = '',
+  entryMode = 'general',
   refreshTrips = null,
   onOpenQuickFill = null,
   fromChatHistory = false,
@@ -108,6 +107,7 @@ const TripPlannerChat = ({
   onInitialAskSent = null,
   playCompletionSound = null,
   primeCompletionSound = null,
+  onShellMetaChange = null,
 }) => {
   const router = useRouter();
   const { user, isAuthenticated, updateUser } = useAuth();
@@ -128,13 +128,13 @@ const TripPlannerChat = ({
   const [currentTripId, setCurrentTripId] = useState(existingTripId);
   const [providers, setProviders] = useState([]);
   const abortControllerRef = useRef(null);
-  const streamFlushRafRef = useRef(null);
+  const streamFlushTimerRef = useRef(null);
   const rawStreamedContentRef = useRef('');
 
   const cancelStreamFlush = useCallback(() => {
-    if (streamFlushRafRef.current != null) {
-      cancelAnimationFrame(streamFlushRafRef.current);
-      streamFlushRafRef.current = null;
+    if (streamFlushTimerRef.current != null) {
+      clearTimeout(streamFlushTimerRef.current);
+      streamFlushTimerRef.current = null;
     }
   }, []);
   const [providersLoaded, setProvidersLoaded] = useState(false);
@@ -166,7 +166,7 @@ const TripPlannerChat = ({
     () => getInitialAuthRestoreStatus(isAuthenticated)
   );
   const [timeUntilReset, setTimeUntilReset] = useState(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
   const [saveState, setSaveState] = useState('idle');
   const [shareUrl, setShareUrl] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -193,6 +193,31 @@ const TripPlannerChat = ({
   const initialAskSentRef = useRef(false);
   const sessionStartTrackedRef = useRef(false);
   const parkContextRef = useRef(null);
+  const pendingParkImagesRef = useRef([]);
+  const isNearBottomRef = useRef(true);
+  const messagesLengthWhenAtBottomRef = useRef(0);
+
+  const SCROLL_NEAR_BOTTOM_PX = 80;
+
+  const handleChatScroll = useCallback((e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const nearBottom = distanceFromBottom <= SCROLL_NEAR_BOTTOM_PX;
+    isNearBottomRef.current = nearBottom;
+    if (nearBottom) {
+      messagesLengthWhenAtBottomRef.current = messagesRef.current.length;
+      setShowScrollToLatest(false);
+    }
+  }, []);
+
+  const scrollChatToBottom = useCallback(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    isNearBottomRef.current = true;
+    messagesLengthWhenAtBottomRef.current = messagesRef.current.length;
+    setShowScrollToLatest(false);
+  }, []);
 
   const chatStatus = isAnonymous
     ? null
@@ -215,11 +240,77 @@ const TripPlannerChat = ({
       ? `${anonymousMessagesRemaining} free ${anonymousMessagesRemaining === 1 ? 'message' : 'messages'} left`
       : null;
 
-  const isWelcomeState =
-    messages.length === 1 &&
+  const getWelcomePlaceholderContent = useCallback(
+    () =>
+      resolvePlanAiWelcomeMessage({
+        entryMode,
+        user,
+        parkName,
+        suggestText,
+        isPersonalized,
+        isNewChat,
+      }),
+    [entryMode, user, parkName, suggestText, isPersonalized, isNewChat]
+  );
+
+  const canShowWelcomePlaceholder =
+    providersLoaded &&
+    !existingTripId &&
+    !isPersonalized &&
+    messages.length === 0 &&
     !isGenerating &&
+    !isStartingFresh &&
+    anonymousRestoreStatus !== 'pending' &&
+    authRestoreStatus !== 'pending';
+
+  const displayMessages = canShowWelcomePlaceholder
+    ? [
+        {
+          id: 'welcome-placeholder',
+          role: 'assistant',
+          content: getWelcomePlaceholderContent(),
+          timestamp: null,
+        },
+      ]
+    : messages;
+
+  const isWelcomeState =
     !messages.some((message) => message.role === 'user' && !message.hiddenFromUi) &&
-    !messages.some((message) => message.isConversionMessage);
+    !isGenerating &&
+    !messages.some((message) => message.isConversionMessage) &&
+    displayMessages.length === 1 &&
+    displayMessages[0].role === 'assistant';
+
+  const showComposerToolbar =
+    !isWelcomeState && messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
+
+  const hasUserMessages = messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
+
+  useEffect(() => {
+    if (!onShellMetaChange) return;
+    onShellMetaChange(
+      derivePlanAiHeaderMeta({
+        entryMode,
+        isPersonalized,
+        parkName,
+        suggestText,
+        formData,
+        currentPlan,
+        isGenerating,
+        hasUserMessages,
+      })
+    );
+  }, [
+    onShellMetaChange,
+    entryMode,
+    isPersonalized,
+    parkName,
+    suggestText,
+    formData,
+    currentPlan,
+    isGenerating,
+    hasUserMessages,
+  ]);
 
   // Auto-scroll only when USER sends a message (not when AI responds)
   // This lets the user read AI responses from the top without being yanked to the bottom
@@ -233,6 +324,14 @@ const TripPlannerChat = ({
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
     lastMessageCountRef.current = messages.length;
+  }, [messages.length, isGenerating]);
+
+  // Only offer jump-to-latest when new content arrives below — not when reading older messages
+  useEffect(() => {
+    if (isNearBottomRef.current) return;
+    if (isGenerating || messages.length > messagesLengthWhenAtBottomRef.current) {
+      setShowScrollToLatest(true);
+    }
   }, [messages.length, isGenerating]);
 
   useEffect(() => {
@@ -285,16 +384,14 @@ const TripPlannerChat = ({
     );
 
   const showWelcomeMessage = useCallback(async () => {
-    let content;
-    if (isPersonalized) {
-      content = getPersonalizedWelcomeMessage(user);
-    } else if (suggestText) {
-      content = getRoadTripWelcomeMessage(user, suggestText);
-    } else if (isNewChat || !parkName) {
-      content = getGenericWelcomeMessage(user);
-    } else {
-      content = getParkWelcomeMessage(user, parkName);
-    }
+    const content = resolvePlanAiWelcomeMessage({
+      entryMode,
+      user,
+      parkName,
+      suggestText,
+      isPersonalized,
+      isNewChat,
+    });
 
     setMessages([
       {
@@ -304,7 +401,7 @@ const TripPlannerChat = ({
         timestamp: new Date(),
       },
     ]);
-  }, [user, parkName, isPersonalized, isNewChat, suggestText]);
+  }, [entryMode, user, parkName, isPersonalized, isNewChat, suggestText]);
 
   // Define loadExistingTrip before the useEffect that uses it
   const loadExistingTrip = useCallback(async (tripId) => {
@@ -370,7 +467,7 @@ const TripPlannerChat = ({
     
     const tempState = tripHistoryService.getTempChatState();
 
-    if (tempState?.currentTripId || tempState?.messages?.length >= 2) {
+    if (tempState?.currentTripId || conversationHasUserMessages(tempState?.messages)) {
       setIsRestoredSession(true);
       console.log('🔄 Restored session detected');
     }
@@ -591,8 +688,8 @@ const TripPlannerChat = ({
         messageCount: sessionData.messageCount || 0,
         canSendMore: sessionData.canSendMore !== undefined ? sessionData.canSendMore : true,
         avatarUrl,
-        parkName,
-        formData,
+        parkName: (sessionData.messageCount || 0) > 0 ? parkName : '',
+        formData: (sessionData.messageCount || 0) > 0 ? formData : null,
         timestamp: sameSession && existing?.timestamp ? existing.timestamp : Date.now(),
       };
       localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(sessionToSave));
@@ -696,7 +793,7 @@ const TripPlannerChat = ({
           console.log('🔄 Restored anonymous chat history:', status.messages.length, 'messages');
         } else {
           const temp = tripHistoryService.getTempChatState();
-          if (temp?.messages?.length >= 2) {
+          if (temp?.messages && conversationHasUserMessages(temp.messages)) {
             setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
             setAnonymousRestoreStatus('restored');
             console.log('🔄 Restored anonymous chat from local cache:', temp.messages.length, 'messages');
@@ -721,7 +818,7 @@ const TripPlannerChat = ({
   }, [isAnonymous, isAuthenticated, validateSessionWithBackend, mapServerMessagesToUi]);
 
   const persistSessionToStorage = useCallback((tripId, msgs, plan) => {
-    if (!msgs || msgs.length < 2) return;
+    if (!conversationHasUserMessages(msgs)) return;
     tripHistoryService.saveTempChatState({
       currentTripId: tripId || null,
       messages: msgs,
@@ -745,7 +842,7 @@ const TripPlannerChat = ({
     const restoreAuthSession = async () => {
       const temp = tripHistoryService.getTempChatState();
 
-      if (temp?.messages?.length >= 2) {
+      if (temp?.messages && conversationHasUserMessages(temp.messages)) {
         if (cancelled) return;
         setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
         if (temp.currentTripId) setCurrentTripId(temp.currentTripId);
@@ -784,7 +881,7 @@ const TripPlannerChat = ({
   // Keep conversation cache in sync for SPA navigation (not only after auto-save)
   useEffect(() => {
     if (isStartingFresh || isNewChat || isPersonalized) return;
-    if (messages.length < 2) return;
+    if (!conversationHasUserMessages(messages)) return;
 
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
@@ -812,18 +909,19 @@ const TripPlannerChat = ({
   useEffect(() => {
     return () => {
       const msgs = messagesRef.current || [];
-      const hasUserMessages = msgs.some(
-        (m) => m.role === 'user' && !m.hiddenFromUi
-      );
+      const hasUserMessages = conversationHasUserMessages(msgs);
 
-      persistSessionToStorage(
-        currentTripIdRef.current,
-        msgs,
-        currentPlanRef.current
-      );
+      if (hasUserMessages) {
+        persistSessionToStorage(
+          currentTripIdRef.current,
+          msgs,
+          currentPlanRef.current
+        );
+      }
 
-      // Welcome-only park browse — do not leave stale park context for the next visit
-      if (!hasUserMessages && msgs.length <= 1) {
+      // Welcome-only browse — do not leave stale context for the next visit
+      if (!hasUserMessages) {
+        tripHistoryService.clearTempChatState();
         tripHistoryService.clearFormState();
         tripHistoryService.clearAnonymousBrowseContext();
       }
@@ -862,9 +960,14 @@ const TripPlannerChat = ({
         setAnonymousRestoreStatus('empty');
         return;
       }
-      // Park deep links (?park=&name=) start fresh — but guest resume links keep stored session
       const storedSession = readStoredAnonymousSession();
-      if (parkName && !storedSession?.anonymousId) {
+      const shouldResumeGuest =
+        storedSession?.anonymousId && (storedSession.messageCount || 0) > 0;
+      if (shouldResumeGuest) {
+        restoreAnonymousSession();
+        return;
+      }
+      if (parkName) {
         setAnonymousRestoreStatus('empty');
         return;
       }
@@ -950,6 +1053,7 @@ const TripPlannerChat = ({
     if (isStartingFresh || existingTripId || isNewChat || isPersonalized) return;
 
     const parkContextKey = [
+      entryMode,
       formData?.parkCode || '',
       parkName || '',
       suggestText || '',
@@ -972,6 +1076,7 @@ const TripPlannerChat = ({
 
     showWelcomeMessage();
   }, [
+    entryMode,
     formData?.parkCode,
     parkName,
     suggestText,
@@ -1042,7 +1147,7 @@ const TripPlannerChat = ({
 
         // Check if we're restoring a session before showing welcome message
         const tempState = tripHistoryService.getTempChatState();
-        if (tempState?.messages?.length >= 2) {
+        if (tempState?.messages && conversationHasUserMessages(tempState.messages)) {
           return;
         }
         if (tempState?.currentTripId) {
@@ -1065,6 +1170,40 @@ const TripPlannerChat = ({
     anonymousRestoreStatus,
     authRestoreStatus,
     parkName,
+    suggestText,
+    formData?.parkCode,
+    showWelcomeMessage,
+    loadExistingTrip,
+  ]);
+
+  // Safety net: never leave the thread blank when welcome should show
+  useEffect(() => {
+    if (messages.length > 0 || isGenerating || isStartingFresh || existingTripId || isPersonalized) return;
+    if (!providersLoaded) return;
+    if (isAnonymous && anonymousRestoreStatus === 'pending') return;
+    if (isAuthenticated && authRestoreStatus === 'pending') return;
+    if (isAnonymous && anonymousRestoreStatus === 'restored') return;
+    if (isAuthenticated && authRestoreStatus === 'restored') return;
+    const tempState = tripHistoryService.getTempChatState();
+    if (conversationHasUserMessages(tempState?.messages) || tempState?.currentTripId) return;
+    if (formData?.parkCode && !parkName && !isNewChat && !suggestText) return;
+    showWelcomeMessage();
+  }, [
+    messages.length,
+    isGenerating,
+    isStartingFresh,
+    existingTripId,
+    isPersonalized,
+    providersLoaded,
+    isAnonymous,
+    isAuthenticated,
+    anonymousRestoreStatus,
+    authRestoreStatus,
+    parkName,
+    suggestText,
+    isNewChat,
+    formData?.parkCode,
+    showWelcomeMessage,
   ]);
 
   // Auto-send Quick Fill summary when applied
@@ -1150,6 +1289,7 @@ const TripPlannerChat = ({
     if (!messageText.trim() || isGenerating) return;
 
     primeCompletionSound?.();
+    pendingParkImagesRef.current = [];
 
     console.log('🔄 handleSendMessage called:', {
       messageText: messageText.trim(),
@@ -1244,10 +1384,29 @@ const TripPlannerChat = ({
 
       const streamCallbacks = {
         onThinking: (thinkingData) => {
-          const { sources, parkName: sourcePark, parkNames: sourceParks } = thinkingData;
+          const {
+            sources,
+            parkName: sourcePark,
+            parkNames: sourceParks,
+            parkImages: thinkingImages,
+          } = thinkingData;
+          if (thinkingImages?.length) {
+            pendingParkImagesRef.current = thinkingImages;
+            setMessages((prev) => {
+              const last = prev[prev.length - 1];
+              if (last?.role === 'assistant' && last?.isStreaming) {
+                return prev.map((m, i) =>
+                  i === prev.length - 1 ? { ...m, parkImages: thinkingImages } : m
+                );
+              }
+              return prev;
+            });
+          }
           setThinkingSources(sources || []);
           const parks = sourceParks?.length > 0 ? sourceParks.join(', ') : (sourcePark || parkName || 'the park');
-          if (sources?.includes('web')) {
+          if (!sources?.length) {
+            setThinkingMessage('Gathering live park data...');
+          } else if (sources?.includes('web')) {
             setThinkingMessage(`Searching the web for live info about ${parks}...`);
           } else if (sources?.includes('nps') && sources?.includes('weather')) {
             setThinkingMessage(`Fetching live park data & weather for ${parks}...`);
@@ -1263,8 +1422,10 @@ const TripPlannerChat = ({
           rawStreamedContentRef.current += chunk;
 
           const applyStreamContent = () => {
-            streamFlushRafRef.current = null;
+            streamFlushTimerRef.current = null;
             const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
+            if (!displayContent.trim()) return;
+
             if (!streamStarted) {
               streamStarted = true;
               setIsGenerating(false);
@@ -1277,6 +1438,7 @@ const TripPlannerChat = ({
                   timestamp: new Date(),
                   provider: 'auto',
                   isStreaming: true,
+                  parkImages: pendingParkImagesRef.current || [],
                 },
               ]);
             } else {
@@ -1288,8 +1450,8 @@ const TripPlannerChat = ({
             }
           };
 
-          if (streamFlushRafRef.current == null) {
-            streamFlushRafRef.current = requestAnimationFrame(applyStreamContent);
+          if (streamFlushTimerRef.current == null) {
+            streamFlushTimerRef.current = setTimeout(applyStreamContent, 48);
           }
         },
         onDone: (result) => {
@@ -1531,8 +1693,8 @@ const TripPlannerChat = ({
         setCurrentPlan(planForSave);
       }
 
-      // Auto-save conversation to history
-      if (updatedMessagesForSave.length >= 2) {
+      // Auto-save conversation to history after at least one user message + AI reply
+      if (conversationHasUserMessages(updatedMessagesForSave)) {
         autoSaveConversation(updatedMessagesForSave, planForSave);
       }
 
@@ -1674,10 +1836,14 @@ const TripPlannerChat = ({
     const currentYear = currentDate.getFullYear();
     const currentSeason = getCurrentSeason(currentMonth);
 
+    const fromCompare = entryMode === PLAN_AI_ENTRY.COMPARE;
     let prompt = `You are helping plan ${suggestText ? `a multi-park road trip to ${suggestText}` : parkName ? `a trip to ${parkName}` : 'a US outdoor trip'}.${suggestText ? `
 
 ROAD TRIP CONTEXT:
-This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.` : ''}
+This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.` : fromCompare && parkName ? `
+
+COMPARE CONTEXT:
+This user compared parks side-by-side on TrailVerse and chose ${parkName} to plan. They may reference why they picked it over alternatives — focus on planning this park, not re-running the comparison unless they ask.` : ''}
 
 CURRENT CONTEXT:
 - Today's date: ${currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1831,21 +1997,20 @@ TRIP DETAILS:
       setTimeout(() => {
         handleSendMessage(customMessage);
       }, 300);
-    } else if (parkName) {
-      setMessages([
-        {
-          id: Date.now(),
-          role: 'assistant',
-          content: getParkWelcomeMessage(user, parkName),
-          timestamp: new Date(),
-        },
-      ]);
     } else {
+      const content = resolvePlanAiWelcomeMessage({
+        entryMode,
+        user,
+        parkName,
+        suggestText,
+        isPersonalized,
+        isNewChat,
+      });
       setMessages([
         {
           id: Date.now(),
           role: 'assistant',
-          content: getGenericWelcomeMessage(user),
+          content,
           timestamp: new Date(),
         },
       ]);
@@ -1980,7 +2145,7 @@ TRIP DETAILS:
   };
 
   const autoSaveConversation = async (messagesToSave, planOverride = null) => {
-    if (!user || !isAuthenticated || !messagesToSave || messagesToSave.length < 2) return;
+    if (!user || !isAuthenticated || !conversationHasUserMessages(messagesToSave)) return;
 
     const planToSave = planOverride || currentPlan;
 
@@ -2212,19 +2377,15 @@ TRIP DETAILS:
       style={{ backgroundColor: 'var(--bg-primary)' }}
       onPointerDownCapture={() => primeCompletionSound?.()}
     >
-      {/* Chat Messages - Responsive width */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div
         ref={chatContainerRef}
         className="relative flex-1 min-h-0 overflow-y-auto chat-messages-container"
-        onScroll={(e) => {
-          const { scrollTop, scrollHeight, clientHeight } = e.target;
-          setShowScrollButton(scrollHeight - scrollTop - clientHeight > 200);
-        }}
+        onScroll={handleChatScroll}
       >
-          <div className={`mx-auto w-full max-w-5xl px-3 sm:px-6 lg:px-8 ${isWelcomeState ? 'py-2 sm:py-6' : 'py-2 sm:py-8'}`}>
-            <div className={isWelcomeState ? 'sm:flex sm:min-h-[min(100%,28rem)] sm:items-center sm:justify-center' : ''}>
-            <div className={`space-y-2 sm:space-y-3 ${isWelcomeState ? 'w-full max-w-3xl' : ''}`}>
-              {messages.map((message, index) => (
+          <div className={`mx-auto w-full px-3 sm:px-4 ${isWelcomeState ? 'py-3 sm:py-5' : 'py-2 sm:py-5'}`}>
+            <div className="space-y-2 sm:space-y-3">
+              {displayMessages.map((message, index) => (
                 message.hiddenFromUi ? null : (
                 <React.Fragment key={`${message.id || message._id || index}-${user?.id || 'anonymous'}-${avatarVersion}`}>
                 <MessageBubble
@@ -2237,6 +2398,7 @@ TRIP DETAILS:
                   timestamp={message.timestamp}
                   hideActions={
                     message.isConversionMessage ||
+                    message.id === 'welcome-placeholder' ||
                     (isWelcomeState &&
                     message.role === 'assistant' &&
                     index === 0)
@@ -2424,6 +2586,62 @@ TRIP DETAILS:
                 )
               ))}
 
+              {isWelcomeState && (
+                <div className="pt-1 sm:pt-3">
+                  {isPersonalized && (
+                    <p
+                      className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE} — or try asking:
+                    </p>
+                  )}
+                  {!isPersonalized && onOpenQuickFill && (
+                    <p
+                      className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Use Plan My Trip to add destination, dates, budget, and interests — or try asking:
+                    </p>
+                  )}
+                  {onOpenQuickFill && !isPersonalized && (
+                    <button
+                      type="button"
+                      onClick={onOpenQuickFill}
+                      className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
+                      style={{
+                        backgroundColor: 'var(--surface-hover)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      {hasUsedQuickFill ? (
+                        <><Edit2 className="h-3.5 w-3.5" />Edit trip details</>
+                      ) : (
+                        <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
+                      )}
+                    </button>
+                  )}
+                  <SuggestedPrompts
+                    hideTitle={Boolean(onOpenQuickFill || isPersonalized)}
+                    prompts={isPersonalized ? [
+                      { icon: Sparkles, text: "What should I explore this season based on my interests?", color: "text-green-400" },
+                      { icon: MapPin, text: "Suggest a park I haven't visited yet that matches my style", color: "text-blue-400" },
+                      { icon: Calendar, text: "Plan a weekend trip based on what I usually enjoy", color: "text-yellow-400" },
+                      { icon: Edit2, text: "What's trending near parks I've already visited?", color: "text-purple-400" },
+                    ] : [
+                      { icon: Sparkles, text: "Plan a 5-day trip to Yellowstone for a family", color: "text-green-400" },
+                      { icon: MapPin, text: "Best national parks for stargazing in the Southwest", color: "text-blue-400" },
+                      { icon: Calendar, text: "Weekend hiking trip from Denver under $500", color: "text-yellow-400" },
+                      { icon: Compare, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
+                    ]}
+                    onSelect={(text) => handleSendMessage(text)}
+                    title={isPersonalized ? 'Suggestions for you' : 'Try asking...'}
+                    subtitle={null}
+                  />
+                </div>
+              )}
+
               {isAnonymous &&
                messages.filter(m => m.role === 'user').length >= 1 &&
                !isGenerating &&
@@ -2471,53 +2689,47 @@ TRIP DETAILS:
 
               <div ref={messagesEndRef} />
             </div>
-            </div>
           </div>
-        </div>
 
-      {/* Scroll to bottom button */}
-      {showScrollButton && (
-        <div className="sticky bottom-24 z-10 flex justify-center pointer-events-none">
-          <button
-            onClick={() => {
-              if (messagesEndRef.current) {
-                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium shadow-lg transition-all duration-200 hover:scale-105"
-            style={{
-              backgroundColor: 'var(--surface)',
-              color: 'var(--text-secondary)',
-              border: '1px solid',
-              borderColor: 'var(--border)',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-            }}
-            aria-label="Scroll to bottom"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M19 12l-7 7-7-7" />
-            </svg>
-            New messages
-          </button>
+        {showScrollToLatest && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center px-3">
+            <button
+              type="button"
+              onClick={scrollChatToBottom}
+              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium shadow-lg transition-all duration-200 hover:scale-105"
+              style={{
+                backgroundColor: 'var(--surface)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              }}
+              aria-label={isGenerating ? 'Scroll to new reply' : 'Scroll to latest messages'}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M19 12l-7 7-7-7" />
+              </svg>
+              {isGenerating ? 'New reply' : 'Jump to latest'}
+            </button>
+          </div>
+        )}
         </div>
-      )}
+      </div>
 
-      {/* Input Area */}
-      <div className="relative z-20 flex-shrink-0 border-t"
+      {/* Composer — slim on welcome; toolbar when in active chat */}
+      <div className="relative z-20 flex-shrink-0 border-t chat-input-area"
           style={{
             backgroundColor: 'var(--bg-primary)',
             borderColor: 'var(--border)',
-            boxShadow: '0 -6px 18px rgba(15, 23, 42, 0.04)',
-            paddingBottom: 'env(safe-area-inset-bottom, 16px)'
+            boxShadow: '0 -4px 14px rgba(15, 23, 42, 0.04)',
+            paddingBottom: 'env(safe-area-inset-bottom, 12px)'
           }}
         >
-          <div className="mx-auto w-full max-w-5xl px-3 pb-2 pt-1.5 sm:px-6 sm:pb-5 sm:pt-4 lg:px-8">
-            <div className="px-1 sm:px-0">
-            <div className="mb-1.5 flex flex-col gap-1.5 sm:mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:gap-2">
+          <div className="mx-auto w-full px-3 pb-1.5 pt-1.5 sm:px-4 sm:pb-3 sm:pt-2">
+            {!isWelcomeState && showComposerToolbar && (
+            <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-2.5 sm:flex-wrap sm:overflow-visible sm:gap-2">
                 {chatStatus && (
                   <div
-                    className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs"
+                    className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs"
                     style={{
                       backgroundColor: chatStatus.tone === 'saved'
                         ? 'rgba(34, 197, 94, 0.12)'
@@ -2622,63 +2834,25 @@ TRIP DETAILS:
                     </button>
                   </>
                 )}
-              </div>
-              {chatStatus?.description && (
-                <p className="hidden max-w-md text-xs leading-relaxed sm:block" style={{ color: 'var(--text-tertiary)' }}>
-                  {chatStatus.description}
-                </p>
-              )}
             </div>
-
-            {isWelcomeState && isPersonalized && (
-              <p
-                className="mb-1.5 text-xs leading-relaxed sm:mb-3 sm:text-sm"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE} — or try asking:
-              </p>
             )}
 
-            {isWelcomeState && onOpenQuickFill && !isPersonalized && (
-              <p
-                className="mb-1.5 text-xs leading-relaxed sm:mb-3 sm:text-sm"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Use Plan My Trip to add destination, dates, budget, and interests — or try asking:
-              </p>
-            )}
-
-            {isWelcomeState && (
-              <div className="mb-1.5 sm:mb-3">
-                <SuggestedPrompts
-                  mobileMax={2}
-                  hideTitle={Boolean(onOpenQuickFill || isPersonalized)}
-                  prompts={isPersonalized ? [
-                    { icon: Sparkles, text: "What should I explore this season based on my interests?", color: "text-green-400" },
-                    { icon: MapPin, text: "Suggest a park I haven't visited yet that matches my style", color: "text-blue-400" },
-                    { icon: Calendar, text: "Plan a weekend trip based on what I usually enjoy", color: "text-yellow-400" },
-                    { icon: Edit2, text: "What's trending near parks I've already visited?", color: "text-purple-400" },
-                  ] : [
-                    { icon: Sparkles, text: "Plan a 5-day trip to Yellowstone for a family", color: "text-green-400" },
-                    { icon: MapPin, text: "Best national parks for stargazing in the Southwest", color: "text-blue-400" },
-                    { icon: Calendar, text: "Weekend hiking trip from Denver under $500", color: "text-yellow-400" },
-                    { icon: Compare, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
-                  ]}
-                  onSelect={(text) => handleSendMessage(text)}
-                  title={isPersonalized ? 'Suggestions for you' : 'Try asking...'}
-                  subtitle={null}
-                />
+            {isWelcomeState && onOpenQuickFill && (
+              <div className="mb-1.5 flex justify-end sm:mb-2">
+                {anonymousQuotaLabel && (
+                  <span className="text-[11px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                    {anonymousQuotaLabel}
+                  </span>
+                )}
               </div>
             )}
 
-            {/* Chat Input */}
             <ChatInput
               onSend={handleSendMessage}
               disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
               placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in or create an account to save this chat and continue..." : "Ask me about your trip..."}
               initialValue=""
             />
-            </div>
           </div>
         </div>
 

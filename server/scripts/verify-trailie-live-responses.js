@@ -206,6 +206,19 @@ function evaluate(mode, caseDef, data, httpOk, zionAlerts) {
     failures.push('defers to nps.gov verify link instead of answering');
   }
 
+  if (caseDef.id === 'narrows-permit') {
+    if (/\bwait,?\s*actually\b/i.test(content)) failures.push('self-corrects mid-answer (Narrows/Subway wobble)');
+    if (/subway|left fork north creek/i.test(content) && !/subway/i.test(caseDef.message)) {
+      failures.push('mentions Subway on Narrows-only permit question');
+    }
+  }
+
+  if (caseDef.id === 'discover-july') {
+    if (/\b(?:skip|avoid|pass on)\s+(?:great sand dunes|the great sand dunes)/i.test(content)) {
+      failures.push('names a park only to say skip it');
+    }
+  }
+
   return { failures, notes, content };
 }
 

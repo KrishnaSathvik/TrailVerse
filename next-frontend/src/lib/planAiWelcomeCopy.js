@@ -60,6 +60,44 @@ export function getRoadTripWelcomeMessage(user, suggestText) {
 How many days, where you're starting from, and camping vs lodges?`;
 }
 
+/** From compare page — single park picked after side-by-side comparison */
+export function getCompareWelcomeMessage(user, parkName) {
+  const park = shortParkName(parkName);
+  const name = displayName(user);
+  const hey = name ? `Hey ${name},` : 'Hey,';
+
+  return `${hey} I'm **Trailie** — you picked **${park}** after comparing your options. Let's plan that trip.
+
+When are you going and how many days do you have? Tell me what you want to do — hikes, scenic drives, wildlife — or say **plan it** for a day-by-day itinerary.`;
+}
+
+/**
+ * Pick welcome copy from entry source — keep in sync with derivePlanAiHeaderMeta entry modes.
+ * @param {'general'|'park'|'compare'|'road_trip'|'personalized'|'chat_history'} entryMode
+ */
+export function resolvePlanAiWelcomeMessage({
+  entryMode = 'general',
+  user,
+  parkName = '',
+  suggestText = '',
+  isPersonalized = false,
+  isNewChat = false,
+}) {
+  if (isPersonalized || entryMode === 'personalized') {
+    return getPersonalizedWelcomeMessage(user);
+  }
+  if (entryMode === 'road_trip' || suggestText) {
+    return getRoadTripWelcomeMessage(user, suggestText);
+  }
+  if (entryMode === 'compare') {
+    return getCompareWelcomeMessage(user, parkName);
+  }
+  if (entryMode === 'park' || (parkName && !isNewChat)) {
+    return getParkWelcomeMessage(user, parkName);
+  }
+  return getGenericWelcomeMessage(user);
+}
+
 /** Resuming a saved trip from chat history */
 export function getWelcomeBackMessage(parkName) {
   const label = parkName || 'this trip';

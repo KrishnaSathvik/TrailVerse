@@ -6,9 +6,12 @@ import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
 import MyRecommendationsButton from '@components/plan-ai/MyRecommendationsButton';
-import { MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE } from '@/lib/planAiWelcomeCopy';
 import usePlanAI from '@hooks/usePlanAI';
 import { useAutoTrailieCompletionSound } from '@/hooks/useTrailieCompletionSound';
+
+const DEFAULT_SHELL_META = {
+  showSubHeader: false,
+};
 
 const defaultFormData = {
   parkCode: '',
@@ -45,17 +48,22 @@ const PlanAIContent = ({ tripId }) => {
     isAuthenticated,
     fromChatHistory,
     askText,
+    entryMode,
+    effectiveEntryMode,
+    guestChatSessionKey,
+    guestResumingChat,
     newChatKey
   } = usePlanAI(tripId);
   const [quickFillOpen, setQuickFillOpen] = useState(false);
   const [quickFillMessage, setQuickFillMessage] = useState(null);
   const [hasAppliedQuickFill, setHasAppliedQuickFill] = useState(!!tripId || !!fromChatHistory);
   const [initialAskMessage, setInitialAskMessage] = useState(askText || null);
+  const [shellMeta, setShellMeta] = useState(DEFAULT_SHELL_META);
   const { playCompletion, prime: primeCompletionSound } = useAutoTrailieCompletionSound();
 
   useEffect(() => {
-    if (askText) setInitialAskMessage(askText);
-  }, [askText]);
+    if (askText && !guestResumingChat) setInitialAskMessage(askText);
+  }, [askText, guestResumingChat]);
 
   if (loadingTrip) {
     return (
@@ -124,18 +132,20 @@ const PlanAIContent = ({ tripId }) => {
   return (
     <>
       <PlanAIShell
-        title={isPersonalized ? 'My Recommendations' : effectiveParkName || 'Plan Your Trip'}
-        subtitle={isPersonalized ? MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE : undefined}
+        title={shellMeta.title}
+        subtitle={shellMeta.subtitle}
+        showSubHeader={shellMeta.showSubHeader !== false}
         headerActions={headerActions}
       >
         <TripPlannerChat
-          key={`chat-${newChatKey || tripId || effectiveFormData.parkCode || suggestText || 'generic'}`}
+          key={`chat-${newChatKey || tripId || guestChatSessionKey || effectiveFormData.parkCode || suggestText || 'generic'}`}
           formData={effectiveFormData}
           parkName={effectiveParkName}
           existingTripId={tripId}
           isPersonalized={isPersonalized}
           isNewChat={effectiveIsNewChat}
           suggestText={suggestText}
+          entryMode={effectiveEntryMode}
           fromChatHistory={fromChatHistory}
           refreshTrips={refetchUserTrips}
           onOpenQuickFill={() => setQuickFillOpen(true)}
@@ -145,6 +155,7 @@ const PlanAIContent = ({ tripId }) => {
           onInitialAskSent={() => setInitialAskMessage(null)}
           playCompletionSound={playCompletion}
           primeCompletionSound={primeCompletionSound}
+          onShellMetaChange={setShellMeta}
         />
       </PlanAIShell>
 
