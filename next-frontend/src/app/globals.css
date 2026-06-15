@@ -4,6 +4,25 @@
 /* Import theme styles - must come before @plugin */
 @import '../styles/themes.css';
 
+:root {
+  --site-header-height: 4rem;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --site-header-height: 4.25rem;
+  }
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Import Tailwind Plugins */
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";

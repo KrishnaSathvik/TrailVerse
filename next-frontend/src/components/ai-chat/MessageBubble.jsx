@@ -136,6 +136,7 @@ const MessageBubble = ({
   hideActions = false,
   compact = false,
   dense = false,
+  hideAvatar = false,
   linkifyParks = true,
   isStreaming = false,
   hasLiveData = false,
@@ -203,6 +204,8 @@ const MessageBubble = ({
   return (
     <div
       className={`flex items-start ${dense ? 'gap-2' : 'gap-3 sm:gap-4'} ${isUser ? 'flex-row-reverse' : 'flex-row'} group ${
+        hideAvatar ? 'gap-0' : ''
+      } ${
         dense ? 'mb-1.5 sm:mb-2' : compact ? 'mb-2 sm:mb-3' : 'mb-5 sm:mb-7'
       }`}
       onMouseEnter={() => setShowActions(true)}
@@ -211,7 +214,7 @@ const MessageBubble = ({
       aria-label={isUser ? 'Your message' : 'Assistant message'}
     >
       {/* Avatar */}
-      {isUser ? (
+      {!hideAvatar && (isUser ? (
         <div
           className={`flex-shrink-0 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-gray-200 ${
             dense ? 'h-8 w-8' : 'h-9 w-9 sm:h-10 sm:w-10'
@@ -234,7 +237,7 @@ const MessageBubble = ({
         </div>
       ) : (
         <TrailieAvatar className={dense ? '!h-8 !w-8' : undefined} />
-      )}
+      ))}
 
       {/* Message Content */}
       <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>

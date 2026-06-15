@@ -9,12 +9,9 @@ const TrailieInteractiveDemo = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="flex w-full items-center justify-center overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg"
+        className="flex min-h-[12rem] w-full items-center justify-center py-12"
         style={{
           backgroundColor: 'var(--bg-primary)',
-          borderWidth: '1px',
-          borderColor: 'var(--border)',
-          minHeight: '28rem',
         }}
       >
         <DotSpinner size={40} label="Loading Trailie demo" />
@@ -23,6 +20,16 @@ const TrailieInteractiveDemo = dynamic(
   }
 );
 
-export default function TrailieDemoClient({ showHeader = true, showCta = true }) {
-  return <TrailieInteractiveDemo showHeader={showHeader} showCta={showCta} />;
+export default function TrailieDemoClient({
+  showHeader = true,
+  showCta = true,
+  className = '',
+}) {
+  return (
+    <TrailieInteractiveDemo
+      showHeader={showHeader}
+      showCta={showCta}
+      className={className}
+    />
+  );
 }
