@@ -88,6 +88,9 @@ function runContentChecks(scenarios, alerts, checks) {
       if (!/to personalize|starting from|how many days|road trip|okay flying/i.test(turn1Text)) {
         fail(checks, id, 'Discovery answer should end with logistics personalization questions');
       }
+      if (/\b(?:skip|avoid|pass on)\s+(?:great sand dunes|the great sand dunes)/i.test(turn1Text)) {
+        fail(checks, id, 'Discovery answer should not name a park only to say skip it');
+      }
     }
 
     if (id === 'discover-july-follow-up') {

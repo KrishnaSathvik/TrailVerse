@@ -17,6 +17,10 @@ const NPS_CONDITIONS_LINK_TAIL_RE =
 const NPS_VERIFY_FOOTER_RE =
   /\n+_Verify at \[nps\.gov\]\([^)]*\) before your trip\._/gi;
 
+/** Strip discovery anti-pattern: "Skip Great Sand Dunes for this trip…" when a park is named only to skip it. */
+const DISCOVERY_SKIP_PARK_PARAGRAPH_RE =
+  /(?:\n\n|^)\s*(?:Skip|Avoid|Pass on|Don't bother with|Steer clear of)\s+(?:Great Sand Dunes|Great Sand Dunes National Park|[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,4}(?:\s+National Park)?)\s+[^.\n]+(?:\.[^\n]*)?(?=\n\n|$)/gi;
+
 /** Strip footers and greetings that don't belong in the marketing demo. */
 export function sanitizeTrailieDemoAnswer(text, { preserveWebUpsell = false } = {}) {
   if (!text) return text;
@@ -29,6 +33,7 @@ export function sanitizeTrailieDemoAnswer(text, { preserveWebUpsell = false } = 
     .replace(NPS_DEFERRAL_PARAGRAPH_RE, '')
     .replace(NPS_CONDITIONS_LINK_TAIL_RE, '')
     .replace(NPS_VERIFY_FOOTER_RE, '')
+    .replace(DISCOVERY_SKIP_PARK_PARAGRAPH_RE, '')
     .replace(/^Hey\s+[^,!—\n]+[—,!]?\s*/i, '')
     .replace(/^Hi\s+[^,!—\n]+[—,!]?\s*/i, '')
     .replace(/,?\s*Krishna[.!]?\s*/gi, '. ')

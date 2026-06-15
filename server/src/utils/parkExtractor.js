@@ -7,6 +7,8 @@
  *   2. Dynamic _dynamicMap — all ~470 NPS sites, built lazily from npsService.getAllParks() (async, populated at startup)
  */
 
+const { filterParksNotSkipOnly } = require('./parkSkipContext');
+
 const PARK_NAME_TO_CODE = new Map([
   // ── Full names (lowercase) ────────────────────────────────────────
   ['black canyon of the gunnison national park', { code: 'blca', lat: 38.574, lon: -107.722 }],
@@ -382,7 +384,7 @@ function extractAllParksFromMessage(message) {
     }
   }
 
-  return found;
+  return filterParksNotSkipOnly(message, found);
 }
 
 module.exports = { extractParkFromMessage, extractAllParksFromMessage, PARK_NAME_TO_CODE, loadDynamicMap };

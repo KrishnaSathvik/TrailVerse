@@ -97,6 +97,7 @@ async function finalizeParkImagesAndMetadata({
 
 const { formatFeeFreeBlock } = require('../services/feeFreeDaysService');
 const { extractParkFromMessage, extractAllParksFromMessage } = require('../utils/parkExtractor');
+const { stripSkipOnlyParkSentences } = require('../utils/parkSkipContext');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 const AnonymousSession = require('../models/AnonymousSession');
 const Favorite = require('../models/Favorite');
@@ -1473,6 +1474,11 @@ async function processAssistantResponse({
   }
 
   let { cleanContent, itineraryData } = extractItineraryJSON(response.content);
+
+  const isDiscoveryResponse = enhancedSystemPrompt.includes('TRAILVERSE PARK CANDIDATES');
+  if (isDiscoveryResponse) {
+    cleanContent = stripSkipOnlyParkSentences(cleanContent);
+  }
 
   if (
     enableItineraryFallbackExtraction &&
