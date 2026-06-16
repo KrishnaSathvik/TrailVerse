@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   X, MapPin, Calendar, Users, ChevronDown,
-  ArrowRight, ArrowLeft, Sparkles, Tent, Utensils
+  ArrowRight, ArrowLeft, CalendarDays, Tent, Utensils, Send
 } from '@components/icons';
 import Button from '@components/common/Button';
 
@@ -80,7 +80,7 @@ const QuickFillModal = ({
                   color: 'var(--accent-green)'
                 }}
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <CalendarDays className="h-3.5 w-3.5" />
                 Plan My Trip
               </div>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
@@ -454,7 +454,7 @@ const QuickFillModal = ({
               onClick={handleApply}
               variant="primary"
               size="md"
-              icon={Sparkles}
+              icon={Send}
             >
               Apply &amp; Chat
             </Button>

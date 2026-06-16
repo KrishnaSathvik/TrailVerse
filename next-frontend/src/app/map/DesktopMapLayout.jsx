@@ -11,6 +11,8 @@ import { useMapPlaces } from '@hooks/useMapPlaces';
 import { usePlaceDetails } from '@hooks/usePlaceDetails';
 import { useParkRatings } from '@hooks/useParkRatings';
 import { parkToSlug } from '@/utils/parkSlug';
+import { parkDetailHref } from '@/lib/returnNavigation';
+import { useReturnPath } from '@/hooks/useReturnPath';
 import { signalNavigation } from '@/lib/navigationProgress';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import MapCanvas from './MapCanvas';
@@ -23,6 +25,7 @@ import useParkMapState from './useParkMapState';
 
 export default function DesktopMapLayout() {
   const router = useRouter();
+  const returnPath = useReturnPath();
   const { isDark } = useTheme();
   const [showPlaces, setShowPlaces] = useState(true);
   const [showCampgrounds, setShowCampgrounds] = useState(true);
@@ -54,12 +57,12 @@ export default function DesktopMapLayout() {
 
   const goToParkCamping = (campground) => {
     signalNavigation();
-    router.push(`/parks/${parkToSlug(campground.parkName)}?tab=camping`);
+    router.push(parkDetailHref(parkToSlug(campground.parkName), returnPath, { tab: 'camping' }));
   };
 
   const goToParkPlaces = (place) => {
     signalNavigation();
-    router.push(`/parks/${parkToSlug(place.parkName)}?tab=places`);
+    router.push(parkDetailHref(parkToSlug(place.parkName), returnPath, { tab: 'places' }));
   };
 
   if (isLoading && allParks.length === 0) {
@@ -128,7 +131,7 @@ export default function DesktopMapLayout() {
               onClose={mapState.clearSelection}
               onViewDetails={() => {
                 signalNavigation();
-                router.push(`/parks/${parkToSlug(mapState.selectedPark.fullName)}`);
+                router.push(parkDetailHref(parkToSlug(mapState.selectedPark.fullName), returnPath));
               }}
               onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
               className="pointer-events-auto"

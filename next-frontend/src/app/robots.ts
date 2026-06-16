@@ -7,8 +7,9 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: [
         '/api/',
-        '/_next/',
-        '/_next/static/',
+        // Block JSON data routes only — allow /_next/static/ so Googlebot can render pages
+        // and read X-Robots-Tag: noindex on chunk URLs (robots.txt block prevents that).
+        '/_next/data/',
         '/login',
         '/signup',
         '/forgot-password',

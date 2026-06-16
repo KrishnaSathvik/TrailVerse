@@ -28,6 +28,7 @@ import {
   DownloadIcon,
   UploadIcon,
   PencilSimpleIcon,
+  NotePencilIcon,
   TrashIcon,
   PlusIcon,
   MinusIcon,
@@ -196,6 +197,7 @@ export const Download = createAppIcon(DownloadIcon);
 export const Upload = createAppIcon(UploadIcon);
 export const Edit = createAppIcon(PencilSimpleIcon);
 export const Edit2 = createAppIcon(PencilSimpleIcon);
+export const NotePencil = createAppIcon(NotePencilIcon);
 export const Trash = createAppIcon(TrashIcon);
 export const Trash2 = createAppIcon(TrashIcon);
 export const Plus = createAppIcon(PlusIcon);

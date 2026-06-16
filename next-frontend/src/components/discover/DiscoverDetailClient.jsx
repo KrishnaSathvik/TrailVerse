@@ -11,6 +11,8 @@ import DiscoverPagination from './DiscoverPagination';
 import { recordDiscoverVisit } from './RecentChips';
 import { useDiscoverDetail, useDiscoverParksPage } from '@/hooks/useDiscoverCatalog';
 import { parkToSlug } from '@/utils/parkSlug';
+import { parkDetailHref } from '@/lib/returnNavigation';
+import { useReturnPath } from '@/hooks/useReturnPath';
 import { htmlToPlainText } from '@/utils/htmlUtils';
 import EventCard from '@/components/events/EventCard';
 import { DISCOVER_EVENT_CATEGORIES } from '@/lib/discoverEvents';
@@ -31,6 +33,7 @@ function eventsSectionSubtitle(dimension, parkCount) {
 }
 
 export default function DiscoverDetailClient({ detail: initialDetail, dimension }) {
+  const returnPath = useReturnPath();
   const { isAuthenticated } = useAuth();
   const { saveEvent, unsaveEvent, isEventSaved } = useSavedEvents();
   const { data: liveDetail, isFetching: detailFetching, isFetched } = useDiscoverDetail(
@@ -115,7 +118,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
               {detail.featured.parks.map((park) => (
                 <Link
                   key={park.parkCode}
-                  href={`/parks/${parkToSlug(park.fullName)}`}
+                  href={parkDetailHref(parkToSlug(park.fullName), returnPath)}
                   className="shrink-0 w-64 rounded-2xl overflow-hidden group"
                   style={{
                     borderWidth: '1px',
@@ -154,7 +157,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
               {detail.programs.map((program) => {
                 const park = programParkSlug(program.parkCode);
                 const parkHref = park
-                  ? `/parks/${parkToSlug(park.fullName)}?tab=activities`
+                  ? parkDetailHref(parkToSlug(park.fullName), returnPath, { tab: 'activities' })
                   : program.url;
                 const programText =
                   program.description ||
@@ -341,7 +344,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
                 className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity ${isFetching ? 'opacity-60' : ''}`}
               >
                 {parks.map((park) => (
-                  <ParkCard key={park.parkCode} park={park} showReviews={false} />
+                  <ParkCard key={park.parkCode} park={park} showReviews={false} fromPath={returnPath} />
                 ))}
               </div>
               <DiscoverPagination

@@ -737,15 +737,17 @@ section {
    ============================================ */
 
 /* Voice button — override the floating element hiding rule */
+.trailie-voice-fab-host {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
 .trailie-voice-btn {
   display: flex !important;
   visibility: visible !important;
-  opacity: 1 !important;
   pointer-events: auto !important;
-  z-index: 9998 !important;
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  position: relative;
   width: 56px;
   height: 56px;
   align-items: center;

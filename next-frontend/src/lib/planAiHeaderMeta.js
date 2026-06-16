@@ -134,8 +134,8 @@ export function derivePlanAiHeaderMeta({
         };
       }
       return {
-        title: 'General planning',
-        subtitle: isGenerating ? 'Trailie is planning…' : null,
+        title: 'Trailie',
+        subtitle: isGenerating ? 'Trailie is planning…' : 'Your AI park trip planner',
         showSubHeader: true,
       };
     }

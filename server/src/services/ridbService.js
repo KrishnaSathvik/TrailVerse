@@ -1,4 +1,6 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 const RIDB_API_BASE = 'https://ridb.recreation.gov/api/v1';
 const RIDB_API_KEY = process.env.RIDB_API_KEY;
@@ -6,6 +8,9 @@ const RIDB_API_KEY = process.env.RIDB_API_KEY;
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 const ONE_DAY = 24 * 60 * 60 * 1000; // shorter TTL for failed resolutions
+
+/** Recreation.gov public search entity types that carry reservations. */
+const REC_GOV_RESERVATION_ENTITY_TYPES = ['permit', 'ticketfacility', 'tour'];
 
 class RIDBService {
   constructor() {
@@ -96,37 +101,61 @@ class RIDBService {
     }
   }
 
-  // Fallback: search Recreation.gov's public search API directly
-  // This catches permits that RIDB's facility search misses
-  async _searchRecGovPermits(parkName, fullName) {
-    try {
-      const response = await axios.get('https://www.recreation.gov/api/search', {
-        params: { q: parkName, fq: 'entity_type:permit', size: 20 },
-        timeout: 10000
-      });
-      const results = response.data?.results || [];
-      // Filter: only keep results that belong to this park
-      // Recreation.gov includes parent_name (e.g. "Zion National Park")
-      const parkLower = parkName.toLowerCase();
-      const fullLower = (fullName || parkName).toLowerCase();
-      const filtered = results.filter(r => {
-        const parentName = (r.parent_name || '').toLowerCase();
-        const name = (r.name || '').toLowerCase();
-        return parentName.includes(parkLower) || parentName.includes(fullLower) ||
-               name.includes(parkLower) || name.includes(fullLower);
-      });
-      // Map to RIDB-like facility shape so _isPermitLikeFacility works
-      return filtered.map(r => ({
-        FacilityID: r.entity_id,
-        FacilityName: r.name || 'Permit',
-        FacilityTypeDescription: this._entityTypeToFacilityType(r.entity_type),
-        FacilityDescription: r.description || '',
-        FacilityAdaAccess: false,
-      }));
-    } catch (error) {
-      console.error('Recreation.gov search error:', error.message);
-      return [];
+  _matchesParkRecGovResult(result, parkName, fullName) {
+    const parkLower = parkName.toLowerCase();
+    const fullLower = (fullName || parkName).toLowerCase();
+    const strippedLower = this._stripCommonSuffixes(fullName || parkName).toLowerCase();
+    const parentName = (result.parent_name || '').toLowerCase();
+    const name = (result.name || '').toLowerCase();
+    const needles = [parkLower, fullLower, strippedLower].filter(Boolean);
+    return needles.some((needle) => parentName.includes(needle) || name.includes(needle));
+  }
+
+  _mapRecGovResultToFacility(result) {
+    const entityType = result.entity_type || '';
+    const name = result.name || 'Reservation';
+    return {
+      FacilityID: String(result.entity_id),
+      FacilityName: name,
+      FacilityTypeDescription: this._entityTypeToFacilityType(entityType, name),
+      FacilityDescription: result.description || result.html_description || '',
+      FacilityAdaAccess: false,
+      ParentFacilityID: result.parent_id || null,
+      ParentFacilityType: result.parent_type || null,
+      RecGovEntityType: entityType,
+    };
+  }
+
+  // Search Recreation.gov for permits, timed entry, ticket facilities, and tours.
+  async _searchRecGovReservations(parkName, fullName) {
+    const seen = new Set();
+    const mapped = [];
+
+    for (const entityType of REC_GOV_RESERVATION_ENTITY_TYPES) {
+      try {
+        const response = await axios.get('https://www.recreation.gov/api/search', {
+          params: { q: parkName, fq: `entity_type:${entityType}`, size: 25 },
+          timeout: 10000,
+        });
+        const results = response.data?.results || [];
+        for (const result of results) {
+          if (!this._matchesParkRecGovResult(result, parkName, fullName)) continue;
+          const id = String(result.entity_id);
+          if (seen.has(id)) continue;
+          seen.add(id);
+          mapped.push(this._mapRecGovResultToFacility(result));
+        }
+      } catch (error) {
+        console.error(`Recreation.gov search error (${entityType}):`, error.message);
+      }
     }
+
+    return mapped;
+  }
+
+  /** @deprecated use _searchRecGovReservations */
+  async _searchRecGovPermits(parkName, fullName) {
+    return this._searchRecGovReservations(parkName, fullName);
   }
 
   async _getParkInfo(parkCode) {
@@ -140,6 +169,18 @@ class RIDBService {
     } catch (error) {
       console.error(`Failed to get NPS park for ${parkCode}:`, error.message);
     }
+
+    try {
+      const slugsPath = path.join(__dirname, '../../../next-frontend/src/data/park-slugs.json');
+      const slugs = JSON.parse(fs.readFileSync(slugsPath, 'utf8'));
+      const match = slugs.find((p) => (p.parkCode || '').toLowerCase() === parkCode.toLowerCase());
+      if (match?.fullName) {
+        return { fullName: match.fullName, stateCode: null };
+      }
+    } catch (error) {
+      console.error(`Park slug fallback failed for ${parkCode}:`, error.message);
+    }
+
     return { fullName: null, stateCode: null };
   }
 
@@ -248,7 +289,8 @@ class RIDBService {
 
   _isPermitLikeFacility(facility) {
     const type = (facility.FacilityTypeDescription || '').toLowerCase();
-    if (type !== 'permit' && type !== 'timed entry' && type !== 'ticket facility') return false;
+    const allowed = ['permit', 'timed entry', 'ticket facility', 'tour ticket'];
+    if (!allowed.includes(type)) return false;
     // Filter out obviously outdated facilities (e.g. "2020" pilots)
     const name = (facility.FacilityName || '').toLowerCase();
     const yearMatch = name.match(/\b(20\d{2})\b/);
@@ -274,19 +316,90 @@ class RIDBService {
       .trim();
   }
 
-  _entityTypeToFacilityType(entityType) {
+  _entityTypeToFacilityType(entityType, name = '') {
     const t = (entityType || '').toLowerCase().replace(/_/g, ' ');
+    const n = (name || '').toLowerCase();
     if (t.includes('timed') && t.includes('entry')) return 'Timed Entry';
+    if (t === 'tour' && (n.includes('timed entry') || n.includes('timed-entry'))) return 'Timed Entry';
     if (t.includes('ticket')) return 'Ticket Facility';
+    if (t === 'tour') return 'Tour Ticket';
     return 'Permit';
   }
 
   _buildReservationUrl(facility) {
     const type = (facility.FacilityTypeDescription || '').toLowerCase();
     const id = facility.FacilityID;
-    if (type === 'timed entry') return `https://www.recreation.gov/timed-entry/${id}`;
-    if (type === 'ticket facility') return `https://www.recreation.gov/ticket/facility/${id}`;
+    const entityType = (facility.RecGovEntityType || '').toLowerCase();
+    const parentId = facility.ParentFacilityID;
+
+    if (type === 'timed entry') {
+      if (entityType === 'tour' && parentId) {
+        return `https://www.recreation.gov/ticket/facility/${parentId}`;
+      }
+      return `https://www.recreation.gov/timed-entry/${id}`;
+    }
+    if (type === 'ticket facility' || entityType === 'ticketfacility') {
+      return `https://www.recreation.gov/ticket/facility/${id}`;
+    }
+    if (type === 'tour ticket' || entityType === 'tour') {
+      if (parentId && facility.ParentFacilityType === 'facility') {
+        return `https://www.recreation.gov/ticket/facility/${parentId}`;
+      }
+      return `https://www.recreation.gov/ticket/tour/${id}`;
+    }
     return `https://www.recreation.gov/permits/${id}`;
+  }
+
+  _facilityToPermit(facility) {
+    return {
+      id: facility.FacilityID,
+      name: facility.FacilityName || 'Permit',
+      description: this._stripHtml(facility.FacilityDescription || ''),
+      type: facility.FacilityTypeDescription || null,
+      accessible: facility.FacilityAdaAccess || false,
+      district: null,
+      town: null,
+      facilityName: facility.FacilityName || null,
+      reservationUrl: this._buildReservationUrl(facility),
+      category: this._permitCategory(facility),
+    };
+  }
+
+  _permitCategory(facility) {
+    const type = (facility.FacilityTypeDescription || '').toLowerCase();
+    const name = (facility.FacilityName || '').toLowerCase();
+    if (type === 'timed entry') return 'timed_entry';
+    if (type === 'tour ticket' && name.includes('timed entry')) return 'timed_entry';
+    if (type === 'ticket facility') return 'ticket';
+    return 'permit';
+  }
+
+  _appendFacilityPermits(facilities, allPermits, seen) {
+    for (const facility of facilities) {
+      if (!this._isPermitLikeFacility(facility)) continue;
+      const id = facility.FacilityID;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      allPermits.push(this._facilityToPermit(facility));
+    }
+  }
+
+  async _appendRecGovReservations(parkCode, allPermits, seen) {
+    const { fullName, stateCode } = await this._getParkInfo(parkCode);
+    if (!fullName) return;
+
+    const stripped = this._stripCommonSuffixes(fullName);
+    const queries = [stripped, fullName].filter((q, i, arr) => q && arr.indexOf(q) === i);
+
+    for (const query of queries) {
+      const recGovFacilities = await this._searchRecGovReservations(query, fullName);
+      const before = allPermits.length;
+      this._appendFacilityPermits(recGovFacilities, allPermits, seen);
+      if (allPermits.length > before) {
+        console.log(`[RIDB] ${parkCode} rec.gov "${query}" → +${allPermits.length - before} reservations`);
+      }
+      if (allPermits.length > 0 && query === stripped) break;
+    }
   }
 
   async _fetchPermits(parkCode) {
@@ -299,28 +412,10 @@ class RIDBService {
       const facilities = await this._getFacilitiesForRecArea(recAreaId);
       console.log(`[RIDB] ${parkCode} recArea=${recAreaId} → ${facilities.length} facilities`);
 
-      for (const facility of facilities) {
-        if (this._isPermitLikeFacility(facility)) {
-          const id = facility.FacilityID;
-          if (seen.has(id)) continue;
-          seen.add(id);
-          allPermits.push({
-            id,
-            name: facility.FacilityName || 'Permit',
-            description: this._stripHtml(facility.FacilityDescription || ''),
-            type: facility.FacilityTypeDescription || null,
-            accessible: facility.FacilityAdaAccess || false,
-            district: null,
-            town: null,
-            facilityName: facility.FacilityName || null,
-            reservationUrl: this._buildReservationUrl(facility)
-          });
-        }
-      }
+      this._appendFacilityPermits(facilities, allPermits, seen);
     }
 
-    // Fallback: if RecArea path found no permits, search facilities directly
-    // Try multiple search terms since permits may not contain the full park name
+    // RIDB facility search when rec-area path is thin or empty
     if (allPermits.length === 0) {
       const { fullName, stateCode } = await this._getParkInfo(parkCode);
       if (fullName) {
@@ -328,9 +423,8 @@ class RIDBService {
         const searches = [
           { query: fullName, state: stateCode },
           { query: stripped, state: stateCode },
-          { query: stripped, state: null }
+          { query: stripped, state: null },
         ];
-        // Deduplicate search terms
         const tried = new Set();
         for (const { query, state } of searches) {
           const key = `${query}|${state}`;
@@ -338,52 +432,15 @@ class RIDBService {
           tried.add(key);
           const directFacilities = await this._searchFacilities(query, state);
           console.log(`[RIDB] ${parkCode} fallback search "${query}" state=${state || 'any'} → ${directFacilities.length} facilities`);
-          for (const facility of directFacilities) {
-            if (this._isPermitLikeFacility(facility)) {
-              const id = facility.FacilityID;
-              if (seen.has(id)) continue;
-              seen.add(id);
-              allPermits.push({
-                id,
-                name: facility.FacilityName || 'Permit',
-                description: this._stripHtml(facility.FacilityDescription || ''),
-                type: facility.FacilityTypeDescription || null,
-                accessible: facility.FacilityAdaAccess || false,
-                district: null,
-                town: null,
-                facilityName: facility.FacilityName || null,
-                reservationUrl: this._buildReservationUrl(facility)
-              });
-            }
-          }
-          if (allPermits.length > 0) break; // Found permits, stop searching
-        }
-
-        // Last resort: Recreation.gov public search API
-        if (allPermits.length === 0) {
-          const recGovFacilities = await this._searchRecGovPermits(stripped, fullName);
-          console.log(`[RIDB] ${parkCode} rec.gov fallback "${stripped}" → ${recGovFacilities.length} permits`);
-          for (const facility of recGovFacilities) {
-            if (this._isPermitLikeFacility(facility)) {
-              const id = facility.FacilityID;
-              if (seen.has(id)) continue;
-              seen.add(id);
-              allPermits.push({
-                id,
-                name: facility.FacilityName || 'Permit',
-                description: this._stripHtml(facility.FacilityDescription || ''),
-                type: facility.FacilityTypeDescription || null,
-                accessible: facility.FacilityAdaAccess || false,
-                district: null,
-                town: null,
-                facilityName: facility.FacilityName || null,
-                reservationUrl: this._buildReservationUrl(facility)
-              });
-            }
-          }
+          const before = allPermits.length;
+          this._appendFacilityPermits(directFacilities, allPermits, seen);
+          if (allPermits.length > before) break;
         }
       }
     }
+
+    // Always supplement with Recreation.gov public search (tours/tickets often missing from RIDB)
+    await this._appendRecGovReservations(parkCode, allPermits, seen);
 
     console.log(`[RIDB] ${parkCode} → ${allPermits.length} total permits`);
     return allPermits;

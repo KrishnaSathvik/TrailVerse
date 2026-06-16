@@ -9,6 +9,8 @@ import { logVoiceSessionStart } from '@/utils/analytics';
 
 const VOICE_HINT_DISMISSED_KEY = 'trailie-voice-hint-dismissed';
 const LEGACY_VOICE_HINT_SESSION_KEY = 'trailie-voice-hint';
+const SCROLL_TOP_THRESHOLD = 80;
+const SCROLL_DELTA_THRESHOLD = 4;
 
 function isVoiceHintDismissed() {
   if (typeof window === 'undefined') return false;
@@ -41,7 +43,9 @@ export default function VoiceButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
   const [showHint, setShowHint] = useState(false);
+  const [fabVisible, setFabVisible] = useState(true);
   const hintTimerRef = useRef(null);
+  const lastScrollYRef = useRef(0);
   const pathname = usePathname();
 
   // Hide on pages where voice chat isn't relevant
@@ -89,7 +93,61 @@ export default function VoiceButton() {
     };
   }, [hiddenOnChat]);
 
+  useEffect(() => {
+    setFabVisible(true);
+    lastScrollYRef.current = 0;
+
+    const autoHideTimer = setTimeout(() => {
+      if (window.scrollY > SCROLL_TOP_THRESHOLD) {
+        setFabVisible(false);
+      }
+    }, 3500);
+
+    return () => clearTimeout(autoHideTimer);
+  }, [pathname]);
+
+  // Hide while scrolling down; reveal on scroll up or near top.
+  useEffect(() => {
+    if (hiddenOnChat) return undefined;
+
+    lastScrollYRef.current = window.scrollY;
+    let ticking = false;
+
+    const revealFab = () => setFabVisible(true);
+    const hideFab = () => setFabVisible(false);
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        const delta = currentY - lastScrollYRef.current;
+
+        if (currentY <= SCROLL_TOP_THRESHOLD) {
+          revealFab();
+        } else if (delta > SCROLL_DELTA_THRESHOLD) {
+          hideFab();
+        } else if (delta < -SCROLL_DELTA_THRESHOLD) {
+          revealFab();
+        }
+
+        lastScrollYRef.current = currentY;
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [hiddenOnChat]);
+
   if (hiddenOnChat) return null;
+
+  const keepFabVisible = isOpen;
+  const fabHidden = !keepFabVisible && !fabVisible;
 
   function dismissHint() {
     if (hintTimerRef.current) {
@@ -112,16 +170,27 @@ export default function VoiceButton() {
       {/* Hint tooltip */}
       {showHint && !isOpen && (
         <div
-          className="fixed z-[9997] flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm"
+          className="trailie-voice-hint"
           style={{
+            position: 'fixed',
+            zIndex: 9997,
             bottom: '5.5rem',
             right: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.625rem 1rem',
+            borderRadius: '0.75rem',
+            fontSize: '0.875rem',
             backgroundColor: 'var(--bg-primary)',
             border: '1px solid var(--border)',
             boxShadow: '0 4px 24px rgba(0,0,0,0.18), 0 0 0 1px var(--border)',
             color: 'var(--text-primary)',
             maxWidth: '260px',
-            animation: 'fadeInUp 0.3s ease-out',
+            transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease',
+            transform: fabHidden ? 'translateY(calc(100% + 2rem))' : 'translateY(0)',
+            opacity: fabHidden ? 0 : 1,
+            pointerEvents: fabHidden ? 'none' : 'auto',
           }}
         >
           <span className="leading-snug">
@@ -140,22 +209,37 @@ export default function VoiceButton() {
         </div>
       )}
 
-      {/* Voice FAB */}
+      {/* Voice FAB — wrapper handles hide/show so legacy CSS !important cannot block it */}
       <div
-        role="button"
-        tabIndex={0}
-        title="Talk to Trailie"
-        aria-label="Talk to Trailie — voice assistant"
-        className="trailie-voice-btn"
-        onClick={openVoice}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openVoice();
-          }
+        className="trailie-voice-fab-host"
+        style={{
+          position: 'fixed',
+          bottom: '1.5rem',
+          right: '1.5rem',
+          zIndex: 9998,
+          transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease',
+          transform: fabHidden ? 'translateY(calc(100% + 2rem))' : 'translateY(0)',
+          opacity: fabHidden ? 0 : 1,
+          pointerEvents: fabHidden ? 'none' : 'auto',
         }}
+        aria-hidden={fabHidden}
       >
-        <Microphone size={24} weight="fill" />
+        <div
+          role="button"
+          tabIndex={fabHidden ? -1 : 0}
+          title="Talk to Trailie"
+          aria-label="Talk to Trailie — voice assistant"
+          className="trailie-voice-btn"
+          onClick={openVoice}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openVoice();
+            }
+          }}
+        >
+          <Microphone size={24} weight="fill" />
+        </div>
       </div>
 
       {isOpen && (

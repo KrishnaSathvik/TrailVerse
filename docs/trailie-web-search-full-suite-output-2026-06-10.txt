@@ -1,0 +1,706 @@
+
+=== TrailVerse web search FULL suite ===
+Cases: 10 | web-only: false
+Login: OK
+
+══════════════════════════════════════════════════════════════════════════════
+operational: Open/closed today → operational-status
+══════════════════════════════════════════════════════════════════════════════
+Q: is Angels Landing open right now in Zion National Park
+
+[WebSearch] cache MISS | category=operational-status query="is Angels Landing open right now in Zion National Park 2026"
+[WebSearch] primary brave returned 2 — running backups
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=operational-status final=4 hasDigest=true providers=brave*:2@583ms tavily:5@1183ms serper:5@835ms
+needsWeb=true | regex=operational-status | resolved=operational-status | block=operational-status
+expected category: operational-status
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: operational-status) via tavily + google:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• Angels Landing requires a permit via the Angels Landing Pilot Permit Program; permits are obtained through Recreation.gov.
+• Spring 2026 seasonal lottery opens Feb. 13, 2026 (per NPS official announcement).
+• The trail itself is not reported as closed; permit availability depends on lottery results.
+• Verify current permit status and application deadlines on nps.gov/zion or Recreation.gov before planning your visit.
+
+Web Sources:
+1. News Releases - Zion National Park (U.S. National Park Service)
+   Zion National Park has announced the lottery dates for the 2026 Angels Landing Pilot Permit Program. The spring seasonal lottery is set to open Feb. 13, 2026.
+   Source: https://www.nps.gov/zion/learn/news/newsreleases.htm
+
+2. Zion National Park Announces 2026 Angels Landing Seasonal ...
+   The spring seasonal lottery is set to open Feb. 13, 2026. Visitors can apply for a permit on Recreation.gov. 2026 Angels Landing Seasonal ...
+   Source: https://www.nps.gov/zion/learn/news/2026-02-11-angels-landing.htm
+
+3. Camping - Zion National Park (U.S. National Park Service)
+   Apply for permits to visit Angels Landing, camp in Zion Wilderness, or carry out other special activities. Last updated: June 2, 2026. Park footer
+   Source: https://www.nps.gov/zion/planyourvisit/campgrounds-in-zion.htm
+
+4. The Narrows - Zion National Park (U.S. National Park Service)
+   Last updated: June 2, 2026. Shuttle schedule & information. How and when to apply for permits. Angels Landing Pilot Permit Program. Park
+   Source: https://www.nps.gov/zion/planyourvisit/thenarrows.htm
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Zion National Park",
+  "parkNames": [
+    "Zion National Park"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Yes, Angels Landing is open — but you need a permit to hike it.
+
+The summer permit lottery (June 1–August 31) is what you'd need right now. Grab it through the [Angels Landing Summer Permit](https://www.recreation.gov/permits/4675324) on Recreation.gov. Without it, you can't do the chains section.
+
+Weather's actually solid this week — mid-to-upper 80s and clear skies, so conditions are good. Just know that Stage 2 fire restrictions are in effect and there's toxic cyanobacteria in the Virgin River, so don't touch the water on the approach.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+local: Restaurants/hotels → local-business
+══════════════════════════════════════════════════════════════════════════════
+Q: best restaurants and hotels near Zion National Park
+
+[WebSearch] cache MISS | category=local-business query="best restaurants and hotels near Zion National Park"
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=local-business final=4 hasDigest=true providers=serper*:4@1142ms
+needsWeb=true | regex=local-business | resolved=local-business | block=local-business
+expected category: local-business
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: local-business) via google:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• Popular casual dining near Zion includes Whiptail Grill, Zion Pizza & Noodle Co., Oscar's Cafe, Fire & Smoke BBQ, and Bit & Spur.
+• Red Rock Grill and The Hangry Goat are highly rated options (4.8–3.9 stars on TripAdvisor).
+• In nearby Page, visitors recommend Big Johns Texas BBQ, Bird House, Strombolli's Italian Restaurant & Pizzeria, and Sunset 89.
+• Zion Canyon Brew is also listed among area restaurants.
+• For hotel details, verify current availability and rates on booking sites or contact the park visitor center.
+
+Web Sources:
+1. Best Restaurants Near Zion National Park (From Casual Coffee to ...
+   Lunch & Casual Dinner Restaurants Near Zion National Park · Whiptail Grill · Zion Pizza & Noodle Co. · Oscar's Cafe · Fire & Smoke BBQ · Bit & Spur ...
+   Source: https://www.zionadventurephotog.com/single-post/best-restaurants-near-zion-national-park
+
+2. Best Restaurants Near Zion National Park - Vanessa Aguirre
+   I've rounded up some of the best restaurants near Zion for you. I would recommend any of these as I would have gone back to all if I had more time!
+   Source: https://vanessaaguirre.com/best-restaurants-near-zion-national-park/
+
+3. Restaurants and Diners Near Zion and Bryce : r/ZionNationalPark
+   Our favorite restaurants in Page are Big Johns Texas BBQ, Bird House, Strombolli's Italian Restaurant and Pizzeria, and Sunset 89. Also, if you ...
+   Source: https://www.reddit.com/r/ZionNationalPark/comments/1gy9a1b/restaurants_and_diners_near_zion_and_bryce/
+
+4. THE BEST Restaurants Near Zion National Park in UT (Updated 2026)
+   1. Red Rock Grill. 3.9. (964 reviews) · 2. Red Rock Grill. 3.8. (741 reviews) · 3. The Hangry Goat. 4.8. (399 reviews) · 4. Zion Canyon Brew ...
+   Source: https://www.tripadvisor.com/RestaurantsNear-g143057-d10035237-Zion_National_Park-Zion_National_Park_Utah.html
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Zion National Park",
+  "parkNames": [
+    "Zion National Park"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Hey Krishna! The Hangry Goat is your best bet for food near Zion — 4.8 stars, and locals consistently back it up. For something more casual after a long trail day, Zion Pizza & Noodle Co. hits the spot, and Bit & Spur has solid Southwestern food with a good bar scene. Skip the generic tourist traps on the main Springdale strip and you'll eat well.
+
+For hotels, Springdale is the sweet spot — staying in town means you can walk to the shuttle stop and skip the parking nightmare entirely (no in-park parking after 9am, so proximity matters). The Zion Lodge inside the park is the obvious splurge pick if you want to wake up inside the canyon. For mid-range, look at Cable Mountain Lodge or Desert Pearl Inn — both well-reviewed and right on the Virgin River. Check TripAdvisor or Google for current availability since rates swing a lot by season.
+
+One heads-up: Zion is packed right now (peak summer), so book hotels ASAP if you haven't. Weeknights are noticeably less chaotic than weekends.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+road: Road closure → road-conditions
+══════════════════════════════════════════════════════════════════════════════
+Q: Glacier National Park Going-to-the-Sun road closure status today
+
+[WebSearch] cache MISS | category=road-conditions query="Glacier National Park Going-to-the-Sun road closure status t"
+[WebSearch] Brave freshness filter returned 0 — retrying without freshness
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=road-conditions final=4 hasDigest=true providers=brave*:5@809ms
+needsWeb=true | regex=road-conditions | resolved=road-conditions | block=road-conditions
+expected category: road-conditions
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: road-conditions) via brave:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+I cannot provide today's closure status based on these snippets. The search results are NPS pages about Going-to-the-Sun Road, but the actual current conditions and closure information are not included in the text provided.
+
+**To check today's status:**
+• Visit nps.gov/glac/planyourvisit/conditions.htm for real-time alerts
+• Call Glacier National Park at 406-888-7800
+• Check the park's official alerts section on nps.gov/glac
+
+Going-to-the-Sun Road typically closes seasonally due to snow; Logan Pass historically opens late May/early June and closes in September/October, but exact dates vary yearly.
+
+Web Sources:
+1. Going-to-the-Sun Road General Info - Glacier National Park (U.S. National Park Service)
+   An official website of the United States government · Official websites use .gov A .gov website belongs to an official government organization in the United States
+   Source: https://www.nps.gov/glac/planyourvisit/gtsrinfo.htm
+
+2. Going-to-the-Sun Road - Glacier National Park (U.S. National Park Service)
+   Glacier · National Park Montana · Info · Alerts · Maps · Calendar · Fees · Last updated: <strong>February 24, 2026</strong> · PO Box 128 West Glacier, MT 59936 · 406-888-7800 · FAQ · Site Index ·
+   Source: https://www.nps.gov/glac/planyourvisit/goingtothesunroad.htm
+
+3. Logan Pass Opening and Closing Dates - Glacier National Park (U.S. National Park Service)
+   Historical opening and closing dates for Going-to-the-Sun Road.
+   Source: https://www.nps.gov/glac/learn/news/logan-pass-opening-and-closing-dates.htm
+
+4. Current Conditions - Glacier National Park (U.S. National Park Service)
+   An official website of the United States government · Official websites use .gov A .gov website belongs to an official government organization in the United States
+   Source: https://www.nps.gov/glac/planyourvisit/conditions.htm
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Glacier National Park",
+  "parkNames": [
+    "Glacier National Park"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Going-to-the-Sun Road is partially open right now. The west side is open to Avalanche Creek, and the east side is open to Jackson Glacier Overlook — but Logan Pass and the full cross-park drive are not accessible yet. Spring weather can shift this daily, so conditions may change before you arrive.
+
+For today's exact status before you head out, check [nps.gov/glac/planyourvisit/conditions.htm](https://www.nps.gov/glac/planyourvisit/conditions.htm) or call the park directly at 406-888-7800.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+trail: Trail conditions → trail-conditions
+══════════════════════════════════════════════════════════════════════════════
+Q: The Narrows trail conditions muddy or closed this week in Zion
+
+[WebSearch] cache MISS | category=trail-conditions query="Zion National Park The Narrows trail conditions muddy or clo"
+[WebSearch] primary brave returned 2 — running backups
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=trail-conditions final=4 hasDigest=true providers=brave*:2@478ms tavily:3@896ms serper:3@771ms
+needsWeb=true | regex=trail-conditions | resolved=trail-conditions | block=trail-conditions
+expected category: trail-conditions
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: trail-conditions) via google + brave:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• The Narrows is currently open for hiking at Zion National Park.
+• Check the official NPS Current Conditions page (nps.gov/zion/planyourvisit/conditions.htm) for real-time updates on trail status and any weather-related closures.
+• Call the park at 435-772-3256 (rangers available 10 a.m.–5 p.m.) or email zion_park_information@nps.gov for specific muddy conditions this week.
+• Snippets do not specify current mud or closure status—verify directly with the park before your visit.
+
+Web Sources:
+1. The Narrows - Zion National Park (U.S. National Park Service)
+   ... Narrows are open for hiking. Stop by a visitor center or check our current conditions page to get the latest information. Jump to... Navigation ...
+   Source: https://www.nps.gov/zion/planyourvisit/thenarrows.htm
+
+2. Zion Planning Guide - Zion National Park (U.S. National Park Service)
+   435-772-3256 If you have questions, please email zion_park_information@nps.gov. Listen to recorded information by calling anytime 24 hours a day. Rangers answer phone calls from 10 a.m.
+   Source: https://www.nps.gov/zion/planyourvisit/planning-guide.htm
+
+3. Directions & Transportation - Zion National Park (U.S. National Park Service)
+   435-772-3256 If you have questions, please email zion_park_information@nps.gov. Listen to recorded information by calling anytime 24 hours a day. Rangers answer phone calls from 10 a.m.
+   Source: https://www.nps.gov/zion/planyourvisit/directions.htm
+
+4. Current Conditions - Zion National Park (U.S. National Park Service)
+   Some trails are closed. Please do not enter closed areas. Long-term Trail Closures. Hidden Canyon (long term closure due to a large rockfall) ...
+   Source: https://www.nps.gov/zion/planyourvisit/conditions.htm
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "The Narrows",
+  "parkNames": [
+    "The Narrows"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Hey Krishna! The Narrows is currently open — no closure in effect right now.
+
+That said, there's one real concern: **toxic cyanobacteria has been detected in the Virgin River and Zion's streams**. That's not a trail closure, but it's serious — avoid swallowing water, keep kids and dogs out of the river, and wash off thoroughly after. Standard Narrows hiking puts you in that water, so go in with eyes open.
+
+On mud conditions specifically, the live data doesn't have this week's specific mud levels. Your best bet: call the park directly at **435-772-3256** (rangers available 10am–5pm) or check [nps.gov/zion/planyourvisit/conditions.htm](https://www.nps.gov/zion/planyourvisit/conditions.htm) for real-time updates.
+
+Weather-wise, it's clear skies all week — highs in the mid-to-upper 80s with low humidity. No rain in the forecast, so mud from recent precip shouldn't be a major issue, but upstream conditions in the slot canyon can be unpredictable regardless.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+smoke: Wildfire smoke → wildfire-smoke
+══════════════════════════════════════════════════════════════════════════════
+Q: wildfire smoke air quality near Yosemite National Park today
+
+[WebSearch] cache MISS | category=wildfire-smoke query="wildfire smoke air quality near Yosemite National Park today"
+[WebSearch] Brave freshness filter returned 0 — retrying without freshness
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=wildfire-smoke final=4 hasDigest=true providers=brave*:5@892ms
+needsWeb=true | regex=wildfire-smoke | resolved=wildfire-smoke | block=wildfire-smoke
+expected category: wildfire-smoke
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: wildfire-smoke) via brave:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+I cannot provide today's air quality conditions—the snippets show only page titles and URLs, not actual current data or readings.
+
+• Check nps.gov/yose/learn/nature/aqmonitoring.htm for real-time air quality and smoke monitoring at Yosemite
+• Visit nps.gov/yose/planyourvisit/conditions.htm for current park conditions including smoke impacts
+• Air quality varies by location within the park and changes hourly; check before visiting
+• For regional AQI data, also consult airnow.gov
+
+Web Sources:
+1. Current Air Quality and Smoke Monitoring - Yosemite National Park (U.S. National Park Service)
+   An official website of the United States government · Official websites use .gov A .gov website belongs to an official government organization in the United States
+   Source: https://www.nps.gov/yose/learn/nature/aqmonitoring.htm
+
+2. Current Conditions - Yosemite National Park (U.S. National Park Service)
+   An official website of the United States government · Official websites use .gov A .gov website belongs to an official government organization in the United States
+   Source: https://www.nps.gov/yose/planyourvisit/conditions.htm
+
+3. Smoke in Yosemite - Yosemite National Park (U.S. National Park Service)
+   An official website of the United States government · Official websites use .gov A .gov website belongs to an official government organization in the United States
+   Source: https://www.nps.gov/yose/learn/nature/smoke-overview.htm
+
+4. Smoke Management and Air Quality - Yosemite National Park (U.S. National Park Service)
+   An official website of the United States government · Official websites use .gov A .gov website belongs to an official government organization in the United States
+   Source: https://www.nps.gov/yose/learn/nature/smokemanagement.htm
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Yosemite National Park",
+  "parkNames": [
+    "Yosemite National Park"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Hey Krishna — good timing to check this before heading out.
+
+I don't have live air quality readings in my current data — the web search snippets came back without actual AQI numbers. For real-time smoke conditions near Yosemite right now, your best bets:
+
+- **[AirNow.gov](https://www.airnow.gov)** — fastest way to get current AQI for the Yosemite Valley area
+- **[NPS air quality monitoring page](https://www.nps.gov/yose/learn/nature/aqmonitoring.htm)** — park-specific readings
+- **[Current conditions page](https://www.nps.gov/yose/planyourvisit/conditions.htm)** — broader park status including smoke advisories
+- **Call the park directly**: (209) 372-0200
+
+Weather-wise, the next three days look clear with low humidity (33-37%) and no precipitation — that's generally a good sign for smoke dispersal, but it doesn't rule out regional wildfire smoke drifting in. AirNow will give you the definitive answer in about 30 seconds.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+planning: General planning → planning
+══════════════════════════════════════════════════════════════════════════════
+Q: best national parks to visit in July with cool weather lakes or beaches
+
+[WebSearch] cache MISS | category=planning query="best national parks to visit in July with cool weather lakes"
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=planning final=3 hasDigest=true providers=tavily*:3@1495ms
+needsWeb=true | regex=planning | resolved=planning | block=planning
+expected category: planning
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: planning) via tavily:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• **Kenai Fjords National Park** (Alaska): Cool July weather (~63°F), featuring glaciers and coastal fjords with water access.
+
+• **Glacier National Park**: Listed among top July destinations; alpine lakes and mountain scenery available.
+
+• **Olympic National Park**: Recommended for July visits; offers both mountain lakes and Pacific coastal access.
+
+• **North Cascades National Park**: July-recommended park with alpine lakes and glacier-fed waters.
+
+• **Mount Rainier National Park**: Suggested for July travel; features subalpine lakes and cool mountain conditions.
+
+Note: Verify current conditions, trail accessibility, and any permit requirements on nps.gov before planning.
+
+Web Sources:
+1. Weather in national parks
+   {'location': {'name': 'National', 'region': 'Pando', 'country': 'Bolivia', 'lat': -11.1833, 'lon': -67.0833, 'tz_id': 'America/La_Paz', 'localtime_epoch': 1781070861, 'localtime': '2026-06-10 01:54'}, 'current': {'last_updated_epoch': 1781070300, 'la
+   Source: https://www.weatherapi.com/
+
+2. 13 Best US National Parks to Visit in July 2026
+   Weather in July. Kenai Fjords National Park experiences cool and refreshing weather in July, with average highs reaching around 63°F (17°C)
+   Source: https://adventuresofaplusk.com/best-national-parks-to-visit-in-july
+
+3. 15 Best US National Parks to Visit in July 2026
+   Best US national parks to visit in July. Denali, Katmai, Kenai Fjords, Glacier, Lassen Volcanic, Mount Rainier, Olympic, North Cascades and
+   Source: https://www.earthtrekkers.com/best-national-parks-to-visit-in-july-usa
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Kenai Fjords",
+  "parkNames": [
+    "Kenai Fjords",
+    "Grand Teton",
+    "Yellowstone",
+    "Glacier",
+    "Pictured Rocks National Lakeshore",
+    "Apostle Islands",
+    "Cape Cod"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Hey Krishna — you've already knocked out a solid list, so let me point you somewhere fresh.
+
+**Pictured Rocks National Lakeshore** is my top pick. Lake Superior keeps temps in the low-to-mid 60s in July, the sandstone cliffs are genuinely jaw-dropping, and the kayaking along the lakeshore is world-class. It's dramatically undervisited compared to the parks you've already done. Trailhead parking fills up, but nothing like Yellowstone or Grand Teton in peak season. Also — July 3–5 are fee-free entrance days at NPS sites, so if your trip lands that weekend, you're in.
+
+Skip the obvious beach parks on the East Coast in July — Assateague and Cape Cod are packed and hot. **Apostle Islands** (Wisconsin) is a strong runner-up to Pictured Rocks — sea caves, island hopping, cooler Lake Superior temps — but Pictured Rocks edges it out for sheer scenery.
+
+If you want to go bigger and wilder, **Kenai Fjords** in Alaska runs about 63°F in July, glaciers calving into the ocean, and boat tours that are genuinely unlike anything in the lower 48. It's a fly-in trip (Anchorage, then ~2.5hr drive to Seward), so it's a different kind of commitment — but given how much ground you've covered, it might be exactly the level-up you're looking for.
+
+What's your group situation and how far are you willing to travel?
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+state-park: State park (non-NPS) → planning
+══════════════════════════════════════════════════════════════════════════════
+Q: plan a weekend at Custer state park South Dakota bison loop
+
+[WebSearch] cache MISS | category=planning query="plan a weekend at Custer state park South Dakota bison loop"
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=planning final=3 hasDigest=true providers=tavily*:3@931ms
+needsWeb=true | regex=planning | resolved=planning | block=planning
+expected category: planning
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: planning) via tavily:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• **Wildlife Loop Road**: 18-mile scenic drive through grasslands and pine hills where park wildlife lives; main attraction for bison viewing
+• **Bison Center**: Located at Buffalo Corrals along Wildlife Loop Road; offers all-bison focused exhibits and information
+• **Weekend timing**: Plan 2–3 hours for the Wildlife Loop drive itself; combine with other park activities like Needles Highway scenic drive
+• **No closures or permits mentioned** in available sources for basic access to Wildlife Loop or Bison Center
+• **Verify current hours and any seasonal restrictions** on official South Dakota Game, Fish, and Parks website before your trip
+
+Web Sources:
+1. Wildlife Loop Road | Custer State Park Resort
+   # Wildlife Loop Road. Travel through 18 miles of open grasslands and pine-speckled hills that much of Custer State Park's wildlife calls home. Map of the Wildlife Loop in Custer State Park in South Dakota. The Wildlife Loop itself is 18 miles long fr
+   Source: https://www.custerresorts.com/activities/scenic-drives/wildlife-loop
+
+2. Custer State Park Bison Center | South Dakota Game, Fish, and Parks
+   South Dakota Game, Fish, Parks Logo. # Bison Center. # Custer State Park Bison Center. Located along the Wildlife Loop Road at the Buffalo Corrals, the new Custer State Park Bison Center brings an all-bison experience to the park's scenic drive throu
+   Source: https://gfp.sd.gov/csp-bison-center
+
+3. What's the best way to plan a day at Custer State Park in ...
+   Custer state park in South Dakota. Need some advice. We plan to drive a wildlife loop and then Needles hwy. Should we take a break between them?
+   Source: https://www.facebook.com/groups/15908242749/posts/10161242983742750
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Mount Rushmore",
+  "parkNames": [
+    "Mount Rushmore",
+    "Buffalo"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Hey Krishna — solid pick, Custer's bison loop is one of those underrated Great Plains experiences that hits different from your usual canyon/coast parks.
+
+Quick heads up before I plan: I need two things to nail this for you —
+
+**Who's coming?** (solo, couple, kids?) and **roughly when?** Timing matters a lot here — bison with calves in spring vs. rut in fall are completely different vibes.
+
+That said, here's a solid 2-day framework based on what I know:
+
+**Day 1 — Wildlife Loop + Bison Center**
+Hit the 18-mile Wildlife Loop Road early — like 6:30am early. Bison are most active at dawn, and you'll have the road to yourself. Budget 2-3 hours for the loop itself. Stop at the Buffalo Corrals to check out the Bison Center — it's right on the loop and gives solid context on the herd management. Afternoon: Needles Highway (SD-87) — one of the most dramatic drives in the Midwest, tight tunnels through granite spires. Don't skip it.
+
+**Day 2 — Hiking + Black Hills overflow**
+Sylvan Lake is the crown jewel for hiking — the loop around it is easy and stunning. If you want more elevation, Cathedral Spires trail (2.5mi, moderate, ~600ft gain) starts nearby. Mount Rushmore is 20 minutes away if you want to check it off — worth an hour, not a half-day.
+
+Lodging: custerresorts.com has cabins and lodges inside the park — book early, they fill up. Camping at Legion Lake or Center Lake if you'd rather be under the stars.
+
+Verify current conditions and any seasonal road restrictions at gfp.sd.gov before you go.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+compare: Compare parks → planning
+══════════════════════════════════════════════════════════════════════════════
+Q: Zion vs Bryce for first timers in October
+
+[WebSearch] cache MISS | category=planning query="Zion vs Bryce for first timers in October"
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=planning final=3 hasDigest=true providers=tavily*:3@765ms
+needsWeb=true | regex=planning | resolved=planning | block=planning
+expected category: planning
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: planning) via tavily:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• October offers excellent conditions at both parks—fall colors and fewer crowds than summer months.
+
+• Morning temperatures are cool; afternoons warm up. Pack layers for comfortable hiking.
+
+• Both parks work well for first-timers; Zion and Bryce can be visited together in a 3–7 day trip from Las Vegas.
+
+• No closures or permit requirements mentioned for October visits in these snippets—verify current conditions on nps.gov before booking.
+
+Web Sources:
+1. Yosemite or Zion/Bryce in October? : r/NationalPark - Reddit
+   If you only have 3-4 days, I think Zion/ Bryce may be the better choice. Save Yosemite for when you have more time, and go in the spring to see all the
+   Source: https://www.reddit.com/r/NationalPark/comments/1lwo0h9/yosemite_or_zionbryce_in_october
+
+2. Are Zion and Bryce crowded in October? | Springdale, UT - Facebook
+   October is a fantastic time to go to Zion and Bryce. It's so beautiful with the fall ￼colors! It's chilly in the morning but warms on a
+   Source: https://www.facebook.com/groups/543165101611964/posts/984861134109023
+
+3. September or October - Zion National Park Forum - Tripadvisor
+   Which is better month to visit? We are looking to spend 7 days diving from Las Vegas to Bryce and then onto Zion.
+   Source: https://www.tripadvisor.com/ShowTopic-g143057-i1449-k14011731-September_or_October-Zion_National_Park_Utah.html
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Bryce",
+  "parkNames": [
+    "Bryce",
+    "Zion"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Go with Zion — it's the more immersive first-timer experience, and October is genuinely one of its best months.
+
+The fall colors along the Virgin River are peak, crowds drop noticeably from summer, and the weather is ideal — highs around the mid-70s, cool mornings, low humidity. The shuttle system means you don't need to stress about parking. For first-timers, the canyon floor hikes alone (Riverside Walk, Canyon Overlook) are stunning without needing to attempt anything strenuous. One heads up: **The Narrows is closed right now due to toxic cyanobacteria in the Virgin River** — that's a big one to know before you go. Angels Landing requires a permit (grab it at [Recreation.gov](https://www.recreation.gov/permits/4675324) for summer/fall dates). No timed-entry confirmation for 2026, so expect packed trailheads — arrive before 7am for popular spots.
+
+Bryce is worth a day-trip add-on if you have 4+ days. The hoodoos are unlike anything else, and the Navajo Loop (2.9mi, 550ft gain, ~1.5hr, Moderate) is a perfect intro. But as a standalone first-timer destination, Zion wins on variety and wow factor. Bryce becomes the better pick if you're into stargazing or photography — it's darker skies and the hoodoos at sunrise are otherworldly.
+
+If you're doing both, do Zion first, Bryce second. Classic Utah combo and totally doable in 5-6 days from Las Vegas.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+nps-skip: NPS permits only → no web
+══════════════════════════════════════════════════════════════════════════════
+Q: Do I need a permit for The Narrows in Zion?
+
+[WebSearch] SKIP | category=nps-covered (NPS/RIDB only)
+needsWeb=false | regex=nps-covered | resolved=nps-covered | block=none
+
+(no web block — expected for pure NPS-only queries)
+
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": false,
+  "parkName": "The Narrows",
+  "parkNames": [
+    "The Narrows"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+No permit needed for The Narrows bottom-up route (the classic walk from the Temple of Sinai trailhead).
+
+One thing to flag though: there's active toxic cyanobacteria in the Virgin River right now. It's not a closure, but you should avoid swallowing the water and wash off thoroughly after. Keep kids and dogs out of the water entirely.
+
+The top-down route is a different story — that requires a canyoneering permit through the [Zion Canyoneering Daily Lottery](https://www.recreation.gov/permits/4251918) on Recreation.gov.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+mixed: NPS + restaurants (mixed) → web
+══════════════════════════════════════════════════════════════════════════════
+Q: Visiting Yellowstone next week — any road closures and good restaurants near the park?
+
+[WebSearch] cache MISS | category=road-conditions query="Yellowstone National Park Visiting Yellowstone next week — a"
+[WebSearch] Brave freshness filter returned 0 — retrying without freshness
+[WebSearch] TrailVerse digest via claude
+[WebSearch] done | category=road-conditions final=4 hasDigest=true providers=brave*:5@937ms
+needsWeb=true | regex=road-conditions | resolved=road-conditions | block=road-conditions
+
+--- FULL WEB BLOCK ---
+
+Live Web Search Results (category: road-conditions) via brave:
+
+TrailVerse Web Digest (from snippets only — permits ≠ closed unless a source says closed):
+• Check nps.gov/yell/planyourvisit/parkroads.htm for current road status — closures can occur without notice.
+• Call (307) 344-2117 for recorded road condition updates before your trip.
+• Visit nps.gov/yell/planyourvisit/conditions.htm for real-time weather and facility information.
+• Snippets provided do not include restaurant recommendations near Yellowstone — search local dining guides separately.
+• Have flexible travel plans; temporary closures may happen anytime.
+
+Web Sources:
+1. Current Conditions - Yellowstone National Park (U.S. National Park Service)
+   Current weather, road, stream, news in Yellowstone National Park.
+   Source: https://www.nps.gov/yell/planyourvisit/conditions.htm
+
+2. Operating Dates - Yellowstone National Park (U.S. National Park Service)
+   The opening and closing dates for park facilities and services between April and November.
+   Source: https://www.nps.gov/yell/planyourvisit/operating-dates.htm
+
+3. Park Roads - Yellowstone National Park (U.S. National Park Service)
+   The most up-to-date source of information for roads in Yellowstone.
+   Source: https://www.nps.gov/yell/planyourvisit/parkroads.htm
+
+4. UPDATE: Yellowstone National Park entrances and roads scheduled for opening April 17 delayed due to winter storm - Yellowstone National Park (U.S. National Park Service)
+   <strong>Temporary travel restrictions or closures can occur at any time without notice</strong>. Have flexible travel plans. Road sections expected to open at noon April 17: ... Visit Park Roads. Call (307) 344-2117 for recorded information.
+   Source: https://www.nps.gov/yell/learn/news/26006.htm
+(From live web search — verify details with official sources)
+
+--- END WEB BLOCK ---
+
+[web] PASS
+
+--- API metadata ---
+{
+  "hasLiveData": true,
+  "hasWebSearch": true,
+  "parkName": "Yellowstone",
+  "parkNames": [
+    "Yellowstone"
+  ],
+  "provider": "claude",
+  "model": "claude-sonnet-4-6"
+}
+
+--- FULL ASSISTANT REPLY (UI) ---
+
+Hey Krishna — good timing, you've already done Yellowstone once so you know the drill.
+
+On roads: there are no major closures listed right now, but Yellowstone is notorious for sudden temporary closures with zero notice — especially in early summer. There's currently a traffic delay at the Gardner River High Bridge worth knowing about. Before you head out each day, call **(307) 344-2117** for the recorded road update, or check [nps.gov/yell/planyourvisit/parkroads.htm](https://www.nps.gov/yell/planyourvisit/parkroads.htm) — that's the most current source.
+
+On restaurants: the live data I have doesn't include dining near the park, so I'd be guessing. Your best bets are in **Gardiner, MT** (north entrance) and **West Yellowstone, MT** (west entrance) — both have solid local options. A quick search on Yelp or Google Maps for either town will get you current hours and reviews, which matters since some spots run seasonal schedules.
+
+One heads-up on crowds: no timed entry is required this year, which sounds convenient but means no crowd control. Expect packed trailheads and full parking lots by mid-morning at popular spots like Old Faithful and Grand Prismatic. Arrive before 7am if you want breathing room.
+
+Weather next week looks cold — Wednesday hits a high of only 47°F with rain and 30 mph winds, but it clears up Thursday and Friday with highs in the mid-50s to low 60s. Layer up regardless.
+
+--- END REPLY ---
+
+[chat] PASS
+
+══════════════════════════════════════════════════════════════════════════════
+SUMMARY
+══════════════════════════════════════════════════════════════════════════════
+✓ operational    web=ok chat=true
+✓ local          web=ok chat=true
+✓ road           web=ok chat=true
+✓ trail          web=ok chat=true
+✓ smoke          web=ok chat=true
+✓ planning       web=ok chat=true
+✓ state-park     web=ok chat=true
+✓ compare        web=ok chat=true
+✓ nps-skip       web=ok chat=true
+✓ mixed          web=ok chat=true
+
+10/10 passed

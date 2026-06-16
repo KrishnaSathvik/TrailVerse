@@ -22,6 +22,9 @@
 
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 
+/** User-facing browse hub name (URLs stay /discover). */
+const BROWSE_HUB_LABEL = 'Explore by Activity';
+
 /** @type {Guide[]} */
 export const GUIDES = [
   {
@@ -38,7 +41,7 @@ export const GUIDES = [
     updatedAt: '2026-05-31',
     trailverseLinks: [
       { label: 'Explore all parks', href: '/explore' },
-      { label: 'Discover by activity, topic, or state', href: '/discover' },
+      { label: `${BROWSE_HUB_LABEL} — topic & state`, href: '/discover' },
       { label: 'Compare up to 4 parks', href: '/compare' },
       { label: 'Plan with Trailie', href: '/plan-ai' },
       { label: 'TrailVerse ChatGPT app', href: '/chatgpt' },
@@ -76,7 +79,7 @@ export const GUIDES = [
           'Permit links pulled from Recreation.gov for each park, in one place',
           'Current weather and seasonal ranges for every park',
           'Side-by-side comparison of up to four parks — weather, crowd level, and campgrounds',
-          'Discovery filters by activity, topic, and state or territory',
+          `${BROWSE_HUB_LABEL} filters by activity, topic, and state or territory`,
           'Ranger programs and events drawn from NPS listings',
           'Trailie AI plus the ChatGPT app and Claude connector for building itineraries',
         ],
@@ -156,7 +159,7 @@ export const GUIDES = [
     updatedAt: '2026-05-31',
     trailverseLinks: [
       { label: 'Compare parks (up to 4)', href: '/compare' },
-      { label: 'Discover parks by activity', href: '/discover/activities' },
+      { label: 'Browse parks by activity', href: '/discover/activities' },
       { label: 'Plan with Trailie', href: '/plan-ai' },
       { label: 'Explore all NPS parks', href: '/explore' },
     ],
@@ -575,7 +578,7 @@ export const GUIDES = [
         id: 'stack',
         heading: 'A simple stack that works',
         bullets: [
-          'Shortlist parks in TrailVerse (or Discover by activity/state)',
+          `Shortlist parks in TrailVerse (or ${BROWSE_HUB_LABEL} by state)`,
           'Compare finalists on weather, fees, and crowds — then check alerts on each park page',
           'Book camps and timed entry on Recreation.gov',
           'Save official alert feeds in the NPS App',
@@ -662,7 +665,7 @@ export const GUIDES = [
             ['Authority', 'Official Park Service product', 'Independent; pulls public NPS feeds and related data'],
             ['Alerts', 'Yes, park-by-park', 'Yes, on each park page + while comparing'],
             ['Compare multiple parks', 'One park at a time', 'Up to four side by side'],
-            ['Discover by activity/topic', 'Limited', 'Discover hub across dimensions'],
+            [BROWSE_HUB_LABEL, 'Limited', `${BROWSE_HUB_LABEL} hub across dimensions`],
             ['Ranger events', 'Some park content', 'Events search across sites'],
             ['Offline use', 'Yes — downloadable park content for offline use', 'Web/PWA; plan and save before you lose signal'],
           ],
@@ -676,7 +679,7 @@ export const GUIDES = [
         id: 'workflow',
         heading: 'Workflow that respects all three',
         bullets: [
-          'Discover and compare in TrailVerse',
+          'Explore and compare in TrailVerse',
           'Read alerts on the park page; cross-check in the NPS App',
           'Book inventory on Recreation.gov as soon as release windows open',
           'Keep the NPS App installed for the drive',
@@ -725,7 +728,7 @@ export const GUIDES = [
     trailverseLinks: [
       { label: 'Open Compare', href: '/compare' },
       { label: 'Explore all parks', href: '/explore' },
-      { label: 'Discover by activity', href: '/discover' },
+      { label: BROWSE_HUB_LABEL, href: '/discover' },
       { label: 'Plan with Trailie', href: '/plan-ai' },
     ],
     sections: [
@@ -778,7 +781,7 @@ export const GUIDES = [
         id: 'workflow',
         heading: 'A simple compare → plan workflow',
         bullets: [
-          'Shortlist on Explore or Discover (by state, activity, or topic)',
+          `Shortlist on Explore or ${BROWSE_HUB_LABEL} (by state, activity, or topic)`,
           'Load finalists into Compare and eliminate on weather, crowds, or facilities',
           'Open the winner\'s park page for alerts, permits, maps, and tabs you need in depth',
           'Draft days with Trailie or the ChatGPT app — see our planning-in-ChatGPT guide',

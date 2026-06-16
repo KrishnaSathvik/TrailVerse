@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Sparkles } from '@components/icons';
+import { NotePencil } from '@components/icons';
 import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
 import QuickFillModal from '@components/plan-ai/QuickFillModal';
@@ -113,18 +113,16 @@ const PlanAIContent = ({ tripId }) => {
       <button
         type="button"
         onClick={handleStartNewChat}
-        title="New Chat"
-        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition sm:h-10 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-sm"
+        title="Start a new chat"
+        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold transition hover:opacity-90 sm:h-9 sm:gap-2 sm:px-3.5 sm:text-sm"
         style={{
-          backgroundColor: 'var(--button-filled-bg)',
-          border: '1px solid var(--border)',
-          color: 'var(--text-primary)',
-          boxShadow: 'var(--shadow)'
+          backgroundColor: 'color-mix(in srgb, var(--accent-green) 12%, var(--bg-primary))',
+          border: '1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border))',
+          color: 'var(--accent-green)',
         }}
       >
-        <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        <span className="hidden sm:inline">New Chat</span>
-        <span className="sm:hidden">New</span>
+        <NotePencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <span>Chat</span>
       </button>
     </div>
   ) : null;

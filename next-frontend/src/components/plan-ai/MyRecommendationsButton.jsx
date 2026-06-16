@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, Info, X } from '@components/icons';
+import { Star, Info, X } from '@components/icons';
 import { MY_RECOMMENDATIONS_INFO } from '@/lib/planAiWelcomeCopy';
 
 function usePopoverPosition(open, anchorRef) {
@@ -124,7 +124,7 @@ export default function MyRecommendationsButton({ onClick }) {
             className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-2.5 text-xs font-semibold transition sm:gap-2 sm:px-4 sm:text-sm"
             style={{ color: 'var(--text-primary)' }}
           >
-            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">My Recommendations</span>
             <span className="sm:hidden">For Me</span>
           </button>

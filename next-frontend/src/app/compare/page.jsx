@@ -1,6 +1,12 @@
 import Header from '@/components/common/Header';
 import ComparePageSeo from './ComparePageSeo';
 import ComparePageClient from './ComparePageClient';
+import { canonicalPageMetadata } from '@/lib/seo';
+
+export async function generateMetadata({ searchParams }) {
+  const params = await searchParams;
+  return canonicalPageMetadata('/compare', params);
+}
 
 function parseInitialParkCodes(searchParams) {
   const parksParam = searchParams?.parks;

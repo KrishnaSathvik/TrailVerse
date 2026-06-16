@@ -21,6 +21,8 @@ import { useParkComparison } from '@/hooks/useEnhancedParks';
 import { useCompareParkingLots } from '@/hooks/useCompareParkingLots';
 import { logEvent } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
+import { parkDetailHref } from '@/lib/returnNavigation';
+import { useReturnPath } from '@/hooks/useReturnPath';
 import { summarizeCompareParking } from '@/utils/parkingUtils';
 import { pickPrimaryEntranceFee } from '@/utils/parkVisitInfoUtils';
 import { COMPARE_LANDINGS } from '@/data/compareLandings';
@@ -166,6 +168,7 @@ const COMPARE_PATH = '/compare';
 
 const ComparePageInner = ({ initialParkCodes = [] }) => {
   const router = useRouter();
+  const returnPath = useReturnPath();
   const { isAuthenticated, user } = useAuth();
   const { isParkVisited } = useVisitedParks();
   const { isParkFavorited } = useFavorites();
@@ -1214,7 +1217,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                                 {parkingSummary.liveNote}
                               </div>
                               <Link
-                                href={`/parks/${slug}?tab=parking`}
+                                href={parkDetailHref(slug, returnPath, { tab: 'parking' })}
                                 className="text-xs font-medium underline-offset-2 hover:underline"
                                 style={{ color: 'var(--accent-green)' }}
                               >
@@ -1275,7 +1278,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                     {enhancedParks.map(park => (
                       <div key={park.parkCode} className="flex flex-col max-lg:items-start lg:items-center gap-2">
                         <Link
-                          href={`/parks/${parkToSlug(park.fullName)}`}
+                          href={parkDetailHref(parkToSlug(park.fullName), returnPath)}
                           className="px-3 py-2 rounded-lg text-sm font-medium transition-colors border"
                           style={{
                             color: 'var(--accent-green)',

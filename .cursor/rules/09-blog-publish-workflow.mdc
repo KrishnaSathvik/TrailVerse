@@ -1,0 +1,90 @@
+---
+description: Publish blog/astro guides from admin or DB — dates, no email, featured, gradual view bumps. Use when user says publish blog, astro guide, bump views, Glacier/Yosemite pair, or "same flow as before".
+globs: "{server/src/models/BlogPost.js,server/src/controllers/blogController.js,server/scripts/bump*.js,server/scripts/publish-astro-guides.js,next-frontend/src/components/admin/BlogPostForm.jsx,next-frontend/src/lib/blogCategories.js}"
+alwaysApply: false
+---
+
+# Blog publish workflow (TrailVerse admin + MongoDB)
+
+When the user asks to **publish a draft**, **ship astro + park guide**, **bump views**, or **“same flow as always”** — follow this checklist. Do not re-ask unless a value is missing.
+
+## Typical pairing
+
+| Guide type | Category slug | Slug pattern (examples) |
+|------------|---------------|-------------------------|
+| **2026 park visitor guide** | `national-parks` | `glacier-2026-no-reservations-...`, `*-the-complete-2026-visitor-guide` |
+| **Astrophotography** | `astrophotography` | `glacier-national-park-astrophotography-guide`, `yellowstone-astrophotography-guide` |
+
+**Date rule (default):** astro `publishedAt` = **main park guide `publishedAt` + 2 days** (same time-of-day). User may override with an explicit date (e.g. “June 11”).
+
+## Publish steps (MongoDB or after admin draft exists)
+
+1. **Find draft:** `BlogPost.find({ status: 'draft', slug/title: /park/i })`
+2. **Set on publish:**
+   - `status: 'published'`
+   - `publishedAt` — per date rule or user date (preserve time from sibling guide if sensible)
+   - `scheduledAt: null`
+   - `featured: true` — when user asks to feature (common for new park + astro)
+   - **`notificationSentAt: new Date()`** at save time → **no subscriber emails** (controller skips if already set)
+3. **Never** rely on admin publish alone for “no email” unless `notificationSentAt` is preset before first `published` save.
+
+## View counts — gradual only for new posts
+
+**Use:** `server/scripts/bump-recent-blog-views.js`
+
+```bash
+cd server
+# Preview
+node scripts/bump-recent-blog-views.js --slug=my-post-slug
+# Apply one post
+node scripts/bump-recent-blog-views.js --slug=my-post-slug --apply
+# All posts published in last 60 days
+node scripts/bump-recent-blog-views.js --apply
+```
+
+- **Age-based** targets (national-parks vs astro tiers); **only increases**; safe to re-run weekly.
+- **Do NOT** run `bump-blog-views.js --apply` on the full library unless user explicitly wants a **one-time rebalance of all posts** (it multiplies existing counts and inflated totals before).
+
+After publish, bump **both** the park guide and astro guide for that park.
+
+## Category enum (server)
+
+Admin sends slugs from `next-frontend/src/lib/blogCategories.js`. **`national-parks` must exist** in `server/src/models/BlogPost.js` category enum or POST returns 500.
+
+Legacy labels still map via `server/src/utils/blogCategories.js` + `LEGACY_BLOG_CATEGORY_TO_SLUG`.
+
+## Verify after publish
+
+```bash
+cd server && node -e "
+require('dotenv').config();
+const mongoose = require('mongoose');
+const BlogPost = require('./src/models/BlogPost');
+(async () => {
+  await mongoose.connect(process.env.MONGODB_URI);
+  const posts = await BlogPost.find({ slug: /KEYWORD/i })
+    .select('title slug category status publishedAt views featured notificationSentAt')
+    .lean();
+  console.log(JSON.stringify(posts, null, 2));
+  await mongoose.disconnect();
+})();
+"
+```
+
+Confirm: `published`, correct `publishedAt`, `notificationSentAt` set, views > 0 after bump, `featured` if requested.
+
+## Optional: publish from markdown file
+
+`server/scripts/publish-astro-guides.js` — frontmatter + HTML; sets `notificationSentAt` and parent+2d date. Dry-run then `--apply`.
+
+## Public blog UX (context)
+
+- `/blog` — hub only (featured, popular, category grid); no full archive grid.
+- Categories → `/blog/category/{slug}` (`national-parks`, `astrophotography`, …).
+- Chip nav: `BlogCategoryNav.jsx` (park-detail-style grid on mobile).
+
+## User shorthand phrases → this workflow
+
+- “Publish astro like Yellowstone” → find draft, publish, no email, +2d date, feature if they usually do, bump recent views.
+- “Bump views gradually” → `bump-recent-blog-views.js --apply` (not full bump).
+- “Check draft in DB” → query `status: 'draft'` by park name/slug.

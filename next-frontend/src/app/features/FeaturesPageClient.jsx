@@ -13,13 +13,13 @@ const FeaturesPage = () => {
     {
       category: 'Choose the right park',
       icon: Compass,
-      description: 'Search and filter on Explore, browse by activity on Discover, then compare finalists before you book.',
+      description: 'Search and filter on Explore, browse by activity on Explore by Activity, then compare finalists before you book.',
       items: [
         {
           icon: MapPin,
           title: 'Park Explorer with Filters',
           description: 'Search the full NPS catalog on Explore with state filters and a National Parks toggle. Every park page pulls together photos, weather, alerts, and reviews.',
-          benefits: ['State & search filters', 'Rich park pages', 'Discover by topic', 'Activity browse on Discover'],
+          benefits: ['State & search filters', 'Rich park pages', 'Browse by topic', 'Activity browse hub'],
         },
         {
           icon: Globe,

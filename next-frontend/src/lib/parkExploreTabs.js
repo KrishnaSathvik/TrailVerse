@@ -50,6 +50,7 @@ export function exploreTabHasData(tabId, cache, { showTransitTab = false } = {})
  * @param {{
  *   alertCount?: number;
  *   permitCount?: number;
+ *   requestedTab?: string | null;
  *   exploreReady?: boolean;
  *   exploreCache?: Record<string, unknown> | null;
  *   showTransitTab?: boolean;
@@ -59,6 +60,7 @@ export function filterVisibleExploreTabs(allTabs, ctx = {}) {
   const {
     alertCount = 0,
     permitCount = 0,
+    requestedTab = null,
     exploreReady = false,
     exploreCache = null,
     showTransitTab = false,
@@ -66,6 +68,7 @@ export function filterVisibleExploreTabs(allTabs, ctx = {}) {
 
   return allTabs.filter((tab) => {
     if (tab.id === 'overview' || tab.id === 'reviews') return true;
+    if (tab.id === requestedTab) return true;
     if (tab.id === 'alerts') return alertCount > 0;
     if (tab.id === 'permits') return permitCount > 0;
     if (!exploreReady) return false;

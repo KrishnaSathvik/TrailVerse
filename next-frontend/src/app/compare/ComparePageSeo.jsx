@@ -6,9 +6,9 @@ export default function ComparePageSeo() {
   return (
     <>
             {/* Hero Section */}
-            <section className="relative overflow-hidden py-6 sm:py-12 lg:py-20">
+            <section className="relative overflow-hidden border-b py-5 sm:py-8" style={{ borderColor: 'var(--border)' }}>
               <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-                <div className="mt-1 sm:mt-6">
+                <div>
                   <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-3 sm:mb-4 backdrop-blur"
                     style={{
                       backgroundColor: 'var(--surface)',

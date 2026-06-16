@@ -6,7 +6,7 @@
   "scenarios": [
     {
       "id": "discover-july-follow-up",
-      "label": "Discover",
+      "label": "Cool July parks",
       "chatTitle": "Cool July parks",
       "multiTurn": true,
       "question": "What are the best national parks to visit in July with cool weather, lakes or beaches?",

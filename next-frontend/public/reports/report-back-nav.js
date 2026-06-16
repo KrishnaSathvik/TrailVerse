@@ -31,14 +31,14 @@
 
   function labelForPath(path, parkName) {
     if (parkName) return '\u2190 Back to ' + parkName;
-    if (!path || path === '/') return '\u2190 Back to Home';
+    if (!path || path === '/') return '\u2190 Back to TrailVerse';
     if (path.startsWith('/blog')) return '\u2190 Back to Blog';
     if (path.startsWith('/explore')) return '\u2190 Back to Explore';
     if (path.startsWith('/parks/')) return '\u2190 Back to park';
     if (path.startsWith('/features')) return '\u2190 Back to Features';
     if (path.startsWith('/map')) return '\u2190 Back to Map';
     if (path.startsWith('/compare')) return '\u2190 Back to Compare';
-    if (path.startsWith('/discover')) return '\u2190 Back to Discover';
+    if (path.startsWith('/discover')) return '\u2190 Back to Explore by Activity';
     if (path.startsWith('/plan-ai')) return '\u2190 Back to Trailie';
     return '\u2190 Back to TrailVerse';
   }

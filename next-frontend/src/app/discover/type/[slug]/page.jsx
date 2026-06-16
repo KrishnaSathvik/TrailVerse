@@ -4,14 +4,24 @@ import Footer from '@/components/common/Footer';
 import DiscoverDetailClient from '@/components/discover/DiscoverDetailClient';
 import { fetchDiscoverDetail } from '@/lib/discoverApi';
 import { BROWSE_HUB_PAGE_SUFFIX } from '@/lib/browseHub';
+import { canonicalPageMetadata, siteCanonical } from '@/lib/seo';
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { slug } = await params;
+  const sp = searchParams ? await searchParams : undefined;
   const detail = await fetchDiscoverDetail('type', slug).catch(() => null);
   if (!detail) return { title: `Park Type | ${BROWSE_HUB_PAGE_SUFFIX}` };
   return {
     title: `${detail.title} | ${BROWSE_HUB_PAGE_SUFFIX}`,
-    description: detail.intro?.slice(0, 160)
+    description: detail.intro?.slice(0, 160),
+    ...canonicalPageMetadata(`/discover/type/${slug}`, sp),
+    openGraph: {
+      title: `${detail.title} | ${BROWSE_HUB_PAGE_SUFFIX}`,
+      description: detail.intro?.slice(0, 160),
+      url: siteCanonical(`/discover/type/${slug}`),
+      siteName: 'TrailVerse',
+      type: 'website',
+    },
   };
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, MapPin, Map as MapIcon, Check, Plus, ExternalLink, Download } from '@components/icons';
+import { Map as MapIcon, Check, Plus, ExternalLink, Download, List, ArrowLeft } from '@components/icons';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useToast } from '@/context/ToastContext';
 import Header from '../common/Header';
@@ -11,12 +11,19 @@ import ItineraryMapView, { DAY_COLORS } from './ItineraryMapView';
 import DayCardList from './DayCardList';
 import AddPlaceInput from '../maps/AddPlaceInput';
 
-function buildDayMapsUrl(day) {
-  const stops = (day?.stops || [])
-    .filter(s => typeof s.latitude === 'number' && typeof s.longitude === 'number');
+function buildTripMapsUrl(dayList) {
+  const stops = (dayList || []).flatMap((day) => day?.stops || [])
+    .filter((s) => typeof s.latitude === 'number' && typeof s.longitude === 'number');
   if (stops.length === 0) return null;
-  const waypoints = stops.map(s => encodeURIComponent(s.name || `${s.latitude},${s.longitude}`));
-  return `https://www.google.com/maps/dir/${waypoints.join('/')}`;
+
+  const waypoints = stops.map((s) => encodeURIComponent(s.name || `${s.latitude},${s.longitude}`));
+  // Google Maps directions URLs support a limited number of stops in one link.
+  const maxWaypoints = 10;
+  const limited = waypoints.length > maxWaypoints
+    ? [...waypoints.slice(0, maxWaypoints - 1), waypoints[waypoints.length - 1]]
+    : waypoints;
+
+  return `https://www.google.com/maps/dir/${limited.join('/')}`;
 }
 
 export default function PlanWorkspace({ tripId }) {
@@ -114,7 +121,11 @@ export default function PlanWorkspace({ tripId }) {
   }
 
   const tripTitle = trip?.title || trip?.parkName || 'Untitled Trip';
+  const itinerarySubtitle = trip?.parkName || (tripTitle !== 'Untitled Trip' ? tripTitle : null);
   const hasStops = days.some(d => d.stops?.length > 0);
+  const tripMapsUrl = buildTripMapsUrl(days);
+  const listDayIndex = activeDayId === 'all' ? 0 : activeDayIndex;
+  const listDay = listDayIndex >= 0 ? days[listDayIndex] : null;
 
   const handleExportPDF = async () => {
     if (!hasStops) {
@@ -143,296 +154,292 @@ export default function PlanWorkspace({ tripId }) {
     }
   };
 
+  const dayPills = (
+    <>
+      {days.map((d, i) => {
+        const isActive = activeDayId === d.id;
+        const color = DAY_COLORS[i % DAY_COLORS.length];
+        return (
+          <button
+            key={d.id}
+            onClick={() => setActiveDayId(d.id)}
+            className="flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition sm:px-3 sm:text-xs"
+            style={isActive
+              ? { backgroundColor: color, color: '#fff' }
+              : { backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+            }
+          >
+            Day {i + 1}
+          </button>
+        );
+      })}
+      <button
+        onClick={() => setActiveDayId('all')}
+        className="flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition sm:px-3 sm:text-xs"
+        style={activeDayId === 'all'
+          ? { backgroundColor: 'var(--accent-green)', color: '#fff' }
+          : { backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)', border: '1px solid var(--border)' }
+        }
+      >
+        All
+      </button>
+      <button
+        onClick={addDay}
+        className="flex-shrink-0 rounded-full p-1 transition hover:bg-[var(--surface-hover)]"
+        style={{ color: 'var(--text-tertiary)', border: '1px dashed var(--border)' }}
+        title="Add day"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </>
+  );
+
+  const backToChatButton = (
+    <button
+      type="button"
+      onClick={() => router.push(`/plan-ai/${tripId}`)}
+      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition hover:opacity-90 lg:min-w-[7.5rem] lg:flex-none lg:px-4"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--accent-green) 12%, var(--bg-primary))',
+        border: '1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border))',
+        color: 'var(--accent-green)',
+      }}
+      title="Back to chat"
+    >
+      <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">Back to Chat</span>
+    </button>
+  );
+
+  const exportPdfButton = (
+    <button
+      type="button"
+      onClick={handleExportPDF}
+      disabled={isExportingPDF || !hasStops}
+      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition hover:opacity-90 disabled:opacity-50 lg:min-w-[7.5rem] lg:flex-none lg:px-4"
+      style={{
+        backgroundColor: 'var(--surface)',
+        border: '1px solid var(--border)',
+        color: 'var(--text-secondary)',
+      }}
+    >
+      <Download className="h-3.5 w-3.5" />
+      {isExportingPDF ? 'Exporting…' : 'PDF'}
+    </button>
+  );
+
+  const planChrome = (
+    <div
+      className="relative z-10 flex-shrink-0 border-b"
+      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
+    >
+      <div className="mx-auto grid w-full max-w-[92rem] grid-cols-1 gap-2.5 px-3 py-2.5 lg:grid-cols-2 lg:gap-x-5 lg:gap-y-3 lg:px-10 lg:py-3 xl:gap-x-6 xl:px-12">
+        {/* Title — left column on desktop */}
+        <div className="flex items-start gap-2 lg:col-start-1 lg:row-start-1">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base font-semibold leading-snug lg:text-lg" style={{ color: 'var(--text-primary)' }}>
+              Day-by-Day Itinerary
+            </h1>
+            {itinerarySubtitle ? (
+              <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed lg:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {itinerarySubtitle}
+              </p>
+            ) : null}
+          </div>
+          {saveState === 'saving' && (
+            <span
+              className="mt-1 h-2 w-2 shrink-0 rounded-full animate-pulse"
+              style={{ backgroundColor: 'var(--accent-orange, #f97316)' }}
+              aria-label="Saving"
+            />
+          )}
+          {saveState === 'saved' && (
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} aria-label="Saved" />
+          )}
+        </div>
+
+        {/* Actions — right column on desktop */}
+        <div className="flex items-center gap-2 lg:col-start-2 lg:row-start-1 lg:justify-end">
+          {backToChatButton}
+          {exportPdfButton}
+        </div>
+
+        {/* Day pills — left column on desktop */}
+        <div className="flex items-center gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] lg:col-start-1 lg:row-start-2 [&::-webkit-scrollbar]:hidden">
+          {dayPills}
+        </div>
+
+        {/* Google Map — right column on desktop */}
+        {tripMapsUrl ? (
+          <a
+            href={tripMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition hover:opacity-90 lg:col-start-2 lg:row-start-2 lg:min-w-[10rem] lg:w-auto lg:justify-self-end lg:px-4"
+            style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+            title="Open full trip route in Google Maps"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Google Map
+          </a>
+        ) : (
+          <div className="hidden lg:col-start-2 lg:row-start-2 lg:block" aria-hidden="true" />
+        )}
+
+        {/* Map / List toggle — mobile only, full width */}
+        {isMobile && (
+          <div
+            className="col-span-1 grid grid-cols-2 gap-0.5 rounded-xl p-0.5 lg:hidden"
+            style={{ backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTab('map')}
+              className="flex items-center justify-center gap-1.5 rounded-[10px] py-2 text-xs font-semibold transition"
+              style={{
+                backgroundColor: activeTab === 'map' ? 'var(--bg-primary)' : 'transparent',
+                color: activeTab === 'map' ? 'var(--accent-green)' : 'var(--text-tertiary)',
+                boxShadow: activeTab === 'map' ? '0 1px 2px rgba(15, 23, 42, 0.08)' : 'none',
+              }}
+            >
+              <MapIcon className="h-4 w-4" />
+              Map
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('list')}
+              className="flex items-center justify-center gap-1.5 rounded-[10px] py-2 text-xs font-semibold transition"
+              style={{
+                backgroundColor: activeTab === 'list' ? 'var(--bg-primary)' : 'transparent',
+                color: activeTab === 'list' ? 'var(--accent-green)' : 'var(--text-tertiary)',
+                boxShadow: activeTab === 'list' ? '0 1px 2px rgba(15, 23, 42, 0.08)' : 'none',
+              }}
+            >
+              <List className="h-4 w-4" />
+              List
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="h-dvh flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      {/* ─── Sub-header: PLAN label + title + Chat/Plan toggle + save ─── */}
-      <section
-        className="relative z-10 border-b px-4 py-2 sm:px-6 sm:py-2.5 lg:px-10 xl:px-12 flex-shrink-0"
-        style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border)' }}
-      >
-        <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] sm:text-xs" style={{ color: 'var(--text-secondary)' }}>
-              Plan
-            </p>
-            <h1 className="mt-0.5 truncate text-base font-semibold sm:text-lg" style={{ color: 'var(--text-primary)' }}>
-              {tripTitle}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {saveState !== 'idle' && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium sm:text-xs"
-                style={{
-                  backgroundColor: saveState === 'saved' ? 'rgba(34,197,94,0.1)' : 'var(--surface-hover)',
-                  color: saveState === 'saved' ? 'var(--accent-green)' : 'var(--text-tertiary)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                {saveState === 'saving' && (
-                  <><span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent-orange, #f97316)' }} />Saving...</>
-                )}
-                {saveState === 'saved' && (
-                  <><Check className="h-3 w-3" />Saved</>
-                )}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={handleExportPDF}
-              disabled={isExportingPDF || !hasStops}
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition hover:opacity-90 disabled:opacity-50 sm:px-3 sm:text-xs"
-              style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-              }}
-              title="Export trip as PDF"
-            >
-              <Download className="h-3.5 w-3.5" />
-              {isExportingPDF ? 'Exporting...' : 'PDF'}
-            </button>
-            <div
-              className="inline-flex items-center rounded-full p-0.5"
-              style={{ backgroundColor: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-            >
-              <button
-                onClick={() => router.push(`/plan-ai/${tripId}`)}
-                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition sm:px-3 sm:text-xs"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <MessageSquare className="h-3.5 w-3.5" />Chat
-              </button>
-              <button
-                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-xs"
-                style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
-              >
-                <MapPin className="h-3.5 w-3.5" />Plan
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {planChrome}
 
-      {/* ─── Day pills bar + Add place ─── */}
-      <div
-        className="flex items-center gap-2 px-4 py-2 sm:px-6 lg:px-10 xl:px-12 border-b flex-shrink-0 overflow-x-auto"
-        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
-      >
-        {/* Day pills */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {days.map((d, i) => {
-            const isActive = activeDayId === d.id;
-            const color = DAY_COLORS[i % DAY_COLORS.length];
-            return (
-              <button
-                key={d.id}
-                onClick={() => setActiveDayId(d.id)}
-                className="rounded-full px-2.5 py-1 text-[11px] font-semibold transition sm:px-3 sm:text-xs whitespace-nowrap"
-                style={isActive
-                  ? { backgroundColor: color, color: '#fff' }
-                  : { backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
-                }
-              >
-                Day {i + 1}
-              </button>
-            );
-          })}
-          <button
-            onClick={() => setActiveDayId('all')}
-            className="rounded-full px-2.5 py-1 text-[11px] font-medium transition sm:px-3 sm:text-xs whitespace-nowrap"
-            style={activeDayId === 'all'
-              ? { backgroundColor: 'var(--accent-green)', color: '#fff' }
-              : { backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)', border: '1px solid var(--border)' }
-            }
+      {/* ─── Main content: mobile tabs · desktop two-column map + list ─── */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="mx-auto grid min-h-0 w-full max-w-[92rem] flex-1 grid-cols-1 overflow-hidden lg:grid-cols-2 lg:gap-5 lg:px-10 lg:py-3 xl:gap-6 xl:px-12">
+
+          {/* Map column */}
+          <div
+            className={`${
+              isMobile && activeTab !== 'map' ? 'hidden' : 'flex'
+            } min-h-0 flex-col overflow-hidden ${isMobile ? 'flex-1' : ''}`}
           >
-            All
-          </button>
-          <button
-            onClick={addDay}
-            className="rounded-full p-1 transition hover:bg-[var(--surface-hover)]"
-            style={{ color: 'var(--text-tertiary)', border: '1px dashed var(--border)' }}
-            title="Add day"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        {/* Open Day in Google Maps */}
-        {activeDayId !== 'all' && activeDay && buildDayMapsUrl(activeDay) && (
-          <a
-            href={buildDayMapsUrl(activeDay)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition hover:opacity-90 whitespace-nowrap flex-shrink-0 sm:text-xs"
-            style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
-          >
-            <ExternalLink className="h-3 w-3" />
-            Open Day {activeDayIndex + 1} in Maps
-          </a>
-        )}
-
-      </div>
-
-      {/* ─── Mobile tab bar ─── */}
-      {isMobile && (
-        <div
-          className="flex border-b flex-shrink-0"
-          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
-        >
-          <button
-            onClick={() => setActiveTab('map')}
-            className="flex-1 py-2 text-xs font-semibold uppercase tracking-wider text-center transition"
-            style={{
-              color: activeTab === 'map' ? 'var(--accent-green)' : 'var(--text-tertiary)',
-              borderBottom: activeTab === 'map' ? '2px solid var(--accent-green)' : '2px solid transparent',
-            }}
-          >
-            <MapIcon className="h-3.5 w-3.5 inline mr-1" />Map
-          </button>
-          <button
-            onClick={() => setActiveTab('list')}
-            className="flex-1 py-2 text-xs font-semibold uppercase tracking-wider text-center transition"
-            style={{
-              color: activeTab === 'list' ? 'var(--accent-green)' : 'var(--text-tertiary)',
-              borderBottom: activeTab === 'list' ? '2px solid var(--accent-green)' : '2px solid transparent',
-            }}
-          >
-            <MapPin className="h-3.5 w-3.5 inline mr-1" />List
-          </button>
-        </div>
-      )}
-
-      {/* ─── Main split: Map (left 58%) + Cards (right 42%) ─── */}
-      <div className="flex-1 min-h-0 flex flex-row overflow-hidden">
-
-        {/* Map panel */}
-        <div
-          className={`${isMobile
-            ? (activeTab === 'map' ? 'flex flex-col w-full' : 'hidden')
-            : 'flex flex-col'
-          } overflow-hidden`}
-          style={!isMobile ? { width: '58%' } : undefined}
-        >
-          {/* Mobile: add place input inside map tab */}
-          {isMobile && days.length > 0 && (
-            <div ref={addPlaceRef} className="relative z-20 flex-shrink-0 px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-              <AddPlaceInput
-                days={days}
-                onAdd={addStopFromMap}
-                biasCenter={parkCenter}
-                activeDayId={activeDayId !== 'all' ? activeDayId : undefined}
-                placeholder="Add a place..."
-              />
-            </div>
-          )}
-          <div className="flex-1 min-h-0 p-3">
-            {hasStops ? (
-              <ItineraryMapView
-                days={days}
-                activeDayId={activeDayId || 'all'}
-                parkCenter={parkCenter}
-                selectedStopId={selectedStopId}
-                onMarkerClick={handleMarkerClick}
-                isMobile={isMobile}
-              />
-            ) : (
+            {isMobile && days.length > 0 && (
               <div
-                className="flex items-center justify-center h-full rounded-xl border"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                ref={activeTab === 'map' ? addPlaceRef : undefined}
+                className="relative z-20 flex-shrink-0 border-b px-3 py-2"
+                style={{ borderColor: 'var(--border)' }}
               >
-                <p className="text-sm text-center px-6">
-                  No stops yet. Add stops or go back to chat to generate an itinerary.
-                </p>
+                <AddPlaceInput
+                  days={days}
+                  onAdd={addStopFromMap}
+                  biasCenter={parkCenter}
+                  activeDayId={activeDayId !== 'all' ? activeDayId : days[listDayIndex]?.id}
+                  placeholder="Add a place..."
+                />
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Card list panel */}
-        <div
-          className={`${isMobile
-            ? (activeTab === 'list' ? 'flex flex-col w-full' : 'hidden')
-            : 'flex flex-col border-l'
-          } min-h-0`}
-          style={{
-            ...(!isMobile ? { width: '42%' } : {}),
-            borderColor: 'var(--border)',
-          }}
-        >
-          {/* Add place input — sticky at top of card panel */}
-          {!isMobile && days.length > 0 && (
             <div
-              ref={addPlaceRef}
-              className="relative z-20 flex-shrink-0 px-4 py-2.5 border-b"
-              style={{ borderColor: 'var(--border)' }}
+              className="min-h-0 flex-1 overflow-hidden rounded-xl border p-2 lg:p-3"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
             >
-              <AddPlaceInput
-                days={days}
-                onAdd={addStopFromMap}
-                biasCenter={parkCenter}
-                activeDayId={activeDayId !== 'all' ? activeDayId : undefined}
-                placeholder="Add a place to your trip..."
+              {hasStops ? (
+                <ItineraryMapView
+                  days={days}
+                  activeDayId={activeDayId || 'all'}
+                  parkCenter={parkCenter}
+                  selectedStopId={selectedStopId}
+                  onMarkerClick={handleMarkerClick}
+                  isMobile={isMobile}
+                />
+              ) : (
+                <div
+                  className="flex h-full items-center justify-center rounded-lg"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <p className="px-6 text-center text-sm">
+                    No stops yet. Add stops or go back to chat to generate an itinerary.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* List column */}
+          <div
+            className={`${
+              isMobile && activeTab !== 'list' ? 'hidden' : 'flex'
+            } min-h-0 flex-col overflow-hidden border-t lg:border-t-0`}
+            style={{ borderColor: 'var(--border)' }}
+          >
+            <div
+              className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border lg:border lg:p-0"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
+            >
+              {days.length > 0 && (!isMobile || activeTab === 'list') && (
+                <div
+                  ref={!isMobile || activeTab === 'list' ? addPlaceRef : undefined}
+                  className="relative z-20 flex-shrink-0 border-b px-3 py-2.5 lg:px-4"
+                  style={{ borderColor: 'var(--border)' }}
+                >
+                  <AddPlaceInput
+                    days={days}
+                    onAdd={addStopFromMap}
+                    biasCenter={parkCenter}
+                    activeDayId={activeDayId !== 'all' ? activeDayId : days[listDayIndex]?.id}
+                    placeholder={isMobile ? 'Add a place...' : 'Add a place to your trip...'}
+                  />
+                </div>
+              )}
+              {activeDayId === 'all' && (
+                <p className="flex-shrink-0 px-3 pt-2 text-[11px] lg:px-4" style={{ color: 'var(--text-tertiary)' }}>
+                  Showing Day {listDayIndex + 1} in list — select a day pill to switch
+                </p>
+              )}
+              <DayCardList
+                day={listDay}
+                dayIndex={listDayIndex}
+                allDays={days}
+                selectedStopId={selectedStopId}
+                onStopClick={handleStopClick}
+                onRemoveStop={removeStop}
+                onUpdateStop={updateStop}
+                onMoveStop={moveStopBetweenDays}
+                onRequestAddStop={() => {
+                  if (activeDayId === 'all' && listDay?.id) setActiveDayId(listDay.id);
+                  const input = addPlaceRef.current?.querySelector('input');
+                  if (input) {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    input.focus();
+                  }
+                }}
+                onRemoveDay={(dayId) => {
+                  removeDay(dayId);
+                  setActiveDayId(days[0]?.id !== dayId ? days[0]?.id : days[1]?.id || null);
+                }}
+                addDay={addDay}
+                tripId={tripId}
+                router={router}
+                dayColor={DAY_COLORS[listDayIndex % DAY_COLORS.length]}
               />
             </div>
-          )}
-          {activeDayId === 'all' ? (
-            // All-days overview: show each day's stop count
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-tertiary)' }}>
-                All Days Overview
-              </p>
-              {days.map((d, i) => (
-                <button
-                  key={d.id}
-                  onClick={() => setActiveDayId(d.id)}
-                  className="w-full text-left rounded-xl p-3.5 transition hover:shadow-sm"
-                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
-                      style={{ backgroundColor: DAY_COLORS[i % DAY_COLORS.length] }}
-                    >
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-                        {d.label}
-                      </p>
-                      <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                        {d.stops?.length || 0} {(d.stops?.length || 0) === 1 ? 'stop' : 'stops'}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <DayCardList
-              day={activeDay}
-              dayIndex={activeDayIndex}
-              allDays={days}
-              selectedStopId={selectedStopId}
-              onStopClick={handleStopClick}
-              onRemoveStop={removeStop}
-              onUpdateStop={updateStop}
-              onMoveStop={moveStopBetweenDays}
-              onRequestAddStop={() => {
-                const input = addPlaceRef.current?.querySelector('input');
-                if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus(); }
-              }}
-              onRemoveDay={(dayId) => {
-                removeDay(dayId);
-                setActiveDayId(days[0]?.id !== dayId ? days[0]?.id : days[1]?.id || null);
-              }}
-              addDay={addDay}
-              tripId={tripId}
-              router={router}
-            />
-          )}
+          </div>
         </div>
       </div>
     </div>

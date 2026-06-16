@@ -1,9 +1,15 @@
 import parkCrowdFacts from '@/data/parkCrowdFacts.json';
 import {
   getTimingFollowUp,
-  getVisitConditionsSuffix,
   spreadFaqLink,
 } from '@/lib/planningConditionsCopy';
+import {
+  buildExtraDaysFaqAnswer,
+  buildPeakCrowdFaqAnswer,
+  buildPermitFaqAnswer,
+  normalizePlanningFaqTabContext,
+  peakCrowdFaqLink,
+} from '@/lib/planningFaqTabs';
 import { isTierAPark } from '@/lib/parkSeo';
 import { parkToSlug } from '@/utils/parkSlug';
 
@@ -221,9 +227,13 @@ export function hydratePlanningFaq(faqItems, park, parkSlug) {
   return applyFaqLinkKeys(faqItems, resolveFaqLinks(park, parkSlug));
 }
 
-function buildExtraDaysAnswer(short, alertCount, park) {
-  const conditionsSuffix = getVisitConditionsSuffix(park, alertCount);
-  return `Use Things to Do to stack hikes and ranger programs by how long you have. What to See lists landmarks and viewpoints worth a separate stop. Add a buffer day for weather or a long hike you do not want to rush.${conditionsSuffix}`;
+function buildExtraDaysAnswer(short, alertCount, tabCtx) {
+  return buildExtraDaysFaqAnswer({
+    shortName: short,
+    alertCount,
+    hasActivitiesTab: tabCtx.hasActivitiesTab,
+    hasPlacesTab: tabCtx.hasPlacesTab,
+  });
 }
 
 function buildLodgingAnswer(short, states) {
@@ -231,21 +241,14 @@ function buildLodgingAnswer(short, states) {
 }
 
 function buildPeakCrowdAnswer(short, park, alertCount) {
-  const code = (park?.parkCode || '').toLowerCase();
-  const crowd = parkCrowdFacts[code];
-  const visitsLine = crowd?.visits2025
-    ? ` About ${(crowd.visits2025 / 1_000_000).toFixed(1)} million recreation visits were recorded in 2025.`
-    : '';
-  const timingFollowUp = getTimingFollowUp(park, alertCount);
-
-  if (crowd?.peakMonth) {
-    return `${crowd.peakMonth} is usually the busiest month at ${short}.${visitsLine}${timingFollowUp.suffix}`;
-  }
-
-  return `Crowds and weather vary by season at ${short}.${timingFollowUp.suffix}`;
+  return buildPeakCrowdFaqAnswer({
+    shortName: short,
+    park,
+    alertCount,
+  });
 }
 
-function buildFactualFaq(park, parkSlug, alertCount = 0) {
+function buildFactualFaq(park, parkSlug, alertCount = 0, tabCtxInput = {}) {
   const name = park?.fullName || 'this park';
   const short = shortParkName(name);
   const code = (park?.parkCode || '').toLowerCase();
@@ -255,35 +258,50 @@ function buildFactualFaq(park, parkSlug, alertCount = 0) {
   const visitsLine = crowd?.visits2025
     ? ` About ${(crowd.visits2025 / 1_000_000).toFixed(1)} million recreation visits were recorded in 2025.`
     : '';
+  const tabCtx = normalizePlanningFaqTabContext({
+    alertCount,
+    permitCount: tabCtxInput.permitCount ?? 0,
+    hasActivitiesTab: tabCtxInput.hasActivitiesTab,
+    hasPlacesTab: tabCtxInput.hasPlacesTab,
+  });
 
-  let permitAnswer;
-  if (!crowd?.permitSystem) {
-    permitAnswer = `Reservation rules vary by season and change year to year. Check the Permits tab on this page and Recreation.gov before you travel.`;
-  } else if (/^none required/i.test(crowd.permitSystem)) {
-    permitAnswer = `As of 2026, ${short} does not require a general park entry reservation.${visitsLine} Campground, backcountry, and activity permits may still apply — see the Permits tab.`;
-  } else {
-    permitAnswer = `${crowd.permitSystem}.${visitsLine} Always confirm on Recreation.gov and the Permits tab before you book travel.`;
-  }
+  const permitAnswer = buildPermitFaqAnswer({
+    shortName: short,
+    parkCode: code,
+    permits: Array.isArray(tabCtxInput.permits) && tabCtxInput.permits.length > 0
+      ? tabCtxInput.permits
+      : (tabCtx.hasPermitsTab ? [{}] : []),
+    hasPermitsTab: tabCtx.hasPermitsTab,
+  });
 
   const timingFollowUp = getTimingFollowUp(park, alertCount);
+  const peakLink = peakCrowdFaqLink({
+    park,
+    alertCount,
+    slug: parkSlug || parkToSlug(park?.fullName || ''),
+  });
 
   const items = [
     {
       q: `Do you need reservations for ${short}?`,
       a: permitAnswer,
-      href: links.permitsHref,
-      linkLabel: FAQ_LINK_LABELS.permits,
+      ...(tabCtx.hasPermitsTab
+        ? { href: links.permitsHref, linkLabel: FAQ_LINK_LABELS.permits }
+        : { href: links.overviewHref, linkLabel: FAQ_LINK_LABELS.overview }),
     },
     {
       q: `When is ${short} busiest?`,
       a: buildPeakCrowdAnswer(short, park, alertCount),
-      ...spreadFaqLink(timingFollowUp.link),
+      ...(peakLink.href
+        ? { href: peakLink.href, linkLabel: peakLink.linkLabel }
+        : spreadFaqLink(timingFollowUp.link)),
     },
     {
       q: `How should you plan extra time at ${short}?`,
-      a: buildExtraDaysAnswer(short, alertCount, park),
-      href: links.activitiesHref,
-      linkLabel: FAQ_LINK_LABELS.activities,
+      a: buildExtraDaysAnswer(short, alertCount, tabCtx),
+      ...(tabCtx.hasActivitiesTab
+        ? { href: links.activitiesHref, linkLabel: FAQ_LINK_LABELS.activities }
+        : {}),
     },
     {
       q: `Where should you book lodging for ${short}?`,
@@ -310,8 +328,8 @@ function buildFactualFaq(park, parkSlug, alertCount = 0) {
  * @param {ParkPlanningSnapshot} snapshot
  * @returns {{ q: string; a: string; href?: string; linkLabel?: string }[]}
  */
-export function getParkPlanningFaq(park, parkSlug, _snapshot, alertCount = 0) {
-  return buildFactualFaq(park, parkSlug, alertCount);
+export function getParkPlanningFaq(park, parkSlug, _snapshot, alertCount = 0, tabCtx = {}) {
+  return buildFactualFaq(park, parkSlug, alertCount, tabCtx);
 }
 
 export { shortParkName };

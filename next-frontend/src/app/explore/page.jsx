@@ -2,6 +2,12 @@ import Header from '@/components/common/Header';
 import ExploreSeoShell from '@/components/seo/ExploreSeoShell';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import { canonicalPageMetadata } from '@/lib/seo';
+
+export async function generateMetadata({ searchParams }) {
+  const params = await searchParams;
+  return canonicalPageMetadata('/explore', params);
+}
 
 async function getInitialParks() {
   try {

@@ -63,14 +63,14 @@ export function buildLlmsTxt() {
   }
   lines.push('');
 
-  lines.push('## Browse & discover');
+  lines.push('## Browse parks by activity');
   lines.push('');
   lines.push(`- [Explore all parks](${BASE}/explore): Search, filter, sort 470+ NPS sites.`);
-  lines.push(`- [Discover hub](${BASE}/discover): Browse by activity, topic, designation type, or state.`);
-  lines.push(`- [Discover activities](${BASE}/discover/activities): All activity dimensions.`);
-  lines.push(`- [Discover topics](${BASE}/discover/topics): NPS topic tags.`);
-  lines.push(`- [Discover types](${BASE}/discover/types): Designations (monument, historic site, etc.).`);
-  lines.push(`- [Discover states](${BASE}/discover/states): Parks by state and territory.`);
+  lines.push(`- [Explore by Activity hub](${BASE}/discover): Browse by activity, topic, designation type, or state.`);
+  lines.push(`- [Activities](${BASE}/discover/activities): All activity dimensions.`);
+  lines.push(`- [Topics](${BASE}/discover/topics): NPS topic tags.`);
+  lines.push(`- [Park types](${BASE}/discover/types): Designations (monument, historic site, etc.).`);
+  lines.push(`- [States](${BASE}/discover/states): Parks by state and territory.`);
   lines.push(`- [Events](${BASE}/events): Ranger programs and park events.`);
   lines.push('');
 

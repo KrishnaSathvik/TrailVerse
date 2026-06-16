@@ -4,8 +4,14 @@ import BlogPageClient from './BlogPageClient';
 import BlogSubscribeToast from './BlogSubscribeToast';
 import { getBlogCategoriesServer, getBlogPostsServer } from '@/lib/blogApi';
 import { blogCategoryLabel } from '@/lib/blogCategories';
+import { canonicalPageMetadata } from '@/lib/seo';
 
 const ARCHIVE_PAGE_SIZE = 9;
+
+export async function generateMetadata({ searchParams }) {
+  const params = await searchParams;
+  return canonicalPageMetadata('/blog', params);
+}
 
 export default async function BlogPage({ searchParams }) {
   const params = await searchParams;

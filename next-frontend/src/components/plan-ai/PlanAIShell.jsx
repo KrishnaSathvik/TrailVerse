@@ -22,15 +22,19 @@ export default function PlanAIShell({
       <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
         {showChromeBar && (
           <section
-            className="relative z-30 shrink-0 border-b px-3 py-1.5 sm:px-5 sm:py-2"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-primary)' }}
+            className="relative z-30 shrink-0 border-b px-3 py-2.5 sm:px-5 sm:py-3"
+            style={{
+              borderColor: 'var(--border)',
+              background:
+                'linear-gradient(180deg, color-mix(in srgb, var(--accent-green) 8%, var(--bg-primary)) 0%, var(--bg-primary) 100%)',
+            }}
           >
-            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 sm:gap-3">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2.5 sm:gap-3">
               {showSubHeader ? (
                 <div className="min-w-0 flex-1">
                   {title ? (
                     <h1
-                      className="truncate text-sm font-semibold sm:text-base"
+                      className="truncate text-[15px] font-semibold leading-tight sm:text-lg"
                       style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
                     >
                       {title}

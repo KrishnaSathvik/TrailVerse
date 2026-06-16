@@ -238,9 +238,10 @@ export default function AddPlaceInput({
             if (e.key === 'Enter' && selectedPlace) commitPlace();
           }}
           placeholder={placeholder}
-          disabled={!ready || !!selectedPlace}
-          className="flex-1 min-w-0 bg-transparent text-sm outline-none disabled:cursor-default placeholder:text-[var(--text-tertiary)]"
-          style={{ color: 'var(--text-primary)' }}
+          readOnly={!ready || !!selectedPlace}
+          autoComplete="off"
+          className="flex-1 min-w-0 border-0 bg-transparent text-sm shadow-none outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 read-only:cursor-default placeholder:text-[var(--text-tertiary)] [appearance:textfield]"
+          style={{ color: 'var(--text-primary)', boxShadow: 'none' }}
         />
 
         {/* Confirm controls (place selected) */}
@@ -249,9 +250,8 @@ export default function AddPlaceInput({
             <select
               value={selectedDayId || ''}
               onChange={(e) => setSelectedDayId(e.target.value)}
-              className="rounded-md border px-1.5 py-1 text-[11px] font-medium cursor-pointer"
+              className="cursor-pointer rounded-lg border-0 px-1.5 py-1 text-[11px] font-medium shadow-none outline-none ring-0 focus:outline-none focus:ring-0"
               style={{
-                borderColor: 'var(--border)',
                 backgroundColor: 'var(--surface-hover)',
                 color: 'var(--text-primary)',
               }}

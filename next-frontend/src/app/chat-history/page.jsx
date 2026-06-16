@@ -9,7 +9,7 @@ import { useTrips } from '@/hooks/useTrips';
 import tripService from '@/services/tripService';
 import { stripMarkdown, truncatePlainText } from '@/utils/stripMarkdown';
 import {
-  Sparkles, Clock, MessageCircle, MapPin, ArchiveRestore, Trash2, CheckCircle,
+  Sparkles, NotePencil, Clock, MessageCircle, MapPin, ArchiveRestore, Trash2, CheckCircle,
   Search, X, Share2, Route, AlertCircle, RefreshCw
 } from '@components/icons';
 
@@ -444,9 +444,9 @@ export default function ChatHistoryPage() {
               onClick={() => router.push('/plan-ai')}
               variant="secondary"
               size="lg"
-              icon={Sparkles}
+              icon={NotePencil}
             >
-              Start New Chat
+              Chat
             </Button>
           </div>
         </div>

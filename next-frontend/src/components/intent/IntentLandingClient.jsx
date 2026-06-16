@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
   CheckCircle,
@@ -20,6 +21,7 @@ import GuideCard from '@/components/guides/GuideCard';
 import IntentTopMatches from '@/components/intent/IntentTopMatches';
 import { getIntentLandingByPath } from '@/data/intentLandings';
 import { parkToSlug } from '@/utils/parkSlug';
+import { hrefWithFrom, sanitizeFromPath } from '@/lib/returnNavigation';
 import { logCtaClick } from '@/utils/analytics';
 
 const surfaceCardStyle = {
@@ -92,6 +94,8 @@ function IntentFaqAccordion({ items }) {
 
 export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
   const contentRef = useRef(null);
+  const searchParams = useSearchParams();
+  const returnFrom = sanitizeFromPath(searchParams.get('from'));
   const relatedLandings = (landing.relatedLinks ?? [])
     .map((link) => getIntentLandingByPath(link.href))
     .filter(Boolean);
@@ -243,7 +247,7 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
                       />
                       <span>
                         <Link
-                          href={`/parks/${parkToSlug(item.fullName)}`}
+                          href={hrefWithFrom(`/parks/${parkToSlug(item.fullName)}`, returnFrom)}
                           className="font-semibold hover:underline"
                           style={{ color: 'var(--text-primary)' }}
                         >
@@ -329,7 +333,7 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
               other traits from official NPS descriptions and activities. The summary under each name
               highlights what earned its spot so you can compare finalists quickly.
             </p>
-            <IntentTopMatches landing={landing} initialParks={parks} />
+            <IntentTopMatches landing={landing} initialParks={parks} fromPath={returnFrom} />
           </section>
 
           {landing.faq?.length > 0 && (

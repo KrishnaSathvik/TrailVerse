@@ -23,6 +23,7 @@ import { logSearch, logSearchResultClick, logEvent } from '@/utils/analytics';
 import npsApi from '@/services/npsApi';
 import { saveParkSearchSession } from '@/lib/parkSearchSession';
 import { parkToSlug } from '@/utils/parkSlug';
+import { useReturnPath } from '@/hooks/useReturnPath';
 import STATE_NAMES from '@/utils/stateNames';
 
 function NationalParksFilterHint({ allSitesCount }) {
@@ -43,6 +44,7 @@ function NationalParksFilterHint({ allSitesCount }) {
 const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const returnPath = useReturnPath();
   const { isAuthenticated, user } = useAuth();
   const searchParams = useSearchParams();
   const { data: parkRatings, isLoading: ratingsLoading, error: ratingsError } = useParkRatings();
@@ -780,7 +782,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
                 <>
                   <div className={viewMode === 'grid' ? 'grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4' : 'space-y-4'}>
                     {currentParks.map((park, index) => (
-                      <ParkCard key={park.parkCode} park={park} viewMode={viewMode} rating={parkRatings?.[park.parkCode]} index={index} />
+                      <ParkCard key={park.parkCode} park={park} viewMode={viewMode} rating={parkRatings?.[park.parkCode]} index={index} fromPath={returnPath} />
                     ))}
                   </div>
 

@@ -127,13 +127,17 @@ const nextConfig = {
     ];
   },
   async headers() {
+    const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
     return [
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
-        ],
-      },
+      { source: '/_next/static/:path*', headers: noindex },
+      { source: '/_next/image/:path*', headers: noindex },
+      { source: '/favicon.ico', headers: noindex },
+      { source: '/manifest.json', headers: noindex },
+      { source: '/favicon-16x16.png', headers: noindex },
+      { source: '/favicon-32x32.png', headers: noindex },
+      { source: '/apple-touch-icon.png', headers: noindex },
+      { source: '/android-chrome-192x192.png', headers: noindex },
+      { source: '/android-chrome-512x512.png', headers: noindex },
     ];
   },
   async rewrites() {

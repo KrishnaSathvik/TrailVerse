@@ -17,6 +17,7 @@ import {
 } from '@/lib/parkPlanningContent';
 import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
+import { canonicalPageMetadata } from '@/lib/seo';
 
 export const revalidate = 300; // 5 minutes — park data includes dynamic NPS content
 
@@ -31,8 +32,9 @@ export async function generateStaticParams() {
   }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { parkCode } = await params;
+  const sp = searchParams ? await searchParams : undefined;
   // If parkCode is longer than 4 chars, it's a slug — look up by slug
   let data = parkCode.length > 4
     ? await getParkDetailsBySlug(parkCode)
@@ -63,7 +65,7 @@ export async function generateMetadata({ params }) {
     title: `${park.fullName} – Live Alerts, Crowd Calendar & Trailie | TrailVerse`,
     description,
     keywords: `${park.fullName}, ${park.states} national park, visit ${park.fullName}, ${park.fullName} guide, ${park.fullName} hiking, ${park.fullName} camping`,
-    alternates: { canonical: url },
+    ...canonicalPageMetadata(`/parks/${slug}`, sp),
     openGraph: {
       title: `${park.fullName} – Alerts, Crowds & Trailie`,
       description,
@@ -188,7 +190,8 @@ export default async function ParkPage({ params }) {
 
   let planningSnapshot = getParkPlanningSnapshot(park, parkSlug);
   const alertCount = Array.isArray(data?.alerts) ? data.alerts.length : 0;
-  let planningFaqItems = getParkPlanningFaq(park, parkSlug, planningSnapshot, alertCount);
+  const permitCount = Array.isArray(data?.permits) ? data.permits.length : 0;
+  let planningFaqItems = getParkPlanningFaq(park, parkSlug, planningSnapshot, alertCount, { permitCount });
 
   try {
     const planningRes = await fetch(`${getApiBaseUrl()}/parks/${park.parkCode}/planning`, {

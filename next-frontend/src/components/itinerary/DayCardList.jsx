@@ -97,7 +97,7 @@ function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, on
     <div
       data-stop-id={stop.id}
       onClick={() => onStopClick?.(stop.id)}
-      className={`rounded-xl px-3.5 py-3 cursor-pointer transition-all duration-200 ${isSelected ? 'ring-2 ring-[var(--accent-green)]' : ''}`}
+      className={`rounded-xl px-3.5 py-3 cursor-pointer transition-all duration-200 sm:px-4 ${isSelected ? 'ring-2 ring-[var(--accent-green)]' : ''}`}
       style={{
         backgroundColor: isSelected ? 'rgba(67,160,106,0.06)' : 'var(--surface)',
         border: '1px solid var(--border)',
@@ -208,7 +208,7 @@ function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, on
 
       {/* Row 4: Why / note */}
       {(stop.why || stop.note) && (
-        <p className="text-[11px] mt-1 line-clamp-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           {stop.why || stop.note}
         </p>
       )}
@@ -240,6 +240,9 @@ export default function DayCardList({
   addDay,
   tripId,
   router,
+  embedded = false,
+  dayColor = 'var(--accent-green)',
+  isLastDay = true,
 }) {
   const listRef = useRef(null);
 
@@ -258,20 +261,46 @@ export default function DayCardList({
   // Extract subtitle from "Day N — Subtitle"
   const subtitle = day.label?.includes('—')
     ? day.label.replace(/^Day\s*\d+\s*[—–-]\s*/, '')
-    : null;
+    : day.label?.includes('–')
+      ? day.label.replace(/^Day\s*\d+\s*[—–-]\s*/, '')
+      : day.label && !/^Day\s*\d+$/i.test(day.label.trim())
+        ? day.label
+        : null;
 
   return (
-    <div ref={listRef} className="flex flex-col h-full overflow-y-auto">
+    <section
+      ref={listRef}
+      className={embedded ? 'border-b last:border-b-0' : 'flex h-full flex-col overflow-y-auto'}
+      style={embedded ? { borderColor: 'var(--border)' } : undefined}
+    >
       {/* Day header */}
-      <div className="px-4 pt-4 pb-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
-            Day {dayIndex + 1}
-          </h2>
+      <div className={`flex-shrink-0 px-3 pt-3 pb-2 sm:px-4 sm:pt-4 ${embedded ? '' : ''}`}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span
+              className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+              style={{ backgroundColor: dayColor }}
+            >
+              {dayIndex + 1}
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                Day {dayIndex + 1}
+              </h2>
+              {subtitle && (
+                <p className="mt-0.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  {subtitle}
+                </p>
+              )}
+              <p className="mt-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                {(day.stops?.length || 0)} {(day.stops?.length || 0) === 1 ? 'stop' : 'stops'}
+              </p>
+            </div>
+          </div>
           {allDays.length > 1 && onRemoveDay && (
             <button
               onClick={() => onRemoveDay(day.id)}
-              className="p-1 rounded hover:bg-[var(--surface-hover)] transition"
+              className="rounded p-1 transition hover:bg-[var(--surface-hover)]"
               style={{ color: 'var(--text-tertiary)' }}
               title={`Delete Day ${dayIndex + 1}`}
             >
@@ -279,17 +308,11 @@ export default function DayCardList({
             </button>
           )}
         </div>
-        {subtitle && (
-          <p className="text-xs mt-0.5 leading-relaxed line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-            {subtitle}
-          </p>
-        )}
-        <div className="mt-2 border-b" style={{ borderColor: 'var(--border)' }} />
       </div>
 
       {/* Empty state */}
       {!hasStops && (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
+        <div className={`flex flex-col items-center justify-center gap-3 px-4 pb-4 text-center ${embedded ? '' : 'flex-1'}`}>
           <div
             className="flex h-12 w-12 items-center justify-center rounded-full"
             style={{ backgroundColor: 'rgba(34,197,94,0.1)' }}
@@ -298,18 +321,18 @@ export default function DayCardList({
           </div>
           <div>
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>No stops yet</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Add stops to this day, or go back to chat and ask the AI to generate an itinerary.
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Add stops below or ask Trailie in chat to build this day.
             </p>
           </div>
-          <div className="flex gap-2 mt-1">
+          <div className="mt-1 flex gap-2">
             <button
               onClick={() => router.push(`/plan-ai/${tripId}`)}
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
               style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Chat
+              Back to Chat
             </button>
             <button
               onClick={() => onRequestAddStop(day.id)}
@@ -325,35 +348,46 @@ export default function DayCardList({
 
       {/* Time-of-day grouped stops */}
       {hasStops && (
-        <div className="px-4 pb-4 flex-1">
+        <div className="px-3 pb-4 sm:px-4">
           {groups.map((group) => (
             <div key={group.label} className="mt-3 first:mt-1">
-              {/* Period header — quiet, small */}
               <p
-                className="text-[10px] font-semibold uppercase tracking-[0.15em] mb-2 px-0.5"
+                className="mb-2 px-0.5 text-[10px] font-semibold uppercase tracking-[0.15em]"
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 {group.label}
               </p>
-              <div className="space-y-2">
-                {group.stops.map(stop => (
-                  <CompactStopCard
-                    key={stop.id}
-                    stop={stop}
-                    dayId={day.id}
-                    allDays={allDays}
-                    selectedStopId={selectedStopId}
-                    onStopClick={onStopClick}
-                    onRemoveStop={onRemoveStop}
-                    onMoveStop={onMoveStop}
-                  />
+              <div className="space-y-2.5">
+                {group.stops.map((stop, stopIndex) => (
+                  <div key={stop.id} className="relative pl-4">
+                    <span
+                      className="absolute top-4 left-0 h-2 w-2 rounded-full"
+                      style={{ backgroundColor: dayColor }}
+                      aria-hidden="true"
+                    />
+                    {stopIndex < group.stops.length - 1 || !isLastDay ? (
+                      <span
+                        className="absolute top-5 left-[3px] bottom-[-10px] w-px"
+                        style={{ backgroundColor: 'var(--border)' }}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <CompactStopCard
+                      stop={stop}
+                      dayId={day.id}
+                      allDays={allDays}
+                      selectedStopId={selectedStopId}
+                      onStopClick={onStopClick}
+                      onRemoveStop={onRemoveStop}
+                      onMoveStop={onMoveStop}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
           ))}
-
         </div>
       )}
-    </div>
+    </section>
   );
 }

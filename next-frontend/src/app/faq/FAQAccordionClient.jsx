@@ -24,7 +24,7 @@ const faqCategories = [
       },
       {
         question: "Is TrailVerse free?",
-        answer: "Yes. Browsing parks, maps, weather, alerts, compare, discover, and blog content is free with no credit card. Trailie AI offers free anonymous messages before signup; a free account unlocks saved trips, chat history, and PDF export."
+        answer: "Yes. Browsing parks, maps, weather, alerts, compare, Explore by Activity, and blog content is free with no credit card. Trailie offers free anonymous messages before signup; a free account unlocks saved trips, chat history, and PDF export."
       },
       {
         question: "Do I need an account to explore parks?",

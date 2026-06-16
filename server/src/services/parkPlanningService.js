@@ -1,6 +1,7 @@
 const npsService = require('./npsService');
 const enhancedParkService = require('./enhancedParkService');
 const ridbService = require('./ridbService');
+const { buildPermitFaqAnswer } = require('../lib/permitFaqCopy');
 const { CROWD_SCORES } = require('../utils/constraintEngine');
 const parkCrowdFacts = require('../data/parkCrowdFacts.json');
 
@@ -310,23 +311,12 @@ function formatVisitsLine(parkCode) {
 }
 
 function buildPermitAnswer(shortName, permits, parkCode) {
-  const visitsLine = formatVisitsLine(parkCode);
-  const crowd = parkCrowdFacts[parkCode];
-
-  if (permits.length > 0) {
-    const names = permits.slice(0, 2).map((p) => p.name).join(' and ');
-    const more = permits.length > 2 ? ` (${permits.length} total on Recreation.gov)` : '';
-    return `${shortName} has Recreation.gov reservations including ${names}${more}.${visitsLine} Confirm current rules on Recreation.gov and the Permits tab before travel.`;
-  }
-
-  if (crowd?.permitSystem) {
-    if (/^none required/i.test(crowd.permitSystem)) {
-      return `No general park entry reservation is listed for ${shortName}.${visitsLine} Campground, backcountry, and activity permits may still apply — check the Permits tab and the park's official website.`;
-    }
-    return `${crowd.permitSystem}.${visitsLine} Always confirm on Recreation.gov and the Permits tab before booking travel.`;
-  }
-
-  return `Reservation rules vary by season and activity for ${shortName}. Check the Permits tab on this page and Recreation.gov before you travel — campground, tour, or backcountry permits may apply even without park-wide timed entry.`;
+  return buildPermitFaqAnswer({
+    shortName,
+    parkCode,
+    permits,
+    hasPermitsTab: permits.length > 0,
+  });
 }
 
 function hasCrowdCalendarData(parkCode) {
@@ -372,34 +362,51 @@ function spreadFaqLink(link) {
 function buildPeakCrowdAnswer(shortName, park, parkCode, crowdScores, bestTime, alertCount) {
   const peakMonth = getPeakMonth(parkCode, crowdScores);
   const visitsLine = formatVisitsLine(parkCode);
-  const crowdLevel = bestTime?.crowdLevel ? ` Typical crowd level: ${bestTime.crowdLevel}.` : '';
   const timingFollowUp = getTimingFollowUp(park, parkCode, alertCount);
 
   if (peakMonth) {
-    return `${peakMonth} is usually the busiest month at ${shortName}.${crowdLevel}${visitsLine}${timingFollowUp.suffix}`;
+    const quieter = (bestTime?.months || []).filter((m) => m !== peakMonth).slice(0, 2);
+    const quieterPhrase = quieter.length
+      ? ` ${quieter.join(' and ')} often feel quieter.`
+      : ' Spring and fall are often quieter alternatives.';
+    return `${peakMonth} is usually the busiest month at ${shortName}.${quieterPhrase}${visitsLine}${timingFollowUp.suffix}`;
   }
 
   const reasons = bestTime?.reasons?.slice(0, 2).join('; ');
   if (reasons) {
     const midFollowUp = alertCount > 0
-      ? ' Check the Alerts tab before setting dates.'
-      : ' Confirm hours and access on the Overview tab before setting dates.';
-    return `Crowds and weather vary by season at ${shortName}. ${reasons}.${crowdLevel}${visitsLine}${midFollowUp}`;
+      ? ' Check Alerts on this page before you pick dates.'
+      : ' See Overview on this page for seasonal hours and access.';
+    return `Crowds and weather vary by season at ${shortName}. ${reasons}.${visitsLine}${midFollowUp}`;
   }
 
-  return `Crowds and weather vary by season at ${shortName}.${crowdLevel}${timingFollowUp.suffix}`;
+  return `Crowds at ${shortName} vary by season and day of week.${visitsLine}${timingFollowUp.suffix}`;
 }
 
-function buildExtraDaysAnswer(shortName, alertCount, park) {
-  const conditionsSuffix = getVisitConditionsSuffix(park, alertCount);
-  return `Use Things to Do to stack hikes and ranger programs by how long you have. What to See lists landmarks and viewpoints worth a separate stop. Add a buffer day for weather or a long hike you do not want to rush.${conditionsSuffix}`;
+function buildExtraDaysAnswer(shortName, alertCount, hasActivitiesTab, hasPlacesTab) {
+  const conditionsSuffix = alertCount > 0
+    ? ' Check Alerts before you go for current road, trail, and weather closures.'
+    : '';
+
+  let main;
+  if (hasActivitiesTab && hasPlacesTab) {
+    main = 'Use Things to Do to stack hikes and ranger programs by how long you have. What to See lists landmarks and viewpoints worth a separate stop.';
+  } else if (hasActivitiesTab) {
+    main = 'Use Things to Do to stack hikes and ranger programs by how long you have.';
+  } else if (hasPlacesTab) {
+    main = 'Use What to See for landmarks and viewpoints worth a separate stop.';
+  } else {
+    main = 'Use the explore tabs on this page to stack sights and programs by how long you have.';
+  }
+
+  return `${main} Add a buffer day for weather or a long hike you do not want to rush.${conditionsSuffix}`;
 }
 
 function buildLodgingAnswer(shortName, states) {
   return `In-park lodges and campgrounds at ${shortName} often book months ahead. Around This Park on this page lists gateway hotels, food, and services in ${states} — reserve early for peak season.`;
 }
 
-function buildFaqItems(park, permits, crowdScores, bestTime, alerts = []) {
+function buildFaqItems(park, permits, activities, crowdScores, bestTime, alerts = []) {
   const name = park.fullName || 'this park';
   const short = shortParkName(name);
   const code = (park.parkCode || '').toLowerCase();
@@ -407,12 +414,14 @@ function buildFaqItems(park, permits, crowdScores, bestTime, alerts = []) {
   const visitsLine = formatVisitsLine(code);
   const alertCount = Array.isArray(alerts) ? alerts.length : 0;
   const timingFollowUp = getTimingFollowUp(park, code, alertCount);
+  const hasPermitsTab = permits.length > 0;
+  const hasActivitiesTab = Array.isArray(activities) && activities.length > 0;
 
   const items = [
     {
       q: `Do you need reservations for ${short}?`,
       a: buildPermitAnswer(short, permits, code),
-      linkKey: 'permits',
+      linkKey: hasPermitsTab ? 'permits' : 'overview',
     },
     {
       q: `When is ${short} busiest?`,
@@ -421,8 +430,8 @@ function buildFaqItems(park, permits, crowdScores, bestTime, alerts = []) {
     },
     {
       q: `How should you plan extra time at ${short}?`,
-      a: buildExtraDaysAnswer(short, alertCount, park),
-      linkKey: 'activities',
+      a: buildExtraDaysAnswer(short, alertCount, hasActivitiesTab, false),
+      ...(hasActivitiesTab ? { linkKey: 'activities' } : {}),
     },
     {
       q: `Where should you book lodging for ${short}?`,
@@ -473,7 +482,7 @@ async function buildParkPlanningContent(park) {
     baseTown: getBaseTown(park),
   };
 
-  const faqItems = buildFaqItems(park, permits, crowdScores, bestTime, alerts);
+  const faqItems = buildFaqItems(park, permits, activities, crowdScores, bestTime, alerts);
 
   return {
     snapshot,

@@ -3,8 +3,10 @@
 import ParkCard from '@/components/explore/ParkCard';
 import DiscoverHubHeader from '@/components/discover/DiscoverHubHeader';
 import DiscoverNpsGuideSection from '@/components/discover/DiscoverNpsGuideSection';
+import { useReturnPath } from '@/hooks/useReturnPath';
 
 export default function StateParkPageClient({ stateName, parks, intro, npsGuide }) {
+  const returnPath = useReturnPath();
   return (
     <div className="pb-24">
       <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 pt-6">
@@ -22,7 +24,7 @@ export default function StateParkPageClient({ stateName, parks, intro, npsGuide 
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {parks.map((park) => (
-              <ParkCard key={park.parkCode} park={park} showReviews={false} />
+              <ParkCard key={park.parkCode} park={park} showReviews={false} fromPath={returnPath} />
             ))}
           </div>
         </section>

@@ -8,12 +8,13 @@ import { htmlToPlainText } from '../../utils/htmlUtils';
 import { parkToSlug } from '../../utils/parkSlug';
 import { getParkSearchSession, saveParkSearchSession } from '../../lib/parkSearchSession';
 import { logParkCardClick } from '../../utils/analytics';
+import { parkDetailHref } from '@/lib/returnNavigation';
 
 const DEFAULT_PARK_IMAGE = '/og-image-trailverse.jpg';
 
-const ExploreListCard = ({ park, rating, onNavigate }) => (
+const ExploreListCard = ({ park, rating, detailHref, onNavigate }) => (
   <Link
-    href={`/parks/${parkToSlug(park.fullName)}`}
+    href={detailHref}
     onClick={onNavigate}
     className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
     style={{
@@ -72,9 +73,9 @@ const ExploreListCard = ({ park, rating, onNavigate }) => (
   </Link>
 );
 
-const ExploreGridCard = ({ park, rating, priority = false, onNavigate }) => (
+const ExploreGridCard = ({ park, rating, detailHref, priority = false, onNavigate }) => (
   <Link
-    href={`/parks/${parkToSlug(park.fullName)}`}
+    href={detailHref}
     onClick={onNavigate}
     className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300"
     style={{
@@ -142,10 +143,12 @@ const ParkCard = memo(({
   index = 0,
   analyticsSurface = null,
   intentSlug = null,
+  fromPath = null,
 }) => {
   const { data: parkRatings } = useParkRatings();
   const parkRating = ratingProp ?? parkRatings?.[park.parkCode];
   const hasReviews = (parkRating?.totalReviews || 0) > 0;
+  const detailHref = parkDetailHref(parkToSlug(park.fullName), fromPath);
 
   const handleSaveClick = useCallback(
     (e) => {
@@ -183,7 +186,14 @@ const ParkCard = memo(({
   }, [park, index, analyticsSurface, intentSlug]);
 
   if (viewMode === 'list') {
-    return <ExploreListCard park={park} rating={parkRating} onNavigate={handleNavigate} />;
+    return (
+      <ExploreListCard
+        park={park}
+        rating={parkRating}
+        detailHref={detailHref}
+        onNavigate={handleNavigate}
+      />
+    );
   }
 
   if (viewMode === 'grid') {
@@ -191,6 +201,7 @@ const ParkCard = memo(({
       <ExploreGridCard
         park={park}
         rating={parkRating}
+        detailHref={detailHref}
         priority={index < 6}
         onNavigate={handleNavigate}
       />
@@ -199,7 +210,7 @@ const ParkCard = memo(({
 
   return (
     <Link
-      href={`/parks/${parkToSlug(park.fullName)}`}
+      href={detailHref}
       className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300 block"
       style={{
         backgroundColor: 'var(--surface)',

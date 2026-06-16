@@ -4,6 +4,7 @@ import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import StateParkPageClient from './StateParkPageClient';
 import { fetchNpsGuide } from '@/lib/discoverApi';
+import { canonicalPageMetadata } from '@/lib/seo';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
@@ -86,24 +87,24 @@ export async function generateStaticParams() {
   return Object.keys(STATE_MAP).map(stateCode => ({ stateCode }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { stateCode } = await params;
+  const sp = searchParams ? await searchParams : undefined;
   const state = STATE_MAP[stateCode];
   if (!state) return { title: '404 - Page Not Found | TrailVerse' };
 
   const parks = await getParksForState(state.code);
   const parkCount = parks.length;
+  const canonicalPath = `/parks/state/${stateCode}`;
 
   return {
     title: `${state.name} National Parks & Sites — All ${parkCount} NPS Sites | TrailVerse`,
     description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Compare parks, plan trips with AI, check real-time weather, and find campgrounds.`,
-    alternates: {
-      canonical: `https://www.nationalparksexplorerusa.com/parks/state/${stateCode}`,
-    },
+    ...canonicalPageMetadata(canonicalPath, sp),
     openGraph: {
       title: `${state.name} National Parks & Sites — ${parkCount} NPS Sites`,
       description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. AI trip planning, real-time weather, and campground info.`,
-      url: `https://www.nationalparksexplorerusa.com/parks/state/${stateCode}`,
+      url: `https://www.nationalparksexplorerusa.com${canonicalPath}`,
       siteName: 'TrailVerse',
       type: 'website',
     },

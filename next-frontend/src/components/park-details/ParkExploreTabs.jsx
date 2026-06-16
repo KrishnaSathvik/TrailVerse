@@ -17,7 +17,7 @@ export default function ParkExploreTabs({
   className = 'mb-6 sm:mb-8',
 }) {
   return (
-    <div className={className}>
+    <div className={className} data-park-explore-tabs>
       <p
         className="text-xs font-medium uppercase tracking-[0.2em] mb-3"
         style={{ color: 'var(--text-tertiary)' }}

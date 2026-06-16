@@ -41,12 +41,18 @@ import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
 import { getParkPlanVisitCta } from '@/lib/planAiWelcomeCopy';
 import { hrefWithFrom } from '@/lib/returnNavigation';
+import { useReturnNavigation } from '@/hooks/useReturnNavigation';
+import { PARK_CORE_TAB_IDS } from '@/lib/parkTabNavigation';
 import { hasCrowdCalendar } from '@/lib/crowdCalendar';
 import ParkPlanOverviewSection from '@/components/park-details/ParkPlanOverviewSection';
 import ParkPlanningFaqSection from '@/components/park-details/ParkPlanningFaqSection';
 import blogService from '@/services/blogService';
 import { useParkExploreCache } from '@/hooks/useParkExploreCache';
 import { filterVisibleExploreTabs } from '@/lib/parkExploreTabs';
+import {
+  alignPlanningFaqWithTabs,
+  planningFaqTabContextFromExplore,
+} from '@/lib/planningFaqTabs';
 import { parkHasGtfs } from '@/lib/gtfsParks';
 import {
   getTransitOperatingStyles,
@@ -91,6 +97,11 @@ const ParkDetailInner = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const { backHref, backLabel } = useReturnNavigation({
+    defaultHref: '/explore',
+    defaultLabel: 'Explore',
+  });
   const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
@@ -147,19 +158,42 @@ const ParkDetailInner = ({
     () => filterVisibleExploreTabs(allTabs, {
       alertCount,
       permitCount,
+      requestedTab,
       exploreReady,
       exploreCache,
       showTransitTab,
     }),
-    [allTabs, alertCount, permitCount, exploreReady, exploreCache, showTransitTab]
+    [allTabs, alertCount, permitCount, requestedTab, exploreReady, exploreCache, showTransitTab]
   );
 
+  const faqTabContext = useMemo(
+    () => planningFaqTabContextFromExplore({
+      alertCount,
+      permitCount,
+      exploreCache,
+      exploreReady,
+      showTransitTab,
+    }),
+    [alertCount, permitCount, exploreCache, exploreReady, showTransitTab]
+  );
+
+  const visiblePlanningFaqItems = useMemo(() => {
+    if (!permitsReady) return planningFaqItems;
+    return alignPlanningFaqWithTabs(
+      planningFaqItems,
+      park,
+      parkToSlug(park.fullName),
+      faqTabContext,
+      { permits },
+    );
+  }, [planningFaqItems, park, permits, permitsReady, faqTabContext]);
+
   const validTabIds = tabs.map((tab) => tab.id);
-  const requestedTab = searchParams.get('tab');
   const activeTab = useMemo(() => {
     if (!requestedTab) return 'overview';
     if (validTabIds.includes(requestedTab)) return requestedTab;
-    if (!exploreReady && requestedTab !== 'overview') return requestedTab;
+    if (PARK_CORE_TAB_IDS.has(requestedTab)) return requestedTab;
+    if (!exploreReady) return requestedTab;
     return 'overview';
   }, [requestedTab, validTabIds, exploreReady]);
 
@@ -289,6 +323,15 @@ const ParkDetailInner = ({
     [park?.entranceFees]
   );
 
+  const scrollToExploreTabs = () => {
+    requestAnimationFrame(() => {
+      document.querySelector('[data-park-explore-tabs]')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
   const handleTabChange = (tabId, options = {}) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     if (tabId === 'overview') {
@@ -308,6 +351,9 @@ const ParkDetailInner = ({
     }
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    if (tabId !== 'overview') {
+      scrollToExploreTabs();
+    }
     if (tabId !== 'activities') {
       setActiveActivityTab('All');
     }
@@ -316,12 +362,22 @@ const ParkDetailInner = ({
     }
   };
 
+  const handleFaqTabNavigate = (tabId) => {
+    handleTabChange(tabId === 'overview' ? 'overview' : tabId);
+  };
+
   useEffect(() => {
-    if (!exploreReady) return;
-    const requested = searchParams.get('tab');
-    if (!requested || validTabIds.includes(requested)) return;
-    handleTabChange('overview');
-  }, [exploreReady, searchParams, validTabIds]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!exploreReady || !requestedTab) return;
+    if (PARK_CORE_TAB_IDS.has(requestedTab)) return;
+    if (!validTabIds.includes(requestedTab)) {
+      handleTabChange('overview');
+    }
+  }, [exploreReady, requestedTab, validTabIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!requestedTab || requestedTab === 'overview') return;
+    scrollToExploreTabs();
+  }, [requestedTab]);
 
   const scrollToOverviewSection = (sectionId) => {
     handleTabChange('overview');
@@ -372,6 +428,19 @@ const ParkDetailInner = ({
   );
 
   const parkSlug = useMemo(() => parkToSlug(park?.fullName || ''), [park?.fullName]);
+
+  const returnPath = useMemo(() => {
+    const qs = searchParams.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }, [pathname, searchParams]);
+
+  const faqItemsForDisplay = useMemo(() => {
+    return visiblePlanningFaqItems.map((item) => {
+      if (!item.href || /^https?:\/\//i.test(item.href)) return item;
+      if (item.href.startsWith(`/parks/${parkSlug}`)) return item;
+      return { ...item, href: hrefWithFrom(item.href, returnPath) };
+    });
+  }, [visiblePlanningFaqItems, parkSlug, returnPath]);
 
   const relatedParksViewAllHref = useMemo(() => {
     const qs = searchParams.toString();
@@ -564,7 +633,7 @@ const ParkDetailInner = ({
         <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <Button
-              onClick={() => router.back()}
+              onClick={() => router.push(backHref)}
               variant="secondary"
               size="md"
               icon={ArrowLeft}
@@ -577,7 +646,7 @@ const ParkDetailInner = ({
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
               }}
             >
-              Back
+              {backLabel}
             </Button>
           </div>
         </div>
@@ -3120,7 +3189,7 @@ const ParkDetailInner = ({
 
                 {/* Planning guides hub */}
                 <Link
-                  href="/guides"
+                  href={hrefWithFrom('/guides', returnPath)}
                   onClick={() => logCtaClick({
                     ctaId: 'park_sidebar_planning_guides',
                     label: 'Planning guides',
@@ -3206,7 +3275,7 @@ const ParkDetailInner = ({
         </div>
       </section>
 
-      {planningFaqItems.length > 0 && (
+      {visiblePlanningFaqItems.length > 0 && (
         <section
           className="py-10 sm:py-12 lg:py-14"
           style={{
@@ -3218,10 +3287,12 @@ const ParkDetailInner = ({
         >
           <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
             <ParkPlanningFaqSection
-              faqItems={planningFaqItems}
+              faqItems={faqItemsForDisplay}
               parkCode={npsParkCode}
               parkName={park.fullName}
-              alertCount={alerts?.length || 0}
+              parkSlug={parkSlug}
+              faqTabContext={faqTabContext}
+              onTabNavigate={handleFaqTabNavigate}
             />
           </div>
         </section>

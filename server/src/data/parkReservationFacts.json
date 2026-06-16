@@ -1,0 +1,5780 @@
+{
+  "abli": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "acad": {
+    "parkWideEntry": "partial",
+    "summary": "Cadillac Summit vehicle reservation May 20–Oct 25.",
+    "authoritative": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Acadia Otter Cliffs Group Climbing Permit",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251902",
+        "reservationUrl": "https://www.recreation.gov/permits/4251902"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "adam": {
+    "parkWideEntry": "partial",
+    "summary": "Adams National Historical Park Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Adams National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300003",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300003"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "afam": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "afbg": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "African Burial Ground National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089005",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089005"
+      },
+      {
+        "name": "Guided Education Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089009",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089005"
+      },
+      {
+        "name": "Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253587",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089005"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "agfo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "alka": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "alag": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "anch": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "alca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "aleu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "alfl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "alpo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "amch": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "amme": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "amis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "anac": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ande": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "anjo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ania": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "anti": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "apis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "appa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "apco": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "arch": {
+    "parkWideEntry": "none",
+    "summary": "No park-wide timed entry in 2026 (Devils Garden campground and Fiery Furnace permits still apply).",
+    "authoritative": true,
+    "preserveActivityTimedEntry": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Arches National Park Canyoneering Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251908",
+        "reservationUrl": "https://www.recreation.gov/permits/4251908"
+      },
+      {
+        "name": "Arches National Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234668",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234668"
+      },
+      {
+        "name": "Ranger-Guided Fiery Furnace Loop Tour - Arches",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "116",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234668"
+      },
+      {
+        "name": "Self-Guided Fiery Furnace Exploration - Arches",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10087108",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234668"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "arpo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "arho": {
+    "parkWideEntry": "partial",
+    "summary": "Arlington House, The Robert E. Lee Memorial Tickets listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Arlington House, The Robert E. Lee Memorial Tickets",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10073370",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10073370"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "asis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "azru": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "badl": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bawa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "band": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bepa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "beol": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Bent's Old Fort National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089883",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089883"
+      },
+      {
+        "name": "Evening Candlelight Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089884",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089883"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "bela": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bibe": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bicy": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "biho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "biso": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bith": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bica": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bicr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bisc": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "blca": {
+    "parkWideEntry": "none",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Black Canyon of the Gunnison NP Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675344",
+        "reservationUrl": "https://www.recreation.gov/permits/4675344"
+      },
+      {
+        "name": "Black Canyon of the Gunnison NP Red Rock Canyon Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675335",
+        "reservationUrl": "https://www.recreation.gov/permits/4675335"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "blrv": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "blsc": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "blri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "blue": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bowa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "boaf": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "boha": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "bost": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "brcr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "brvb": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "brca": {
+    "parkWideEntry": "none",
+    "summary": "5 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Bryce Canyon National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675330",
+        "reservationUrl": "https://www.recreation.gov/permits/4675330"
+      },
+      {
+        "name": "Bryce Canyon National Park Full Moon Hike Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10112209",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10112209"
+      },
+      {
+        "name": "Bryce Canyon National Park Private Horse Reservations",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10101955",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101955"
+      },
+      {
+        "name": "Bryce Canyon Full Moon Hike",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10112210",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10112209"
+      },
+      {
+        "name": "Bryce Canyon Private Stock Ride",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10101956",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101955"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "buis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "buff": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "buov": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cabr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cali": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cane": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cana": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cari": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cach": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cany": {
+    "parkWideEntry": "none",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Canyonlands National Park Day Use Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251904",
+        "reservationUrl": "https://www.recreation.gov/permits/4251904"
+      },
+      {
+        "name": "Canyonlands National Park Day Use River Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "621747",
+        "reservationUrl": "https://www.recreation.gov/permits/621747"
+      },
+      {
+        "name": "Canyonlands National Park Overnight Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675315",
+        "reservationUrl": "https://www.recreation.gov/permits/4675315"
+      },
+      {
+        "name": "Canyonlands National Park Overnight River Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "621748",
+        "reservationUrl": "https://www.recreation.gov/permits/621748"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "caco": {
+    "parkWideEntry": "partial",
+    "summary": "Kayak Trip: Evening on Gull Pond, Wellfleet listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Kayak Trip: Evening on Gull Pond, Wellfleet",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "1028",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/250795"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "caha": {
+    "parkWideEntry": "partial",
+    "summary": "Bodie Island Lighthouse listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Bodie Island Lighthouse",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "252034",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252034"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "came": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cakr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "calo": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Cape Lookout National Seashore Duck Blind Lottery",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10063832",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10063832"
+      },
+      {
+        "name": "Cape Lookout National Seashore Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "252276",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252276"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "cahi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "care": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cajo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cavo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "carl": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Carl Sandburg Home National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300005",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300005"
+      },
+      {
+        "name": "Carl Sandburg Home Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "1060",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300005"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "cibs": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cave": {
+    "parkWideEntry": "none",
+    "summary": "No park-wide entry reservation, but cave tour timed entry is required year-round (separate from the entrance pass).",
+    "authoritative": true,
+    "preserveActivityTimedEntry": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Carlsbad Caverns National Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234637",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234637"
+      },
+      {
+        "name": "Carlsbad Caverns Timed Entry Reservation",
+        "type": "Timed Entry",
+        "category": "timed_entry",
+        "entityId": "10086811",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234637"
+      },
+      {
+        "name": "Lower Cave Tour Reservation",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "77",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234637"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "cawo": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Carter G. Woodson Home National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "261701",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/261701"
+      },
+      {
+        "name": "Group Tour of the Carter G. Woodson Home",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "282",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/261701"
+      },
+      {
+        "name": "Tour of the Carter G. Woodson Home",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "281",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/261701"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "cagr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "casa": {
+    "parkWideEntry": "partial",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Castillo de San Marcos National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088440",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088440"
+      },
+      {
+        "name": "Academic Teacher-Guided Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088441",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088440"
+      },
+      {
+        "name": "Commercial Use Authorization Portal",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088442",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088440"
+      },
+      {
+        "name": "Pre-Paid Group Tickets",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088443",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088440"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "cacl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "camo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cato": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cebr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cebe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chcu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cham": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chis": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chpi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chyo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chat": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "choh": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cbpo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chch": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chic": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chir": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ciro": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cwdw": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "clba": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "colo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "colm": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "colt": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cong": {
+    "parkWideEntry": "none",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Congaree National Park Ranger-Guided Canoe Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "252279",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252279"
+      },
+      {
+        "name": "Congaree National Park Firefly Viewing Lottery",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300008",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300008"
+      },
+      {
+        "name": "Introduction to the Cedar Creek Canoe Trail",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "243",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252279"
+      },
+      {
+        "name": "Ranger Guided Canoe Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "244",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252279"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "coga": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "coro": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cowp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "crla": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "crmo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cuga": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cuis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cure": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cuva": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "cech": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "daav": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "deso": {
+    "parkWideEntry": "partial",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "De Soto National Memorial Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089289",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089289"
+      },
+      {
+        "name": "De Soto Rancho Fishing Clinic",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089294",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089289"
+      },
+      {
+        "name": "Escape De Soto: Immersive Escape Room Experience",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089295",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089289"
+      },
+      {
+        "name": "Ranger-led Kayak Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089290",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089289"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "deva": {
+    "parkWideEntry": "none",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Death Valley National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675343",
+        "reservationUrl": "https://www.recreation.gov/permits/4675343"
+      },
+      {
+        "name": "Scotty's Castle - Death Valley National Park",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "233282",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233282"
+      },
+      {
+        "name": "Death Valley National Park Ranger Programs",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088452",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088452"
+      },
+      {
+        "name": "Special Guided Paleontology Hike",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088453",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088452"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "dewa": {
+    "parkWideEntry": "partial",
+    "summary": "Delaware Water Gap - Founder's Day and River Sojourn 06/27/2026 listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Delaware Water Gap - Founder's Day and River Sojourn 06/27/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253707",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "dena": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "depo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "deto": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "dino": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Dinosaur National Monument - Split Mountain Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "250987",
+        "reservationUrl": "https://www.recreation.gov/permits/250987"
+      },
+      {
+        "name": "Dinosaur Green And Yampa River Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "250014",
+        "reservationUrl": "https://www.recreation.gov/permits/250014"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "drto": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ddem": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ebla": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "edal": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "efmo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "eise": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "elca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "elte": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "elma": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "elmo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "elro": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Eleanor Roosevelt National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300001",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300001"
+      },
+      {
+        "name": "Eleanor Roosevelt (Val-Kill) Group Tours",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "319",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300001"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "elis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "till": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "euon": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ever": {
+    "parkWideEntry": "none",
+    "summary": "Everglades National Park Wilderness Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Everglades National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675314",
+        "reservationUrl": "https://www.recreation.gov/permits/4675314"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "feha": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Federal Hall National Memorial Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089018",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089018"
+      },
+      {
+        "name": "Ranger Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089019",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089018"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "fiis": {
+    "parkWideEntry": "partial",
+    "summary": "Fire Island National Seashore Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Fire Island National Seashore Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "234768",
+        "reservationUrl": "https://www.recreation.gov/permits/234768"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "fila": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frst": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "flni": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "flfo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "foth": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fobo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "foda": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fodo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fodu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fofo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fofr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fola": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fols": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "foma": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Fort Matanzas National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10101953",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101953"
+      },
+      {
+        "name": "Fort Matanzas Torchlight Event",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10101954",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101953"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "fomc": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fomr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fone": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fopo": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Fort Point National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088307",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088307"
+      },
+      {
+        "name": "Fort Point Candlelight Tour, America's 250th",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088308",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088307"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "fopu": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Fort Pulaski National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10101846",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101846"
+      },
+      {
+        "name": "Candle Lantern Holiday Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10101847",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101846"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "fora": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fosc": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fosm": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fost": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fosu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "foun": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fous": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fova": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fowa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "fobu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frpe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frde": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frdo": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Frederick Douglass National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234636",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234636"
+      },
+      {
+        "name": "Douglass Home Group Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "1009",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234636"
+      },
+      {
+        "name": "Douglass Home Standard Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "71",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234636"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "frla": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frsp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "frhi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gaar": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jeff": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gate": {
+    "parkWideEntry": "partial",
+    "summary": "Gateway National Recreation Area - Sandy Hook Canoe Cruise listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Gateway National Recreation Area - Sandy Hook Canoe Cruise",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "252275",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252275"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "gari": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gegr": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "General Grant National Memorial Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089543",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089543"
+      },
+      {
+        "name": "Mausoleum Self-Guided Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089544",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089543"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "gero": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gewa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gwca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gwmp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gett": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gicl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "glba": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "glac": {
+    "parkWideEntry": "partial",
+    "summary": "No vehicle reservation in 2026; Logan Pass shuttle ticket Jul–Labor Day for some alpine hikes.",
+    "authoritative": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Glacier National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675321",
+        "reservationUrl": "https://www.recreation.gov/permits/4675321"
+      },
+      {
+        "name": "Glacier National Park Logan Pass Shuttle Tickets",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10087424",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10087424"
+      },
+      {
+        "name": "Apgar Visitor Center Shuttle Stop",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10087425",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10087424"
+      },
+      {
+        "name": "Lake McDonald Lodge Shuttle Stop",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253715",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10087424"
+      },
+      {
+        "name": "Rising Sun Picnic Area Shuttle Stop",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253714",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10087424"
+      },
+      {
+        "name": "St. Mary Visitor Center Shuttle Stop",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10087426",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10087424"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "glca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "glec": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "glde": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "goga": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gosp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gois": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Governors Island National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089021",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089021"
+      },
+      {
+        "name": "Castle Williams Guided Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089022",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089021"
+      },
+      {
+        "name": "Fort Jay Guided Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089023",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089021"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "grca": {
+    "parkWideEntry": "none",
+    "summary": "Grand Canyon National Park Backcountry Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Grand Canyon National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675337",
+        "reservationUrl": "https://www.recreation.gov/permits/4675337"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "para": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "grpo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "grte": {
+    "parkWideEntry": "none",
+    "summary": "No timed entry in 2026 — popular lots fill by mid-morning in summer.",
+    "authoritative": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Grand Teton National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675342",
+        "reservationUrl": "https://www.recreation.gov/permits/4675342"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "grko": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "grba": {
+    "parkWideEntry": "none",
+    "summary": "Lehman Caves Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Lehman Caves Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "251853",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251853"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "greg": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "grfa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "grsa": {
+    "parkWideEntry": "none",
+    "summary": "Great Sand Dunes National Park Backcountry Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Great Sand Dunes National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675316",
+        "reservationUrl": "https://www.recreation.gov/permits/4675316"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "grsm": {
+    "parkWideEntry": "none",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Great Smoky Mountains Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675347",
+        "reservationUrl": "https://www.recreation.gov/permits/4675347"
+      },
+      {
+        "name": "The Great Smoky Mountains Firefly Viewing Lottery",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "233374",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233374"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "grsp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gree": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "gumo": {
+    "parkWideEntry": "none",
+    "summary": "Guadalupe Mountains National Park Wilderness Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Guadalupe Mountains National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675328",
+        "reservationUrl": "https://www.recreation.gov/permits/4675328"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "guco": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "guis": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hafo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hale": {
+    "parkWideEntry": "partial",
+    "summary": "Summit sunrise reservations required year-round.",
+    "authoritative": true,
+    "preserveActivityTimedEntry": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Haleakala National Park Summit Sunrise Reservations",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "253731",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/253731"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "hagr": {
+    "parkWideEntry": "partial",
+    "summary": "Hamilton Grange National Memorial Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Hamilton Grange National Memorial Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089551",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089551"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "hamp": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Hampton National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10112175",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10112175"
+      },
+      {
+        "name": "Hampton Mansion Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10112176",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10112175"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "haha": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hafe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hart": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hatu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hstr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "havo": {
+    "parkWideEntry": "none",
+    "summary": "Hawaii Volcanoes National Park Backcountry Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Hawaii Volcanoes National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675341",
+        "reservationUrl": "https://www.recreation.gov/permits/4675341"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "heho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jame": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hofr": {
+    "parkWideEntry": "partial",
+    "summary": "Home of Franklin D. Roosevelt National Historic Site Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Home of Franklin D. Roosevelt National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300000",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300000"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "home": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hono": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hocu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hofu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hobe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hosp": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hove": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "hutr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "iafl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "iatr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "inde": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Independence National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234639",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234639"
+      },
+      {
+        "name": "Independence Hall Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "90",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234639"
+      },
+      {
+        "name": "Independence Hall Tour - Expanded",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253642",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234639"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "indu": {
+    "parkWideEntry": "none",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Indiana Dunes National Park Programs and Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10112648",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10112648"
+      },
+      {
+        "name": "Art in the Park-All Ages",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10112650",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10112648"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "isro": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "inup": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jaga": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jela": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jeca": {
+    "parkWideEntry": "partial",
+    "summary": "7 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Jewel Cave National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088103",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      },
+      {
+        "name": "Discovery Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088105",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      },
+      {
+        "name": "Discovery Tour (Fee Free Days)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253644",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      },
+      {
+        "name": "Historic Lantern Tour - Heavenly Route",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089143",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      },
+      {
+        "name": "Scenic Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088104",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      },
+      {
+        "name": "Scenic Tour (Fee Free Days)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253643",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      },
+      {
+        "name": "Wild Caving Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089110",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088103"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "jica": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "joda": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jofi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jomu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jofl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jotr": {
+    "parkWideEntry": "none",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Joshua Tree National Park Wilderness Backpacking Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675329",
+        "reservationUrl": "https://www.recreation.gov/permits/4675329"
+      },
+      {
+        "name": "Joshua Tree National Park Tours and Programs",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300004",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300004"
+      },
+      {
+        "name": "Keys Ranch Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "1040",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300004"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "juba": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kala": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kaho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kaww": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "katm": {
+    "parkWideEntry": "none",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Brooks Camp Camping Permit",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "249991",
+        "reservationUrl": "https://www.recreation.gov/permits/249991"
+      },
+      {
+        "name": "Brooks River Corridor Group 7-Day Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251910",
+        "reservationUrl": "https://www.recreation.gov/permits/4251910"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "kefj": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "keaq": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kemo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kewe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kimo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "klse": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "klgo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "knri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kova": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "kowa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lyba": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lacl": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lake": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lamr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "laro": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lavo": {
+    "parkWideEntry": "none",
+    "summary": "Lassen Volcanic National Park Wilderness Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Lassen Volcanic National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675334",
+        "reservationUrl": "https://www.recreation.gov/permits/4675334"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "labe": {
+    "parkWideEntry": "partial",
+    "summary": "Lava Beds National Monument Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Lava Beds National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "251978",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251978"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "lecl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lewi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "libo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "liho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "linc": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Lincoln Memorial Undercroft",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10113318",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10113318"
+      },
+      {
+        "name": "Lincoln Undercroft Large Group Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10113320",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10113318"
+      },
+      {
+        "name": "Lincoln Undercroft Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10113319",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10113318"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "libi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "liri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "chsc": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "long": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lowe": {
+    "parkWideEntry": "partial",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Lowell National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300011",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300011"
+      },
+      {
+        "name": "A River Transformed - Lowell Riverwalk & Suffolk Mill Walking Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253668",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300011"
+      },
+      {
+        "name": "Riverboat Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253667",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300011"
+      },
+      {
+        "name": "Suffolk Mill Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253669",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300011"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "lode": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "loea": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "lyjo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mawa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "maac": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "maca": {
+    "parkWideEntry": "none",
+    "summary": "19 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Mammoth Cave National Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234640",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Accessible Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "219",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Cleaveland Avenue Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "185",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Discovery Tour [Self-Guided]",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "108",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Domes and Dripstones  Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "98",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Extended Historic Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "1012",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Frozen Niagara Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "106",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Gothic Avenue Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "115",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Grand Avenue Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "100",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Great Onyx Lantern Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "99",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Historic Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "93",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Introduction to Caving Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "95",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Mammoth Passage Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "107",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "River Styx Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "105",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Star Chamber Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "91",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Trog Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "94",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Violet City Lantern Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "104",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Wild Cave Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "96",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      },
+      {
+        "name": "Wondering Woods Tours",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088885",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234640"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "mana": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mapr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "manz": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mabi": {
+    "parkWideEntry": "partial",
+    "summary": "Marsh-Billings-Rockefeller National Historical Park Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Marsh-Billings-Rockefeller National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089497",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089497"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "mlkm": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "malu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mava": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mamc": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "memy": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "meve": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "misp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "miin": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mima": {
+    "parkWideEntry": "partial",
+    "summary": "Minute Man National Historical Park Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Minute Man National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "252277",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/252277"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "mimi": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Minuteman Missile NHS Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10113322",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10113322"
+      },
+      {
+        "name": "Delta One Launch Facility",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10113323",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10113322"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "miss": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mnrr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "moja": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mono": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "moca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mocr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mopi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "morr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "mora": {
+    "parkWideEntry": "none",
+    "summary": "No timed entry in 2026 — parking management only.",
+    "authoritative": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Mount Rainier National Park Wilderness and Climbing Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675317",
+        "reservationUrl": "https://www.recreation.gov/permits/4675317"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "moru": {
+    "parkWideEntry": "partial",
+    "summary": "South Dakota's Mount Rushmore Fireworks Celebration Lottery listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "South Dakota's Mount Rushmore Fireworks Celebration Lottery",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300010",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300010"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "muwo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "natc": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Natchez National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089703",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089703"
+      },
+      {
+        "name": "Melrose Mansion Guided Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089704",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089703"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "natt": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "natr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "nace": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "nama": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Washington Monument",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234635",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234635"
+      },
+      {
+        "name": "Lincoln Memorial Undercroft",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10113318",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10113318"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "npsa": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "npnh": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "nabr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "nava": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "nebe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "neen": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pine": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "jazz": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "neph": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "neri": {
+    "parkWideEntry": "none",
+    "summary": "New River Gorge National Park and Preserve Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "New River Gorge National Park and Preserve Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089332",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089332"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "nepe": {
+    "parkWideEntry": "partial",
+    "summary": "Main Salmon River (Powerboat) listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Main Salmon River (Powerboat)",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "251576",
+        "reservationUrl": "https://www.recreation.gov/permits/251576"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "nico": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "nisi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "niob": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "noat": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "noca": {
+    "parkWideEntry": "none",
+    "summary": "North Cascades National Park Backcountry Permits listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "North Cascades National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675322",
+        "reservationUrl": "https://www.recreation.gov/permits/4675322"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "noco": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "obed": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ocmu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "okci": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "olsp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "olym": {
+    "parkWideEntry": "none",
+    "summary": "Olympic National Park Wilderness Permit listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Olympic National Park Wilderness Permit",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4098362",
+        "reservationUrl": "https://www.recreation.gov/permits/4098362"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "orca": {
+    "parkWideEntry": "partial",
+    "summary": "Oregon Caves National Monument and Preserve Tours listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Oregon Caves National Monument and Preserve Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "251610",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251610"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "oreg": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "orpi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ovvi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "oxhi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ozar": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pais": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "paal": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pagr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "peri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "valr": {
+    "parkWideEntry": "partial",
+    "summary": "17 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Arizona Memorial Tours Pearl Harbor",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "233338",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233338"
+      },
+      {
+        "name": "NPS Pearl Harbor National Memorial Ford Island Bus Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089185",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089185"
+      },
+      {
+        "name": "Passport to Pearl Harbor Historic Sites",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088721",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088721"
+      },
+      {
+        "name": "Pearl Harbor Narrated Multimedia Tours & Virtual Reality Center",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10091247",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Arizona Memorial Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "16",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233338"
+      },
+      {
+        "name": "Official Pearl Harbor Captain's Unlimited Self-Guided Multimedia Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "46",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233338"
+      },
+      {
+        "name": "Official Pearl Harbor Deluxe Combo Package",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "289",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233338"
+      },
+      {
+        "name": "Pearl Harbor Bus Tours",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089186",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089185"
+      },
+      {
+        "name": "USS Arizona Memorial (Authorized Commercial Users)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089777",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233338"
+      },
+      {
+        "name": "Passport to Pearl Harbor",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088722",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088721"
+      },
+      {
+        "name": "Official Pearl Harbor Admiral's Unlimited VIP Package",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091301",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Official Pearl Harbor Chief's Self-Guided Multimedia Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091295",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Official Pearl Harbor Commander's Self-Guided Multimedia Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091296",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Pearl Harbor Virtual Reality Experience: Air Raid",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091298",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Pearl Harbor Virtual Reality Experience: Explore the USS Arizona Memorial",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091300",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Pearl Harbor Virtual Reality Experience: Skies Over Pearl Harbor",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091297",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      },
+      {
+        "name": "Pearl Harbor Virtual Reality Experience: Walk the Deck of USS Arizona",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091299",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091247"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "peco": {
+    "parkWideEntry": "partial",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Pecos National Historical Park Fishing Reservations",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "274313",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274313"
+      },
+      {
+        "name": "Beat 1",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "308",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274313"
+      },
+      {
+        "name": "Beat 2",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "309",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274313"
+      },
+      {
+        "name": "Beat 3",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "310",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274313"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "paav": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pevi": {
+    "parkWideEntry": "partial",
+    "summary": "Perry's Victory and International Peace Memorial listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Perry's Victory and International Peace Memorial",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "274287",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274287"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "pete": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pefo": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "petr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "piro": {
+    "parkWideEntry": "partial",
+    "summary": "Au Sable Light Station listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Au Sable Light Station",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10101806",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10101806"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "pinn": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pisp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pipe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pisc": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pore": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "poex": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "poch": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pohe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "popo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wicl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "prsf": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "prwi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "pull": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "puho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "puhe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "rabr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "reer": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "redw": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "rich": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "rigr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "rira": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "rocr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "romo": {
+    "parkWideEntry": "required",
+    "summary": "Timed entry May 22–mid-Oct (certain hours; Bear Lake corridor rules differ).",
+    "authoritative": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Rocky Mountain National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675320",
+        "reservationUrl": "https://www.recreation.gov/permits/4675320"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "rowi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "roca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "rori": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ruca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sahi": {
+    "parkWideEntry": "partial",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Sagamore Hill National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "251573",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251573"
+      },
+      {
+        "name": "Guided Tour of Theodore Roosevelt's Home",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "179",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251573"
+      },
+      {
+        "name": "Square Deal Tour (1st Floor Only)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253647",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251573"
+      },
+      {
+        "name": "Theodore Roosevelt's Home - Fee Free Days Only",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "223",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251573"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "sagu": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sacr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sacn": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sapa": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Saint Paul's Church NHS Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088445",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088445"
+      },
+      {
+        "name": "Guided Tour of St. Paul's Church",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088446",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088445"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "saga": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sama": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sapu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sari": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "saan": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "safr": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "San Francisco Maritime National Historic Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "249985",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249985"
+      },
+      {
+        "name": "Streamlines and Stories: A Historical Passage Through the Aquatic Park Bathhouse",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253611",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249985"
+      },
+      {
+        "name": "Walking Tour from North Beach to Black Point",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253610",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249985"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "sajh": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "saju": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sand": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "safe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "samo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sara": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sair": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "scbl": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "semo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "seki": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Sequoia and Kings Canyon National Parks Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "445857",
+        "reservationUrl": "https://www.recreation.gov/permits/445857"
+      },
+      {
+        "name": "Crystal Cave Tours Sequoia National Park",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "251898",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251898"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "shen": {
+    "parkWideEntry": "partial",
+    "summary": "Old Rag day-use ticket Mar–Nov (Old Rag trails only; not whole park).",
+    "authoritative": true,
+    "preserveActivityTimedEntry": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Shenandoah National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675336",
+        "reservationUrl": "https://www.recreation.gov/permits/4675336"
+      },
+      {
+        "name": "Rapidan Camp Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "251745",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/251745"
+      },
+      {
+        "name": "Old Rag Mountain Tickets",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088450",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088450"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "shil": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sitk": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "slbe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "spra": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "spar": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "stsp": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "stli": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "stge": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "stea": {
+    "parkWideEntry": "partial",
+    "summary": "12 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Steamtown National Historic Site Tickets",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088803",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "05/09/2026 - 11/08/2026 Short Train Rides",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253698",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Big Boy Reunion - Display Days - June 15 & 16, 2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253713",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Big Boy Reunion - June 17-30, 2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253716",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Caboose Experience",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088814",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Carbondale - Pioneer Nights 08/22/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253705",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Carbondale - Spring Market 05/16/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253706",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Cresco - The Mountain Special 06/28/2026 & 08/23/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253699",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Delaware Water Gap - Founder's Day and River Sojourn 06/27/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253707",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Gouldsboro - Craft Fair 05/23/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253703",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Moscow - Country Street Fair 07/25/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253708",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      },
+      {
+        "name": "Tobyhanna Blueberries and Icehouse Tour 07/18/2026",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253701",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088803"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "stri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ston": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "sucr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tapr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "thko": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "whho": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "National Christmas Tree Lighting Ceremony",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "250006",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/250006"
+      },
+      {
+        "name": "The White House Easter Egg Roll",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "250029",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/250029"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "thrb": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "thri": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "this": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "thro": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "thco": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "edis": {
+    "parkWideEntry": "partial",
+    "summary": "4 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Thomas Edison National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10089297",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089297"
+      },
+      {
+        "name": "Adult and Commercial Group Tour: The Life and Times of Thomas Edison",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089847",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089297"
+      },
+      {
+        "name": "Glenmont Estate Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089298",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089297"
+      },
+      {
+        "name": "School Groups: Idea to Product the Edison Way",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089846",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10089297"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "thje": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "thst": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tica": {
+    "parkWideEntry": "partial",
+    "summary": "5 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Timpanogos Cave National Monument Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "249993",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249993"
+      },
+      {
+        "name": "Cave Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "155",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249993"
+      },
+      {
+        "name": "Hansen Cave Accessibility Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253661",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249993"
+      },
+      {
+        "name": "Historic Lantern Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089255",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249993"
+      },
+      {
+        "name": "Introduction to Caving Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "154",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/249993"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "timu": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tont": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Bob Bear Trailhead",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251903",
+        "reservationUrl": "https://www.recreation.gov/permits/4251903"
+      },
+      {
+        "name": "Salt River Canyon Wilderness Permit",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "249275",
+        "reservationUrl": "https://www.recreation.gov/permits/249275"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "tosy": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "trte": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tule": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tusk": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tuma": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Tumacácori National Historical Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "233274",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233274"
+      },
+      {
+        "name": "Guevavi and Calabazas Missions Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "137",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233274"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "tupe": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tuai": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tuin": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "tuzi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "ulsg": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "upde": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "vall": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "vafo": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "vama": {
+    "parkWideEntry": "partial",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Vanderbilt Mansion National Historic Site Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "300002",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300002"
+      },
+      {
+        "name": "Vanderbilt Mansion Group Tour Reservation",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "320",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/300002"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "vick": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "vive": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "vicr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "viis": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "voya": {
+    "parkWideEntry": "none",
+    "summary": "16 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Voyageurs National Park Houseboat Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "251977",
+        "reservationUrl": "https://www.recreation.gov/permits/251977"
+      },
+      {
+        "name": "Voyageurs National Park Special Interpretive Programs",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10091243",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091243"
+      },
+      {
+        "name": "Voyageurs National Park Winter Equipment Rentals",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10090880",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10090880"
+      },
+      {
+        "name": "Voyageurs National Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "233405",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      },
+      {
+        "name": "Ash River North Canoe Voyage",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091245",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091243"
+      },
+      {
+        "name": "Rainy Lake North Canoe Voyage",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10091244",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10091243"
+      },
+      {
+        "name": "Rainy Lake Cross-Country Ski Rental - Adult (17 & up)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10090883",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10090880"
+      },
+      {
+        "name": "Rainy Lake Cross-Country Ski Rental - Youth (16 & under)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10090884",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10090880"
+      },
+      {
+        "name": "Rainy Lake Snowshoe Rental - Adult (17 & up)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10090881",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10090880"
+      },
+      {
+        "name": "Rainy Lake Snowshoe Rental - Youth (16 & under)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10090882",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10090880"
+      },
+      {
+        "name": "Ellsworth Rock Gardens Tour (Kabetogama)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "12",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      },
+      {
+        "name": "Grand Tour (Rainy Lake)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "14",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      },
+      {
+        "name": "Kettle Falls Cruise (Ash River)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "11",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      },
+      {
+        "name": "Kettle Falls Cruise (Rainy Lake)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "15",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      },
+      {
+        "name": "Life on the Lake (Ash River)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253625",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      },
+      {
+        "name": "Life on the Lake (Rainy Lake)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10253622",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/233405"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "waco": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "waca": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wapa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wamo": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Washington Monument",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "234635",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234635"
+      },
+      {
+        "name": "Washington Monument Large Group Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "1050",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234635"
+      },
+      {
+        "name": "Washington Monument Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "193",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/234635"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "waro": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "waba": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wefa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "whis": {
+    "parkWideEntry": "partial",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Whiskeytown National Recreation Area Ranger Guided Programs",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "274349",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274349"
+      },
+      {
+        "name": "1. Rise and Shine Kayak Tour (9am-11:30am)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "314",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274349"
+      },
+      {
+        "name": "2. Paddle Board Adventure (1:30pm-3:30pm)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "316",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/274349"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "whsa": {
+    "parkWideEntry": "none",
+    "summary": "3 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "White Sands National Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "253503",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/253503"
+      },
+      {
+        "name": "Lake Lucero",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "251",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/253503"
+      },
+      {
+        "name": "Moonlight Hike",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "253",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/253503"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "whmi": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wiho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wicr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wica": {
+    "parkWideEntry": "none",
+    "summary": "8 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Wind Cave National Park Tours",
+        "type": "Ticket Facility",
+        "category": "ticket",
+        "entityId": "10088514",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Accessibility Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088518",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Fairgrounds Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088517",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Fairgrounds Tour (Fee Free Days)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089077",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Garden of Eden Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088515",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Garden of Eden Tour (Fee Free Days)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089076",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Natural Entrance Tour",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10088516",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      },
+      {
+        "name": "Natural Entrance Tour (Fee Free Days)",
+        "type": "Tour Ticket",
+        "category": "permit",
+        "entityId": "10089075",
+        "reservationUrl": "https://www.recreation.gov/ticket/facility/10088514"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "wing": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wotr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wori": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wwim": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wwii": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wrst": {
+    "parkWideEntry": "none",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wrbr": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "wupa": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "yell": {
+    "parkWideEntry": "none",
+    "summary": "2 reservation types listed on Recreation.gov.",
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Yellowstone National Park Backcountry Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675323",
+        "reservationUrl": "https://www.recreation.gov/permits/4675323"
+      },
+      {
+        "name": "Yellowstone Non-Commercially Guided Snowmobile Access Program",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "250849",
+        "reservationUrl": "https://www.recreation.gov/permits/250849"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "york": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "yose": {
+    "parkWideEntry": "none",
+    "summary": "No park-wide timed entry in 2026 — arrive early for parking.",
+    "authoritative": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Yosemite National Park Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "445859",
+        "reservationUrl": "https://www.recreation.gov/permits/445859"
+      },
+      {
+        "name": "Half Dome Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "234652",
+        "reservationUrl": "https://www.recreation.gov/permits/234652"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  },
+  "yuho": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "yuch": {
+    "parkWideEntry": "unknown",
+    "summary": null,
+    "authoritative": false,
+    "lastReviewed": "2026-06",
+    "liveItems": [],
+    "seededAt": "2026-06-16"
+  },
+  "zion": {
+    "parkWideEntry": "partial",
+    "summary": "Canyon shuttle Mar–Nov (no ticket); Angels Landing permit required year-round.",
+    "authoritative": true,
+    "preserveActivityTimedEntry": true,
+    "lastReviewed": "2026-06",
+    "liveItems": [
+      {
+        "name": "Angels Landing: Fall (Hikes on September 1 – November 30)",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675325",
+        "reservationUrl": "https://www.recreation.gov/permits/4675325"
+      },
+      {
+        "name": "Angels Landing: Spring (Hikes on March 1 - May 31)",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675310",
+        "reservationUrl": "https://www.recreation.gov/permits/4675310"
+      },
+      {
+        "name": "Angels Landing: Summer (Hikes on June 1 – August 31)",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675324",
+        "reservationUrl": "https://www.recreation.gov/permits/4675324"
+      },
+      {
+        "name": "Angels Landing: Winter (Hikes on December 1 - February 28)",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675326",
+        "reservationUrl": "https://www.recreation.gov/permits/4675326"
+      },
+      {
+        "name": "Zion Commercial Use Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251913",
+        "reservationUrl": "https://www.recreation.gov/permits/4251913"
+      },
+      {
+        "name": "Zion Left Fork North Creek (Subway) Seasonal Lottery",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251917",
+        "reservationUrl": "https://www.recreation.gov/permits/4251917"
+      },
+      {
+        "name": "Zion Mystery Canyon Seasonal Lottery",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251916",
+        "reservationUrl": "https://www.recreation.gov/permits/4251916"
+      },
+      {
+        "name": "Zion National Park Canyoneering Daily Lottery",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251918",
+        "reservationUrl": "https://www.recreation.gov/permits/4251918"
+      },
+      {
+        "name": "Zion National Park Overnight Narrows Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675339",
+        "reservationUrl": "https://www.recreation.gov/permits/4675339"
+      },
+      {
+        "name": "Zion National Park Overnight Wilderness Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675338",
+        "reservationUrl": "https://www.recreation.gov/permits/4675338"
+      },
+      {
+        "name": "Zion National Park Canyoneering Advanced Reservations",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4251915",
+        "reservationUrl": "https://www.recreation.gov/permits/4251915"
+      },
+      {
+        "name": "Zion National Park Overnight Climbing Permits",
+        "type": "Permit",
+        "category": "permit",
+        "entityId": "4675340",
+        "reservationUrl": "https://www.recreation.gov/permits/4675340"
+      }
+    ],
+    "seededAt": "2026-06-16"
+  }
+}

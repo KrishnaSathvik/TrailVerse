@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  MapPin, Calendar, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, Edit2, Compare,
+  MapPin, Calendar, CalendarDays, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, Edit2, Compare,
   Share2,
   Download,
 } from '@components/icons';
@@ -2601,26 +2601,43 @@ TRIP DETAILS:
                       className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      Use Plan My Trip to add destination, dates, budget, and interests — or try asking:
-                    </p>
-                  )}
-                  {onOpenQuickFill && !isPersonalized && (
-                    <button
-                      type="button"
-                      onClick={onOpenQuickFill}
-                      className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        color: 'var(--text-secondary)',
-                        border: '1px solid var(--border)',
-                      }}
-                    >
                       {hasUsedQuickFill ? (
-                        <><Edit2 className="h-3.5 w-3.5" />Edit trip details</>
+                        <>
+                          <button
+                            type="button"
+                            onClick={onOpenQuickFill}
+                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-xs font-medium transition hover:opacity-90"
+                            style={{
+                              backgroundColor: 'var(--surface-hover)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                            Edit trip details
+                          </button>
+                          {' '}to update destination, dates, budget, and interests — or try asking:
+                        </>
                       ) : (
-                        <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
+                        <>
+                          Use{' '}
+                          <button
+                            type="button"
+                            onClick={onOpenQuickFill}
+                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-xs font-medium transition hover:opacity-90"
+                            style={{
+                              backgroundColor: 'var(--surface-hover)',
+                              color: 'var(--text-secondary)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            <CalendarDays className="h-3 w-3" />
+                            Plan My Trip
+                          </button>
+                          {' '}to add destination, dates, budget, and interests — or try asking:
+                        </>
                       )}
-                    </button>
+                    </p>
                   )}
                   <SuggestedPrompts
                     hideTitle={Boolean(onOpenQuickFill || isPersonalized)}
@@ -2783,7 +2800,7 @@ TRIP DETAILS:
                     {hasUsedQuickFill ? (
                       <><Edit2 className="h-3.5 w-3.5" />Edit Trip Details</>
                     ) : (
-                      <><Sparkles className="h-3.5 w-3.5" />Plan My Trip</>
+                      <><CalendarDays className="h-3.5 w-3.5" />Plan My Trip</>
                     )}
                   </button>
                 )}

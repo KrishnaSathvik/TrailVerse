@@ -8,21 +8,22 @@ import {
 } from '@/data/intentLandings';
 import { fetchIntentLandingParks } from '@/lib/intentLandingApi';
 import { parkToSlug } from '@/utils/parkSlug';
+import { canonicalPageMetadata } from '@/lib/seo';
 
 /**
  * @param {string} path — e.g. /parks-for-couples
  */
 export function createIntentLandingPageExports(path) {
-  async function generateMetadata() {
+  async function generateMetadata({ searchParams }) {
     const landing = getIntentLandingByPath(path);
     if (!landing) return { title: 'Not Found | TrailVerse' };
 
     const canonical = getIntentLandingCanonicalUrl(landing);
+    const params = searchParams ? await searchParams : undefined;
 
     return {
       title: landing.metadataTitle,
       description: landing.metaDescription,
-      alternates: { canonical },
       openGraph: {
         title: landing.metadataTitle,
         description: landing.metaDescription,
@@ -35,6 +36,7 @@ export function createIntentLandingPageExports(path) {
         title: landing.metadataTitle,
         description: landing.metaDescription,
       },
+      ...canonicalPageMetadata(path, params),
     };
   }
 

@@ -4,16 +4,23 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from '@components/icons';
 import { logCtaClick } from '@/utils/analytics';
+import { buildFaqIntroCopy } from '@/lib/planningFaqTabs';
+import { parseParkTabHref } from '@/lib/parkTabNavigation';
 
-export default function ParkPlanningFaqSection({ faqItems = [], parkCode, parkName, alertCount = 0 }) {
+export default function ParkPlanningFaqSection({
+  faqItems = [],
+  parkCode,
+  parkName,
+  parkSlug,
+  faqTabContext = {},
+  onTabNavigate,
+}) {
   const [openIndex, setOpenIndex] = useState(0);
   const shortName = parkName?.replace(/ National Park.*$/i, '') || 'this park';
 
   if (!faqItems.length) return null;
 
-  const introCopy = alertCount > 0
-    ? 'The summary above covers timing and highlights. These go deeper on reservations, crowds, and logistics — check Alerts and Permits for live updates.'
-    : 'The summary above covers timing and highlights. These go deeper on reservations, crowds, and logistics.';
+  const introCopy = buildFaqIntroCopy(faqTabContext);
 
   const toggle = (index, question) => {
     setOpenIndex((prev) => (prev === index ? -1 : index));
@@ -86,39 +93,71 @@ export default function ParkPlanningFaqSection({ faqItems = [], parkCode, parkNa
                     {item.a}
                   </p>
                   {item.href ? (
-                    /^https?:\/\//i.test(item.href) ? (
-                      <a
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => logCtaClick({
-                          ctaId: 'park_faq_link',
-                          label: item.q,
-                          surface: 'park_planning_faq',
-                          destination: item.href,
-                          parkCode,
-                        })}
-                        className="inline-block mt-3 text-sm font-semibold hover:underline"
-                        style={{ color: 'var(--accent-green)' }}
-                      >
-                        {item.linkLabel || 'Learn more →'}
-                      </a>
-                    ) : (
-                      <Link
-                        href={item.href}
-                        onClick={() => logCtaClick({
-                          ctaId: 'park_faq_link',
-                          label: item.q,
-                          surface: 'park_planning_faq',
-                          destination: item.href,
-                          parkCode,
-                        })}
-                        className="inline-block mt-3 text-sm font-semibold hover:underline"
-                        style={{ color: 'var(--accent-green)' }}
-                      >
-                        {item.linkLabel || 'Learn more →'}
-                      </Link>
-                    )
+                    (() => {
+                      const tabId = parkSlug && onTabNavigate
+                        ? parseParkTabHref(item.href, parkSlug)
+                        : null;
+
+                      if (tabId && onTabNavigate) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              logCtaClick({
+                                ctaId: 'park_faq_link',
+                                label: item.q,
+                                surface: 'park_planning_faq',
+                                destination: item.href,
+                                parkCode,
+                              });
+                              onTabNavigate(tabId);
+                            }}
+                            className="inline-block mt-3 text-sm font-semibold hover:underline text-left"
+                            style={{ color: 'var(--accent-green)' }}
+                          >
+                            {item.linkLabel || 'Learn more →'}
+                          </button>
+                        );
+                      }
+
+                      if (/^https?:\/\//i.test(item.href)) {
+                        return (
+                          <a
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => logCtaClick({
+                              ctaId: 'park_faq_link',
+                              label: item.q,
+                              surface: 'park_planning_faq',
+                              destination: item.href,
+                              parkCode,
+                            })}
+                            className="inline-block mt-3 text-sm font-semibold hover:underline"
+                            style={{ color: 'var(--accent-green)' }}
+                          >
+                            {item.linkLabel || 'Learn more →'}
+                          </a>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          href={item.href}
+                          onClick={() => logCtaClick({
+                            ctaId: 'park_faq_link',
+                            label: item.q,
+                            surface: 'park_planning_faq',
+                            destination: item.href,
+                            parkCode,
+                          })}
+                          className="inline-block mt-3 text-sm font-semibold hover:underline"
+                          style={{ color: 'var(--accent-green)' }}
+                        >
+                          {item.linkLabel || 'Learn more →'}
+                        </Link>
+                      );
+                    })()
                   ) : null}
                 </div>
               )}

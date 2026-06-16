@@ -7,6 +7,7 @@ import { ChevronRight, Mountain } from '@components/icons';
 import DotSpinner from '@/components/common/DotSpinner';
 import { logSearch, logSearchResultClick } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
+import { LANDING_RETURN_PATH, parkDetailHref } from '@/lib/returnNavigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import npsApi from '@/services/npsApi';
 import { saveParkSearchSession } from '@/lib/parkSearchSession';
@@ -93,7 +94,7 @@ export default function LandingSearchClient({ variant = 'default' }) {
       searchId: lastSearchId,
     });
     signalNavigation();
-    router.push(`/parks/${parkToSlug(park.fullName)}`);
+    router.push(parkDetailHref(parkToSlug(park.fullName), LANDING_RETURN_PATH));
     setSearchFocused(false);
   };
 

@@ -138,7 +138,7 @@ export const INTENT_LANDINGS = [
     intro:
       'Great park photography needs more than a famous name — you want reliable scenic viewpoints, interesting light, and subjects that match your lens (landscape, wildlife, astro, or waterfalls). TrailVerse ranks every NPS site by photography and scenic traits, with live weather on each park page.',
     quickAnswer:
-      'Mount Rainier, Grand Teton, Yosemite, and Zion frequently rank high for photography — mountains, wildlife, and iconic light. For astro work, pair scenic parks with dark-sky planning; check the Photography activity collection in Discover for NPS-tagged sites.',
+      'Mount Rainier, Grand Teton, Yosemite, and Zion frequently rank high for photography — mountains, wildlife, and iconic light. For astro work, pair scenic parks with dark-sky planning; check the Photography activity collection in Explore by Activity for NPS-tagged sites.',
     featuredParkCodes: ['yose', 'grte', 'mora', 'zion', 'arch', 'cany'],
     standouts: [
       {
@@ -236,7 +236,7 @@ export const INTENT_LANDINGS = [
     intro:
       'Coastal parks span Atlantic seashores, Pacific cliffs, Gulf islands, and Great Lakes shorelines — not just one type of beach. TrailVerse ranks NPS sites by ocean and water traits, with permit links and live alerts on every park page.',
     quickAnswer:
-      'Assateague, Cape Hatteras, Channel Islands, and Olympic coast sections rank high for ocean and shoreline traits. Pair this list with Discover seashores for the full NPS designation catalog, then compare finalists by season and weather.',
+      'Assateague, Cape Hatteras, Channel Islands, and Olympic coast sections rank high for ocean and shoreline traits. Pair this list with national seashores in Explore by Activity for the full NPS designation catalog, then compare finalists by season and weather.',
     featuredParkCodes: ['asis', 'caha', 'chis', 'olym', 'buis', 'calo'],
     standouts: [
       {
@@ -297,7 +297,7 @@ export const INTENT_LANDINGS = [
       },
     ],
     trailverseLinks: [
-      { label: 'National seashores in Discover', href: '/discover/type/seashores' },
+      { label: 'National seashores — Explore by Activity', href: '/discover/type/seashores' },
       { label: 'Compare coastal parks', href: '/compare' },
       { label: 'Plan a coastal trip with Trailie', href: '/plan-ai' },
     ],

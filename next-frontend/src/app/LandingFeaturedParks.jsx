@@ -5,13 +5,14 @@ import Image from 'next/image';
 import IconGlyph from '@/components/common/IconGlyph';
 import { logCtaClick } from '@/utils/analytics';
 import { parkToSlug } from '@/utils/parkSlug';
+import { LANDING_RETURN_PATH, parkDetailHref } from '@/lib/returnNavigation';
 
 export default function LandingFeaturedParks({ parks }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
       {parks.map((park, index) => {
         const parkSlug = parkToSlug(park.fullName);
-        const parkUrl = `/parks/${parkSlug}`;
+        const parkUrl = parkDetailHref(parkSlug, LANDING_RETURN_PATH);
         const planUrl = `/plan-ai?park=${encodeURIComponent(park.parkCode)}&name=${encodeURIComponent(park.fullName)}`;
 
         return (

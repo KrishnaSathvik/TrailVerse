@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getApiBaseUrl } from '@/lib/apiBase';
 
-const EXPLORE_ENDPOINTS = [
+export const PARK_EXPLORE_ENDPOINTS = [
   ['activities', 'activities'],
   ['places', 'places'],
   ['tours', 'tours'],
@@ -18,47 +18,54 @@ const EXPLORE_ENDPOINTS = [
   ['transit', 'transit'],
 ];
 
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+
+export function parkExploreQueryKey(parkCode) {
+  return ['parkExploreCache', parkCode];
+}
+
 /**
- * Eagerly load all explore-tab payloads once so we can hide empty tabs.
+ * Fetch all explore-tab payloads for one park (parallel).
+ * @param {string} parkCode NPS park code
+ * @param {string} [apiUrl]
+ */
+export async function fetchParkExploreBundle(parkCode, apiUrl = getApiBaseUrl()) {
+  const results = await Promise.allSettled(
+    PARK_EXPLORE_ENDPOINTS.map(([, endpoint]) =>
+      fetch(`${apiUrl}/parks/${parkCode}/${endpoint}`)
+        .then((res) => res.json())
+        .then((json) => json?.data ?? null)
+    )
+  );
+
+  const bundle = {};
+  PARK_EXPLORE_ENDPOINTS.forEach(([key], index) => {
+    const result = results[index];
+    bundle[key] = result.status === 'fulfilled' ? result.value : null;
+  });
+  return bundle;
+}
+
+/**
+ * Eagerly load explore-tab payloads once per park; cached in TanStack Query
+ * so park → list → park in the same session reuses data within staleTime.
  */
 export function useParkExploreCache(parkCode) {
-  const [cache, setCache] = useState(null);
-  const [ready, setReady] = useState(false);
+  const normalizedCode = parkCode ? String(parkCode).toLowerCase() : '';
 
-  useEffect(() => {
-    if (!parkCode) {
-      setCache(null);
-      setReady(false);
-      return undefined;
-    }
+  const query = useQuery({
+    queryKey: parkExploreQueryKey(normalizedCode),
+    queryFn: () => fetchParkExploreBundle(normalizedCode),
+    enabled: Boolean(normalizedCode),
+    staleTime: FIVE_MINUTES_MS,
+    gcTime: THIRTY_MINUTES_MS,
+    refetchOnWindowFocus: false,
+  });
 
-    let cancelled = false;
-    setReady(false);
-    setCache(null);
-
-    const apiUrl = getApiBaseUrl();
-
-    Promise.allSettled(
-      EXPLORE_ENDPOINTS.map(([, endpoint]) =>
-        fetch(`${apiUrl}/parks/${parkCode}/${endpoint}`)
-          .then((res) => res.json())
-          .then((json) => json?.data ?? null)
-      )
-    ).then((results) => {
-      if (cancelled) return;
-      const next = {};
-      EXPLORE_ENDPOINTS.forEach(([key], index) => {
-        const result = results[index];
-        next[key] = result.status === 'fulfilled' ? result.value : null;
-      });
-      setCache(next);
-      setReady(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [parkCode]);
-
-  return { cache, ready, loading: !ready };
+  return {
+    cache: query.data ?? null,
+    ready: query.isSuccess,
+    loading: query.isLoading,
+  };
 }

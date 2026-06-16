@@ -1,0 +1,100 @@
+Trailie live response verification
+Generated: 2026-06-15T19:36:31.064Z
+API: http://127.0.0.1:5001/api
+Passed: 16/16
+
+────────────────────────────────────────────────────────────────────────
+discover-july · general · guest
+Q: What are the best national parks to visit in July with cool weather, lakes or beaches?
+Flags: hasWebSearch=undefined hasLiveData=false · claude/claude-sonnet-4-6 · 1613 chars · 11.1s
+→ For cool July weather with actual water access, **Olympic National Park** is your top pick. It's the rare park that gives you both — rugged Pacific coastline (Ruby Beach is stunning and rarely crowded) plus alpine lakes …
+
+────────────────────────────────────────────────────────────────────────
+discover-july · general · auth
+Q: What are the best national parks to visit in July with cool weather, lakes or beaches?
+Flags: hasWebSearch=false hasLiveData=false · claude/claude-sonnet-4-6 · 1781 chars · 16.2s
+→ For cool July weather with actual water access, **Olympic National Park** is your best pick. It's the rare park that gives you everything at once — rugged Pacific coastline, old-growth rainforest, and alpine lakes, all i…
+
+────────────────────────────────────────────────────────────────────────
+compare-zion-bryce · general · guest
+Q: Zion vs Bryce for first-time visitors in October — which should we pick?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1634 chars · 12.3s
+→ Go with Zion — October is genuinely one of its best months, crowds start thinning after Labor Day and the canyon light in fall is stunning. The main draws are obvious for a reason: Angels Landing and The Narrows are buck…
+
+────────────────────────────────────────────────────────────────────────
+compare-zion-bryce · general · auth
+Q: Zion vs Bryce for first-time visitors in October — which should we pick?
+Flags: hasWebSearch=false hasLiveData=true · claude/claude-sonnet-4-6 · 1684 chars · 11.7s
+→ Go with Zion — October is genuinely one of its best months, and first-timers get more variety per day than Bryce can match. Zion in October means cooler temps (highs around 70s°F dropping to the 50s at night based on cur…
+
+────────────────────────────────────────────────────────────────────────
+angels-landing-open · alerts · guest
+Q: Is Angels Landing open right now in Zion National Park?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 887 chars · 10.7s
+→ Yes, Angels Landing is open — but you need a permit to hike it. It's currently summer permit season (June 1–August 31), so you'll need to snag a permit through the [Angels Landing Summer permit lottery](https://www.recre…
+
+────────────────────────────────────────────────────────────────────────
+angels-landing-open · alerts · auth
+Q: Is Angels Landing open right now in Zion National Park?
+Flags: hasWebSearch=false hasLiveData=true · claude/claude-sonnet-4-6 · 907 chars · 7.9s
+→ Yes, Angels Landing is open — but you need a permit to hike it. The Summer permit window (June 1–August 31) is active right now. Permits are distributed via lottery on Recreation.gov — [grab yours here](https://www.recre…
+
+────────────────────────────────────────────────────────────────────────
+narrows-permit · general · guest
+Q: Do I need a permit to hike The Narrows top-down in Zion?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1137 chars · 8.1s
+→ Yes — the top-down Narrows route requires a permit through the Zion Left Fork/Subway lottery system... wait, actually that's a different trail. The top-down Narrows specifically goes through Zion Slot Canyon and **does r…
+
+────────────────────────────────────────────────────────────────────────
+narrows-permit · general · auth
+Q: Do I need a permit to hike The Narrows top-down in Zion?
+Flags: hasWebSearch=false hasLiveData=true · claude/claude-sonnet-4-6 · 845 chars · 6.5s
+→ Yes — the top-down Narrows route requires a permit through the [Zion Left Fork North Creek (Subway) Seasonal Lottery](https://www.recreation.gov/permits/4251917)... wait, that's the Subway. For the Narrows top-down speci…
+
+────────────────────────────────────────────────────────────────────────
+yellowstone-itinerary · general · guest
+Q: Plan a 4-day Yellowstone itinerary in September for two adults who like wildlife and moderate hikes.
+Flags: hasWebSearch=undefined hasLiveData=true · openai/gpt-5.4-mini · 5873 chars · 28.5s
+→ Hey — heads up, September 17, 2026 is a fee-free entrance day at all NPS sites, so if your Yellowstone dates overlap that, you won’t pay the park entrance fee. With two adults, wildlife focus, and a moderate-fitness cap,…
+
+────────────────────────────────────────────────────────────────────────
+yellowstone-itinerary · general · auth
+Q: Plan a 4-day Yellowstone itinerary in September for two adults who like wildlife and moderate hikes.
+Flags: hasWebSearch=false hasLiveData=true · openai/gpt-5.4-mini · 5652 chars · 24.5s
+→ Hey — heads up, September 17, 2026 is a fee-free entrance day at Yellowstone, so you won’t pay the park entrance fee if your trip overlaps that date. **Logistics summary:** Yellowstone has **no vehicle entrance reservati…
+
+────────────────────────────────────────────────────────────────────────
+guest-west-yellowstone · web · guest
+Q: Where should we eat and stay in West Yellowstone before entering the park?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1361 chars · 9.9s
+→ West Yellowstone is a solid base — small town but it punches above its weight for food and lodging right at the park's west entrance. **To stay:** The Yellowstone Hot Springs area lodges book fast, but in West Yellowston…
+
+────────────────────────────────────────────────────────────────────────
+guest-west-yellowstone · web · auth
+Q: Where should we eat and stay in West Yellowstone before entering the park?
+Flags: hasWebSearch=true hasLiveData=true · claude/claude-sonnet-4-6 · 1163 chars · 12.6s
+→ For staying in West Yellowstone, **Three Bear Lodge** is the local favorite — it's walking distance to restaurants, has a cozy Western vibe, and staff actually know the park well. **Kelly Inn** is a solid mid-range pick …
+
+────────────────────────────────────────────────────────────────────────
+auth-jackson-lodging · web · guest
+Q: Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 1690 chars · 11.8s
+→ Jackson Hole in September is a sweet spot — the summer crowds are thinning, fall colors are starting to pop on the aspens, and you're catching some of the best weather of the year (expect highs around 70°F and clear skie…
+
+────────────────────────────────────────────────────────────────────────
+auth-jackson-lodging · web · auth
+Q: Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?
+Flags: hasWebSearch=true hasLiveData=true · claude/claude-sonnet-4-6 · 1439 chars · 14.0s
+→ Four Seasons Resort Jackson Hole in Teton Village is the top pick — ski-in/ski-out access (irrelevant in September, but the infrastructure means impeccable service), stunning Teton views, and solid fine dining on-site. I…
+
+────────────────────────────────────────────────────────────────────────
+glacier-road · web · guest
+Q: Are there any road closures on Going-to-the-Sun Road in Glacier National Park this week?
+Flags: hasWebSearch=undefined hasLiveData=true · claude/claude-sonnet-4-6 · 856 chars · 5.8s
+→ Going-to-the-Sun Road is partially open right now. On the west side, it's open up to Avalanche Creek. On the east side, you can drive to Jackson Glacier Overlook. The middle section — including Logan Pass — is still clos…
+
+────────────────────────────────────────────────────────────────────────
+glacier-road · web · auth
+Q: Are there any road closures on Going-to-the-Sun Road in Glacier National Park this week?
+Flags: hasWebSearch=true hasLiveData=true · claude/claude-sonnet-4-6 · 925 chars · 15.3s
+→ Yes — part of Going-to-the-Sun Road is currently closed. Here's where things stand: the road is open to **Avalanche Creek** on the west side, and to **Jackson Glacier Overlook** on the east side. The middle section over …

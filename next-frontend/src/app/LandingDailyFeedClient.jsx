@@ -8,6 +8,7 @@ import Button from '@/components/common/Button';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import dailyFeedService from '@/services/dailyFeedService';
 import { parkToSlug } from '@/utils/parkSlug';
+import { LANDING_RETURN_PATH, parkDetailHref } from '@/lib/returnNavigation';
 import { getFeedDateKey } from '@/utils/dailyFeedDate';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
 import { logCtaClick } from '@/utils/analytics';
@@ -36,6 +37,10 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
     return null;
   }
 
+  const parkOfDayHref = feed?.parkOfDay?.name
+    ? parkDetailHref(parkToSlug(feed.parkOfDay.name), LANDING_RETURN_PATH)
+    : null;
+
   return (
     <section className={LANDING_SECTION} style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-[92rem] mx-auto">
@@ -62,14 +67,14 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
         {feed?.parkOfDay && feed?.natureFact ? (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.8fr)] gap-6 xl:gap-8 items-stretch">
             <Link
-              href={`/parks/${parkToSlug(feed.parkOfDay.name)}`}
+              href={parkOfDayHref}
               className="group block relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
               style={{ minHeight: '28rem', boxShadow: 'var(--shadow-lg)' }}
               onClick={() => logCtaClick({
                 ctaId: 'park_of_day',
                 label: feed.parkOfDay.name,
                 surface: 'landing_daily_feed',
-                destination: `/parks/${parkToSlug(feed.parkOfDay.name)}`,
+                destination: parkOfDayHref,
                 parkCode: feed.parkOfDay.parkCode || null,
               })}
             >
@@ -143,7 +148,7 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  href={`/parks/${parkToSlug(feed.parkOfDay.name)}`}
+                  href={parkOfDayHref}
                   variant="primary"
                   size="lg"
                   icon={ArrowRight}

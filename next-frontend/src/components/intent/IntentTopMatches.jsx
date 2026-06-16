@@ -9,7 +9,7 @@ import { mergeFeaturedParks } from '@/lib/intentLandingApi';
  * Top matches grid — hydrates from SSR when present; otherwise loads via same-origin
  * /api rewrite (reliable on Vercel; avoids empty ISR when build-time backend fetch fails).
  */
-export default function IntentTopMatches({ landing, initialParks = [] }) {
+export default function IntentTopMatches({ landing, initialParks = [], fromPath = null }) {
   const [parks, setParks] = useState(initialParks);
   const [status, setStatus] = useState(initialParks.length > 0 ? 'ready' : 'idle');
 
@@ -104,6 +104,7 @@ export default function IntentTopMatches({ landing, initialParks = [] }) {
           showReviews={false}
           analyticsSurface="intent_landing"
           intentSlug={landing.path}
+          fromPath={fromPath}
         />
       ))}
     </div>
