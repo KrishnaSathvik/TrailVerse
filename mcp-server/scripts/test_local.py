@@ -45,7 +45,23 @@ def _truncate(v, n=200):
     return s if len(s) <= n else s[:n] + f"... [{len(s)} chars]"
 
 
-def _print_result(name: str, result: dict) -> bool:
+def _normalize_tool_result(result) -> dict:
+    if isinstance(result, dict):
+        return result
+    is_error = bool(getattr(result, "isError", False))
+    content = getattr(result, "content", None) or []
+    blocks = []
+    for block in content:
+        if isinstance(block, dict):
+            blocks.append(block)
+        else:
+            blocks.append({"type": getattr(block, "type", "text"), "text": getattr(block, "text", "")})
+    structured = getattr(result, "structuredContent", None) or {}
+    return {"isError": is_error, "content": blocks, "structuredContent": structured}
+
+
+def _print_result(name: str, result) -> bool:
+    result = _normalize_tool_result(result)
     is_error = result.get("isError", False)
     prefix = f"{RED}✗{RESET}" if is_error else f"{GREEN}✓{RESET}"
     print(f"\n{prefix} {BOLD}{name}{RESET}")
@@ -87,6 +103,17 @@ TESTS = {
         fitness_level="easy",
         has_kids=True,
         interests=["photography", "family-friendly"],
+    ),
+    "plan_trip_state_park": lambda: plan_trip(
+        message=(
+            "Plan a 3-day itinerary for Custer State Park in South Dakota "
+            "for two adults who like wildlife drives and moderate hikes."
+        ),
+        persona="planner",
+        days=3,
+        group_size=2,
+        fitness_level="moderate",
+        interests=["wildlife", "hiking"],
     ),
 }
 

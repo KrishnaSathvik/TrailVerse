@@ -9,7 +9,34 @@ const SEGMENTED_THEMES = [
   { id: 'dark', label: 'Dark', icon: Moon },
 ];
 
-const ThemeSwitcher = ({ showLabel = false, compact = false, variant }) => {
+/** SSR + first client paint — stable markup, no theme state (avoids hydration mismatch). */
+export function SegmentedThemeSkeleton({ size = 'sm' } = {}) {
+  const btnClass = size === 'sm' ? 'h-6 w-6' : 'h-8 w-8';
+  const iconClass = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4';
+
+  return (
+    <div
+      className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
+      style={{
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--surface)',
+      }}
+      aria-hidden="true"
+    >
+      {SEGMENTED_THEMES.map(({ id, icon: Icon }) => (
+        <span
+          key={id}
+          className={`flex ${btnClass} items-center justify-center rounded-full`}
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <Icon className={iconClass} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const ThemeSwitcher = ({ showLabel = false, compact = false, variant, size = 'default' }) => {
   const { theme, setTheme: rawSetTheme, isDark } = useTheme();
   const setTheme = (newTheme) => { logEvent('Theme', 'toggle', newTheme); rawSetTheme(newTheme); };
   const [showMenu, setShowMenu] = useState(false);
@@ -29,76 +56,47 @@ const ThemeSwitcher = ({ showLabel = false, compact = false, variant }) => {
   const CurrentIcon = currentTheme?.icon || Monitor;
 
   if (variant === 'segmented') {
-    if (!mounted) {
-      return (
-        <div className="flex w-fit items-center gap-3" aria-hidden="true">
-          <span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Theme
-          </span>
-          <div
-            className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
-            style={{
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--surface)',
-            }}
-          >
-            {SEGMENTED_THEMES.map((themeOption) => {
-              const Icon = themeOption.icon;
-              return (
-                <span
-                  key={themeOption.id}
-                  className="flex h-8 w-8 items-center justify-center rounded-full"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  <Icon className="h-4 w-4" />
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
+    const isCompact = size === 'sm';
+    const btnClass = isCompact ? 'h-6 w-6' : 'h-8 w-8';
+    const iconClass = isCompact ? 'h-3 w-3' : 'h-4 w-4';
 
     return (
-      <div className="flex w-fit items-center gap-3">
-        <span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Theme
-        </span>
-        <div
-          className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
-          style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--surface)',
-          }}
-          role="radiogroup"
-          aria-label="Theme"
-        >
-          {SEGMENTED_THEMES.map((themeOption) => {
-            const Icon = themeOption.icon;
-            const isActive = theme === themeOption.id;
+      <div
+        className="inline-flex items-center gap-0.5 rounded-full border p-0.5"
+        style={{
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--surface)',
+        }}
+        role="radiogroup"
+        aria-label="Theme"
+        suppressHydrationWarning
+      >
+        {SEGMENTED_THEMES.map((themeOption) => {
+          const Icon = themeOption.icon;
+          const isActive = theme === themeOption.id;
 
-            return (
-              <button
-                key={themeOption.id}
-                type="button"
-                role="radio"
-                aria-checked={isActive}
-                aria-label={themeOption.label}
-                onClick={() => setTheme(themeOption.id)}
-                className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
-                  isActive ? 'ring-1' : 'hover:opacity-80'
-                }`}
-                style={{
-                  backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
-                  borderColor: isActive ? 'var(--border)' : 'transparent',
-                  color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                }}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={themeOption.id}
+              type="button"
+              role="radio"
+              aria-checked={isActive}
+              aria-label={themeOption.label}
+              onClick={() => setTheme(themeOption.id)}
+              className={`flex ${btnClass} items-center justify-center rounded-full transition ${
+                isActive ? 'ring-1' : 'hover:opacity-80'
+              }`}
+              style={{
+                backgroundColor: isActive ? 'var(--bg-primary)' : 'transparent',
+                borderColor: isActive ? 'var(--border)' : 'transparent',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              }}
+              suppressHydrationWarning
+            >
+              <Icon className={iconClass} />
+            </button>
+          );
+        })}
       </div>
     );
   }

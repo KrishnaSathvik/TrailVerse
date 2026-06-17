@@ -112,6 +112,7 @@ async function finalizeParkImagesAndMetadata({
 const { formatFeeFreeBlock } = require('../services/feeFreeDaysService');
 const { extractParkFromMessage, extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { stripSkipOnlyParkSentences } = require('../utils/parkSkipContext');
+const { unwrapMislinkedParkMarkdown } = require('../utils/parkMarkdownLinks');
 const { getAIAnalytics, getLearningInsights } = require('../controllers/aiAnalyticsController');
 const AnonymousSession = require('../models/AnonymousSession');
 const Favorite = require('../models/Favorite');
@@ -125,6 +126,15 @@ const { extractItineraryJSON, validateItineraryFeasibility } = require('../utils
 const { parseConstraints, preflightCheck, buildConstraintBlock, validateItineraryConstraints, detectHypothetical, detectConflicts, detectIntent } = require('../utils/constraintEngine');
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
+const { TRAILIE_VOICE_INSTRUCTIONS } = require('../prompts');
+const {
+  buildTrailieContext,
+  formatStructuredContextInjection,
+  maybeAttachDebugTrailieContext,
+} = require('../utils/trailieContextBuilder');
+const {
+  extractConversationSummaryFromMessages,
+} = require('../utils/tripStateBuilder');
 const { streamRawLLMToSse } = require('../services/aiProviderStream');
 const {
   setSseHeaders,
@@ -515,6 +525,22 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     throw Object.assign(new Error('Messages array is required'), { statusCode: 400 });
   }
 
+  const originalMessages = messages;
+  const conversationSummary = extractConversationSummaryFromMessages(originalMessages);
+
+  let savedTripPlan = null;
+  const tripId = metadata.tripId || body.tripId;
+  if (tripId) {
+    try {
+      const TripPlan = require('../models/TripPlan');
+      savedTripPlan = await TripPlan.findById(tripId)
+        .select('formData parkCode parkName')
+        .lean();
+    } catch (tripLoadErr) {
+      console.warn(`${logPrefix} Could not load TripPlan ${tripId}:`, tripLoadErr.message);
+    }
+  }
+
   // Auto-route provider if not explicitly set
   if (!provider || provider === 'auto') {
     provider = autoRouteProvider(messages);
@@ -650,6 +676,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   let webSearchFacts = null;
   let feeFreeFacts = null;
   let webSearchUnavailable = false;
+  let factsMeta = null;
 
   try {
     // Fetch weather + web search using primary park
@@ -665,6 +692,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     webSearchFacts = factsResult.webSearchFacts;
     feeFreeFacts = factsResult.feeFreeFacts;
     webSearchUnavailable = !!factsResult.webSearchUnavailable;
+    factsMeta = factsResult.factsMeta || null;
 
     // Fetch NPS facts for ALL mentioned parks in parallel
     if (allExtractedParks.length > 1) {
@@ -985,6 +1013,37 @@ CRITICAL ISOLATION RULES — follow these exactly:
     console.log(`${logPrefix} Hypothetical detected:`, hypothetical.scenarioDescription);
   }
 
+  const trailieContext = buildTrailieContext({
+    provider,
+    lastUserMessage: lastMsg,
+    constraints,
+    intent,
+    preflightResult,
+    conflicts,
+    hypothetical,
+    factsMeta,
+    resolvedMetadata,
+    allExtractedParks,
+    npsFacts,
+    weatherFacts,
+    webSearchFacts,
+    feeFreeFacts,
+    webSearchUnavailable,
+    skipWebSearchForGuest,
+    metadata,
+    userCity,
+    conversationSummary,
+    savedTripPlan,
+  });
+  enhancedSystemPrompt += formatStructuredContextInjection(trailieContext);
+  console.log(`${logPrefix} Structured context injected:`, {
+    schemaVersion: trailieContext.contextMeta.schemaVersion,
+    providerMode: trailieContext.providerMode,
+    intent: trailieContext.intent.primary,
+    npsStatus: trailieContext.liveData.nps.status,
+    weatherStatus: trailieContext.liveData.weather.status,
+  });
+
   // Final reinforcement: if this looks like a planning request, remind the AI to include JSON
   const planningPatterns = /\b(plan|itinerary|schedule|trip|day-by-day|multi-day|\d+[\s-]day)\b/i;
   if (planningPatterns.test(lastMsg)) {
@@ -1002,7 +1061,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, lastMsg };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, lastMsg, trailieContext };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {
@@ -1510,6 +1569,8 @@ async function processAssistantResponse({
 
   let { cleanContent, itineraryData } = extractItineraryJSON(response.content);
 
+  cleanContent = unwrapMislinkedParkMarkdown(cleanContent);
+
   const isDiscoveryResponse = enhancedSystemPrompt.includes('TRAILVERSE PARK CANDIDATES');
   if (isDiscoveryResponse) {
     cleanContent = stripSkipOnlyParkSentences(cleanContent);
@@ -1708,7 +1769,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, lastMsg } = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, lastMsg, trailieContext } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -1965,17 +2026,20 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
     });
 
     res.json({
-      data: {
-        ...response,
-        hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
-        hasWebSearch: !!webSearchFacts,
-        parkName: displayMeta.parkName,
-        parkNames: displayMeta.parkNames,
-        confidence,
-        planScore,
-        intent: intent?.primaryIntent || null,
-        parkImages: displayMeta.parkImages,
-      },
+      data: maybeAttachDebugTrailieContext(
+        {
+          ...response,
+          hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+          hasWebSearch: !!webSearchFacts,
+          parkName: displayMeta.parkName,
+          parkNames: displayMeta.parkNames,
+          confidence,
+          planScore,
+          intent: intent?.primaryIntent || null,
+          parkImages: displayMeta.parkImages,
+        },
+        trailieContext
+      ),
     });
 
   } catch (error) {
@@ -2083,6 +2147,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         attachParkImages,
         openEndedDiscovery,
         lastMsg,
+        trailieContext,
       } = await prepareChatContext(req.body, '[AI Stream]', { req });
 
       if (preflightResult.blockers.length > 0) {
@@ -2187,23 +2252,29 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
       const contentUnchanged = processed.cleanContent === strippedStreamContent;
 
-      writeSseEvent(res, {
-        type: 'done',
-        contentUnchanged,
-        ...(contentUnchanged ? {} : { content: response.content }),
-        provider: response.provider,
-        model: response.model,
-        hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
-        hasWebSearch: !!webSearchFacts,
-        parkName: displayMeta.parkName,
-        parkNames: displayMeta.parkNames,
-        hasItinerary: !!processed.itineraryData,
-        itineraryData: processed.itineraryData || null,
-        confidence: processed.confidence,
-        planScore: processed.planScore,
-        intent: intent?.primaryIntent || null,
-        parkImages: displayMeta.parkImages,
-      });
+      writeSseEvent(
+        res,
+        maybeAttachDebugTrailieContext(
+          {
+            type: 'done',
+            contentUnchanged,
+            ...(contentUnchanged ? {} : { content: response.content }),
+            provider: response.provider,
+            model: response.model,
+            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+            hasWebSearch: !!webSearchFacts,
+            parkName: displayMeta.parkName,
+            parkNames: displayMeta.parkNames,
+            hasItinerary: !!processed.itineraryData,
+            itineraryData: processed.itineraryData || null,
+            confidence: processed.confidence,
+            planScore: processed.planScore,
+            intent: intent?.primaryIntent || null,
+            parkImages: displayMeta.parkImages,
+          },
+          trailieContext
+        )
+      );
       res.end();
 
       void saveStreamItineraryToTrip(req, processed.itineraryData);
@@ -2401,6 +2472,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         openEndedDiscovery: anonOpenEndedDiscovery,
         allExtractedParks,
         lastMsg,
+        trailieContext: anonTrailieContext,
       } = ctx;
 
       provider = ctxProvider;
@@ -2510,26 +2582,32 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
       const contentUnchanged = processed.cleanContent === strippedStreamContent;
 
-      writeSseEvent(res, {
-        type: 'done',
-        contentUnchanged,
-        ...(contentUnchanged ? {} : { content: response.content }),
-        provider: response.provider,
-        model: response.model,
-        hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
-        hasWebSearch: !!webSearchFacts,
-        parkName: anonDisplayMeta.parkName,
-        parkNames: anonDisplayMeta.parkNames,
-        hasItinerary: !!processed.itineraryData,
-        itineraryData: processed.itineraryData || null,
-        confidence: processed.confidence,
-        planScore: processed.planScore,
-        intent: anonIntent?.primaryIntent || null,
-        parkImages: anonDisplayMeta.parkImages,
-        anonymousId: session.anonymousId,
-        messageCount: userMessageCount,
-        canSendMore: session.canSendMessage(),
-      });
+      writeSseEvent(
+        res,
+        maybeAttachDebugTrailieContext(
+          {
+            type: 'done',
+            contentUnchanged,
+            ...(contentUnchanged ? {} : { content: response.content }),
+            provider: response.provider,
+            model: response.model,
+            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+            hasWebSearch: !!webSearchFacts,
+            parkName: anonDisplayMeta.parkName,
+            parkNames: anonDisplayMeta.parkNames,
+            hasItinerary: !!processed.itineraryData,
+            itineraryData: processed.itineraryData || null,
+            confidence: processed.confidence,
+            planScore: processed.planScore,
+            intent: anonIntent?.primaryIntent || null,
+            parkImages: anonDisplayMeta.parkImages,
+            anonymousId: session.anonymousId,
+            messageCount: userMessageCount,
+            canSendMore: session.canSendMessage(),
+          },
+          anonTrailieContext
+        )
+      );
       res.end();
 
       const anonRequestEndTime = Date.now();
@@ -2744,6 +2822,7 @@ router.post('/chat-anonymous', async (req, res) => {
       openEndedDiscovery: anonOpenEndedDiscovery,
       allExtractedParks,
       lastMsg,
+      trailieContext: anonTrailieContext,
     } = ctx;
 
     provider = ctxProvider;
@@ -2997,24 +3076,27 @@ router.post('/chat-anonymous', async (req, res) => {
     });
 
     res.json({
-      data: {
-        content: response.content,
-        provider: response.provider,
-        model: response.model,
-        usage: response.usage,
-        anonymousId: session.anonymousId,
-        messageCount: userMessageCount,
-        canSendMore: session.canSendMessage(),
-        hasLiveData: !!(npsFacts || weatherFacts),
-        parkName: anonDisplayMeta.parkName,
-        parkNames: anonDisplayMeta.parkNames,
-        hasItinerary: !!anonItineraryData,
-        itinerary: anonItineraryData || null,
-        confidence: anonConfidence,
-        planScore: anonPlanScore,
-        intent: anonIntent?.primaryIntent || null,
-        parkImages: anonDisplayMeta.parkImages
-      }
+      data: maybeAttachDebugTrailieContext(
+        {
+          content: response.content,
+          provider: response.provider,
+          model: response.model,
+          usage: response.usage,
+          anonymousId: session.anonymousId,
+          messageCount: userMessageCount,
+          canSendMore: session.canSendMessage(),
+          hasLiveData: !!(npsFacts || weatherFacts),
+          parkName: anonDisplayMeta.parkName,
+          parkNames: anonDisplayMeta.parkNames,
+          hasItinerary: !!anonItineraryData,
+          itinerary: anonItineraryData || null,
+          confidence: anonConfidence,
+          planScore: anonPlanScore,
+          intent: anonIntent?.primaryIntent || null,
+          parkImages: anonDisplayMeta.parkImages,
+        },
+        anonTrailieContext
+      ),
     });
 
   } catch (error) {
@@ -3256,53 +3338,6 @@ router.get('/learning-insights', protect, getLearningInsights);
 
 const voiceSessionRateLimit = new Map(); // key → { count, resetAt }
 const ANON_VOICE_FREE_SESSIONS = 3; // free voice sessions before requiring login
-
-const TRAILIE_VOICE_INSTRUCTIONS = `You are Trailie — TrailVerse AI's insider travel buddy for U.S. national parks and outdoor travel. You speak like a sharp, experienced friend who knows every park — not a travel brochure.
-
-STARTUP RULE — ABSOLUTE:
-- When the session starts, say NOTHING. Do not greet, introduce yourself, or speak at all until the user speaks first.
-- Stay completely silent until you hear the user's voice. No "hey", no "welcome", no "how can I help" — total silence.
-
-VOICE DELIVERY — THIS IS CRITICAL:
-- You are a VOICE assistant. People are LISTENING, not reading.
-- Your responses MUST be 2-4 sentences max. That's it. No exceptions.
-- Lead with the single most important fact, then 1-2 supporting details. STOP. Do not keep going.
-- NEVER list more than 3 items. If there are 5 alerts, mention the 1-2 most important ones.
-- NEVER read out descriptions, overviews, or long lists. Summarize in your own words briefly.
-- Speak at a natural conversational pace. Pause between ideas. Do NOT rush through information.
-- After answering, STOP and WAIT for the user to ask a follow-up. Do NOT volunteer extra info.
-- Example GOOD: "Zion's at 68 degrees right now, nice weather. There are a couple alerts — the Canyon Overlook Trail is closed for rockfall. Entrance is 35 bucks per car."
-- Example BAD: "Zion National Park is located in Utah. Current weather is 68 degrees Fahrenheit. There are 5 active alerts including a closure on Canyon Overlook Trail due to rockfall, information about shuttle schedules, seasonal road information, and two more. The entrance fee is $35 per vehicle. Today's hours are sunrise to sunset. Activities include hiking, camping, rock climbing, stargazing, canyoneering, wildlife watching, and more."
-
-RESPONSE LENGTH — HARD LIMIT:
-- Park details: weather + 1 key alert + fee. That's ONE response. Stop.
-- Search results: mention top 2-3 parks by name with one phrase each. Stop.
-- Comparisons: pick a winner, give 2 reasons. Stop.
-- Events: mention 1-2 upcoming events. Stop.
-- The user will ask follow-ups if they want more. Trust that.
-
-TOOL CALL BEHAVIOR — MANDATORY:
-- When you need to call a tool, call it IMMEDIATELY without saying anything first. Do NOT speak before the tool returns.
-- NEVER say "let me check", "hang tight", "let me pull that up", "alright here we go", "sure thing", or ANY filler before a tool call. Just call the tool silently.
-- After the tool returns data, give ONE short response (2-4 sentences). Do NOT read back all the data. Cherry-pick the 2-3 most relevant facts.
-- NEVER start speaking, then pause to call a tool, then speak again. Either speak OR call a tool — not both in sequence.
-- Do NOT give a summary, then repeat the same info with more detail. Say it ONCE.
-
-WHEN TO CALL search_parks:
-- Use search_parks for park discovery ("best parks for couples", "romantic beach parks", "quiet parks for beginners", etc.). Pass the user's phrase as query when possible.
-- Results come from TrailVerse ranked search — mention top picks by name and briefly why they match.
-- For general advice about a park already in context ("best time to visit", "what to pack") — answer from pre-loaded data; do not call search_parks.
-- Call get_park_details when you need live weather, alerts, or fees for a specific park code.
-
-Key persona rules:
-- Use contractions, be direct, be opinionated. "Skip the tourist trap — head to Lipan Point at sunrise."
-- Share insider tips: best times, hidden trails, where locals eat, what to skip.
-- Concrete over abstract: "4-hour drive" not "a manageable distance."
-- Include trail stats when recommending hikes: distance, elevation gain, time, difficulty.
-- Be honest about downsides: "Amazing views but brutal in July heat."
-- If LIVE PARK DATA is pre-loaded below, use it directly to answer — do NOT call tools for that park. Respond instantly.
-- Only call tools (get_park_details, search_parks, compare_parks, find_events) when the user asks about a DIFFERENT park, wants park search/comparison, or asks about events/programs.
-- Never guess about weather, alerts, fees, or hours — use pre-loaded data or call the relevant tool.`;
 
 router.post('/realtime-session', optionalAuth, async (req, res) => {
   try {

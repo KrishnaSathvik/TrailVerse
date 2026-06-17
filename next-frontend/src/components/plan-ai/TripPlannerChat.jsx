@@ -38,6 +38,7 @@ import {
   resolvePlanAiWelcomeMessage,
 } from '@/lib/planAiWelcomeCopy';
 import { derivePlanAiHeaderMeta, PLAN_AI_ENTRY } from '@/lib/planAiHeaderMeta';
+import { applyMessageConstraintOverrides } from '@/lib/messageConstraintOverrides';
 import { stripItineraryJsonForDisplay } from '@/utils/streamDisplayContent';
 
 const ANONYMOUS_SESSION_KEY = 'anonymousSession';
@@ -1330,7 +1331,7 @@ const TripPlannerChat = ({
       // Build context for AI
       const userContext = user ? await tripHistoryService.getAIContext(user.id) : null;
       
-      const sessionContext = buildClientSessionContext(userContext, isPersonalized);
+      const sessionContext = buildClientSessionContext(userContext, isPersonalized, messageText.trim());
 
       const requestMetadata = {
         parkCode: formData.parkCode,
@@ -1828,8 +1829,17 @@ const TripPlannerChat = ({
   };
 
   /** Session context merged server-side with Trailie persona (not a replacement system prompt). */
-  const buildClientSessionContext = (userContext, isPersonalizedMode = false) => {
-    const days = calculateDays();
+  const buildClientSessionContext = (userContext, isPersonalizedMode = false, latestUserMessage = '') => {
+    const effectiveForm = applyMessageConstraintOverrides(formData, latestUserMessage);
+    const days = (() => {
+      if (effectiveForm.startDate && effectiveForm.endDate) {
+        const start = new Date(effectiveForm.startDate);
+        const end = new Date(effectiveForm.endDate);
+        const ms = end.setHours(0, 0, 0, 0) - start.setHours(0, 0, 0, 0);
+        return Math.max(1, Math.floor(ms / 86400000) + 1);
+      }
+      return effectiveForm.numDays || effectiveForm.days || calculateDays();
+    })();
 
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
@@ -1854,12 +1864,12 @@ CURRENT CONTEXT:
 TRIP DETAILS:
 - ${suggestText ? `Destinations: ${suggestText}` : `Park: ${parkName}`}
 - Duration: ${days} days
-- Dates: ${formData.startDate} to ${formData.endDate}
-- Group: ${formData.groupSize} people
-- Budget: ${formData.budget}
-- Fitness: ${formData.fitnessLevel}
-- Interests: ${(formData.interests || []).join(', ') || 'not specified'}
-- Accommodation: ${formData.accommodation}`;
+- Dates: ${effectiveForm.startDate} to ${effectiveForm.endDate}
+- Group: ${effectiveForm.groupSize} people
+- Budget: ${effectiveForm.budget}
+- Fitness: ${effectiveForm.fitnessLevel}
+- Interests: ${(effectiveForm.interests || []).join(', ') || 'not specified'}
+- Accommodation: ${effectiveForm.accommodation}`;
 
     if (userContext && userContext.totalTrips > 0) {
       prompt += `\n\nUSER HISTORY & PREFERENCES:

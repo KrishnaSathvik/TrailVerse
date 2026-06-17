@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { User, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
 import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
-import { linkifyParkNames } from '@/utils/parkLinkifier';
+import { normalizeParkLinksInMarkdown, unwrapMislinkedParkMarkdown } from '@/utils/parkLinkifier';
 import { stabilizeStreamingMarkdown } from '@/utils/stripMarkdown';
 
 
@@ -166,7 +166,9 @@ const MessageBubble = ({
   const shouldLinkifyParks = linkifyParks && !isStreaming && !isUser;
   const markdownContent = isUser
     ? message
-    : (shouldLinkifyParks ? linkifyParkNames(renderBody) : renderBody);
+    : (shouldLinkifyParks
+        ? normalizeParkLinksInMarkdown(renderBody)
+        : unwrapMislinkedParkMarkdown(renderBody));
 
   const handleCopy = () => {
     if (!message) return;

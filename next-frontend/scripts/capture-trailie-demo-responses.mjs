@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Capture Trailie demo chat responses — mixed scenarios (discovery curator,
- * head-to-head compare, itinerary, permits, guest local tips + upsell).
+ * Capture Trailie demo chat responses — 4 scenarios (discovery, compare, itinerary, web local).
  */
 
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
@@ -38,13 +37,16 @@ const TRAILVERSE_WEB_BASE =
 function normalizeDemoLinks(text) {
   if (!text) return text;
   return text
-    .replace(/https?:\/\/trailverse\.ai/g, TRAILVERSE_WEB_BASE)
+    .replace(/https?:\/\/(?:www\.)?trailverse\.ai/g, TRAILVERSE_WEB_BASE)
     .replace(/https?:\/\/(?:localhost|127\.0\.0\.1):3000/g, TRAILVERSE_WEB_BASE)
     .replace(/\/parks\/the-narrows(?=\?|\/|$|\))/g, '/parks/zion-national-park')
     .replace(/\/parks\/bryce(?=\?|\/|$|\))/g, '/parks/bryce-canyon-national-park')
     .replace(/\/parks\/yosemite(?=\?|\/|$|\))/g, '/parks/yosemite-national-park')
+    .replace(/\/parks\/boston(?=\?|\/|$|\))/g, '/parks/acadia-national-park')
+    .replace(/\[([^\]]+)\]\([^)]*\/parks\/boston[^)]*\)/g, '$1')
     .replace(/\/parks\/zion-national-park/g, '/parks/zion-national-park');
 }
+
 const TIMEOUT_MS = Number(process.env.TRAILIE_DEMO_TIMEOUT_MS || 180000);
 const EMAIL = process.env.PLAN_AI_TEST_EMAIL;
 const PASSWORD = process.env.PLAN_AI_TEST_PASSWORD;
@@ -293,8 +295,17 @@ async function main() {
   }
 
   const outPath = join(dirname(fileURLToPath(import.meta.url)), '../src/data/trailieDemoResponses.json');
+  let nextVersion = 1;
+  if (existsSync(outPath)) {
+    try {
+      const prev = JSON.parse(readFileSync(outPath, 'utf8'));
+      nextVersion = Number(prev.version || 0) + 1;
+    } catch {
+      nextVersion = 1;
+    }
+  }
   const payload = {
-    version: 6,
+    version: nextVersion,
     source: `${API_BASE}/ai/chat + /ai/chat-anonymous`,
     captureMode: 'mixed-live',
     generatedAt: new Date().toISOString(),

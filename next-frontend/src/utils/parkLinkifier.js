@@ -144,6 +144,46 @@ function isFalsePositive(text, matchIndex, matchLength, parkName) {
 // are matched before shorter ones ("Grand Canyon")
 const sortedParks = Object.keys(PARK_NAME_TO_SLUG).sort((a, b) => b.length - a.length);
 
+/** True when markdown link text is a known park name (not a hotel, trail, etc.). */
+export function isParkLinkLabel(label) {
+  const plain = String(label || '').replace(/\*\*/g, '').trim();
+  if (!plain) return false;
+  if (PARK_NAME_TO_SLUG[plain]) return true;
+  const lower = plain.toLowerCase();
+  return sortedParks.some((name) => lower === name.toLowerCase());
+}
+
+/**
+ * Unwrap [Hotel Name](/parks/...) — model sometimes links businesses to park pages.
+ * Keeps links when the label is an actual park name.
+ */
+export function unwrapMislinkedParkMarkdown(content) {
+  if (!content || typeof content !== 'string') return content;
+  return content.replace(
+    /\[([^\]]+)\]\(([^)]*\/parks\/[^)\s]+[^)]*)\)/gi,
+    (full, label) => (isParkLinkLabel(label) ? full : label)
+  );
+}
+
+/**
+ * Remove markdown park links so linkifyParkNames can attach one link per slug
+ * (first mention in reading order).
+ */
+export function stripExistingParkMarkdownLinks(content) {
+  if (!content || typeof content !== 'string') return content;
+  return content.replace(
+    /\[([^\]]+)\]\(([^)]*\/parks\/[^)\s]+[^)]*)\)/gi,
+    (full, label) => (isParkLinkLabel(label) ? label : full)
+  );
+}
+
+/** One park link per slug — unwrap mislinked hotels, strip duplicate park links, linkify first mention. */
+export function normalizeParkLinksInMarkdown(content, currentSlug = '') {
+  if (!content || typeof content !== 'string') return content;
+  const stripped = stripExistingParkMarkdownLinks(unwrapMislinkedParkMarkdown(content));
+  return linkifyParkNames(stripped, currentSlug);
+}
+
 /**
  * Replace park name occurrences in markdown text with markdown links.
  * Only replaces in plain text — skips existing markdown links and code blocks.

@@ -5,23 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, ChevronDown } from '@components/icons';
-import ThemeSwitcher from './ThemeSwitcher';
+import ThemeSwitcher, { SegmentedThemeSkeleton } from './ThemeSwitcher';
 import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
-
-/** SSR/hydration-safe skeleton — matches ThemeSwitcher showLabel toggle size. */
-function DesktopThemeTogglePlaceholder() {
-  return (
-    <button
-      type="button"
-      className="relative inline-flex h-8 w-14 shrink-0 items-center rounded-full"
-      style={{ backgroundColor: '#e5e7eb', border: '1px solid var(--border)' }}
-      aria-hidden="true"
-      tabIndex={-1}
-    >
-      <span className="inline-block h-6 w-6 translate-x-1 transform rounded-full bg-white" />
-    </button>
-  );
-}
 
 const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
 const BLOG_NAV_ITEM = { path: '/blog', label: 'Blog' };
@@ -195,6 +180,13 @@ const Header = () => {
 
   const closeMoreMenu = () => setMoreMenuOpen(false);
 
+  const renderSegmentedThemeSwitcher = () =>
+    hasMounted ? (
+      <ThemeSwitcher variant="segmented" size="sm" />
+    ) : (
+      <SegmentedThemeSkeleton size="sm" />
+    );
+
   useEffect(() => {
     setMoreMenuOpen(false);
   }, [pathname]);
@@ -257,7 +249,7 @@ const Header = () => {
             className="mt-1 border-t px-1 pt-2"
             style={{ borderColor: 'var(--border)' }}
           >
-            {hasMounted ? <ThemeSwitcher variant="segmented" /> : null}
+            {renderSegmentedThemeSwitcher()}
           </div>
         )}
 
@@ -356,37 +348,31 @@ const Header = () => {
 
           <div className="hidden shrink-0 items-center justify-end justify-self-end lg:flex lg:w-auto">
             <div className="flex items-center gap-3">
-              {hasMounted ? (
-                <>
-                  <ThemeSwitcher showLabel />
-                  {showAuthChrome ? (
-                    <div className="flex items-center gap-3">
-                      {user.role === 'admin' && (
-                        <Link
-                          href="/admin"
-                          className="text-sm font-medium transition"
-                          style={{ color: 'var(--text-secondary)' }}
-                          onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
-                          onMouseLeave={(e) => { e.target.style.color = 'var(--text-secondary)'; }}
-                        >
-                          Admin
-                        </Link>
-                      )}
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-3 py-2 rounded-full transition"
-                        style={{ color: 'var(--text-tertiary)' }}
-                        onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
-                        onMouseLeave={(e) => { e.target.style.color = 'var(--text-tertiary)'; }}
-                      >
-                        <LogOut className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <DesktopThemeTogglePlaceholder />
-              )}
+              {renderSegmentedThemeSwitcher()}
+              {showAuthChrome ? (
+                <div className="flex items-center gap-3">
+                  {user.role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      className="text-sm font-medium transition"
+                      style={{ color: 'var(--text-secondary)' }}
+                      onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
+                      onMouseLeave={(e) => { e.target.style.color = 'var(--text-secondary)'; }}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-3 py-2 rounded-full transition"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    onMouseEnter={(e) => { e.target.style.color = 'var(--text-primary)'; }}
+                    onMouseLeave={(e) => { e.target.style.color = 'var(--text-tertiary)'; }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

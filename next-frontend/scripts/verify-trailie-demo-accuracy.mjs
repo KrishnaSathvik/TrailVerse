@@ -88,7 +88,10 @@ function runContentChecks(scenarios, alerts, checks) {
       if (!/to personalize|starting from|how many days|road trip|okay flying/i.test(turn1Text)) {
         fail(checks, id, 'Discovery answer should end with logistics personalization questions');
       }
-      if (/\b(?:skip|avoid|pass on)\s+(?:great sand dunes|the great sand dunes)/i.test(turn1Text)) {
+      if (
+        /\b(?:skip|avoid|pass on)\s+(?:great sand dunes|the great sand dunes)/i.test(turn1Text) ||
+        /great sand dunes[^.\n]{0,220}\b(?:i'd skip it|i would skip it|skip it for your)/i.test(turn1Text)
+      ) {
         fail(checks, id, 'Discovery answer should not name a park only to say skip it');
       }
     }
@@ -102,10 +105,16 @@ function runContentChecks(scenarios, alerts, checks) {
         if (!/boston|drive from boston|from boston/i.test(t2)) {
           fail(checks, id, 'Refinement turn 2 should use Boston starting context');
         }
+        if (/faneuil hall|weather note:/i.test(t2)) {
+          fail(checks, id, 'Refinement turn 2 should not add off-topic Boston city closures or weather-note asides');
+        }
+        if (/\bjune 2026\b/i.test(t2) && !/\bjuly\b/i.test(t2)) {
+          fail(checks, id, 'Refinement turn 2 should stay on July thread, not June');
+        }
         if (!/acadia|olympic/i.test(t2)) {
           fail(checks, id, 'Refinement turn 2 should name concrete parks from thread');
         }
-        if (/to personalize this:/i.test(t2)) {
+        if (/to personalize this:/i.test(t2) && /where are you starting|how many days do you have|road trip only, or okay flying/i.test(t2)) {
           fail(checks, id, 'Refinement turn 2 should answer with a tailored pick, not re-ask logistics');
         }
       }

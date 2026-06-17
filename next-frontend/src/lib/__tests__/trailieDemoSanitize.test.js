@@ -41,4 +41,15 @@ describe('sanitizeTrailieDemoAnswer', () => {
 _Verify at [nps.gov](https://www.nps.gov) before your trip._`;
     expect(sanitizeTrailieDemoAnswer(input)).toBe('Dinner in Springdale.');
   });
+
+  it('removes discovery skip-dismissal paragraphs naming a park', () => {
+    const input = `Olympic is the pick.
+
+Great Sand Dunes (Colorado) has Medano Creek for wading in late spring, but it typically dries up by July — so I'd skip it for your water-access goal.
+
+**To personalize this:**`;
+    const out = sanitizeTrailieDemoAnswer(input);
+    expect(out).not.toMatch(/great sand dunes/i);
+    expect(out).toMatch(/olympic is the pick/i);
+  });
 });

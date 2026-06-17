@@ -8,6 +8,7 @@ const {
 } = require('./webSearchClassifier');
 const { summarizeWebResultsForTrailie } = require('./webSearchSummarizer');
 const { rankAndFilterWebResults } = require('../utils/webSearchRelevance');
+const { createFactSlotMeta } = require('../utils/trailieContextBuilder');
 const { fetchNpsRoadConditionsFacts, needsNpsRoadConditionsBlock } = require('./npsParkConditionsService');
 const {
   isClosureCategory,
@@ -386,6 +387,34 @@ function enrichQuery(rawQuery, parkName, category) {
  * @param {string} userMessage
  * @returns {string} One of the keys in STRATEGY
  */
+/**
+ * Named non-catalog outdoor destinations (state parks, forests, preserves, etc.).
+ * Conservative v1 — avoids broad discovery words (best, recommend, near Chicago).
+ * @param {string} userMessage
+ * @returns {boolean}
+ */
+function hasExplicitNonNpsDestinationSignal(userMessage) {
+  if (!userMessage) return false;
+  const msg = userMessage.toLowerCase();
+
+  return (
+    /\bstate park\b/.test(msg) ||
+    /\bnational forest\b/.test(msg) ||
+    /\bstate forest\b/.test(msg) ||
+    /\bcounty park\b/.test(msg) ||
+    /\bcity park\b/.test(msg) ||
+    /\bpreserve\b/.test(msg) ||
+    /\brecreation area\b/.test(msg) ||
+    /\bconservation area\b/.test(msg) ||
+    /\bvalley of fire\b/.test(msg) ||
+    /\bhocking hills\b/.test(msg) ||
+    /\bred river gorge\b/.test(msg) ||
+    /\bcuster\b/.test(msg) ||
+    /\bstarved rock\b/.test(msg) ||
+    /\bsmith rock\b/.test(msg)
+  );
+}
+
 /**
  * Topics TrailVerse does not answer from NPS live API — use web search (logged-in).
  */
@@ -778,7 +807,12 @@ function formatWebResults(finalResults, trailieDigest, category) {
 
   if (places.length > 0) {
     formatted += '\nNearby Places:\n';
-    formatted += places.map(p => `- ${p.title}: ${p.snippet}`).join('\n');
+    formatted += places
+      .map((p) => {
+        const line = `- ${p.title}: ${p.snippet}`;
+        return p.url ? `${line}\n   Link: ${p.url}` : line;
+      })
+      .join('\n');
     formatted += '\n';
   }
 
@@ -791,6 +825,8 @@ function formatWebResults(finalResults, trailieDigest, category) {
   }
 
   formatted += '\n(From live web search — verify details with official sources)';
+  formatted +=
+    '\nWhen citing a hotel or restaurant from Nearby Places or Web Sources, link the business name to its Link/Source URL on first mention — e.g. [Jackson Lake Lodge](url). Do NOT link business names to TrailVerse /parks/ URLs.';
   return formatted;
 }
 
@@ -811,12 +847,20 @@ function isHeadToHeadCompareQuery(userMessage) {
 /**
  * Logged-in web search policy: NPS + catalog for park picks, compare, permits, and open/closed;
  * web search only for logistics that need live off-NPS sources (restaurants, hotels, roads, etc.).
+ * Named non-NPS destinations (no parkCode) bypass itinerary/compare/operational gates.
  * @param {string} userMessage
+ * @param {{ parkCode?: string|null }} [options]
  * @returns {boolean}
  */
-function needsWebSearch(userMessage) {
+function needsWebSearch(userMessage, { parkCode = null } = {}) {
   if (!userMessage || userMessage.trim().length < 8) return false;
   if (!isTravelRelated(userMessage)) return false;
+
+  const explicitNonNps = !parkCode && hasExplicitNonNpsDestinationSignal(userMessage);
+  if (explicitNonNps) {
+    return true;
+  }
+
   if (isItineraryPlanningQuery(userMessage)) return false;
   if (isNpsAuthoritativeOnly(userMessage)) return false;
   if (isOpenEndedParkDiscoveryQuery(userMessage)) return false;
@@ -971,7 +1015,10 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
     const shouldFetchWeather = needsWeatherFacts(userMessage) && lat && lon;
     const shouldFetchNPS = needsNPSFacts(userMessage) && parkCode;
     // Skip web search for anonymous users — it's a signup incentive
-    const shouldFetchWeb = !isAnonymous && needsWebSearch(userMessage);
+    const shouldFetchWeb = !isAnonymous && needsWebSearch(userMessage, { parkCode });
+    const shouldCheckFeeFree = !!userMessage;
+
+    const fetchStartedAt = new Date().toISOString();
 
     console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, shouldFetchWeb, hasFeeFree: !!results.feeFreeFacts, userMessage: userMessage?.substring(0, 50) });
 
@@ -1019,6 +1066,35 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
       results.webSearchUnavailable = true;
       console.warn('[Facts] Web search was needed but returned no results (timeout, empty, or API keys missing)');
     }
+
+    const fetchedAt = new Date().toISOString();
+    results.factsMeta = {
+      weather: createFactSlotMeta(shouldFetchWeather, results.weatherFacts, {
+        source: 'OpenWeather',
+        fetchedAt: results.weatherFacts ? fetchedAt : null,
+      }),
+      nps: createFactSlotMeta(shouldFetchNPS, results.npsFacts, {
+        source: 'NPS',
+        fetchedAt: results.npsFacts ? fetchedAt : null,
+      }),
+      webSearch: shouldFetchWeb
+        ? createFactSlotMeta(true, results.webSearchFacts, {
+            source: 'Brave|Serper|Tavily',
+            fetchedAt: results.webSearchFacts ? fetchedAt : null,
+            reason: results.webSearchFacts
+              ? null
+              : results.webSearchUnavailable
+                ? 'web_search_unavailable'
+                : 'no_results',
+          })
+        : createFactSlotMeta(false, null, {
+            reason: isAnonymous ? 'guest_account_web_search_disabled' : null,
+          }),
+      feeFree: createFactSlotMeta(shouldCheckFeeFree, results.feeFreeFacts, {
+        source: 'feeFreeDaysService',
+        fetchedAt: results.feeFreeFacts ? fetchStartedAt : null,
+      }),
+    };
 
     console.log('[Facts] Results:', {
       hasWeather: !!results.weatherFacts,
@@ -1237,6 +1313,7 @@ module.exports = {
   needsWeatherFacts,
   needsNPSFacts,
   needsWebSearch,
+  hasExplicitNonNpsDestinationSignal,
   shouldAppendAnonymousWebSearchUpsell,
   isTravelRelated,
   classifyQuery,
@@ -1244,4 +1321,5 @@ module.exports = {
   extractUserCity,
   getCandidateParks,
   formatCandidateParksBlock,
+  formatWebResults,
 };

@@ -214,7 +214,10 @@ function evaluate(mode, caseDef, data, httpOk, zionAlerts) {
   }
 
   if (caseDef.id === 'discover-july') {
-    if (/\b(?:skip|avoid|pass on)\s+(?:great sand dunes|the great sand dunes)/i.test(content)) {
+    if (
+      /\b(?:skip|avoid|pass on)\s+(?:great sand dunes|the great sand dunes)/i.test(content) ||
+      /great sand dunes[^.\n]{0,220}\b(?:i'd skip it|i would skip it|skip it for your)/i.test(content)
+    ) {
       failures.push('names a park only to say skip it');
     }
   }

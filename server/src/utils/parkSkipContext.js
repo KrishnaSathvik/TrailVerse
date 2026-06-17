@@ -4,34 +4,63 @@
 
 const SKIP_LEAD_RE = /\b(?:skip|avoid|pass on|don't bother(?: with)?|steer clear of|not worth)\b/i;
 
-/** Remove discovery paragraphs that name a catalog park only to say skip/avoid. */
-function stripSkipOnlyParkSentences(text) {
-  if (!text || typeof text !== 'string') return text;
+const SKIP_DISMISSAL_RE =
+  /\b(?:i'd skip it|i would skip it|so i'd skip it|skip it for your|not a fit for your)\b/i;
 
-  let parkKeys = [];
+/** Compare / head-to-head answers may legitimately say "save X for later". */
+const POSITIVE_RECOMMEND_RE =
+  /\b(?:go with|top pick|best pick|my (?:top |honest )?pick|save [a-z]+ for when)\b/i;
+
+function loadParkKeys() {
   try {
     const { PARK_NAME_TO_CODE } = require('./parkExtractor');
-    parkKeys = [...PARK_NAME_TO_CODE.keys()].sort((a, b) => b.length - a.length);
+    return [...PARK_NAME_TO_CODE.keys()].sort((a, b) => b.length - a.length);
   } catch {
-    return text;
+    return [];
   }
+}
 
-  const paragraphs = text.split(/\n\n+/);
-  const kept = paragraphs.filter((paragraph) => {
-    const trimmed = paragraph.trim();
-    if (!/^(?:Skip|Avoid|Pass on|Don't bother with|Steer clear of)\b/i.test(trimmed)) {
-      return true;
-    }
+function plainTextForParkMatch(text) {
+  return String(text || '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .toLowerCase();
+}
+
+function paragraphNamesCatalogPark(paragraph, parkKeys) {
+  const plain = plainTextForParkMatch(paragraph);
+  return parkKeys.some((key) => key.length >= 4 && plain.includes(key));
+}
+
+function isSkipOnlyDismissalParagraph(paragraph, parkKeys = loadParkKeys()) {
+  const trimmed = paragraph.trim();
+  if (!trimmed || !parkKeys.length) return false;
+
+  if (/^(?:Skip|Avoid|Pass on|Don't bother with|Steer clear of)\b/i.test(trimmed)) {
     const afterLead = trimmed.replace(
       /^(?:Skip|Avoid|Pass on|Don't bother with|Steer clear of)\s+(?:the\s+)?/i,
       ''
     );
-    const lowerAfter = afterLead.toLowerCase();
-    const namesPark = parkKeys.some(
-      (key) => lowerAfter.startsWith(key) || lowerAfter.startsWith(`${key} `)
-    );
-    return !namesPark;
-  });
+    const lowerAfter = plainTextForParkMatch(afterLead);
+    if (parkKeys.some((key) => lowerAfter.startsWith(key) || lowerAfter.startsWith(`${key} `))) {
+      return true;
+    }
+  }
+
+  if (!SKIP_DISMISSAL_RE.test(trimmed)) return false;
+  if (POSITIVE_RECOMMEND_RE.test(trimmed)) return false;
+  if (/^[-*•]\s+\*\*/.test(trimmed)) return false;
+
+  return paragraphNamesCatalogPark(trimmed, parkKeys);
+}
+
+/** Remove discovery paragraphs that name a catalog park only to say skip/avoid. */
+function stripSkipOnlyParkSentences(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  const parkKeys = loadParkKeys();
+  if (!parkKeys.length) return text;
+
+  const kept = text.split(/\n\n+/).filter((paragraph) => !isSkipOnlyDismissalParagraph(paragraph, parkKeys));
 
   return kept.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 }
@@ -50,8 +79,33 @@ function sentencePrefixBefore(text, index) {
   return start >= 0 ? lookback.slice(start) : lookback;
 }
 
-function isParkMentionInSkipContext(text, index) {
-  return SKIP_LEAD_RE.test(sentencePrefixBefore(text, index));
+function sentenceSuffixAfter(text, index, keyLength) {
+  const raw = text.slice(index, Math.min(text.length, index + keyLength + 220));
+  const sentenceEnd = raw.search(/[.!?\n]/);
+  return sentenceEnd === -1 ? raw : raw.slice(0, sentenceEnd);
+}
+
+function isParkMentionInSkipContext(text, index, keyLength = 0) {
+  const prefix = sentencePrefixBefore(text, index);
+  const suffix = sentenceSuffixAfter(text, index, keyLength);
+  return SKIP_LEAD_RE.test(prefix) || SKIP_DISMISSAL_RE.test(suffix);
+}
+
+function keysForPark(park) {
+  const keys = new Set();
+  if (park.parkName) keys.add(String(park.parkName).toLowerCase());
+  if (park.parkCode) {
+    keys.add(String(park.parkCode).toLowerCase());
+    try {
+      const { PARK_NAME_TO_CODE } = require('./parkExtractor');
+      for (const [name, meta] of PARK_NAME_TO_CODE.entries()) {
+        if (meta.code === park.parkCode) keys.add(name);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return [...keys];
 }
 
 /**
@@ -64,11 +118,7 @@ function filterParksNotSkipOnly(text, parks) {
   const lower = text.toLowerCase();
 
   return parks.filter((park) => {
-    const keys = new Set();
-    if (park.parkName) keys.add(String(park.parkName).toLowerCase());
-    if (park.parkCode) keys.add(String(park.parkCode).toLowerCase());
-
-    for (const key of keys) {
+    for (const key of keysForPark(park)) {
       if (!key || key.length < 3) continue;
       const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const re = new RegExp(escaped, 'gi');
@@ -77,7 +127,7 @@ function filterParksNotSkipOnly(text, parks) {
       let allSkip = true;
       while ((match = re.exec(lower)) !== null) {
         hasMention = true;
-        if (!isParkMentionInSkipContext(text, match.index)) {
+        if (!isParkMentionInSkipContext(text, match.index, match[0].length)) {
           allSkip = false;
           break;
         }
@@ -90,6 +140,7 @@ function filterParksNotSkipOnly(text, parks) {
 
 module.exports = {
   stripSkipOnlyParkSentences,
+  isSkipOnlyDismissalParagraph,
   isParkMentionInSkipContext,
   filterParksNotSkipOnly,
 };

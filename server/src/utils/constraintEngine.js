@@ -104,10 +104,13 @@ const FITNESS_TO_MAX_DIFFICULTY = {
   expert: 'strenuous',
 };
 
+const { extractMessageConstraintOverrides } = require('./messageConstraintOverrides');
+
 // ── parseConstraints ─────────────────────────────────────────────────────────
 
 /**
  * Extract structured constraints from metadata.formData + user message fallback.
+ * Latest explicit user-message corrections override stale Quick Fill formData.
  */
 function parseConstraints(metadata, userMessage) {
   const fd = metadata?.formData || {};
@@ -184,6 +187,17 @@ function parseConstraints(metadata, userMessage) {
   if (!hasChildren) {
     hasChildren = /\b(?:kids?|children|toddler|family|infant|baby)\b/i.test(msg);
   }
+
+  const overrides = extractMessageConstraintOverrides(msg);
+  if (overrides.groupSize != null) groupSize = overrides.groupSize;
+  if (overrides.budget != null) budget = overrides.budget;
+  if (overrides.fitnessLevel != null) fitnessLevel = overrides.fitnessLevel;
+  if (overrides.accommodation != null) accommodation = overrides.accommodation;
+  if (overrides.numDays != null) numDays = overrides.numDays;
+  if (overrides.startDate != null) startDate = overrides.startDate;
+  if (overrides.endDate != null) endDate = overrides.endDate;
+  if (overrides.interests != null) interests = overrides.interests;
+  if (overrides.hasChildren != null) hasChildren = overrides.hasChildren;
 
   const hasConstraints = !!(parkCode || numDays || groupSize || budget || fitnessLevel || accommodation || interests.length > 0 || hasChildren);
 

@@ -56,6 +56,8 @@ function formatTrailverseLinksBlock(parks = []) {
     'TrailVerse already shows live NPS alerts, weather, permits, and park details. When users need more detail or you link a park, use TrailVerse URLs below.',
     'Brand the source as TrailVerse live data (e.g. "TrailVerse shows…", "live alerts on TrailVerse…") — not "check nps.gov" or conditions.htm.',
     'Recreation.gov / booking URLs from the live block are fine for reservations. Do not replace those with TrailVerse.',
+    'Do NOT link hotels, lodges, or restaurants to TrailVerse park URLs — only link actual park names to /parks/ pages.',
+    'When the web search block includes a Link or Source URL for a hotel or restaurant, link that business name to that URL on first mention.',
   ];
 
   for (const park of unique) {

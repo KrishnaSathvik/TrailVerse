@@ -35,7 +35,7 @@ function normalizeScenario(item) {
 const SCENARIOS = demoData.scenarios.map(normalizeScenario);
 
 /** Bump when demo playback behavior changes so stale localStorage transcripts are ignored. */
-const DEMO_PLAYBACK_CACHE_VERSION = `${demoData.version}-playback-v6`;
+const DEMO_PLAYBACK_CACHE_VERSION = `${demoData.version}-playback-v7`;
 
 const PHASE = {
   IDLE: 'idle',
@@ -104,6 +104,18 @@ export default function TrailieInteractiveDemo({
     setSentQuestion('');
     setTurnMetadata(null);
   }, [clearTimers]);
+
+  const hydrateFromCache = useCallback((item) => {
+    const cached = scenarioCacheRef.current.get(item.id);
+    if (!cached?.length) return false;
+
+    setCompletedTurns(cached);
+    setPhase(PHASE.COMPLETE);
+    setTypedQuestion('');
+    setSentQuestion('');
+    setTurnMetadata(cached[cached.length - 1]?.metadata ?? null);
+    return true;
+  }, []);
 
   const playTurn = useCallback(
     (scenarioIndex, nextTurnIndex, token) => {
@@ -177,17 +189,20 @@ export default function TrailieInteractiveDemo({
       if (!item) return;
 
       resetPlaybackState();
-      const token = playbackTokenRef.current;
       setActiveIndex(index);
       persistTrailieDemoActiveIndex(DEMO_PLAYBACK_CACHE_VERSION, index);
+
+      if (hydrateFromCache(item)) return;
+
+      const token = playbackTokenRef.current;
       setCompletedTurns([]);
       playTurn(index, 0, token);
     },
-    [playTurn, resetPlaybackState]
+    [playTurn, resetPlaybackState, hydrateFromCache]
   );
 
   const handleSelectScenario = (index) => {
-    if (index === activeIndex && phase !== PHASE.IDLE && phase !== PHASE.COMPLETE) return;
+    if (index === activeIndex && phase !== PHASE.IDLE) return;
     runScenario(index);
   };
 
