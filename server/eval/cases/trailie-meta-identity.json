@@ -1,0 +1,23 @@
+{
+  "name": "trailie-meta-identity",
+  "description": "Who are you / what can you do should get a consistent Trailie capability answer",
+  "failureMode": "guardrails",
+  "ifFailingCheck": ["ABOUT_TRAILIE block in coreTrailiePolicy.js", "buildSharedChatPolicyTail"],
+  "messages": [
+    { "role": "user", "content": "What can you do?" }
+  ],
+  "metadata": {},
+  "provider": "claude",
+  "assertions": {
+    "mustInclude": [
+      { "pattern": "Trailie", "flags": "i", "description": "Names Trailie" },
+      { "pattern": "470|\\b63\\b|national park", "flags": "i", "description": "Mentions park scope" },
+      { "pattern": "plan|itinerar", "flags": "i", "description": "Mentions trip planning" },
+      { "pattern": "compare|weather|alert|event", "flags": "i", "description": "Mentions at least one other capability" }
+    ],
+    "mustNotInclude": [
+      { "pattern": "can't help with that topic|homework|python script", "flags": "i", "description": "Should not use off-topic redirect" }
+    ]
+  },
+  "tags": ["guardrails", "meta", "p1"]
+}
