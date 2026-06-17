@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -24,6 +24,9 @@ import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
 import GuestLimitMessageExtras from './GuestLimitMessageExtras';
+import DiscoveryPlanCta from './DiscoveryPlanCta';
+import { buildDayByDayPlanFollowUp } from '@/lib/buildDayByDayPlanFollowUp';
+import { findDiscoveryPlanCtaMessage, messageMatchesDiscoveryPlanCta } from '@/lib/discoveryPlanCta';
 import { buildGuestLimitIntro } from '@/lib/guestLimitMessage';
 import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
 import { ANONYMOUS_MESSAGE_LIMIT } from '@/lib/anonymousChatLimits';
@@ -129,13 +132,13 @@ const TripPlannerChat = ({
   const [currentTripId, setCurrentTripId] = useState(existingTripId);
   const [providers, setProviders] = useState([]);
   const abortControllerRef = useRef(null);
-  const streamFlushTimerRef = useRef(null);
+  const streamFlushRafRef = useRef(null);
   const rawStreamedContentRef = useRef('');
 
   const cancelStreamFlush = useCallback(() => {
-    if (streamFlushTimerRef.current != null) {
-      clearTimeout(streamFlushTimerRef.current);
-      streamFlushTimerRef.current = null;
+    if (streamFlushRafRef.current != null) {
+      cancelAnimationFrame(streamFlushRafRef.current);
+      streamFlushRafRef.current = null;
     }
   }, []);
   const [providersLoaded, setProvidersLoaded] = useState(false);
@@ -177,6 +180,7 @@ const TripPlannerChat = ({
   const [saveModalReason, setSaveModalReason] = useState(SIGNUP_PROMPT_REASONS.SAVE_ITINERARY);
 
   const messagesEndRef = useRef(null);
+  const discoveryPlanCtaRef = useRef(null);
   const chatContainerRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
   const messagesRef = useRef(messages);
@@ -285,6 +289,11 @@ const TripPlannerChat = ({
   const showComposerToolbar =
     !isWelcomeState && messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
 
+  const discoveryPlanCtaMessage = useMemo(
+    () => findDiscoveryPlanCtaMessage(messages),
+    [messages]
+  );
+
   const hasUserMessages = messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
 
   useEffect(() => {
@@ -326,6 +335,14 @@ const TripPlannerChat = ({
     }
     lastMessageCountRef.current = messages.length;
   }, [messages.length, isGenerating]);
+
+  useEffect(() => {
+    if (!discoveryPlanCtaMessage || isGenerating) return undefined;
+    const timer = window.setTimeout(() => {
+      discoveryPlanCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [discoveryPlanCtaMessage?.id, isGenerating]);
 
   // Only offer jump-to-latest when new content arrives below — not when reading older messages
   useEffect(() => {
@@ -1286,7 +1303,7 @@ const TripPlannerChat = ({
   }, [isPersonalized]);
 
   const handleSendMessage = async (messageText, options = {}) => {
-    const { hiddenFromUi = false } = options;
+    const { hiddenFromUi = false, dayByDayPlanIntake = false, intakeParkName = null, intakeParkNames = null } = options;
     if (!messageText.trim() || isGenerating) return;
 
     primeCompletionSound?.();
@@ -1316,6 +1333,7 @@ const TripPlannerChat = ({
       content: messageText.trim(),
       timestamp: new Date(),
       hiddenFromUi,
+      ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -1341,6 +1359,9 @@ const TripPlannerChat = ({
         formData,
         personalizedRecommendations: isPersonalized,
         aiContext: userContext || null,
+        ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
+        ...(intakeParkName ? { intakeParkName, parkName: intakeParkName } : {}),
+        ...(intakeParkNames?.length ? { intakeParkNames } : {}),
       };
       // Build conversation history — include image context so AI can
       // answer follow-up questions about the photos it shared
@@ -1423,7 +1444,7 @@ const TripPlannerChat = ({
           rawStreamedContentRef.current += chunk;
 
           const applyStreamContent = () => {
-            streamFlushTimerRef.current = null;
+            streamFlushRafRef.current = null;
             const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
             if (!displayContent.trim()) return;
 
@@ -1451,9 +1472,45 @@ const TripPlannerChat = ({
             }
           };
 
-          if (streamFlushTimerRef.current == null) {
-            streamFlushTimerRef.current = setTimeout(applyStreamContent, 48);
+          if (streamFlushRafRef.current == null) {
+            streamFlushRafRef.current = requestAnimationFrame(applyStreamContent);
           }
+        },
+        onStreamEnd: () => {
+          cancelStreamFlush();
+
+          const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
+          if (!displayContent.trim()) return;
+
+          setIsGenerating(true);
+          setThinkingMessage('Finishing up...');
+          setThinkingSources(null);
+
+          if (!streamStarted) {
+            streamStarted = true;
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: streamAssistantId,
+                role: 'assistant',
+                content: displayContent,
+                timestamp: new Date(),
+                provider: 'auto',
+                isStreaming: false,
+                isFinalizing: true,
+                parkImages: pendingParkImagesRef.current || [],
+              },
+            ]);
+            return;
+          }
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamAssistantId
+                ? { ...m, content: displayContent, isStreaming: false, isFinalizing: true }
+                : m
+            )
+          );
         },
         onDone: (result) => {
           cancelStreamFlush();
@@ -1477,6 +1534,7 @@ const TripPlannerChat = ({
             messageCount: result.messageCount,
             canSendMore: result.canSendMore,
             isConversionMessage: result.isConversionMessage,
+            showDayByDayPlanCta: result.showDayByDayPlanCta === true,
           };
           applyAnonymousSessionFromResult(result);
 
@@ -1493,11 +1551,13 @@ const TripPlannerChat = ({
                     provider: result.provider,
                     model: result.model,
                     isStreaming: false,
+                    isFinalizing: false,
                     hasLiveData: result.hasLiveData,
                     parkName: result.parkName,
                     parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
                     hasItinerary: result.hasItinerary || false,
                     parkImages: result.parkImages || [],
+                    showDayByDayPlanCta: result.showDayByDayPlanCta === true,
                   }
                 : m
             )
@@ -1636,7 +1696,8 @@ const TripPlannerChat = ({
         parkName: data.parkName,
         parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
         hasItinerary: data.hasItinerary || false,
-        parkImages: data.parkImages || []
+        parkImages: data.parkImages || [],
+        showDayByDayPlanCta: data.showDayByDayPlanCta === true,
       };
 
       // `messages` from closure = pre-send messages; userMessage was defined above
@@ -1647,7 +1708,7 @@ const TripPlannerChat = ({
         if (usedStreaming) {
           return prev.map(msg =>
             msg.id === streamAssistantId
-              ? { ...msg, responseTime, isStreaming: false, hasLiveData: data.hasLiveData, parkName: data.parkName, hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [] }
+              ? { ...msg, responseTime, isStreaming: false, isFinalizing: false, hasLiveData: data.hasLiveData, parkName: data.parkName, hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [], showDayByDayPlanCta: data.showDayByDayPlanCta === true }
               : msg
           );
         }
@@ -1665,7 +1726,8 @@ const TripPlannerChat = ({
             hasLiveData: data.hasLiveData,
             parkName: data.parkName,
             hasItinerary: data.hasItinerary || false,
-            parkImages: data.parkImages || []
+            parkImages: data.parkImages || [],
+            showDayByDayPlanCta: data.showDayByDayPlanCta === true,
           }
         ];
       });
@@ -2408,6 +2470,8 @@ TRIP DETAILS:
                   timestamp={message.timestamp}
                   hideActions={
                     message.isConversionMessage ||
+                    message.isStreaming ||
+                    message.isFinalizing ||
                     message.id === 'welcome-placeholder' ||
                     (isWelcomeState &&
                     message.role === 'assistant' &&
@@ -2416,6 +2480,26 @@ TRIP DETAILS:
                   afterContent={
                     message.isConversionMessage ? (
                       <GuestLimitMessageExtras onSignup={handleSignupRedirect} />
+                    ) : messageMatchesDiscoveryPlanCta(message, discoveryPlanCtaMessage) ? (
+                      <div ref={discoveryPlanCtaRef}>
+                        <DiscoveryPlanCta
+                          insideBubble
+                          disabled={isGenerating}
+                          onRequestPlan={() =>
+                            handleSendMessage(
+                              buildDayByDayPlanFollowUp({
+                                parkName: message.parkName,
+                                parkNames: message.parkNames,
+                              }),
+                              {
+                                dayByDayPlanIntake: true,
+                                intakeParkName: message.parkName,
+                                intakeParkNames: message.parkNames,
+                              }
+                            )
+                          }
+                        />
+                      </div>
                     ) : null
                   }
                   compact={

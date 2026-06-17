@@ -47,7 +47,9 @@ import { hasCrowdCalendar } from '@/lib/crowdCalendar';
 import ParkPlanOverviewSection from '@/components/park-details/ParkPlanOverviewSection';
 import ParkPlanningFaqSection from '@/components/park-details/ParkPlanningFaqSection';
 import blogService from '@/services/blogService';
-import { useParkExploreCache } from '@/hooks/useParkExploreCache';
+import { useParkExploreIndex } from '@/hooks/useParkExploreIndex';
+import { useParkExploreTabBundle } from '@/hooks/useParkTabData';
+import { isExploreDataTab } from '@/lib/parkTabEndpoints';
 import { filterVisibleExploreTabs } from '@/lib/parkExploreTabs';
 import {
   alignPlanningFaqWithTabs,
@@ -149,7 +151,7 @@ const ParkDetailInner = ({
   const [permitsReady, setPermitsReady] = useState(() => Array.isArray(permitsFromSsr));
 
   const npsParkCodeForApi = park?.parkCode || npsParkCode;
-  const { cache: exploreCache, ready: exploreReady, loading: exploreLoading } = useParkExploreCache(npsParkCodeForApi);
+  const { index: exploreIndex, ready: indexReady } = useParkExploreIndex(npsParkCodeForApi);
 
   const alertCount = alerts?.length || 0;
   const permitCount = permits.length;
@@ -159,22 +161,22 @@ const ParkDetailInner = ({
       alertCount,
       permitCount,
       requestedTab,
-      exploreReady,
-      exploreCache,
+      exploreIndexReady: indexReady,
+      exploreIndex,
       showTransitTab,
     }),
-    [allTabs, alertCount, permitCount, requestedTab, exploreReady, exploreCache, showTransitTab]
+    [allTabs, alertCount, permitCount, requestedTab, indexReady, exploreIndex, showTransitTab]
   );
 
   const faqTabContext = useMemo(
     () => planningFaqTabContextFromExplore({
       alertCount,
       permitCount,
-      exploreCache,
-      exploreReady,
+      exploreIndex,
+      exploreIndexReady: indexReady,
       showTransitTab,
     }),
-    [alertCount, permitCount, exploreCache, exploreReady, showTransitTab]
+    [alertCount, permitCount, exploreIndex, indexReady, showTransitTab]
   );
 
   const visiblePlanningFaqItems = useMemo(() => {
@@ -193,9 +195,27 @@ const ParkDetailInner = ({
     if (!requestedTab) return 'overview';
     if (validTabIds.includes(requestedTab)) return requestedTab;
     if (PARK_CORE_TAB_IDS.has(requestedTab)) return requestedTab;
-    if (!exploreReady) return requestedTab;
+    if (!indexReady) return requestedTab;
     return 'overview';
-  }, [requestedTab, validTabIds, exploreReady]);
+  }, [requestedTab, validTabIds, indexReady]);
+
+  const tabIdsToLoad = useMemo(() => {
+    const ids = [];
+    if (isExploreDataTab(activeTab)) ids.push(activeTab);
+    if (
+      requestedTab
+      && requestedTab !== activeTab
+      && isExploreDataTab(requestedTab)
+    ) {
+      ids.push(requestedTab);
+    }
+    return ids;
+  }, [activeTab, requestedTab]);
+
+  const {
+    cache: exploreCache,
+    loadingByTabId,
+  } = useParkExploreTabBundle(npsParkCodeForApi, tabIdsToLoad, { enabled: indexReady });
 
   const activities = exploreCache?.activities ?? null;
   const campgrounds = exploreCache?.campgrounds ?? null;
@@ -210,18 +230,18 @@ const ParkDetailInner = ({
   const brochureData = exploreCache?.brochures ?? null;
   const transitData = exploreCache?.transit ?? null;
 
-  const activitiesLoading = exploreLoading && activities === null;
-  const campgroundsLoading = exploreLoading && campgrounds === null;
-  const placesLoading = exploreLoading && places === null;
-  const toursLoading = exploreLoading && tours === null;
-  const visitorCentersLoading = exploreLoading && visitorCenters === null;
-  const parkingLoading = exploreLoading && parkingLots === null;
-  const webcamsLoading = exploreLoading && webcams === null;
-  const videosLoading = exploreLoading && videos === null;
-  const galleryLoading = exploreLoading && galleryPhotos === null;
-  const facilitiesLoading = exploreLoading && facilities === null;
-  const brochuresLoading = exploreLoading && brochureData === null;
-  const transitLoading = exploreLoading && transitData === null;
+  const activitiesLoading = Boolean(loadingByTabId.activities);
+  const campgroundsLoading = Boolean(loadingByTabId.camping);
+  const placesLoading = Boolean(loadingByTabId.places);
+  const toursLoading = Boolean(loadingByTabId.tours);
+  const visitorCentersLoading = Boolean(loadingByTabId.visitorcenters);
+  const parkingLoading = Boolean(loadingByTabId.parking);
+  const webcamsLoading = Boolean(loadingByTabId.webcams);
+  const videosLoading = Boolean(loadingByTabId.videos);
+  const galleryLoading = Boolean(loadingByTabId.photos);
+  const facilitiesLoading = Boolean(loadingByTabId.facilities);
+  const brochuresLoading = Boolean(loadingByTabId.brochures);
+  const transitLoading = Boolean(loadingByTabId.transit);
 
   // Eagerly fetch permits for tab badge (SSR may omit permits until /details includes RIDB)
   useEffect(() => {
@@ -277,7 +297,69 @@ const ParkDetailInner = ({
       credit: p.credit
     })).filter(p => p.url);
     const existingUrls = new Set(parkImages.map(i => i.url));
-    return [...parkImages, ...gallery.filter(g => !existingUrls.has(g.url))];
+    const merged = [...parkImages, ...gallery.filter(g => !existingUrls.has(g.url))];
+
+    const scorePhoto = (img) => {
+      const haystack = `${img?.altText || ''} ${img?.caption || ''}`.toLowerCase();
+      const url = String(img?.url || '').toLowerCase();
+
+      // Push non-photo artifacts down the gallery (still keep them).
+      const downrankPatterns = [
+        /\bmap\b/,
+        /\btopo(?:graphic)?\b/,
+        /\bgeolog(?:y|ic|ical)\b/,
+        /\bchart\b/,
+        /\bdiagram\b/,
+        /\bcross[-\s]?section\b/,
+        /\blegend\b/,
+        /\bplate\b/,
+        /\bquadrangle\b/,
+        /\busgs\b/,
+        /\bscan(?:ned)?\b/,
+        /\barchiv(?:al|e)\b/,
+        /\bhistoric(?:al)?\b/,
+        /\bblack\s*(?:&|and)\s*white\b/,
+        /\bphoto\s*\d+\b/,
+      ];
+      if (downrankPatterns.some((re) => re.test(haystack))) return -50;
+      if (/\.(pdf|tif|tiff)(\?|$)/.test(url)) return -50;
+
+      let score = 0;
+      const wowBoost = [
+        /\bsunrise\b/,
+        /\bsunset\b/,
+        /\bgolden hour\b/,
+        /\bmountain\b/,
+        /\bpeak\b/,
+        /\bglacier\b/,
+        /\blake\b/,
+        /\briver\b/,
+        /\bwaterfall\b/,
+        /\bcanyon\b/,
+        /\boverlook\b/,
+        /\bview\b/,
+        /\bwildlife\b/,
+        /\bbison\b/,
+        /\belk\b/,
+        /\bbear\b/,
+        /\bmoose\b/,
+      ];
+      for (const re of wowBoost) {
+        if (re.test(haystack)) score += 6;
+      }
+
+      if ((img?.altText || '').trim().length >= 8) score += 2;
+      if ((img?.caption || '').trim().length >= 12) score += 1;
+      if (/\.(jpe?g|png|webp)(\?|$)/.test(url)) score += 1;
+
+      return score;
+    };
+
+    // Stable sort: keep original order inside score buckets.
+    return merged
+      .map((img, idx) => ({ img, idx, score: scorePhoto(img) }))
+      .sort((a, b) => b.score - a.score || a.idx - b.idx)
+      .map((x) => x.img);
   }, [park?.images, galleryPhotos]);
 
   useEffect(() => {
@@ -367,12 +449,12 @@ const ParkDetailInner = ({
   };
 
   useEffect(() => {
-    if (!exploreReady || !requestedTab) return;
+    if (!indexReady || !requestedTab) return;
     if (PARK_CORE_TAB_IDS.has(requestedTab)) return;
     if (!validTabIds.includes(requestedTab)) {
       handleTabChange('overview');
     }
-  }, [exploreReady, requestedTab, validTabIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [indexReady, requestedTab, validTabIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!requestedTab || requestedTab === 'overview') return;

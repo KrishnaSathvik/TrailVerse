@@ -35,7 +35,7 @@ export async function getParkDetailsBySlug(slug) {
 export async function getParkDetails(parkCode) {
   try {
     const res = await fetch(`${BASE_URL}/parks/${parkCode}/details`, {
-      next: { revalidate: 300 }, // 5 minutes — park details include dynamic NPS data
+      next: { revalidate: 3600 },
     });
 
     if (!res.ok) {

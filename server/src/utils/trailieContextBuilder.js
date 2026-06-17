@@ -10,7 +10,13 @@ const {
 
 const SCHEMA_VERSION = 'trailie-context-v2';
 
-const OFFICIAL_HIGH_CONFIDENCE_SOURCES = new Set(['NPS', 'OpenWeather', 'feeFreeDaysService', 'RIDB']);
+const OFFICIAL_HIGH_CONFIDENCE_SOURCES = new Set([
+  'NPS',
+  'OpenWeather',
+  'TrailVerseClimateEstimate',
+  'feeFreeDaysService',
+  'RIDB',
+]);
 const WEB_SOURCE_PATTERN = /brave|serper|tavily|web/i;
 const DESERT_PARKS = new Set(['deva', 'jotr', 'arch', 'cany', 'zion', 'grca']);
 
@@ -435,6 +441,7 @@ function parseWeatherHighF(weatherFacts) {
 
   let max = null;
   const patterns = [
+    /typical\s+\w+\s+highs?:\s*(\d{2,3})\s*°?\s*f/i,
     /high[:\s]*(\d{2,3})\s*°?\s*f/i,
     /highs?(?:\s+of)?\s+(\d{2,3})/i,
     /currently\s+(\d{2,3})\s*°?\s*f/i,

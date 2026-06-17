@@ -3,10 +3,13 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { normalizeParkLinksInMarkdown } from '@/utils/parkLinkifier';
+import { escapeApproximateTildesForGfm } from '@/utils/stripMarkdown';
 
 export default function DemoAnswerProse({ text, className = '' }) {
-  const markdown = normalizeParkLinksInMarkdown(
-    (text || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd()
+  const markdown = escapeApproximateTildesForGfm(
+    normalizeParkLinksInMarkdown(
+      (text || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd()
+    )
   );
 
   if (!markdown) return null;

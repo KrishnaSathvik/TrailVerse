@@ -18,12 +18,23 @@ const TRAVEL_PATTERNS =
   /(park|trail|hike|camp|visit|trip|travel|itinerary|road trip|getaway|vacation|weekend|drive|fly|airport|hotel|lodge|cabin|tent|backpack|scenic|viewpoint|overlook|canyon|mountain|lake|river|waterfall|beach|forest|desert|glacier|wildlife|bear|elk|sunrise|sunset|star|astrophotography|photograph|permit|reservation|entry|fee|ranger|visitor center|campground|trailhead|shuttle|gear|boot|pack|map|route|weather|season|crowd|busy|quiet|relax|chill|somewhere|national|state park|wilderness|outdoor|adventure|explore|nature|forag|mushroom|morel|workshop|class|course|lesson|tour|excursion|activit|experience|fish|kayak|canoe|raft|climb|rappel|zipline|horseback|bike|cycling|bird|birding|snorkel|dive|surf|ski|snowshoe|swim|paddle|guided|instruction|versus|vs\.?|compare|between|first.?timer|beginner)/i;
 
 const SPECIFIC_ITINERARY_PLAN_PATTERNS = [
-  /\bplan\s+(a|my|our|the)\s+\d/i,
   /\bitinerary\b/i,
+  /\bday[- ]?by[- ]?day\b/i,
+  /\bplan\s+(a|my|our|the)\s+/i,
+  /\bhelp\s+(me\s+)?plan\b/i,
+  /\bbuild\s+(me\s+)?(a\s+)?(day[- ]?by[- ]?day\s+)?(trip|plan|itinerary)\b/i,
+  /\bcreate\s+(a\s+)?(day[- ]?by[- ]?day\s+)?(trip|plan|itinerary)\b/i,
+  /\b(make|draft)\s+(me\s+)?(a\s+)?(trip|plan|itinerary)\b/i,
+  /\bschedule\s+(my|our|the)\s+(trip|visit|days)\b/i,
   /\bday\s+\d\b/i,
-  /\b\d[\s-]*day\s+(trip|itinerary|visit|schedule)\b/i,
-  /\b(hour.by.hour|morning.*afternoon.*evening)\b/i,
+  /\b\d[\s-]*day\s+(trip|itinerary|visit|schedule|plan)\b/i,
+  /\b(hour[- ]?by[- ]?hour|morning.*afternoon.*evening)\b/i,
 ];
+
+const SINGLE_PARK_PLAN_VERB_PATTERN =
+  /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|build\s+(me\s+)?(a\s+)?(plan|itinerary)|help\s+(me\s+)?plan)\b/i;
+
+const { assessItineraryReadiness } = require('./itineraryReadiness');
 
 function normalizeMessage(message) {
   return typeof message === 'string' ? message.trim() : '';
@@ -54,6 +65,48 @@ function isSpecificItineraryRequest(message) {
   const text = normalizeMessage(message);
   if (!text) return false;
   return SPECIFIC_ITINERARY_PLAN_PATTERNS.some((re) => re.test(text));
+}
+
+/**
+ * Whether Trailie should emit/process structured [ITINERARY_JSON] for this turn.
+ * Discovery questions ("weekend hiking trip from Denver under $500") are NOT itinerary requests.
+ * Intake turns and incomplete context ask questions first — no JSON until ready.
+ *
+ * @param {{
+ *   userMessage: string,
+ *   openEndedDiscovery?: boolean,
+ *   metadata?: { parkCode?: string, dayByDayPlanIntake?: boolean },
+ *   constraints?: object,
+ *   allExtractedParks?: Array<{ parkCode?: string }>,
+ *   conversationUserText?: string,
+ * }} options
+ * @returns {boolean}
+ */
+function shouldRequestItineraryJson({
+  userMessage,
+  openEndedDiscovery = false,
+  metadata = {},
+  constraints = {},
+  allExtractedParks = [],
+  conversationUserText = '',
+}) {
+  const text = normalizeMessage(userMessage);
+  if (!text) return false;
+  if (metadata.dayByDayPlanIntake) return false;
+  if (openEndedDiscovery) return false;
+
+  const wantsPlan =
+    isSpecificItineraryRequest(text) ||
+    (metadata.parkCode && SINGLE_PARK_PLAN_VERB_PATTERN.test(text));
+  if (!wantsPlan) return false;
+
+  const readiness = assessItineraryReadiness({
+    constraints,
+    metadata,
+    allExtractedParks,
+    conversationUserText: conversationUserText || text,
+  });
+  return readiness.ready;
 }
 
 /**
@@ -213,10 +266,31 @@ function buildDiscoverySearchQuery(messages) {
   return lastUser.trim().slice(0, 200);
 }
 
+/**
+ * Show "Want a day-by-day plan?" only after the first open-ended discovery answer —
+ * not on refinements, intake turns, explicit plan requests, or when an itinerary exists.
+ */
+function shouldShowDayByDayPlanCta({
+  openEndedDiscovery = false,
+  userRequestedItinerary = false,
+  hasItinerary = false,
+  discoveryRefinement = false,
+  dayByDayPlanIntake = false,
+  lastUserMessage = '',
+  namedParkCount = 0,
+}) {
+  if (hasItinerary || userRequestedItinerary || dayByDayPlanIntake) return false;
+  if (discoveryRefinement) return false;
+  if (!openEndedDiscovery) return false;
+  if (isSpecificItineraryRequest(lastUserMessage)) return false;
+  return shouldInjectParkDiscovery(lastUserMessage, { namedParkCount });
+}
+
 module.exports = {
   isTravelRelated,
   isOffTopic,
   isSpecificItineraryRequest,
+  shouldRequestItineraryJson,
   isOpenEndedDestinationQuery,
   shouldInjectParkDiscovery,
   isHeadToHeadCompareQuery,
@@ -226,4 +300,5 @@ module.exports = {
   findPriorDiscoveryUserQuery,
   buildDiscoverySearchQuery,
   userMessageHasRefinementConstraints,
+  shouldShowDayByDayPlanCta,
 };

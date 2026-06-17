@@ -59,6 +59,17 @@ connectDB().then(async () => {
       // Build dynamic park name map — reuses the already-cached park list
       await loadDynamicMap();
 
+      // Bulk alerts: one warm load so crawlers don't fill the 500-key endpoint cache
+      npsService
+        .getAllAlerts()
+        .then((alertsByPark) => {
+          const parkCount = Object.keys(alertsByPark || {}).length;
+          console.log(`🔔 Warmed bulk alerts cache (${parkCount} parks indexed)`);
+        })
+        .catch((err) => {
+          console.warn(`⚠️ Bulk alerts warm-up skipped: ${err.message}`);
+        });
+
       const discoverCatalogService = require('./src/services/discoverCatalogService');
       const snapshot = await npsService._loadSnapshot('discover-catalog', 7 * 24 * 60 * 60 * 1000);
       const needsRebuild =

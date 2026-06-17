@@ -1,6 +1,11 @@
 const axios = require('axios');
 
 const { getFeeFreeInfo } = require('./feeFreeDaysService');
+const {
+  resolveTripWeatherWindow,
+  resolveWeatherMode,
+  buildEstimatedWeatherFacts,
+} = require('./weatherEstimateService');
 const { isTravelRelated: isTravelRelatedQuery } = require('../utils/discoveryQuery');
 const {
   classifyQueryRegex,
@@ -184,11 +189,75 @@ async function fetchWeatherFacts({ lat, lon, units = 'imperial' }) {
       return `${dayName}: High ${maxTemp}°F, Low ${minTemp}°F, ${mostCommonCondition}, Humidity ${avgHumidity}%, Wind ${avgWind} mph`;
     }).join('\n');
 
-    return `Weather Forecast at ${location} (Next 3 Days):\n${forecastText}\n(From OpenWeather API - 5-day forecast)`;
+    return `Weather Forecast at ${location} (LIVE — next 3 days from today):\n${forecastText}\n(Source: OpenWeather 5-day forecast. Use ONLY for trips starting within the next few days — not for distant future dates.)`;
   } catch (error) {
     console.error('Weather facts error:', error.message);
     return null;
   }
+}
+
+/**
+ * Live forecast or climate estimate depending on trip timing.
+ * @returns {Promise<{ text: string|null, meta: { source: string, mode: string } }>}
+ */
+async function fetchWeatherForTrailie({
+  lat,
+  lon,
+  tripDates = null,
+  userMessage = '',
+  locationName = 'this area',
+  parkCode = null,
+}) {
+  if (!lat || !lon) {
+    return { text: null, meta: null };
+  }
+
+  const window = resolveTripWeatherWindow(tripDates, userMessage);
+  const mode = window ? resolveWeatherMode(window) : 'live';
+
+  if (mode === 'estimate') {
+    const estimate = buildEstimatedWeatherFacts({
+      lat,
+      lon,
+      locationName,
+      parkCode,
+      tripDates,
+      userMessage,
+    });
+    if (estimate?.text) {
+      return {
+        text: estimate.text,
+        meta: { source: 'TrailVerseClimateEstimate', mode: 'estimate', ...estimate.meta },
+      };
+    }
+  }
+
+  const live = await fetchWeatherFacts({ lat, lon });
+  if (live) {
+    return {
+      text: live,
+      meta: { source: 'OpenWeather', mode: 'live' },
+    };
+  }
+
+  if (window) {
+    const estimate = buildEstimatedWeatherFacts({
+      lat,
+      lon,
+      locationName,
+      parkCode,
+      tripDates,
+      userMessage,
+    });
+    if (estimate?.text) {
+      return {
+        text: estimate.text,
+        meta: { source: 'TrailVerseClimateEstimate', mode: 'estimate', ...estimate.meta },
+      };
+    }
+  }
+
+  return { text: null, meta: null };
 }
 
 /**
@@ -967,10 +1036,18 @@ function needsNPSFacts(userMessage) {
 
 /**
  * Main function to fetch all relevant facts
- * @param {Object} params - { userMessage, parkCode, lat, lon, parkName, isAnonymous }
+ * @param {Object} params - { userMessage, parkCode, lat, lon, parkName, isAnonymous, tripDates }
  * @returns {Promise<Object>} { weatherFacts, npsFacts, webSearchFacts }
  */
-async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, isAnonymous = false }) {
+async function fetchRelevantFacts({
+  userMessage,
+  parkCode,
+  lat,
+  lon,
+  parkName,
+  isAnonymous = false,
+  tripDates = null,
+}) {
   const results = {
     weatherFacts: null,
     npsFacts: null,
@@ -1009,7 +1086,7 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
     }
 
     // Check for fee-free day overlap (sync, no API call)
-    results.feeFreeFacts = getFeeFreeInfo(userMessage);
+    results.feeFreeFacts = getFeeFreeInfo(userMessage, tripDates);
 
     // Determine what facts to fetch
     const shouldFetchWeather = needsWeatherFacts(userMessage) && lat && lon;
@@ -1027,10 +1104,23 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
 
     if (shouldFetchWeather) {
       promises.push(
-        fetchWeatherFacts({ lat, lon }).then(facts => { results.weatherFacts = facts; }).catch(err => {
-          console.error('[Facts] Weather fetch error:', err.message);
-          results.weatherFacts = null;
+        fetchWeatherForTrailie({
+          lat,
+          lon,
+          tripDates,
+          userMessage,
+          locationName: parkName || 'this area',
+          parkCode,
         })
+          .then(({ text, meta }) => {
+            results.weatherFacts = text;
+            results.weatherMeta = meta;
+          })
+          .catch((err) => {
+            console.error('[Facts] Weather fetch error:', err.message);
+            results.weatherFacts = null;
+            results.weatherMeta = null;
+          })
       );
     }
 
@@ -1070,8 +1160,9 @@ async function fetchRelevantFacts({ userMessage, parkCode, lat, lon, parkName, i
     const fetchedAt = new Date().toISOString();
     results.factsMeta = {
       weather: createFactSlotMeta(shouldFetchWeather, results.weatherFacts, {
-        source: 'OpenWeather',
+        source: results.weatherMeta?.source || 'OpenWeather',
         fetchedAt: results.weatherFacts ? fetchedAt : null,
+        mode: results.weatherMeta?.mode || null,
       }),
       nps: createFactSlotMeta(shouldFetchNPS, results.npsFacts, {
         source: 'NPS',
@@ -1307,6 +1398,7 @@ function formatCandidateParksBlock(candidateResult) {
 
 module.exports = {
   fetchWeatherFacts,
+  fetchWeatherForTrailie,
   fetchNPSFacts,
   fetchWebSearchFacts,
   fetchRelevantFacts,

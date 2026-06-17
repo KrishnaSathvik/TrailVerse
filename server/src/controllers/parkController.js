@@ -1,3 +1,4 @@
+const NodeCache = require('node-cache');
 const npsService = require('../services/npsService');
 const { normalizePlaceForMap } = require('../utils/mapPlaceUtils');
 const gtfsCatalogService = require('../services/gtfsCatalogService');
@@ -327,6 +328,13 @@ exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bi
 exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
 exports.getParkFacilities = makeTabHandler(npsService.getParkAmenities.bind(npsService), 'facilities');
 
+// Short-lived cache for expensive GTFS parse + NPS transit merge
+const transitResponseCache = new NodeCache({
+  stdTTL: 15 * 60,
+  maxKeys: 80,
+  checkperiod: 120,
+});
+
 // @desc    Get park transit systems (NPS GTFS catalog)
 // @route   GET /api/parks/:parkCode/transit
 // @access  Public
@@ -335,6 +343,11 @@ exports.getParkTransit = async (req, res, next) => {
     const parkCode = String(req.params.parkCode || '').toLowerCase();
     if (!parkCode) {
       return res.status(400).json({ success: false, error: 'parkCode is required' });
+    }
+
+    const cached = transitResponseCache.get(parkCode);
+    if (cached) {
+      return res.status(200).json(cached);
     }
 
     const { catalog, feeds } = await gtfsCatalogService.getFeedsForPark(parkCode);
@@ -429,7 +442,9 @@ exports.getParkTransit = async (req, res, next) => {
       },
     };
 
-    res.status(200).json({ success: true, data: response });
+    const payload = { success: true, data: response };
+    transitResponseCache.set(parkCode, payload);
+    res.status(200).json(payload);
   } catch (error) {
     next(error);
   }
@@ -457,6 +472,16 @@ setInterval(() => {
     }
   }
 }, 6 * 60 * 60 * 1000);
+
+/** Count from brochure cache only — avoids NPS scrape on explore-index (tab loads full data lazily). */
+exports.getBrochureCountForIndex = (parkCode) => {
+  const code = String(parkCode || '').toLowerCase();
+  const cached = brochureCache.get(code);
+  if (cached && Date.now() - cached.timestamp < BROCHURE_CACHE_TTL) {
+    return Array.isArray(cached.data) ? cached.data.length : 0;
+  }
+  return 0;
+};
 
 // @desc    Get park brochure/PDF links by scraping NPS brochure pages
 // @route   GET /api/parks/:parkCode/brochures
@@ -571,6 +596,20 @@ exports.getParkBrochures = async (req, res, next) => {
     brochureCache.set(parkCode, { data: result, timestamp: Date.now() });
 
     res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Lightweight explore-tab availability (counts only — for tab bar visibility)
+// @route   GET /api/parks/:parkCode/explore-index
+// @access  Public
+exports.getParkExploreIndex = async (req, res, next) => {
+  try {
+    const { parkCode } = req.params;
+    const { buildExploreIndex } = require('../services/parkExploreIndexService');
+    const data = await buildExploreIndex(parkCode);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }

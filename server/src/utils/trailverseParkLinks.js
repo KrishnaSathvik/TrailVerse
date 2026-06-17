@@ -80,11 +80,25 @@ function formatTrailverseVerifyFooter(parks = []) {
   const base = getTrailVerseWebBase();
   const primary = parks.find((p) => p?.parkName || p?.parkCode);
   if (!primary) {
-    return `\n\n_See live park data on [TrailVerse](${base}/explore) before your trip._`;
+    return `\n\n_Check current park alerts and conditions on [TrailVerse](${base}/explore)._`;
   }
   const label = primary.parkName || primary.parkCode;
   const url = buildParkPageUrl(primary, { tab: 'alerts' });
-  return `\n\n_See live alerts and permits for [${label} on TrailVerse](${url})._`;
+  return `\n\n_Check current alerts and conditions for [${label} on TrailVerse](${url})._`;
+}
+
+/**
+ * Prompt line when live NPS feeds failed for a named park.
+ * @param {{ parkCode?: string, parkName?: string }} park
+ */
+function formatNoLiveDataPromptInstruction(park) {
+  const label = park.parkName || park.parkCode || 'this park';
+  const alertsUrl = buildParkPageUrl(park, { tab: 'alerts' });
+  return [
+    'Live feeds did not load — follow WHEN LIVE FEEDS DON\'T LOAD (shared policy): hedge with usually/typically in the plan.',
+    `If you add a pre-trip check, one linked line only: "Worth a quick look at current alerts for [${label} on TrailVerse](${alertsUrl}) before you go."`,
+    'Do NOT say "general knowledge", "training data", "I don\'t have real-time data", "I\'m working from…", "real-world conditions", or unlinked "check TrailVerse".',
+  ].join(' ');
 }
 
 module.exports = {
@@ -93,4 +107,5 @@ module.exports = {
   buildParkPageUrl,
   formatTrailverseLinksBlock,
   formatTrailverseVerifyFooter,
+  formatNoLiveDataPromptInstruction,
 };

@@ -147,12 +147,35 @@ function dateOverlaps(feeDay, dateRef) {
   return true; // whole month match
 }
 
+function isWholeMonthRef(dateRef) {
+  return dateRef.dayStart === 1 && dateRef.dayEnd === 31;
+}
+
+/**
+ * @param {{ startDate?: string, endDate?: string } | null} tripDates
+ * @returns {{ start: Date, end: Date } | null}
+ */
+function parseIsoTripRange(tripDates) {
+  if (!tripDates?.startDate) return null;
+  const start = new Date(`${tripDates.startDate}T12:00:00`);
+  const end = new Date(`${tripDates.endDate || tripDates.startDate}T12:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  if (end < start) return null;
+  return { start, end };
+}
+
+function feeDayInIsoRange(feeDay, range) {
+  const d = new Date(`${feeDay.date}T12:00:00`);
+  return d >= range.start && d <= range.end;
+}
+
 /**
  * Get fee-free day info relevant to the user's message
  * @param {string} userMessage - The user's message
+ * @param {{ startDate?: string, endDate?: string } | null} tripDates - Quick Fill / formData dates
  * @returns {{ hasOverlap: boolean, days: Array } | null}
  */
-function getFeeFreeInfo(userMessage) {
+function getFeeFreeInfo(userMessage, tripDates = null) {
   if (!userMessage) return null;
 
   const feeFreeDays = getActiveFeeFreeDays();
@@ -175,10 +198,25 @@ function getFeeFreeInfo(userMessage) {
     return { hasOverlap: false, days: feeFreeDays };
   }
 
+  const isoRange = parseIsoTripRange(tripDates);
+  if (isoRange) {
+    const overlapping = feeFreeDays.filter((feeDay) => feeDayInIsoRange(feeDay, isoRange));
+    if (overlapping.length > 0) {
+      return { hasOverlap: true, days: overlapping };
+    }
+    return null;
+  }
+
   // If we extracted date references, check for overlap with fee-free days
   if (dateRefs.length > 0) {
-    const overlapping = feeFreeDays.filter(feeDay =>
-      dateRefs.some(ref => dateOverlaps(feeDay, ref))
+    const hasSpecificDays = dateRefs.some((ref) => !isWholeMonthRef(ref));
+    if (!hasSpecificDays) {
+      // Month-only ("in October") — do not treat the whole month as a trip overlap
+      return null;
+    }
+
+    const overlapping = feeFreeDays.filter((feeDay) =>
+      dateRefs.some((ref) => dateOverlaps(feeDay, ref))
     );
     if (overlapping.length > 0) {
       return { hasOverlap: true, days: overlapping };
@@ -227,6 +265,7 @@ module.exports = {
   getFeeFreeInfo,
   formatFeeFreeBlock,
   getActiveFeeFreeDays,
+  parseIsoTripRange,
   FEE_FREE_DAYS_2026,
   FEE_FREE_DAYS_2027,
   FEE_FREE_DAYS_BY_YEAR,

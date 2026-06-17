@@ -19,7 +19,7 @@ import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
 import { canonicalPageMetadata } from '@/lib/seo';
 
-export const revalidate = 300; // 5 minutes — park data includes dynamic NPS content
+export const revalidate = 3600; // 1 hour — reduces crawler SSR fan-out; client tabs load lazily
 
 export async function generateStaticParams() {
   try {
@@ -195,7 +195,7 @@ export default async function ParkPage({ params }) {
 
   try {
     const planningRes = await fetch(`${getApiBaseUrl()}/parks/${park.parkCode}/planning`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 3600 },
     });
     if (planningRes.ok) {
       const planningJson = await planningRes.json();

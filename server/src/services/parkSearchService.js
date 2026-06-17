@@ -16,10 +16,11 @@ const { logParkSearch } = require('./parkSearchAnalytics');
  *   limit?: number|string,
  *   req?: import('express').Request,
  *   source?: string,
+ *   originCity?: { lat: number, lon: number, name?: string } | null,
  * }} options
  * @returns {Promise<{ parks: object[], count: number, searchId: string|null }>}
  */
-async function executeParkSearch({ q, state, activity, limit, pinned, req, source }) {
+async function executeParkSearch({ q, state, activity, limit, pinned, req, source, originCity = null }) {
   const catalog = await loadCanonicalParks({
     state: state ? String(state).toUpperCase() : undefined,
   });
@@ -34,6 +35,9 @@ async function executeParkSearch({ q, state, activity, limit, pinned, req, sourc
     : [];
 
   if (query) {
+    if (originCity) {
+      parks = filterCatalogByOriginDistance(parks, originCity, query);
+    }
     parks = filterParksBySearchQuery(parks, query);
     if (pinnedCodes.length === 0) {
       pinnedCodes = resolveSearchPinsFromQuery(query);
@@ -79,10 +83,11 @@ async function executeParkSearch({ q, state, activity, limit, pinned, req, sourc
 const {
   buildDiscoveryQueryHints,
   getParkLogisticsNote,
+  filterCatalogByOriginDistance,
 } = require('../catalog/discoverySearchPolicy');
 
 const DISCOVERY_ALIGNMENT_INSTRUCTION =
-  'Lead with ONE clear top pick, then 2–3 alternates from the candidate list. Prioritize the highest-weight detected intent (e.g. cool summer + lakes → parks where you can actually get on the water, not just a scenic mountain drive). If your #1 has a Logistics note, say access reality in one sentence and name an easier-access alternative from the list. Skip weak fits silently — never name a park only to say "skip" it; only discuss parks you are recommending.';
+  'Lead with ONE clear top pick, then 2–3 alternates from the candidate list. Prioritize the highest-weight detected intent (e.g. cool summer + lakes → parks where you can actually get on the water, not just a scenic mountain drive). If your #1 has a Logistics note, say access reality in one sentence and name an easier-access alternative from the list. Skip weak fits silently — never name a park only to say "skip" it; only discuss parks you are recommending. When the user\'s origin city is known, recommend ONLY parks within realistic drive range from that city — never mention distant parks (e.g. Ohio or Virginia from Denver) even to dismiss them.';
 
 const DISCOVERY_RESPONSE_FORMAT_BLOCK = `
 --- DISCOVERY RESPONSE FORMAT ---
@@ -122,9 +127,11 @@ The user is replying with trip logistics after your prior discovery answer. Read
  * Prompt block for Trailie chat — ranked matches + intent weights from catalog search.
  * @param {object[]} parks API park objects with matchReason / matchedTraits
  * @param {{ label: string, weight: number }[]} [primaryIntents]
+ * @param {string} [query]
+ * @param {{ lat: number, lon: number, name?: string } | null} [originCity]
  * @returns {string}
  */
-function formatRankedParksDiscoveryBlock(parks, primaryIntents = [], query = '') {
+function formatRankedParksDiscoveryBlock(parks, primaryIntents = [], query = '', originCity = null) {
   if (!parks?.length) return '';
 
   const hints = buildDiscoveryQueryHints(query || '', parks);
@@ -132,6 +139,11 @@ function formatRankedParksDiscoveryBlock(parks, primaryIntents = [], query = '')
   let block = '\n--- TRAILVERSE PARK CANDIDATES ---\n';
   block +=
     'TrailVerse ranked these parks for the user\'s question. ';
+  if (originCity?.name && hints.maxDriveMiles) {
+    block += `User is starting from ${originCity.name}. Every candidate below is within ~${hints.maxDriveMiles} miles / realistic drive range for this question. `;
+    block +=
+      'Do NOT mention parks outside this radius — especially not to say they are too far or to "skip" them. ';
+  }
   block +=
     'Curate like a trip-planning friend: pick a clear #1, then 2–4 strong alternates from this list. ';
   block +=

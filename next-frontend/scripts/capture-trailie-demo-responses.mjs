@@ -31,8 +31,9 @@ if (existsSync(SERVER_ENV)) {
 }
 
 const API_BASE = process.env.API_BASE || 'http://127.0.0.1:5001/api';
-const TRAILVERSE_WEB_BASE =
-  (process.env.WEBSITE_URL || 'https://www.nationalparksexplorerusa.com').replace(/\/$/, '');
+const TRAILVERSE_WEB_BASE = (
+  process.env.TRAILIE_DEMO_WEB_BASE || 'https://www.nationalparksexplorerusa.com'
+).replace(/\/$/, '');
 
 function normalizeDemoLinks(text) {
   if (!text) return text;
@@ -42,6 +43,9 @@ function normalizeDemoLinks(text) {
     .replace(/\/parks\/the-narrows(?=\?|\/|$|\))/g, '/parks/zion-national-park')
     .replace(/\/parks\/bryce(?=\?|\/|$|\))/g, '/parks/bryce-canyon-national-park')
     .replace(/\/parks\/yosemite(?=\?|\/|$|\))/g, '/parks/yosemite-national-park')
+    .replace(/\/parks\/sequoia(?=\?|\/|$|\))/g, '/parks/sequoia-kings-canyon-national-park')
+    .replace(/\/parks\/glacier(?=\?|\/|$|\))/g, '/parks/glacier-national-park')
+    .replace(/\/parks\/canyonlands(?=\?|\/|$|\))/g, '/parks/canyonlands-national-park')
     .replace(/\/parks\/boston(?=\?|\/|$|\))/g, '/parks/acadia-national-park')
     .replace(/\[([^\]]+)\]\([^)]*\/parks\/boston[^)]*\)/g, '$1')
     .replace(/\/parks\/zion-national-park/g, '/parks/zion-national-park');
@@ -52,66 +56,54 @@ const EMAIL = process.env.PLAN_AI_TEST_EMAIL;
 const PASSWORD = process.env.PLAN_AI_TEST_PASSWORD;
 
 /**
- * Demo scenarios — data-source policy (logged-in):
- *   NPS + catalog only → discover, compare, couples, permits, open/closed, itineraries
- *   NPS + live web     → gateway-town hotels, restaurants, road/trail conditions
- *   Anonymous          → same answers from training; upsell only on local-logistics questions
+ * Demo scenarios — public mix: 3 NPS + 1 non-NPS (logged-in authenticated capture).
+ *   NPS compare / itinerary / logistics → catalog + live NPS data
+ *   Non-NPS (Valley of Fire)         → web search grounding
  */
 const SCENARIOS = [
   {
-    id: 'discover-july-follow-up',
-    label: 'Discover',
-    chatTitle: 'Cool July parks',
+    id: 'compare-yosemite-sequoia',
+    label: 'Compare',
+    chatTitle: 'Yosemite vs Sequoia',
+    question:
+      'I have 3 days in late September. Should I choose Yosemite or Sequoia for easy hikes, photography, and fewer crowds? Pick one and explain why.',
+    metadata: { skipUserContext: true },
+  },
+  {
+    id: 'zion-couple-itinerary',
+    label: 'Itinerary',
+    chatTitle: 'Zion weekend',
     multiTurn: true,
+    suppressWebOnRefinement: true,
     turns: [
       {
         question:
-          'What are the best national parks to visit in July with cool weather, lakes or beaches?',
+          'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.',
         metadata: { skipUserContext: true },
       },
       {
-        question: 'Starting from Boston, 5 days, fine with flying.',
+        question:
+          'Actually make it more relaxed, avoid shuttle-heavy parts if possible, and add one good sunset spot.',
         metadata: { skipUserContext: true },
       },
     ],
   },
   {
-    id: 'compare-zion-bryce',
-    label: 'Compare',
-    chatTitle: 'Zion vs Bryce',
-    question: 'Zion vs Bryce for first-time visitors in October — which should we pick?',
+    id: 'glacier-one-day-july',
+    label: 'Logistics',
+    chatTitle: 'Glacier in one day',
+    question:
+      "I'm visiting Glacier in July with only one full day. What should I prioritize, and what's the backup plan if Logan Pass parking is full?",
     metadata: { skipUserContext: true },
   },
   {
-    id: 'yellowstone-itinerary',
-    label: 'Itinerary',
-    chatTitle: 'Yellowstone · 4 days',
-    question:
-      'Plan a 4-day Yellowstone itinerary in September for two adults who like wildlife and moderate hikes.',
-    metadata: {
-      parkCode: 'yell',
-      parkName: 'Yellowstone National Park',
-      skipUserContext: true,
-      formData: {
-        parkCode: 'yell',
-        startDate: '2026-09-10',
-        endDate: '2026-09-13',
-        groupSize: 2,
-        budget: 'moderate',
-        fitnessLevel: 'moderate',
-        interests: ['wildlife', 'hiking'],
-        accommodation: 'lodge',
-      },
-    },
-  },
-  {
-    id: 'auth-jackson-lodging',
-    label: 'Hotels & dinner',
-    chatTitle: 'Hotels & dinner · Grand Teton',
+    id: 'valley-of-fire-weekend',
+    label: 'State park',
+    chatTitle: 'Valley of Fire',
     expectsWebSearch: true,
     question:
-      'Best hotels and dinner spots in Jackson Hole near Grand Teton National Park for a September trip?',
-    metadata: { parkCode: 'grte', parkName: 'Grand Teton National Park', skipUserContext: true },
+      'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.',
+    metadata: { skipUserContext: true },
   },
 ];
 
@@ -145,14 +137,10 @@ function turnMetadataFromApi(
   data,
   { authenticated = false, hasGuestUpsell = false, turnIndex = 0 } = {}
 ) {
-  const hasWebSearch =
-    scenario.id === 'discover-july-follow-up' && turnIndex > 0
-      ? false
-      : Boolean(data.hasWebSearch);
-  const hasLiveData =
-    scenario.id === 'discover-july-follow-up' && turnIndex > 0
-      ? false
-      : Boolean(data.hasLiveData);
+  const isDiscoverRefinement =
+    scenario.multiTurn && scenario.suppressWebOnRefinement && turnIndex > 0;
+  const hasWebSearch = isDiscoverRefinement ? false : Boolean(data.hasWebSearch);
+  const hasLiveData = isDiscoverRefinement ? false : Boolean(data.hasLiveData);
 
   return {
     hasLiveData,
@@ -263,7 +251,18 @@ async function fetchScenarioLive(scenario, token) {
 }
 
 async function main() {
-  console.log(`Capturing ${SCENARIOS.length} Trailie demo scenarios...\n`);
+  const onlyId = process.env.TRAILIE_DEMO_SCENARIO_ID?.trim();
+  const scenariosToRun = onlyId
+    ? SCENARIOS.filter((s) => s.id === onlyId)
+  : SCENARIOS;
+
+  if (onlyId && scenariosToRun.length === 0) {
+    throw new Error(`Unknown TRAILIE_DEMO_SCENARIO_ID: ${onlyId}`);
+  }
+
+  console.log(
+    `Capturing ${scenariosToRun.length} Trailie demo scenario${scenariosToRun.length === 1 ? '' : 's'}${onlyId ? ` (${onlyId} only)` : ''}...\n`
+  );
 
   const token = await login();
   if (!token) {
@@ -272,7 +271,7 @@ async function main() {
 
   const results = [];
 
-  for (const scenario of SCENARIOS) {
+  for (const scenario of scenariosToRun) {
     process.stdout.write(`→ ${scenario.id}... `);
     try {
       const entry = await fetchScenarioLive(scenario, token);
@@ -296,20 +295,33 @@ async function main() {
 
   const outPath = join(dirname(fileURLToPath(import.meta.url)), '../src/data/trailieDemoResponses.json');
   let nextVersion = 1;
+  let mergedScenarios = results;
   if (existsSync(outPath)) {
     try {
       const prev = JSON.parse(readFileSync(outPath, 'utf8'));
       nextVersion = Number(prev.version || 0) + 1;
-    } catch {
+      if (onlyId && Array.isArray(prev.scenarios)) {
+        const byId = new Map(prev.scenarios.map((s) => [s.id, s]));
+        for (const entry of results) byId.set(entry.id, entry);
+        mergedScenarios = SCENARIOS.map((s) => byId.get(s.id)).filter(Boolean);
+        if (mergedScenarios.length !== SCENARIOS.length) {
+          throw new Error('Merged demo JSON is missing scenarios — run full capture');
+        }
+      }
+    } catch (err) {
+      if (onlyId && err.message.includes('missing scenarios')) throw err;
       nextVersion = 1;
     }
+  } else if (onlyId) {
+    throw new Error('Cannot capture a single scenario without existing trailieDemoResponses.json');
   }
+
   const payload = {
     version: nextVersion,
     source: `${API_BASE}/ai/chat + /ai/chat-anonymous`,
-    captureMode: 'mixed-live',
+    captureMode: onlyId ? 'single-scenario-refresh' : 'mixed-live',
     generatedAt: new Date().toISOString(),
-    scenarios: results,
+    scenarios: mergedScenarios,
   };
 
   writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
@@ -326,7 +338,7 @@ async function main() {
   }
   console.log('  ✓ All accuracy checks passed');
 
-  console.log(`\nWrote ${results.length} scenarios to ${outPath}`);
+  console.log(`\nWrote ${mergedScenarios.length} scenarios to ${outPath}`);
 }
 
 main().catch((err) => {

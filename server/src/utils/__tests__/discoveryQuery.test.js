@@ -6,6 +6,9 @@ const {
   isDiscoveryRefinementReply,
   buildDiscoverySearchQuery,
   userMessageHasRefinementConstraints,
+  isSpecificItineraryRequest,
+  shouldRequestItineraryJson,
+  shouldShowDayByDayPlanCta,
 } = require('../discoveryQuery');
 
 describe('discoveryQuery (principle-based routing)', () => {
@@ -72,6 +75,88 @@ describe('discoveryQuery (principle-based routing)', () => {
       isDiscoveryRefinementReply([
         { role: 'user', content: 'Best parks for couples with ocean views?' },
       ])
+    ).toBe(false);
+  });
+
+  test('shouldRequestItineraryJson distinguishes discovery from day-by-day plans', () => {
+    const discoveryMsg = 'Weekend hiking trip from Denver under $500';
+    expect(shouldRequestItineraryJson({
+      userMessage: discoveryMsg,
+      openEndedDiscovery: true,
+    })).toBe(false);
+    expect(isSpecificItineraryRequest(discoveryMsg)).toBe(false);
+
+    const planMsg = 'plan a 3 day trip to yellowstone with kids';
+    expect(shouldRequestItineraryJson({
+      userMessage: planMsg,
+      openEndedDiscovery: false,
+      metadata: { parkCode: 'yell' },
+      constraints: { dates: { numDays: 3 }, hasChildren: true, groupSize: 4 },
+      allExtractedParks: [{ parkCode: 'yell' }],
+      conversationUserText: planMsg,
+    })).toBe(true);
+    expect(isSpecificItineraryRequest(planMsg)).toBe(true);
+
+    expect(shouldRequestItineraryJson({
+      userMessage: 'best hikes in Yosemite',
+      openEndedDiscovery: false,
+      metadata: { parkCode: 'yose' },
+    })).toBe(false);
+
+    expect(shouldRequestItineraryJson({
+      userMessage: 'plan my 2 day Yosemite itinerary',
+      openEndedDiscovery: false,
+      metadata: { parkCode: 'yose' },
+      constraints: { dates: { numDays: 2 }, groupSize: 2 },
+      allExtractedParks: [{ parkCode: 'yose' }],
+      conversationUserText: 'plan my 2 day Yosemite itinerary for two of us',
+    })).toBe(true);
+  });
+
+  test('shouldShowDayByDayPlanCta only on first open-ended discovery answer', () => {
+    const discoveryMsg = 'Weekend hiking trip from Denver under $500';
+
+    expect(
+      shouldShowDayByDayPlanCta({
+        openEndedDiscovery: true,
+        lastUserMessage: discoveryMsg,
+        namedParkCount: 0,
+      })
+    ).toBe(true);
+
+    expect(
+      shouldShowDayByDayPlanCta({
+        openEndedDiscovery: true,
+        discoveryRefinement: true,
+        lastUserMessage: "We're in Boston, have 5 days, and we're fine flying.",
+        namedParkCount: 0,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldShowDayByDayPlanCta({
+        openEndedDiscovery: false,
+        lastUserMessage: 'what are the best hikes in Yosemite',
+        namedParkCount: 1,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldShowDayByDayPlanCta({
+        openEndedDiscovery: true,
+        dayByDayPlanIntake: true,
+        lastUserMessage: "I'd like a day-by-day plan for Rocky Mountain National Park.",
+        namedParkCount: 1,
+      })
+    ).toBe(false);
+
+    expect(
+      shouldShowDayByDayPlanCta({
+        openEndedDiscovery: true,
+        hasItinerary: true,
+        lastUserMessage: discoveryMsg,
+        namedParkCount: 0,
+      })
     ).toBe(false);
   });
 });

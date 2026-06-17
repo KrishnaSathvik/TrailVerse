@@ -3,7 +3,11 @@ const fetch = require('node-fetch');
 const NodeCache = require('node-cache');
 
 const router = express.Router();
-const cache = new NodeCache({ stdTTL: 60 * 60 * 24 * 3 }); // 3 days default
+const cache = new NodeCache({
+  stdTTL: 60 * 60 * 24 * 3, // 3 days default
+  maxKeys: 200,
+  checkperiod: 300,
+});
 const KEY = process.env.GMAPS_SERVER_KEY;
 
 // Debug endpoint to check API key status

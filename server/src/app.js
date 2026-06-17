@@ -276,7 +276,6 @@ app.use('/api/events', requireFeature('enableEvents'), require('./routes/events'
 app.use('/api/trips', require('./routes/trips'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/testimonials', require('./routes/testimonials'));
-app.use('/api/stats', require('./routes/stats'));
 app.use('/api/email', require('./routes/emailRoutes'));
 app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/images', require('./routes/images'));

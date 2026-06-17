@@ -3,6 +3,7 @@ const {
   buildParkPageUrl,
   formatTrailverseLinksBlock,
   formatTrailverseVerifyFooter,
+  formatNoLiveDataPromptInstruction,
 } = require('../trailverseParkLinks');
 
 describe('trailverseParkLinks', () => {
@@ -38,6 +39,16 @@ describe('trailverseParkLinks', () => {
     const footer = formatTrailverseVerifyFooter([park]);
     expect(footer).toContain('TrailVerse');
     expect(footer).toContain('?tab=alerts');
+    expect(footer).toContain('alerts and conditions');
     expect(footer).not.toContain('nps.gov');
+  });
+
+  test('formatNoLiveDataPromptInstruction bans general-knowledge disclaimers', () => {
+    const line = formatNoLiveDataPromptInstruction(park);
+    expect(line).toContain('[Zion National Park on TrailVerse]');
+    expect(line).toContain('?tab=alerts');
+    expect(line).toContain('general knowledge');
+    expect(line).toMatch(/Do NOT say/);
+    expect(line).toMatch(/usually\/typically/);
   });
 });

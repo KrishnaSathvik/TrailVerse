@@ -7,7 +7,7 @@ function getAiApiBaseUrl() {
   return getApiBaseUrl();
 }
 
-async function consumeAiSseStream(response, { onChunk, onDone, onError, onThinking } = {}) {
+async function consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking } = {}) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -22,6 +22,7 @@ async function consumeAiSseStream(response, { onChunk, onDone, onError, onThinki
     }
     if (parsed.type === 'thinking') onThinking?.(parsed);
     if (parsed.type === 'chunk') onChunk?.(parsed.content);
+    if (parsed.type === 'stream_end') onStreamEnd?.(parsed);
     if (parsed.type === 'done') onDone?.(parsed);
     if (parsed.type === 'error') onError?.(parsed.message);
   };
@@ -163,6 +164,7 @@ class AIService {
     signal,
     metadata,
     onChunk,
+    onStreamEnd,
     onDone,
     onError,
     onThinking
@@ -210,7 +212,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onDone, onError, onThinking });
+    await consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking });
   }
 
   /**
@@ -228,6 +230,7 @@ class AIService {
     metadata,
     anonymousId,
     onChunk,
+    onStreamEnd,
     onDone,
     onError,
     onThinking,
@@ -271,7 +274,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onDone, onError, onThinking });
+    await consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking });
   }
 
   /**

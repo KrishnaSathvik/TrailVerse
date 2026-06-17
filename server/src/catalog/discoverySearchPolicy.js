@@ -3,6 +3,64 @@
  * Used by GET /api/parks/search, Trailie chat discovery, voice, and MCP.
  */
 
+const { haversineMi } = require('../utils/airportCoordinates');
+
+/**
+ * @param {import('./canonicalPark').CanonicalPark} park
+ * @returns {{ lat: number, lng: number } | null}
+ */
+function getCanonicalParkCoords(park) {
+  const lat = park?.location?.lat ?? parseFloat(park?.sourceRecord?.latitude);
+  const lng = park?.location?.lng ?? parseFloat(park?.sourceRecord?.longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+  return { lat, lng };
+}
+
+/**
+ * Max reasonable drive radius (miles) when user's origin city is known.
+ * @param {string} q
+ * @returns {number|null}
+ */
+function resolveMaxDriveMilesFromQuery(q) {
+  if (!q || typeof q !== 'string') return null;
+
+  const hoursEachWay = q.match(
+    /\b(?:up\s+to\s+)?(\d{1,2})\s*hours?\s+(?:each\s+way|one[\s-]way|drive)\b/i
+  );
+  if (hoursEachWay) {
+    const hours = parseInt(hoursEachWay[1], 10);
+    if (hours > 0 && hours <= 12) return hours * 55;
+  }
+
+  if (/\b(weekend|quick\s+getaway|day\s+trip|short\s+trip|quick\s+trip)\b/i.test(q)) {
+    return 400;
+  }
+
+  return 550;
+}
+
+/**
+ * Narrow catalog to parks within drive range of the user's origin city.
+ * @param {import('./canonicalPark').CanonicalPark[]} parks
+ * @param {{ lat: number, lon: number, name?: string } | null} originCity
+ * @param {string} q
+ * @returns {import('./canonicalPark').CanonicalPark[]}
+ */
+function filterCatalogByOriginDistance(parks, originCity, q) {
+  if (!originCity?.lat || !originCity?.lon || !Array.isArray(parks) || parks.length === 0) {
+    return parks;
+  }
+
+  const maxMi = resolveMaxDriveMilesFromQuery(q);
+  if (!maxMi) return parks;
+
+  return parks.filter((park) => {
+    const coords = getCanonicalParkCoords(park);
+    if (!coords) return false;
+    return haversineMi(originCity.lat, originCity.lon, coords.lat, coords.lng) <= maxMi;
+  });
+}
+
 /**
  * User explicitly asked for National Park designations (not all NPS unit types).
  * @param {string} q
@@ -243,6 +301,7 @@ function buildDiscoveryQueryHints(q, parks = []) {
   hints.hasRemoteCandidates = parks.some((p) =>
     REMOTE_LOGISTICS_PARK_CODES.has((p.id || '').toLowerCase())
   );
+  hints.maxDriveMiles = resolveMaxDriveMilesFromQuery(q);
   return hints;
 }
 
@@ -256,6 +315,9 @@ module.exports = {
   getDiscoveryQueryHints,
   buildDiscoveryQueryHints,
   getParkLogisticsNote,
+  getCanonicalParkCoords,
+  resolveMaxDriveMilesFromQuery,
+  filterCatalogByOriginDistance,
   HOT_SUMMER_PARK_CODES,
   COOL_SUMMER_PARK_CODES,
   COOL_LAKE_BEACH_SUMMER_CODES,

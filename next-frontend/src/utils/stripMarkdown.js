@@ -24,7 +24,15 @@ export function truncatePlainText(text, maxLen = 140) {
 }
 
 /**
- * Close dangling markdown delimiters while SSE is still streaming so partial
+ * GFM strikethrough can treat paired single tildes as delimiters (e.g. "~6hrs … ~$30").
+ * Escape tildes used as "approximately" before digits or $ so hike times/prices render normally.
+ */
+export function escapeApproximateTildesForGfm(text = '') {
+  if (!text) return '';
+  return text.replace(/~(?=[0-9$])/g, '\\~');
+}
+
+/**
  * tokens render as formatted text instead of literal ** or __.
  */
 export function stabilizeStreamingMarkdown(text = '') {

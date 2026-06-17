@@ -44,8 +44,8 @@ router.get('/', async (req, res) => {
       name: mongoose.connection.name
     };
 
-    // Collection statistics
-    if (dbState === 1) {
+    // Collection statistics (expensive — opt in with ?detailed=true for admin/debug)
+    if (dbState === 1 && req.query.detailed === 'true') {
       const collections = await mongoose.connection.db.listCollections().toArray();
       const collectionStats = {};
       

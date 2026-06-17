@@ -126,20 +126,28 @@ class NPSService {
       ttl: 24 * 60 * 60 * 1000 // 24 hours — parking lots rarely change
     };
 
+    // O(1) parkCode → park record (rebuilt whenever parksCache updates)
+    this.parksByCode = new Map();
+
     // Per-endpoint caches for individual park data (bounded with auto-eviction)
     this.endpointCache = new NodeCache({ maxKeys: 500, checkperiod: 120 });
     this.endpointCacheTTLs = {
-      alerts: 30 * 60 * 1000,           // 30 min — safety-critical, can change anytime
-      eventsQuery: 24 * 60 * 60 * 1000,  // 1 day — event lists rarely change daily
-      eventsSummary: 24 * 60 * 60 * 1000, // 1 day — count can be cached separately
-      parkinglots: 10 * 60 * 1000,      // 10 min — live occupancy data
-      activities: 7 * 24 * 60 * 60 * 1000, // 7 days — rarely changes
-      campgrounds: 7 * 24 * 60 * 60 * 1000, // 7 days — seasonal changes only
-      visitorcenters: 7 * 24 * 60 * 60 * 1000, // 7 days — rarely changes
-      parksByState: 7 * 24 * 60 * 60 * 1000,  // 7 days — almost never changes
-      places: 7 * 24 * 60 * 60 * 1000,     // 7 days — almost never changes
-      tours: 7 * 24 * 60 * 60 * 1000,      // 7 days — almost never changes
-      webcams: 24 * 60 * 60 * 1000,        // 24 hours — status can change
+      alerts: 30 * 60 * 1000,           // 30 min — safety-critical
+      eventsQuery: 24 * 60 * 60 * 1000,
+      eventsSummary: 24 * 60 * 60 * 1000,
+      parkinglots: 30 * 24 * 60 * 60 * 1000,
+      webcams: 30 * 24 * 60 * 60 * 1000,
+      transit: 15 * 60 * 1000,          // 15 min — seasonal schedules
+      // NPS catalog payloads — change rarely (seasonal at most)
+      activities: 30 * 24 * 60 * 60 * 1000,
+      campgrounds: 30 * 24 * 60 * 60 * 1000,
+      visitorcenters: 30 * 24 * 60 * 60 * 1000,
+      parksByState: 30 * 24 * 60 * 60 * 1000,
+      places: 30 * 24 * 60 * 60 * 1000,
+      tours: 30 * 24 * 60 * 60 * 1000,
+      gallery: 30 * 24 * 60 * 60 * 1000,
+      videos: 30 * 24 * 60 * 60 * 1000,
+      facilities: 30 * 24 * 60 * 60 * 1000,
     };
   }
 
@@ -178,7 +186,6 @@ class NPSService {
 
   getCachedActivities() {
     if (this._isCacheValid(this.activitiesCache)) {
-      console.log('📦 Returning cached activities');
       return this.activitiesCache.data;
     }
     return null;
@@ -203,7 +210,17 @@ class NPSService {
   _setEndpointCache(key, data, type) {
     const ttlMs = this.endpointCacheTTLs[type] || 30 * 60 * 1000;
     const ttlSeconds = Math.round(ttlMs / 1000);
-    this.endpointCache.set(key, data, ttlSeconds);
+    try {
+      this.endpointCache.set(key, data, ttlSeconds);
+    } catch (err) {
+      // NodeCache throws when maxKeys (500) is full — evict one stale key and retry.
+      if (!/max keys/i.test(err?.message || '')) throw err;
+      const keys = this.endpointCache.keys();
+      if (keys.length > 0) {
+        this.endpointCache.del(keys[0]);
+      }
+      this.endpointCache.set(key, data, ttlSeconds);
+    }
   }
 
   // --- Rate-limit backoff ---
@@ -321,10 +338,19 @@ class NPSService {
 
   getCachedParks() {
     if (this.isParksCacheValid()) {
-      console.log('📦 Returning cached parks');
       return this.parksCache.data;
     }
     return null;
+  }
+
+  _rebuildParksByCodeIndex(parks = []) {
+    this.parksByCode = new Map();
+    for (const park of parks) {
+      const code = park?.parkCode?.toLowerCase();
+      if (code) {
+        this.parksByCode.set(code, park);
+      }
+    }
   }
 
   setParksCache(data) {
@@ -333,6 +359,7 @@ class NPSService {
       timestamp: Date.now(),
       ttl: 24 * 60 * 60 * 1000
     };
+    this._rebuildParksByCodeIndex(data);
     console.log(`💾 Cached ${data.length} parks for 24 hours`);
   }
 
@@ -508,16 +535,13 @@ class NPSService {
       parks.find((park) => park?.parkCode?.toLowerCase() === normalizedParkCode) || null;
 
     try {
-      // Prefer the full parks dataset because it is already cached aggressively and
-      // avoids extra per-park NPS calls that can trigger 429s on detail pages.
-      const cachedParks = this.getCachedParks();
-      const cachedMatch = findParkByCode(cachedParks || []);
-      if (cachedMatch) {
-        return cachedMatch;
+      const indexed = this.parksByCode.get(normalizedParkCode);
+      if (indexed) {
+        return indexed;
       }
 
       const allParks = await this.getAllParks();
-      const fullDatasetMatch = findParkByCode(allParks);
+      const fullDatasetMatch = this.parksByCode.get(normalizedParkCode) || findParkByCode(allParks);
       if (fullDatasetMatch) {
         return fullDatasetMatch;
       }
@@ -1373,8 +1397,6 @@ class NPSService {
   }
 
   async getParkParkingLots(parkCode) {
-    // Always use 10-min per-endpoint cache (not 24h bulk cache) so liveStatus
-    // occupancy data stays fresh — bulk cache freezes "Closed"/"Open" for hours
     const cacheKey = `parkinglots_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'parkinglots');
     if (cached) return cached;
@@ -1403,7 +1425,7 @@ class NPSService {
 
   async getParkVideos(parkCode) {
     const cacheKey = `videos_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    const cached = this._getEndpointCache(cacheKey, 'videos');
     if (cached) return cached;
 
     if (this._isRateLimited()) return [];
@@ -1414,7 +1436,7 @@ class NPSService {
       });
       const data = response.data.data || [];
       console.log(`🎬 Videos for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'activities');
+      this._setEndpointCache(cacheKey, data, 'videos');
       return data;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1465,7 +1487,7 @@ class NPSService {
 
   async getParkGalleryPhotos(parkCode) {
     const cacheKey = `gallery_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    const cached = this._getEndpointCache(cacheKey, 'gallery');
     if (cached) return cached;
 
     if (this._isRateLimited()) return [];
@@ -1487,7 +1509,7 @@ class NPSService {
       })).filter(p => p.url);
 
       console.log(`🖼️ Gallery photos for ${parkCode}: ${photos.length} found`);
-      this._setEndpointCache(cacheKey, photos, 'activities');
+      this._setEndpointCache(cacheKey, photos, 'gallery');
       return photos;
     } catch (error) {
       if (error.response?.status === 429) {
@@ -1550,7 +1572,7 @@ class NPSService {
 
   async getParkAmenities(parkCode) {
     const cacheKey = `amenities_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    const cached = this._getEndpointCache(cacheKey, 'facilities');
     if (cached) return cached;
 
     // Backoff if rate-limited
@@ -1594,7 +1616,7 @@ class NPSService {
       const enriched = this._enrichAmenitiesFromPlaces(amenities, parkCode);
 
       console.log(`🏛️ Amenities for ${parkCode}: ${enriched.length} found`);
-      this._setEndpointCache(cacheKey, enriched, 'activities');
+      this._setEndpointCache(cacheKey, enriched, 'facilities');
       return enriched;
     } catch (error) {
       if (error.response?.status === 429) {

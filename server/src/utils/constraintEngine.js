@@ -479,11 +479,44 @@ function validateItineraryConstraints(itineraryData, constraints) {
 
 // ── detectHypothetical ───────────────────────────────────────────────────────
 
+/** Real trip friction — backup planning here is normal logistics, not scenario mode. */
+function isPracticalContingencyPlanning(userMessage) {
+  if (!userMessage) return false;
+
+  const operationalFriction =
+    /\b(?:parking|lot|trailhead|shuttle|crowd|crowded|busy|full|wait(?:ing)?|line|sold out|reservation|permit|weather|rain|snow|storm|heat|wind)\b/i;
+
+  if (/\b(?:backup plan|plan b)\b/i.test(userMessage) && operationalFriction.test(userMessage)) {
+    return true;
+  }
+
+  if (/\bwhat if\b/i.test(userMessage) && operationalFriction.test(userMessage)) {
+    return true;
+  }
+
+  if (/\balternative\b/i.test(userMessage) && /\b(?:if|when)\b/i.test(userMessage) && operationalFriction.test(userMessage)) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Detects if user message is a hypothetical/scenario question.
  */
 function detectHypothetical(userMessage) {
   if (!userMessage) return { isHypothetical: false, scenarioDescription: null };
+
+  if (isPracticalContingencyPlanning(userMessage)) {
+    return { isHypothetical: false, scenarioDescription: null };
+  }
+
+  if (
+    /\b(?:backup plan|plan b)\b/i.test(userMessage) &&
+    /\b(?:closed|shut|blocked|unavailable)\b/i.test(userMessage)
+  ) {
+    return { isHypothetical: true, scenarioDescription: 'backup plan for closure' };
+  }
 
   const patterns = [
     /what if\b/i,
@@ -492,11 +525,8 @@ function detectHypothetical(userMessage) {
     /imagine\b/i,
     /in a scenario\b/i,
     /if the road (?:was|were|is) closed/i,
-    /if it (?:rains?|snows?|storms?)/i,
-    /if we (?:can't|couldn't|cannot)/i,
-    /plan B/i,
-    /backup plan/i,
-    /alternative.*if/i,
+    /if (?:the )?(?:trail|area|basin|canyon|pass|road|highway|route)\b[^.?\n]{0,80}\b(?:closed|shut|blocked|unavailable)/i,
+    /if we (?:can't|couldn't|cannot)\b/i,
     /assuming\b.*(?:closed|unavailable|shut|blocked|can't access)/i,
   ];
 

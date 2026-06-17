@@ -20,6 +20,7 @@ const {
   getParkBrochures,
   getParkPermits,
   getParkPlanning,
+  getParkExploreIndex,
   getParkFacilities,
   getParkTransit
 } = require('../controllers/parkController');
@@ -43,6 +44,7 @@ router.get('/:parkCode/transit', getParkTransit);
 router.get('/:parkCode/brochures', getParkBrochures);
 router.get('/:parkCode/permits', getParkPermits);
 router.get('/:parkCode/planning', getParkPlanning);
+router.get('/:parkCode/explore-index', getParkExploreIndex);
 router.get('/:parkCode/facilities', getParkFacilities);
 router.get('/:parkCode', getParkByCode);
 

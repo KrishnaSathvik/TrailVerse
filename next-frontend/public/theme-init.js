@@ -1,6 +1,5 @@
 /**
- * Blocking theme init — keep in sync with src/lib/themeInitScript.js.
- * Runs in <head> before <body> — sets .dark/.light on <html> immediately.
+ * Blocking theme init — runs in <head> before <body> to set .dark/.light on <html> immediately.
  */
 (function () {
   var STORAGE_KEY = 'theme';

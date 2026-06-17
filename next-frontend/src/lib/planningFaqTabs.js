@@ -1,6 +1,6 @@
 import parkCrowdFacts from '@/data/parkCrowdFacts.json';
 import { hasCrowdCalendar } from '@/lib/crowdCalendar';
-import { exploreTabHasData } from '@/lib/parkExploreTabs';
+import { exploreTabHasData, exploreTabHasDataFromIndex } from '@/lib/parkExploreTabs';
 import { buildPermitFaqAnswer } from '@/lib/permitFaqCopy';
 
 export { buildPermitFaqAnswer };
@@ -37,16 +37,28 @@ export function normalizePlanningFaqTabContext(ctx = {}) {
 export function planningFaqTabContextFromExplore({
   alertCount = 0,
   permitCount = 0,
+  exploreIndex = null,
+  exploreIndexReady = false,
   exploreCache = null,
   exploreReady = false,
   showTransitTab = false,
 } = {}) {
   const tabOpts = { showTransitTab };
+  const indexReady = exploreIndexReady || exploreReady;
+
+  const hasActivities = indexReady && exploreIndex
+    ? exploreTabHasDataFromIndex('activities', exploreIndex, tabOpts)
+    : indexReady && exploreTabHasData('activities', exploreCache, tabOpts);
+
+  const hasPlaces = indexReady && exploreIndex
+    ? exploreTabHasDataFromIndex('places', exploreIndex, tabOpts)
+    : indexReady && exploreTabHasData('places', exploreCache, tabOpts);
+
   return normalizePlanningFaqTabContext({
     alertCount,
     permitCount,
-    hasActivitiesTab: exploreReady && exploreTabHasData('activities', exploreCache, tabOpts),
-    hasPlacesTab: exploreReady && exploreTabHasData('places', exploreCache, tabOpts),
+    hasActivitiesTab: Boolean(hasActivities),
+    hasPlacesTab: Boolean(hasPlaces),
   });
 }
 

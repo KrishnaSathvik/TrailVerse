@@ -35,7 +35,7 @@ function normalizeScenario(item) {
 const SCENARIOS = demoData.scenarios.map(normalizeScenario);
 
 /** Bump when demo playback behavior changes so stale localStorage transcripts are ignored. */
-const DEMO_PLAYBACK_CACHE_VERSION = `${demoData.version}-playback-v7`;
+const DEMO_PLAYBACK_CACHE_VERSION = `${demoData.version}-playback-v8`;
 
 const PHASE = {
   IDLE: 'idle',
@@ -141,14 +141,22 @@ export default function TrailieInteractiveDemo({
           if (token !== playbackTokenRef.current) return;
 
           setSentQuestion('');
-          setCompletedTurns((prev) => [
-            ...prev,
-            {
-              question: turn.question,
-              answer: turn.answer,
-              metadata: turn.metadata,
-            },
-          ]);
+          setCompletedTurns((prev) => {
+            const nextTurns = [
+              ...prev,
+              {
+                question: turn.question,
+                answer: turn.answer,
+                metadata: turn.metadata,
+              },
+            ];
+            // Persist progress even for multi-turn scenarios so the tab feels "cached"
+            // after the first response (otherwise users who switch tabs mid-playback
+            // lose the transcript on refresh).
+            scenarioCacheRef.current.set(item.id, nextTurns);
+            persistTrailieDemoScenario(DEMO_PLAYBACK_CACHE_VERSION, item.id, nextTurns, scenarioIndex);
+            return nextTurns;
+          });
 
           if (nextTurnIndex + 1 < item.turns.length) {
             schedule(() => {
@@ -156,9 +164,6 @@ export default function TrailieInteractiveDemo({
               playTurn(scenarioIndex, nextTurnIndex + 1, token);
             }, TURN_GAP_MS);
           } else {
-            const cachedTurns = turnsToCache(item);
-            scenarioCacheRef.current.set(item.id, cachedTurns);
-            persistTrailieDemoScenario(DEMO_PLAYBACK_CACHE_VERSION, item.id, cachedTurns, scenarioIndex);
             setPhase(PHASE.COMPLETE);
           }
         }, THINKING_MS);
@@ -236,7 +241,7 @@ export default function TrailieInteractiveDemo({
             Live Trailie demo
           </h2>
           <p className="mt-2 text-sm sm:text-base leading-relaxed text-pretty" style={{ color: 'var(--text-secondary)' }}>
-            Pick a sample below — cool July parks, Zion vs Bryce, a Yellowstone itinerary, or Jackson Hole stays.
+            Pick a sample below — Yosemite vs Sequoia, a Zion weekend with follow-up, Glacier one-day logistics, or a relaxed Valley of Fire weekend from Vegas.
           </p>
         </div>
       )}

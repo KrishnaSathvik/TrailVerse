@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { User, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
 import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 import { normalizeParkLinksInMarkdown, unwrapMislinkedParkMarkdown } from '@/utils/parkLinkifier';
-import { stabilizeStreamingMarkdown } from '@/utils/stripMarkdown';
+import { stabilizeStreamingMarkdown, escapeApproximateTildesForGfm } from '@/utils/stripMarkdown';
 
 
 const ImageLightbox = ({ images, initialIndex, onClose }) => {
@@ -145,6 +145,7 @@ const MessageBubble = ({
   liveDataParks = [],
   parkImages = [],
   afterContent = null,
+  belowBubbleContent = null,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -166,9 +167,11 @@ const MessageBubble = ({
   const shouldLinkifyParks = linkifyParks && !isStreaming && !isUser;
   const markdownContent = isUser
     ? message
-    : (shouldLinkifyParks
-        ? normalizeParkLinksInMarkdown(renderBody)
-        : unwrapMislinkedParkMarkdown(renderBody));
+    : escapeApproximateTildesForGfm(
+        shouldLinkifyParks
+          ? normalizeParkLinksInMarkdown(renderBody)
+          : unwrapMislinkedParkMarkdown(renderBody)
+      );
 
   const handleCopy = () => {
     if (!message) return;
@@ -620,6 +623,8 @@ const MessageBubble = ({
             </div>
           )}
           </div>
+
+          {!isUser && belowBubbleContent}
 
           {/* Timestamp */}
           {timestamp && (
