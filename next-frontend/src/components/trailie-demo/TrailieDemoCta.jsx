@@ -18,13 +18,12 @@ export default function TrailieDemoCta({ className = '' }) {
             style={{ color: 'var(--text-secondary)' }}
           >
             <p>
-              Want to try your own trip? Ask me which parks fit your dates, who wins in a compare, or
-              map out a full itinerary — same kinds of questions as the samples above.
+              Want to try your own trip? Ask Trailie where to go outdoors, which destination wins in a compare, or
+              how to map a full itinerary — same kinds of questions as the samples above.
             </p>
             <p>
-              Name a park and I&apos;ll weave in live alerts, weather, and permit notes when I have them.
-              Sign up free if you want live web search for hotels and roads, or to save a trip and share
-              the link. Guests get five messages to start.
+              Name a park or outdoor spot and Trailie weaves in live alerts, weather, and permit notes when available.
+              Sign in free for state-park web search, saved trips, and share links. Guests get five messages to start.
             </p>
           </div>
 

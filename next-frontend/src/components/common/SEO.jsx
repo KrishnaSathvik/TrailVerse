@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 
 const SEO = ({
   title = 'TrailVerse - Explore America\'s 470+ Parks & Sites',
-  description = 'Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and AI trip planning. Free to explore — no account needed.',
+  description = 'Browse all 470+ parks and sites with real-time weather, interactive maps, community reviews, park comparison, events, and Trailie outdoor trip planning. Free to explore — no account needed.',
   keywords = 'national parks, USA parks, national park guide, park explorer, visit national parks, yellowstone, yosemite, grand canyon, park planning, hiking trails',
   image = 'https://www.nationalparksexplorerusa.com/og-image.jpg',
   url = 'https://www.nationalparksexplorerusa.com',

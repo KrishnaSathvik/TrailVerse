@@ -166,7 +166,7 @@ export default function AboutPage() {
               <div className="space-y-6 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                 <p>TrailVerse started from the way I already travel: planning deeply, documenting everything, and sharing what actually helps once you&apos;re on the road. Over time, that turned into thousands of Google Maps contributions, park visits across the country, and a clearer idea of what travelers really need in one place.</p>
                 <p>As a Google Maps Level 8 reviewer, I&apos;ve spent years writing detailed reviews, sharing photos, and leaving practical notes about what&apos;s worth your time. That experience shaped TrailVerse into something grounded in real visits, not just scraped data or generic travel advice.</p>
-                <p>I built TrailVerse to make national park planning feel modern and useful: AI trip planning, interactive maps, saved chats, live NPS events, weather, blogs, and community reviews all working together. The goal is simple: help you spend less time juggling tabs and more time planning a trip you&apos;re actually excited about.</p>
+                <p>I built TrailVerse to make national park planning feel modern and useful: Trailie outdoor trip planning, interactive maps, saved chats, live NPS events, weather, blogs, and community reviews all working together. The goal is simple: help you spend less time juggling tabs and more time planning a trip you&apos;re actually excited about.</p>
                 <p>The best outcome is when someone opens TrailVerse, finds the right park, builds a better itinerary, and heads out feeling more prepared and more inspired than they would have otherwise.</p>
               </div>
             </div>

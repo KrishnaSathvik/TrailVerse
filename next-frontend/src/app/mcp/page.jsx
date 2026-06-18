@@ -36,7 +36,7 @@ const tools = [
   {
     icon: 'Map',
     title: 'Plan a Trip',
-    description: 'AI-powered day-by-day itineraries with live alerts, weather, and crowd data',
+    description: 'Trailie day-by-day itineraries with live alerts, weather, and crowd data',
     accent: 'var(--accent-green)',
   },
   {

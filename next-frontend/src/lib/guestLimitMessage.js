@@ -1,13 +1,13 @@
 /** Trailie-voice intro for the guest 6th-message limit reply */
 
 export function buildGuestLimitIntro({ timeUntilReset } = {}) {
-  const resetClause = timeUntilReset
+  const resetWhen = timeUntilReset
     ? `in ${timeUntilReset}`
     : 'in about 48 hours';
 
-  return `You've used your **5 free guest messages** for this session.
+  return `You've reached the 5-message guest limit for now.
 
-We've got a good start on this trip. Create a free account to keep planning with Trailie and save this exact conversation for later. You'll also be able to share the trip with your travel crew and export a PDF when the itinerary feels ready.
+Your trip plan is already off to a good start. Sign in for free to keep planning, save this chat, share your itinerary, or export it as a PDF when you're ready.
 
-Not ready yet? This chat is saved on this device — come back to Trailie anytime. Your next 5 guest messages reset ${resetClause}.`;
+Not ready to sign in? No worries — this conversation stays on your device, and you'll get 5 more guest messages ${resetWhen}.`;
 }

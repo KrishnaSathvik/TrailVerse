@@ -6,6 +6,7 @@ import { User, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, Chevro
 import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 import ParkPhotoGrid from '@/components/ai-chat/ParkPhotoGrid';
 import { buildMarkdownComponents } from '@/components/ai-chat/markdownComponents';
+import { filterParkChatImages } from '@/utils/parkChatImages';
 import { normalizeParkLinksInMarkdown, unwrapMislinkedParkMarkdown } from '@/utils/parkLinkifier';
 import { stabilizeStreamingMarkdown, escapeApproximateTildesForGfm } from '@/utils/stripMarkdown';
 
@@ -140,6 +141,7 @@ const MessageBubble = ({
   compact = false,
   dense = false,
   hideAvatar = false,
+  inlineAvatarLayout = false,
   linkifyParks = true,
   isStreaming = false,
   isFinalizing = false,
@@ -176,57 +178,277 @@ const MessageBubble = ({
           : unwrapMislinkedParkMarkdown(renderBody)
       );
 
+  const usableParkImages = useMemo(() => filterParkChatImages(parkImages), [parkImages]);
   const parkImageUrls = useMemo(
-    () => new Set((parkImages || []).map((img) => img.url).filter(Boolean)),
-    [parkImages]
+    () => new Set(usableParkImages.map((img) => img.url).filter(Boolean)),
+    [usableParkImages]
   );
   const markdownComponents = useMemo(
     () => buildMarkdownComponents(parkImageUrls),
     [parkImageUrls]
   );
-  const displayPhotos = useMemo(() => parkImages?.slice(0, 4) || [], [parkImages]);
+  const displayPhotos = useMemo(() => usableParkImages.slice(0, 4), [usableParkImages]);
   const showStreamingCursor = isStreaming && !isFinalizing;
+  const useInlineLayout = inlineAvatarLayout && !hideAvatar;
+  const useInlineAssistantLayout = useInlineLayout && !isUser;
+  const useInlineUserLayout = useInlineLayout && isUser;
+  const avatarSize = dense ? 'h-7 w-7' : 'h-8 w-8 sm:h-9 sm:w-9';
+  const trailieAvatarSize = dense ? '!h-7 !w-7' : '!h-8 !w-8 sm:!h-9 sm:!w-9';
 
   const handleCopy = () => {
     if (!message) return;
-    
-    // Strip markdown formatting for cleaner copy
+
     const cleanText = message
-      .replace(/\[ITINERARY_JSON\][\s\S]*$/, '') // Remove itinerary JSON block
-      .replace(/#{1,6}\s+/g, '') // Remove headers
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-      .replace(/\*(.*?)\*/g, '$1') // Remove italic
-      .replace(/`(.*?)`/g, '$1') // Remove inline code
-      .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
-      .replace(/^\s*[-*+]\s+/gm, '') // Remove list bullets
-      .replace(/^\s*\d+\.\s+/gm, '') // Remove numbered lists
+      .replace(/\[ITINERARY_JSON\][\s\S]*$/, '')
+      .replace(/#{1,6}\s+/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`(.*?)`/g, '$1')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/^\s*[-*+]\s+/gm, '')
+      .replace(/^\s*\d+\.\s+/gm, '')
       .trim();
-    
+
     onCopy ? onCopy(cleanText) : navigator.clipboard.writeText(cleanText);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Show "Copied!" for 2 seconds
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleFeedback = async (type) => {
-    // Update UI immediately for instant feedback
     setFeedbackState(type);
-    
+
     if (onFeedback) {
       try {
         await onFeedback(type, messageData);
       } catch (error) {
         console.error('Feedback error:', error);
-        // Visual feedback already set above
       }
     }
   };
 
+  const liveDataLabel = !isUser && (hasLiveData || hasWebSearch) ? (
+    <div
+      className="flex items-center gap-1.5 min-w-0 text-[11px] font-medium"
+      style={{ color: 'var(--accent-green)' }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
+      <span>
+        {hasWebSearch ? 'Live web search' : 'Live NPS data'}
+        {liveDataParks.length > 0 ? ` · ${liveDataParks.join(', ')}` : ''}
+      </span>
+    </div>
+  ) : null;
+
+  const liveDataIndicator = liveDataLabel ? (
+    <div
+      className="mb-3 pb-2.5 border-b"
+      style={{ borderColor: 'var(--border)' }}
+    >
+      {liveDataLabel}
+    </div>
+  ) : null;
+
+  const messageContentCore = (
+    <>
+      <div className="prose prose-sm max-w-none"
+        style={{
+          '--tw-prose-bullets': 'var(--text-primary)',
+          '--tw-prose-counters': 'var(--text-primary)',
+          overflowWrap: 'anywhere',
+          wordBreak: 'normal',
+          hyphens: 'none'
+        }}
+      >
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {markdownContent}
+        </ReactMarkdown>
+        {isUser && showStreamingCursor && markdownContent && (
+          <span
+            className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
+            style={{ backgroundColor: 'var(--accent-green)' }}
+            aria-hidden="true"
+          />
+        )}
+        {!isUser && showStreamingCursor && markdownContent && (
+          <span
+            className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
+            style={{ backgroundColor: 'var(--accent-green)' }}
+            aria-hidden="true"
+          />
+        )}
+        {!isUser && isFinalizing && (
+          <p className="mt-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+            Finishing up…
+          </p>
+        )}
+      </div>
+
+      {!isUser && displayPhotos.length > 0 && (
+        <ParkPhotoGrid
+          photos={displayPhotos}
+          showViewAllCount={usableParkImages.length}
+          onOpenLightbox={(idx) => {
+            setLightboxIndex(idx);
+            setLightboxOpen(true);
+          }}
+        />
+      )}
+
+      {!isUser && afterContent}
+
+      {!isUser && !hideActions && (
+        <div
+          className="flex items-center gap-1.5 mt-4 pt-3 border-t"
+          style={{ borderColor: 'var(--border)' }}
+        >
+          <button
+            onClick={handleCopy}
+            className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
+            style={{
+              color: copied ? 'var(--accent-green)' : 'var(--text-tertiary)',
+              backgroundColor: copied ? 'var(--accent-green)/10' : 'var(--surface-hover)'
+            }}
+            aria-label="Copy message"
+            title={copied ? 'Copied!' : 'Copy'}
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            ) : (
+              <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            )}
+          </button>
+
+          {onRegenerate && (
+            <button
+              onClick={onRegenerate}
+              className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
+              style={{
+                color: 'var(--text-tertiary)',
+                backgroundColor: 'var(--surface-hover)'
+              }}
+              aria-label="Regenerate response"
+              title="Regenerate"
+            >
+              <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </button>
+          )}
+
+          {onFeedback && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleFeedback('up');
+                }}
+                className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
+                style={{
+                  color: feedbackState === 'up' ? '#fff' : 'var(--text-tertiary)',
+                  backgroundColor: feedbackState === 'up' ? 'var(--accent-green)' : 'var(--surface-hover)',
+                  borderWidth: feedbackState === 'up' ? '0' : '0',
+                  boxShadow: feedbackState === 'up' ? '0 2px 8px rgba(67, 160, 106, 0.3)' : 'none'
+                }}
+                title={feedbackState === 'up' ? 'Liked' : 'Good response'}
+                aria-label="Thumbs up"
+              >
+                <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" weight={feedbackState === 'up' ? 'fill' : 'regular'} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleFeedback('down');
+                }}
+                className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
+                style={{
+                  color: feedbackState === 'down' ? '#fff' : 'var(--text-tertiary)',
+                  backgroundColor: feedbackState === 'down' ? '#ef4444' : 'var(--surface-hover)',
+                  borderWidth: feedbackState === 'down' ? '0' : '0',
+                  boxShadow: feedbackState === 'down' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
+                }}
+                title={feedbackState === 'down' ? 'Disliked' : 'Bad response'}
+                aria-label="Thumbs down"
+              >
+                <ThumbsDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" weight={feedbackState === 'down' ? 'fill' : 'regular'} />
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const inlineAssistantHeader = (
+    <div
+      className="mb-3 flex items-center gap-2.5 border-b pb-2.5 sm:gap-3"
+      style={{ borderColor: 'var(--border)' }}
+    >
+      <TrailieAvatar className={`${trailieAvatarSize} shrink-0`} />
+      {liveDataLabel || (
+        <span
+          className="text-[11px] font-semibold uppercase tracking-[0.2em]"
+          style={{ color: 'var(--accent-green)' }}
+        >
+          Trailie
+        </span>
+      )}
+    </div>
+  );
+
+  const userAvatarBubble = (
+    <div
+      className={`${avatarSize} flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-gray-200`}
+      style={{ backgroundColor: 'var(--surface)' }}
+    >
+      {userAvatar && !avatarError ? (
+        <img
+          src={userAvatar}
+          alt=""
+          className="h-full w-full rounded-full object-cover"
+          onError={() => setAvatarError(true)}
+        />
+      ) : (
+        <User className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
+      )}
+    </div>
+  );
+
+  const inlineUserRow = (
+    <div className="flex items-center gap-2.5 sm:gap-3">
+      {userAvatarBubble}
+      <div
+        className="min-w-0 flex-1 text-sm leading-relaxed"
+        style={{ color: 'var(--text-primary)', overflowWrap: 'anywhere', wordBreak: 'normal' }}
+      >
+        {message}
+        {showStreamingCursor && message && (
+          <span
+            className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
+            style={{ backgroundColor: 'var(--accent-green)' }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const messageBody = (
+    <>
+      {liveDataIndicator}
+      {messageContentCore}
+    </>
+  );
+
   return (
     <div
-      className={`flex items-start ${dense ? 'gap-2' : 'gap-3 sm:gap-4'} ${isUser ? 'flex-row-reverse' : 'flex-row'} group ${
-        hideAvatar ? 'gap-0' : ''
-      } ${
+      className={`group ${
+        useInlineLayout
+          ? 'w-full'
+          : `flex items-start ${dense ? 'gap-2' : 'gap-3 sm:gap-4'} ${isUser ? 'flex-row-reverse' : 'flex-row'}`
+      } ${hideAvatar && !useInlineLayout ? 'gap-0' : ''} ${
         dense ? 'mb-1.5 sm:mb-2' : compact ? 'mb-2 sm:mb-3' : 'mb-5 sm:mb-7'
       }`}
       onMouseEnter={() => setShowActions(true)}
@@ -234,8 +456,7 @@ const MessageBubble = ({
       role="group"
       aria-label={isUser ? 'Your message' : 'Assistant message'}
     >
-      {/* Avatar */}
-      {!hideAvatar && (isUser ? (
+      {!hideAvatar && !useInlineLayout && (isUser ? (
         <div
           className={`flex-shrink-0 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-gray-200 ${
             dense ? 'h-8 w-8' : 'h-9 w-9 sm:h-10 sm:w-10'
@@ -260,11 +481,18 @@ const MessageBubble = ({
         <TrailieAvatar className={dense ? '!h-8 !w-8' : undefined} />
       ))}
 
-      {/* Message Content */}
-      <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
-        <div className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : ''}`}>
+      <div className={`${useInlineLayout ? 'w-full' : 'flex-1 min-w-0'} ${!useInlineLayout && isUser ? 'flex justify-end' : ''}`}>
+        <div className={`flex flex-col gap-1.5 ${!useInlineLayout && isUser ? 'items-end' : ''}`}>
           <div
-            className={`${isUser ? 'w-fit' : 'inline-block'} max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] chat-message-bubble ${
+            className={`${
+              useInlineLayout
+                ? 'w-full !max-w-full'
+                : isUser
+                  ? 'w-fit max-w-full sm:max-w-[94%] lg:max-w-[88%]'
+                  : 'inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%]'
+            } rounded-[24px] chat-message-bubble ${
+              useInlineLayout ? 'chat-message-bubble--inline ' : ''
+            }${
               isUser ? 'chat-message-bubble--user' : 'chat-message-bubble--assistant'
             } ${
               dense
@@ -273,7 +501,7 @@ const MessageBubble = ({
                   ? 'px-3.5 py-2.5 sm:px-4 sm:py-3'
                   : 'px-4 py-3.5 sm:px-5 sm:py-4'
             } ${
-              isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
+              useInlineLayout ? '' : isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
             style={{
               backgroundColor: isUser ? 'var(--accent-green-light)' : 'var(--surface)',
@@ -285,161 +513,26 @@ const MessageBubble = ({
                 : '0 18px 38px rgba(15, 23, 42, 0.06)',
               overflowWrap: 'anywhere',
               wordBreak: 'normal',
-              hyphens: 'none'
+              hyphens: 'none',
             }}
           >
-
-          {/* Live data indicator — inside bubble */}
-          {!isUser && (hasLiveData || hasWebSearch) && (
-            <div
-              className="flex items-center gap-1.5 mb-3 pb-2.5 border-b text-[11px] font-medium"
-              style={{ borderColor: 'var(--border)', color: 'var(--accent-green)' }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
-              <span>
-                {hasWebSearch ? 'Live web search' : 'Live NPS data'}
-                {liveDataParks.length > 0 ? ` · ${liveDataParks.join(', ')}` : ''}
-              </span>
-            </div>
-          )}
-
-          <div className="prose prose-sm max-w-none"
-            style={{
-              '--tw-prose-bullets': 'var(--text-primary)',
-              '--tw-prose-counters': 'var(--text-primary)',
-              overflowWrap: 'anywhere',
-              wordBreak: 'normal',
-              hyphens: 'none'
-            }}
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {markdownContent}
-            </ReactMarkdown>
-            {isUser && showStreamingCursor && markdownContent && (
-              <span
-                className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
-                style={{ backgroundColor: 'var(--accent-green)' }}
-                aria-hidden="true"
-              />
+            {useInlineAssistantLayout ? (
+              <>
+                {inlineAssistantHeader}
+                {messageContentCore}
+              </>
+            ) : useInlineUserLayout ? (
+              inlineUserRow
+            ) : (
+              messageBody
             )}
-            {!isUser && showStreamingCursor && markdownContent && (
-              <span
-                className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
-                style={{ backgroundColor: 'var(--accent-green)' }}
-                aria-hidden="true"
-              />
-            )}
-            {!isUser && isFinalizing && (
-              <p className="mt-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                Finishing up…
-              </p>
-            )}
-          </div>
-
-          {/* Park photos — after text so streaming copy isn't pushed down when images arrive */}
-          {!isUser && displayPhotos.length > 0 && (
-            <ParkPhotoGrid
-              photos={displayPhotos}
-              showViewAllCount={parkImages.length}
-              onOpenLightbox={(idx) => {
-                setLightboxIndex(idx);
-                setLightboxOpen(true);
-              }}
-            />
-          )}
-
-          {!isUser && afterContent}
-
-          {/* Actions (assistant only) */}
-          {!isUser && !hideActions && (
-            <div
-              className="flex items-center gap-1.5 mt-4 pt-3 border-t"
-              style={{ borderColor: 'var(--border)' }}
-            >
-              <button
-                onClick={handleCopy}
-                className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
-                style={{
-                  color: copied ? 'var(--accent-green)' : 'var(--text-tertiary)',
-                  backgroundColor: copied ? 'var(--accent-green)/10' : 'var(--surface-hover)'
-                }}
-                aria-label="Copy message"
-                title={copied ? 'Copied!' : 'Copy'}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                )}
-              </button>
-
-              {onRegenerate && (
-                <button
-                  onClick={onRegenerate}
-                  className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
-                  style={{
-                    color: 'var(--text-tertiary)',
-                    backgroundColor: 'var(--surface-hover)'
-                  }}
-                  aria-label="Regenerate response"
-                  title="Regenerate"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
-              )}
-
-              {onFeedback && (
-                <>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleFeedback('up');
-                    }}
-                    className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
-                    style={{ 
-                      color: feedbackState === 'up' ? '#fff' : 'var(--text-tertiary)',
-                      backgroundColor: feedbackState === 'up' ? '#3b82f6' : 'var(--surface-hover)',
-                      borderWidth: feedbackState === 'up' ? '0' : '0',
-                      boxShadow: feedbackState === 'up' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
-                    }}
-                    title={feedbackState === 'up' ? 'Liked!' : 'Good response'}
-                    aria-label="Thumbs up"
-                  >
-                    <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" weight={feedbackState === 'up' ? 'fill' : 'regular'} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleFeedback('down');
-                    }}
-                    className="p-2 rounded-lg transition-all duration-200 hover:scale-105 touch-manipulation"
-                    style={{ 
-                      color: feedbackState === 'down' ? '#fff' : 'var(--text-tertiary)',
-                      backgroundColor: feedbackState === 'down' ? '#ef4444' : 'var(--surface-hover)',
-                      borderWidth: feedbackState === 'down' ? '0' : '0',
-                      boxShadow: feedbackState === 'down' ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none'
-                    }}
-                    title={feedbackState === 'down' ? 'Disliked' : 'Bad response'}
-                    aria-label="Thumbs down"
-                  >
-                    <ThumbsDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" weight={feedbackState === 'down' ? 'fill' : 'regular'} />
-                  </button>
-                </>
-              )}
-            </div>
-          )}
           </div>
 
           {!isUser && belowBubbleContent}
 
-          {/* Timestamp */}
           {timestamp && (
             <div
-              className={`text-xs ${isUser ? 'text-right' : 'text-left'}`}
+              className={`text-xs ${useInlineLayout || !isUser ? 'text-left' : 'text-right'}`}
               style={{ color: 'var(--text-tertiary)' }}
               title={new Date(timestamp).toLocaleString()}
             >
@@ -448,10 +541,9 @@ const MessageBubble = ({
           )}
         </div>
       </div>
-      {/* Image lightbox */}
-      {lightboxOpen && parkImages?.length > 0 && (
+      {lightboxOpen && usableParkImages.length > 0 && (
         <ImageLightbox
-          images={parkImages}
+          images={usableParkImages}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
         />
@@ -471,6 +563,7 @@ function messageBubblePropsAreEqual(prev, next) {
     prev.compact === next.compact &&
     prev.dense === next.dense &&
     prev.hideAvatar === next.hideAvatar &&
+    prev.inlineAvatarLayout === next.inlineAvatarLayout &&
     prev.linkifyParks === next.linkifyParks &&
     prev.isStreaming === next.isStreaming &&
     prev.isFinalizing === next.isFinalizing &&

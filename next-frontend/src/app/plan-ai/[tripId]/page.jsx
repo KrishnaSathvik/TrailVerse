@@ -12,7 +12,11 @@ function PlanAIWithTrip() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<PlanAIShell loadingMessage="Loading trip..." />}>
+    <Suspense
+      fallback={
+        <PlanAIShell title="Your trip" showSubHeader loadingMessage="Loading trip..." />
+      }
+    >
       <PlanAIWithTrip />
     </Suspense>
   );

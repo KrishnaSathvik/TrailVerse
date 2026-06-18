@@ -6,7 +6,7 @@ alwaysApply: false
 
 # TrailVerse Backend API
 
-Entry: `server/server.js` → `server/src/app.js`. Base path: **`/api`**. Swagger: `/api-docs`. Health: `/health` (not under `/api`).
+Entry: `server/server.js` → `server/src/app.js`. Base path: **`/api`**. Swagger: `/api-docs`. Health (not under `/api`): **`GET /health/ping`** for Render/uptime liveness; **`GET /health`** for full check (DB + memory); **`GET /health/database`** for DB diagnostics.
 
 ## Auth middleware (`server/src/middleware/auth.js`)
 

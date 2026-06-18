@@ -22,7 +22,7 @@ const JSON_LD = {
   name: 'TrailVerse',
   url: 'https://www.nationalparksexplorerusa.com',
   description:
-    "Explore 470+ U.S. parks, monuments, and historic sites with AI trip planning, live alerts, weather, maps, and community reviews.",
+    "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and Trailie outdoor trip planning. Free to explore — no account needed.",
   potentialAction: {
     '@type': 'SearchAction',
     target: {
@@ -63,7 +63,7 @@ export async function generateViewport() {
 export const metadata = {
   title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
   applicationName: "TrailVerse",
-  description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and AI trip planning with Trailie. Free to explore — no account needed.",
+  description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and Trailie outdoor trip planning. Free to explore — no account needed.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -84,7 +84,7 @@ export const metadata = {
   },
   openGraph: {
     title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
-    description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and AI trip planning with Trailie. Free to explore — no account needed.",
+    description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and Trailie outdoor trip planning. Free to explore — no account needed.",
     url: "https://www.nationalparksexplorerusa.com",
     siteName: "TrailVerse",
     type: "website",
@@ -100,7 +100,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
-    description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and AI trip planning with Trailie.",
+    description: "Explore 470+ U.S. parks, monuments, and historic sites with live weather, alerts, maps, park comparison, events, and Trailie outdoor trip planning.",
     images: ["/og-image-trailverse.jpg"],
   },
 };

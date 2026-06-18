@@ -76,8 +76,11 @@ Your backend integration setup is **90% complete**! Here's what's ready:
 Once servers are running:
 
 ### 1. Health Check
-Visit: http://localhost:5001/api/health
-Should show: `{"status":"ok","database":"connected"}`
+Visit: http://localhost:5001/health/ping
+
+Should show: `{"status":"ok","timestamp":"...","uptime":...}`
+
+For DB diagnostics: http://localhost:5001/health
 
 ### 2. Test Authentication
 - Go to http://localhost:3000/signup

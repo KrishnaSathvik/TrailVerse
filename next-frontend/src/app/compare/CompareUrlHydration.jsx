@@ -2,10 +2,18 @@
 
 import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import {
+  COMPARE_MAX_PARKS,
+  loadCompareSelectionCodes,
+  parseCompareParkCodes,
+} from '@/lib/comparePersistence';
 
-const MAX_PARKS = 4;
-
-function CompareUrlHydrationInner({ allParks, hydratedRef, onHydrate }) {
+function CompareUrlHydrationInner({
+  allParks,
+  hydratedRef,
+  onHydrate,
+  initialParkCodes = [],
+}) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -16,12 +24,21 @@ function CompareUrlHydrationInner({ allParks, hydratedRef, onHydrate }) {
     let codes = [];
 
     if (parksParam) {
-      codes = parksParam.split(',').map((code) => code.trim().toLowerCase()).filter(Boolean);
+      codes = parseCompareParkCodes(parksParam);
     } else if (legacyPark) {
-      codes = [legacyPark.trim().toLowerCase()];
+      codes = parseCompareParkCodes(legacyPark);
     }
 
-    codes = [...new Set(codes)].slice(0, MAX_PARKS);
+    if (codes.length === 0 && initialParkCodes.length > 0) {
+      codes = [...new Set(initialParkCodes.map((c) => c.trim().toLowerCase()).filter(Boolean))].slice(
+        0,
+        COMPARE_MAX_PARKS
+      );
+    }
+
+    if (codes.length === 0) {
+      codes = loadCompareSelectionCodes();
+    }
 
     if (codes.length > 0) {
       const parks = codes
@@ -33,7 +50,7 @@ function CompareUrlHydrationInner({ allParks, hydratedRef, onHydrate }) {
     }
 
     hydratedRef.current = true;
-  }, [allParks, searchParams, hydratedRef, onHydrate]);
+  }, [allParks, searchParams, hydratedRef, onHydrate, initialParkCodes]);
 
   return null;
 }

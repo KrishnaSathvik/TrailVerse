@@ -9,7 +9,7 @@ export default function GuestLimitMessageExtras({ onSignup }) {
   return (
     <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
       <Button onClick={onSignup} variant="primary" size="sm" icon={Sparkles} className="w-full sm:w-auto">
-        Keep planning free
+        Sign in to continue
       </Button>
     </div>
   );

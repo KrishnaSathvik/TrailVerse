@@ -8,7 +8,7 @@ Your National Parks Explorer application now has a **fully functional backend** 
 
 #### ✅ **Backend Server**
 - **Port:** 5001 (http://localhost:5001)
-- **Health Check:** ✅ Working (`/health`)
+- **Health Check:** ✅ `GET /health/ping` (liveness) · `GET /health` (full)
 - **Database:** ✅ MongoDB connected locally
 - **Authentication:** ✅ JWT-based auth working
 
@@ -119,7 +119,10 @@ cd server && npm run dev
 # Start frontend  
 cd client && npm start
 
-# Test health
+# Test liveness
+curl http://localhost:5001/health/ping
+
+# Test full health (DB + memory)
 curl http://localhost:5001/health
 
 # Test login

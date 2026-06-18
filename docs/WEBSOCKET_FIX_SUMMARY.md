@@ -76,7 +76,7 @@ WebSocket connection to 'wss://www.nationalparksexplorerusa.com/socket.io/?EIO=4
 
 3. **Verify Backend is Running**
    ```bash
-   curl https://trailverse.onrender.com/health
+   curl https://trailverse.onrender.com/health/ping
    ```
 
 4. **Test Production**
@@ -187,7 +187,7 @@ window.websocketService.getStatus()
 
 2. **Check Render backend is running**
    ```bash
-   curl -I https://trailverse.onrender.com/health
+   curl -I https://trailverse.onrender.com/health/ping
    ```
    Should return: `HTTP/2 200`
    

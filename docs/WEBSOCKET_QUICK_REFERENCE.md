@@ -34,7 +34,7 @@ node verify-websocket-config.js
 
 ### Check Backend Health
 ```bash
-curl https://trailverse.onrender.com/health
+curl https://trailverse.onrender.com/health/ping
 ```
 
 ### Deploy Frontend
@@ -154,7 +154,8 @@ console.log(localStorage.getItem('token'))
 - **Render Dashboard**: https://dashboard.render.com/
 - **Production Site**: https://www.nationalparksexplorerusa.com
 - **Backend API**: https://trailverse.onrender.com/api
-- **Backend Health**: https://trailverse.onrender.com/health
+- **Backend liveness**: https://trailverse.onrender.com/health/ping
+- **Full health (DB)**: https://trailverse.onrender.com/health
 
 ## 📞 Support Files
 
@@ -181,10 +182,10 @@ console.log(localStorage.getItem('token'))
 curl -s https://www.nationalparksexplorerusa.com | grep VITE_WS_URL
 
 # Check if backend is responding
-curl -I https://trailverse.onrender.com/health
+curl -I https://trailverse.onrender.com/health/ping
 
 # Check if Render is sleeping
-time curl https://trailverse.onrender.com/health
+time curl https://trailverse.onrender.com/health/ping/ping
 # If >10s, it's waking from sleep
 ```
 

@@ -36,7 +36,7 @@ function buildDateSubtitle(formData, currentPlan, isGenerating) {
   if (dayCount > 0) parts.push(`${dayCount}-day plan`);
   else if (formData?.groupSize > 1) parts.push(`${formData.groupSize} travelers`);
   if (parts.length) return parts.join(' · ');
-  if (isGenerating) return 'Trailie is planning…';
+  if (isGenerating) return 'Planning…';
   return null;
 }
 
@@ -52,16 +52,46 @@ export function resolvePlanAiEntryMode({
   if (searchParams.has('personalized')) return PLAN_AI_ENTRY.PERSONALIZED;
   if (tripId && fromChatHistory) return PLAN_AI_ENTRY.CHAT_HISTORY;
   if (searchParams.get('suggest')?.trim()) return PLAN_AI_ENTRY.ROAD_TRIP;
-  if (searchParams.get('from') === 'compare') return PLAN_AI_ENTRY.COMPARE;
   if (searchParams.get('park') && searchParams.get('name')) return PLAN_AI_ENTRY.PARK;
+  if (searchParams.get('from') === 'compare') return PLAN_AI_ENTRY.PARK;
   return PLAN_AI_ENTRY.GENERAL;
 }
 
+/** Compare page → Plan my trip (single park) — park header, compare welcome copy. */
+export function isFromComparePage(searchParams) {
+  return searchParams?.get('from') === 'compare';
+}
+
 /**
- * Shell title/subtitle for Plan AI — driven by entry source, not assistant reply text.
+ * Best park label for shell header — URL/prop first, then latest assistant turn.
+ */
+export function resolvePlanningParkName({ parkName = '', messages = [] } = {}) {
+  const fromProp = parkName?.trim();
+  if (fromProp) return fromProp;
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i];
+    if (msg.role !== 'assistant') continue;
+    const name = msg.parkName?.trim();
+    if (name) return name;
+  }
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const names = messages[i].parkNames;
+    if (Array.isArray(names) && names.length === 1 && names[0]?.trim()) {
+      return names[0].trim();
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Shell title/subtitle for Plan AI — entry source (sticky per session) + park from URL or chat.
  */
 export function derivePlanAiHeaderMeta({
   entryMode = PLAN_AI_ENTRY.GENERAL,
+  sessionEntryMode = null,
   isPersonalized = false,
   parkName = '',
   suggestText = '',
@@ -69,11 +99,19 @@ export function derivePlanAiHeaderMeta({
   currentPlan = null,
   isGenerating = false,
   hasUserMessages = false,
+  resolvedParkName = '',
 }) {
-  const mode =
-    isPersonalized || entryMode === PLAN_AI_ENTRY.PERSONALIZED
-      ? PLAN_AI_ENTRY.PERSONALIZED
+  const activeEntry =
+    sessionEntryMode && sessionEntryMode !== PLAN_AI_ENTRY.GENERAL
+      ? sessionEntryMode
       : entryMode;
+
+  const mode =
+    isPersonalized || activeEntry === PLAN_AI_ENTRY.PERSONALIZED
+      ? PLAN_AI_ENTRY.PERSONALIZED
+      : activeEntry === PLAN_AI_ENTRY.COMPARE
+        ? PLAN_AI_ENTRY.PARK
+        : activeEntry;
 
   if (mode === PLAN_AI_ENTRY.PERSONALIZED) {
     return {
@@ -83,26 +121,15 @@ export function derivePlanAiHeaderMeta({
     };
   }
 
-  const parkLabel = shortParkLabel(parkName);
+  const planningPark = resolvedParkName || parkName;
+  const parkLabel = shortParkLabel(planningPark);
   const dateSubtitle = buildDateSubtitle(formData, currentPlan, isGenerating);
 
   switch (mode) {
     case PLAN_AI_ENTRY.PARK:
       return {
         title: parkLabel ? `Planning ${parkLabel}` : 'Planning',
-        subtitle:
-          dateSubtitle ||
-          (isGenerating ? 'Trailie is planning…' : 'Live NPS data when this park is in focus'),
-        showSubHeader: true,
-      };
-
-    case PLAN_AI_ENTRY.COMPARE:
-      return {
-        title: 'Compare and plan trip',
-        subtitle:
-          parkLabel ||
-          dateSubtitle ||
-          (isGenerating ? 'Trailie is planning…' : null),
+        subtitle: dateSubtitle || null,
         showSubHeader: true,
       };
 
@@ -110,7 +137,7 @@ export function derivePlanAiHeaderMeta({
       const parksHint = suggestText ? truncatePlainText(suggestText, 72) : null;
       return {
         title: "Let's plan a road trip",
-        subtitle: isGenerating ? 'Trailie is planning…' : parksHint,
+        subtitle: isGenerating ? 'Planning…' : parksHint || null,
         showSubHeader: true,
       };
     }
@@ -118,24 +145,22 @@ export function derivePlanAiHeaderMeta({
     case PLAN_AI_ENTRY.CHAT_HISTORY:
       return {
         title: parkLabel ? `Planning ${parkLabel}` : 'Your trip',
-        subtitle: dateSubtitle || (isGenerating ? 'Trailie is planning…' : null),
+        subtitle: dateSubtitle || (isGenerating ? 'Planning…' : null),
         showSubHeader: true,
       };
 
     case PLAN_AI_ENTRY.GENERAL:
     default: {
-      if (parkLabel && hasUserMessages && formData?.parkCode) {
+      if (hasUserMessages && parkLabel) {
         return {
           title: `Planning ${parkLabel}`,
-          subtitle:
-            dateSubtitle ||
-            (isGenerating ? 'Trailie is planning…' : 'Live NPS data when this park is in focus'),
+          subtitle: dateSubtitle || (isGenerating ? 'Planning…' : null),
           showSubHeader: true,
         };
       }
       return {
-        title: 'Trailie',
-        subtitle: isGenerating ? 'Trailie is planning…' : 'Your AI park trip planner',
+        title: isGenerating ? 'Planning…' : 'Outdoor trip planning',
+        subtitle: dateSubtitle || null,
         showSubHeader: true,
       };
     }

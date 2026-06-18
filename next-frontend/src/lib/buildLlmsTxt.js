@@ -18,7 +18,7 @@ export function buildLlmsTxt() {
   lines.push('# TrailVerse');
   lines.push('');
   lines.push(
-    '> TrailVerse (National Parks Explorer USA) helps people plan trips across 470+ U.S. National Park Service parks and sites. Use it for live alerts, weather, events, park comparison, AI itineraries (Trailie), ranked “park picks” by trip vibe, and editorial planning guides. Canonical site: nationalparksexplorerusa.com. Most features work without an account.'
+    '> TrailVerse (National Parks Explorer USA) is built around **Trailie** — outdoor trip planning on TrailVerse with deep live data for 470+ NPS parks and sites, plus state parks and local spots when users sign in. Use it for alerts, weather, events, park comparison, day-by-day itineraries, ranked “park picks” by trip vibe, and editorial planning guides. Canonical site: nationalparksexplorerusa.com. Most browsing works without an account.'
   );
   lines.push('');
   lines.push('## How to use this site (for AI assistants)');
@@ -31,10 +31,10 @@ export function buildLlmsTxt() {
   lines.push('- **Full URL index**: `https://www.nationalparksexplorerusa.com/sitemap.xml` (all park slugs, guides, blog posts, discover dimensions).');
   lines.push('');
 
-  lines.push('## Trip planning & AI');
+  lines.push('## Trailie');
   lines.push('');
-  lines.push(`- [Plan with Trailie (web)](${BASE}/plan-ai): Free AI trip chat with live NPS data; optional account for saved trips.`);
-  lines.push(`- [Trailie interactive demo](${BASE}/trailie-demo): Replay recorded sample chats (July parks, couples trips, permits, closures) before opening the live planner.`);
+  lines.push(`- [Plan with Trailie (web)](${BASE}/plan-ai): Trailie plans outdoor and national park trips — live NPS data for 470+ sites; sign in for state parks, saved trips, and chat history.`);
+  lines.push(`- [Trailie interactive demo](${BASE}/trailie-demo): Replay sample chats (NPS parks, state parks, comparisons, permits, multi-day itineraries) before opening live Trailie.`);
   lines.push(`- [TrailVerse ChatGPT app](${BASE}/chatgpt): Install guide — plan trips, park details, compare, search, events inside ChatGPT.`);
   lines.push(`- [Claude MCP connector](${BASE}/mcp): Install guide for Claude Desktop / claude.ai — connector URL \`${MCP}\`.`);
   lines.push(`- [Compare parks](${BASE}/compare): Side-by-side comparison of 2–4 parks (weather, crowds, activities).`);

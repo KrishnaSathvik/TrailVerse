@@ -1,19 +1,20 @@
 import React, { memo } from 'react';
+import { filterParkChatImages } from '@/utils/parkChatImages';
 
 function ParkPhotoGrid({ photos, onOpenLightbox, showViewAllCount }) {
-  if (!photos?.length) return null;
+  const usablePhotos = filterParkChatImages(photos);
+  if (!usablePhotos.length) return null;
 
-  const gridClass =
-    photos.length === 1 ? 'grid-cols-1' : 'grid-cols-2';
+  const gridClass = usablePhotos.length === 1 ? 'grid-cols-1' : 'grid-cols-2';
 
   return (
     <>
       <div className={`mt-3 grid ${gridClass} gap-1.5 rounded-xl overflow-hidden`}>
-        {photos.map((img, idx) => (
+        {usablePhotos.map((img, idx) => (
           <div
             key={img.url || `park-${idx}`}
-            className={`relative aspect-[4/3] overflow-hidden group/img cursor-pointer${
-              photos.length === 3 && idx === 2 ? ' col-span-2 max-h-40' : ''
+            className={`relative aspect-[4/3] overflow-hidden cursor-pointer${
+              usablePhotos.length === 3 && idx === 2 ? ' col-span-2 max-h-40' : ''
             }`}
             style={{ backgroundColor: 'var(--surface-hover)' }}
             onClick={() => onOpenLightbox(idx)}
@@ -30,22 +31,23 @@ function ParkPhotoGrid({ photos, onOpenLightbox, showViewAllCount }) {
               className="w-full h-full object-cover"
               loading="eager"
               decoding="async"
+              referrerPolicy="no-referrer"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = '/og-image-trailverse.jpg';
+                e.target.closest('[role="button"]')?.remove();
               }}
             />
           </div>
         ))}
       </div>
-      {showViewAllCount > 4 ? (
+      {showViewAllCount > usablePhotos.length ? (
         <button
           type="button"
           onClick={() => onOpenLightbox(0)}
           className="mt-2 text-xs font-medium transition-colors"
           style={{ color: 'var(--accent-green)' }}
         >
-          View all {showViewAllCount} photos
+          View all {usablePhotos.length} photos
         </button>
       ) : null}
     </>

@@ -31,7 +31,7 @@ export default function PrivacyPageContent() {
 
           <h3 className="text-lg font-semibold mb-3 mt-4">Usage & Activity Data</h3>
           <p className="mb-4">
-            We collect: favorite parks/blogs/events, visited parks with dates, Trailie AI trip conversations, reviews with up to 5 photos per review, 
+            We collect: favorite parks/blogs/events, visited parks with dates, Trailie trip conversations, reviews with up to 5 photos per review, 
             blog comments and likes, saved events, trip history (active & archived), search queries, map interactions, and filter preferences.
           </p>
 
@@ -44,7 +44,7 @@ export default function PrivacyPageContent() {
           <h3 className="text-lg font-semibold mb-3 mt-4">Third-Party Data</h3>
           <p className="mb-4">
             We integrate with: National Park Service API (park info, events, alerts), OpenWeather API (weather forecasts), 
-            OpenAI & Anthropic (AI trip planning - anonymized), Google Maps Platform (maps, places, directions), and Resend (email delivery).
+            OpenAI & Anthropic (Trailie planning — anonymized), Google Maps Platform (maps, places, directions), and Resend (email delivery).
           </p>
         </>
       )
@@ -115,7 +115,7 @@ export default function PrivacyPageContent() {
           </p>
           <ul className="list-disc pl-6 mb-4 space-y-2">
             <li><strong>Essential:</strong> Authentication tokens, session management</li>
-            <li><strong>Functional:</strong> Theme preferences, favorites, cached park data, AI chat state</li>
+            <li><strong>Functional:</strong> Theme preferences, favorites, cached park data, Trailie chat state</li>
             <li><strong>Analytics:</strong> Google Analytics session data (optional, via cookie consent)</li>
             <li><strong>Offline:</strong> Cached content for fast, offline app access</li>
           </ul>
@@ -295,7 +295,7 @@ export default function PrivacyPageContent() {
               <div className="grid md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>We Collect</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Account info, favorites, reviews, AI conversations, usage data</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>Account info, favorites, reviews, Trailie conversations, usage data</p>
                 </div>
                 <div>
                   <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>We Never</p>

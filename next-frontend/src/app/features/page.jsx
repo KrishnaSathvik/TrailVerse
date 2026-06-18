@@ -3,14 +3,14 @@ import Footer from '@/components/common/Footer';
 import FeaturesPageClient from './FeaturesPageClient';
 
 export const metadata = {
-  title: 'Features — AI Trip Planning, Maps, Weather & More | TrailVerse',
-  description: 'Explore TrailVerse features: Trailie smart AI trip planning, drag-and-drop itinerary builder, PDF export, interactive maps, real-time weather, community reviews, and 470+ parks.',
+  title: 'Features — Trailie, Maps, Weather & More | TrailVerse',
+  description: 'Explore TrailVerse features: Trailie outdoor trip planning (5 guest messages; sign in for unlimited chat, live web search, and state parks), itinerary builder, PDF export, maps, weather, and 470+ NPS sites.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/features',
   },
   openGraph: {
     title: 'Features — TrailVerse National Parks',
-    description: 'AI trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ National Parks.',
+    description: 'Trailie trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ NPS parks and sites. Sign in for live web search and state-park planning.',
     url: 'https://www.nationalparksexplorerusa.com/features',
     siteName: 'TrailVerse',
     type: 'website',
@@ -19,7 +19,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Features — TrailVerse National Parks',
-    description: 'AI trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ National Parks.',
+    description: 'Trailie trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ NPS parks and sites. Sign in for live web search and state-park planning.',
     images: ['/og-image-trailverse.jpg'],
   },
 };
@@ -29,7 +29,7 @@ const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'WebPage',
   name: 'TrailVerse Features',
-  description: 'AI trip planning, interactive maps, real-time weather, itinerary builder, PDF export, and community reviews for 470+ U.S. national parks.',
+  description: 'Trailie trip planning, interactive maps, real-time weather, itinerary builder, PDF export, and community reviews for 470+ NPS parks and sites. Free account unlocks live web search and state parks.',
   url: 'https://www.nationalparksexplorerusa.com/features',
   mainEntity: {
     '@type': 'SoftwareApplication',
@@ -37,13 +37,13 @@ const jsonLd = JSON.stringify({
     applicationCategory: 'TravelApplication',
     operatingSystem: 'Web',
     url: 'https://www.nationalparksexplorerusa.com',
-    description: 'Free travel planning platform for all 470+ U.S. national parks with AI trip planning, interactive maps, real-time weather, and community reviews.',
+    description: 'Free travel planning platform for 470+ NPS parks and sites with Trailie, interactive maps, real-time weather, and community reviews.',
     offers: {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'USD',
     },
-    featureList: 'AI Trip Planning, Trailie Voice, Interactive Maps, Real-Time Weather, Itinerary Builder, PDF Export, Park Comparison, Community Reviews, Event Calendar, ChatGPT App, Claude MCP',
+    featureList: 'Trailie, Trailie Voice, Interactive Maps, Real-Time Weather, Itinerary Builder, PDF Export, Park Comparison, Community Reviews, Event Calendar, ChatGPT App, Claude MCP',
   },
   publisher: {
     '@type': 'Organization',

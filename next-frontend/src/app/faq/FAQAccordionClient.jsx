@@ -16,11 +16,11 @@ const faqCategories = [
       },
       {
         question: "How do I get started?",
-        answer: "Getting started is easy! Create a free account by clicking 'Sign Up', enter your email and create a password. Once logged in, you can explore parks, save favorites, use AI trip planning, view real-time weather, check NPS events, and read travel guides. No credit card required!"
+        answer: "Getting started is easy! Create a free account by clicking 'Sign Up', enter your email and create a password. Once logged in, you can explore parks, save favorites, plan with Trailie, view real-time weather, check NPS events, and read travel guides. No credit card required!"
       },
       {
         question: "What makes TrailVerse different?",
-        answer: "TrailVerse uniquely combines Trailie (smart AI trip planning), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations."
+        answer: "TrailVerse uniquely combines Trailie outdoor trip planning, real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations."
       },
       {
         question: "Is TrailVerse free?",
@@ -28,21 +28,21 @@ const faqCategories = [
       },
       {
         question: "Do I need an account to explore parks?",
-        answer: "No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue AI trip plans, or export itineraries."
+        answer: "No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue Trailie plans, or export itineraries."
       },
       {
         question: "How is TrailVerse different from AllTrails?",
-        answer: "AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and AI day-by-day itineraries. Many visitors use TrailVerse to plan the trip and AllTrails on specific hikes."
+        answer: "AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and Trailie day-by-day itineraries. Many visitors use TrailVerse to plan the trip and AllTrails on specific hikes."
       }
     ]
   },
   {
-    category: "AI & Trip Planning",
+    category: "Trailie & Trip Planning",
     icon: Sparkles,
     questions: [
       {
-        question: "How does AI trip planning work?",
-        answer: "Our AI analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It considers weather, seasonal attractions, trail difficulty, and optimal routes. Simply provide your preferences, and let our AI craft a detailed plan for you."
+        question: "How does Trailie trip planning work?",
+        answer: "Trailie analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It weaves in live NPS data when available — weather, closures, permits — and can use web search for state parks when you are signed in. Tell Trailie where you want to go and what matters; it builds a day-by-day plan from there."
       },
       {
         question: "How does Trailie pick which AI to use?",
@@ -50,11 +50,11 @@ const faqCategories = [
       },
       {
         question: "How does trip history and archiving work?",
-        answer: "All your AI conversations are automatically saved to your Trip History. Active trips appear in the 'Active' tab for easy continuation. Archive completed trips to the 'Archived' tab where you can restore them anytime with full context and conversation history preserved."
+        answer: "All your Trailie conversations are automatically saved to your Trip History. Active trips appear in the 'Active' tab for easy continuation. Archive completed trips to the 'Archived' tab where you can restore them anytime with full context and conversation history preserved."
       },
       {
-        question: "Are my AI conversations private?",
-        answer: "Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into AI trip planning chats."
+        question: "Are my Trailie conversations private?",
+        answer: "Yes! Your Trailie conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats."
       },
       {
         question: "How is TrailVerse different from using ChatGPT alone?",
@@ -120,7 +120,7 @@ const faqCategories = [
       },
       {
         question: "Can I use TrailVerse offline?",
-        answer: "Yes! TrailVerse securely saves park information, saved trips, and your favorites so you can access them without cell service or internet. Features requiring live data (like map routing, live weather, or AI conversations) still require a connection. Tip: You can install our app to your home screen for the best offline experience."
+        answer: "Yes! TrailVerse securely saves park information, saved trips, and your favorites so you can access them without cell service or internet. Features requiring live data (like map routing, live weather, or Trailie chat) still require a connection. Tip: You can install our app to your home screen for the best offline experience."
       }
     ]
   },

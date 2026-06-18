@@ -11,7 +11,7 @@ export const LANDING_HERO_PRIMARY_CTA = 'Plan with Trailie';
 export const LANDING_HERO_DEMO_CTA = 'View Trailie demo';
 
 export const LANDING_HERO_META_DESCRIPTION =
-  'Plan U.S. national park trips with live weather, alerts, maps, park comparison, and AI itineraries from Trailie — 470+ parks on TrailVerse.';
+  'Plan outdoor and national park trips with Trailie — live weather, alerts, maps, park comparison, and day-by-day itineraries across 470+ NPS sites on TrailVerse.';
 
 export const LANDING_PAGE_TITLE =
   'TrailVerse — Plan Smarter National Park Trips | 470+ Parks';

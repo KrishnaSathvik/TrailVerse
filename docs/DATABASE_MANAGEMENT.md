@@ -106,7 +106,7 @@ GET /health
 # Detailed database health
 GET /health/database
 
-# Simple ping
+# Liveness check (Render, uptime monitors, frontend)
 GET /health/ping
 
 # Readiness check (for Kubernetes)
@@ -115,6 +115,9 @@ GET /health/ready
 # Liveness check (for Kubernetes)
 GET /health/live
 ```
+
+**Render:** set Health Check Path to `/health/ping` (lightweight; always 200 when the process is up).  
+Use `/health` or `/health/database` manually when debugging MongoDB or memory — those can return 503 if the DB is slow.
 
 #### Health Check Features
 - Database connection status
@@ -244,7 +247,8 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/nomadiq?retryWri
 4. **Monthly**: Review and clean old data
 
 ### Monitoring Endpoints
-- `/health` - Basic health check
+- `/health/ping` - Liveness (Render health check, uptime monitors)
+- `/health` - Full health check (DB + memory + CPU)
 - `/health/database` - Detailed database info
 - `/health/ready` - Kubernetes readiness
 - `/health/live` - Kubernetes liveness

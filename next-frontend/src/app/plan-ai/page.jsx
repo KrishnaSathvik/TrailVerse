@@ -10,7 +10,11 @@ function PlanAIPage() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<PlanAIShell />}>
+    <Suspense
+      fallback={
+        <PlanAIShell title="Outdoor trip planning" showSubHeader />
+      }
+    >
       <PlanAIPage />
     </Suspense>
   );

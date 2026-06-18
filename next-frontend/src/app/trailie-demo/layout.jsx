@@ -2,9 +2,9 @@ import { indexablePageRobots } from '@/lib/seo';
 
 const CANONICAL = 'https://www.nationalparksexplorerusa.com/trailie-demo';
 
-const TITLE = 'Trailie Demo — Try AI National Park Trip Planning | TrailVerse';
+const TITLE = 'Trailie Demo — Outdoor & National Park Trip Planning | TrailVerse';
 const DESCRIPTION =
-  'Preview Trailie with sample trip-planning chats — permits, closures, itineraries, and follow-ups. No sign-in for the demo; guests get 5 free messages on the full chat. Sign up to save trips.';
+  'Preview Trailie with sample outdoor trip chats — national parks, state parks, comparisons, permits, and multi-day itineraries. No sign-in for the demo; sign in on live chat for saved trips and state-park web search.';
 
 export const metadata = {
   title: TITLE,
@@ -12,16 +12,16 @@ export const metadata = {
   robots: indexablePageRobots,
   alternates: { canonical: CANONICAL },
   openGraph: {
-    title: 'Trailie Demo — Interactive National Park AI Chat | TrailVerse',
+    title: 'Trailie Demo — See Outdoor Trip Planning | TrailVerse',
     description: DESCRIPTION,
     url: CANONICAL,
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse Trailie AI trip planner demo' }],
+    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'Trailie demo on TrailVerse' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Trailie Demo — Try AI National Park Planning',
+    title: 'Trailie Demo — Outdoor & National Park Planning',
     description: DESCRIPTION,
     images: ['/og-image-trailverse.jpg'],
   },
@@ -40,7 +40,7 @@ const webPageLd = {
   },
   about: {
     '@type': 'SoftwareApplication',
-    name: 'Trailie — TrailVerse Trip Planner',
+    name: 'Trailie',
     applicationCategory: 'TravelApplication',
     operatingSystem: 'Web',
     url: 'https://www.nationalparksexplorerusa.com/plan-ai',

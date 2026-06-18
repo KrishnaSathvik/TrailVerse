@@ -104,16 +104,18 @@ Frontend runs on: http://localhost:3000
 ## 🧪 Test Your Setup
 
 ### 1. Check Backend Health
-Visit: http://localhost:5000/api/health
+Visit: http://localhost:5001/health/ping
 
 Expected response:
 ```json
 {
   "status": "ok",
   "timestamp": "2024-01-01T00:00:00.000Z",
-  "database": "connected"
+  "uptime": 12.34
 }
 ```
+
+Full check (includes DB): http://localhost:5001/health
 
 ### 2. Test Authentication
 1. Go to http://localhost:3000/signup

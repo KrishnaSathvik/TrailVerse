@@ -57,25 +57,25 @@ const FeaturesPage = () => {
     {
       category: 'Build your itinerary with Trailie',
       icon: Sparkles,
-      description: 'Turn a rough trip idea into a practical day-by-day plan with live park context.',
+      description: 'Turn a rough trip idea into a practical day-by-day plan. Guests get 5 Trailie messages for NPS catalog trips; sign in free for unlimited chat, live web search, and state-park planning.',
       items: [
         {
           icon: Bot,
-          title: 'Smart AI Routing',
-          description: 'Trailie picks the best AI for each message — Claude for quick tips, OpenAI for structured itineraries. No toggles required.',
-          benefits: ['Automatic provider selection', 'Streaming when signed in', 'Context-aware follow-ups', 'Trip history when signed in'],
+          title: 'Trailie routing',
+          description: 'Trailie picks the best model for each message — Claude for quick tips, OpenAI for structured itineraries. No toggles required.',
+          benefits: ['5 guest messages on site', 'Automatic provider selection', 'Streaming when signed in', 'Trip history when signed in'],
         },
         {
           icon: Route,
-          title: 'Intelligent Itinerary Generation',
-          description: 'AI builds day-by-day plans from your dates, budget, group size, fitness level, and interests.',
-          benefits: ['Personalized preferences', 'Budget & fitness matching', 'Day-by-day structure', 'Seasonal awareness'],
+          title: 'Trailie day-by-day itineraries',
+          description: 'Trailie builds day-by-day plans from your dates, budget, group size, fitness level, and interests — NPS catalog as a guest, broader outdoor destinations when signed in.',
+          benefits: ['Personalized preferences', 'Budget & fitness matching', 'Day-by-day structure', 'State parks when signed in'],
         },
         {
           icon: Mountain,
-          title: 'Live NPS Data in AI Responses',
-          description: 'Trailie weaves closures, events, and permit notes into your chat answers — so plans reflect what is open now.',
-          benefits: ['Closure-aware answers', 'Event suggestions', 'Campground context', 'Visitor center hours'],
+          title: 'Live NPS data in Trailie',
+          description: 'Trailie weaves closures, events, and permit notes into chat — catalog data for all guests; signed-in users also get live web search for state parks and current local conditions.',
+          benefits: ['Closure-aware answers', 'Live web search (signed in)', 'State-park planning (signed in)', 'Visitor center hours'],
         },
         {
           icon: ArchiveRestore,
@@ -99,7 +99,7 @@ const FeaturesPage = () => {
         {
           icon: GripVertical,
           title: 'Drag-and-Drop Itinerary Builder',
-          description: 'Open the plan workspace to turn AI day-by-day output into a visual timeline. Reorder stops, add custom activities, and edit details.',
+          description: 'Open the plan workspace to turn Trailie day-by-day output into a visual timeline. Reorder stops, add custom activities, and edit details.',
           benefits: ['Visual day timeline', 'Drag to reorder', 'Add custom stops', 'Edit descriptions'],
         },
         {
@@ -153,10 +153,10 @@ const FeaturesPage = () => {
     {
       icon: MessageSquare,
       title: 'TrailVerse for ChatGPT',
-      description: 'Use Trailie inside ChatGPT — plan trips, compare parks, check live weather and alerts, search parks, and find ranger programs across 470+ NPS sites.',
+      description: 'Use Trailie inside ChatGPT for NPS catalog trips — compare parks, weather, alerts, search, and ranger programs across 470+ sites. No TrailVerse account required; state parks and web search are on the website.',
       href: '/chatgpt',
       cta: 'Install ChatGPT app',
-      benefits: ['5 MCP tools', 'Multi-turn planning', 'Live NPS data', 'No TrailVerse account required'],
+      benefits: ['5 MCP tools (NPS-focused)', 'Multi-turn planning', 'Live NPS catalog data', 'Website sign-in for state parks'],
     },
     {
       icon: Bot,
@@ -171,14 +171,14 @@ const FeaturesPage = () => {
   const competitiveAdvantages = [
     {
       icon: Sparkles,
-      title: "Smart AI + Live Data",
+      title: 'Trailie + live data',
       description: "Trailie auto-routes each message to Claude or OpenAI based on what you're asking. Both are enriched with real-time NPS data \u2014 not just training data.",
-      comparison: "Other apps: single AI, static data. TrailVerse: smart routing, live NPS."
+      comparison: 'Other apps: single model, static data. TrailVerse: Trailie routing, live NPS.',
     },
     {
       icon: GripVertical,
       title: "Plan to Itinerary Pipeline",
-      description: "Go from AI chat to the plan workspace, then PDF export — without copying between separate apps.",
+      description: "Go from Trailie chat to the plan workspace, then PDF export — without copying between separate apps.",
       comparison: "Other apps: chat only. TrailVerse: chat + workspace + export."
     },
     {
@@ -225,8 +225,23 @@ const FeaturesPage = () => {
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            TrailVerse covers 470+ NPS parks and sites — research, live conditions, and Trailie trip planning in one place.
+            TrailVerse covers 470+ NPS parks and sites — research, live conditions, and Trailie in one place.
+            Browse without an account; sign in free for unlimited Trailie, live web search, and state-park trips.
           </p>
+
+          <div
+            className="max-w-2xl mx-auto rounded-2xl px-5 py-4 text-left text-sm leading-relaxed"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderWidth: '1px',
+              borderColor: 'var(--border)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <strong style={{ color: 'var(--text-primary)' }}>Trailie on the website:</strong>{' '}
+            Guests get 5 messages per session for NPS catalog planning. A free account unlocks unlimited
+            chat, saved trips, live web search, and state-park itineraries.
+          </div>
         </div>
       </section>
 
@@ -306,7 +321,8 @@ const FeaturesPage = () => {
               Also Available Outside the Website
             </h2>
             <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-              The same live park tools power Trailie in ChatGPT and Claude — handy when you already live in those apps.
+              The same NPS-focused Trailie tools power ChatGPT and Claude — handy when you already live in those apps.
+              Full outdoor planning with web search and state parks stays on the website.
             </p>
           </div>
 

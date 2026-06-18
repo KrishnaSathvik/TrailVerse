@@ -339,8 +339,8 @@ cors({
    ```
 
 2. **Check Render Backend Status**
-   - Visit: https://trailverse.onrender.com/api/health
-   - Should return 200 OK
+   - Liveness: https://trailverse.onrender.com/health/ping (should return 200 + `{"status":"ok",...}`)
+   - Full diagnostics: https://trailverse.onrender.com/health
 
 3. **Check CORS Configuration**
    - Backend must allow: `https://www.nationalparksexplorerusa.com`

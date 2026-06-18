@@ -16,10 +16,10 @@ export default function TrailieDemoPage() {
               className="text-xl sm:text-3xl font-semibold tracking-tight text-balance"
               style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
             >
-              Trailie demo — AI national park trip planning
+              Trailie demo — outdoor & national park trip planning
             </h1>
             <p className="mt-2 text-sm sm:text-base leading-relaxed text-pretty" style={{ color: 'var(--text-secondary)' }}>
-              Watch Trailie answer real trip-planning questions — open-ended discovery with drive times, state parks outside NPS, park comparisons, and multi-day itineraries — then{' '}
+              Watch Trailie answer real outdoor trip questions — national parks, state parks outside NPS, drive times, comparisons, and multi-day itineraries — then{' '}
               <span className="whitespace-nowrap">try your own plan free.</span>
             </p>
           </header>

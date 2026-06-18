@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { resolvePlanAiEntryMode, PLAN_AI_ENTRY } from '@/lib/planAiHeaderMeta';
+import { resolvePlanAiEntryMode, PLAN_AI_ENTRY, isFromComparePage } from '@/lib/planAiHeaderMeta';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Mountain, Camera, Trees, Tent, Car, Route, Star, Landmark
@@ -106,6 +106,8 @@ export default function usePlanAI(tripId) {
   const fromChatHistory = searchParams.get('chat') === 'true';
   const askText = searchParams.get('ask')?.trim() || '';
 
+  const fromCompare = isFromComparePage(searchParams);
+
   const entryMode = useMemo(
     () =>
       resolvePlanAiEntryMode({
@@ -117,9 +119,18 @@ export default function usePlanAI(tripId) {
   );
 
   const guestResumingChat = !isAuthenticated && guestHasResumableAnonymousChat();
+  const effectiveEntryMode = useMemo(() => {
+    if (isNewChat) return PLAN_AI_ENTRY.GENERAL;
+    if (entryMode !== PLAN_AI_ENTRY.GENERAL) return entryMode;
+    if (guestResumingChat) {
+      const saved = getFormState();
+      if (saved?.entryMode === PLAN_AI_ENTRY.COMPARE) return PLAN_AI_ENTRY.PARK;
+      if (saved?.entryMode) return saved.entryMode;
+    }
+    return PLAN_AI_ENTRY.GENERAL;
+  }, [entryMode, isNewChat, guestResumingChat]);
+
   const guestChatSessionKey = guestResumingChat ? getGuestAnonymousSessionId() : '';
-  const effectiveEntryMode =
-    guestResumingChat && !isNewChat ? PLAN_AI_ENTRY.GENERAL : entryMode;
 
   const resumeGuestChatContext = useCallback(() => {
     setSuggestText('');
@@ -127,6 +138,7 @@ export default function usePlanAI(tripId) {
     if (savedFormState?.chatFormData) {
       setChatFormData(savedFormState.chatFormData);
       setSelectedParkName(savedFormState.selectedParkName || '');
+      if (savedFormState.suggestText) setSuggestText(savedFormState.suggestText);
     } else {
       try {
         const raw = localStorage.getItem('anonymousSession');
@@ -196,13 +208,10 @@ export default function usePlanAI(tripId) {
     // Deep link from Trailie demo — open chat and auto-send the sample question
     const ask = searchParams.get('ask')?.trim();
     if (ask) {
-      if (!isAuthenticated && guestHasResumableAnonymousChat()) {
-        resumeGuestChatContext();
-        return;
-      }
       clearTempChatState();
       setChatFormData(emptyChatFormData());
       setSelectedParkName('');
+      setSuggestText('');
       setShowChat(true);
       setStep(4);
       setIsRestoringState(false);
@@ -212,10 +221,6 @@ export default function usePlanAI(tripId) {
     // Handle suggest param (road trip from compare page)
     const suggest = searchParams.get('suggest');
     if (suggest) {
-      if (!isAuthenticated && guestHasResumableAnonymousChat()) {
-        resumeGuestChatContext();
-        return;
-      }
       setSuggestText(suggest);
       setChatFormData(emptyChatFormData());
       setSelectedParkName('');
@@ -225,11 +230,6 @@ export default function usePlanAI(tripId) {
     }
 
     if (parkCode && parkName) {
-      if (!isAuthenticated && guestHasResumableAnonymousChat()) {
-        resumeGuestChatContext();
-        return;
-      }
-
       const selectedPark = allParks?.find(p => p.parkCode === parkCode);
       const coordinates = selectedPark
         ? {
@@ -239,6 +239,7 @@ export default function usePlanAI(tripId) {
         : null;
 
       clearTempChatState();
+      setSuggestText('');
       setSelectedParkName(parkName);
 
       setFormData(prev => ({
@@ -274,7 +275,11 @@ export default function usePlanAI(tripId) {
         if (savedFormState?.chatFormData) {
           setChatFormData(savedFormState.chatFormData);
           setSelectedParkName(savedFormState.selectedParkName || '');
+          if (savedFormState.suggestText) setSuggestText(savedFormState.suggestText);
         }
+      } else if (!isAuthenticated && guestHasResumableAnonymousChat()) {
+        resumeGuestChatContext();
+        return;
       } else {
         setChatFormData(emptyChatFormData());
         setSelectedParkName('');
@@ -371,11 +376,17 @@ export default function usePlanAI(tripId) {
   // Persist form wizard state only for real chats — never park-only browse with no messages
   useEffect(() => {
     if (showChat && chatFormData && hasActivePlanAiConversation()) {
-      saveFormState({ showChat, chatFormData, selectedParkName });
+      saveFormState({
+        showChat,
+        chatFormData,
+        selectedParkName,
+        entryMode: effectiveEntryMode,
+        suggestText: suggestText || '',
+      });
     } else if (!hasActivePlanAiConversation()) {
       clearFormState();
     }
-  }, [showChat, chatFormData, selectedParkName]);
+  }, [showChat, chatFormData, selectedParkName, effectiveEntryMode, suggestText]);
 
   // Cleanup on unmount - preserve chat state for refresh
   useEffect(() => {
@@ -625,7 +636,7 @@ export default function usePlanAI(tripId) {
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab,
     formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory, askText, entryMode,
-    effectiveEntryMode, guestChatSessionKey, guestResumingChat,
+    effectiveEntryMode, fromCompare, guestChatSessionKey, guestResumingChat,
     newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || searchParams.get('ask') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,
 

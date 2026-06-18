@@ -50,6 +50,7 @@ const tripPlanSchema = new mongoose.Schema({
     model: String,
     responseTime: Number,
     hasLiveData: Boolean,
+    hasWebSearch: Boolean,
     hasItinerary: Boolean,
     parkName: String,
     parkNames: [String],

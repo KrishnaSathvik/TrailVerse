@@ -10,12 +10,25 @@ const {
 } = require('../controllers/tripController');
 const { protect } = require('../middleware/auth');
 const TripPlan = require('../models/TripPlan');
+const User = require('../models/User');
 
 // View shared trip (public, no auth) — must be before router.use(protect)
 router.get('/shared/:shareId', async (req, res) => {
   const trip = await TripPlan.findOne({ shareId: req.params.shareId });
   if (!trip) {
     return res.status(404).json({ success: false, error: 'Shared trip not found' });
+  }
+
+  let sharedBy = null;
+  if (trip.userId) {
+    const owner = await User.findById(trip.userId).select('name firstName avatar');
+    if (owner) {
+      sharedBy = {
+        name: owner.name,
+        firstName: owner.firstName || owner.name?.split(/\s+/)[0] || null,
+        avatar: owner.avatar || null,
+      };
+    }
   }
 
   res.json({
@@ -26,7 +39,8 @@ router.get('/shared/:shareId', async (req, res) => {
       formData: trip.formData,
       conversation: trip.conversation,
       plan: trip.plan,
-      createdAt: trip.createdAt
+      createdAt: trip.createdAt,
+      sharedBy,
     }
   });
 });

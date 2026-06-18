@@ -7,7 +7,7 @@ export const SIGNUP_PROMPT_REASONS = {
 };
 
 const DEFAULT_BENEFITS = [
-  'Unlimited AI trip planning',
+  'Unlimited Trailie planning',
   'Save trips and chat history',
   'Share plans with travel companions',
   'Export itineraries as PDF',
@@ -21,7 +21,7 @@ const PROMPTS = {
     title: "You've Used Your 5 Free Messages",
     subtitle: 'Create a free account to keep the conversation going:',
     benefits: [
-      'Unlimited AI trip planning — no message cap',
+      'Unlimited Trailie — no message cap',
       'Save this chat and continue where you left off',
       'Share your plan with travel companions',
       'Export itineraries as PDF',
@@ -39,7 +39,7 @@ const PROMPTS = {
       'Export your itinerary as PDF',
       'Save this trip permanently',
       'Edit days in the drag-and-drop plan builder',
-      'Unlimited AI planning for future trips',
+      'Unlimited Trailie planning for future trips',
     ],
     primaryCta: 'Create Free Account',
     secondaryCta: 'Sign In',
@@ -54,7 +54,7 @@ const PROMPTS = {
     subtitle: 'Create a free account so you never lose this planning session:',
     benefits: [
       'Save this chat permanently',
-      'Unlimited AI trip planning',
+      'Unlimited Trailie planning',
       'Build structured itineraries over multiple sessions',
       'Share and export when your plan is ready',
       'Save parks, track visits & write reviews',

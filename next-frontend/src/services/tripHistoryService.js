@@ -227,6 +227,12 @@ export const normalizeStoredMessages = (messages = []) =>
     timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
   }));
 
+/** Drop in-flight stream flags and partial assistant placeholders before persisting trips. */
+export const sanitizeMessagesForPersistence = (messages = []) =>
+  messages
+    .filter((msg) => !msg.isStreaming && !msg.isFinalizing)
+    .map(({ isStreaming, isFinalizing, ...msg }) => msg);
+
 /**
  * Update user preferences (for AI context)
  * These are lightweight user preferences, not trip data
@@ -419,6 +425,7 @@ export const tripHistoryService = {
   guestHasResumableAnonymousChat,
   clearAnonymousBrowseContext,
   normalizeStoredMessages,
+  sanitizeMessagesForPersistence,
   updateUserPreferences,
   getUserPreferences,
   getAIContext,

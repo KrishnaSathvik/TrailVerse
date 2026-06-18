@@ -18,9 +18,9 @@ function greeting(user) {
 export function getGenericWelcomeMessage(user) {
   const name = displayName(user);
   const hey = name ? `Hey ${name},` : 'Hey,';
-  return `${hey} I'm **Trailie**. I can help you choose where to go, understand what to expect, and plan a trip that fits your time, season, group, and travel style.
+  return `${hey} I'm **Trailie**. I help you choose where to go outdoors — national parks, state parks, or anywhere you're thinking — and plan a trip that fits your time, season, group, and travel style.
 
-Tell me where you're thinking of going — or just describe the kind of trip you want.`;
+Tell me a destination or describe the kind of trip you want.`;
 }
 
 /** Park already chosen (Quick Fill, park page, landing cards, etc.) */
@@ -37,7 +37,7 @@ When are you going and how many days do you have? Tell me what you want to do �
 /** Shared copy for "My Recommendations" / "For Me" */
 export const MY_RECOMMENDATIONS_INFO = {
   title: 'My Recommendations',
-  body: 'Trailie suggests your next park or trip using your chat history, saved and visited parks, and what’s ideal this season. Unlocks after you’ve planned 3 different parks.',
+  body: 'Trailie suggests your next park or trip using your saved and visited parks, trip history, and seasonality. Unlocks after you\'ve planned 3 different parks in chat.',
 };
 
 export const MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE =
@@ -82,6 +82,7 @@ export function resolvePlanAiWelcomeMessage({
   suggestText = '',
   isPersonalized = false,
   isNewChat = false,
+  fromCompare = false,
 }) {
   if (isPersonalized || entryMode === 'personalized') {
     return getPersonalizedWelcomeMessage(user);
@@ -89,7 +90,7 @@ export function resolvePlanAiWelcomeMessage({
   if (entryMode === 'road_trip' || suggestText) {
     return getRoadTripWelcomeMessage(user, suggestText);
   }
-  if (entryMode === 'compare') {
+  if (fromCompare && parkName) {
     return getCompareWelcomeMessage(user, parkName);
   }
   if (entryMode === 'park' || (parkName && !isNewChat)) {

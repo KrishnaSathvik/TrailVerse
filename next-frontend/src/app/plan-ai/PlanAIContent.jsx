@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NotePencil } from '@components/icons';
 import PlanAIShell from '@components/plan-ai/PlanAIShell';
 import TripPlannerChat from '@components/plan-ai/TripPlannerChat';
@@ -8,10 +8,7 @@ import QuickFillModal from '@components/plan-ai/QuickFillModal';
 import MyRecommendationsButton from '@components/plan-ai/MyRecommendationsButton';
 import usePlanAI from '@hooks/usePlanAI';
 import { useAutoTrailieCompletionSound } from '@/hooks/useTrailieCompletionSound';
-
-const DEFAULT_SHELL_META = {
-  showSubHeader: false,
-};
+import { derivePlanAiHeaderMeta } from '@/lib/planAiHeaderMeta';
 
 const defaultFormData = {
   parkCode: '',
@@ -50,6 +47,7 @@ const PlanAIContent = ({ tripId }) => {
     askText,
     entryMode,
     effectiveEntryMode,
+    fromCompare,
     guestChatSessionKey,
     guestResumingChat,
     newChatKey
@@ -58,22 +56,52 @@ const PlanAIContent = ({ tripId }) => {
   const [quickFillMessage, setQuickFillMessage] = useState(null);
   const [hasAppliedQuickFill, setHasAppliedQuickFill] = useState(!!tripId || !!fromChatHistory);
   const [initialAskMessage, setInitialAskMessage] = useState(askText || null);
-  const [shellMeta, setShellMeta] = useState(DEFAULT_SHELL_META);
+  const [shellMetaOverride, setShellMetaOverride] = useState(null);
+  const [clientReady, setClientReady] = useState(false);
   const { playCompletion, prime: primeCompletionSound } = useAutoTrailieCompletionSound();
+
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
 
   useEffect(() => {
     if (askText && !guestResumingChat) setInitialAskMessage(askText);
   }, [askText, guestResumingChat]);
 
-  if (loadingTrip) {
-    return (
-      <PlanAIShell loadingMessage="Loading trip data…" />
-    );
-  }
-
   const effectiveFormData = chatFormData || defaultFormData;
   const effectiveParkName = selectedParkName || '';
   const effectiveIsNewChat = tripId ? false : isNewChat;
+
+  /** SSR + first client paint — derived from URL/entry, not chat effects (avoids hydration mismatch). */
+  const baseShellMeta = useMemo(
+    () =>
+      derivePlanAiHeaderMeta({
+        entryMode: effectiveEntryMode,
+        sessionEntryMode: effectiveEntryMode,
+        isPersonalized,
+        parkName: effectiveParkName,
+        suggestText: suggestText || '',
+        formData: effectiveFormData,
+        currentPlan: null,
+        isGenerating: false,
+        hasUserMessages: false,
+        resolvedParkName: effectiveParkName,
+      }),
+    [effectiveEntryMode, isPersonalized, effectiveParkName, suggestText, effectiveFormData]
+  );
+
+  const shellMeta = shellMetaOverride ?? baseShellMeta;
+
+  if (loadingTrip) {
+    return (
+      <PlanAIShell
+        title={baseShellMeta.title}
+        subtitle={baseShellMeta.subtitle}
+        showSubHeader={baseShellMeta.showSubHeader !== false}
+        loadingMessage="Loading trip data…"
+      />
+    );
+  }
 
   const handleQuickFillApply = (data) => {
     setFormData(data);
@@ -105,7 +133,7 @@ const PlanAIContent = ({ tripId }) => {
     setHasAppliedQuickFill(true);
   };
 
-  const headerActions = isAuthenticated ? (
+  const headerActions = clientReady && isAuthenticated ? (
     <div className="flex items-center gap-1.5 sm:gap-2">
       {uniqueParksCount >= 3 && (
         <MyRecommendationsButton onClick={handlePersonalizedRecommendations} />
@@ -144,6 +172,7 @@ const PlanAIContent = ({ tripId }) => {
           isNewChat={effectiveIsNewChat}
           suggestText={suggestText}
           entryMode={effectiveEntryMode}
+          fromCompare={fromCompare}
           fromChatHistory={fromChatHistory}
           refreshTrips={refetchUserTrips}
           onOpenQuickFill={() => setQuickFillOpen(true)}
@@ -153,7 +182,7 @@ const PlanAIContent = ({ tripId }) => {
           onInitialAskSent={() => setInitialAskMessage(null)}
           playCompletionSound={playCompletion}
           primeCompletionSound={primeCompletionSound}
-          onShellMetaChange={setShellMeta}
+          onShellMetaChange={setShellMetaOverride}
         />
       </PlanAIShell>
 

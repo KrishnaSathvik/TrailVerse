@@ -5,14 +5,14 @@ import FAQAccordionClient from './FAQAccordionClient';
 import { NPS_OFFICIAL_FAQ_ANSWER, PARKS_COVERAGE_ANSWER } from '@/lib/npsDisclaimer';
 
 export const metadata = {
-  title: 'FAQ — National Park Trip Planning & TrailVerse Features',
-  description: 'Answers to common questions about TrailVerse — AI trip planning, 470+ park coverage, real-time weather, community features, and getting started.',
+  title: 'FAQ — Trailie, Trip Planning & TrailVerse Features',
+  description: 'Answers about TrailVerse and Trailie — outdoor trip planning, 470+ park coverage, weather, community features, and getting started.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/faq',
   },
   openGraph: {
     title: 'FAQ — TrailVerse National Parks',
-    description: 'Answers to common questions about TrailVerse — AI trip planning, 470+ park coverage, real-time weather, community features, and getting started.',
+    description: 'Answers about TrailVerse and Trailie — outdoor trip planning, 470+ park coverage, weather, community features, and getting started.',
     url: 'https://www.nationalparksexplorerusa.com/faq',
     siteName: 'TrailVerse',
     type: 'website',
@@ -20,7 +20,7 @@ export const metadata = {
   twitter: {
     card: 'summary',
     title: 'FAQ — TrailVerse National Parks',
-    description: 'Answers to common questions about TrailVerse — AI trip planning, 470+ park coverage, real-time weather, community features, and getting started.',
+    description: 'Answers about TrailVerse and Trailie — outdoor trip planning, 470+ park coverage, weather, community features, and getting started.',
   },
 };
 
@@ -41,7 +41,7 @@ const faqStructuredData = {
       name: 'How do I get started?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: "Getting started is easy! Create a free account by clicking 'Sign Up', enter your email and create a password. Once logged in, you can explore parks, save favorites, use AI trip planning, view real-time weather, check NPS events, and read travel guides. No credit card required!"
+        text: "Getting started is easy! Create a free account by clicking 'Sign Up', enter your email and create a password. Once logged in, you can explore parks, save favorites, plan with Trailie, view real-time weather, check NPS events, and read travel guides. No credit card required!"
       }
     },
     {
@@ -49,7 +49,7 @@ const faqStructuredData = {
       name: 'What makes TrailVerse different?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'TrailVerse uniquely combines Trailie (smart AI trip planning), real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations.'
+        text: 'TrailVerse uniquely combines Trailie outdoor trip planning, real-time weather, live NPS events, interactive maps, community reviews with photos, and expert travel guides all in one platform. We help you discover, compare, and plan visits across all 470+ parks and sites with personalized recommendations.'
       }
     },
     {
@@ -65,7 +65,7 @@ const faqStructuredData = {
       name: 'Do I need an account to explore parks?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue AI trip plans, or export itineraries.'
+        text: 'No account is required to browse parks, compare destinations, read guides, or check live weather and alerts. Sign up when you want to save favorites, continue Trailie plans, or export itineraries.'
       }
     },
     {
@@ -73,15 +73,15 @@ const faqStructuredData = {
       name: 'How is TrailVerse different from AllTrails?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and AI day-by-day itineraries.'
+        text: 'AllTrails excels at individual trail hikes, GPS navigation, and crowdsourced trail conditions. TrailVerse focuses on full trip planning across 470+ NPS sites — park comparison, live NPS alerts, ranger events, and Trailie day-by-day itineraries.'
       }
     },
     {
       '@type': 'Question',
-      name: 'How does AI trip planning work?',
+      name: 'How does Trailie trip planning work?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Our AI analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It considers weather, seasonal attractions, trail difficulty, and optimal routes. Simply provide your preferences, and let our AI craft a detailed plan for you.'
+        text: 'Trailie analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It weaves in live NPS data when available — weather, closures, permits — and can use web search for state parks when you are signed in. Tell Trailie where you want to go and what matters; it builds a day-by-day plan from there.'
       }
     },
     {
@@ -97,15 +97,15 @@ const faqStructuredData = {
       name: 'How does trip history and archiving work?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: "All your AI conversations are automatically saved to your Trip History. Active trips appear in the 'Active' tab for easy continuation. Archive completed trips to the 'Archived' tab where you can restore them anytime with full context and conversation history preserved."
+        text: "All your Trailie conversations are automatically saved to your Trip History. Active trips appear in the 'Active' tab for easy continuation. Archive completed trips to the 'Archived' tab where you can restore them anytime with full context and conversation history preserved."
       }
     },
     {
       '@type': 'Question',
-      name: 'Are my AI conversations private?',
+      name: 'Are my Trailie conversations private?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes! Your AI conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into AI trip planning chats.'
+        text: 'Yes! Your Trailie conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats.'
       }
     },
     {
@@ -201,7 +201,7 @@ const faqStructuredData = {
       name: 'Can I use TrailVerse offline?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes! TrailVerse securely saves park information, saved trips, and your favorites so you can access them without cell service or internet. Features requiring live data (like map routing, live weather, or AI conversations) still require a connection. Tip: You can install our app to your home screen for the best offline experience.'
+        text: 'Yes! TrailVerse securely saves park information, saved trips, and your favorites so you can access them without cell service or internet. Features requiring live data (like map routing, live weather, or Trailie chat) still require a connection. Tip: You can install our app to your home screen for the best offline experience.'
       }
     },
     {

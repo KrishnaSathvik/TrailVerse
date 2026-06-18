@@ -319,6 +319,11 @@ body.mobile-nav-open {
     width: fit-content !important;
   }
 
+  .chat-message-bubble--inline {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
   .chat-message-bubble--assistant {
     max-width: calc(100vw - 40px) !important;
   }
@@ -395,6 +400,11 @@ body.mobile-nav-open {
   .chat-message-bubble--user {
     max-width: min(78%, 36rem) !important;
     width: fit-content !important;
+  }
+
+  .chat-message-bubble--inline {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .chat-message-bubble--assistant {

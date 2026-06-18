@@ -619,7 +619,7 @@ export default function ChatHistoryPage() {
                   </h2>
                   <p className="mt-3 text-base leading-7" style={{ color: 'var(--text-secondary)' }}>
                     {activeTab === 'active'
-                      ? 'Your AI trip conversations will appear here once they have been saved to your account.'
+                      ? 'Your Trailie conversations will appear here once they have been saved to your account.'
                       : 'Archive a finished trip from the Active tab when you want to keep history without cluttering your main list.'}
                   </p>
                 </div>

@@ -3290,10 +3290,10 @@ const ParkDetailInner = ({
                     Planning Guides
                   </span>
                   <h4 className="text-base font-semibold mt-1 mb-1" style={{ color: 'var(--text-primary)' }}>
-                    National park trip planning
+                    Plan with Trailie
                   </h4>
                   <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    Tool comparisons, permits, AI tips, and ranked park lists.
+                    Tool comparisons, permits, Trailie tips, and ranked park lists.
                   </p>
                   <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: 'var(--accent-blue)' }}>
                     View Guides <ChevronRight className="h-3.5 w-3.5" />

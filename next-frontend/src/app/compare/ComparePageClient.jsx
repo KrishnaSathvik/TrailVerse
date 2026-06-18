@@ -25,6 +25,7 @@ import { parkDetailHref } from '@/lib/returnNavigation';
 import { useReturnPath } from '@/hooks/useReturnPath';
 import { summarizeCompareParking } from '@/utils/parkingUtils';
 import { pickPrimaryEntranceFee } from '@/utils/parkVisitInfoUtils';
+import { saveCompareSelection } from '@/lib/comparePersistence';
 import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
 /** Default picker list — search still queries all parks from useAllParks */
@@ -255,14 +256,6 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
 
   const isSearchingParks = searchTerm.trim().length > 0;
 
-  const resolveParkByCode = (code) => {
-    if (!code || !allParks?.length) return null;
-    const normalized = code.trim().toLowerCase();
-    return allParks.find(
-      (park) => park.parkCode?.toLowerCase() === normalized
-    ) || null;
-  };
-
   const handleAddPark = (park) => {
     if (selectedParks.length < maxParks) {
       setSelectedParks([...selectedParks, park]);
@@ -272,32 +265,15 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
     }
   };
 
-  const hydrateFromCodes = useCallback(
-    (codes) => {
-      const normalized = [...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean))].slice(
-        0,
-        maxParks
-      );
-      if (!normalized.length || !allParks?.length) return;
-      const parks = normalized.map((code) => resolveParkByCode(code)).filter(Boolean);
-      if (parks.length > 0) {
-        setSelectedParks(parks);
-      }
-    },
-    [allParks]
-  );
+  const handleUrlHydrate = useCallback((parks) => {
+    setSelectedParks(parks);
+  }, []);
 
-  useEffect(() => {
-    if (!allParks?.length || urlHydratedRef.current) return;
-    if (initialParkCodes.length > 0) {
-      hydrateFromCodes(initialParkCodes);
-      urlHydratedRef.current = true;
-    }
-  }, [allParks, initialParkCodes, hydrateFromCodes]);
-
-  // Keep URL in sync for shareable comparisons
+  // Keep URL + sessionStorage in sync for shareable comparisons (after initial hydrate)
   useEffect(() => {
     if (!urlHydratedRef.current) return;
+
+    saveCompareSelection(selectedParks);
 
     const params = new URLSearchParams();
     if (selectedParks.length > 0) {
@@ -620,16 +596,12 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
 
   return (
     <div className="overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {initialParkCodes.length === 0 && (
-        <CompareUrlHydration
-          allParks={allParks}
-          hydratedRef={urlHydratedRef}
-          onHydrate={(parks) => {
-            setSelectedParks(parks);
-            urlHydratedRef.current = true;
-          }}
-        />
-      )}
+      <CompareUrlHydration
+        allParks={allParks}
+        initialParkCodes={initialParkCodes}
+        hydratedRef={urlHydratedRef}
+        onHydrate={handleUrlHydrate}
+      />
 
 
       {/* Main Content */}

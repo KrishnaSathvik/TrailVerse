@@ -38,6 +38,7 @@ const STREAM_POST_PROCESS_OPTIONS = {
 };
 
 const { isGenericClosureAlert } = require('../utils/npsAlertUtils');
+const { needsNpsRoadConditionsBlock } = require('../services/npsParkConditionsService');
 const {
   formatTrailverseLinksBlock,
   formatTrailverseVerifyFooter,
@@ -252,6 +253,10 @@ function scoreParkImageForChat(img) {
   ];
   if (skipPatterns.some((re) => re.test(haystack))) return -1000;
   if (/\b(pdf|tif|tiff)\b/.test(url)) return -1000;
+  // NPS gallery asset pages are HTML endpoints — they 404 in <img> tags.
+  if (/\/npgallery\/getasset\//i.test(url) && !/\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(url)) {
+    return -1000;
+  }
 
   // Prefer "wow" scenery keywords when present.
   let score = 0;
@@ -863,6 +868,9 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     }
     if (isTrailStatusQuery(lastUserMessage)) {
       enhancedSystemPrompt += `\nTRAIL OPEN/CLOSED: Check ACTIVE CLOSURES in the live data first. If the named trail is closed there, lead with closed — do not open with "yes, it's open." Permit or lottery requirements are separate; state closure status before permits.`;
+    }
+    if (needsNpsRoadConditionsBlock(lastUserMessage)) {
+      enhancedSystemPrompt += `\nROAD OPEN/CLOSED: When the NPS ROAD & CONDITIONS block appears below, use it for current mileage and open/closed status — do NOT say you lack live road data. Prefer that block over training data and over generic "check the alerts page" deferrals. If live web search snippets are also present, NPS road block wins for open/closed claims.`;
     }
     enhancedSystemPrompt += `\nCROWD IMPACT: If a popular park has NO timed-entry requirement, that means NO crowd control — warn users to expect heavier traffic, packed trailheads, full parking lots by mid-morning, and longer waits. Advise arriving before 7am for popular spots and visiting on weekdays when possible. Do NOT frame the absence of timed entry as purely positive.`;
     if (isNonNpsWithWebSearch) {

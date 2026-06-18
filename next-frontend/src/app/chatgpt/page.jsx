@@ -6,22 +6,22 @@ import { TrackedCtaLink, TrackedOutboundLink } from '@/components/distribution/D
 const DIST_CHANNEL = 'chatgpt';
 
 export const metadata = {
-  title: 'TrailVerse for ChatGPT — National Park Planner App',
+  title: 'TrailVerse for ChatGPT — Trailie NPS Trip Planner',
   description:
-    'Install the TrailVerse ChatGPT app to plan trips, compare parks, check live weather and alerts, and find ranger programs across 470+ NPS sites.',
+    'Install the TrailVerse ChatGPT app and plan national park trips with Trailie — live alerts, weather, compare, search, and events across 470+ NPS sites. No TrailVerse account required.',
   openGraph: {
-    title: 'TrailVerse for ChatGPT — National Park Planner App',
+    title: 'TrailVerse for ChatGPT — Trailie NPS Trip Planner',
     description:
-      'Plan trips, compare parks, check live weather and alerts — all 470+ NPS sites, right inside ChatGPT.',
+      'Trailie in ChatGPT for 470+ national parks and sites — itineraries, alerts, weather, compare, and events.',
     url: 'https://www.nationalparksexplorerusa.com/chatgpt',
     type: 'website',
     images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse for ChatGPT' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TrailVerse for ChatGPT — National Park Planner App',
+    title: 'TrailVerse for ChatGPT — Trailie NPS Trip Planner',
     description:
-      'Plan trips, compare parks, check live weather and alerts — all 470+ NPS sites, right inside ChatGPT.',
+      'Plan national park trips with Trailie in ChatGPT — 470+ NPS sites with live alerts, weather, and compare.',
     images: ['/og-image-trailverse.jpg'],
   },
   alternates: {
@@ -39,7 +39,7 @@ const tools = [
   {
     icon: 'Map',
     title: 'Plan a Trip',
-    description: 'AI-powered day-by-day itineraries with live alerts, weather, and crowd data',
+    description: 'Trailie day-by-day NPS itineraries with live alerts, weather, and crowd data when available',
     accent: 'var(--accent-green)',
   },
   {
@@ -139,8 +139,9 @@ export default function ChatGPTPage() {
             </h1>
 
             <p className="text-lg sm:text-xl leading-relaxed mb-10 text-white/90 max-w-3xl mx-auto">
-              Explore &amp; plan park trips in ChatGPT. Live NPS alerts, weather,
-              and AI itineraries for 470+ parks &mdash; right from the official app listing.
+              Plan national park trips inside ChatGPT with <strong className="font-semibold text-white">Trailie</strong> — live
+              alerts, weather, compare, search, and day-by-day itineraries across{' '}
+              <strong className="font-semibold text-white">470+ parks and sites</strong>.
             </p>
 
             <TrackedOutboundLink
@@ -168,8 +169,8 @@ export default function ChatGPTPage() {
                 What You Get
               </h2>
               <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                The TrailVerse ChatGPT app connects your conversation to live National Park
-                Service data so planning stays grounded in current conditions, not stale training data.
+                Your chat pulls from live National Park Service data — closures, weather, fees, and
+                events — so answers reflect what&apos;s happening now, not old training data.
               </p>
             </div>
 
@@ -249,15 +250,15 @@ export default function ChatGPTPage() {
                     Ask for a trip plan, park details, a comparison, or upcoming ranger events
                   </>,
                   <>
-                    For unlimited planning on the full site, continue at{' '}
+                    Planning a state park or want the full website experience? Continue on{' '}
                     <TrackedCtaLink
                       channel={DIST_CHANNEL}
                       ctaId="install_step_plan_ai"
-                      label="Trailie AI Planner"
+                      label="Trailie"
                       href="/plan-ai"
                       className="font-semibold underline underline-offset-2"
                     >
-                      Trailie AI Planner
+                      Trailie
                     </TrackedCtaLink>
                   </>,
                 ].map((step, i) => (
@@ -276,8 +277,8 @@ export default function ChatGPTPage() {
               </ol>
 
               <p className="text-xs mt-6" style={{ color: 'var(--text-tertiary)' }}>
-                Requires a ChatGPT account with access to third-party apps. Trip planning in the app
-                is rate-limited; park search, details, compare, and events have generous limits.
+                Requires a ChatGPT account with access to third-party apps. Trip planning is
+                rate-limited to 5 requests per 48 hours; other tools have generous limits.
               </p>
 
               <TrackedOutboundLink
@@ -420,13 +421,13 @@ export default function ChatGPTPage() {
                   Limits
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Free to use in ChatGPT. Trip planning is rate-limited to 5 requests per 48 hours;
-                  park details, search, compare, and events have generous shared limits. Unlimited
-                  planning is available on{' '}
+                  Free to use in ChatGPT. Trip planning is limited to 5 requests per 48 hours; park
+                  details, search, compare, and events have higher limits. For unlimited planning on
+                  the website, use{' '}
                   <TrackedCtaLink channel={DIST_CHANNEL} ctaId="faq_plan_ai" label="Trailie" href="/plan-ai" className="underline underline-offset-2">
-                    nationalparksexplorerusa.com
-                  </TrackedCtaLink>
-                  .
+                    Trailie
+                  </TrackedCtaLink>{' '}
+                  there.
                 </p>
               </div>
             </div>
@@ -453,8 +454,8 @@ export default function ChatGPTPage() {
                 className="text-base leading-7 mb-8"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Open TrailVerse in ChatGPT and start planning your next trip with live data
-                from 470+ NPS sites.
+                Open TrailVerse in ChatGPT and start planning your next national park trip with live
+                data from 470+ sites.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <TrackedOutboundLink

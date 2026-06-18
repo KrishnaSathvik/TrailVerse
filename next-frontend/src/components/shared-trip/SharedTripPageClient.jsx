@@ -1,14 +1,19 @@
 'use client';
 
-import Link from 'next/link';
+import { useMemo } from 'react';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import SharedConversation from '@/components/ai-chat/SharedConversation';
-import SharedTripAlertCard from '@/components/shared-trip/SharedTripAlertCard';
 import SharedTripDayCard from '@/components/shared-trip/SharedTripDayCard';
+import TrailiePlanCtaCard from '@/components/plan-ai/TrailiePlanCtaCard';
 import { buildSharedTripMetaLines } from '@/utils/sharedTripFormat';
-import { parkToSlug } from '@/utils/parkSlug';
-import { Calendar } from '@components/icons';
+import {
+  resolveSharedByLabel,
+  resolveSharedTripHeadline,
+  resolveSharedTripParkLink,
+} from '@/utils/sharedTripConversation';
+import { getBestAvatar } from '@/utils/avatarGenerator';
+import { Compass } from '@components/icons';
 
 function SectionHeading({ children }) {
   return (
@@ -99,65 +104,88 @@ export default function SharedTripPageClient({ trip }) {
   const packingList = plan.packingList || [];
   const permits = plan.permits || [];
   const meta = buildSharedTripMetaLines(formData, plan, trip.createdAt);
+  const sharedBy = trip.sharedBy || null;
+  const sharedByLabel = resolveSharedByLabel(sharedBy);
+  const sharedByAvatar =
+    sharedBy?.avatar?.trim() ||
+    getBestAvatar(
+      {
+        firstName: sharedBy?.firstName,
+        name: sharedBy?.name,
+        email: sharedBy?.firstName || sharedBy?.name || 'traveler',
+      },
+      {},
+      'travel'
+    );
+  const featuredPark = resolveSharedTripParkLink(trip);
+  const tripTitle = resolveSharedTripHeadline(trip, featuredPark);
 
-  const tripTitle = trip.title || `${trip.parkName || 'National Park'} Trip Plan`;
-  const parkSlug = trip.parkName ? parkToSlug(trip.parkName) : null;
-  const parkHref = parkSlug ? `/parks/${parkSlug}` : null;
+  const metaLine = [
+    `Shared by ${sharedByLabel}`,
+    meta.sharedOn?.replace(/^Shared\s+/i, '') || null,
+    meta.details || null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const planCta = useMemo(() => {
+    if (featuredPark) {
+      const park = featuredPark.shortLabel;
+      return {
+        title: `Plan your own ${park} trip`,
+        body: 'Tell Trailie your dates, group size, and what you love — hiking, scenic drives, easy walks — and get a day-by-day plan built for you.',
+        button: `Plan my ${park} trip`,
+        href: `/plan-ai?park=${encodeURIComponent(featuredPark.parkCode)}&name=${encodeURIComponent(featuredPark.name)}`,
+      };
+    }
+
+    return {
+      title: 'Ready for your next trip?',
+      body: 'Tell Trailie where you want to go, when, and what matters — and get a day-by-day itinerary built for you.',
+      button: 'Plan with Trailie',
+      href: '/plan-ai',
+    };
+  }, [featuredPark]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
       <main>
-        <section className="border-b px-4 py-5 sm:px-6 sm:py-7 lg:px-8" style={{ borderColor: 'var(--border)' }}>
+        <section className="border-b px-4 py-6 sm:px-6 sm:py-8 lg:px-8" style={{ borderColor: 'var(--border)' }}>
           <div className="mx-auto max-w-4xl">
-            <span
-              className="mb-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--accent-green)' }}
-            >
-              Shared plan
-            </span>
-
-            <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl" style={{ color: 'var(--text-primary)' }}>
-              {tripTitle}
-            </h1>
-
-            {trip.parkName ? (
+            <div className="flex items-start gap-3 sm:gap-4">
               <div
-                className="mb-5 rounded-r-lg py-1 pl-4"
-                style={{ borderLeft: '3px solid var(--accent-green)' }}
+                className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--border)]"
+                style={{ backgroundColor: 'var(--surface)' }}
               >
-                <p className="text-base leading-relaxed sm:text-lg" style={{ color: 'var(--text-secondary)' }}>
-                  {parkHref ? (
-                    <Link href={parkHref} className="font-medium hover:underline" style={{ color: 'var(--accent-green-dark)' }}>
-                      {trip.parkName}
-                    </Link>
-                  ) : (
-                    trip.parkName
-                  )}
-                  {' · '}
-                  Planned with Trailie
-                </p>
+                <img
+                  src={sharedByAvatar}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
               </div>
-            ) : null}
 
-            <div className="mb-2 space-y-1">
-              {meta.schedule ? (
-                <p className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <Calendar className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
-                  {meta.schedule}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+                  Shared plan
                 </p>
-              ) : null}
-              {meta.details ? (
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {meta.details}
+                <h1
+                  className="mt-1 text-2xl font-bold leading-tight sm:text-3xl"
+                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+                >
+                  {tripTitle}
+                </h1>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  {metaLine}
                 </p>
-              ) : null}
-              {meta.sharedOn ? (
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  {meta.sharedOn}
-                </p>
-              ) : null}
+                {meta.schedule ? (
+                  <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {meta.schedule}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
         </section>
@@ -199,50 +227,19 @@ export default function SharedTripPageClient({ trip }) {
 
           {trip.conversation?.length > 0 ? (
             <section className="mb-10">
-              <SectionHeading>Trailie conversation</SectionHeading>
-              <div
-                className="rounded-xl p-4 sm:p-5"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-              >
-                <SharedConversation conversation={trip.conversation} />
-              </div>
+              <SharedConversation conversation={trip.conversation} sharedBy={sharedBy} />
             </section>
           ) : null}
 
-          <section>
-            <h2 className="mb-4 text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              Keep exploring with TrailVerse
-            </h2>
-            <div className="space-y-4">
-              <SharedTripAlertCard
-                badgeLabel="Explore"
-                title="Explore all parks"
-                body="Browse 470+ National Park Service sites with live weather, maps, compare tools, and park guides."
-                buttonLabel="Browse parks"
-                href="/explore"
-              />
-              <SharedTripAlertCard
-                accentColor="#3b82f6"
-                badgeBg="rgba(59, 130, 246, 0.1)"
-                badgeColor="#3b82f6"
-                badgeLabel="Trailie"
-                title="Plan your trip with Trailie"
-                body="Get a personalized itinerary, day-by-day routes, and park tips from TrailVerse AI — free to start, no account required."
-                buttonLabel="Open Trailie"
-                href="/plan-ai"
-              />
-              {parkHref ? (
-                <SharedTripAlertCard
-                  accentColor="var(--accent-green-dark)"
-                  badgeLabel="Park guide"
-                  title={`Visit ${trip.parkName}`}
-                  body="See live alerts, weather, maps, permits, and things to do for this park on TrailVerse."
-                  buttonLabel="Open park"
-                  href={parkHref}
-                />
-              ) : null}
-            </div>
-          </section>
+          <TrailiePlanCtaCard
+            title={planCta.title}
+            body={planCta.body}
+            buttonLabel={planCta.button}
+            href={planCta.href}
+            secondaryHref="/explore"
+            secondaryLabel="Browse all parks"
+            secondaryIcon={Compass}
+          />
         </div>
       </main>
 

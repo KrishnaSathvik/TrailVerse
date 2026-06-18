@@ -15,6 +15,7 @@ export default function GuestLimitFooter({
       message={buildGuestLimitIntro({ timeUntilReset, parkName })}
       isUser={false}
       hideActions
+      inlineAvatarLayout
       linkifyParks={false}
       afterContent={<GuestLimitMessageExtras onSignup={onSignup} />}
     />

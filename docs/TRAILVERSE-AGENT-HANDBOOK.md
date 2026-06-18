@@ -322,8 +322,10 @@ Requires JWT + `role: 'admin'`.
 |---------|-----|
 | MCP server | https://trailverse-mcp.onrender.com |
 | MCP endpoint | https://trailverse-mcp.onrender.com/mcp |
-| Health | `GET /health` |
+| MCP health | `GET /health` (MCP service only) |
 | Express API | https://trailverse.onrender.com/api |
+| Express liveness | `GET /health/ping` (Render health check) |
+| Express diagnostics | `GET /health`, `GET /health/database` |
 
 Deploy MCP: `mcp-server/render.yaml` → `python -m server.main`
 
@@ -376,7 +378,8 @@ MIME: `text/html;profile=mcp-app`
 ## 9. Backend API
 
 **Entry:** `server/server.js` → `server/src/app.js`  
-**Base:** `/api` · **Swagger:** `/api-docs` · **Health:** `/health`
+**Base:** `/api` · **Swagger:** `/api-docs`  
+**Health (not under `/api`):** `GET /health/ping` (Render liveness) · `GET /health` (full) · `GET /health/database` (DB detail)
 
 ### Auth middleware
 

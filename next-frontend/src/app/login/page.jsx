@@ -101,9 +101,9 @@ const LoginContent = () => {
   return (
     <AuthShell
       desktopTitle="Welcome back!"
-      desktopDescription="Sign in to save your favorite parks, track visited sites, keep your current AI chat, and pick up right where you left off."
+      desktopDescription="Sign in to save your favorite parks, track visited sites, keep your Trailie chat, and pick up right where you left off."
       mobileTitle="Sign in to your account"
-      mobileDescription="Save favorite parks, keep your current AI chat, and pick up right where you left off."
+      mobileDescription="Save favorite parks, keep your Trailie chat, and pick up right where you left off."
     >
             {authTransition.active && (
               <div 

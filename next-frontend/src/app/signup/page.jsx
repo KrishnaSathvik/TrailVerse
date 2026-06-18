@@ -176,9 +176,9 @@ const SignupPage = () => {
   return (
     <AuthShell
       desktopTitle="Join the adventure!"
-      desktopDescription="Create a free account to save favorites, keep your current AI chat, plan trips with AI, and get personalized recommendations."
+      desktopDescription="Create a free account to save favorites, keep your Trailie chat, plan outdoor trips, and get personalized recommendations."
       mobileTitle="Create Account"
-      mobileDescription="Unlock favorites, save your current AI chat, and get personalized recommendations."
+      mobileDescription="Unlock favorites, save your Trailie chat, and get personalized recommendations."
     >
           <div
             className="hidden lg:block lg:mb-8 lg:rounded-none lg:border-0 lg:px-0 lg:py-0"
@@ -191,7 +191,7 @@ const SignupPage = () => {
               Create Account
             </h1>
             <p className="mt-1 text-sm leading-relaxed lg:text-base" style={{ color: 'var(--text-secondary)' }}>
-              Unlock favorites, AI trip planning, personalized recommendations, and park tracking in one place.
+              Unlock favorites, Trailie trip planning, personalized recommendations, and park tracking in one place.
             </p>
             <p className="mt-3 text-sm lg:mt-2" style={{ color: 'var(--text-secondary)' }}>
               Already have an account?{' '}

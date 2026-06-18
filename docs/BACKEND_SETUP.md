@@ -123,7 +123,7 @@ npm start
 
 ## Step 6: Verify Setup
 
-1. **Backend Health Check**: http://localhost:5000/health
+1. **Backend Health Check**: http://localhost:5001/health/ping (liveness) · http://localhost:5001/health (full + DB)
 2. **Frontend**: http://localhost:3000
 3. **Test Authentication**: Try logging in with admin credentials
 4. **Test Features**: Create a trip, add favorites, write reviews

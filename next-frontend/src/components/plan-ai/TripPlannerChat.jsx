@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { tripHistoryService, conversationHasUserMessages } from '../../services/tripHistoryService';
+import { tripHistoryService, conversationHasUserMessages, sanitizeMessagesForPersistence } from '../../services/tripHistoryService';
 import tripService from '../../services/tripService';
 import conversationService from '../../services/conversationService';
 import aiService from '../../services/aiService';
@@ -40,7 +40,7 @@ import {
   MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE,
   resolvePlanAiWelcomeMessage,
 } from '@/lib/planAiWelcomeCopy';
-import { derivePlanAiHeaderMeta, PLAN_AI_ENTRY } from '@/lib/planAiHeaderMeta';
+import { derivePlanAiHeaderMeta, PLAN_AI_ENTRY, resolvePlanningParkName } from '@/lib/planAiHeaderMeta';
 import { applyMessageConstraintOverrides } from '@/lib/messageConstraintOverrides';
 import { stripItineraryJsonForDisplay } from '@/utils/streamDisplayContent';
 
@@ -49,6 +49,27 @@ const ANONYMOUS_GUEST_AVATAR_KEY = 'anonymousGuestAvatar';
 const ANONYMOUS_SESSION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 const EMPTY_PARK_LIST = [];
 const STREAM_IDLE_MS = 4000;
+
+function liveFlagsFromSources(sources) {
+  const list = Array.isArray(sources) ? sources : [];
+  if (!list.length) {
+    return { hasLiveData: false, hasWebSearch: false };
+  }
+  return {
+    hasWebSearch: list.includes('web'),
+    hasLiveData: list.some((s) => s === 'nps' || s === 'weather' || s === 'web'),
+  };
+}
+
+function applyStreamSourcesToMessage(message, sources) {
+  const list = Array.isArray(sources) ? sources : [];
+  if (!list.length) return message;
+  return {
+    ...message,
+    streamSources: list,
+    ...liveFlagsFromSources(list),
+  };
+}
 
 function readStoredAnonymousSession() {
   if (typeof window === 'undefined') return null;
@@ -104,6 +125,7 @@ const TripPlannerChat = ({
   isNewChat = false,
   suggestText = '',
   entryMode = 'general',
+  fromCompare = false,
   refreshTrips = null,
   onOpenQuickFill = null,
   fromChatHistory = false,
@@ -137,6 +159,7 @@ const TripPlannerChat = ({
   const streamFlushRafRef = useRef(null);
   const rawStreamedContentRef = useRef('');
   const streamIdleTimerRef = useRef(null);
+  const activeStreamSourcesRef = useRef(null);
 
   const cancelStreamFlush = useCallback(() => {
     if (streamFlushRafRef.current != null) {
@@ -182,6 +205,9 @@ const TripPlannerChat = ({
   const [showScrollToLatest, setShowScrollToLatest] = useState(false);
   const [saveState, setSaveState] = useState('idle');
   const [shareUrl, setShareUrl] = useState(null);
+  /** Sticky entry mode for shell header — survives generic URL after deep link navigation */
+  const [sessionEntryMode, setSessionEntryMode] = useState(entryMode);
+  const [sessionSuggestText, setSessionSuggestText] = useState(suggestText || '');
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -263,8 +289,9 @@ const TripPlannerChat = ({
         suggestText,
         isPersonalized,
         isNewChat,
+        fromCompare,
       }),
-    [entryMode, user, parkName, suggestText, isPersonalized, isNewChat]
+    [entryMode, user, parkName, suggestText, isPersonalized, isNewChat, fromCompare]
   );
 
   const canShowWelcomePlaceholder =
@@ -306,29 +333,59 @@ const TripPlannerChat = ({
   const hasUserMessages = messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
 
   useEffect(() => {
+    if (isNewChat) {
+      setSessionEntryMode(PLAN_AI_ENTRY.GENERAL);
+      setSessionSuggestText('');
+      return;
+    }
+    if (entryMode !== PLAN_AI_ENTRY.GENERAL) {
+      setSessionEntryMode(
+        entryMode === PLAN_AI_ENTRY.COMPARE ? PLAN_AI_ENTRY.PARK : entryMode
+      );
+    }
+  }, [entryMode, isNewChat]);
+
+  useEffect(() => {
+    if (suggestText?.trim()) {
+      setSessionSuggestText(suggestText);
+    }
+  }, [suggestText]);
+
+  const resolvedParkName = useMemo(
+    () => resolvePlanningParkName({ parkName, messages }),
+    [parkName, messages]
+  );
+
+  const headerSuggestText = sessionSuggestText || suggestText;
+
+  useEffect(() => {
     if (!onShellMetaChange) return;
     onShellMetaChange(
       derivePlanAiHeaderMeta({
         entryMode,
+        sessionEntryMode,
         isPersonalized,
         parkName,
-        suggestText,
+        suggestText: headerSuggestText,
         formData,
         currentPlan,
         isGenerating,
         hasUserMessages,
+        resolvedParkName,
       })
     );
   }, [
     onShellMetaChange,
     entryMode,
+    sessionEntryMode,
     isPersonalized,
     parkName,
-    suggestText,
+    headerSuggestText,
     formData,
     currentPlan,
     isGenerating,
     hasUserMessages,
+    resolvedParkName,
   ]);
 
   // Auto-scroll only when USER sends a message (not when AI responds)
@@ -418,6 +475,7 @@ const TripPlannerChat = ({
       suggestText,
       isPersonalized,
       isNewChat,
+      fromCompare,
     });
 
     setMessages([
@@ -428,7 +486,7 @@ const TripPlannerChat = ({
         timestamp: new Date(),
       },
     ]);
-  }, [entryMode, user, parkName, isPersonalized, isNewChat, suggestText]);
+  }, [entryMode, user, parkName, isPersonalized, isNewChat, suggestText, fromCompare]);
 
   // Define loadExistingTrip before the useEffect that uses it
   const loadExistingTrip = useCallback(async (tripId) => {
@@ -1344,6 +1402,7 @@ const TripPlannerChat = ({
     setThinkingStartTime(Date.now());
     setThinkingMessage('Thinking...');
     setThinkingSources(null);
+    activeStreamSourcesRef.current = null;
 
     try {
       // Build context for AI
@@ -1473,17 +1532,26 @@ const TripPlannerChat = ({
               return prev;
             });
           }
-          setThinkingSources(sources || []);
+          const src = sources || [];
+          activeStreamSourcesRef.current = src;
+          setThinkingSources(src);
+          if (src.length) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === streamAssistantId ? applyStreamSourcesToMessage(m, src) : m
+              )
+            );
+          }
           const parks = sourceParks?.length > 0 ? sourceParks.join(', ') : (sourcePark || parkName || 'the park');
-          if (!sources?.length) {
+          if (!src.length) {
             setThinkingMessage('Gathering live park data...');
-          } else if (sources?.includes('web')) {
+          } else if (src?.includes('web')) {
             setThinkingMessage(`Searching the web for live info about ${parks}...`);
-          } else if (sources?.includes('nps') && sources?.includes('weather')) {
+          } else if (src?.includes('nps') && src?.includes('weather')) {
             setThinkingMessage(`Fetching live park data & weather for ${parks}...`);
-          } else if (sources?.includes('nps')) {
+          } else if (src?.includes('nps')) {
             setThinkingMessage(`Fetching live park data for ${parks}...`);
-          } else if (sources?.includes('weather')) {
+          } else if (src?.includes('weather')) {
             setThinkingMessage(`Checking weather forecast for ${parks}...`);
           } else {
             setThinkingMessage('Preparing your response...');
@@ -1499,23 +1567,31 @@ const TripPlannerChat = ({
 
             if (!streamStarted) {
               streamStarted = true;
-              setIsGenerating(false);
+              const streamSources = activeStreamSourcesRef.current || [];
               setMessages((prev) => [
                 ...prev,
-                {
-                  id: streamAssistantId,
-                  role: 'assistant',
-                  content: displayContent,
-                  timestamp: new Date(),
-                  provider: 'auto',
-                  isStreaming: true,
-                  parkImages: pendingParkImagesRef.current || [],
-                },
+                applyStreamSourcesToMessage(
+                  {
+                    id: streamAssistantId,
+                    role: 'assistant',
+                    content: displayContent,
+                    timestamp: new Date(),
+                    provider: 'auto',
+                    isStreaming: true,
+                    parkImages: pendingParkImagesRef.current || [],
+                  },
+                  streamSources
+                ),
               ]);
             } else {
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === streamAssistantId ? { ...m, content: displayContent } : m
+                  m.id === streamAssistantId
+                    ? applyStreamSourcesToMessage(
+                        { ...m, content: displayContent },
+                        m.streamSources || activeStreamSourcesRef.current
+                      )
+                    : m
                 )
               );
             }
@@ -1543,6 +1619,7 @@ const TripPlannerChat = ({
             provider: result.provider,
             model: result.model,
             hasLiveData: result.hasLiveData,
+            hasWebSearch: result.hasWebSearch,
             parkName: result.parkName,
             parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
             hasItinerary: result.hasItinerary || false,
@@ -1571,6 +1648,7 @@ const TripPlannerChat = ({
                     isStreaming: false,
                     isFinalizing: false,
                     hasLiveData: result.hasLiveData,
+                    hasWebSearch: result.hasWebSearch,
                     parkName: result.parkName,
                     parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
                     hasItinerary: result.hasItinerary || false,
@@ -1747,6 +1825,7 @@ const TripPlannerChat = ({
         responseTime,
         isStreaming: false,
         hasLiveData: data.hasLiveData,
+        hasWebSearch: data.hasWebSearch,
         parkName: data.parkName,
         parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
         hasItinerary: data.hasItinerary || false,
@@ -1762,7 +1841,7 @@ const TripPlannerChat = ({
         if (usedStreaming) {
           return prev.map(msg =>
             msg.id === streamAssistantId
-              ? { ...msg, responseTime, isStreaming: false, isFinalizing: false, hasLiveData: data.hasLiveData, parkName: data.parkName, hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [], showDayByDayPlanCta: data.showDayByDayPlanCta === true }
+              ? { ...msg, responseTime, isStreaming: false, isFinalizing: false, hasLiveData: data.hasLiveData, hasWebSearch: data.hasWebSearch, parkName: data.parkName, parkNames: data.parkNames || (data.parkName ? [data.parkName] : []), hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [], showDayByDayPlanCta: data.showDayByDayPlanCta === true }
               : msg
           );
         }
@@ -1778,7 +1857,9 @@ const TripPlannerChat = ({
             model: data.model,
             responseTime,
             hasLiveData: data.hasLiveData,
+            hasWebSearch: data.hasWebSearch,
             parkName: data.parkName,
+            parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
             hasItinerary: data.hasItinerary || false,
             parkImages: data.parkImages || [],
             showDayByDayPlanCta: data.showDayByDayPlanCta === true,
@@ -1820,6 +1901,8 @@ const TripPlannerChat = ({
 
       setIsGenerating(false);
       setThinkingStartTime(null);
+      setThinkingSources(null);
+      activeStreamSourcesRef.current = null;
       if (data?.content) playCompletionSound?.();
 
     } catch (error) {
@@ -1962,11 +2045,11 @@ const TripPlannerChat = ({
     const currentYear = currentDate.getFullYear();
     const currentSeason = getCurrentSeason(currentMonth);
 
-    const fromCompare = entryMode === PLAN_AI_ENTRY.COMPARE;
+    const fromCompareContext = fromCompare && parkName;
     let prompt = `You are helping plan ${suggestText ? `a multi-park road trip to ${suggestText}` : parkName ? `a trip to ${parkName}` : 'a US outdoor trip'}.${suggestText ? `
 
 ROAD TRIP CONTEXT:
-This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.` : fromCompare && parkName ? `
+This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.` : fromCompareContext ? `
 
 COMPARE CONTEXT:
 This user compared parks side-by-side on TrailVerse and chose ${parkName} to plan. They may reference why they picked it over alternatives — focus on planning this park, not re-running the comparison unless they ask.` : ''}
@@ -2131,6 +2214,7 @@ TRIP DETAILS:
         suggestText,
         isPersonalized,
         isNewChat,
+        fromCompare,
       });
       setMessages([
         {
@@ -2273,6 +2357,9 @@ TRIP DETAILS:
   const autoSaveConversation = async (messagesToSave, planOverride = null) => {
     if (!user || !isAuthenticated || !conversationHasUserMessages(messagesToSave)) return;
 
+    const persistedMessages = sanitizeMessagesForPersistence(messagesToSave);
+    if (!conversationHasUserMessages(persistedMessages)) return;
+
     const planToSave = planOverride || currentPlan;
 
     // Prevent duplicate trip creation from concurrent calls
@@ -2283,22 +2370,22 @@ TRIP DETAILS:
 
     console.log('🔄 Auto-saving conversation:', {
       currentTripId,
-      messagesCount: messagesToSave.length,
+      messagesCount: persistedMessages.length,
       isExistingTrip: currentTripId && !currentTripId.startsWith('temp-'),
-      hasFeedback: messagesToSave.some(msg => msg.userFeedback)
+      hasFeedback: persistedMessages.some(msg => msg.userFeedback)
     });
 
     // Auto-save ALL conversations to database (no manual save needed)
     try {
       setSaveState('saving');
       savingInProgressRef.current = true;
-      const tripSummary = createTripSummary(messagesToSave, planToSave);
+      const tripSummary = createTripSummary(persistedMessages, planToSave);
 
       if (currentTripId && !currentTripId.startsWith('temp-')) {
         console.log('🔄 Updating existing trip in database:', currentTripId);
         // Update existing trip in database
         const updateResponse = await tripService.updateTrip(currentTripId, {
-          conversation: messagesToSave,
+          conversation: persistedMessages,
           summary: tripSummary,
           plan: planToSave,
           provider: 'auto',
@@ -2311,20 +2398,20 @@ TRIP DETAILS:
           console.log('🔄 Refreshing trips list to update message count');
           refreshTrips();
         }
-        persistSessionToStorage(currentTripId, messagesToSave, planToSave);
+        persistSessionToStorage(currentTripId, persistedMessages, planToSave);
       } else {
         // Create new trip in database
         console.log('🆕 Creating NEW trip in database:', {
           parkName: parkName || 'General Planning',
           parkCode: formData.parkCode || null,
-          messagesCount: messagesToSave.length
+          messagesCount: persistedMessages.length
         });
         const response = await tripService.createTrip({
           parkName: parkName || 'General Planning',
           parkCode: formData.parkCode || null,
           title: parkName ? `${parkName} Trip Plan` : 'General Planning Session',
           formData: formData || {},
-          conversation: messagesToSave,
+          conversation: persistedMessages,
           summary: tripSummary,
           plan: planToSave,
           provider: 'auto',
@@ -2341,12 +2428,12 @@ TRIP DETAILS:
           refreshTrips();
         }
 
-        persistSessionToStorage(newTripId, messagesToSave, planToSave);
+        persistSessionToStorage(newTripId, persistedMessages, planToSave);
       }
       setSaveState('saved');
     } catch (error) {
       console.error('Error auto-saving conversation:', error);
-      persistSessionToStorage(currentTripId, messagesToSave, planToSave);
+      persistSessionToStorage(currentTripId, persistedMessages, planToSave);
       setSaveState('idle');
     } finally {
       savingInProgressRef.current = false;
@@ -2511,8 +2598,13 @@ TRIP DETAILS:
       >
           <div className={`mx-auto w-full px-3 sm:px-4 ${isWelcomeState ? 'py-3 sm:py-5' : 'py-2 sm:py-5'}`}>
             <div className="space-y-2 sm:space-y-3">
-              {displayMessages.map((message, index) => (
-                message.hiddenFromUi ? null : (
+              {displayMessages.map((message, index) => {
+                const sourceFlags = liveFlagsFromSources(
+                  message.streamSources ||
+                    (message.isStreaming && !message.isFinalizing ? thinkingSources : null)
+                );
+
+                return message.hiddenFromUi ? null : (
                 <React.Fragment key={message.id || message._id || index}>
                 <MessageBubble
                   message={
@@ -2522,6 +2614,7 @@ TRIP DETAILS:
                   }
                   isUser={message.role === 'user'}
                   timestamp={message.timestamp}
+                  inlineAvatarLayout
                   hideActions={
                     message.isConversionMessage ||
                     message.isStreaming ||
@@ -2590,7 +2683,8 @@ TRIP DETAILS:
                       name: user.name
                     }, {}, 'travel');
                   })() : null}
-                  hasLiveData={message.hasLiveData || false}
+                  hasLiveData={Boolean(message.hasLiveData || sourceFlags.hasLiveData)}
+                  hasWebSearch={Boolean(message.hasWebSearch || sourceFlags.hasWebSearch)}
                   liveDataParks={
                     message.parkNames?.length
                       ? message.parkNames
@@ -2738,8 +2832,8 @@ TRIP DETAILS:
                   } : undefined}
                 />
                 </React.Fragment>
-                )
-              ))}
+                );
+              })}
 
               {isWelcomeState && (
                 <div className="pt-1 sm:pt-3">
@@ -2854,10 +2948,15 @@ TRIP DETAILS:
                 );
                })()}
 
-              {isGenerating && <TypingIndicator
+              {isGenerating &&
+                !displayMessages.some(
+                  (m) => m.role === 'assistant' && (m.isStreaming || m.isFinalizing)
+                ) && (
+                <TypingIndicator
                 text={thinkingMessage}
                 sources={thinkingSources}
-              />}
+                inlineAvatarLayout
+              />)}
 
               <div ref={messagesEndRef} />
             </div>

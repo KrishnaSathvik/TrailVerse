@@ -41,7 +41,7 @@ git push origin master
 
 Check if Render backend is running:
 ```bash
-curl https://trailverse.onrender.com/health
+curl https://trailverse.onrender.com/health/ping
 ```
 
 If backend is sleeping (Render free tier), wake it up by visiting the URL in browser.
@@ -112,7 +112,7 @@ npm start
    ```
    Should show: `https://trailverse.onrender.com`
 
-3. **Verify Render is online**: Visit https://trailverse.onrender.com/health
+3. **Verify Render is online**: Visit https://trailverse.onrender.com/health/ping
 
 4. **Check Render logs**:
    - Go to Render Dashboard

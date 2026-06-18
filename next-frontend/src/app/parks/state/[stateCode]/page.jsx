@@ -99,11 +99,11 @@ export async function generateMetadata({ params, searchParams }) {
 
   return {
     title: `${state.name} National Parks & Sites — All ${parkCount} NPS Sites | TrailVerse`,
-    description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Compare parks, plan trips with AI, check real-time weather, and find campgrounds.`,
+    description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Compare parks, plan with Trailie, check real-time weather, and find campgrounds.`,
     ...canonicalPageMetadata(canonicalPath, sp),
     openGraph: {
       title: `${state.name} National Parks & Sites — ${parkCount} NPS Sites`,
-      description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. AI trip planning, real-time weather, and campground info.`,
+      description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Trailie trip planning, real-time weather, and campground info.`,
       url: `https://www.nationalparksexplorerusa.com${canonicalPath}`,
       siteName: 'TrailVerse',
       type: 'website',

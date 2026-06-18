@@ -110,7 +110,7 @@ vercel --prod
 Ensure your Render backend is running and accessible:
 
 ```bash
-curl https://trailverse.onrender.com/health
+curl https://trailverse.onrender.com/health/ping
 ```
 
 Should return a health check response.
