@@ -47,6 +47,8 @@ import { stripItineraryJsonForDisplay } from '@/utils/streamDisplayContent';
 const ANONYMOUS_SESSION_KEY = 'anonymousSession';
 const ANONYMOUS_GUEST_AVATAR_KEY = 'anonymousGuestAvatar';
 const ANONYMOUS_SESSION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+const EMPTY_PARK_LIST = [];
+const STREAM_IDLE_MS = 4000;
 
 function readStoredAnonymousSession() {
   if (typeof window === 'undefined') return null;
@@ -134,11 +136,19 @@ const TripPlannerChat = ({
   const abortControllerRef = useRef(null);
   const streamFlushRafRef = useRef(null);
   const rawStreamedContentRef = useRef('');
+  const streamIdleTimerRef = useRef(null);
 
   const cancelStreamFlush = useCallback(() => {
     if (streamFlushRafRef.current != null) {
       cancelAnimationFrame(streamFlushRafRef.current);
       streamFlushRafRef.current = null;
+    }
+  }, []);
+
+  const clearStreamIdleTimer = useCallback(() => {
+    if (streamIdleTimerRef.current != null) {
+      clearTimeout(streamIdleTimerRef.current);
+      streamIdleTimerRef.current = null;
     }
   }, []);
   const [providersLoaded, setProvidersLoaded] = useState(false);
@@ -150,7 +160,6 @@ const TripPlannerChat = ({
   const [showParkInputModal, setShowParkInputModal] = useState(false);
   const [parkInput, setParkInput] = useState('');
   const [isStartingFresh, setIsStartingFresh] = useState(false);
-  const [avatarVersion, setAvatarVersion] = useState(0);
   const [anonymousAvatar, setAnonymousAvatar] = useState(() => {
     const session = readStoredAnonymousSession();
     if (session?.avatarUrl) return session.avatarUrl;
@@ -502,12 +511,6 @@ const TripPlannerChat = ({
     }
   }, [user, existingTripId, loadExistingTrip, isStartingFresh]); // Added isStartingFresh dependency
 
-  // Force re-render when user avatar changes
-  useEffect(() => {
-    // Increment avatar version to force re-render of message bubbles
-    setAvatarVersion(prev => prev + 1);
-  }, [user?.avatar, user?.profilePicture, user?.profile?.avatar]);
-
   // Setup WebSocket real-time sync for profile updates and trip updates
   useEffect(() => {
     if (!user) return;
@@ -526,9 +529,6 @@ const TripPlannerChat = ({
           // Update the user object in AuthContext with the new avatar
           updateUser({ avatar: data.avatar });
         }
-        // Force re-render of message bubbles with new avatar
-        setAvatarVersion(prev => prev + 1);
-        console.log('🔄 Avatar version updated due to real-time profile update');
       }
     };
 
@@ -1389,6 +1389,7 @@ const TripPlannerChat = ({
       const streamAssistantId = Date.now() + 1;
       rawStreamedContentRef.current = '';
       cancelStreamFlush();
+      clearStreamIdleTimer();
 
       const applyAnonymousSessionFromResult = (result) => {
         if (!isAnonymous || !result) return;
@@ -1402,6 +1403,54 @@ const TripPlannerChat = ({
             canSendMore: result.canSendMore,
           });
         }
+      };
+
+      const markStreamFinalizing = () => {
+        cancelStreamFlush();
+        clearStreamIdleTimer();
+
+        const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
+        if (!displayContent.trim()) return;
+
+        setIsGenerating(true);
+        setThinkingMessage('Finishing up...');
+        setThinkingSources(null);
+
+        if (!streamStarted) {
+          streamStarted = true;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: streamAssistantId,
+              role: 'assistant',
+              content: displayContent,
+              timestamp: new Date(),
+              provider: 'auto',
+              isStreaming: false,
+              isFinalizing: true,
+              parkImages: pendingParkImagesRef.current || [],
+            },
+          ]);
+          return;
+        }
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === streamAssistantId
+              ? { ...m, content: displayContent, isStreaming: false, isFinalizing: true }
+              : m
+          )
+        );
+      };
+
+      const scheduleStreamIdleCheck = () => {
+        clearStreamIdleTimer();
+        streamIdleTimerRef.current = window.setTimeout(() => {
+          const target = messagesRef.current.find((m) => m.id === streamAssistantId);
+          if (target?.isStreaming) {
+            markStreamFinalizing();
+          }
+        }, STREAM_IDLE_MS);
       };
 
       const streamCallbacks = {
@@ -1475,44 +1524,13 @@ const TripPlannerChat = ({
           if (streamFlushRafRef.current == null) {
             streamFlushRafRef.current = requestAnimationFrame(applyStreamContent);
           }
+          scheduleStreamIdleCheck();
         },
         onStreamEnd: () => {
-          cancelStreamFlush();
-
-          const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
-          if (!displayContent.trim()) return;
-
-          setIsGenerating(true);
-          setThinkingMessage('Finishing up...');
-          setThinkingSources(null);
-
-          if (!streamStarted) {
-            streamStarted = true;
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: streamAssistantId,
-                role: 'assistant',
-                content: displayContent,
-                timestamp: new Date(),
-                provider: 'auto',
-                isStreaming: false,
-                isFinalizing: true,
-                parkImages: pendingParkImagesRef.current || [],
-              },
-            ]);
-            return;
-          }
-
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === streamAssistantId
-                ? { ...m, content: displayContent, isStreaming: false, isFinalizing: true }
-                : m
-            )
-          );
+          markStreamFinalizing();
         },
         onDone: (result) => {
+          clearStreamIdleTimer();
           cancelStreamFlush();
 
           const resolvedContent = result.contentUnchanged
@@ -1565,6 +1583,22 @@ const TripPlannerChat = ({
         },
         onError: (err) => {
           console.error('Stream error:', err);
+          clearStreamIdleTimer();
+          markStreamFinalizing();
+        },
+        onClose: ({ sawStreamEnd, sawDone }) => {
+          clearStreamIdleTimer();
+          if (!sawStreamEnd && rawStreamedContentRef.current.trim()) {
+            markStreamFinalizing();
+          }
+          if (!sawDone && !data && rawStreamedContentRef.current.trim()) {
+            data = {
+              content: stripItineraryJsonForDisplay(rawStreamedContentRef.current),
+              contentUnchanged: true,
+              provider: 'auto',
+              parkImages: pendingParkImagesRef.current || [],
+            };
+          }
         },
       };
 
@@ -1602,11 +1636,31 @@ const TripPlannerChat = ({
       } catch (streamErr) {
         if (streamErr.name === 'AbortError') throw streamErr;
         console.error('Streaming failed, falling back to non-streaming:', streamErr.message);
+      } finally {
+        clearStreamIdleTimer();
+        cancelStreamFlush();
       }
 
       if (!data) {
         if (streamStarted) {
-          setMessages((prev) => prev.filter((m) => m.id !== streamAssistantId));
+          const fallbackContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
+          if (fallbackContent.trim()) {
+            data = {
+              content: fallbackContent,
+              contentUnchanged: true,
+              provider: 'auto',
+              parkImages: pendingParkImagesRef.current || [],
+            };
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === streamAssistantId
+                  ? { ...m, content: fallbackContent, isStreaming: false, isFinalizing: false }
+                  : m
+              )
+            );
+          } else {
+            setMessages((prev) => prev.filter((m) => m.id !== streamAssistantId));
+          }
         }
         setIsGenerating(true);
 
@@ -2459,7 +2513,7 @@ TRIP DETAILS:
             <div className="space-y-2 sm:space-y-3">
               {displayMessages.map((message, index) => (
                 message.hiddenFromUi ? null : (
-                <React.Fragment key={`${message.id || message._id || index}-${user?.id || 'anonymous'}-${avatarVersion}`}>
+                <React.Fragment key={message.id || message._id || index}>
                 <MessageBubble
                   message={
                     message.isConversionMessage
@@ -2515,6 +2569,7 @@ TRIP DETAILS:
                     ) && !message.isStreaming
                   }
                   isStreaming={Boolean(message.isStreaming)}
+                  isFinalizing={Boolean(message.isFinalizing)}
                   userAvatar={message.role === 'user' ? (() => {
                     // Anonymous users: use the session-stable random avatar
                     if (!user) {
@@ -2536,7 +2591,13 @@ TRIP DETAILS:
                     }, {}, 'travel');
                   })() : null}
                   hasLiveData={message.hasLiveData || false}
-                  liveDataParks={message.parkNames || (message.parkName ? [message.parkName] : [])}
+                  liveDataParks={
+                    message.parkNames?.length
+                      ? message.parkNames
+                      : message.parkName
+                        ? [message.parkName]
+                        : EMPTY_PARK_LIST
+                  }
                   parkImages={message.parkImages || []}
                   messageData={message.role === 'assistant' ? {
                     messageId: message.id,

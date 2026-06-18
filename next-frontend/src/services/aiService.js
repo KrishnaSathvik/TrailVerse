@@ -7,10 +7,12 @@ function getAiApiBaseUrl() {
   return getApiBaseUrl();
 }
 
-async function consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking } = {}) {
+async function consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking, onClose } = {}) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let sawStreamEnd = false;
+  let sawDone = false;
 
   const handleLine = (line) => {
     if (!line.startsWith('data: ')) return;
@@ -22,26 +24,36 @@ async function consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onEr
     }
     if (parsed.type === 'thinking') onThinking?.(parsed);
     if (parsed.type === 'chunk') onChunk?.(parsed.content);
-    if (parsed.type === 'stream_end') onStreamEnd?.(parsed);
-    if (parsed.type === 'done') onDone?.(parsed);
+    if (parsed.type === 'stream_end') {
+      sawStreamEnd = true;
+      onStreamEnd?.(parsed);
+    }
+    if (parsed.type === 'done') {
+      sawDone = true;
+      onDone?.(parsed);
+    }
     if (parsed.type === 'error') onError?.(parsed.message);
   };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      handleLine(line);
+      for (const line of lines) {
+        handleLine(line);
+      }
     }
-  }
 
-  if (buffer.startsWith('data: ')) {
-    handleLine(buffer);
+    if (buffer.startsWith('data: ')) {
+      handleLine(buffer);
+    }
+  } finally {
+    onClose?.({ sawStreamEnd, sawDone });
   }
 }
 
@@ -167,7 +179,8 @@ class AIService {
     onStreamEnd,
     onDone,
     onError,
-    onThinking
+    onThinking,
+    onClose,
   }) {
     const resolved = resolveChatPayload(messages, systemPrompt);
     const token = typeof window !== 'undefined' ? getAuthBearerToken() : null;
@@ -212,7 +225,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking });
+    await consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking, onClose });
   }
 
   /**
@@ -234,6 +247,7 @@ class AIService {
     onDone,
     onError,
     onThinking,
+    onClose,
   }) {
     const resolved = resolveChatPayload(messages, systemPrompt);
 
@@ -274,7 +288,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking });
+    await consumeAiSseStream(response, { onChunk, onStreamEnd, onDone, onError, onThinking, onClose });
   }
 
   /**

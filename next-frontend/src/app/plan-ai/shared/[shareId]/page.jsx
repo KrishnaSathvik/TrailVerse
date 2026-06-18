@@ -2,6 +2,9 @@ import { notFound } from 'next/navigation';
 import SharedTripPageClient from '@/components/shared-trip/SharedTripPageClient';
 import { privatePageRobots } from '@/lib/seo';
 
+/** Shared chats update as the owner keeps planning — always fetch live trip data. */
+export const dynamic = 'force-dynamic';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
     ? 'https://trailverse.onrender.com/api'
@@ -10,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ||
 async function getSharedTrip(shareId) {
   try {
     const res = await fetch(`${API_URL}/trips/shared/${shareId}`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     const json = await res.json();

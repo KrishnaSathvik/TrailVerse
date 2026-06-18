@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { User, Copy, ThumbsUp, ThumbsDown, Check, RefreshCw, X, Download, ChevronLeft, ChevronRight } from '@components/icons';
 import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
+import ParkPhotoGrid from '@/components/ai-chat/ParkPhotoGrid';
+import { buildMarkdownComponents } from '@/components/ai-chat/markdownComponents';
 import { normalizeParkLinksInMarkdown, unwrapMislinkedParkMarkdown } from '@/utils/parkLinkifier';
 import { stabilizeStreamingMarkdown, escapeApproximateTildesForGfm } from '@/utils/stripMarkdown';
 
@@ -140,6 +142,7 @@ const MessageBubble = ({
   hideAvatar = false,
   linkifyParks = true,
   isStreaming = false,
+  isFinalizing = false,
   hasLiveData = false,
   hasWebSearch = false,
   liveDataParks = [],
@@ -172,6 +175,17 @@ const MessageBubble = ({
           ? normalizeParkLinksInMarkdown(renderBody)
           : unwrapMislinkedParkMarkdown(renderBody)
       );
+
+  const parkImageUrls = useMemo(
+    () => new Set((parkImages || []).map((img) => img.url).filter(Boolean)),
+    [parkImages]
+  );
+  const markdownComponents = useMemo(
+    () => buildMarkdownComponents(parkImageUrls),
+    [parkImageUrls]
+  );
+  const displayPhotos = useMemo(() => parkImages?.slice(0, 4) || [], [parkImages]);
+  const showStreamingCursor = isStreaming && !isFinalizing;
 
   const handleCopy = () => {
     if (!message) return;
@@ -250,7 +264,7 @@ const MessageBubble = ({
       <div className={`flex-1 min-w-0 ${isUser ? 'flex justify-end' : ''}`}>
         <div className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : ''}`}>
           <div
-            className={`${isUser ? 'w-fit' : 'inline-block'} max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] backdrop-blur-sm chat-message-bubble ${
+            className={`${isUser ? 'w-fit' : 'inline-block'} max-w-full sm:max-w-[94%] lg:max-w-[88%] rounded-[24px] chat-message-bubble ${
               isUser ? 'chat-message-bubble--user' : 'chat-message-bubble--assistant'
             } ${
               dense
@@ -298,245 +312,41 @@ const MessageBubble = ({
               hyphens: 'none'
             }}
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                // Headings
-                h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold mb-3 mt-2 break-words">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base sm:text-lg font-semibold mb-2 mt-3 break-words">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm sm:text-base font-semibold mb-2 mt-2 break-words">{children}</h3>,
-                
-                // Text formatting
-                strong: ({ children }) => <strong className="font-semibold break-words">{children}</strong>,
-                em: ({ children }) => <em className="italic break-words">{children}</em>,
-                
-                // Paragraphs — use div when children contain block elements (images)
-                p: ({ children, node }) => {
-                  const hasImage = node?.children?.some(c => c.tagName === 'img');
-                  const Tag = hasImage ? 'div' : 'p';
-                  return <Tag className="mb-2 leading-relaxed text-sm sm:text-base break-words" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{children}</Tag>;
-                },
-                br: () => <br />,
-                
-                // Lists
-                ul: ({ children }) => (
-                  <ul className="ml-4 list-disc space-y-1 mb-2 text-sm sm:text-base break-words" 
-                    style={{ 
-                      color: 'var(--text-primary)',
-                      listStyleType: 'disc'
-                    }}
-                  >
-                    {children}
-                  </ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="ml-4 list-decimal space-y-1 mb-2 text-sm sm:text-base break-words"
-                    style={{ 
-                      color: 'var(--text-primary)',
-                      listStyleType: 'decimal'
-                    }}
-                  >
-                    {children}
-                  </ol>
-                ),
-                li: ({ children }) => (
-                  <li className="break-words" 
-                    style={{ 
-                      color: 'var(--text-primary)',
-                      markerColor: 'var(--text-primary)',
-                      overflowWrap: 'break-word',
-                      wordBreak: 'break-word'
-                    }}
-                  >
-                    {children}
-                  </li>
-                ),
-                
-                // Code
-                code: ({ children, className }) => {
-                  const isInline = !className;
-                  return isInline ? (
-                    <code 
-                      className="px-1 rounded text-xs sm:text-sm" 
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
-                    >
-                      {children}
-                    </code>
-                  ) : (
-                    <code 
-                      className="block p-2 rounded text-xs sm:text-sm overflow-x-auto mb-2" 
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
-                    >
-                      {children}
-                    </code>
-                  );
-                },
-                pre: ({ children }) => (
-                  <pre 
-                    className="p-2 rounded overflow-x-auto mb-2 text-xs sm:text-sm" 
-                    style={{ backgroundColor: 'var(--surface-hover)' }}
-                  >
-                    {children}
-                  </pre>
-                ),
-                
-                // Links
-                a: ({ href, children }) => {
-                  if (href?.startsWith('/parks/')) {
-                    return (
-                      <a href={href} className="underline" style={{ color: 'var(--accent-green)', textDecoration: 'underline' }}>
-                        {children}
-                      </a>
-                    );
-                  }
-                  return (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                      style={{
-                        color: 'var(--forest-500)',
-                        '--hover-color': 'var(--forest-600)'
-                      }}
-                      onMouseEnter={(e) => e.target.style.color = 'var(--forest-600)'}
-                      onMouseLeave={(e) => e.target.style.color = 'var(--forest-500)'}
-                    >
-                      {children}
-                    </a>
-                  );
-                },
-                
-                // Inline images — render as styled cards instead of raw inline
-                img: ({ src, alt }) => {
-                  // Skip if this image is already shown in the parkImages grid below
-                  if (parkImages?.length > 0 && parkImages.some(pi => pi.url === src)) return null;
-                  return (
-                    <img
-                      src={src}
-                      alt={alt || 'Photo'}
-                      className="rounded-xl my-3 w-full max-w-sm object-cover"
-                      style={{ aspectRatio: '4/3', backgroundColor: 'var(--surface-hover)' }}
-                      loading="lazy"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                  );
-                },
-
-                // Horizontal rule
-                hr: () => <hr className="my-4" style={{ borderColor: 'var(--border)' }} />,
-                
-                // Blockquotes
-                blockquote: ({ children }) => (
-                  <blockquote 
-                    className="border-l-4 pl-4 italic mb-2 break-words overflow-wrap-anywhere"
-                    style={{ 
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-secondary)'
-                    }}
-                  >
-                    {children}
-                  </blockquote>
-                ),
-                
-                // Tables
-                table: ({ children }) => (
-                  <table 
-                    className="min-w-full border-collapse border mb-2 text-xs sm:text-sm"
-                    style={{ borderColor: 'var(--border)' }}
-                  >
-                    {children}
-                  </table>
-                ),
-                th: ({ children }) => (
-                  <th 
-                    className="border px-2 py-1 font-semibold text-left break-words overflow-wrap-anywhere"
-                    style={{ 
-                      borderColor: 'var(--border)',
-                      backgroundColor: 'var(--surface-hover)'
-                    }}
-                  >
-                    {children}
-                  </th>
-                ),
-                td: ({ children }) => (
-                  <td 
-                    className="border px-2 py-1 break-words overflow-wrap-anywhere"
-                    style={{ borderColor: 'var(--border)' }}
-                  >
-                    {children}
-                  </td>
-                ),
-              }}
-            >
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {markdownContent}
             </ReactMarkdown>
-            {isUser && isStreaming && markdownContent && (
+            {isUser && showStreamingCursor && markdownContent && (
               <span
                 className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
                 style={{ backgroundColor: 'var(--accent-green)' }}
                 aria-hidden="true"
               />
             )}
-            {!isUser && isStreaming && markdownContent && (
+            {!isUser && showStreamingCursor && markdownContent && (
               <span
                 className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
                 style={{ backgroundColor: 'var(--accent-green)' }}
                 aria-hidden="true"
               />
+            )}
+            {!isUser && isFinalizing && (
+              <p className="mt-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                Finishing up…
+              </p>
             )}
           </div>
 
           {/* Park photos — after text so streaming copy isn't pushed down when images arrive */}
-          {!isUser && parkImages?.length > 0 && (() => {
-            const photos = parkImages.slice(0, 4);
-            const gridClass =
-              photos.length === 1
-                ? 'grid-cols-1'
-                : photos.length === 2
-                  ? 'grid-cols-2'
-                  : photos.length === 3
-                    ? 'grid-cols-2'
-                    : 'grid-cols-2';
-            return (
-            <>
-              <div className={`mt-3 grid ${gridClass} gap-1.5 rounded-xl overflow-hidden`}>
-                {photos.map((img, idx) => (
-                  <div
-                    key={`${img.url || 'park'}-${idx}`}
-                    className={`relative aspect-[4/3] overflow-hidden group/img cursor-pointer${
-                      photos.length === 3 && idx === 2 ? ' col-span-2 max-h-40' : ''
-                    }`}
-                    style={{ backgroundColor: 'var(--surface-hover)' }}
-                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View photo: ${img.altText || img.title || 'Park photo'}`}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { setLightboxIndex(idx); setLightboxOpen(true); } }}
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.altText || img.title || 'Park photo'}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/og-image-trailverse.jpg';
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {parkImages.length > 4 && (
-                <button
-                  onClick={() => { setLightboxIndex(0); setLightboxOpen(true); }}
-                  className="mt-2 text-xs font-medium transition-colors"
-                  style={{ color: 'var(--accent-green)' }}
-                >
-                  View all {parkImages.length} photos
-                </button>
-              )}
-            </>
-            );
-          })()}
+          {!isUser && displayPhotos.length > 0 && (
+            <ParkPhotoGrid
+              photos={displayPhotos}
+              showViewAllCount={parkImages.length}
+              onOpenLightbox={(idx) => {
+                setLightboxIndex(idx);
+                setLightboxOpen(true);
+              }}
+            />
+          )}
 
           {!isUser && afterContent}
 
@@ -650,4 +460,27 @@ const MessageBubble = ({
   );
 };
 
-export default MessageBubble;
+function messageBubblePropsAreEqual(prev, next) {
+  return (
+    prev.message === next.message &&
+    prev.isUser === next.isUser &&
+    prev.timestamp === next.timestamp &&
+    prev.userAvatar === next.userAvatar &&
+    prev.initialFeedback === next.initialFeedback &&
+    prev.hideActions === next.hideActions &&
+    prev.compact === next.compact &&
+    prev.dense === next.dense &&
+    prev.hideAvatar === next.hideAvatar &&
+    prev.linkifyParks === next.linkifyParks &&
+    prev.isStreaming === next.isStreaming &&
+    prev.isFinalizing === next.isFinalizing &&
+    prev.hasLiveData === next.hasLiveData &&
+    prev.hasWebSearch === next.hasWebSearch &&
+    prev.liveDataParks === next.liveDataParks &&
+    prev.parkImages === next.parkImages &&
+    prev.afterContent === next.afterContent &&
+    prev.belowBubbleContent === next.belowBubbleContent
+  );
+}
+
+export default memo(MessageBubble, messageBubblePropsAreEqual);
