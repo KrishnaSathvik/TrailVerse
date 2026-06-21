@@ -41,6 +41,9 @@ describe('factsService web search policy (NPS vs web)', () => {
     expect(
       needsWebSearch('Do I need a permit for The Narrows and where should we stay in Springdale?')
     ).toBe(true);
+    expect(
+      needsWebSearch('Plan 3 days in Zion and where should we stay in Springdale?', { parkCode: 'zion' })
+    ).toBe(true);
   });
 
   test('non-travel — no web', () => {

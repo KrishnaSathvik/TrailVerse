@@ -14,6 +14,12 @@ const {
 const { summarizeWebResultsForTrailie } = require('./webSearchSummarizer');
 const { rankAndFilterWebResults } = require('../utils/webSearchRelevance');
 const { createFactSlotMeta } = require('../utils/trailieContextBuilder');
+const {
+  planTrailieFetches,
+  shouldAppendGuestLiveUpsell,
+  hasExplicitNonNpsDestinationSignal,
+  getBlockedReason,
+} = require('./trailieFetchPlanner');
 const { fetchNpsRoadConditionsFacts, needsNpsRoadConditionsBlock } = require('./npsParkConditionsService');
 const {
   isClosureCategory,
@@ -457,34 +463,6 @@ function enrichQuery(rawQuery, parkName, category) {
  * @returns {string} One of the keys in STRATEGY
  */
 /**
- * Named non-catalog outdoor destinations (state parks, forests, preserves, etc.).
- * Conservative v1 — avoids broad discovery words (best, recommend, near Chicago).
- * @param {string} userMessage
- * @returns {boolean}
- */
-function hasExplicitNonNpsDestinationSignal(userMessage) {
-  if (!userMessage) return false;
-  const msg = userMessage.toLowerCase();
-
-  return (
-    /\bstate park\b/.test(msg) ||
-    /\bnational forest\b/.test(msg) ||
-    /\bstate forest\b/.test(msg) ||
-    /\bcounty park\b/.test(msg) ||
-    /\bcity park\b/.test(msg) ||
-    /\bpreserve\b/.test(msg) ||
-    /\brecreation area\b/.test(msg) ||
-    /\bconservation area\b/.test(msg) ||
-    /\bvalley of fire\b/.test(msg) ||
-    /\bhocking hills\b/.test(msg) ||
-    /\bred river gorge\b/.test(msg) ||
-    /\bcuster\b/.test(msg) ||
-    /\bstarved rock\b/.test(msg) ||
-    /\bsmith rock\b/.test(msg)
-  );
-}
-
-/**
  * Topics TrailVerse does not answer from NPS live API — use web search (logged-in).
  */
 function hasNonNpsTravelSignals(userMessage) {
@@ -529,17 +507,6 @@ function hasNonNpsTravelSignals(userMessage) {
 
   const category = classifyQueryRegex(userMessage);
   return !STRATEGY[category]?.skip;
-}
-
-/**
- * Pure NPS live-data questions — no web search.
- */
-function isNpsAuthoritativeOnly(userMessage) {
-  if (!userMessage || userMessage.trim().length < 8) return false;
-  if (!isTravelRelated(userMessage)) return false;
-  const category = classifyQueryRegex(userMessage);
-  if (!STRATEGY[category]?.skip) return false;
-  return !hasNonNpsTravelSignals(userMessage);
 }
 
 /** Sync regex classification (tests / gating). */
@@ -908,11 +875,6 @@ function isTravelRelated(userMessage) {
   return isTravelRelatedQuery(userMessage);
 }
 
-function isHeadToHeadCompareQuery(userMessage) {
-  if (!userMessage) return false;
-  return /\b(vs\.?|versus)\b/i.test(userMessage);
-}
-
 /**
  * Logged-in web search policy: NPS + catalog for park picks, compare, permits, and open/closed;
  * web search only for logistics that need live off-NPS sources (restaurants, hotels, roads, etc.).
@@ -921,65 +883,20 @@ function isHeadToHeadCompareQuery(userMessage) {
  * @param {{ parkCode?: string|null }} [options]
  * @returns {boolean}
  */
-function needsWebSearch(userMessage, { parkCode = null } = {}) {
-  if (!userMessage || userMessage.trim().length < 8) return false;
-  if (!isTravelRelated(userMessage)) return false;
-
-  const explicitNonNps = !parkCode && hasExplicitNonNpsDestinationSignal(userMessage);
-  if (explicitNonNps) {
-    return true;
-  }
-
-  if (isItineraryPlanningQuery(userMessage)) return false;
-  if (isNpsAuthoritativeOnly(userMessage)) return false;
-  if (isOpenEndedParkDiscoveryQuery(userMessage)) return false;
-  if (isHeadToHeadCompareQuery(userMessage)) return false;
-
-  if (
-    isPermitOrReservationQuery(userMessage) &&
-    !/\b(restaurant|hotel|lodging|motel|stay|eat|dining|gateway|airbnb)\b/i.test(userMessage)
-  ) {
-    return false;
-  }
-
-  const category = classifyQuery(userMessage);
-  // Trail/attraction open-closed — NPS alerts suffice; roads still use web.
-  if (category === 'operational-status' && !/\broad\b/i.test(userMessage)) return false;
-
-  return true;
-}
-
-/** Day-by-day trip plans — NPS + weather facts suffice; skip web-search signup footer. */
-function isItineraryPlanningQuery(userMessage) {
-  if (!userMessage) return false;
-  return (
-    /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|things to do)\b/i.test(userMessage) ||
-    /\b\d{1,2}\s*[- ]?day\b/i.test(userMessage)
-  );
-}
-
-function isOpenEndedParkDiscoveryQuery(userMessage) {
-  if (!userMessage) return false;
-  if (
-    /\b(restaurant|hotel|lodging|motel|eat|dining|dinner|stay|airbnb|gateway town|spots?)\b/i.test(
-      userMessage
-    )
-  ) {
-    return false;
-  }
-  if (/\b(vs\.?|versus)\b/i.test(userMessage)) return false;
-
-  return (
-    /\b(best|which|top|recommend|suggest|ideas? for)\b/i.test(userMessage) &&
-    (/\b(national\s+)?parks?\b/i.test(userMessage) ||
-      /\b(visit|getaway|vibes?)\b/i.test(userMessage) ||
-      /\b(couples?|families|first[- ]?timers|photography)\b/i.test(userMessage))
-  );
-}
-
-function isPermitOrReservationQuery(userMessage) {
-  if (!userMessage) return false;
-  return /\b(permit|reservation|lottery|timed[- ]?entry|pass required)\b/i.test(userMessage);
+/** @deprecated Use planTrailieFetches().shouldFetch.web */
+function needsWebSearch(
+  userMessage,
+  { parkCode = null, conversationUserText = '', resolvedMetadata = {}, lat = null, lon = null } = {}
+) {
+  return planTrailieFetches({
+    userMessage,
+    parkCode,
+    lat,
+    lon,
+    isAnonymous: false,
+    conversationUserText,
+    resolvedMetadata,
+  }).shouldFetch.web;
 }
 
 /**
@@ -987,50 +904,114 @@ function isPermitOrReservationQuery(userMessage) {
  * Not for park discovery, compare, permits, or NPS-only questions.
  * @returns {{ append: boolean, variant?: 'local'|'road'|'trail'|'conditions' }}
  */
-function shouldAppendAnonymousWebSearchUpsell(userMessage) {
-  if (!userMessage) return { append: false };
+function shouldAppendAnonymousWebSearchUpsell(
+  userMessage,
+  { conversationUserText = '', resolvedMetadata = {} } = {}
+) {
+  const { fetchMessage } = planTrailieFetches({
+    userMessage,
+    parkCode: resolvedMetadata.parkCode || null,
+    isAnonymous: true,
+    conversationUserText,
+    resolvedMetadata,
+  });
+  return shouldAppendGuestLiveUpsell(userMessage, { fetchMessage });
+}
 
-  if (isItineraryPlanningQuery(userMessage)) {
-    return { append: false };
-  }
+function needsAstroFacts(userMessage) {
+  if (!userMessage) return false;
+  return /\b(astrophotography|astro\s*photo|stargaz|milky\s*way|dark\s*sky|night\s*sky|moon\s*phase|new\s*moon|full\s*moon|meteor\s*shower|star\s*trail|aurora|celestial)\b/i.test(
+    userMessage
+  );
+}
 
-  if (isOpenEndedParkDiscoveryQuery(userMessage)) {
-    return { append: false };
-  }
-
-  if (isPermitOrReservationQuery(userMessage)) {
-    return { append: false };
-  }
-
-  const category = classifyQuery(userMessage);
-
-  if (category === 'local-business') return { append: true, variant: 'local' };
-  if (category === 'road-conditions') return { append: true, variant: 'road' };
-  if (category === 'trail-conditions') return { append: true, variant: 'trail' };
-  if (category === 'wildfire-smoke') return { append: true, variant: 'conditions' };
-
-  return { append: false };
+function moonSkyQuality(illumination) {
+  if (illumination <= 10) return 'Excellent dark-sky conditions';
+  if (illumination <= 35) return 'Good — some moon interference';
+  if (illumination <= 60) return 'Moderate moon interference';
+  if (illumination <= 85) return 'Poor for faint Milky Way detail';
+  return 'Very poor — bright moon washes out deep-sky targets';
 }
 
 /**
- * Determine if weather facts are needed based on user message
- * @param {string} userMessage - The user's message
- * @returns {boolean} Whether weather facts should be fetched
+ * Computed astronomical facts for stargazing / astrophotography questions.
+ * @returns {string|null}
  */
-function needsWeatherFacts(userMessage) {
-  // Always fetch weather when we have coordinates — it's essential context
-  // for any park-related query (trip planning, packing, timing, etc.)
+function fetchAstroFacts({ lat, lon, tripDates = null, userMessage = '', locationName = 'this location' }) {
+  if (!lat || !lon) return null;
+
+  const { resolveAstroWindow } = require('../utils/tripDateParser');
+  const astronomicalService = require('./astronomicalService');
+  const window = resolveAstroWindow(tripDates, userMessage);
+  if (!window) return null;
+
+  const start = new Date(`${window.startDate}T12:00:00`);
+  const end = new Date(`${window.endDate}T12:00:00`);
+  const lines = [];
+  lines.push(`Astronomical Data for ${locationName} (COMPUTED — authoritative for moon timing):`);
+  lines.push(`Coordinates: ${lat.toFixed(4)}°N, ${Math.abs(lon).toFixed(4)}°W`);
+  lines.push(`Window: ${window.label}`);
+
+  let bestDay = null;
+  let bestIllumination = 101;
+  const dayLines = [];
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    const data = astronomicalService.getAstronomicalData(lat, lon, cursor, 0);
+    const dayLabel = cursor.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const quality = moonSkyQuality(data.moonIllumination);
+    dayLines.push(
+      `${dayLabel}: ${data.moonPhase}, ${data.moonIllumination}% illuminated — ${quality}; Milky Way: ${data.milkyWayVisibility}`
+    );
+    if (data.moonIllumination < bestIllumination) {
+      bestIllumination = data.moonIllumination;
+      bestDay = dayLabel;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  lines.push(...dayLines);
+  if (bestDay) {
+    lines.push(`Darkest night in this window: ${bestDay} (${bestIllumination}% moon).`);
+  }
+
+  const anchor = astronomicalService.getAstronomicalData(lat, lon, start, 0);
+  if (anchor.nextNewMoon) {
+    const nextNew = new Date(anchor.nextNewMoon);
+    if (!Number.isNaN(nextNew.getTime())) {
+      lines.push(
+        `Next new moon after window start: ${nextNew.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })}`
+      );
+    }
+  }
+
+  lines.push(
+    'Use these computed moon values exactly. Do NOT substitute training-data moon calendars or guess new/full moon dates.'
+  );
+  return lines.join('\n');
+}
+
+/**
+ * @deprecated Use planTrailieFetches().shouldFetch.weather
+ */
+function needsWeatherFacts() {
   return true;
 }
 
 /**
- * Determine if NPS facts are needed based on user message
- * @param {string} userMessage - The user's message
- * @returns {boolean} Whether NPS facts should be fetched
+ * @deprecated Use planTrailieFetches().shouldFetch.nps
  */
-function needsNPSFacts(userMessage) {
-  // Always fetch NPS data when we have a parkCode — users benefit from
-  // current conditions regardless of the specific question asked
+function needsNPSFacts() {
   return true;
 }
 
@@ -1047,11 +1028,15 @@ async function fetchRelevantFacts({
   parkName,
   isAnonymous = false,
   tripDates = null,
+  conversationUserText = '',
+  resolvedMetadata = {},
+  allExtractedParks = [],
 }) {
   const results = {
     weatherFacts: null,
     npsFacts: null,
     webSearchFacts: null,
+    astroFacts: null,
     feeFreeFacts: null,
     webSearchAttempted: false,
     webSearchUnavailable: false,
@@ -1085,19 +1070,38 @@ async function fetchRelevantFacts({
       }
     }
 
-    // Check for fee-free day overlap (sync, no API call)
+    // Check for fee-free day overlap (sync, no API call) — uses raw user message
     results.feeFreeFacts = getFeeFreeInfo(userMessage, tripDates);
 
-    // Determine what facts to fetch
-    const shouldFetchWeather = needsWeatherFacts(userMessage) && lat && lon;
-    const shouldFetchNPS = needsNPSFacts(userMessage) && parkCode;
-    // Skip web search for anonymous users — it's a signup incentive
-    const shouldFetchWeb = !isAnonymous && needsWebSearch(userMessage, { parkCode });
-    const shouldCheckFeeFree = !!userMessage;
+    const fetchPlan = planTrailieFetches({
+      userMessage,
+      parkCode,
+      parkName,
+      lat,
+      lon,
+      isAnonymous,
+      conversationUserText,
+      resolvedMetadata: { ...resolvedMetadata, parkName },
+      allExtractedParks,
+    });
+    const fetchMessage = fetchPlan.fetchMessage || userMessage;
+
+    const shouldFetchWeather = fetchPlan.shouldFetch.weather;
+    const shouldFetchNPS = fetchPlan.shouldFetch.nps;
+    const shouldFetchAstro = fetchPlan.shouldFetch.astro;
+    const shouldFetchWeb = fetchPlan.shouldFetch.web;
+    const shouldCheckFeeFree = fetchPlan.shouldFetch.feeFree;
 
     const fetchStartedAt = new Date().toISOString();
 
-    console.log('[Facts] Fetching facts:', { shouldFetchWeather, shouldFetchNPS, shouldFetchWeb, hasFeeFree: !!results.feeFreeFacts, userMessage: userMessage?.substring(0, 50) });
+    console.log('[Facts] Fetch plan:', {
+      authTier: fetchPlan.authTier,
+      queryTypes: fetchPlan.queryTypes,
+      shouldFetch: fetchPlan.shouldFetch,
+      blocked: fetchPlan.reasonCodes,
+      destinations: fetchPlan.destinations?.map((d) => d.name),
+      fetchMessage: fetchMessage?.substring(0, 80),
+    });
 
     // Fetch facts in parallel if needed
     const promises = [];
@@ -1108,7 +1112,7 @@ async function fetchRelevantFacts({
           lat,
           lon,
           tripDates,
-          userMessage,
+          userMessage: fetchMessage,
           locationName: parkName || 'this area',
           parkCode,
         })
@@ -1126,7 +1130,7 @@ async function fetchRelevantFacts({
 
     if (shouldFetchNPS) {
       promises.push(
-        fetchNPSFacts({ parkCode, parkName, userMessage }).then(facts => { results.npsFacts = facts; }).catch(err => {
+        fetchNPSFacts({ parkCode, parkName, userMessage: fetchMessage }).then(facts => { results.npsFacts = facts; }).catch(err => {
           console.error('[Facts] NPS fetch error:', err.message);
           results.npsFacts = null;
         })
@@ -1136,7 +1140,7 @@ async function fetchRelevantFacts({
     if (shouldFetchWeb) {
       results.webSearchAttempted = true;
       promises.push(
-        fetchWebSearchFacts({ userMessage, parkName, parkCode })
+        fetchWebSearchFacts({ userMessage: fetchMessage, parkName, parkCode })
           .then((facts) => {
             results.webSearchFacts = facts;
           })
@@ -1144,6 +1148,20 @@ async function fetchRelevantFacts({
             console.error('[Facts] Web search error:', err.message);
             results.webSearchFacts = null;
           })
+      );
+    }
+
+    if (shouldFetchAstro) {
+      promises.push(
+        Promise.resolve().then(() => {
+          results.astroFacts = fetchAstroFacts({
+            lat,
+            lon,
+            tripDates,
+            userMessage: fetchMessage,
+            locationName: parkName || 'this location',
+          });
+        })
       );
     }
 
@@ -1158,6 +1176,7 @@ async function fetchRelevantFacts({
     }
 
     const fetchedAt = new Date().toISOString();
+    results.fetchPlan = fetchPlan;
     results.factsMeta = {
       weather: createFactSlotMeta(shouldFetchWeather, results.weatherFacts, {
         source: results.weatherMeta?.source || 'OpenWeather',
@@ -1179,18 +1198,42 @@ async function fetchRelevantFacts({
                 : 'no_results',
           })
         : createFactSlotMeta(false, null, {
-            reason: isAnonymous ? 'guest_account_web_search_disabled' : null,
+            reason:
+              getBlockedReason(fetchPlan, 'web') ||
+              (isAnonymous ? 'guest_account_web_search_disabled' : 'web_not_needed'),
           }),
       feeFree: createFactSlotMeta(shouldCheckFeeFree, results.feeFreeFacts, {
         source: 'feeFreeDaysService',
         fetchedAt: results.feeFreeFacts ? fetchStartedAt : null,
+        reason: shouldCheckFeeFree && !results.feeFreeFacts ? 'no_fee_free_overlap' : null,
       }),
+      astro: createFactSlotMeta(shouldFetchAstro, results.astroFacts, {
+        source: 'TrailVerseAstronomicalService',
+        fetchedAt: results.astroFacts ? fetchedAt : null,
+        reason: !shouldFetchAstro ? getBlockedReason(fetchPlan, 'astro') : null,
+      }),
+      fetchPlan: {
+        status: 'available',
+        source: 'trailieFetchPlanner',
+        fetchedAt,
+        reason: null,
+        data: {
+          authTier: fetchPlan.authTier,
+          queryTypes: fetchPlan.queryTypes,
+          confidence: fetchPlan.confidence,
+          shouldFetch: fetchPlan.shouldFetch,
+          blockedFetches: fetchPlan.blockedFetches,
+          destinations: fetchPlan.destinations,
+        },
+        confidence: fetchPlan.confidence,
+      },
     };
 
     console.log('[Facts] Results:', {
       hasWeather: !!results.weatherFacts,
       hasNPS: !!results.npsFacts,
       hasWebSearch: !!results.webSearchFacts,
+      hasAstro: !!results.astroFacts,
       webSearchUnavailable: results.webSearchUnavailable,
       hasFeeFree: !!results.feeFreeFacts,
     });
@@ -1405,6 +1448,8 @@ module.exports = {
   needsWeatherFacts,
   needsNPSFacts,
   needsWebSearch,
+  needsAstroFacts,
+  fetchAstroFacts,
   hasExplicitNonNpsDestinationSignal,
   shouldAppendAnonymousWebSearchUpsell,
   isTravelRelated,
@@ -1414,4 +1459,5 @@ module.exports = {
   getCandidateParks,
   formatCandidateParksBlock,
   formatWebResults,
+  planTrailieFetches,
 };

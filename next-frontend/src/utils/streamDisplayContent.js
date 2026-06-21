@@ -4,14 +4,14 @@
 export function stripItineraryJsonForDisplay(content) {
   if (!content || typeof content !== 'string') return content || '';
 
-  const withoutClosed = content
-    .replace(/\[ITINERARY_JSON\][\s\S]*?\[\/ITINERARY_JSON\]/g, '')
+  let output = content
+    .replace(/\[ITINERARY_JSON\][\s\S]*?\[\/ITINERARY_JSON\]/gi, '')
     .replace(/\n{3,}/g, '\n\n');
 
-  const openIdx = withoutClosed.lastIndexOf('[ITINERARY_JSON]');
+  const openIdx = output.toUpperCase().lastIndexOf('[ITINERARY_JSON]');
   if (openIdx !== -1) {
-    return withoutClosed.slice(0, openIdx).replace(/\n{3,}/g, '\n\n').trimEnd();
+    output = output.slice(0, openIdx);
   }
 
-  return withoutClosed;
+  return output.replace(/\n{3,}/g, '\n\n').trimEnd();
 }

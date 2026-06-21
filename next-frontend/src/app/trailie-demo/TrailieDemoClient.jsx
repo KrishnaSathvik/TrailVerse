@@ -8,13 +8,25 @@ const TrailieInteractiveDemo = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div
-        className="flex min-h-[12rem] w-full items-center justify-center py-12"
-        style={{
-          backgroundColor: 'var(--bg-primary)',
-        }}
-      >
-        <DotSpinner size={40} label="Loading Trailie demo" />
+      <div className="space-y-5 sm:space-y-6">
+        <div className="flex flex-wrap justify-center gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-9 w-20 animate-pulse rounded-full sm:h-10 sm:w-24"
+              style={{ backgroundColor: 'var(--surface)' }}
+            />
+          ))}
+        </div>
+        <div
+          className="flex min-h-[20rem] items-center justify-center rounded-2xl border py-12 sm:rounded-3xl sm:min-h-[24rem]"
+          style={{
+            backgroundColor: 'var(--surface)',
+            borderColor: 'var(--border)',
+          }}
+        >
+          <DotSpinner size={40} label="Loading Trailie demo" />
+        </div>
       </div>
     ),
   }

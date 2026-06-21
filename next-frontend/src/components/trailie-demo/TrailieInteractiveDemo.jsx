@@ -246,8 +246,8 @@ export default function TrailieInteractiveDemo({
         </div>
       )}
 
-      <div className="mb-4 sm:mb-6 shrink-0" role="tablist" aria-label="Demo scenarios">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
+      <div className="mb-5 shrink-0 sm:mb-6" role="tablist" aria-label="Demo scenarios">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5">
           {SCENARIOS.map((item, index) => {
             const isActive = index === activeIndex;
             return (
@@ -257,34 +257,44 @@ export default function TrailieInteractiveDemo({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => handleSelectScenario(index)}
-                className="rounded-full px-3 py-2 sm:px-4 sm:py-2.5 text-[11px] sm:text-sm font-medium transition-all duration-200 sm:hover:-translate-y-0.5 text-center sm:shrink-0"
+                className="rounded-full px-3 py-2 text-[11px] font-medium transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-sm sm:hover:-translate-y-0.5"
                 style={{
                   backgroundColor: isActive ? 'var(--accent-green)' : 'var(--surface)',
                   color: isActive ? '#fff' : 'var(--text-primary)',
                   borderWidth: '1px',
                   borderColor: isActive ? 'var(--accent-green)' : 'var(--border)',
+                  boxShadow: isActive ? '0 10px 24px rgba(67, 160, 106, 0.15)' : 'none',
                 }}
               >
-                <span className="block truncate">{item.label}</span>
+                {item.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      <TrailieDemoPlaybackStage
-        scenario={scenario}
-        completedTurns={completedTurns}
-        isTyping={isTyping}
-        typedQuestion={typedQuestion}
-        isThinking={isThinking}
-        sentQuestion={sentQuestion}
-        thinkingLabel={thinkingLabel}
-        turnMetadata={turnMetadata}
-        showMessagePane={showMessagePane}
-      />
+      <div
+        className="min-w-0 rounded-2xl border p-4 sm:rounded-3xl sm:p-6 lg:p-8"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderColor: 'var(--border)',
+          boxShadow: '0 18px 38px rgba(15, 23, 42, 0.06)',
+        }}
+      >
+        <TrailieDemoPlaybackStage
+          scenario={scenario}
+          completedTurns={completedTurns}
+          isTyping={isTyping}
+          typedQuestion={typedQuestion}
+          isThinking={isThinking}
+          sentQuestion={sentQuestion}
+          thinkingLabel={thinkingLabel}
+          turnMetadata={turnMetadata}
+          showMessagePane={showMessagePane}
+        />
+      </div>
 
-      {showCta && <TrailieDemoCta className="mt-8 sm:mt-10 shrink-0" />}
+      {showCta && <TrailieDemoCta className="mt-8 sm:mt-10 lg:mt-12 shrink-0" />}
     </div>
   );
 }

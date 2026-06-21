@@ -130,6 +130,16 @@ function parseConstraints(metadata, userMessage) {
     if (dayMatch) numDays = parseInt(dayMatch[1], 10);
   }
 
+  if (!startDate && !endDate) {
+    const { parseTripDatesFromMessage } = require('./tripDateParser');
+    const parsedDates = parseTripDatesFromMessage(msg);
+    if (parsedDates) {
+      startDate = parsedDates.startDate;
+      endDate = parsedDates.endDate;
+      if (!numDays) numDays = parsedDates.numDays;
+    }
+  }
+
   if (startDate && endDate && !numDays) {
     const s = new Date(startDate);
     const e = new Date(endDate);

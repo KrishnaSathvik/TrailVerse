@@ -4,6 +4,7 @@
  */
 
 const axios = require('axios');
+const astronomicalService = require('./astronomicalService');
 
 class ReliableAstronomicalService {
   constructor() {
@@ -120,40 +121,19 @@ class ReliableAstronomicalService {
    * @returns {Object} Moon data
    */
   calculateMoonPhase(date) {
-    // Use the existing accurate moon phase calculation
-    const julianDay = this.julianDay(date);
-    
-    // Calculate days since last new moon
-    const K = Math.floor((julianDay - 2451545.0) / 29.53058867);
-    const T = (julianDay - 2451545.0 - K * 29.53058867) / 29.53058867;
-
-    const phases = [
-      'New Moon', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous',
-      'Full Moon', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent'
-    ];
-    
-    const phaseIndex = Math.floor(T * 8 + 0.5) & 7;
-    const moonPhase = phases[phaseIndex];
-    
-    // Moon illumination
-    const illumination = Math.round(50 * (1 - Math.cos(2 * Math.PI * T)));
-    
-    // Moon age in days
-    const moonAge = Math.round(T * 29.53058867);
-    
-    // Calculate next new moon and full moon (fix the calculation)
-    const daysToNextNewMoon = (29.53058867 - T * 29.53058867);
-    const daysToNextFullMoon = (14.765294335 - T * 29.53058867);
-    
-    const nextNewMoon = new Date(date.getTime() + daysToNextNewMoon * 24 * 60 * 60 * 1000);
-    const nextFullMoon = new Date(date.getTime() + daysToNextFullMoon * 24 * 60 * 60 * 1000);
-    
+    const moon = astronomicalService.calculateMoonPhase(date);
     return {
-      moonPhase,
-      moonIllumination: illumination,
-      moonAge,
-      nextNewMoon: nextNewMoon.toISOString(),
-      nextFullMoon: nextFullMoon.toISOString()
+      moonPhase: moon.phase,
+      moonIllumination: Math.round(moon.illumination),
+      moonAge: moon.age,
+      nextNewMoon:
+        moon.nextNewMoon instanceof Date
+          ? moon.nextNewMoon.toISOString()
+          : moon.nextNewMoon,
+      nextFullMoon:
+        moon.nextFullMoon instanceof Date
+          ? moon.nextFullMoon.toISOString()
+          : moon.nextFullMoon,
     };
   }
 

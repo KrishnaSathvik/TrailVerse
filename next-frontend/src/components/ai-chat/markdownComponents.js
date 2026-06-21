@@ -8,8 +8,16 @@ export function buildMarkdownComponents(parkImageUrls) {
 
   return {
     h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold mb-3 mt-2 break-words">{children}</h1>,
-    h2: ({ children }) => <h2 className="text-base sm:text-lg font-semibold mb-2 mt-3 break-words">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-sm sm:text-base font-semibold mb-2 mt-2 break-words">{children}</h3>,
+    h2: ({ children }) => (
+      <h2 className="mt-5 mb-2 text-base font-semibold leading-snug sm:text-lg break-words">
+        {children}
+      </h2>
+    ),
+    h3: ({ children }) => (
+      <h3 className="mt-4 mb-1.5 text-sm font-semibold leading-snug sm:text-base break-words">
+        {children}
+      </h3>
+    ),
     strong: ({ children }) => <strong className="font-semibold break-words">{children}</strong>,
     em: ({ children }) => <em className="italic break-words">{children}</em>,
     p: ({ children, node }) => {
@@ -17,7 +25,7 @@ export function buildMarkdownComponents(parkImageUrls) {
       const Tag = hasImage ? 'div' : 'p';
       return (
         <Tag
-          className="mb-2 leading-relaxed text-sm sm:text-base break-words"
+          className="mb-3 text-sm leading-7 sm:text-base sm:leading-7 break-words"
           style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
         >
           {children}
@@ -27,16 +35,16 @@ export function buildMarkdownComponents(parkImageUrls) {
     br: () => <br />,
     ul: ({ children }) => (
       <ul
-        className="ml-4 list-disc space-y-1 mb-2 text-sm sm:text-base break-words"
-        style={{ color: 'var(--text-primary)', listStyleType: 'disc' }}
+        className="my-3 ml-5 list-disc space-y-1.5 text-sm leading-7 sm:text-base break-words"
+        style={{ color: 'var(--text-primary)' }}
       >
         {children}
       </ul>
     ),
     ol: ({ children }) => (
       <ol
-        className="ml-4 list-decimal space-y-1 mb-2 text-sm sm:text-base break-words"
-        style={{ color: 'var(--text-primary)', listStyleType: 'decimal' }}
+        className="my-3 ml-5 list-decimal space-y-1.5 text-sm leading-7 sm:text-base break-words"
+        style={{ color: 'var(--text-primary)' }}
       >
         {children}
       </ol>
@@ -113,27 +121,39 @@ export function buildMarkdownComponents(parkImageUrls) {
     hr: () => <hr className="my-4" style={{ borderColor: 'var(--border)' }} />,
     blockquote: ({ children }) => (
       <blockquote
-        className="border-l-4 pl-4 italic mb-2 break-words overflow-wrap-anywhere"
-        style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+        className="my-3 rounded-xl border-l-4 px-4 py-3 text-sm leading-7 break-words"
+        style={{
+          borderColor: 'var(--accent-green)',
+          backgroundColor: 'var(--surface-hover)',
+          color: 'var(--text-secondary)',
+        }}
       >
         {children}
       </blockquote>
     ),
     table: ({ children }) => (
-      <table className="min-w-full border-collapse border mb-2 text-xs sm:text-sm" style={{ borderColor: 'var(--border)' }}>
-        {children}
-      </table>
+      <div
+        className="my-3 w-fit max-w-full overflow-x-auto rounded-xl border [-webkit-overflow-scrolling:touch] [&_table]:!my-0"
+        style={{ borderColor: 'var(--border)' }}
+      >
+        <table className="w-max min-w-[34rem] border-collapse text-xs sm:text-sm !my-0">
+          {children}
+        </table>
+      </div>
     ),
     th: ({ children }) => (
       <th
-        className="border px-2 py-1 font-semibold text-left break-words overflow-wrap-anywhere"
+        className="border px-2.5 py-2 font-semibold text-left align-top text-xs sm:text-sm last:min-w-[9rem] last:max-w-[14rem] last:whitespace-normal [&:not(:last-child)]:whitespace-nowrap"
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}
       >
         {children}
       </th>
     ),
     td: ({ children }) => (
-      <td className="border px-2 py-1 break-words overflow-wrap-anywhere" style={{ borderColor: 'var(--border)' }}>
+      <td
+        className="border px-2.5 py-2 align-top text-xs sm:text-sm last:min-w-[9rem] last:max-w-[14rem] last:whitespace-normal last:leading-snug [&:not(:last-child)]:whitespace-nowrap"
+        style={{ borderColor: 'var(--border)' }}
+      >
         {children}
       </td>
     ),

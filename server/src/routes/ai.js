@@ -2,7 +2,19 @@ const express = require('express');
 const router = express.Router();
 const { protect, optionalAuth } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');
-const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, shouldAppendAnonymousWebSearchUpsell, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
+const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, needsAstroFacts, shouldAppendAnonymousWebSearchUpsell, isTravelRelated, extractUserCity, getCandidateParks, formatCandidateParksBlock } = require('../services/factsService');
+const {
+  planTrailieFetches,
+  formatGuestLiveDataBoundaryBlock,
+  needsLiveData,
+  isItineraryPlanningQuery: hasItineraryIntentFromPlanner,
+} = require('../services/trailieFetchPlanner');
+const {
+  resolveActiveTripContext,
+  applyPrimaryDestinationToMetadata,
+  formatActiveTripContextPromptBlock,
+  finalizeActiveTripContextForClient,
+} = require('../services/activeTripContextService');
 const {
   executeParkSearch,
   formatRankedParksDiscoveryBlock,
@@ -88,6 +100,33 @@ function resolveDisplayParkMetadata(validatedContent, resolvedMetadata, parkName
     parkNames: [],
     parksForImages: [],
   };
+}
+
+function toPrimaryFromExtracted(park) {
+  if (!park) return null;
+  return {
+    name: park.parkName,
+    parkCode: park.parkCode || null,
+    type: park.parkCode ? 'nps' : 'unknown',
+    lat: park.lat ?? null,
+    lon: park.lon ?? null,
+    source: 'user_message',
+    confidence: park.parkCode ? 'high' : 'medium',
+  };
+}
+
+function buildClientActiveTripContext({
+  activeTripContext,
+  assistantContent,
+  resolvedMetadata,
+  openEndedDiscovery,
+}) {
+  return finalizeActiveTripContextForClient({
+    activeTripContext,
+    assistantContent,
+    resolvedMetadata,
+    openEndedDiscovery,
+  });
 }
 
 async function finalizeParkImagesAndMetadata({
@@ -444,6 +483,14 @@ function buildBaseSystemPrompt(provider, systemPrompt, messages, metadata = {}) 
   if (aiContextBlock) {
     prompt += aiContextBlock;
   }
+  const today = new Date();
+  const todayLabel = today.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  prompt += `\n\n--- CURRENT DATE ---\nToday is ${todayLabel}. When the user mentions a month without a year, use ${today.getFullYear()} if that month is still ahead in the calendar year; otherwise use ${today.getFullYear() + 1}.\n--- END CURRENT DATE ---\n`;
   return prompt;
 }
 
@@ -713,24 +760,59 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   // Extract the last user message for fact fetching
   const lastUserMessage = [...filteredMessages].reverse().find(m => m.role === 'user')?.content || '';
 
-  // Auto-extract parks from the current user message (message wins over stale session metadata)
+  // Auto-extract parks and resolve multi-turn active destination memory
   let resolvedMetadata = { ...metadata };
-  let allExtractedParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
+  const initialMessageParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
 
   const discoveryRefinement = isDiscoveryRefinementReply(filteredMessages);
   const discoverySearchQuery = buildDiscoverySearchQuery(filteredMessages);
 
   const openEndedDiscovery =
     shouldInjectParkDiscovery(lastUserMessage, {
-      namedParkCount: allExtractedParks.length,
+      namedParkCount: initialMessageParks.length,
     }) || discoveryRefinement;
 
+  const {
+    activeTripContext,
+    allExtractedParks: contextParks,
+    inheritedDestination,
+  } = resolveActiveTripContext({
+    lastUserMessage,
+    conversationUserText,
+    filteredMessages,
+    storedContext: metadata.activeTripContext || null,
+    openEndedDiscovery,
+  });
+
+  let allExtractedParks = contextParks.length > 0 ? contextParks : initialMessageParks;
+
   if (allExtractedParks.length > 0) {
-    resolvedMetadata.parkCode = allExtractedParks[0].parkCode;
+    resolvedMetadata = applyPrimaryDestinationToMetadata(
+      resolvedMetadata,
+      activeTripContext.primaryDestination || toPrimaryFromExtracted(allExtractedParks[0])
+    );
+    resolvedMetadata.parkCode = allExtractedParks[0].parkCode || resolvedMetadata.parkCode;
     resolvedMetadata.parkName = resolvedMetadata.parkName || allExtractedParks[0].parkName;
     resolvedMetadata.lat = resolvedMetadata.lat || allExtractedParks[0].lat;
     resolvedMetadata.lon = resolvedMetadata.lon || allExtractedParks[0].lon;
-    console.log(`${logPrefix} Parks extracted from message: ${allExtractedParks.map(p => `${p.parkName} (${p.parkCode})`).join(', ')}`);
+    console.log(
+      `${logPrefix} Parks resolved: ${allExtractedParks.map((p) => `${p.parkName} (${p.parkCode})`).join(', ')}` +
+        (inheritedDestination ? ' [inherited]' : '')
+    );
+  } else if (activeTripContext.primaryDestination) {
+    resolvedMetadata = applyPrimaryDestinationToMetadata(
+      resolvedMetadata,
+      activeTripContext.primaryDestination
+    );
+    allExtractedParks = [{
+      parkCode: activeTripContext.primaryDestination.parkCode,
+      parkName: activeTripContext.primaryDestination.name,
+      lat: activeTripContext.primaryDestination.lat,
+      lon: activeTripContext.primaryDestination.lon,
+    }].filter((p) => p.parkCode || p.parkName);
+    console.log(
+      `${logPrefix} Active destination inherited: ${activeTripContext.primaryDestination.name} (${activeTripContext.resolutionSource})`
+    );
   } else if (resolvedMetadata.parkCode && !openEndedDiscovery) {
     allExtractedParks = [{
       parkCode: resolvedMetadata.parkCode,
@@ -739,7 +821,6 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       lon: resolvedMetadata.lon,
     }];
   } else if (openEndedDiscovery) {
-    // Open-ended trip question — do not lock weather/NPS to a stale session park
     resolvedMetadata.parkCode = null;
     resolvedMetadata.parkName = null;
     resolvedMetadata.lat = resolvedMetadata.lat || null;
@@ -748,6 +829,8 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       `${logPrefix} Open-ended discovery${discoveryRefinement ? ' (refinement follow-up)' : ''} — cleared session park lock`
     );
   }
+
+  resolvedMetadata.activeTripContext = activeTripContext;
 
   // Store all park names for frontend display (user message — not assistant/footer text)
   const parkNames = allExtractedParks.map(p => p.parkName).filter(Boolean);
@@ -790,13 +873,46 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     }
   }
 
+  if ((!resolvedMetadata.lat || !resolvedMetadata.lon) && !resolvedMetadata.parkCode) {
+    try {
+      const { resolvePlaceFromMessage } = require('../services/geocodePlaceService');
+      const place = await resolvePlaceFromMessage(lastUserMessage);
+      if (place) {
+        resolvedMetadata.lat = place.lat;
+        resolvedMetadata.lon = place.lon;
+        resolvedMetadata.resolvedPlaceName = place.name;
+        if (!resolvedMetadata.parkName) {
+          resolvedMetadata.parkName = place.name;
+        }
+        console.log(
+          `${logPrefix} Geocoded place from message: ${place.name} (${place.lat}, ${place.lon}) via ${place.source}`
+        );
+      }
+    } catch (geoErr) {
+      console.warn(`${logPrefix} Place geocode error:`, geoErr.message);
+    }
+  }
+
   // Fetch relevant facts based on user message and resolved metadata
   let weatherFacts = null;
   let npsFacts = null;
   let webSearchFacts = null;
+  let astroFacts = null;
   let feeFreeFacts = null;
   let webSearchUnavailable = false;
   let factsMeta = null;
+
+  let fetchPlan = planTrailieFetches({
+    userMessage: lastUserMessage,
+    parkCode: resolvedMetadata.parkCode,
+    parkName: resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName,
+    lat: resolvedMetadata.lat,
+    lon: resolvedMetadata.lon,
+    isAnonymous: skipWebSearchForGuest,
+    conversationUserText,
+    resolvedMetadata,
+    allExtractedParks,
+  });
 
   try {
     // Fetch weather + web search using primary park
@@ -809,15 +925,20 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       parkCode: resolvedMetadata.parkCode,
       lat: resolvedMetadata.lat,
       lon: resolvedMetadata.lon,
-      parkName: resolvedMetadata.parkName,
+      parkName: resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName,
       isAnonymous: skipWebSearchForGuest,
       tripDates,
+      conversationUserText,
+      resolvedMetadata,
+      allExtractedParks,
     });
     weatherFacts = factsResult.weatherFacts;
     webSearchFacts = factsResult.webSearchFacts;
+    astroFacts = factsResult.astroFacts;
     feeFreeFacts = factsResult.feeFreeFacts;
     webSearchUnavailable = !!factsResult.webSearchUnavailable;
     factsMeta = factsResult.factsMeta || null;
+    fetchPlan = factsResult.fetchPlan || fetchPlan;
 
     // Fetch NPS facts for ALL mentioned parks in parallel
     if (allExtractedParks.length > 1) {
@@ -834,7 +955,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       npsFacts = factsResult.npsFacts;
     }
 
-    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, hasFeeFree: !!feeFreeFacts, parks: parkNames });
+    console.log(`${logPrefix} Facts fetched:`, { hasWeather: !!weatherFacts, hasNPS: !!npsFacts, hasWebSearch: !!webSearchFacts, hasAstro: !!astroFacts, hasFeeFree: !!feeFreeFacts, parks: parkNames });
   } catch (factsError) {
     console.error(`${logPrefix} Facts fetching error:`, factsError.message);
   }
@@ -872,9 +993,17 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
 
   // Determine if this is a non-NPS destination query with web search context
   const isNonNpsWithWebSearch = !resolvedMetadata.parkCode && webSearchFacts && isTravelRelated(lastUserMessage);
+  if (skipWebSearchForGuest && fetchPlan.guestNeedsLiveBoundary) {
+    enhancedSystemPrompt += formatGuestLiveDataBoundaryBlock();
+  }
 
-  if (npsFacts || weatherFacts || webSearchFacts) {
-    const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || 'this destination');
+  enhancedSystemPrompt += formatActiveTripContextPromptBlock(activeTripContext);
+  if (activeTripContext?.lowConfidenceClarification) {
+    enhancedSystemPrompt += `\n\n--- CLARIFICATION NEEDED ---\n${activeTripContext.lowConfidenceClarification}\n--- END CLARIFICATION ---\n`;
+  }
+
+  if (npsFacts || weatherFacts || webSearchFacts || astroFacts) {
+    const parkLabel = parkNames.length > 1 ? parkNames.join(', ') : (resolvedMetadata.parkName || resolvedMetadata.resolvedPlaceName || 'this destination');
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
     // Build data availability manifest so the model knows what's present and what's missing
@@ -895,6 +1024,13 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     } else {
       missing.push(skipWebSearchForGuest ? 'web search (requires sign-up)' : 'web search');
     }
+    if (astroFacts) {
+      available.push('computed astronomical data (moon phase / Milky Way timing)');
+    } else if (needsAstroFacts(lastUserMessage) && resolvedMetadata.lat) {
+      missing.push('astronomical data (could not compute moon window for dates)');
+    } else if (needsAstroFacts(lastUserMessage)) {
+      missing.push('astronomical data (location not geocoded)');
+    }
 
     enhancedSystemPrompt += `\n\n--- LIVE TRAILVERSE DATA: ${parkLabel.toUpperCase()} ---`;
     enhancedSystemPrompt += `\nThis is AUTHORITATIVE real-time data as of ${today}. This OVERRIDES your training data where they conflict.`;
@@ -905,8 +1041,8 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       } else {
         enhancedSystemPrompt += `\nDATA MISSING: ${missing.join(', ')} — for missing categories, qualify your knowledge as "typically" or "generally" and link the TrailVerse park page (see TRAILVERSE LINKS below), not nps.gov.`;
       }
-      if (skipWebSearchForGuest && missing.some((m) => m.includes('web search'))) {
-        enhancedSystemPrompt += `\nGUEST ACCOUNT — WEB SEARCH: Do NOT say you lack live restaurant, hotel, trail condition, road, or air-quality data in your reply. Answer from general knowledge like a well-traveled friend. A short sign-up note for live web search is added automatically after your message when relevant — do not duplicate it.`;
+      if (skipWebSearchForGuest && missing.some((m) => m.includes('web search')) && !fetchPlan.guestNeedsLiveBoundary) {
+        enhancedSystemPrompt += `\nGUEST ACCOUNT: Live web search requires a free TrailVerse sign-in. For this turn, qualify changeable details as "typically" and link TrailVerse park pages when helpful.`;
       }
       if (webSearchUnavailable && !skipWebSearchForGuest) {
         enhancedSystemPrompt += `\nWEB SEARCH UNAVAILABLE: Live web search timed out or returned no results for this query. Do NOT invent current prices, hours, or closure status from training data. Qualify logistics as "typically" or "check official sources" and prioritize NPS data above when present.`;
@@ -962,6 +1098,11 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     if (webSearchFacts) {
       enhancedSystemPrompt += webSearchFacts + '\n';
     }
+    if (astroFacts) {
+      enhancedSystemPrompt += `\n${astroFacts}\n\n`;
+      enhancedSystemPrompt +=
+        'ASTRO NOTE: The astronomical block above is computed for the user\'s stated dates. Use those moon phases and illumination percentages exactly. Do NOT invent new/full moon dates from training data. For non-NPS towns, do not guess administering national forest or park unit names unless confirmed in live data.\n\n';
+    }
 
     enhancedSystemPrompt += `--- END LIVE DATA ---\n`;
   } else if (resolvedMetadata.parkCode) {
@@ -1010,7 +1151,17 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     } else if (isNonNpsTravelQuery) {
       // User is asking about a non-NPS destination — help naturally
       enhancedSystemPrompt += `\n\n--- DESTINATION GUIDANCE ---`;
-      enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
+      if (needsAstroFacts(lastUserMessage)) {
+        enhancedSystemPrompt += `\nThe user is asking about stargazing or astrophotography timing.`;
+        enhancedSystemPrompt += `\nNo computed astronomical data is available for this turn. Do NOT state specific new/full moon dates or exact moon illumination from memory. Tell the user moon timing depends on their exact dates and suggest verifying with a moon calendar.`;
+        enhancedSystemPrompt += `\nFor land management names (national forest vs state park), only name an agency if you are confident — otherwise describe the area without guessing the administering forest.`;
+        enhancedSystemPrompt += `\nYou may describe typical dark-sky character of rural mountain valleys as "generally dark" — do not cite exact Bortle numbers unless sourced in live data.`;
+      } else if (skipWebSearchForGuest && needsLiveData(lastUserMessage)) {
+        enhancedSystemPrompt += formatGuestLiveDataBoundaryBlock();
+      } else {
+        enhancedSystemPrompt += `\nHelp the user plan their trip using your training knowledge. Answer naturally and enthusiastically.`;
+        enhancedSystemPrompt += `\nDo NOT say things like "I don't have live data" or "this isn't a national park" — just help them like a knowledgeable travel friend would.`;
+      }
       if (shouldRequestItineraryJson({
         userMessage: lastUserMessage,
         openEndedDiscovery,
@@ -1021,7 +1172,6 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       })) {
         enhancedSystemPrompt += `\nYou CAN output an [ITINERARY_JSON] block for this day-by-day plan request.`;
       }
-      enhancedSystemPrompt += `\nDo NOT say things like "I don't have live data" or "this isn't a national park" — just help them like a knowledgeable travel friend would.`;
       enhancedSystemPrompt += `\nIf the query is vague (no specific destination), suggest 2–3 concrete places that fit what they described — do not only ask them to pick a destination.`;
       enhancedSystemPrompt += `\n--- END GUIDANCE ---\n`;
     } else {
@@ -1136,7 +1286,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   const augmentedMessages = filteredMessages;
 
   console.log(`${logPrefix} Augmented messages:`, {
-    hasSystemFacts: !!(npsFacts || weatherFacts || webSearchFacts),
+    hasSystemFacts: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
     totalMessageCount: augmentedMessages.length,
     provider,
     parks: parkNames
@@ -1203,11 +1353,14 @@ CRITICAL ISOLATION RULES — follow these exactly:
     conflicts,
     hypothetical,
     factsMeta,
+    fetchPlan,
+    activeTripContext,
     resolvedMetadata,
     allExtractedParks,
     npsFacts,
     weatherFacts,
     webSearchFacts,
+    astroFacts,
     feeFreeFacts,
     webSearchUnavailable,
     skipWebSearchForGuest,
@@ -1223,6 +1376,8 @@ CRITICAL ISOLATION RULES — follow these exactly:
     intent: trailieContext.intent.primary,
     npsStatus: trailieContext.liveData.nps.status,
     weatherStatus: trailieContext.liveData.weather.status,
+    fetchPlanConfidence: trailieContext.fetchPlan?.confidence || null,
+    fetchPlanQueryTypes: trailieContext.fetchPlan?.queryTypes || [],
   });
 
   const userRequestedItinerary = shouldRequestItineraryJson({
@@ -1265,7 +1420,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary };
+  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext, fetchPlan };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {
@@ -1410,10 +1565,7 @@ function isSpecificPermitOnlyQuery(userMessage = '') {
 /** Day-by-day trip plans — skip Recreation.gov permit inventory footers unless user asked about permits. */
 function isItineraryPlanningQuery(userMessage = '') {
   if (!userMessage || isPermitPlanningQuery(userMessage)) return false;
-  return (
-    /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|things to do)\b/i.test(userMessage) ||
-    /\b\d{1,2}\s*[- ]?day\b/i.test(userMessage)
-  );
+  return hasItineraryIntentFromPlanner(userMessage);
 }
 
 /** Permits that should not appear in generic trip-plan footers (niche programs, not park entry). */
@@ -1993,7 +2145,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary } = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -2254,7 +2406,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       data: maybeAttachDebugTrailieContext(
         {
           ...response,
-          hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+          hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
           hasWebSearch: !!webSearchFacts,
           parkName: displayMeta.parkName,
           parkNames: displayMeta.parkNames,
@@ -2262,6 +2414,12 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
           planScore,
           intent: intent?.primaryIntent || null,
           parkImages: displayMeta.parkImages,
+          activeTripContext: buildClientActiveTripContext({
+            activeTripContext,
+            assistantContent: response.content,
+            resolvedMetadata,
+            openEndedDiscovery,
+          }),
           showDayByDayPlanCta: shouldShowDayByDayPlanCta({
             openEndedDiscovery,
             userRequestedItinerary,
@@ -2366,6 +2524,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         npsFacts,
         weatherFacts,
         webSearchFacts,
+        astroFacts,
         feeFreeFacts,
         resolvedMetadata,
         parkNames,
@@ -2384,6 +2543,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         lastMsg,
         trailieContext,
         userRequestedItinerary,
+        activeTripContext,
       } = await prepareChatContext(req.body, '[AI Stream]', { req });
 
       if (preflightResult.blockers.length > 0) {
@@ -2500,7 +2660,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             ...(contentUnchanged ? {} : { content: response.content }),
             provider: response.provider,
             model: response.model,
-            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
             hasWebSearch: !!webSearchFacts,
             parkName: displayMeta.parkName,
             parkNames: displayMeta.parkNames,
@@ -2510,6 +2670,12 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
             planScore: processed.planScore,
             intent: intent?.primaryIntent || null,
             parkImages: displayMeta.parkImages,
+            activeTripContext: buildClientActiveTripContext({
+              activeTripContext,
+              assistantContent: response.content,
+              resolvedMetadata,
+              openEndedDiscovery,
+            }),
             showDayByDayPlanCta: shouldShowDayByDayPlanCta({
               openEndedDiscovery,
               userRequestedItinerary,
@@ -2703,6 +2869,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         npsFacts,
         weatherFacts,
         webSearchFacts,
+        astroFacts,
         feeFreeFacts,
         userCity: anonUserCity,
         candidateParksBlock: anonCandidateParksBlock,
@@ -2723,6 +2890,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         lastMsg,
         trailieContext: anonTrailieContext,
         userRequestedItinerary: anonUserRequestedItinerary,
+        activeTripContext: anonActiveTripContext,
       } = ctx;
 
       provider = ctxProvider;
@@ -2844,7 +3012,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
             ...(contentUnchanged ? {} : { content: response.content }),
             provider: response.provider,
             model: response.model,
-            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts),
+            hasLiveData: !!(npsFacts || weatherFacts || webSearchFacts || astroFacts),
             hasWebSearch: !!webSearchFacts,
             parkName: anonDisplayMeta.parkName,
             parkNames: anonDisplayMeta.parkNames,
@@ -2857,6 +3025,12 @@ router.post('/chat-anonymous-stream', async (req, res) => {
             anonymousId: session.anonymousId,
             messageCount: userMessageCount,
             canSendMore: session.canSendMessage(),
+            activeTripContext: buildClientActiveTripContext({
+              activeTripContext: anonActiveTripContext,
+              assistantContent: response.content,
+              resolvedMetadata,
+              openEndedDiscovery: anonOpenEndedDiscovery,
+            }),
             showDayByDayPlanCta: shouldShowDayByDayPlanCta({
               openEndedDiscovery: anonOpenEndedDiscovery,
               userRequestedItinerary: anonUserRequestedItinerary,
@@ -3067,6 +3241,7 @@ router.post('/chat-anonymous', async (req, res) => {
       npsFacts,
       weatherFacts,
       webSearchFacts,
+      astroFacts,
       feeFreeFacts,
       userCity: anonUserCity,
       candidateParksBlock: anonCandidateParksBlock,
@@ -3087,6 +3262,7 @@ router.post('/chat-anonymous', async (req, res) => {
       lastMsg,
       trailieContext: anonTrailieContext,
       userRequestedItinerary: anonUserRequestedItinerary,
+      activeTripContext: anonActiveTripContext,
     } = ctx;
 
     provider = ctxProvider;
@@ -3350,7 +3526,7 @@ router.post('/chat-anonymous', async (req, res) => {
           anonymousId: session.anonymousId,
           messageCount: userMessageCount,
           canSendMore: session.canSendMessage(),
-          hasLiveData: !!(npsFacts || weatherFacts),
+          hasLiveData: !!(npsFacts || weatherFacts || astroFacts),
           parkName: anonDisplayMeta.parkName,
           parkNames: anonDisplayMeta.parkNames,
           hasItinerary: !!anonItineraryData,
@@ -3359,6 +3535,12 @@ router.post('/chat-anonymous', async (req, res) => {
           planScore: anonPlanScore,
           intent: anonIntent?.primaryIntent || null,
           parkImages: anonDisplayMeta.parkImages,
+          activeTripContext: buildClientActiveTripContext({
+            activeTripContext: anonActiveTripContext,
+            assistantContent: response.content,
+            resolvedMetadata,
+            openEndedDiscovery: anonOpenEndedDiscovery,
+          }),
           showDayByDayPlanCta: shouldShowDayByDayPlanCta({
             openEndedDiscovery: anonOpenEndedDiscovery,
             userRequestedItinerary: anonUserRequestedItinerary,

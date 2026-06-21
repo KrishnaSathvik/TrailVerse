@@ -144,6 +144,46 @@ describe('buildTrailieContext', () => {
     expect(ctx.liveData.webSearch.data).toBeNull();
   });
 
+  test('includes fetch plan summary in structured context', () => {
+    const ctx = buildTrailieContext({
+      ...baseArgs,
+      fetchPlan: {
+        authTier: 'logged_in',
+        queryTypes: ['itinerary', 'local_business'],
+        confidence: 'high',
+        destinations: [{ name: 'Zion National Park', parkCode: 'zion', type: 'nps', confidence: 'high' }],
+        shouldFetch: { nps: true, weather: true, web: true, events: false, transit: false, permits: true, astro: false, feeFree: true },
+        intentFlags: { events: false, transit: false, permits: true },
+        blockedFetches: [],
+        guestNeedsLiveBoundary: false,
+      },
+    });
+    expect(ctx.fetchPlan).toMatchObject({
+      authTier: 'logged_in',
+      queryTypes: ['itinerary', 'local_business'],
+      confidence: 'high',
+    });
+    expect(ctx.fetchPlan.destinations[0].parkCode).toBe('zion');
+  });
+
+  test('includes active trip context summary', () => {
+    const ctx = buildTrailieContext({
+      ...baseArgs,
+      activeTripContext: {
+        primaryDestination: {
+          name: 'Yellowstone National Park',
+          parkCode: 'yell',
+          confidence: 'high',
+        },
+        resolutionSource: 'stored_follow_up',
+        lastRecommendationList: [{ name: 'Zion National Park', parkCode: 'zion' }],
+      },
+    });
+    expect(ctx.activeTripContext.primaryDestination.parkCode).toBe('yell');
+    expect(ctx.activeTripContext.resolutionSource).toBe('stored_follow_up');
+    expect(ctx.activeTripContext.recommendationCount).toBe(1);
+  });
+
   test('multi-park NPS available when prose present', () => {
     const ctx = buildTrailieContext({
       ...baseArgs,

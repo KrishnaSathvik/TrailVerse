@@ -11,7 +11,13 @@ describe('stripItineraryJsonForDisplay', () => {
     expect(stripItineraryJsonForDisplay(input)).toBe('Day 1 plan');
   });
 
-  test('returns plain text unchanged', () => {
-    expect(stripItineraryJsonForDisplay('Hello Yellowstone')).toBe('Hello Yellowstone');
+  test('removes itinerary blocks case-insensitively', () => {
+    const input = 'Plan\n[itinerary_json]{"days":[]}\n[/itinerary_json]\nDone';
+    expect(stripItineraryJsonForDisplay(input)).toBe('Plan\n\nDone');
+  });
+
+  test('hides in-progress block with mixed case tag', () => {
+    const input = 'Plan\n[Itinerary_Json]{"days":[';
+    expect(stripItineraryJsonForDisplay(input)).toBe('Plan');
   });
 });

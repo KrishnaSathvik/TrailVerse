@@ -33,21 +33,37 @@ export function escapeApproximateTildesForGfm(text = '') {
 }
 
 /**
- * tokens render as formatted text instead of literal ** or __.
+ * Stabilize partially streamed markdown so users don't see raw markers like **.
+ * This is intentionally conservative: it only closes common inline markers while streaming.
  */
 export function stabilizeStreamingMarkdown(text = '') {
   if (!text) return '';
 
   let output = text;
 
+  // Close unmatched bold markers: **bold
   const boldDoubleStar = (output.match(/\*\*/g) || []).length;
   if (boldDoubleStar % 2 === 1) {
     output += '**';
   }
 
+  // Close unmatched bold underscore markers: __bold
   const boldUnderscore = (output.match(/__/g) || []).length;
   if (boldUnderscore % 2 === 1) {
     output += '__';
+  }
+
+  // Close unmatched inline code: `code
+  const backticks = (output.match(/`/g) || []).length;
+  if (backticks % 2 === 1) {
+    output += '`';
+  }
+
+  // Close unfinished markdown links like [Trailie](https://...
+  const openBracketCount = (output.match(/\[/g) || []).length;
+  const closeBracketCount = (output.match(/\]/g) || []).length;
+  if (openBracketCount > closeBracketCount) {
+    output += ']';
   }
 
   return output;

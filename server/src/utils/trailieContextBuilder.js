@@ -7,6 +7,8 @@ const {
   buildTripState,
   computeTripStateCompleteness,
 } = require('./tripStateBuilder');
+const { summarizeFetchPlan } = require('../services/trailieFetchPlanner');
+const { summarizeActiveTripContext } = require('../services/activeTripContextService');
 
 const SCHEMA_VERSION = 'trailie-context-v2';
 
@@ -200,15 +202,16 @@ function normalizeNpsMeta(factsMeta, { npsFacts, allExtractedParks = [] }) {
   return assignSlotConfidence(factsMeta?.nps || createFactSlotMeta(false, null));
 }
 
-function normalizeWebSearchMeta(factsMeta, { webSearchUnavailable, skipWebSearchForGuest }) {
+function normalizeWebSearchMeta(factsMeta, { webSearchUnavailable, skipWebSearchForGuest, fetchPlan }) {
   const base = factsMeta?.webSearch || createFactSlotMeta(false, null);
+  const blockedReason = fetchPlan?.blockedFetches?.find((b) => b.type === 'web')?.reason;
 
   if (skipWebSearchForGuest && base.status === 'not_requested') {
     return assignSlotConfidence({
       status: 'not_requested',
       source: null,
       fetchedAt: null,
-      reason: 'guest_account_web_search_disabled',
+      reason: blockedReason || base.reason || 'guest_account_web_search_disabled',
       data: null,
     });
   }
@@ -302,6 +305,7 @@ function normalizeLiveData({
   npsFacts,
   weatherFacts,
   webSearchFacts,
+  astroFacts,
   feeFreeFacts,
   webSearchUnavailable,
   skipWebSearchForGuest,
@@ -311,6 +315,7 @@ function normalizeLiveData({
   constraints,
   metadata,
   tripState,
+  fetchPlan,
 }) {
   const hasPark = !!(resolvedMetadata?.parkCode || allExtractedParks?.length > 0);
   const hasCoords = !!(resolvedMetadata?.lat && resolvedMetadata?.lon);
@@ -326,7 +331,7 @@ function normalizeLiveData({
   const liveData = {
     nps: normalizeNpsMeta(factsMeta, { npsFacts, allExtractedParks }),
     weather: assignSlotConfidence(weather),
-    webSearch: normalizeWebSearchMeta(factsMeta, { webSearchUnavailable, skipWebSearchForGuest }),
+    webSearch: normalizeWebSearchMeta(factsMeta, { webSearchUnavailable, skipWebSearchForGuest, fetchPlan }),
     feeFree: normalizeFeeFreeMeta({
       factsMeta,
       feeFreeFacts,
@@ -335,10 +340,12 @@ function normalizeLiveData({
       metadata,
       tripState,
     }),
+    astro: assignSlotConfidence(factsMeta?.astro || createFactSlotMeta(false, null)),
     prosePresent: {
       nps: !!npsFacts,
       weather: !!weatherFacts,
       webSearch: !!webSearchFacts,
+      astro: !!astroFacts,
       feeFree: !!feeFreeFacts,
     },
     park: {
@@ -652,11 +659,14 @@ function buildTrailieContext({
   conflicts,
   hypothetical,
   factsMeta,
+  fetchPlan,
+  activeTripContext,
   resolvedMetadata,
   allExtractedParks,
   npsFacts,
   weatherFacts,
   webSearchFacts,
+  astroFacts,
   feeFreeFacts,
   webSearchUnavailable,
   skipWebSearchForGuest,
@@ -684,6 +694,7 @@ function buildTrailieContext({
     npsFacts,
     weatherFacts,
     webSearchFacts,
+    astroFacts,
     feeFreeFacts,
     webSearchUnavailable,
     skipWebSearchForGuest,
@@ -693,6 +704,7 @@ function buildTrailieContext({
     constraints,
     metadata,
     tripState,
+    fetchPlan,
   });
 
   if (resolvedMetadata?.parkName && !normalizedConstraints.parkCode) {
@@ -722,6 +734,8 @@ function buildTrailieContext({
     },
     providerMode,
     userMessage: lastUserMessage ? lastUserMessage.slice(0, 500) : null,
+    fetchPlan: summarizeFetchPlan(fetchPlan),
+    activeTripContext: summarizeActiveTripContext(activeTripContext),
     tripState,
     constraints: normalizedConstraints,
     liveData,
@@ -765,6 +779,8 @@ function summarizeTrailieContext(trailieContext) {
       webSearch: trailieContext.liveData?.webSearch?.confidence || null,
       feeFree: trailieContext.liveData?.feeFree?.confidence || null,
     },
+    fetchPlan: trailieContext.fetchPlan || null,
+    activeTripContext: trailieContext.activeTripContext || null,
     riskFlagCount: trailieContext.validation?.riskFlags?.length ?? 0,
     riskFlagTypes: (trailieContext.validation?.riskFlags || []).map((f) => f.type),
     tripStateCompleteness:

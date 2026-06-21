@@ -167,9 +167,11 @@ const MessageBubble = ({
     }
   }, [initialFeedback]);
 
-  const markdownBody = (message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/, '').trimEnd();
-  const renderBody = !isUser && isStreaming ? stabilizeStreamingMarkdown(markdownBody) : markdownBody;
-  const shouldLinkifyParks = linkifyParks && !isStreaming && !isUser;
+  const markdownBody = (message || '').replace(/\[ITINERARY_JSON\][\s\S]*$/i, '').trimEnd();
+  const renderBody = !isUser && isStreaming
+    ? stabilizeStreamingMarkdown(markdownBody)
+    : markdownBody;
+  const shouldLinkifyParks = linkifyParks && !isStreaming && !isUser && !isFinalizing;
   const markdownContent = isUser
     ? message
     : escapeApproximateTildesForGfm(
@@ -188,7 +190,6 @@ const MessageBubble = ({
     [parkImageUrls]
   );
   const displayPhotos = useMemo(() => usableParkImages.slice(0, 4), [usableParkImages]);
-  const showStreamingCursor = isStreaming && !isFinalizing;
   const useInlineLayout = inlineAvatarLayout && !hideAvatar;
   const useInlineAssistantLayout = useInlineLayout && !isUser;
   const useInlineUserLayout = useInlineLayout && isUser;
@@ -227,25 +228,38 @@ const MessageBubble = ({
     }
   };
 
-  const liveDataLabel = !isUser && (hasLiveData || hasWebSearch) ? (
-    <div
-      className="flex items-center gap-1.5 min-w-0 text-[11px] font-medium"
-      style={{ color: 'var(--accent-green)' }}
+  const sourceLabelText = !isUser && !isStreaming && !isFinalizing && (hasLiveData || hasWebSearch)
+    ? (() => {
+        if (hasWebSearch) return 'Checked live info';
+        if (hasLiveData && liveDataParks.length > 0) return 'Checked park info';
+        if (hasLiveData) return 'Checked trip info';
+        return null;
+      })()
+    : null;
+
+  const sourcePill = sourceLabelText ? (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+      style={{
+        backgroundColor: 'var(--surface-hover)',
+        color: 'var(--accent-green)',
+        border: '1px solid var(--border)',
+      }}
     >
-      <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
-      <span>
-        {hasWebSearch ? 'Live web search' : 'Live NPS data'}
-        {liveDataParks.length > 0 ? ` · ${liveDataParks.join(', ')}` : ''}
-      </span>
-    </div>
+      <span
+        className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: 'var(--accent-green)' }}
+      />
+      {sourceLabelText}
+    </span>
   ) : null;
 
-  const liveDataIndicator = liveDataLabel ? (
+  const liveDataIndicator = sourcePill ? (
     <div
       className="mb-3 pb-2.5 border-b"
       style={{ borderColor: 'var(--border)' }}
     >
-      {liveDataLabel}
+      {sourcePill}
     </div>
   ) : null;
 
@@ -263,28 +277,9 @@ const MessageBubble = ({
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
           {markdownContent}
         </ReactMarkdown>
-        {isUser && showStreamingCursor && markdownContent && (
-          <span
-            className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
-            style={{ backgroundColor: 'var(--accent-green)' }}
-            aria-hidden="true"
-          />
-        )}
-        {!isUser && showStreamingCursor && markdownContent && (
-          <span
-            className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
-            style={{ backgroundColor: 'var(--accent-green)' }}
-            aria-hidden="true"
-          />
-        )}
-        {!isUser && isFinalizing && (
-          <p className="mt-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            Finishing up…
-          </p>
-        )}
       </div>
 
-      {!isUser && displayPhotos.length > 0 && (
+      {!isUser && !isStreaming && displayPhotos.length > 0 && (
         <ParkPhotoGrid
           photos={displayPhotos}
           showViewAllCount={usableParkImages.length}
@@ -387,14 +382,15 @@ const MessageBubble = ({
       style={{ borderColor: 'var(--border)' }}
     >
       <TrailieAvatar className={`${trailieAvatarSize} shrink-0`} />
-      {liveDataLabel || (
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span
           className="text-[11px] font-semibold uppercase tracking-[0.2em]"
           style={{ color: 'var(--accent-green)' }}
         >
           Trailie
         </span>
-      )}
+        {sourcePill}
+      </div>
     </div>
   );
 
@@ -424,13 +420,6 @@ const MessageBubble = ({
         style={{ color: 'var(--text-primary)', overflowWrap: 'anywhere', wordBreak: 'normal' }}
       >
         {message}
-        {showStreamingCursor && message && (
-          <span
-            className="inline-block w-0.5 h-[1em] ml-0.5 align-text-bottom animate-pulse"
-            style={{ backgroundColor: 'var(--accent-green)' }}
-            aria-hidden="true"
-          />
-        )}
       </div>
     </div>
   );

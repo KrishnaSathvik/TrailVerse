@@ -62,16 +62,6 @@ function liveFlagsFromSources(sources) {
   };
 }
 
-function applyStreamSourcesToMessage(message, sources) {
-  const list = Array.isArray(sources) ? sources : [];
-  if (!list.length) return message;
-  return {
-    ...message,
-    streamSources: list,
-    ...liveFlagsFromSources(list),
-  };
-}
-
 function readStoredAnonymousSession() {
   if (typeof window === 'undefined') return null;
   try {
@@ -162,6 +152,9 @@ const TripPlannerChat = ({
   const rawStreamedContentRef = useRef('');
   const streamIdleTimerRef = useRef(null);
   const activeStreamSourcesRef = useRef(null);
+  const activeTripContextRef = useRef(
+    typeof window !== 'undefined' ? readStoredAnonymousSession()?.activeTripContext || null : null
+  );
 
   const cancelStreamFlush = useCallback(() => {
     if (streamFlushRafRef.current != null) {
@@ -192,6 +185,25 @@ const TripPlannerChat = ({
   });
   const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
   const [anonymousId, setAnonymousId] = useState(null);
+
+  const applyActiveTripContextFromResult = useCallback((result) => {
+    if (!result?.activeTripContext) return;
+    activeTripContextRef.current = result.activeTripContext;
+
+    if (!isAnonymous) return;
+    const existing = readStoredAnonymousSession();
+    if (!existing?.anonymousId) return;
+    if (result.anonymousId && existing.anonymousId !== result.anonymousId) return;
+
+    localStorage.setItem(
+      ANONYMOUS_SESSION_KEY,
+      JSON.stringify({
+        ...existing,
+        activeTripContext: result.activeTripContext,
+      })
+    );
+  }, [isAnonymous]);
+
   const [messageCount, setMessageCount] = useState(0);
   const [canSendMore, setCanSendMore] = useState(true);
   const [isSessionRestored, setIsSessionRestored] = useState(false);
@@ -634,37 +646,35 @@ const TripPlannerChat = ({
         // If we have data source info from the backend, show source-aware messages
         if (hasAnySources && seconds >= 5) {
           if (seconds < 10) {
-            if (hasWeb) setThinkingMessage('Analyzing web search results...');
-            else if (hasNps) setThinkingMessage('Processing live park data...');
-            else setThinkingMessage('Analyzing your request...');
+            if (hasWeb) setThinkingMessage('Searching live info...');
+            else if (hasNps) setThinkingMessage('Checking park info...');
+            else if (hasWeather) setThinkingMessage('Checking weather...');
+            else setThinkingMessage('Understanding your trip details...');
           } else if (seconds < 15) {
-            if (hasWeb && hasNps) setThinkingMessage('Combining web results with NPS data...');
-            else setThinkingMessage('Researching the best options...');
+            if ((hasWeb && hasNps) || (hasNps && hasWeather) || (hasWeb && hasWeather)) {
+              setThinkingMessage('Combining trip details...');
+            } else {
+              setThinkingMessage('Building a realistic plan...');
+            }
           } else if (seconds < 20) {
-            setThinkingMessage('Creating your personalized plan...');
+            setThinkingMessage('Building a realistic plan...');
           } else if (seconds < 30) {
-            setThinkingMessage('Adding detailed recommendations...');
-          } else if (seconds < 40) {
-            setThinkingMessage('Finalizing your travel itinerary...');
+            setThinkingMessage('Checking the plan for timing and tradeoffs...');
           } else {
-            setThinkingMessage('Almost done! Generating comprehensive response...');
+            setThinkingMessage('Finishing your response...');
           }
         } else if (!hasAnySources) {
           // Fallback: no source info yet (before thinking event arrives)
           if (seconds < 5) {
             setThinkingMessage('Thinking...');
           } else if (seconds < 10) {
-            setThinkingMessage('Analyzing your request...');
+            setThinkingMessage('Understanding your trip details...');
           } else if (seconds < 15) {
-            setThinkingMessage('Researching the best options...');
-          } else if (seconds < 20) {
-            setThinkingMessage('Creating your personalized plan...');
+            setThinkingMessage('Building a realistic plan...');
           } else if (seconds < 30) {
-            setThinkingMessage('Adding detailed recommendations...');
-          } else if (seconds < 40) {
-            setThinkingMessage('Finalizing your travel itinerary...');
+            setThinkingMessage('Checking the plan for timing and tradeoffs...');
           } else {
-            setThinkingMessage('Almost done! Generating comprehensive response...');
+            setThinkingMessage('Finishing your response...');
           }
         }
       }, 1000);
@@ -772,6 +782,11 @@ const TripPlannerChat = ({
         avatarUrl,
         parkName: (sessionData.messageCount || 0) > 0 ? parkName : '',
         formData: (sessionData.messageCount || 0) > 0 ? formData : null,
+        activeTripContext:
+          sessionData.activeTripContext ??
+          activeTripContextRef.current ??
+          existing?.activeTripContext ??
+          null,
         timestamp: sameSession && existing?.timestamp ? existing.timestamp : Date.now(),
       };
       localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(sessionToSave));
@@ -857,6 +872,9 @@ const TripPlannerChat = ({
       setMessageCount(sessionData.messageCount ?? 0);
       setCanSendMore(sessionData.canSendMore ?? true);
       setIsSessionRestored(true);
+      if (sessionData.activeTripContext) {
+        activeTripContextRef.current = sessionData.activeTripContext;
+      }
 
       if (sessionData.avatarUrl) {
         setAnonymousAvatar(sessionData.avatarUrl);
@@ -906,6 +924,7 @@ const TripPlannerChat = ({
       messages: msgs,
       plan: plan || null,
       provider: 'auto',
+      activeTripContext: activeTripContextRef.current || null,
     });
   }, []);
 
@@ -929,6 +948,7 @@ const TripPlannerChat = ({
         setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
         if (temp.currentTripId) setCurrentTripId(temp.currentTripId);
         if (temp.plan) setCurrentPlan(temp.plan);
+        if (temp.activeTripContext) activeTripContextRef.current = temp.activeTripContext;
         setAuthRestoreStatus('restored');
         return;
       }
@@ -1418,13 +1438,15 @@ const TripPlannerChat = ({
       const userContext = user ? await tripHistoryService.getAIContext(user.id) : null;
       
       const sessionContext = buildClientSessionContext(userContext, isPersonalized, messageText.trim());
+      const activeCtx = activeTripContextRef.current;
 
       const requestMetadata = {
-        parkCode: formData.parkCode,
-        parkName,
-        lat: formData.coordinates?.lat,
-        lon: formData.coordinates?.lon,
+        parkCode: formData.parkCode || activeCtx?.primaryDestination?.parkCode || null,
+        parkName: parkName || activeCtx?.primaryDestination?.name || null,
+        lat: formData.coordinates?.lat ?? activeCtx?.primaryDestination?.lat ?? undefined,
+        lon: formData.coordinates?.lon ?? activeCtx?.primaryDestination?.lon ?? undefined,
         formData,
+        activeTripContext: activeCtx,
         personalizedRecommendations: isPersonalized,
         aiContext: userContext || null,
         ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
@@ -1474,11 +1496,13 @@ const TripPlannerChat = ({
         if (result.anonymousId) setAnonymousId(result.anonymousId);
         if (result.messageCount !== undefined) setMessageCount(result.messageCount);
         if (result.canSendMore !== undefined) setCanSendMore(result.canSendMore);
+        applyActiveTripContextFromResult(result);
         if (result.anonymousId) {
           saveAnonymousSession({
             anonymousId: result.anonymousId,
             messageCount: result.messageCount,
             canSendMore: result.canSendMore,
+            activeTripContext: result.activeTripContext,
           });
         }
       };
@@ -1491,7 +1515,7 @@ const TripPlannerChat = ({
         if (!displayContent.trim()) return;
 
         setIsGenerating(true);
-        setThinkingMessage('Finishing up...');
+        setThinkingMessage('Finishing your response...');
         setThinkingSources(null);
 
         if (!streamStarted) {
@@ -1515,7 +1539,13 @@ const TripPlannerChat = ({
         setMessages((prev) =>
           prev.map((m) =>
             m.id === streamAssistantId
-              ? { ...m, content: displayContent, isStreaming: false, isFinalizing: true }
+              ? {
+                  ...m,
+                  content: displayContent,
+                  isStreaming: false,
+                  isFinalizing: true,
+                  parkImages: pendingParkImagesRef.current || m.parkImages || [],
+                }
               : m
           )
         );
@@ -1535,45 +1565,26 @@ const TripPlannerChat = ({
         onThinking: (thinkingData) => {
           const {
             sources,
-            parkName: sourcePark,
-            parkNames: sourceParks,
             parkImages: thinkingImages,
           } = thinkingData;
           if (thinkingImages?.length) {
             pendingParkImagesRef.current = thinkingImages;
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (last?.role === 'assistant' && last?.isStreaming) {
-                return prev.map((m, i) =>
-                  i === prev.length - 1 ? { ...m, parkImages: thinkingImages } : m
-                );
-              }
-              return prev;
-            });
           }
           const src = sources || [];
           activeStreamSourcesRef.current = src;
           setThinkingSources(src);
-          if (src.length) {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === streamAssistantId ? applyStreamSourcesToMessage(m, src) : m
-              )
-            );
-          }
-          const parks = sourceParks?.length > 0 ? sourceParks.join(', ') : (sourcePark || parkName || 'the park');
           if (!src.length) {
-            setThinkingMessage('Gathering live park data...');
+            setThinkingMessage('Understanding your trip details...');
           } else if (src?.includes('web')) {
-            setThinkingMessage(`Searching the web for live info about ${parks}...`);
+            setThinkingMessage('Searching live info...');
           } else if (src?.includes('nps') && src?.includes('weather')) {
-            setThinkingMessage(`Fetching live park data & weather for ${parks}...`);
+            setThinkingMessage('Checking park info...');
           } else if (src?.includes('nps')) {
-            setThinkingMessage(`Fetching live park data for ${parks}...`);
+            setThinkingMessage('Checking park info...');
           } else if (src?.includes('weather')) {
-            setThinkingMessage(`Checking weather forecast for ${parks}...`);
+            setThinkingMessage('Checking weather...');
           } else {
-            setThinkingMessage('Preparing your response...');
+            setThinkingMessage('Combining trip details...');
           }
         },
         onChunk: (chunk) => {
@@ -1586,30 +1597,22 @@ const TripPlannerChat = ({
 
             if (!streamStarted) {
               streamStarted = true;
-              const streamSources = activeStreamSourcesRef.current || [];
               setMessages((prev) => [
                 ...prev,
-                applyStreamSourcesToMessage(
-                  {
-                    id: streamAssistantId,
-                    role: 'assistant',
-                    content: displayContent,
-                    timestamp: new Date(),
-                    provider: 'auto',
-                    isStreaming: true,
-                    parkImages: pendingParkImagesRef.current || [],
-                  },
-                  streamSources
-                ),
+                {
+                  id: streamAssistantId,
+                  role: 'assistant',
+                  content: displayContent,
+                  timestamp: new Date(),
+                  provider: 'auto',
+                  isStreaming: true,
+                },
               ]);
             } else {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === streamAssistantId
-                    ? applyStreamSourcesToMessage(
-                        { ...m, content: displayContent },
-                        m.streamSources || activeStreamSourcesRef.current
-                      )
+                    ? { ...m, content: displayContent }
                     : m
                 )
               );
@@ -1649,6 +1652,7 @@ const TripPlannerChat = ({
             canSendMore: result.canSendMore,
             isConversionMessage: result.isConversionMessage,
             showDayByDayPlanCta: result.showDayByDayPlanCta === true,
+            activeTripContext: result.activeTripContext,
           };
           applyAnonymousSessionFromResult(result);
 
@@ -1828,9 +1832,9 @@ const TripPlannerChat = ({
       // Add AI response
       const responseTime = Date.now() - thinkingStartTime;
 
-      // Build the assistant message for saving DIRECTLY (not inside setMessages callback,
-      // because React 18 batching may defer the updater function when other updates are pending,
-      // which would leave updatedMessagesForSave as null).
+      applyActiveTripContextFromResult(data);
+
+      // Build the assistant message for saving DIRECTLY
       const usedStreaming = streamStarted && !data.isConversionMessage;
       const assistantMessageId = usedStreaming ? streamAssistantId : Date.now() + 1;
 
@@ -2634,10 +2638,9 @@ TRIP DETAILS:
           <div className={`mx-auto w-full px-3 sm:px-4 ${isWelcomeState ? 'py-3 sm:py-5' : 'py-2 sm:py-5'}`}>
             <div className="space-y-2 sm:space-y-3">
               {displayMessages.map((message, index) => {
-                const sourceFlags = liveFlagsFromSources(
-                  message.streamSources ||
-                    (message.isStreaming && !message.isFinalizing ? thinkingSources : null)
-                );
+                const sourceFlags = message.isStreaming || message.isFinalizing
+                  ? { hasLiveData: false, hasWebSearch: false }
+                  : liveFlagsFromSources(message.streamSources);
 
                 return message.hiddenFromUi ? null : (
                 <React.Fragment key={message.id || message._id || index}>
