@@ -5,7 +5,7 @@ import Footer from '@/components/common/Footer';
 import LandingSearchClient from './LandingSearchClient';
 import LandingDailyFeedClient from './LandingDailyFeedClient';
 import LandingPopularBlogsSection from '@/components/landing/LandingPopularBlogsSection';
-import TestimonialsSection from '@/components/testimonials/TestimonialsSection';
+import LandingTestimonialsClient from '@/components/testimonials/LandingTestimonialsClient';
 import IconGlyph from '@/components/common/IconGlyph';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { getBlogPostsServer } from '@/lib/blogApi';
@@ -151,7 +151,7 @@ export default async function LandingPage() {
 
         <LandingPopularBlogsSection posts={popularBlogs} />
 
-        <TestimonialsSection limit={3} initialTestimonials={landingTestimonials} />
+        <LandingTestimonialsClient limit={3} initialTestimonials={landingTestimonials} />
 
         <div className="pt-4 pb-10 sm:pb-12 px-4 sm:px-6 text-center">
           <Link

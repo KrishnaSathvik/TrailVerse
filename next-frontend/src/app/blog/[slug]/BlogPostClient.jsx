@@ -1,22 +1,27 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
-import CommentSection from '@/components/blog/CommentSection';
-import AuthorBioCard from '@/components/blog/AuthorBioCard';
-import LikeFavorite from '@/components/blog/LikeFavorite';
+import BlogPostEngagement from '@/components/blog/BlogPostEngagement';
 import ShareButtons from '@/components/common/ShareButtons';
 import RelatedPosts from '@/components/blog/RelatedPosts';
 import TableOfContents from '@/components/blog/TableOfContents';
-import NewsletterWidget from '@/components/blog/NewsletterWidget';
 import blogService from '@/services/blogService';
 import BlogViewCount from '@/components/blog/BlogViewCount';
 import { logBlogView } from '@/utils/analytics';
+import {
+  ARTICLE_BODY,
+  ARTICLE_CONTENT,
+  ARTICLE_DECK,
+  ARTICLE_HERO,
+  ARTICLE_STANDARD,
+  ARTICLE_TITLE,
+} from '@/lib/articleLayout';
 import { injectHeadingIdsIntoHtml, parseBlogHeadingsFromHtml } from '@/utils/blogHeadings';
+import { enhanceBlogTablesInHtml } from '@/utils/blogTables';
 import { linkifyParkNamesHtml, linkifyUrlsHtml } from '@/utils/parkLinkifier';
 import { Calendar, Clock, ArrowLeft, BookOpen } from '@components/icons';
 import '@/styles/blog-prose.css';
@@ -26,19 +31,17 @@ const blogViewSessionKey = (slug) => `tv-blog-view:${slug}`;
 const BlogPostSkeleton = () => (
   <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
     <Header />
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+    <div className={ARTICLE_STANDARD}>
       <div className="h-5 w-28 rounded-full animate-pulse mb-8" style={{ backgroundColor: 'var(--surface)' }} />
       <div className="h-8 w-24 rounded-full animate-pulse mb-6" style={{ backgroundColor: 'var(--surface)' }} />
-      <div className="h-14 max-w-4xl rounded-3xl animate-pulse mb-4" style={{ backgroundColor: 'var(--surface)' }} />
-      <div className="h-8 max-w-3xl rounded-3xl animate-pulse mb-10" style={{ backgroundColor: 'var(--surface)' }} />
-      <div className="h-[28rem] rounded-[2rem] animate-pulse mb-12" style={{ backgroundColor: 'var(--surface)' }} />
-      <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-8">
-        <div className="hidden xl:block h-64 rounded-3xl animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
-        <div className="space-y-4">
+      <div className="h-12 max-w-2xl rounded-2xl animate-pulse mb-4" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-6 max-w-xl rounded-2xl animate-pulse mb-10" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-56 rounded-2xl animate-pulse mb-6 w-full" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="h-40 rounded-2xl animate-pulse mb-8 w-full" style={{ backgroundColor: 'var(--surface)' }} />
+      <div className="space-y-4 w-full">
           {Array.from({ length: 7 }).map((_, index) => (
             <div key={index} className="h-6 rounded-2xl animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
           ))}
-        </div>
       </div>
     </div>
   </div>
@@ -78,7 +81,6 @@ const BlogPostNotFound = () => (
 );
 
 const BlogPostClient = ({ slug, initialPost = null }) => {
-  const router = useRouter();
   const articleRef = useRef(null);
   const contentRef = useRef(null);
   const viewTrackedRef = useRef(false);
@@ -175,6 +177,12 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
     [headings, post?.content, slug]
   );
 
+  const [renderedContent, setRenderedContent] = useState('');
+
+  useLayoutEffect(() => {
+    setRenderedContent(enhanceBlogTablesInHtml(contentWithHeadingIds));
+  }, [contentWithHeadingIds]);
+
   useEffect(() => {
     const handleScroll = () => {
       if (!articleRef.current) {
@@ -221,38 +229,31 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
         />
       </div>
 
-      <article ref={articleRef} className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 lg:py-12">
-        <div
-          className="mb-10 rounded-[2rem] border px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"
-          style={{
-            background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, white 6%), var(--surface))',
-            borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-sm)'
-          }}
-        >
-          <Link href="/blog" className="inline-flex items-center gap-2 mb-6" style={{ color: 'var(--text-secondary)' }}>
+      <article ref={articleRef} className={ARTICLE_STANDARD}>
+        <header className={ARTICLE_HERO} style={{ borderColor: 'var(--border)' }}>
+          <Link href="/blog" className="inline-flex items-center gap-2 mb-6 text-sm font-medium transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
             <ArrowLeft className="h-4 w-4" />
             Back to Blog
           </Link>
 
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <span className="inline-block px-4 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
+            <span className="inline-block px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}>
               {post.category}
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-[5rem] font-bold mb-6 leading-[0.98] tracking-tight max-w-6xl" style={{ color: 'var(--text-primary)' }}>
+          <h1 className={ARTICLE_TITLE} style={{ color: 'var(--text-primary)' }}>
             {post.title}
           </h1>
 
           {post.excerpt && (
-            <p className="text-lg sm:text-xl md:text-[1.55rem] leading-relaxed font-medium mb-8 max-w-5xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className={`${ARTICLE_DECK} mb-6`} style={{ color: 'var(--text-secondary)' }}>
               {post.excerpt}
             </p>
           )}
 
           <div
-            className="flex flex-col gap-5 text-sm lg:flex-row lg:items-center lg:justify-between"
+            className="flex flex-col gap-4 text-sm sm:flex-row sm:items-center sm:justify-between"
             style={{ color: 'var(--text-secondary)' }}
           >
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -282,93 +283,32 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
               />
             </div>
           </div>
+        </header>
 
-          {post.featuredImage && (
-            <div className="mt-8">
-              <OptimizedImage src={post.featuredImage} alt={post.title} className="w-full aspect-[16/8.5] object-cover rounded-[1.75rem] shadow-lg" />
-            </div>
-          )}
+        {post.featuredImage && (
+          <div className="mb-10 overflow-hidden rounded-2xl">
+            <OptimizedImage src={post.featuredImage} alt={post.title} className="w-full aspect-[16/9] object-cover" />
+          </div>
+        )}
 
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)] gap-8 xl:gap-10 2xl:gap-12 items-start">
-          <aside className="xl:order-1 xl:pr-2 2xl:pr-4">
+        <div className={ARTICLE_CONTENT}>
+          <div className={ARTICLE_BODY}>
             {headings.length > 0 && (
-              <TableOfContents headings={headings} sticky containerRef={contentRef} />
-            )}
-          </aside>
-
-          <div className="xl:order-2 min-w-0 max-w-[72rem]">
-            <div
-              className="rounded-[2rem] border px-5 py-8 sm:px-8 lg:px-10 xl:px-12 2xl:px-14 xl:py-10 mb-12"
-              style={{
-                background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, white 4%), var(--surface))',
-                borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow)'
-              }}
-            >
-              <div
-                ref={contentRef}
-                className="blog-prose mb-0"
-                style={{ color: 'var(--text-primary)', maxWidth: 'none' }}
-                dangerouslySetInnerHTML={{ __html: contentWithHeadingIds }}
+              <TableOfContents
+                headings={headings}
+                variant="inline"
+                containerRef={contentRef}
               />
-            </div>
+            )}
 
             <div
-              className="rounded-[1.75rem] p-6 sm:p-8 mb-10"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                      Continue The Trail
-                    </h2>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      Save the post, react to it, or jump into related topics.
-                    </p>
-                  </div>
-                  <LikeFavorite post={post} onUpdate={setPost} />
-                </div>
+              ref={contentRef}
+              className="blog-prose w-full"
+              style={{ color: 'var(--text-primary)' }}
+              dangerouslySetInnerHTML={{ __html: renderedContent || contentWithHeadingIds }}
+            />
 
-                {post.tags?.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                    <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {post.tags.map((tag) => (
-                        <button
-                          key={tag}
-                          onClick={() => router.push(`/blog?tag=${encodeURIComponent(tag)}`)}
-                          className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:scale-105"
-                          style={{
-                            backgroundColor: 'var(--bg-primary)',
-                            color: 'var(--text-secondary)',
-                            border: '1px solid var(--border)'
-                          }}
-                        >
-                          #{tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <AuthorBioCard author={post.author} />
-
-            <div className="mt-10">
-              <NewsletterWidget source="blog-post" category={post.category} />
-            </div>
-
-            <div className="mt-12">
-              <CommentSection postId={post._id} />
-            </div>
+            <BlogPostEngagement post={post} onPostUpdate={setPost} />
 
             <RelatedPosts currentPostId={post._id} category={post.category} tags={post.tags || []} />
           </div>

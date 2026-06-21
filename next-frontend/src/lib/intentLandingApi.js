@@ -3,7 +3,12 @@ import { getApiBaseUrl } from '@/lib/apiBase';
 const DEFAULT_LIMIT = 24;
 const PRODUCTION_API = 'https://trailverse.onrender.com/api';
 /** Production ISR for intent rankings; dev uses no-store so trait fixes show immediately. */
-const REVALIDATE_SECONDS = 3600;
+export const INTENT_LANDING_REVALIDATE_SECONDS = 3600;
+const REVALIDATE_SECONDS = INTENT_LANDING_REVALIDATE_SECONDS;
+
+/** Card grid fields for intent landings — matchReason replaces heavy descriptions. */
+export const INTENT_SEARCH_LITE_FIELDS =
+  'parkCode,fullName,states,designation,images,matchReason,matchedTraits';
 const FETCH_TIMEOUT_MS = 45_000;
 const MAX_ATTEMPTS = 2;
 
@@ -80,6 +85,7 @@ export async function fetchIntentLandingParks(landing, { limit = DEFAULT_LIMIT }
   if (landing.featuredParkCodes?.length) {
     params.set('pinned', landing.featuredParkCodes.join(','));
   }
+  params.set('fields', INTENT_SEARCH_LITE_FIELDS);
 
   const paramString = params.toString();
   const bases = intentServerApiBases();
@@ -115,4 +121,36 @@ export async function fetchIntentLandingParks(landing, { limit = DEFAULT_LIMIT }
   }
 
   return { parks: [], totalCount: 0 };
+}
+
+/**
+ * Browser fetch for Plan AI intent sessions — same lite search as guide pages.
+ * @param {import('@/data/intentLandings').IntentLanding} landing
+ * @param {{ limit?: number }} [options]
+ */
+export async function fetchIntentLandingParksClient(landing, { limit = DEFAULT_LIMIT } = {}) {
+  const params = new URLSearchParams({
+    q: landing.searchQuery,
+    limit: String(Math.max(limit, 48)),
+    fields: INTENT_SEARCH_LITE_FIELDS,
+  });
+
+  if (landing.featuredParkCodes?.length) {
+    params.set('pinned', landing.featuredParkCodes.join(','));
+  }
+
+  try {
+    const res = await fetch(`/api/parks/search?${params.toString()}`);
+    if (!res.ok) {
+      return { parks: [], totalCount: 0 };
+    }
+
+    const json = await res.json();
+    const rawParks = json.data ?? json.parks ?? [];
+    const totalCount = json.count ?? rawParks.length;
+    const parks = mergeFeaturedParks(rawParks, landing.featuredParkCodes, limit);
+    return { parks, totalCount };
+  } catch {
+    return { parks: [], totalCount: 0 };
+  }
 }

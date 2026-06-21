@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import npsApi from '@/services/npsApi';
 import {
   COMPARE_MAX_PARKS,
   loadCompareSelectionCodes,
@@ -9,7 +10,6 @@ import {
 } from '@/lib/comparePersistence';
 
 function CompareUrlHydrationInner({
-  allParks,
   hydratedRef,
   onHydrate,
   initialParkCodes = [],
@@ -17,7 +17,7 @@ function CompareUrlHydrationInner({
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!allParks?.length || hydratedRef.current) return;
+    if (hydratedRef.current) return;
 
     const parksParam = searchParams.get('parks');
     const legacyPark = searchParams.get('park');
@@ -40,17 +40,25 @@ function CompareUrlHydrationInner({
       codes = loadCompareSelectionCodes();
     }
 
-    if (codes.length > 0) {
-      const parks = codes
-        .map((code) => allParks.find((park) => park.parkCode?.toLowerCase() === code))
-        .filter(Boolean);
+    if (codes.length === 0) {
+      hydratedRef.current = true;
+      return;
+    }
+
+    let cancelled = false;
+
+    npsApi.fetchParksByCodes(codes).then((parks) => {
+      if (cancelled) return;
       if (parks.length > 0) {
         onHydrate(parks);
       }
-    }
+      hydratedRef.current = true;
+    });
 
-    hydratedRef.current = true;
-  }, [allParks, searchParams, hydratedRef, onHydrate, initialParkCodes]);
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, hydratedRef, onHydrate, initialParkCodes]);
 
   return null;
 }

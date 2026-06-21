@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, Calendar, Trash2, MessageSquare } from '@components/icons';
-import { useAllParks } from '../../hooks/useParks';
+import { useAllParksLite } from '../../hooks/useParks';
 import { parkToSlug } from '../../utils/parkSlug';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const UserReviews = ({ reviews, isLoading, error, onRefresh }) => {
-  const { data: allParksData, isLoading: parksLoading } = useAllParks();
+  const { data: allParksData, isLoading: parksLoading } = useAllParksLite(false);
   const parksData = allParksData?.data;
   const [deletingReview, setDeletingReview] = useState(null);
 

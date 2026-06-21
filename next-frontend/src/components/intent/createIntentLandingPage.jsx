@@ -1,13 +1,14 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IntentLandingClient from '@/components/intent/IntentLandingClient';
+import IntentLandingParksSection from '@/components/intent/IntentLandingParksSection';
+import IntentTopMatchesSkeleton from '@/components/intent/IntentTopMatchesSkeleton';
 import {
   getIntentLandingByPath,
   getIntentLandingCanonicalUrl,
 } from '@/data/intentLandings';
-import { fetchIntentLandingParks } from '@/lib/intentLandingApi';
-import { parkToSlug } from '@/utils/parkSlug';
 import { canonicalPageMetadata } from '@/lib/seo';
 
 /**
@@ -40,27 +41,6 @@ export function createIntentLandingPageExports(path) {
     };
   }
 
-  function buildCollectionSchema(landing, parks) {
-    return {
-      '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: landing.title,
-      description: landing.metaDescription,
-      url: getIntentLandingCanonicalUrl(landing),
-      dateModified: landing.updatedAt,
-      mainEntity: {
-        '@type': 'ItemList',
-        numberOfItems: parks.length,
-        itemListElement: parks.slice(0, 12).map((park, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          name: park.fullName,
-          url: `https://www.nationalparksexplorerusa.com/parks/${parkToSlug(park.fullName)}`,
-        })),
-      },
-    };
-  }
-
   function buildFaqSchema(landing) {
     if (!landing.faq?.length) return null;
     return {
@@ -81,13 +61,10 @@ export function createIntentLandingPageExports(path) {
     const landing = getIntentLandingByPath(path);
     if (!landing) notFound();
 
-    const { parks } = await fetchIntentLandingParks(landing);
-    const collectionSchema = buildCollectionSchema(landing, parks);
     const faqSchema = buildFaqSchema(landing);
 
     return (
       <>
-        <script type="application/ld+json">{JSON.stringify(collectionSchema)}</script>
         {faqSchema && (
           <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         )}
@@ -96,9 +73,12 @@ export function createIntentLandingPageExports(path) {
           <main>
             <IntentLandingClient
               landing={landing}
-              parks={parks}
               canonicalUrl={getIntentLandingCanonicalUrl(landing)}
-            />
+            >
+              <Suspense fallback={<IntentTopMatchesSkeleton />}>
+                <IntentLandingParksSection landing={landing} />
+              </Suspense>
+            </IntentLandingClient>
           </main>
           <Footer />
         </div>

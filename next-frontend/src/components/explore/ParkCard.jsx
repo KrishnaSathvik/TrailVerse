@@ -12,6 +12,13 @@ import { parkDetailHref } from '@/lib/returnNavigation';
 
 const DEFAULT_PARK_IMAGE = '/og-image-trailverse.jpg';
 
+function getParkCardSubtitle(park) {
+  if (park.matchReason) return park.matchReason;
+  const description = htmlToPlainText(park.description || '').trim();
+  if (description) return description.slice(0, 160);
+  return park.designation || '';
+}
+
 const ExploreListCard = ({ park, rating, detailHref, onNavigate }) => (
   <Link
     href={detailHref}
@@ -50,7 +57,7 @@ const ExploreListCard = ({ park, rating, detailHref, onNavigate }) => (
         className="text-sm line-clamp-2 mb-3"
         style={{ color: park.matchReason ? 'var(--accent-green)' : 'var(--text-secondary)' }}
       >
-        {park.matchReason || htmlToPlainText(park.description || '').slice(0, 160)}
+        {getParkCardSubtitle(park)}
       </p>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
@@ -110,7 +117,7 @@ const ExploreGridCard = ({ park, rating, detailHref, priority = false, onNavigat
         className="text-sm line-clamp-3 mb-4 xl:mb-3 xl:line-clamp-2 xl:text-[0.8125rem]"
         style={{ color: park.matchReason ? 'var(--accent-green)' : 'var(--text-secondary)' }}
       >
-        {park.matchReason || htmlToPlainText(park.description || '').slice(0, 160)}
+        {getParkCardSubtitle(park)}
       </p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>

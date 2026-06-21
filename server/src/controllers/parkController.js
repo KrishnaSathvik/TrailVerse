@@ -6,6 +6,7 @@ const gtfsFeedService = require('../services/gtfsFeedService');
 const { computeTransitOperating } = gtfsFeedService;
 const npsTransitPageService = require('../services/npsTransitPageService');
 const { executeParkSearch } = require('../services/parkSearchService');
+const { getRelatedParks } = require('../utils/relatedParks');
 
 const normalizeActivityName = (activityName = '') => {
   const name = activityName.toLowerCase();
@@ -650,13 +651,54 @@ exports.getParkPermits = async (req, res, next) => {
   }
 };
 
+// @desc    Related parks in the same state(s) for park detail "You Might Also Like"
+// @route   GET /api/parks/:parkCode/related?limit=4
+// @access  Public
+exports.getRelatedParks = async (req, res, next) => {
+  try {
+    const { parkCode } = req.params;
+    const parsedLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(parsedLimit, 1), 12)
+      : 4;
+
+    const park = await npsService.getParkByCode(parkCode);
+    if (!park) {
+      return res.status(404).json({
+        success: false,
+        error: 'Park not found',
+      });
+    }
+
+    if (!park.states) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+    }
+
+    const allParks = await npsService.getAllParks();
+    const related = getRelatedParks(park, allParks, limit);
+
+    res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    res.status(200).json({
+      success: true,
+      count: related.length,
+      data: related,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Search parks
 // @route   GET /api/parks/search
 // @access  Public
 exports.searchParks = async (req, res, next) => {
   try {
-    const { q, state, activity, limit, pinned } = req.query;
-    const { parks, count, searchId } = await executeParkSearch({
+    const { q, state, activity, limit, pinned, fields: fieldsParam } = req.query;
+    let { parks, count, searchId } = await executeParkSearch({
       q,
       state,
       activity,
@@ -664,6 +706,17 @@ exports.searchParks = async (req, res, next) => {
       pinned,
       req,
     });
+
+    if (fieldsParam) {
+      const allowed = String(fieldsParam).split(',').map((f) => f.trim()).filter(Boolean);
+      parks = parks.map((park) => {
+        const proj = {};
+        for (const key of allowed) {
+          if (park[key] !== undefined) proj[key] = park[key];
+        }
+        return proj;
+      });
+    }
 
     res.status(200).json({
       success: true,

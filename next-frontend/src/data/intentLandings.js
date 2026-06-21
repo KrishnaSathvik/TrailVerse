@@ -17,7 +17,6 @@
  * @property {IntentStandout[]} [standouts] — editorial picks with human-written blurbs
  * @property {IntentFaqItem[]} [faq]
  * @property {IntentLink[]} [relatedLinks]
- * @property {IntentLink[]} [trailverseLinks]
  * @property {string} updatedAt
  */
 
@@ -99,11 +98,6 @@ export const INTENT_LANDINGS = [
         description:
           'Trail Ridge Road carries you above the tree line on the highest continuous paved road in the country, and Bear Lake offers an easy, beautiful stroll. Alpine grandeur without the alpine suffering.',
       },
-    ],
-    trailverseLinks: [
-      { label: 'Compare parks side by side', href: '/compare' },
-      { label: 'Plan a romantic trip with Trailie', href: '/plan-ai' },
-      { label: 'Browse all parks', href: '/explore' },
     ],
     faq: [
       {
@@ -198,11 +192,6 @@ export const INTENT_LANDINGS = [
           'Granite coast, Atlantic fog, and the first U.S. sunrise from Cadillac Mountain (for part of the year). Bass Harbor Head Light, Jordan Pond reflections, and carriage-road bridges in peak fall color give you coast, forest, and mountain in one park. Tide and weather move fast — build slack into every shoot.',
       },
     ],
-    trailverseLinks: [
-      { label: 'Photography activity — all NPS sites', href: '/discover/activity/photography' },
-      { label: 'Compare scenic parks', href: '/compare' },
-      { label: 'Plan shoots with Trailie', href: '/plan-ai' },
-    ],
     faq: [
       {
         q: 'What are the best national parks for landscape photography?',
@@ -295,11 +284,6 @@ export const INTENT_LANDINGS = [
         description:
           'Caribbean water color on Trunk Bay and Cinnamon Bay, reef snorkeling steps from the sand, and short hikes to hilltop views over the chain. Hurricane recovery and ferry logistics shape any trip — confirm facilities and trails before you fly. When conditions align, this is the warm-water end of the NPS coastal map.',
       },
-    ],
-    trailverseLinks: [
-      { label: 'National seashores — Explore by Activity', href: '/discover/type/seashores' },
-      { label: 'Compare coastal parks', href: '/compare' },
-      { label: 'Plan a coastal trip with Trailie', href: '/plan-ai' },
     ],
     faq: [
       {
@@ -394,11 +378,6 @@ export const INTENT_LANDINGS = [
           'Lake Superior shore, not ocean — but the fall mix of maple and birch against sandstone cliffs and teal water is underrated. Miners Castle, Chapel Rock, and boat tours when the lake allows. Peak is usually late September into early October; lake effect weather turns fast, so build a buffer day.',
       },
     ],
-    trailverseLinks: [
-      { label: 'Seasonal blog guides', href: '/blog/category/seasonal' },
-      { label: 'Compare fall destinations', href: '/compare' },
-      { label: 'Plan fall dates with Trailie', href: '/plan-ai' },
-    ],
     faq: [
       {
         q: 'When is peak fall foliage in national parks?',
@@ -491,11 +470,6 @@ export const INTENT_LANDINGS = [
         description:
           "Old-growth bottomland hardwood forest — a boardwalk through cathedral trees and swamp without the Everglades' airboat circus. Kayaking when water levels cooperate; mosquitoes when they do not. Low visitation, flat terrain, and a completely different texture from mountain or desert quiet parks. Check flood status before you go.",
       },
-    ],
-    trailverseLinks: [
-      { label: 'Crowd calendar report', href: '/reports/when-to-go' },
-      { label: 'Compare quiet finalists', href: '/compare' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
     ],
     faq: [
       {

@@ -60,6 +60,33 @@ export function getRoadTripWelcomeMessage(user, suggestText) {
 How many days, where you're starting from, and camping vs lodges?`;
 }
 
+/** From a parks-by-vibe intent guide (/parks-for-couples, etc.) */
+export function getIntentWelcomeMessage(user, intentContext) {
+  const name = displayName(user);
+  const hey = name ? `Hey ${name},` : 'Hey,';
+  const guideTitle = intentContext?.title || 'this trip style';
+  const quickAnswer = intentContext?.quickAnswer?.trim();
+  const picks = (intentContext?.standouts || [])
+    .slice(0, 4)
+    .map((item) => (typeof item === 'string' ? item : item.fullName || item.label))
+    .filter(Boolean);
+
+  let body = `${hey} I'm **Trailie** — you're planning from our **${guideTitle}** guide.`;
+
+  if (quickAnswer) {
+    body += `\n\n${quickAnswer}`;
+  }
+
+  if (picks.length > 0) {
+    const pickList = picks.map((name) => `**${shortParkName(name)}**`).join(', ');
+    body += `\n\nStrong picks from that list include ${pickList}.`;
+  }
+
+  body += `\n\nTell me your dates, where you're starting from, and how many days you have — or name a park and say **plan it** for a day-by-day itinerary.`;
+
+  return body;
+}
+
 /** From compare page — single park picked after side-by-side comparison */
 export function getCompareWelcomeMessage(user, parkName) {
   const park = shortParkName(parkName);
@@ -73,19 +100,23 @@ When are you going and how many days do you have? Tell me what you want to do �
 
 /**
  * Pick welcome copy from entry source — keep in sync with derivePlanAiHeaderMeta entry modes.
- * @param {'general'|'park'|'compare'|'road_trip'|'personalized'|'chat_history'} entryMode
+ * @param {'general'|'park'|'compare'|'road_trip'|'intent'|'personalized'|'chat_history'} entryMode
  */
 export function resolvePlanAiWelcomeMessage({
   entryMode = 'general',
   user,
   parkName = '',
   suggestText = '',
+  intentContext = null,
   isPersonalized = false,
   isNewChat = false,
   fromCompare = false,
 }) {
   if (isPersonalized || entryMode === 'personalized') {
     return getPersonalizedWelcomeMessage(user);
+  }
+  if (entryMode === 'intent' && intentContext) {
+    return getIntentWelcomeMessage(user, intentContext);
   }
   if (entryMode === 'road_trip' || suggestText) {
     return getRoadTripWelcomeMessage(user, suggestText);

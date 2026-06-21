@@ -11,7 +11,7 @@ import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { useEvents, useEventSummary } from '@/hooks/useEvents';
-import { useAllParks } from '@/hooks/useParks';
+import { useAllParksLite } from '@/hooks/useParks';
 import { useSavedEvents } from '@/hooks/useSavedEvents';
 import EventCard from '@/components/events/EventCard';
 import EventListItem from '@/components/events/EventListItem';
@@ -93,7 +93,7 @@ const EventsPage = ({ initialData }) => {
         }
       : {}),
   });
-  const { data: allParksData } = useAllParks();
+  const { data: allParksData } = useAllParksLite(false);
   const allParks = allParksData?.data || [];
   const { saveEvent: rawSaveEvent, unsaveEvent: rawUnsaveEvent, isEventSaved } = useSavedEvents();
   const saveEvent = (event) => { logEvent('Event', 'save', event.title || event.id); rawSaveEvent(event); };

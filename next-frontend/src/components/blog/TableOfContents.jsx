@@ -37,7 +37,7 @@ const scrollToHeading = (id, containerRef, setActiveId) => {
 
   element.scrollIntoView({
     behavior: 'smooth',
-    block: 'start'
+    block: 'start',
   });
 
   element.style.backgroundColor = 'rgba(16, 185, 129, 0.16)';
@@ -54,11 +54,14 @@ const TableOfContents = ({
   className = '',
   headings: providedHeadings,
   sticky = false,
-  containerRef = null
+  variant = 'sidebar',
+  containerRef = null,
 }) => {
   const [activeId, setActiveId] = useState(null);
   const [isDesktop, setIsDesktop] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
+  const isInline = variant === 'inline';
+
   const headings = useMemo(() => {
     if (providedHeadings?.length) {
       return providedHeadings;
@@ -74,7 +77,7 @@ const TableOfContents = ({
     const handleResize = () => {
       const desktop = window.innerWidth >= 1024;
       setIsDesktop(desktop);
-      if (desktop) {
+      if (desktop || isInline) {
         setIsOpen(true);
       }
     };
@@ -83,7 +86,7 @@ const TableOfContents = ({
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isInline]);
 
   useEffect(() => {
     if (headings.length === 0) {
@@ -125,7 +128,7 @@ const TableOfContents = ({
       },
       {
         rootMargin: '-15% 0px -65% 0px',
-        threshold: [0.1, 0.35, 0.6]
+        threshold: [0.1, 0.35, 0.6],
       }
     );
 
@@ -138,9 +141,30 @@ const TableOfContents = ({
     return null;
   }
 
+  const rootClass = [
+    'table-of-contents',
+    sticky && !isInline ? 'table-of-contents-sticky' : '',
+    isInline ? 'table-of-contents-inline' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const listClass = isInline ? 'toc-list toc-list-inline' : 'toc-list';
+  const linkClass = (heading) => {
+    const classes = [
+      isInline ? 'toc-link toc-link-inline' : 'toc-link',
+      activeId === heading.id ? 'active' : '',
+      isInline && heading.level >= 3 ? 'toc-link-nested' : '',
+    ];
+    return classes.filter(Boolean).join(' ');
+  };
+
+  let topLevelIndex = 0;
+
   return (
-    <div className={`table-of-contents ${sticky ? 'table-of-contents-sticky' : ''} ${className}`}>
-      {isDesktop ? (
+    <div className={rootClass}>
+      {isDesktop || isInline ? (
         <div className="toc-header toc-header-desktop">
           <span className="toc-header-main">
             <List size={18} />
@@ -163,28 +187,40 @@ const TableOfContents = ({
           </span>
         </button>
       )}
-      <nav className={`toc-nav ${(isDesktop || isOpen) ? 'open' : 'collapsed'}`}>
-        <ul className="toc-list">
-          {headings.map((heading, index) => (
-            <li key={`${heading.id}-${index}`} className={`toc-item toc-level-${heading.level}`}>
-              <a
-                href={`#${heading.id}`}
-                className={`toc-link ${activeId === heading.id ? 'active' : ''}`}
-                aria-current={activeId === heading.id ? 'location' : undefined}
-                onClick={(event) => {
-                  const didScroll = scrollToHeading(heading.id, containerRef, setActiveId);
-                  if (didScroll) {
-                    event.preventDefault();
-                  }
-                  if (!isDesktop) {
-                    setIsOpen(false);
-                  }
-                }}
+      <nav className={`toc-nav ${(isDesktop || isOpen || isInline) ? 'open' : 'collapsed'}`}>
+        <ul className={listClass}>
+          {headings.map((heading, index) => {
+            const showNumber = isInline && heading.level <= 2;
+            if (showNumber) {
+              topLevelIndex += 1;
+            }
+            const displayIndex = showNumber ? topLevelIndex : null;
+
+            return (
+              <li
+                key={`${heading.id}-${index}`}
+                className={`toc-item toc-level-${heading.level}${isInline && heading.level >= 3 ? ' toc-item-nested' : ''}`}
               >
-                {heading.text}
-              </a>
-            </li>
-          ))}
+                <a
+                  href={`#${heading.id}`}
+                  className={linkClass(heading)}
+                  aria-current={activeId === heading.id ? 'location' : undefined}
+                  onClick={(event) => {
+                    const didScroll = scrollToHeading(heading.id, containerRef, setActiveId);
+                    if (didScroll) {
+                      event.preventDefault();
+                    }
+                    if (!isDesktop && !isInline) {
+                      setIsOpen(false);
+                    }
+                  }}
+                >
+                  {displayIndex ? `${displayIndex}. ` : null}
+                  {heading.text}
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </div>

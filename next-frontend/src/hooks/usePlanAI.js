@@ -2,11 +2,17 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { resolvePlanAiEntryMode, PLAN_AI_ENTRY, isFromComparePage } from '@/lib/planAiHeaderMeta';
+import {
+  buildIntentPlanAiContext,
+  resolveIntentPathFromSearchParams,
+} from '@/lib/intentPlanAi';
+import { fetchIntentLandingParksClient } from '@/lib/intentLandingApi';
+import { getIntentLandingByPath } from '@/data/intentLandings';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Mountain, Camera, Trees, Tent, Car, Route, Star, Landmark
 } from '@components/icons';
-import { useAllParks } from '@hooks/useParks';
+import { useAllParksLite } from '@hooks/useParks';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { useTrips } from '@hooks/useTrips';
@@ -69,7 +75,7 @@ export default function usePlanAI(tripId) {
   // Determine if this is a public access (not authenticated)
   const isPublicAccess = !isAuthenticated;
   const { showToast } = useToast();
-  const { data: allParksData, isLoading: parksLoading, error: parksError } = useAllParks();
+  const { data: allParksData, isLoading: parksLoading, error: parksError } = useAllParksLite(false);
   const allParks = allParksData?.data;
   const { trips: userTrips, loading: tripsLoading, refreshTrips: refetchUserTrips } = useTrips();
   const [showChat, setShowChat] = useState(false);
@@ -89,6 +95,7 @@ export default function usePlanAI(tripId) {
   const [restoringTripId, setRestoringTripId] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
   const [suggestText, setSuggestText] = useState('');
+  const [intentContext, setIntentContext] = useState(null);
 
   const [formData, setFormData] = useState({
     parkCode: '',
@@ -139,6 +146,7 @@ export default function usePlanAI(tripId) {
       setChatFormData(savedFormState.chatFormData);
       setSelectedParkName(savedFormState.selectedParkName || '');
       if (savedFormState.suggestText) setSuggestText(savedFormState.suggestText);
+      if (savedFormState.intentContext) setIntentContext(savedFormState.intentContext);
     } else {
       try {
         const raw = localStorage.getItem('anonymousSession');
@@ -192,6 +200,7 @@ export default function usePlanAI(tripId) {
     // Handle personalized recommendations
     if (isPersonalized) {
       setChatFormData(emptyChatFormData());
+      setIntentContext(null);
       setShowChat(true);
       setStep(4);
       return;
@@ -200,6 +209,7 @@ export default function usePlanAI(tripId) {
     // Handle new chat
     if (isNewChat) {
       setChatFormData(emptyChatFormData());
+      setIntentContext(null);
       setShowChat(true);
       setStep(4);
       return;
@@ -212,6 +222,7 @@ export default function usePlanAI(tripId) {
       setChatFormData(emptyChatFormData());
       setSelectedParkName('');
       setSuggestText('');
+      setIntentContext(null);
       setShowChat(true);
       setStep(4);
       setIsRestoringState(false);
@@ -222,11 +233,29 @@ export default function usePlanAI(tripId) {
     const suggest = searchParams.get('suggest');
     if (suggest) {
       setSuggestText(suggest);
+      setIntentContext(null);
       setChatFormData(emptyChatFormData());
       setSelectedParkName('');
       setShowChat(true);
       setStep(4);
       return;
+    }
+
+    // Vibe guide → contextual Trailie (e.g. /parks-for-couples)
+    const intentPath = resolveIntentPathFromSearchParams(searchParams);
+    if (intentPath) {
+      const landing = getIntentLandingByPath(intentPath);
+      if (landing) {
+        clearTempChatState();
+        setSuggestText('');
+        setSelectedParkName('');
+        setIntentContext(buildIntentPlanAiContext(landing));
+        setChatFormData(emptyChatFormData());
+        setShowChat(true);
+        setStep(4);
+        setIsRestoringState(false);
+        return;
+      }
     }
 
     if (parkCode && parkName) {
@@ -240,6 +269,7 @@ export default function usePlanAI(tripId) {
 
       clearTempChatState();
       setSuggestText('');
+      setIntentContext(null);
       setSelectedParkName(parkName);
 
       setFormData(prev => ({
@@ -270,12 +300,14 @@ export default function usePlanAI(tripId) {
     } else if (!tripId) {
       // Generic /plan-ai — do not resurrect park-only browse from earlier "Plan with Trailie" clicks
       setSuggestText('');
+      setIntentContext(null);
       if (hasActivePlanAiConversation()) {
         const savedFormState = getFormState();
         if (savedFormState?.chatFormData) {
           setChatFormData(savedFormState.chatFormData);
           setSelectedParkName(savedFormState.selectedParkName || '');
           if (savedFormState.suggestText) setSuggestText(savedFormState.suggestText);
+          if (savedFormState.intentContext) setIntentContext(savedFormState.intentContext);
         }
       } else if (!isAuthenticated && guestHasResumableAnonymousChat()) {
         resumeGuestChatContext();
@@ -382,11 +414,35 @@ export default function usePlanAI(tripId) {
         selectedParkName,
         entryMode: effectiveEntryMode,
         suggestText: suggestText || '',
+        intentContext: intentContext || null,
       });
     } else if (!hasActivePlanAiConversation()) {
       clearFormState();
     }
-  }, [showChat, chatFormData, selectedParkName, effectiveEntryMode, suggestText]);
+  }, [showChat, chatFormData, selectedParkName, effectiveEntryMode, suggestText, intentContext]);
+
+  // Refresh live ranked grid when entering from a vibe guide (matches guide page search)
+  useEffect(() => {
+    if (!intentContext?.path || intentContext.rankedParks?.length) return;
+
+    const landing = getIntentLandingByPath(intentContext.path);
+    if (!landing) return;
+
+    let cancelled = false;
+
+    fetchIntentLandingParksClient(landing).then(({ parks }) => {
+      if (cancelled || parks.length === 0) return;
+      setIntentContext((prev) =>
+        prev?.path === landing.path
+          ? buildIntentPlanAiContext(landing, { rankedParks: parks })
+          : prev
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [intentContext?.path, intentContext?.rankedParks?.length]);
 
   // Cleanup on unmount - preserve chat state for refresh
   useEffect(() => {
@@ -635,7 +691,7 @@ export default function usePlanAI(tripId) {
     showChat, chatFormData, selectedParkName, step, isRestoringState, loadingTrip,
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab,
-    formData, isPersonalized, isNewChat, isPublicAccess, suggestText, fromChatHistory, askText, entryMode,
+    formData, isPersonalized, isNewChat, isPublicAccess, suggestText, intentContext, fromChatHistory, askText, entryMode,
     effectiveEntryMode, fromCompare, guestChatSessionKey, guestResumingChat,
     newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || searchParams.get('ask') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,

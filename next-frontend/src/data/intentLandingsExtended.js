@@ -78,11 +78,6 @@ export const EXTENDED_INTENT_LANDINGS = [
           'Dark enough for strong Milky Way work with iconic Joshua tree silhouettes — and close enough to LA that you share the desert with many other tripods. Keys View and Hidden Valley area pullouts are popular for a reason. Winter weekends fill campgrounds; weeknights and shoulder seasons buy you breathing room.',
       },
     ],
-    trailverseLinks: [
-      { label: 'Parks for photography', href: '/parks-for-photography' },
-      { label: 'Quiet national parks', href: '/quiet-national-parks' },
-      { label: 'Plan a shoot with Trailie', href: '/plan-ai' },
-    ],
     faq: [
       {
         q: 'Which national park has the darkest skies?',
@@ -175,11 +170,6 @@ export const EXTENDED_INTENT_LANDINGS = [
         description:
           'Low-stakes family park — train rides, flat towpath trails, Brandywine Falls, and easy access from Cleveland or Akron. Less wow-factor than Yellowstone but far less planning stress for a first NPS trip with toddlers. Bike rentals and short hikes make a fine long weekend.',
       },
-    ],
-    trailverseLinks: [
-      { label: 'Parks for first-timers', href: '/parks-for-first-timers' },
-      { label: 'Accessible national parks', href: '/accessible-national-parks' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
     ],
     faq: [
       {
@@ -274,11 +264,6 @@ export const EXTENDED_INTENT_LANDINGS = [
           'Often paired with Yellowstone but strong solo — Jenny Lake, Mormon Row, and Oxbow Bend deliver Tetons drama without Yosemite crowds. Jackson is the gateway; summer is peak. A first-timer who wants mountains over geysers should start here instead of both in one rushed loop.',
       },
     ],
-    trailverseLinks: [
-      { label: 'Parks for families', href: '/parks-for-families' },
-      { label: 'Compare parks', href: '/compare' },
-      { label: 'Ask Trailie for a first trip plan', href: '/plan-ai' },
-    ],
     faq: [
       {
         q: 'Which national park should I visit first?',
@@ -371,11 +356,6 @@ export const EXTENDED_INTENT_LANDINGS = [
         description:
           'Leashed dogs on many developed trails and campgrounds in the cooperative national and state park units — Lady Bird Johnson Grove and beach areas at certain times. Not every trail allows pets; check unit-specific rules. Coastal fog and redwood duff make for memorable leashed walks when you pick the right loop.',
       },
-    ],
-    trailverseLinks: [
-      { label: 'Quiet national parks', href: '/quiet-national-parks' },
-      { label: 'Parks for families', href: '/parks-for-families' },
-      { label: 'Browse all parks', href: '/explore' },
     ],
     faq: [
       {
@@ -470,11 +450,6 @@ export const EXTENDED_INTENT_LANDINGS = [
           'Rainforest in mossy green while lowland valleys see occasional snow — Hurricane Ridge when the road is open delivers alpine winter play near sea level. Coastal strips stay mild and stormy; perfect for moody beach walks. Check ridge road status daily; closures are frequent.',
       },
     ],
-    trailverseLinks: [
-      { label: 'Dark sky parks', href: '/dark-sky-parks' },
-      { label: 'Quiet national parks', href: '/quiet-national-parks' },
-      { label: 'Crowd calendar report', href: '/reports/when-to-go' },
-    ],
     faq: [
       {
         q: 'Which national parks are open in winter?',
@@ -568,11 +543,6 @@ export const EXTENDED_INTENT_LANDINGS = [
           'Balanced Rock viewpoint and Delicate Arch viewing from a distance offer paved or firm paths — full Delicate Arch hike is not accessible. Park Avenue and Windows Section have shorter, relatively firm approaches. Summer heat and lack of shade stress many visitors; go at dawn.',
       },
     ],
-    trailverseLinks: [
-      { label: 'Parks for families', href: '/parks-for-families' },
-      { label: 'Parks for first-timers', href: '/parks-for-first-timers' },
-      { label: 'Compare parks', href: '/compare' },
-    ],
     faq: [
       {
         q: 'Which national parks have wheelchair-accessible trails?',
@@ -665,11 +635,6 @@ export const EXTENDED_INTENT_LANDINGS = [
         description:
           'Bison herds on scenic loops, prairie dogs at roadside towns, wild horses in the south unit, and elk in the badlands — underrated wildlife density without Alaska logistics. Summer heat is sharp; spring and fall are kinder for all-day driving loops. Remote relative to interstates; plan fuel.',
       },
-    ],
-    trailverseLinks: [
-      { label: 'Parks for photography', href: '/parks-for-photography' },
-      { label: 'Quiet national parks', href: '/quiet-national-parks' },
-      { label: 'Compare parks side by side', href: '/compare' },
     ],
     faq: [
       {

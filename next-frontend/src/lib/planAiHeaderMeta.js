@@ -1,11 +1,13 @@
 import { truncatePlainText } from '@/utils/stripMarkdown';
 import { MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE } from '@/lib/planAiWelcomeCopy';
+import { intentPlanAiHeaderTitle } from '@/lib/intentPlanAi';
 
 export const PLAN_AI_ENTRY = {
   GENERAL: 'general',
   PARK: 'park',
   COMPARE: 'compare',
   ROAD_TRIP: 'road_trip',
+  INTENT: 'intent',
   PERSONALIZED: 'personalized',
   CHAT_HISTORY: 'chat_history',
 };
@@ -51,6 +53,9 @@ export function resolvePlanAiEntryMode({
   if (!searchParams) return PLAN_AI_ENTRY.GENERAL;
   if (searchParams.has('personalized')) return PLAN_AI_ENTRY.PERSONALIZED;
   if (tripId && fromChatHistory) return PLAN_AI_ENTRY.CHAT_HISTORY;
+  if (searchParams.get('from') === 'intent' && searchParams.get('intent')?.trim()) {
+    return PLAN_AI_ENTRY.INTENT;
+  }
   if (searchParams.get('suggest')?.trim()) return PLAN_AI_ENTRY.ROAD_TRIP;
   if (searchParams.get('park') && searchParams.get('name')) return PLAN_AI_ENTRY.PARK;
   if (searchParams.get('from') === 'compare') return PLAN_AI_ENTRY.PARK;
@@ -95,6 +100,7 @@ export function derivePlanAiHeaderMeta({
   isPersonalized = false,
   parkName = '',
   suggestText = '',
+  intentContext = null,
   formData = null,
   currentPlan = null,
   isGenerating = false,
@@ -138,6 +144,19 @@ export function derivePlanAiHeaderMeta({
       return {
         title: "Let's plan a road trip",
         subtitle: isGenerating ? 'Planning…' : parksHint || null,
+        showSubHeader: true,
+      };
+    }
+
+    case PLAN_AI_ENTRY.INTENT: {
+      const guideTitle = intentContext?.title
+        ? intentPlanAiHeaderTitle(intentContext.title)
+        : 'Trip planning';
+      return {
+        title: guideTitle,
+        subtitle: intentContext?.title
+          ? truncatePlainText(`From ${intentContext.title}`, 72)
+          : 'From our park picks guide',
         showSubHeader: true,
       };
     }

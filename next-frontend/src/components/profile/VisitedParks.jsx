@@ -2,12 +2,12 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CheckCircle, Calendar, Star, Trash2, ChevronRight } from '@components/icons';
-import { useAllParks } from '../../hooks/useParks';
+import { useAllParksLite } from '../../hooks/useParks';
 import { parkToSlug } from '../../utils/parkSlug';
 import { useParkRatings } from '../../hooks/useParkRatings';
 
 const VisitedParks = ({ visitedParks, onRemove }) => {
-  const { data: allParksData } = useAllParks();
+  const { data: allParksData } = useAllParksLite(false);
   const parksData = allParksData?.data;
   const { data: parkRatings } = useParkRatings();
 

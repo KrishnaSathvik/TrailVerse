@@ -182,6 +182,80 @@
   font-size: 12px;
 }
 
+/* Inline — full-width block above article body (no sidebar) */
+.table-of-contents-inline {
+  margin-bottom: 2rem;
+  background-color: color-mix(in srgb, var(--surface) 88%, var(--bg-primary));
+}
+
+.table-of-contents-inline .toc-header {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+}
+
+.table-of-contents-inline .toc-list-inline {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem 2.5rem;
+}
+
+.table-of-contents-inline .toc-level-1 .toc-link,
+.table-of-contents-inline .toc-level-2 .toc-link,
+.table-of-contents-inline .toc-level-3 .toc-link,
+.table-of-contents-inline .toc-level-4 .toc-link,
+.table-of-contents-inline .toc-level-5 .toc-link,
+.table-of-contents-inline .toc-level-6 .toc-link {
+  padding-left: 0;
+}
+
+@media (min-width: 640px) {
+  .table-of-contents-inline .toc-list-inline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.table-of-contents-inline .toc-link-inline {
+  padding: 0.3rem 0;
+  border-radius: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+  text-underline-offset: 3px;
+}
+
+.table-of-contents-inline .toc-link-inline:hover {
+  background: none;
+  transform: none;
+  color: var(--accent-green);
+  text-decoration-color: var(--accent-green);
+}
+
+.table-of-contents-inline .toc-link-inline.active {
+  background: none;
+  box-shadow: none;
+  color: var(--accent-green);
+  font-weight: 600;
+  text-decoration-color: var(--accent-green);
+}
+
+.table-of-contents-inline .toc-item-nested {
+  grid-column: 1 / -1;
+}
+
+.table-of-contents-inline .toc-link-nested {
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.table-of-contents-inline .toc-link-nested:hover,
+.table-of-contents-inline .toc-link-nested.active {
+  text-decoration: underline;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .table-of-contents-sticky {

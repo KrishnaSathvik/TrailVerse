@@ -3,10 +3,15 @@ import npsApi from '../services/npsApi';
 import { get, set } from 'idb-keyval';
 
 const ALL_PARKS_CACHE_VERSION = 'v4';
+const ALL_PARKS_LITE_CACHE_VERSION = 'v1';
 const getAllParksCacheKey = (includeActivities = false) =>
   `trailverse_all_parks_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
 const getAllParksCacheTimeKey = (includeActivities = false) =>
   `trailverse_all_parks_time_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
+const getAllParksLiteCacheKey = (includeImages = true) =>
+  `trailverse_all_parks_lite_${ALL_PARKS_LITE_CACHE_VERSION}_${includeImages ? 'with_images' : 'basic'}`;
+const getAllParksLiteCacheTimeKey = (includeImages = true) =>
+  `trailverse_all_parks_lite_time_${ALL_PARKS_LITE_CACHE_VERSION}_${includeImages ? 'with_images' : 'basic'}`;
 const PARKS_QUERY_VERSION = 'v4';
 
 // Hook for paginated parks (default behavior - fetches one page at a time)
@@ -86,6 +91,46 @@ export const useAllParks = (initialData = undefined, includeActivities = false, 
     enabled,
     staleTime: 1000 * 60 * 60 * 24, // 24 hours - parks data rarely changes
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 2,
+    ...(initialData !== undefined && initialData !== null ? { initialData } : {}),
+  });
+};
+
+/** Lite all-parks index for map (with images) or plan-ai (no images). */
+export const useAllParksLite = (
+  includeImages = true,
+  enabled = true,
+  initialData = undefined
+) => {
+  return useQuery({
+    queryKey: ['parks', PARKS_QUERY_VERSION, 'all-lite', includeImages],
+    queryFn: async () => {
+      const cacheKey = getAllParksLiteCacheKey(includeImages);
+      const cacheTimeKey = getAllParksLiteCacheTimeKey(includeImages);
+      try {
+        const idbCacheTime = await get(cacheTimeKey);
+        if (idbCacheTime && (Date.now() - parseInt(idbCacheTime, 10)) < 1000 * 60 * 60 * 24) {
+          const cached = await get(cacheKey);
+          if (cached) return cached;
+        }
+      } catch (e) {
+        // ignore idb errors
+      }
+
+      const response = await npsApi.getAllParksLite({ includeImages });
+      try {
+        await set(cacheKey, response);
+        await set(cacheTimeKey, Date.now().toString());
+      } catch (e) {
+        console.warn('IndexedDB full or disabled');
+      }
+      return response;
+    },
+    enabled,
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 2,

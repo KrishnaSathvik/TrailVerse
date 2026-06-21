@@ -15,7 +15,7 @@ import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import { useAuth } from '@/context/AuthContext';
 import { getExploreMobilePlanCta } from '@/lib/planAiWelcomeCopy';
 import { BROWSE_HUB_CTA_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
-import { useParks, useAllParks } from '@/hooks/useParks';
+import { useParks, useAllParksLite } from '@/hooks/useParks';
 import { useParkRatings } from '@/hooks/useParkRatings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useSearchPrefetch } from '@/hooks/useSmartPrefetch';
@@ -87,10 +87,10 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
     filters.nationalParksOnly,
     currentPage === 1 && filters.nationalParksOnly ? initialPaginatedData : undefined
   );
-  const { data: allParksData, isPending: allParksPending, error: allParksError } = useAllParks(
-    initialAllParksData,
-    false,
-    true
+  const { data: allParksData, isPending: allParksPending, error: allParksError } = useAllParksLite(
+    true,
+    true,
+    initialAllParksData
   );
 
   useEffect(() => {

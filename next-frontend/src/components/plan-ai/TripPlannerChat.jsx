@@ -26,6 +26,7 @@ import SaveTripModal from './SaveTripModal';
 import GuestLimitMessageExtras from './GuestLimitMessageExtras';
 import DiscoveryPlanCta from './DiscoveryPlanCta';
 import { buildDayByDayPlanFollowUp } from '@/lib/buildDayByDayPlanFollowUp';
+import { formatIntentGuideContextForPrompt } from '@/lib/intentPlanAi';
 import { findDiscoveryPlanCtaMessage, messageMatchesDiscoveryPlanCta } from '@/lib/discoveryPlanCta';
 import { buildGuestLimitIntro } from '@/lib/guestLimitMessage';
 import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
@@ -124,6 +125,7 @@ const TripPlannerChat = ({
   isPersonalized = false,
   isNewChat = false,
   suggestText = '',
+  intentContext = null,
   entryMode = 'general',
   fromCompare = false,
   refreshTrips = null,
@@ -287,11 +289,12 @@ const TripPlannerChat = ({
         user,
         parkName,
         suggestText,
+        intentContext,
         isPersonalized,
         isNewChat,
         fromCompare,
       }),
-    [entryMode, user, parkName, suggestText, isPersonalized, isNewChat, fromCompare]
+    [entryMode, user, parkName, suggestText, intentContext, isPersonalized, isNewChat, fromCompare]
   );
 
   const canShowWelcomePlaceholder =
@@ -367,6 +370,7 @@ const TripPlannerChat = ({
         isPersonalized,
         parkName,
         suggestText: headerSuggestText,
+        intentContext,
         formData,
         currentPlan,
         isGenerating,
@@ -381,6 +385,7 @@ const TripPlannerChat = ({
     isPersonalized,
     parkName,
     headerSuggestText,
+    intentContext,
     formData,
     currentPlan,
     isGenerating,
@@ -473,6 +478,7 @@ const TripPlannerChat = ({
       user,
       parkName,
       suggestText,
+      intentContext,
       isPersonalized,
       isNewChat,
       fromCompare,
@@ -486,7 +492,7 @@ const TripPlannerChat = ({
         timestamp: new Date(),
       },
     ]);
-  }, [entryMode, user, parkName, isPersonalized, isNewChat, suggestText, fromCompare]);
+  }, [entryMode, user, parkName, isPersonalized, isNewChat, suggestText, intentContext, fromCompare]);
 
   // Define loadExistingTrip before the useEffect that uses it
   const loadExistingTrip = useCallback(async (tripId) => {
@@ -1133,6 +1139,8 @@ const TripPlannerChat = ({
       formData?.parkCode || '',
       parkName || '',
       suggestText || '',
+      intentContext?.path || '',
+      intentContext?.rankedParks?.length || 0,
     ].join('|');
 
     if (parkContextRef.current === null) {
@@ -1156,6 +1164,7 @@ const TripPlannerChat = ({
     formData?.parkCode,
     parkName,
     suggestText,
+    intentContext,
     messages,
     isStartingFresh,
     existingTripId,
@@ -1421,6 +1430,16 @@ const TripPlannerChat = ({
         ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
         ...(intakeParkName ? { intakeParkName, parkName: intakeParkName } : {}),
         ...(intakeParkNames?.length ? { intakeParkNames } : {}),
+        ...(intentContext?.path
+          ? {
+              intentGuide: {
+                path: intentContext.path,
+                title: intentContext.title,
+                searchQuery: intentContext.searchQuery,
+                featuredParkCodes: intentContext.featuredParkCodes || [],
+              },
+            }
+          : {}),
       };
       // Build conversation history — include image context so AI can
       // answer follow-up questions about the photos it shared
@@ -2046,13 +2065,28 @@ const TripPlannerChat = ({
     const currentSeason = getCurrentSeason(currentMonth);
 
     const fromCompareContext = fromCompare && parkName;
-    let prompt = `You are helping plan ${suggestText ? `a multi-park road trip to ${suggestText}` : parkName ? `a trip to ${parkName}` : 'a US outdoor trip'}.${suggestText ? `
+    const fromIntentContext = intentContext?.path;
+    const tripFocus = suggestText
+      ? `a multi-park road trip to ${suggestText}`
+      : parkName
+        ? `a trip to ${parkName}`
+        : fromIntentContext
+          ? `a trip based on the "${intentContext.title}" guide`
+          : 'a US outdoor trip';
+
+    let prompt = `You are helping plan ${tripFocus}.${fromIntentContext
+      ? formatIntentGuideContextForPrompt(intentContext)
+      : suggestText
+        ? `
 
 ROAD TRIP CONTEXT:
-This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.` : fromCompareContext ? `
+This user came from the compare page wanting to plan a road trip visiting: ${suggestText}. Focus on that multi-park itinerary when they ask about "the road trip" or planning.`
+        : fromCompareContext
+          ? `
 
 COMPARE CONTEXT:
-This user compared parks side-by-side on TrailVerse and chose ${parkName} to plan. They may reference why they picked it over alternatives — focus on planning this park, not re-running the comparison unless they ask.` : ''}
+This user compared parks side-by-side on TrailVerse and chose ${parkName} to plan. They may reference why they picked it over alternatives — focus on planning this park, not re-running the comparison unless they ask.`
+          : ''}
 
 CURRENT CONTEXT:
 - Today's date: ${currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -2061,7 +2095,7 @@ CURRENT CONTEXT:
 - Current year: ${currentYear}
 
 TRIP DETAILS:
-- ${suggestText ? `Destinations: ${suggestText}` : `Park: ${parkName}`}
+- ${suggestText ? `Destinations: ${suggestText}` : parkName ? `Park: ${parkName}` : fromIntentContext ? `Trip style: ${intentContext.title} (${intentContext.searchQuery})` : 'Destination: not specified yet'}
 - Duration: ${days} days
 - Dates: ${effectiveForm.startDate} to ${effectiveForm.endDate}
 - Group: ${effectiveForm.groupSize} people
@@ -2212,6 +2246,7 @@ TRIP DETAILS:
         user,
         parkName,
         suggestText,
+        intentContext,
         isPersonalized,
         isNewChat,
         fromCompare,

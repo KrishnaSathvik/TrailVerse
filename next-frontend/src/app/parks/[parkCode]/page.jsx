@@ -2,11 +2,11 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
 import {
   buildParkMetaDescription,
+  buildParkPageTitle,
   buildParkSeoLeadLine,
   formatStateList,
   getStateHubSlug,
   isTierAPark,
-  sortRelatedParks,
 } from '@/lib/parkSeo';
 import { parkToSlug, findCorrectSlug } from '@/utils/parkSlug';
 import { getApiBaseUrl } from '@/lib/apiBase';
@@ -57,17 +57,18 @@ export async function generateMetadata({ params, searchParams }) {
   }
 
   const slug = parkToSlug(park.fullName);
+  const title = buildParkPageTitle(park);
   const description = buildParkMetaDescription(park, slug);
   const image = park.images?.[0]?.url;
   const url = `https://www.nationalparksexplorerusa.com/parks/${slug}`;
 
   return {
-    title: `${park.fullName} – Live Alerts, Crowd Calendar & Trailie | TrailVerse`,
+    title,
     description,
     keywords: `${park.fullName}, ${park.states} national park, visit ${park.fullName}, ${park.fullName} guide, ${park.fullName} hiking, ${park.fullName} camping`,
     ...canonicalPageMetadata(`/parks/${slug}`, sp),
     openGraph: {
-      title: `${park.fullName} – Alerts, Crowds & Trailie`,
+      title,
       description,
       url,
       siteName: 'TrailVerse',
@@ -76,7 +77,7 @@ export async function generateMetadata({ params, searchParams }) {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${park.fullName} - TrailVerse`,
+      title,
       description,
       images: [image],
     },
@@ -165,23 +166,17 @@ export default async function ParkPage({ params }) {
     '@graph': [placeNode, breadcrumb],
   };
 
-  // Fetch related parks (same state, different park) — cached 24h
+  // Related parks for "You Might Also Like" — slim payload (~2 KB vs 3.66 MB all-parks)
   let relatedParks = [];
   if (park.states) {
     try {
-      const allRes = await fetch(`${getApiBaseUrl()}/parks?all=true`, {
-        next: { revalidate: 86400 },
-      });
-      if (allRes.ok) {
-        const allJson = await allRes.json();
-        const allParks = allJson.data || [];
-        const parkStates = park.states.split(',').map((s) => s.trim());
-        const candidates = allParks.filter(
-          (p) =>
-            p.parkCode !== park.parkCode &&
-            parkStates.some((st) => p.states?.includes(st))
-        );
-        relatedParks = sortRelatedParks(candidates, park).slice(0, 4);
+      const relatedRes = await fetch(
+        `${getApiBaseUrl()}/parks/${park.parkCode}/related?limit=4`,
+        { next: { revalidate: 86400 } }
+      );
+      if (relatedRes.ok) {
+        const relatedJson = await relatedRes.json();
+        relatedParks = relatedJson.data || [];
       }
     } catch {
       // Non-critical — just skip related parks

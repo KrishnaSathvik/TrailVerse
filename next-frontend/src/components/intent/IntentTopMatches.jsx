@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import ParkCard from '@/components/explore/ParkCard';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { mergeFeaturedParks } from '@/lib/intentLandingApi';
+import IntentTopMatchesSkeleton from '@/components/intent/IntentTopMatchesSkeleton';
+import {
+  INTENT_SEARCH_LITE_FIELDS,
+  mergeFeaturedParks,
+} from '@/lib/intentLandingApi';
 
 /**
  * Top matches grid — hydrates from SSR when present; otherwise loads via same-origin
@@ -11,7 +14,7 @@ import { mergeFeaturedParks } from '@/lib/intentLandingApi';
  */
 export default function IntentTopMatches({ landing, initialParks = [], fromPath = null }) {
   const [parks, setParks] = useState(initialParks);
-  const [status, setStatus] = useState(initialParks.length > 0 ? 'ready' : 'idle');
+  const [status, setStatus] = useState(initialParks.length > 0 ? 'ready' : 'loading');
 
   useEffect(() => {
     if (initialParks.length > 0) {
@@ -28,6 +31,7 @@ export default function IntentTopMatches({ landing, initialParks = [], fromPath 
     if (landing.featuredParkCodes?.length) {
       params.set('pinned', landing.featuredParkCodes.join(','));
     }
+    params.set('fields', INTENT_SEARCH_LITE_FIELDS);
 
     async function load() {
       setStatus('loading');
@@ -50,24 +54,8 @@ export default function IntentTopMatches({ landing, initialParks = [], fromPath 
     };
   }, [landing.searchQuery, landing.featuredParkCodes, initialParks]);
 
-  if (status === 'loading' || status === 'idle') {
-    return (
-      <div className="space-y-8">
-        <div className="flex justify-center py-6">
-          <LoadingSpinner size="md" text="Loading park matches…" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-80 rounded-2xl animate-pulse"
-              style={{ backgroundColor: 'var(--surface-hover)' }}
-              aria-hidden="true"
-            />
-          ))}
-        </div>
-      </div>
-    );
+  if (status === 'loading') {
+    return <IntentTopMatchesSkeleton />;
   }
 
   if (status === 'error' || parks.length === 0) {

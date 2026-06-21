@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import blogService from '../../services/blogService';
 
-const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
+const LikeFavorite = ({ post, onUpdate, isPublic = false, embedded = false }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
@@ -76,49 +76,59 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false }) => {
   // Always show likes/comments, but disable interaction for non-logged-in users
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      {/* Like Button */}
+    <div className={`flex items-center gap-2 ${embedded ? '' : 'mb-6'}`}>
       <button
         onClick={handleLike}
         disabled={loading}
-        className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`flex items-center gap-1.5 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
+          embedded ? 'px-3 py-2 text-sm' : 'px-6 py-3 rounded-xl font-semibold gap-2'
+        }`}
         style={{
-          backgroundColor: isLiked ? 'var(--error-red)' : 'var(--surface)',
-          color: isLiked ? 'white' : 'var(--text-primary)',
+          backgroundColor: isLiked ? 'color-mix(in srgb, var(--error-red) 12%, transparent)' : 'transparent',
+          color: isLiked ? 'var(--error-red)' : 'var(--text-secondary)',
           border: '1px solid',
-          borderColor: isLiked ? 'var(--error-red)' : 'var(--border)'
+          borderColor: isLiked ? 'color-mix(in srgb, var(--error-red) 35%, var(--border))' : 'var(--border)',
         }}
       >
-        <Heart 
-          size={18} 
+        <Heart
+          size={embedded ? 16 : 18}
           className={isLiked ? 'fill-current' : ''}
         />
         <span>{likesCount}</span>
-        <span className="hidden sm:inline">
-          {likesCount === 1 ? 'Like' : 'Likes'}
-        </span>
+        {embedded ? (
+          <span>Love</span>
+        ) : (
+          <span className="hidden sm:inline">
+            {likesCount === 1 ? 'Like' : 'Likes'}
+          </span>
+        )}
       </button>
 
-      {/* Favorite Button */}
       <button
         onClick={handleFavorite}
         disabled={loading}
-        className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`flex items-center gap-1.5 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
+          embedded ? 'px-3 py-2 text-sm' : 'px-6 py-3 rounded-xl font-semibold gap-2'
+        }`}
         style={{
-          backgroundColor: isFavorited ? 'var(--accent-blue)' : 'var(--surface)',
-          color: isFavorited ? 'white' : 'var(--text-primary)',
+          backgroundColor: isFavorited ? 'color-mix(in srgb, var(--accent-blue) 12%, transparent)' : 'transparent',
+          color: isFavorited ? 'var(--accent-blue)' : 'var(--text-secondary)',
           border: '1px solid',
-          borderColor: isFavorited ? 'var(--accent-blue)' : 'var(--border)'
+          borderColor: isFavorited ? 'color-mix(in srgb, var(--accent-blue) 35%, var(--border))' : 'var(--border)',
         }}
       >
-        <Bookmark 
-          size={18} 
+        <Bookmark
+          size={embedded ? 16 : 18}
           className={isFavorited ? 'fill-current' : ''}
         />
         <span>{favoritesCount}</span>
-        <span className="hidden sm:inline">
-          {favoritesCount === 1 ? 'Favorite' : 'Favorites'}
-        </span>
+        {embedded ? (
+          <span>Save</span>
+        ) : (
+          <span className="hidden sm:inline">
+            {favoritesCount === 1 ? 'Favorite' : 'Favorites'}
+          </span>
+        )}
       </button>
     </div>
   );

@@ -236,9 +236,37 @@ function formatVoiceSearchResult(parks, totalCount) {
   return lines.join('\n');
 }
 
+function formatIntentGuideParksBlock(parks, { guideTitle = '', searchQuery = '' } = {}) {
+  if (!parks?.length) return '';
+
+  let block = '\n--- INTENT GUIDE RANKED PICKS ---\n';
+  if (guideTitle) {
+    block += `Live ranked grid for the TrailVerse guide "${guideTitle}"`;
+    if (searchQuery) block += ` (search: "${searchQuery}")`;
+    block += '. Same data as the guide page.\n';
+  } else {
+    block += 'Live ranked parks for the vibe guide the user came from.\n';
+  }
+  block +=
+    'Prefer these when recommending parks for this trip style. Curate a short list — do not dump every row equally.\n\n';
+
+  parks.slice(0, 12).forEach((park, index) => {
+    const name = park.fullName || park.name || 'Unknown';
+    const states = park.states ? ` (${park.states})` : '';
+    const code = park.parkCode ? ` [${park.parkCode}]` : '';
+    const reason = park.matchReason || 'Matches the guide search.';
+    block += `${index + 1}. ${name}${states}${code}\n`;
+    block += `   Why: ${reason}\n`;
+  });
+
+  block += '--- END INTENT GUIDE RANKED PICKS ---\n';
+  return block;
+}
+
 module.exports = {
   executeParkSearch,
   formatRankedParksDiscoveryBlock,
+  formatIntentGuideParksBlock,
   formatVoiceSearchResult,
   DISCOVERY_ALIGNMENT_INSTRUCTION,
   DISCOVERY_RESPONSE_FORMAT_BLOCK,

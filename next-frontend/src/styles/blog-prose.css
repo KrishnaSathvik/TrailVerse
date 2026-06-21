@@ -3,9 +3,8 @@
 .blog-prose {
   color: var(--text-primary);
   line-height: 1.8;
-  font-size: 1.125rem;
-  max-width: 68ch;
-  margin: 0 auto;
+  font-size: 1.0625rem;
+  max-width: 100%;
 }
 
 /* Headings */
@@ -257,20 +256,26 @@
 }
 
 /* Tables */
+.blog-prose .blog-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 2rem 0;
+  border-radius: 12px;
+  scrollbar-width: thin;
+}
+
 .blog-prose table {
   --table-border: rgba(150, 150, 150, 0.35);
   --table-border-strong: rgba(150, 150, 150, 0.5);
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  margin: 2rem 0;
+  margin: 0;
   background: var(--surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  display: block;
-  overflow-x: auto;
-  min-width: 100%;
+  display: table;
   border: 1.5px solid var(--table-border-strong) !important;
 }
 
@@ -313,6 +318,42 @@
 
 .blog-prose tbody tr:hover {
   background: var(--surface-hover);
+}
+
+/* Comparison tables — sticky row label while swiping columns */
+.blog-prose table.blog-table-sticky th:first-child,
+.blog-prose table.blog-table-sticky td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.1);
+}
+
+.blog-prose table.blog-table-sticky thead th:first-child {
+  z-index: 2;
+  background: var(--surface-hover);
+}
+
+.blog-prose table.blog-table-sticky tbody tr:nth-child(even) td:first-child {
+  background: var(--surface-hover);
+}
+
+.blog-prose table.blog-table-sticky tbody tr:hover td:first-child {
+  background: var(--surface-hover);
+}
+
+.blog-prose table.blog-table-sticky {
+  width: max-content;
+  min-width: 100%;
+}
+
+.blog-prose table td p,
+.blog-prose table th p {
+  margin: 0;
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
 }
 
 .blog-prose > *:first-child {
@@ -428,57 +469,37 @@
     font-size: 1.125rem;
   }
 
-  /* Responsive tables — same as desktop, horizontally scrollable */
-  .blog-prose table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .blog-prose .blog-table-wrap {
     margin: 1.5rem 0;
-    border: none !important;
-    border-radius: 0;
-    box-shadow: none;
-    background: transparent;
   }
 
-  .blog-prose table thead,
-  .blog-prose table tbody {
-    display: table;
-    width: 100%;
-    min-width: 600px;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: var(--surface);
-    border: 1.5px solid var(--table-border-strong) !important;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
+  .blog-prose .blog-table-wrap--sticky::after {
+    content: 'Swipe for more columns →';
+    display: block;
+    margin-top: 0.4rem;
+    text-align: right;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
   }
 
-  .blog-prose table tr {
-    display: table-row;
+  .blog-prose table.blog-table-sticky th,
+  .blog-prose table.blog-table-sticky td,
+  .blog-prose table.blog-table-scroll th,
+  .blog-prose table.blog-table-scroll td {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
   }
 
-  .blog-prose table th,
-  .blog-prose table td {
-    padding: 0.6rem 0.65rem;
-    font-size: 0.8rem;
-    white-space: normal;
-    word-wrap: break-word;
-    min-width: 80px;
+  .blog-prose table.blog-table-sticky th,
+  .blog-prose table.blog-table-scroll th {
+    font-size: 0.6875rem;
   }
 
-  .blog-prose table th {
-    font-size: 0.7rem;
-    padding: 0.6rem 0.65rem;
-    background: var(--surface-hover);
-  }
-
-  .blog-prose table td p,
-  .blog-prose table th p {
-    margin: 0;
-    font-size: inherit;
-    color: inherit;
-    line-height: inherit;
+  .blog-prose table.blog-table-scroll {
+    width: max-content;
+    min-width: 100%;
   }
 }
 

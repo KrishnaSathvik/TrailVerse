@@ -1,45 +1,31 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
-  ArrowRight,
   CheckCircle,
   ChevronDown,
-  Compass,
-  Globe,
-  MapPin,
-  Scales,
-  Sparkles,
 } from '@components/icons';
 import ShareButtons from '@/components/common/ShareButtons';
-import Button from '@/components/common/Button';
+import TrailiePlanningCta from '@/components/plan-ai/TrailiePlanningCta';
+import { getIntentPlanCta } from '@/lib/intentPlanCta';
 import ReturnNavLink from '@/components/common/ReturnNavLink';
-import TableOfContents from '@/components/blog/TableOfContents';
 import GuideCard from '@/components/guides/GuideCard';
 import IntentTopMatches from '@/components/intent/IntentTopMatches';
 import { getIntentLandingByPath } from '@/data/intentLandings';
 import { parkToSlug } from '@/utils/parkSlug';
 import { hrefWithFrom, sanitizeFromPath } from '@/lib/returnNavigation';
-import { logCtaClick } from '@/utils/analytics';
-
-const surfaceCardStyle = {
-  background:
-    'linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, white 4%), var(--surface))',
-  borderColor: 'var(--border)',
-  boxShadow: 'var(--shadow)',
-};
-
-function getLinkIcon(href) {
-  if (href.includes('/plan-ai')) return Sparkles;
-  if (href.includes('/compare')) return Scales;
-  if (href.includes('/discover')) return Compass;
-  if (href.includes('/explore')) return MapPin;
-  if (href.includes('/chatgpt') || href.includes('/mcp')) return Globe;
-  if (href.includes('/reports')) return MapPin;
-  return ArrowRight;
-}
+import {
+  ARTICLE_BODY,
+  ARTICLE_CALLOUT,
+  ARTICLE_CALLOUT_LABEL,
+  ARTICLE_DECK,
+  ARTICLE_H2,
+  ARTICLE_HERO_WIDE,
+  ARTICLE_TITLE,
+  ARTICLE_WIDE,
+} from '@/lib/articleLayout';
 
 function IntentFaqAccordion({ items }) {
   const [openItems, setOpenItems] = useState([]);
@@ -92,43 +78,17 @@ function IntentFaqAccordion({ items }) {
   );
 }
 
-export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
-  const contentRef = useRef(null);
+export default function IntentLandingClient({ landing, canonicalUrl, children }) {
   const searchParams = useSearchParams();
   const returnFrom = sanitizeFromPath(searchParams.get('from'));
   const relatedLandings = (landing.relatedLinks ?? [])
     .map((link) => getIntentLandingByPath(link.href))
     .filter(Boolean);
-
-  const tocHeadings = useMemo(() => {
-    const headings = [{ id: 'quick-answer', text: 'Quick answer', level: 2 }];
-    if (landing.standouts?.length) {
-      headings.push({ id: 'standouts', text: 'The standouts', level: 2 });
-    }
-    if (landing.trailverseLinks?.length) {
-      headings.push({ id: 'trailverse-tools', text: 'Live on TrailVerse', level: 2 });
-    }
-    headings.push({ id: 'ranked-parks', text: 'Top matches', level: 2 });
-    if (landing.faq?.length) {
-      headings.push({ id: 'faq', text: 'FAQ', level: 2 });
-    }
-    if (relatedLandings.length) {
-      headings.push({ id: 'related-searches', text: 'Related searches', level: 2 });
-    }
-    return headings;
-  }, [landing, relatedLandings.length]);
+  const planCta = getIntentPlanCta(landing);
 
   return (
-    <article className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 lg:py-12">
-      <div
-        className="mb-10 rounded-[2rem] border px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10"
-        style={{
-          ...surfaceCardStyle,
-          background:
-            'linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, white 6%), var(--surface))',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
+    <article className={ARTICLE_WIDE}>
+      <header className={ARTICLE_HERO_WIDE} style={{ borderColor: 'var(--border)' }}>
         <ReturnNavLink
           defaultHref="/guides"
           defaultLabel="All planning guides"
@@ -138,7 +98,7 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
         {landing.category ? (
           <div className="mb-4">
             <span
-              className="inline-block px-4 py-1 rounded-full text-sm font-semibold"
+              className="inline-block px-3 py-1 rounded-full text-sm font-semibold"
               style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
             >
               {landing.category}
@@ -146,27 +106,21 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
           </div>
         ) : null}
 
-        <h1
-          className="text-3xl sm:text-4xl md:text-5xl xl:text-[3.25rem] font-bold mb-5 leading-[1.05] tracking-tight max-w-5xl"
-          style={{ color: 'var(--text-primary)' }}
-        >
+        <h1 className={ARTICLE_TITLE} style={{ color: 'var(--text-primary)' }}>
           {landing.title}
         </h1>
 
         {landing.metaDescription ? (
-          <p
-            className="text-lg sm:text-xl leading-relaxed font-medium mb-8 max-w-4xl"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+          <p className={`${ARTICLE_DECK} mb-6`} style={{ color: 'var(--text-secondary)' }}>
             {landing.metaDescription}
           </p>
         ) : null}
 
         <div
-          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-sm"
           style={{ color: 'var(--text-secondary)' }}
         >
-          <p className="text-sm">Park picks · TrailVerse</p>
+          <p>Park picks · TrailVerse</p>
           {canonicalUrl ? (
             <ShareButtons
               url={canonicalUrl}
@@ -177,229 +131,123 @@ export default function IntentLandingClient({ landing, parks, canonicalUrl }) {
             />
           ) : null}
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)] gap-8 xl:gap-10 2xl:gap-12 items-start">
-        <aside className="xl:order-1 xl:pr-2 2xl:pr-4">
-          {tocHeadings.length > 0 && (
-            <TableOfContents headings={tocHeadings} sticky containerRef={contentRef} />
-          )}
-        </aside>
-
-        <div ref={contentRef} className="xl:order-2 min-w-0 max-w-none w-full space-y-8">
-          {landing.quickAnswer ? (
-            <div
-              id="quick-answer"
-              className="scroll-mt-28 rounded-[2rem] border px-5 py-6 sm:px-8 sm:py-8"
-              style={{
-                ...surfaceCardStyle,
-                borderLeftWidth: '4px',
-                borderLeftColor: 'var(--accent-green)',
-              }}
-            >
-              <p
-                className="text-xs font-semibold uppercase tracking-wider mb-3"
-                style={{ color: 'var(--accent-green)' }}
-              >
-                Quick answer
-              </p>
-              <p
-                className="text-base sm:text-lg leading-relaxed font-medium"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {landing.quickAnswer}
-              </p>
-            </div>
-          ) : null}
-
-          {landing.intro ? (
+      <div className={ARTICLE_BODY}>
+        {landing.quickAnswer ? (
+          <div
+            id="quick-answer"
+            className={ARTICLE_CALLOUT}
+            style={{ borderColor: 'var(--accent-green)' }}
+          >
+            <p className={ARTICLE_CALLOUT_LABEL} style={{ color: 'var(--accent-green)' }}>
+              Quick answer
+            </p>
             <p
               className="text-base sm:text-lg leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {landing.intro}
-            </p>
-          ) : null}
-
-          {landing.standouts?.length > 0 ? (
-            <section id="standouts" className="scroll-mt-28">
-              <div
-                className="rounded-[2rem] border px-5 py-8 sm:px-8 lg:px-10 xl:py-10"
-                style={surfaceCardStyle}
-              >
-                <h2
-                  className="text-2xl sm:text-3xl font-bold tracking-tight mb-6"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  The standouts
-                </h2>
-                <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-7">
-                  {landing.standouts.map((item) => (
-                    <li
-                      key={item.parkCode}
-                      className="flex items-start gap-3 text-base sm:text-lg leading-relaxed"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      <CheckCircle
-                        className="h-5 w-5 flex-shrink-0 mt-1"
-                        style={{ color: 'var(--accent-green)' }}
-                        weight="fill"
-                      />
-                      <span>
-                        <Link
-                          href={hrefWithFrom(`/parks/${parkToSlug(item.fullName)}`, returnFrom)}
-                          className="font-semibold hover:underline"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          {item.label}
-                        </Link>
-                        <span aria-hidden="true"> — </span>
-                        {item.description}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          ) : null}
-
-          {landing.trailverseLinks?.length > 0 && (
-            <div className="scroll-mt-28">
-              <h2
-                id="trailverse-tools"
-                className="text-xl sm:text-2xl font-bold mb-5 scroll-mt-28"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Live on TrailVerse
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {landing.trailverseLinks.map((link) => {
-                  const Icon = getLinkIcon(link.href);
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => logCtaClick({
-                        ctaId: 'intent_tool_link',
-                        label: link.label,
-                        surface: 'intent_landing',
-                        destination: link.href,
-                      })}
-                      className="group flex items-center gap-4 rounded-2xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5"
-                      style={{
-                        backgroundColor: 'var(--surface)',
-                        borderColor: 'var(--border)',
-                        boxShadow: 'var(--shadow-sm)',
-                      }}
-                    >
-                      <div
-                        className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
-                        style={{
-                          backgroundColor: 'var(--accent-green-light)',
-                          color: 'var(--accent-green)',
-                        }}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span
-                        className="flex-1 text-sm sm:text-base font-semibold leading-snug"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {link.label}
-                      </span>
-                      <ArrowRight
-                        className="h-4 w-4 flex-shrink-0 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
-                        style={{ color: 'var(--accent-green)' }}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <section id="ranked-parks" className="scroll-mt-28">
-            <h2
-              className="text-2xl sm:text-3xl font-bold tracking-tight mb-2"
               style={{ color: 'var(--text-primary)' }}
             >
-              Top matches
-            </h2>
-            <p
-              className="text-base sm:text-lg leading-relaxed mb-6 max-w-3xl"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Sorted by how well each park fits this trip type — scenic views, pace, season, terrain, and
-              other traits from official NPS descriptions and activities. The summary under each name
-              highlights what earned its spot so you can compare finalists quickly.
+              {landing.quickAnswer}
             </p>
-            <IntentTopMatches landing={landing} initialParks={parks} fromPath={returnFrom} />
-          </section>
+          </div>
+        ) : null}
 
-          {landing.faq?.length > 0 && (
-            <section id="faq" className="scroll-mt-28">
-              <h2
-                className="text-2xl sm:text-3xl font-bold tracking-tight mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Frequently asked questions
-              </h2>
-              <IntentFaqAccordion items={landing.faq} />
-            </section>
-          )}
+        <div className="max-w-3xl">
+          <TrailiePlanningCta
+            title={planCta.title}
+            body={planCta.body}
+            planLabel={planCta.planLabel}
+            compareLabel={planCta.compareLabel}
+            intentPath={landing.path}
+          />
+        </div>
 
-          <section
-            className="rounded-[2rem] border px-6 py-8 sm:px-10 sm:py-10 text-center"
-            style={{
-              ...surfaceCardStyle,
-              background:
-                'linear-gradient(135deg, color-mix(in srgb, var(--accent-green) 12%, var(--surface)), var(--surface))',
-            }}
+        {landing.intro ? (
+          <p
+            className="text-base sm:text-lg leading-relaxed max-w-3xl"
+            style={{ color: 'var(--text-secondary)' }}
           >
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
-              Start planning
+            {landing.intro}
+          </p>
+        ) : null}
+
+        {landing.standouts?.length > 0 ? (
+          <section id="standouts" className="scroll-mt-28 max-w-3xl">
+            <h2 className={`${ARTICLE_H2} mb-6`} style={{ color: 'var(--text-primary)' }}>
+              The standouts
             </h2>
-            <p
-              className="text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Browse 470+ parks, compare destinations, or ask Trailie to build your itinerary — free to
-              explore, no account required.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <Button href="/plan-ai" variant="primary" size="md">
-                Plan with Trailie
-              </Button>
-              <Button href="/compare" variant="secondary" size="md">
-                Compare parks
-              </Button>
-              <Button href="/explore" variant="secondary" size="md">
-                Explore parks
-              </Button>
+            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-7">
+              {landing.standouts.map((item) => (
+                <li
+                  key={item.parkCode}
+                  className="flex items-start gap-3 text-base sm:text-lg leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  <CheckCircle
+                    className="h-5 w-5 flex-shrink-0 mt-1"
+                    style={{ color: 'var(--accent-green)' }}
+                    weight="fill"
+                  />
+                  <span>
+                    <Link
+                      href={hrefWithFrom(`/parks/${parkToSlug(item.fullName)}`, returnFrom)}
+                      className="font-semibold hover:underline"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {item.label}
+                    </Link>
+                    <span aria-hidden="true"> — </span>
+                    {item.description}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        <section id="ranked-parks" className="scroll-mt-28">
+          <h2 className={`${ARTICLE_H2} mb-2`} style={{ color: 'var(--text-primary)' }}>
+            Top matches
+          </h2>
+          <p
+            className="text-base sm:text-lg leading-relaxed mb-6 max-w-3xl"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Sorted by how well each park fits this trip type — scenic views, pace, season, terrain, and
+            other traits from official NPS descriptions and activities. The summary under each name
+            highlights what earned its spot so you can compare finalists quickly.
+          </p>
+          {children ?? (
+            <IntentTopMatches landing={landing} initialParks={[]} fromPath={returnFrom} />
+          )}
+        </section>
+
+        {landing.faq?.length > 0 && (
+          <section id="faq" className="scroll-mt-28 max-w-3xl">
+            <h2 className={`${ARTICLE_H2} mb-6`} style={{ color: 'var(--text-primary)' }}>
+              Frequently asked questions
+            </h2>
+            <IntentFaqAccordion items={landing.faq} />
+          </section>
+        )}
+
+        {relatedLandings.length > 0 && (
+          <section id="related-searches" className="scroll-mt-28">
+            <h2 className={`${ARTICLE_H2} mb-6`} style={{ color: 'var(--text-primary)' }}>
+              Related searches
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {relatedLandings.map((related) => (
+                <GuideCard
+                  key={related.path}
+                  guide={related}
+                  href={related.path}
+                  ctaLabel="See ranked parks →"
+                />
+              ))}
             </div>
           </section>
-
-          {relatedLandings.length > 0 && (
-            <section id="related-searches" className="scroll-mt-28">
-              <h2
-                className="text-2xl sm:text-3xl font-bold tracking-tight mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Related searches
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {relatedLandings.map((related) => (
-                  <GuideCard
-                    key={related.path}
-                    guide={related}
-                    href={related.path}
-                    ctaLabel="See ranked parks →"
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
+        )}
       </div>
     </article>
   );

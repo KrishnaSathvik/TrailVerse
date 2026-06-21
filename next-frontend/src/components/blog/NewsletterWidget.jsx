@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { logEvent } from '@/utils/analytics';
 
-export default function NewsletterWidget({ source = 'blog-listing', category = null }) {
+export default function NewsletterWidget({
+  source = 'blog-listing',
+  category = null,
+  embedded = false,
+}) {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
@@ -47,36 +51,80 @@ export default function NewsletterWidget({ source = 'blog-listing', category = n
   };
 
   if (status === 'success') {
-    return (
-      <div
-        className="rounded-[2rem] p-6 sm:p-8"
-        style={{ backgroundColor: 'var(--surface)' }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--accent-green) 15%, transparent)' }}
-          >
-            ✓
-          </div>
-          <div>
-            <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              You're almost in!
-            </h3>
-            <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-              {message}
-            </p>
-          </div>
+    const successBody = (
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--accent-green) 15%, transparent)' }}
+        >
+          ✓
         </div>
+        <div>
+          <h3 className={`font-bold ${embedded ? 'text-base' : 'text-lg'}`} style={{ color: 'var(--text-primary)' }}>
+            You&apos;re almost in!
+          </h3>
+          <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+            {message}
+          </p>
+        </div>
+      </div>
+    );
+
+    if (embedded) return successBody;
+
+    return (
+      <div className="rounded-[2rem] p-6 sm:p-8" style={{ backgroundColor: 'var(--surface)' }}>
+        {successBody}
       </div>
     );
   }
 
-  return (
-    <div
-      className="rounded-[2rem] p-6 sm:p-8"
-      style={{ backgroundColor: 'var(--surface)' }}
-    >
+  const formContent = embedded ? (
+    <>
+      <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+        Get trail stories in your inbox
+      </p>
+      <p className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        New posts and park guides — no spam.
+      </p>
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <input
+          type="email"
+          required
+          placeholder="Your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="rounded-xl px-4 py-2.5 text-sm sm:text-base flex-1 min-w-0"
+          style={{
+            backgroundColor: 'var(--surface)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)',
+            outline: 'none',
+          }}
+        />
+        <button
+          type="submit"
+          disabled={status === 'loading'}
+          className="rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap sm:flex-shrink-0"
+          style={{
+            backgroundColor: 'var(--accent-green)',
+            color: '#fff',
+            border: 'none',
+            cursor: status === 'loading' ? 'wait' : 'pointer',
+            opacity: status === 'loading' ? 0.7 : 1,
+          }}
+        >
+          {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
+        </button>
+      </form>
+      {status === 'error' && message && (
+        <p className="text-sm mt-2" style={{ color: '#ef4444' }}>
+          {message}
+        </p>
+      )}
+    </>
+  ) : (
+    <>
       <div className="mb-6">
         <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
           Get trail stories in your inbox
@@ -97,7 +145,7 @@ export default function NewsletterWidget({ source = 'blog-listing', category = n
             backgroundColor: 'var(--bg-primary)',
             color: 'var(--text-primary)',
             border: '1px solid var(--border)',
-            outline: 'none'
+            outline: 'none',
           }}
         />
         <input
@@ -111,7 +159,7 @@ export default function NewsletterWidget({ source = 'blog-listing', category = n
             backgroundColor: 'var(--bg-primary)',
             color: 'var(--text-primary)',
             border: '1px solid var(--border)',
-            outline: 'none'
+            outline: 'none',
           }}
         />
         <button
@@ -123,7 +171,7 @@ export default function NewsletterWidget({ source = 'blog-listing', category = n
             color: '#fff',
             border: 'none',
             cursor: status === 'loading' ? 'wait' : 'pointer',
-            opacity: status === 'loading' ? 0.7 : 1
+            opacity: status === 'loading' ? 0.7 : 1,
           }}
         >
           {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
@@ -135,6 +183,16 @@ export default function NewsletterWidget({ source = 'blog-listing', category = n
           {message}
         </p>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div>{formContent}</div>;
+  }
+
+  return (
+    <div className="rounded-[2rem] p-6 sm:p-8" style={{ backgroundColor: 'var(--surface)' }}>
+      {formContent}
     </div>
   );
 }

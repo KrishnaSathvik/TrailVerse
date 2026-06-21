@@ -16,7 +16,6 @@
  * @property {string[]} relatedSlugs — bare slugs only; GuideDetailClient resolves via getGuideBySlug → /guides/{slug}
  * @property {string} [verifiedAt] — ISO date when live TrailVerse/NPS data was checked
  * @property {string[]} [verifiedSources]
- * @property {{ label: string; href: string }[]} [trailverseLinks]
  * @property {string} [seasonNote] — e.g. "Updated for the 2026 season"
  */
 
@@ -39,13 +38,6 @@ export const GUIDES = [
     quickAnswer:
       'No single free tool does everything a park trip needs — but the right combination saves hours of tab-juggling, and TrailVerse is the free hub that ties it together. Use it to browse 470+ parks, check live alerts and permits, compare parks side by side, and draft AI itineraries — then pair it with NPS.gov for official safety info, Recreation.gov for reservations, and AllTrails for trail-level conditions once you are on the ground. All of TrailVerse\'s planning tools are free to use without an account.',
     updatedAt: '2026-05-31',
-    trailverseLinks: [
-      { label: 'Explore all parks', href: '/explore' },
-      { label: `${BROWSE_HUB_LABEL} — topic & state`, href: '/discover' },
-      { label: 'Compare up to 4 parks', href: '/compare' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
-      { label: 'TrailVerse ChatGPT app', href: '/chatgpt' },
-    ],
     sections: [
       {
         id: 'planning-jobs',
@@ -157,12 +149,6 @@ export const GUIDES = [
     quickAnswer:
       'They solve different problems, and most people end up using both. AllTrails is the tool for individual hikes — crowdsourced trail conditions, distance and elevation, and GPS navigation on the trail. TrailVerse is the tool for planning a whole trip across the national park system — live alerts and permits, park-to-park comparisons, weather, ranger events, and AI itineraries. A common rhythm: plan the trip in TrailVerse, then check specific hikes in AllTrails the week you go.',
     updatedAt: '2026-05-31',
-    trailverseLinks: [
-      { label: 'Compare parks (up to 4)', href: '/compare' },
-      { label: 'Browse parks by activity', href: '/discover/activities' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
-      { label: 'Explore all NPS parks', href: '/explore' },
-    ],
     sections: [
       {
         id: 'different-jobs',
@@ -267,12 +253,6 @@ export const GUIDES = [
     quickAnswer:
       'Connect the TrailVerse app inside ChatGPT and you can plan trips using live park data — current alerts, weather, permits, and events — instead of whatever ChatGPT happens to remember from training. Get it from the ChatGPT App Directory (or via nationalparksexplorerusa.com/chatgpt), then ask your question. Prefer the web? Trailie at /plan-ai runs on the same data, free to try.',
     updatedAt: '2026-05-31',
-    trailverseLinks: [
-      { label: 'TrailVerse ChatGPT app — install link', href: '/chatgpt' },
-      { label: 'Claude MCP connector setup', href: '/mcp' },
-      { label: 'Plan on the web with Trailie', href: '/plan-ai' },
-      { label: 'Compare parks before you ask ChatGPT', href: '/compare' },
-    ],
     sections: [
       {
         id: 'problem',
@@ -379,12 +359,6 @@ export const GUIDES = [
       'TrailVerse GET /api/parks/{code}/permits — Half Dome lottery, backcountry, Recreation.gov links',
       'TrailVerse POST /api/parks/compare/summary — weather, crowd, campground counts',
       '2026 entrance reservation status — NPS/Recreation.gov policy (confirm on park Permits tab before travel)',
-    ],
-    trailverseLinks: [
-      { label: 'Yosemite park page — live alerts & weather', href: '/parks/yosemite-national-park' },
-      { label: 'Yellowstone park page — live alerts & weather', href: '/parks/yellowstone-national-park' },
-      { label: 'Compare Yosemite vs Yellowstone side by side', href: '/compare?parks=yose,yell' },
-      { label: 'Plan your trip with Trailie', href: '/plan-ai' },
     ],
     sections: [
       {
@@ -522,12 +496,6 @@ export const GUIDES = [
     quickAnswer:
       'No single app does everything. Recreation.gov is for bookings and timed-entry permits. The NPS App is the official source for alerts and basic park info. AllTrails is for individual hikes once you have picked a trail. Google Maps handles driving. TrailVerse is for choosing among 470+ parks, comparing options, reading today\'s alerts in one place, and drafting an itinerary — free to browse without an account. Most trips use three or four of these, not one.',
     updatedAt: '2026-06-01',
-    trailverseLinks: [
-      { label: 'Explore all parks', href: '/explore' },
-      { label: 'Compare parks', href: '/compare' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
-      { label: 'TrailVerse vs AllTrails', href: '/guides/trailverse-vs-alltrails' },
-    ],
     sections: [
       {
         id: 'how-to-read',
@@ -624,12 +592,6 @@ export const GUIDES = [
     quickAnswer:
       'These are not three versions of the same app. Recreation.gov is where you buy campsites and timed-entry permits. The NPS App is the Park Service\'s official mobile channel for alerts and park information. TrailVerse is a trip planner across 470+ sites — compare parks, read alerts and weather on one page, browse by activity, and draft itineraries. You will use Recreation.gov when something requires a reservation; you should have the NPS App (or NPS.gov) for authoritative closures; TrailVerse helps before and between those steps.',
     updatedAt: '2026-06-01',
-    trailverseLinks: [
-      { label: 'Explore parks', href: '/explore' },
-      { label: 'Compare parks', href: '/compare' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
-      { label: 'Best national park apps roundup', href: '/guides/best-national-park-apps-2026' },
-    ],
     sections: [
       {
         id: 'three-jobs',
@@ -725,12 +687,6 @@ export const GUIDES = [
     quickAnswer:
       'Open /compare on TrailVerse, add up to four parks with search or a preset (Zion vs Bryce, Yellowstone vs Grand Teton), and scroll one table for overview, weather, crowd level, facilities, accessibility, best time to visit, parking, and top activities. Share the URL with ?parks=code1,code2 so your travel group sees the same stack. When you pick a winner, use Quick Actions to open the full park page or start a Trailie plan.',
     updatedAt: '2026-06-01',
-    trailverseLinks: [
-      { label: 'Open Compare', href: '/compare' },
-      { label: 'Explore all parks', href: '/explore' },
-      { label: BROWSE_HUB_LABEL, href: '/discover' },
-      { label: 'Plan with Trailie', href: '/plan-ai' },
-    ],
     sections: [
       {
         id: 'when-to-use',
@@ -837,12 +793,6 @@ export const GUIDES = [
     quickAnswer:
       'Most bookable inventory for national parks flows through Recreation.gov — campsites, timed-entry tickets, some shuttle seats, and many wilderness permits. Not everything uses it: some hikes and climbs use separate lottery sites, and entrance is usually just a pass at the gate unless a park posts a specific timed-entry pilot. Start on the park\'s official Permits page (or TrailVerse park page permit section) to see what exists, then create Recreation.gov alerts for release windows so you do not miss lottery dates.',
     updatedAt: '2026-06-01',
-    trailverseLinks: [
-      { label: 'Explore parks', href: '/explore' },
-      { label: 'Compare parks', href: '/compare' },
-      { label: 'TrailVerse vs Recreation.gov', href: '/guides/trailverse-vs-recreation-gov-and-nps-app' },
-      { label: 'How to compare parks', href: '/guides/how-to-compare-national-parks-on-trailverse' },
-    ],
     sections: [
       {
         id: 'types',

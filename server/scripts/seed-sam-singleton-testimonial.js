@@ -13,6 +13,8 @@ const Testimonial = require('../src/models/Testimonial');
 const PCWORLD_ARTICLE_URL =
   'https://www.pcworld.com/article/3141689/i-found-a-better-way-to-explore-americas-national-parks-online.html';
 
+const NSCF_LINKEDIN_URL = 'https://www.linkedin.com/company/nationalstemcellfoundation/';
+
 /** @type {Array<Record<string, unknown>>} */
 const CURATED = [
   {
@@ -27,7 +29,21 @@ const CURATED = [
     source: 'press',
     sourceUrl: PCWORLD_ARTICLE_URL,
     sourceLabel: 'Featured in PCWorld',
-    approvedAt: new Date()
+    approvedAt: new Date('2026-05-01'),
+  },
+  {
+    name: 'National Stem Cell Foundation',
+    role: 'STEM education nonprofit',
+    content:
+      'Summer break is a great time to explore the National Parks in your state or beyond. We shared TrailVerse with our #NationalSTEMScholars community — 470+ parks and sites with real-time weather, interactive maps, community reviews, and smart trip planning.',
+    rating: 5,
+    approved: true,
+    featured: true,
+    verified: true,
+    source: 'social-media',
+    sourceUrl: NSCF_LINKEDIN_URL,
+    sourceLabel: 'Shared on LinkedIn, X & Facebook',
+    approvedAt: new Date('2026-06-11'),
   },
   {
     name: 'Elena M.',

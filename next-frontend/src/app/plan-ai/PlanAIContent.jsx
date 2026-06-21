@@ -34,6 +34,7 @@ const PlanAIContent = ({ tripId }) => {
     isPersonalized,
     isNewChat,
     suggestText,
+    intentContext,
     refetchUserTrips,
     allParks,
     parksLoading,
@@ -81,13 +82,14 @@ const PlanAIContent = ({ tripId }) => {
         isPersonalized,
         parkName: effectiveParkName,
         suggestText: suggestText || '',
+        intentContext: intentContext || null,
         formData: effectiveFormData,
         currentPlan: null,
         isGenerating: false,
         hasUserMessages: false,
         resolvedParkName: effectiveParkName,
       }),
-    [effectiveEntryMode, isPersonalized, effectiveParkName, suggestText, effectiveFormData]
+    [effectiveEntryMode, isPersonalized, effectiveParkName, suggestText, intentContext, effectiveFormData]
   );
 
   const shellMeta = shellMetaOverride ?? baseShellMeta;
@@ -164,13 +166,14 @@ const PlanAIContent = ({ tripId }) => {
         headerActions={headerActions}
       >
         <TripPlannerChat
-          key={`chat-${newChatKey || tripId || guestChatSessionKey || effectiveFormData.parkCode || suggestText || 'generic'}`}
+          key={`chat-${newChatKey || tripId || guestChatSessionKey || effectiveFormData.parkCode || intentContext?.path || suggestText || 'generic'}`}
           formData={effectiveFormData}
           parkName={effectiveParkName}
           existingTripId={tripId}
           isPersonalized={isPersonalized}
           isNewChat={effectiveIsNewChat}
           suggestText={suggestText}
+          intentContext={intentContext}
           entryMode={effectiveEntryMode}
           fromCompare={fromCompare}
           fromChatHistory={fromChatHistory}

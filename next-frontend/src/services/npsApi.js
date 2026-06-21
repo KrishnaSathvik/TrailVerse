@@ -2,6 +2,15 @@ import enhancedApi from './enhancedApi';
 import globalCacheManager from './globalCacheManager';
 
 const ALL_PARKS_CACHE_VERSION = 'v4';
+const ALL_PARKS_LITE_CACHE_VERSION = 'v1';
+
+/** Slim index for map (~994 KB) vs full all-parks (~3.66 MB). */
+export const ALL_PARKS_LITE_FIELDS_MAP =
+  'parkCode,fullName,states,designation,latitude,longitude,images';
+
+/** Slim index for Plan AI (~79 KB) — no thumbnails needed in the picker. */
+export const ALL_PARKS_LITE_FIELDS_PLAN_AI =
+  'parkCode,fullName,states,designation,latitude,longitude';
 
 class NPSApi {
   // Get all parks with pagination support
@@ -52,6 +61,74 @@ class NPSApi {
     );
     
     return result.data;
+  }
+
+  /**
+   * All parks with a projected field set for map / plan-ai (bandwidth-friendly).
+   * @param {{ includeImages?: boolean }} [options]
+   */
+  async getAllParksLite({ includeImages = true } = {}) {
+    const fields = includeImages
+      ? ALL_PARKS_LITE_FIELDS_MAP
+      : ALL_PARKS_LITE_FIELDS_PLAN_AI;
+    const cacheKey = `all-parks-lite-${ALL_PARKS_LITE_CACHE_VERSION}-images-${includeImages}`;
+
+    const result = await globalCacheManager.get(
+      cacheKey,
+      'parks',
+      async () => {
+        const result = await enhancedApi.get(
+          '/parks',
+          { all: 'true', fields },
+          {
+            cacheType: 'parks',
+            ttl: 24 * 60 * 60 * 1000,
+            skipCache: true,
+          }
+        );
+
+        return {
+          data: result.data.data,
+          total: result.data.total,
+          page: result.data.page,
+          pages: result.data.pages,
+          hasMore: result.data.hasMore,
+        };
+      }
+    );
+
+    return result.data;
+  }
+
+  /** Fetch full park records for compare URL hydration / deep links. */
+  async fetchParksByCodes(codes = []) {
+    const normalized = [...new Set(
+      (codes || [])
+        .map((code) => String(code || '').trim().toLowerCase())
+        .filter(Boolean)
+    )];
+
+    if (normalized.length === 0) return [];
+
+    const fetched = await Promise.all(
+      normalized.map(async (code) => {
+        try {
+          return await this.getParkByCode(code);
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const byCode = new Map(
+      fetched
+        .filter(Boolean)
+        .map((park) => [park.parkCode?.toLowerCase(), park])
+    );
+
+    return normalized
+      .map((code) => byCode.get(code))
+      .filter(Boolean);
   }
 
   // Get park by code

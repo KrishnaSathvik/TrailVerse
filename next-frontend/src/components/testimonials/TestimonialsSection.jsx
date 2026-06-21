@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Star, Award, ChevronLeft, ChevronRight } from '@components/icons';
+import { Star, ChevronLeft, ChevronRight } from '@components/icons';
 import testimonialService from '../../services/testimonialService';
 import { useToast } from '../../context/ToastContext';
 import { handleApiError } from '../../utils/errorHandler';
@@ -10,6 +10,7 @@ import {
   TESTIMONIALS_SECTION_SUBTITLE
 } from './testimonialsCopy';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
+import TestimonialBadge from './TestimonialBadge';
 
 function TestimonialAttribution({ testimonial }) {
   if (testimonial.sourceUrl) {
@@ -40,7 +41,7 @@ function TestimonialAttribution({ testimonial }) {
 function TestimonialCard({ testimonial, renderStars, className = '' }) {
   return (
     <div
-      className={`flex h-full flex-col rounded-2xl p-6 backdrop-blur ${className}`}
+      className={`flex h-full flex-col rounded-2xl p-5 sm:p-6 backdrop-blur ${className}`}
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
@@ -50,7 +51,7 @@ function TestimonialCard({ testimonial, renderStars, className = '' }) {
       <div className="mb-4 shrink-0">{renderStars(testimonial.rating)}</div>
 
       <p
-        className="mb-6 flex-1 text-sm leading-relaxed"
+        className="mb-5 flex-1 text-sm sm:text-[0.9375rem] leading-relaxed"
         style={{ color: 'var(--text-secondary)' }}
       >
         &quot;{testimonial.content}&quot;
@@ -80,28 +81,7 @@ function TestimonialCard({ testimonial, renderStars, className = '' }) {
           </div>
         </div>
 
-        {testimonial.source === 'press' && (
-          <div
-            className="mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs"
-            style={{
-              backgroundColor: 'var(--surface-hover)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            Press mention
-          </div>
-        )}
-        {testimonial.featured && testimonial.source !== 'press' && (
-          <div
-            className="mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs"
-            style={{ backgroundColor: 'var(--primary)', color: 'white' }}
-          >
-            <Award className="h-3 w-3" />
-            Featured
-          </div>
-        )}
+        <TestimonialBadge testimonial={testimonial} />
       </div>
     </div>
   );
@@ -109,7 +89,7 @@ function TestimonialCard({ testimonial, renderStars, className = '' }) {
 
 function TestimonialSlide({ testimonial, renderStars }) {
   return (
-    <div className="flex w-full flex-shrink-0 self-stretch">
+    <div className="min-w-full flex-[0_0_100%]">
       <TestimonialCard
         testimonial={testimonial}
         renderStars={renderStars}
@@ -146,8 +126,12 @@ function TestimonialCarouselNav({ count, currentIndex, onPrev, onNext, onSelect,
             type="button"
             onClick={() => onSelect(index)}
             className={`h-2 rounded-full transition ${
-              index === currentIndex ? 'w-6 bg-forest-500' : 'w-2 bg-gray-300'
+              index === currentIndex ? 'w-6' : 'w-2'
             }`}
+            style={{
+              backgroundColor:
+                index === currentIndex ? 'var(--accent-green)' : 'var(--border)',
+            }}
             aria-label={dotLabel(index)}
           />
         ))}
@@ -201,6 +185,13 @@ const TestimonialsSection = ({
     : testimonials;
 
   useEffect(() => {
+    if (initialTestimonials !== undefined) {
+      setTestimonials(initialTestimonials);
+      setLoading(false);
+    }
+  }, [initialTestimonials]);
+
+  useEffect(() => {
     if (hasServerData) return;
     loadTestimonials();
   }, [featured, limit, refreshTrigger, hasServerData]);
@@ -245,6 +236,7 @@ const TestimonialsSection = ({
     desktopPage * DESKTOP_BATCH_SIZE,
     desktopPage * DESKTOP_BATCH_SIZE + DESKTOP_BATCH_SIZE
   );
+  const useMobileStack = visibleTestimonials.length <= 3;
 
   const nextMobile = () => {
     setMobileIndex((prev) => (prev + 1) % visibleTestimonials.length);
@@ -282,13 +274,13 @@ const TestimonialsSection = ({
   if (loading) {
     return (
       <div className={LANDING_SECTION}>
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="max-w-[92rem] mx-auto">
           {showTitle && (
             <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
               <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
                 {TESTIMONIALS_SECTION_TITLE}
               </h2>
-              <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-base sm:text-lg max-w-2xl mx-auto px-1" style={{ color: 'var(--text-secondary)' }}>
                 {TESTIMONIALS_SECTION_SUBTITLE}
               </p>
             </div>
@@ -315,9 +307,9 @@ const TestimonialsSection = ({
               </div>
             ))}
           </div>
-          <div className="md:hidden mx-auto max-w-3xl">
+          <div className="md:hidden flex flex-col gap-4">
             <div
-              className="animate-pulse rounded-2xl p-6 backdrop-blur"
+              className="animate-pulse rounded-2xl p-5 sm:p-6 backdrop-blur"
               style={{
                 backgroundColor: 'var(--surface)',
                 borderWidth: '1px',
@@ -345,7 +337,7 @@ const TestimonialsSection = ({
     }
     return (
       <div className="py-8">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="max-w-[92rem] mx-auto">
           <p className="text-center text-base" style={{ color: 'var(--text-secondary)' }}>
             No published testimonials yet. Be the first to share your experience below.
           </p>
@@ -357,7 +349,7 @@ const TestimonialsSection = ({
   if (visibleTestimonials.length === 0) {
     return (
       <div className="py-8">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="max-w-[92rem] mx-auto">
           <p className="text-center text-base" style={{ color: 'var(--text-secondary)' }}>
             No testimonials match your search.
           </p>
@@ -367,14 +359,14 @@ const TestimonialsSection = ({
   }
 
   return (
-    <div className={LANDING_SECTION}>
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+    <div className={LANDING_SECTION} id="testimonials">
+      <div className="max-w-[92rem] mx-auto">
         {showTitle && (
           <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               {TESTIMONIALS_SECTION_TITLE}
             </h2>
-            <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base sm:text-lg max-w-2xl mx-auto px-1" style={{ color: 'var(--text-secondary)' }}>
               {TESTIMONIALS_SECTION_SUBTITLE}
             </p>
           </div>
@@ -405,30 +397,44 @@ const TestimonialsSection = ({
           />
         </div>
 
-        {/* Mobile — one card at a time */}
-        <div className="mx-auto max-w-3xl md:hidden">
-          <div className="overflow-hidden">
-            <div
-              className="flex items-stretch transition-transform duration-300 ease-in-out"
-              style={{ transform: `translateX(-${mobileIndex * 100}%)` }}
-            >
+        {/* Mobile — stack up to 3; carousel when more */}
+        <div className="md:hidden">
+          {useMobileStack ? (
+            <div className="flex flex-col gap-4">
               {visibleTestimonials.map((testimonial) => (
-                <TestimonialSlide
+                <TestimonialCard
                   key={testimonial._id}
                   testimonial={testimonial}
                   renderStars={renderStars}
                 />
               ))}
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="overflow-hidden w-full">
+                <div
+                  className="flex w-full transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${mobileIndex * 100}%)` }}
+                >
+                  {visibleTestimonials.map((testimonial) => (
+                    <TestimonialSlide
+                      key={testimonial._id}
+                      testimonial={testimonial}
+                      renderStars={renderStars}
+                    />
+                  ))}
+                </div>
+              </div>
 
-          <TestimonialCarouselNav
-            count={visibleTestimonials.length}
-            currentIndex={mobileIndex}
-            onPrev={prevMobile}
-            onNext={nextMobile}
-            onSelect={setMobileIndex}
-          />
+              <TestimonialCarouselNav
+                count={visibleTestimonials.length}
+                currentIndex={mobileIndex}
+                onPrev={prevMobile}
+                onNext={nextMobile}
+                onSelect={setMobileIndex}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

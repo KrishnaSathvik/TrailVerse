@@ -1,5 +1,6 @@
 import { parkToSlug } from '@/utils/parkSlug';
 import { htmlToPlainText } from '@/utils/htmlUtils';
+import { hasCrowdCalendar } from '@/lib/crowdCalendar';
 
 /** Tier A parks — GSC Performance + blog traffic (May 2026). */
 export const TIER_A_PARK_SLUGS = new Set([
@@ -98,13 +99,26 @@ export function formatStateList(states) {
   return states.split(',').map((s) => s.trim()).filter(Boolean).join(', ');
 }
 
+export function buildParkPageTitle(park) {
+  const name = park.fullName;
+
+  if (hasCrowdCalendar(park)) {
+    return `${name}: Alerts, Crowd Calendar, Map & Trailie | TrailVerse`;
+  }
+
+  return `${name}: Alerts, Map, Weather & Trailie Planner | TrailVerse`;
+}
+
 export function buildParkMetaDescription(park, parkSlug) {
   const slug = parkSlug || parkToSlug(park.fullName);
   const states = formatStateList(park.states);
   const hook = TIER_A_HOOKS[slug] || 'Check live alerts, maps, fees, and seasonal tips before you go.';
   const name = park.fullName;
   if (isTierAPark(slug)) {
-    return `Plan ${name} (${states}): live NPS alerts, crowd calendar, maps, and Trailie trip planning. ${hook}`;
+    const crowdPhrase = hasCrowdCalendar(park)
+      ? 'live NPS alerts, crowd calendar, maps, and Trailie trip planning'
+      : 'live NPS alerts, maps, weather, and Trailie trip planning';
+    return `Plan ${name} (${states}): ${crowdPhrase}. ${hook}`;
   }
   const snippet = park.description
     ? htmlToPlainText(park.description).replace(/\s+/g, ' ').trim().slice(0, 120)

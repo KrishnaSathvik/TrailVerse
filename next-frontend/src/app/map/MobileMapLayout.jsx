@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@components/common/Header';
 import { useTheme } from '@/context/ThemeContext';
-import { useAllParks } from '@hooks/useParks';
+import { useAllParksLite } from '@hooks/useParks';
+import useMapPreviewPark from './useMapPreviewPark';
 import { useMapCampgrounds } from '@hooks/useMapCampgrounds';
 import { useMapPlaces } from '@hooks/useMapPlaces';
 import { useParkRatings } from '@hooks/useParkRatings';
@@ -27,7 +28,7 @@ export default function MobileMapLayout() {
   const { isDark } = useTheme();
   const [showPlaces, setShowPlaces] = useState(true);
   const [showCampgrounds, setShowCampgrounds] = useState(true);
-  const { data: allParksData, isLoading } = useAllParks();
+  const { data: allParksData, isLoading } = useAllParksLite(true);
   const { data: placesData } = useMapPlaces();
   const { data: campgroundsData } = useMapCampgrounds();
   const { data: parkRatings } = useParkRatings();
@@ -35,6 +36,7 @@ export default function MobileMapLayout() {
   const allPlaces = placesData?.data || [];
   const allCampgrounds = campgroundsData?.data || [];
   const mapState = useParkMapState(allParks, allCampgrounds, allPlaces);
+  const previewPark = useMapPreviewPark(mapState.selectedPark);
 
   const getRating = (parkCode) => {
     if (!Array.isArray(parkRatings)) return null;
@@ -112,15 +114,15 @@ export default function MobileMapLayout() {
           </div>
         </div>
 
-        {mapState.selectedPark && (
+        {previewPark && (
           <div className="absolute inset-x-0 bottom-0 z-30">
             <ParkPreviewCard
-              park={mapState.selectedPark}
-              rating={getRating(mapState.selectedPark.parkCode)}
+              park={previewPark}
+              rating={getRating(previewPark.parkCode)}
               onClose={mapState.clearSelection}
               onViewDetails={() => {
                 signalNavigation();
-                router.push(parkDetailHref(parkToSlug(mapState.selectedPark.fullName), returnPath));
+                router.push(parkDetailHref(parkToSlug(previewPark.fullName), returnPath));
               }}
               onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
               compact

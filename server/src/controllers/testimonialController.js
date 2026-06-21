@@ -14,7 +14,7 @@ exports.getTestimonials = async (req, res, next) => {
 
     const testimonials = await Testimonial.find(query)
       .populate('user', 'name email avatar')
-      .sort({ featured: -1, submittedAt: -1 })
+      .sort({ featured: -1, approvedAt: 1, submittedAt: -1 })
       .limit(parseInt(limit));
 
     res.status(200).json({

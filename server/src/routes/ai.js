@@ -6,6 +6,7 @@ const { fetchRelevantFacts, fetchNPSFacts, needsWebSearch, shouldAppendAnonymous
 const {
   executeParkSearch,
   formatRankedParksDiscoveryBlock,
+  formatIntentGuideParksBlock,
   formatVoiceSearchResult,
   DISCOVERY_RESPONSE_FORMAT_BLOCK,
   DISCOVERY_REFINEMENT_CLOSE_BLOCK,
@@ -545,6 +546,59 @@ async function appendRankedDiscoveryToPrompt({
   return { appended: false, prompt };
 }
 
+/** Auto-search on vibe-guide sessions when the client has not yet sent ranked picks. */
+async function appendIntentGuideDiscoveryToPrompt({
+  enhancedSystemPrompt,
+  intentGuide,
+  clientContext,
+  isAnonymous,
+  httpReq,
+  logPrefix,
+  originCity = null,
+}) {
+  if (!intentGuide?.searchQuery) {
+    return { appended: false, prompt: enhancedSystemPrompt };
+  }
+  if (typeof clientContext === 'string' && clientContext.includes('INTENT GUIDE RANKED PICKS')) {
+    return { appended: false, prompt: enhancedSystemPrompt };
+  }
+
+  let prompt = enhancedSystemPrompt;
+  try {
+    const searchQuery = intentGuide.searchQuery.trim().slice(0, 200);
+    const pinned = Array.isArray(intentGuide.featuredParkCodes)
+      ? intentGuide.featuredParkCodes.join(',')
+      : '';
+    const { parks, count } = await executeParkSearch({
+      q: searchQuery,
+      limit: 24,
+      pinned: pinned || undefined,
+      req: httpReq,
+      source: isAnonymous ? 'trailie_chat_anon' : 'trailie_chat',
+      originCity,
+    });
+    if (parks.length >= 1) {
+      const block = formatIntentGuideParksBlock(parks, {
+        guideTitle: intentGuide.title,
+        searchQuery,
+      });
+      if (block) {
+        prompt += block;
+        console.log(`${logPrefix} Intent guide ranked parks injected:`, {
+          path: intentGuide.path,
+          query: searchQuery.slice(0, 60),
+          count,
+        });
+        return { appended: true, prompt };
+      }
+    }
+  } catch (err) {
+    console.error(`${logPrefix} Intent guide discovery error:`, err.message);
+  }
+
+  return { appended: false, prompt: enhancedSystemPrompt };
+}
+
 // Helper: parse request body and prepare messages, facts, and system prompt
 async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   const { isAnonymous = false, isTrustedMcp = false, req: httpReq = null } = options;
@@ -998,6 +1052,21 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
 
   // Open-ended discovery only when no parks are named in the message
   let rankedDiscoveryAppended = false;
+
+  const clientContextForIntent = extractClientSystemContext(systemPrompt, messages);
+  if (metadata.intentGuide?.searchQuery) {
+    const intentGuideResult = await appendIntentGuideDiscoveryToPrompt({
+      enhancedSystemPrompt,
+      intentGuide: metadata.intentGuide,
+      clientContext: clientContextForIntent,
+      isAnonymous,
+      httpReq,
+      logPrefix,
+      originCity: userCity,
+    });
+    enhancedSystemPrompt = intentGuideResult.prompt;
+  }
+
   if (openEndedDiscovery && allExtractedParks.length === 0) {
     const discoveryResult = await appendRankedDiscoveryToPrompt({
       enhancedSystemPrompt,

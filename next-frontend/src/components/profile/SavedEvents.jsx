@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Calendar, MapPin, Clock, ExternalLink, Heart, X, CalendarDays } from '@components/icons';
-import { useAllParks } from '../../hooks/useParks';
 
 const SavedEvents = ({ savedEvents, loading, onRemove, onClearAll }) => {
-  useAllParks(); // Prefetch all parks data for park name lookups
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredEvents = useMemo(() => {

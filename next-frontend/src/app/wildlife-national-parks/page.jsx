@@ -1,6 +1,7 @@
 import { createIntentLandingPageExports } from '@/components/intent/createIntentLandingPage';
 
-export const dynamic = 'force-dynamic';
+/** Hourly ISR — ranked grids refresh without blocking every request on Render. */
+export const revalidate = 3600;
 
 const { generateMetadata, default: Page } = createIntentLandingPageExports('/wildlife-national-parks');
 

@@ -16,7 +16,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useVisitedParks } from '@/hooks/useVisitedParks';
 import { useFavorites } from '@/hooks/useFavorites';
 import { getCompareRoadTripCta, getCompareParkPlanButton } from '@/lib/planAiWelcomeCopy';
-import { useAllParks } from '@/hooks/useParks';
+import { useAllParksLite } from '@/hooks/useParks';
+import npsApi from '@/services/npsApi';
 import { useParkComparison } from '@/hooks/useEnhancedParks';
 import { useCompareParkingLots } from '@/hooks/useCompareParkingLots';
 import { logEvent } from '@/utils/analytics';
@@ -28,7 +29,7 @@ import { pickPrimaryEntranceFee } from '@/utils/parkVisitInfoUtils';
 import { saveCompareSelection } from '@/lib/comparePersistence';
 import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
-/** Default picker list — search still queries all parks from useAllParks */
+/** Default picker list — search queries lite all-parks index; full record fetched on add. */
 const COMPARE_FEATURED_PARK_CODES = [
   'yell', 'yose', 'grca', 'zion', 'glac', 'acad', 'grte', 'grsm',
   'arch', 'brca', 'jotr', 'olym', 'ever', 'dena', 'seki', 'romo',
@@ -173,7 +174,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
   const { isAuthenticated, user } = useAuth();
   const { isParkVisited } = useVisitedParks();
   const { isParkFavorited } = useFavorites();
-  const { data: allParksData, isLoading } = useAllParks();
+  const { data: allParksData, isLoading } = useAllParksLite(true);
   const allParks = allParksData?.data;
   const [selectedParks, setSelectedParks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -256,13 +257,21 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
 
   const isSearchingParks = searchTerm.trim().length > 0;
 
-  const handleAddPark = (park) => {
-    if (selectedParks.length < maxParks) {
-      setSelectedParks([...selectedParks, park]);
+  const handleAddPark = async (park) => {
+    if (selectedParks.length >= maxParks) return;
+
+    try {
+      const fullPark = await npsApi.getParkByCode(park.parkCode);
+      const toAdd = fullPark || park;
+      setSelectedParks((prev) => [...prev, toAdd]);
+      logEvent('Compare', 'add_park', toAdd.fullName);
+    } catch {
+      setSelectedParks((prev) => [...prev, park]);
       logEvent('Compare', 'add_park', park.fullName);
-      setSearchTerm('');
-      setShowSelector(false);
     }
+
+    setSearchTerm('');
+    setShowSelector(false);
   };
 
   const handleUrlHydrate = useCallback((parks) => {
@@ -597,7 +606,6 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
   return (
     <div className="overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <CompareUrlHydration
-        allParks={allParks}
         initialParkCodes={initialParkCodes}
         hydratedRef={urlHydratedRef}
         onHydrate={handleUrlHydrate}

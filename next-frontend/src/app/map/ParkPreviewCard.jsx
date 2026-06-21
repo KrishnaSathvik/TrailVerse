@@ -2,6 +2,7 @@
 
 import { ArrowRight, MapPin, Star, X } from '@components/icons';
 import OptimizedImage from '@components/common/OptimizedImage';
+import { htmlToPlainText } from '@/utils/htmlUtils';
 
 export default function ParkPreviewCard({
   park,
@@ -15,6 +16,9 @@ export default function ParkPreviewCard({
   if (!park) return null;
 
   const primaryImage = park.images?.[0];
+  const descriptionText = park.description
+    ? htmlToPlainText(park.description).slice(0, 220)
+    : '';
 
   if (compact) {
     return (
@@ -181,7 +185,7 @@ export default function ParkPreviewCard({
         )}
 
         <p className="text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
-          {park.description || 'Explore this park to learn more about trails, experiences, and planning details.'}
+          {descriptionText || 'Explore this park to learn more about trails, experiences, and planning details.'}
         </p>
 
         <button

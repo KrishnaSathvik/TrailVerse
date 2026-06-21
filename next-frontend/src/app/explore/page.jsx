@@ -2,6 +2,7 @@ import Header from '@/components/common/Header';
 import ExploreSeoShell from '@/components/seo/ExploreSeoShell';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import { ALL_PARKS_LITE_FIELDS_MAP } from '@/services/npsApi';
 import { canonicalPageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({ searchParams }) {
@@ -27,9 +28,12 @@ async function getInitialParks() {
 
 async function getInitialAllParks() {
   try {
-    const response = await fetch(`${getApiBaseUrl()}/parks?all=true`, {
+    const response = await fetch(
+      `${getApiBaseUrl()}/parks?all=true&fields=${encodeURIComponent(ALL_PARKS_LITE_FIELDS_MAP)}`,
+      {
       next: { revalidate: 86400 },
-    });
+      }
+    );
 
     if (!response.ok) {
       return undefined;

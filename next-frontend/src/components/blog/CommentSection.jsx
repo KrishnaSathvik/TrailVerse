@@ -3,9 +3,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import commentService from '../../services/commentService';
 import { getBestAvatar } from '../../utils/avatarGenerator';
-import { MessageCircle, ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from '@components/icons';
+import { ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from '@components/icons';
 
-const CommentSection = ({ postId, comments: initialComments = [], isPublic = false }) => {
+const CommentSection = ({
+  postId,
+  comments: initialComments = [],
+  isPublic = false,
+  embedded = false,
+  unified = false,
+}) => {
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [comments, setComments] = useState(initialComments);
@@ -69,87 +75,118 @@ const CommentSection = ({ postId, comments: initialComments = [], isPublic = fal
     }
   };
 
+  const header = unified ? null : (
+    <h3
+      className={`font-bold mb-4 ${embedded ? 'text-xl' : 'text-2xl'}`}
+      style={{ color: 'var(--text-primary)' }}
+    >
+      {embedded ? 'Comments' : 'Discussion'}
+      {!embedded && ` (${comments.length})`}
+      {embedded && comments.length > 0 ? ` (${comments.length})` : ''}
+    </h3>
+  );
+
+  const unifiedLabel = unified ? (
+    <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+      Comment{comments.length > 0 ? ` · ${comments.length}` : ''}
+    </p>
+  ) : null;
+
+  const form = (
+    <form onSubmit={handleSubmit} className={embedded ? 'mb-6' : 'mb-8'}>
+      <textarea
+        value={newComment}
+        onChange={(e) => setNewComment(e.target.value)}
+        placeholder={isAuthenticated ? 'Share your thoughts...' : 'Share your thoughts... (Login to save your comment)'}
+        rows={embedded ? 3 : 4}
+        maxLength={500}
+        className="w-full px-4 py-3 rounded-xl outline-none resize-none mb-3 text-sm sm:text-base"
+        style={{
+          backgroundColor: 'var(--bg-primary)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-primary)',
+        }}
+      />
+      <div className="flex justify-between items-center gap-3">
+        <span className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          {newComment.length}/500
+        </span>
+        <button
+          type="submit"
+          disabled={submitting || !newComment.trim()}
+          className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-semibold transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: 'var(--accent-green)',
+            color: 'white',
+          }}
+        >
+          {submitting ? 'Posting...' : 'Post comment'}
+        </button>
+      </div>
+    </form>
+  );
+
+  const emptyState = embedded ? (
+    <p className="text-sm py-2" style={{ color: 'var(--text-tertiary)' }}>
+      No comments yet — be the first to reply.
+    </p>
+  ) : (
+    <div className="text-center py-12">
+      <div
+        className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+        style={{ backgroundColor: 'var(--surface-hover)' }}
+      >
+        <MessageSquare className="h-8 w-8" style={{ color: 'var(--text-tertiary)' }} />
+      </div>
+      <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+        No comments yet
+      </h4>
+      <p style={{ color: 'var(--text-secondary)' }}>
+        Be the first to share your thoughts on this post!
+      </p>
+    </div>
+  );
+
+  const list = (
+    <div className="space-y-5 sm:space-y-6">
+      {comments.map((comment) => (
+        <Comment
+          key={comment._id}
+          comment={comment}
+          user={user}
+          isAuthenticated={isAuthenticated}
+          onReply={(id) => setReplyTo(id)}
+          onDelete={handleDelete}
+          onLike={handleLike}
+        />
+      ))}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div>
+        {header}
+        {unifiedLabel}
+        {form}
+        {comments.length === 0 ? emptyState : list}
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl p-8 backdrop-blur"
+    <div
+      className="rounded-2xl p-6 sm:p-8 backdrop-blur"
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',
-        borderColor: 'var(--border)'
+        borderColor: 'var(--border)',
       }}
     >
-      <div className="flex items-center gap-2 mb-6">
-        <MessageCircle className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
-        <h3 className="text-2xl font-bold"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          Comments ({comments.length})
-        </h3>
-      </div>
-
-      {/* Comment Form */}
-      <form onSubmit={handleSubmit} className="mb-8">
-        <textarea
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder={isAuthenticated ? "Share your thoughts..." : "Share your thoughts... (Login to save your comment)"}
-          rows={4}
-          maxLength={500}
-          className="w-full px-4 py-3 rounded-xl outline-none resize-none mb-3"
-          style={{
-            backgroundColor: 'var(--surface-hover)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)',
-            color: 'var(--text-primary)'
-          }}
-        />
-        <div className="flex justify-between items-center">
-          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            {newComment.length}/500
-          </span>
-          <button
-            type="submit"
-            disabled={submitting || !newComment.trim()}
-            className="px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--accent-green)',
-              color: 'white'
-            }}
-          >
-            {submitting ? 'Posting...' : 'Post Comment'}
-          </button>
-        </div>
-      </form>
-
-      {/* Comments List */}
-      {comments.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
-            style={{ backgroundColor: 'var(--surface-hover)' }}
-          >
-            <MessageSquare className="h-8 w-8" style={{ color: 'var(--text-tertiary)' }} />
-          </div>
-          <h4 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-            No comments yet
-          </h4>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Be the first to share your thoughts on this post!
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {comments.map((comment) => (
-            <Comment
-              key={comment._id}
-              comment={comment}
-              user={user}
-              isAuthenticated={isAuthenticated}
-              onReply={(id) => setReplyTo(id)}
-              onDelete={handleDelete}
-              onLike={handleLike}
-            />
-          ))}
-        </div>
-      )}
+      {header}
+      {form}
+      {comments.length === 0 ? emptyState : list}
     </div>
   );
 };

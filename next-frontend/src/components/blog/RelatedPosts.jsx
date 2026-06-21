@@ -1,202 +1,171 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock } from '@components/icons';
-import BlogViewCount from './BlogViewCount';
-import OptimizedImage from '../common/OptimizedImage';
-import LoadingSpinner from '../common/LoadingSpinner';
-import blogService from '../../services/blogService';
+import BlogViewCount from '@/components/blog/BlogViewCount';
+import OptimizedImage from '@/components/common/OptimizedImage';
+import { blogCategoryLabel } from '@/lib/blogCategories';
+import blogService from '@/services/blogService';
 
-const RelatedPosts = ({ currentPostId, category, tags = [], isPublic = false }) => {
+function RelatedPostRow({ post }) {
+  const categoryLabel = blogCategoryLabel(post.category);
+
+  return (
+    <li>
+      <Link
+        href={`/blog/${post.slug}`}
+        className="group flex items-start gap-4 py-5 sm:gap-5 sm:py-6 transition-opacity hover:opacity-90"
+      >
+        <div className="w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 rounded-xl overflow-hidden flex-shrink-0 bg-[var(--surface-hover)]">
+          <OptimizedImage
+            src={post.featuredImage || post.imageUrl}
+            alt={post.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        </div>
+
+        <div className="min-w-0 flex-1 pt-0.5">
+          {categoryLabel ? (
+            <p
+              className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
+              style={{ color: 'var(--accent-green)' }}
+            >
+              {categoryLabel}
+            </p>
+          ) : null}
+          <h3
+            className="text-base sm:text-lg font-semibold leading-snug line-clamp-2"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {post.title}
+          </h3>
+          {post.excerpt ? (
+            <p
+              className="text-sm mt-1.5 leading-relaxed line-clamp-2 hidden sm:block"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {post.excerpt}
+            </p>
+          ) : null}
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            {post.readTime ? (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {post.readTime} min read
+              </span>
+            ) : null}
+            <BlogViewCount views={post.views} />
+          </div>
+        </div>
+
+        <ArrowRight
+          className="h-4 w-4 mt-1 flex-shrink-0 opacity-40 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 hidden sm:block"
+          style={{ color: 'var(--accent-green)' }}
+        />
+      </Link>
+    </li>
+  );
+}
+
+function RelatedPostsSkeleton() {
+  return (
+    <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <li key={index} className="flex gap-4 py-5 sm:py-6 animate-pulse">
+          <div
+            className="w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 rounded-xl flex-shrink-0"
+            style={{ backgroundColor: 'var(--surface-hover)' }}
+          />
+          <div className="flex-1 space-y-2 pt-1">
+            <div className="h-3 w-20 rounded-full" style={{ backgroundColor: 'var(--surface-hover)' }} />
+            <div className="h-5 w-full max-w-md rounded-lg" style={{ backgroundColor: 'var(--surface-hover)' }} />
+            <div className="h-4 w-32 rounded-lg hidden sm:block" style={{ backgroundColor: 'var(--surface-hover)' }} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function RelatedPosts({
+  currentPostId,
+  category,
+  tags = [],
+  isPublic = false,
+}) {
   const [relatedPosts, setRelatedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentPostId) return;
+
+    let cancelled = false;
+
     const fetchRelatedPosts = async () => {
       try {
         setLoading(true);
-        // Fetch posts from the same category
         const posts = await blogService.getRelatedPosts(currentPostId, category, tags);
-        setRelatedPosts(posts);
+        if (!cancelled) setRelatedPosts(posts);
       } catch (error) {
         console.error('Error fetching related posts:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    if (currentPostId) {
-      fetchRelatedPosts();
-    }
+    fetchRelatedPosts();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentPostId, category, tags]);
 
-  if (loading) {
-    return (
-      <section className="mt-16 pt-16" style={{ borderTop: '1px solid var(--border)' }}>
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="md" />
-        </div>
-      </section>
-    );
-  }
-
-  if (relatedPosts.length === 0) {
+  if (!loading && relatedPosts.length === 0) {
     return null;
   }
 
   return (
-    <section className="mt-16 pt-16" style={{ borderTop: '1px solid var(--border)' }}>
-      {/* Section Header */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-          You Might Also Like
+    <section
+      className="pt-10"
+      style={{ borderTop: '1px solid var(--border)' }}
+      aria-labelledby="related-posts-heading"
+    >
+      <div className="flex items-baseline justify-between gap-4 mb-2">
+        <h2
+          id="related-posts-heading"
+          className="text-xl sm:text-2xl font-bold tracking-tight"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          Keep reading
         </h2>
-        <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
-          Discover more stories and guides related to this topic
-        </p>
-      </div>
-
-      {/* Related Posts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {relatedPosts.map((post, index) => (
-          <RelatedPostCard key={post._id} post={post} index={index} />
-        ))}
-      </div>
-
-      {/* View All Link - Only show for authenticated users */}
-      {!isPublic && (
-        <div className="mt-8 text-center">
+        {!isPublic && !loading && (
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all hover:-translate-y-1"
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
-              color: 'var(--text-primary)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-              e.currentTarget.style.borderColor = 'var(--border-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface)';
-              e.currentTarget.style.borderColor = 'var(--border)';
-            }}
+            className="inline-flex items-center gap-1 text-sm font-semibold transition hover:opacity-80 flex-shrink-0"
+            style={{ color: 'var(--accent-green)' }}
           >
-            Explore All Articles
-            <ArrowRight className="h-4 w-4" />
+            All articles
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        </div>
+        )}
+      </div>
+      <p className="text-sm mb-5 sm:mb-6" style={{ color: 'var(--text-secondary)' }}>
+        More on this topic from TrailVerse
+      </p>
+
+      {loading ? (
+        <RelatedPostsSkeleton />
+      ) : (
+        <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
+          {relatedPosts.map((post) => (
+            <RelatedPostRow key={post._id} post={post} />
+          ))}
+        </ul>
       )}
     </section>
   );
-};
-
-const RelatedPostCard = ({ post, index }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <Link
-      href={`/blog/${post.slug}`}
-      className="group rounded-2xl overflow-hidden backdrop-blur transition-all duration-300"
-      style={{
-        backgroundColor: 'var(--surface)',
-        borderWidth: '1px',
-        borderColor: 'var(--border)',
-        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: isHovered ? 'var(--shadow-lg)' : 'var(--shadow-sm)'
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden">
-        <OptimizedImage
-          src={post.featuredImage || post.imageUrl}
-          alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        
-        {/* Post Number Badge */}
-        <div className="absolute top-4 right-4">
-          <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm backdrop-blur"
-            style={{ 
-              backgroundColor: 'rgba(34, 197, 94, 0.9)',
-              boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
-            }}
-          >
-            {index + 1}
-          </div>
-        </div>
-
-        {/* Category Badge */}
-        {post.category && (
-          <div className="absolute top-4 left-4">
-            <span 
-              className="px-3 py-1 rounded-full text-xs font-semibold backdrop-blur"
-              style={{ 
-                backgroundColor: 'rgba(14, 165, 233, 0.9)',
-                color: 'white'
-              }}
-            >
-              {post.category}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="p-5">
-        {/* Title */}
-        <h3 
-          className="text-lg font-bold mb-2 line-clamp-2 group-hover:opacity-80 transition-opacity"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {post.title}
-        </h3>
-
-        {/* Excerpt */}
-        {post.excerpt && (
-          <p 
-            className="text-sm mb-4 line-clamp-2"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {post.excerpt}
-          </p>
-        )}
-
-        {/* Footer Meta */}
-        <div 
-          className="flex items-center justify-between pt-4 text-xs"
-          style={{ 
-            borderTop: '1px solid var(--border)',
-            color: 'var(--text-tertiary)' 
-          }}
-        >
-          <div className="flex items-center gap-3">
-            {post.readTime && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {post.readTime} min
-              </span>
-            )}
-            <BlogViewCount views={post.views} />
-          </div>
-          
-          <span 
-            className="flex items-center gap-1 font-medium group-hover:gap-2 transition-all"
-            style={{ color: 'var(--accent-green)' }}
-          >
-            Read
-            <ArrowRight className="h-3 w-3" />
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-export default RelatedPosts;
-
+}

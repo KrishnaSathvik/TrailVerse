@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@components/common/Header';
 import { useTheme } from '@/context/ThemeContext';
-import { useAllParks } from '@hooks/useParks';
+import { useAllParksLite } from '@hooks/useParks';
+import useMapPreviewPark from './useMapPreviewPark';
 import { useCampgroundDetails } from '@hooks/useCampgroundDetails';
 import { useMapCampgrounds } from '@hooks/useMapCampgrounds';
 import { useMapPlaces } from '@hooks/useMapPlaces';
@@ -29,7 +30,7 @@ export default function DesktopMapLayout() {
   const { isDark } = useTheme();
   const [showPlaces, setShowPlaces] = useState(true);
   const [showCampgrounds, setShowCampgrounds] = useState(true);
-  const { data: allParksData, isLoading } = useAllParks();
+  const { data: allParksData, isLoading } = useAllParksLite(true);
   const { data: placesData } = useMapPlaces();
   const { data: campgroundsData } = useMapCampgrounds();
   const { data: parkRatings } = useParkRatings();
@@ -37,6 +38,7 @@ export default function DesktopMapLayout() {
   const allPlaces = placesData?.data || [];
   const allCampgrounds = campgroundsData?.data || [];
   const mapState = useParkMapState(allParks, allCampgrounds, allPlaces);
+  const previewPark = useMapPreviewPark(mapState.selectedPark);
   const selectedCampground = mapState.selectedCampground;
   const selectedPlace = mapState.selectedPlace;
   const { data: campgroundDetails } = useCampgroundDetails(
@@ -123,15 +125,15 @@ export default function DesktopMapLayout() {
           </div>
         </div>
 
-        {mapState.selectedPark && (
+        {previewPark && (
           <div className="pointer-events-none absolute bottom-8 right-10 z-20 w-full max-w-[28rem]">
             <ParkPreviewCard
-              park={mapState.selectedPark}
-              rating={getRating(mapState.selectedPark.parkCode)}
+              park={previewPark}
+              rating={getRating(previewPark.parkCode)}
               onClose={mapState.clearSelection}
               onViewDetails={() => {
                 signalNavigation();
-                router.push(parkDetailHref(parkToSlug(mapState.selectedPark.fullName), returnPath));
+                router.push(parkDetailHref(parkToSlug(previewPark.fullName), returnPath));
               }}
               onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
               className="pointer-events-auto"

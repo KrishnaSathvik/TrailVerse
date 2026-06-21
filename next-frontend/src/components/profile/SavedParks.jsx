@@ -2,12 +2,12 @@ import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Heart, Calendar } from '@components/icons';
-import { useAllParks } from '../../hooks/useParks';
+import { useAllParksLite } from '../../hooks/useParks';
 import { parkToSlug } from '../../utils/parkSlug';
 import { htmlToPlainText } from '../../utils/htmlUtils';
 
 const SavedParks = ({ savedParks, onRemove }) => {
-  const { data: allParksData } = useAllParks();
+  const { data: allParksData } = useAllParksLite(false);
   const parksData = allParksData?.data;
 
   // Map parkCode → NPS park data for enrichment
