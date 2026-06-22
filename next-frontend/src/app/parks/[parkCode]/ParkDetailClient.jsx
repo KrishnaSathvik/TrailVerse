@@ -156,7 +156,7 @@ const ParkDetailInner = ({
   const alertCount = alerts?.length || 0;
   const permitCount = permits.length;
 
-  const tabs = useMemo(
+  const indexTabs = useMemo(
     () => filterVisibleExploreTabs(allTabs, {
       alertCount,
       permitCount,
@@ -167,6 +167,12 @@ const ParkDetailInner = ({
     }),
     [allTabs, alertCount, permitCount, requestedTab, indexReady, exploreIndex, showTransitTab]
   );
+
+  const validTabIds = useMemo(() => {
+    const ids = new Set(indexTabs.map((tab) => tab.id));
+    if (requestedTab) ids.add(requestedTab);
+    return [...ids];
+  }, [indexTabs, requestedTab]);
 
   const faqTabContext = useMemo(
     () => planningFaqTabContextFromExplore({
@@ -190,7 +196,6 @@ const ParkDetailInner = ({
     );
   }, [planningFaqItems, park, permits, permitsReady, faqTabContext]);
 
-  const validTabIds = tabs.map((tab) => tab.id);
   const activeTab = useMemo(() => {
     if (!requestedTab) return 'overview';
     if (validTabIds.includes(requestedTab)) return requestedTab;
@@ -216,6 +221,29 @@ const ParkDetailInner = ({
     cache: exploreCache,
     loadingByTabId,
   } = useParkExploreTabBundle(npsParkCodeForApi, tabIdsToLoad, { enabled: indexReady });
+
+  const tabs = useMemo(
+    () => filterVisibleExploreTabs(allTabs, {
+      alertCount,
+      permitCount,
+      requestedTab,
+      exploreIndexReady: indexReady,
+      exploreIndex,
+      exploreReady: Boolean(exploreCache),
+      exploreCache,
+      showTransitTab,
+    }),
+    [
+      allTabs,
+      alertCount,
+      permitCount,
+      requestedTab,
+      indexReady,
+      exploreIndex,
+      exploreCache,
+      showTransitTab,
+    ]
+  );
 
   const activities = exploreCache?.activities ?? null;
   const campgrounds = exploreCache?.campgrounds ?? null;

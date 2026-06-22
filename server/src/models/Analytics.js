@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ANALYTICS_RETENTION_SECONDS } = require('../config/analyticsRetention');
 
 const analyticsSchema = new mongoose.Schema({
   eventType: {
@@ -127,7 +128,6 @@ const analyticsSchema = new mongoose.Schema({
   timestamp: {
     type: Date,
     default: Date.now,
-    index: true
   }
 }, {
   timestamps: true
@@ -145,7 +145,11 @@ analyticsSchema.index({ 'metadata.searchTerm': 1, timestamp: -1 });
 analyticsSchema.index({ 'location.country': 1, timestamp: -1 });
 analyticsSchema.index({ 'device.type': 1, timestamp: -1 });
 analyticsSchema.index({ 'metadata.source': 1, timestamp: -1 });
-analyticsSchema.index({ timestamp: -1 }); // For time-based queries
+// Auto-delete events older than ANALYTICS_RETENTION_SECONDS (90 days by default).
+analyticsSchema.index(
+  { timestamp: 1 },
+  { expireAfterSeconds: ANALYTICS_RETENTION_SECONDS, name: 'analytics_timestamp_ttl' }
+);
 
 // Compound indexes for common queries
 analyticsSchema.index({ eventType: 1, eventCategory: 1, timestamp: -1 });

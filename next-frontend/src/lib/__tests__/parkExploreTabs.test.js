@@ -38,4 +38,15 @@ describe('filterVisibleExploreTabs with explore index', () => {
 
     expect(tabs.map((t) => t.id)).toContain('tours');
   });
+
+  it('shows tab when loaded cache has data even if index count is zero', () => {
+    const tabs = filterVisibleExploreTabs(ALL_TABS, {
+      exploreIndexReady: true,
+      exploreIndex: { places: 0, activities: 0, tours: 0 },
+      exploreReady: true,
+      exploreCache: { places: [{ id: '1' }], activities: [], tours: [] },
+    });
+
+    expect(tabs.map((t) => t.id)).toEqual(['overview', 'places', 'reviews']);
+  });
 });

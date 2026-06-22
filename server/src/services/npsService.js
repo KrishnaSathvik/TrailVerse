@@ -329,6 +329,71 @@ class NPSService {
     }
   }
 
+  _normalizeParkCode(parkCode) {
+    return String(parkCode || '').toLowerCase();
+  }
+
+  _itemParkCode(item) {
+    const code = item?.parkCode || item?.relatedParks?.[0]?.parkCode || item?.siteCode;
+    return code ? String(code).toLowerCase() : '';
+  }
+
+  _getGroupedBulkSlice(data, parkCode) {
+    if (!data) return null;
+    const code = this._normalizeParkCode(parkCode);
+
+    if (!Array.isArray(data) && typeof data === 'object') {
+      const slice = data[code] || data[parkCode] || data[String(parkCode || '').toUpperCase()];
+      if (Array.isArray(slice) && slice.length > 0) return slice;
+    }
+
+    if (Array.isArray(data)) {
+      const filtered = data.filter((item) => this._itemParkCode(item) === code);
+      if (filtered.length > 0) return filtered;
+    }
+
+    return null;
+  }
+
+  _bulkSnapshotMemoryCache(snapshotKey) {
+    const map = {
+      'bulk-activities': this.activitiesCache,
+      'bulk-places': this.placesCache,
+      'bulk-campgrounds': this.campgroundsCache,
+      'bulk-visitorcenters': this.visitorCentersCache,
+      'bulk-tours': this.toursCache,
+      'bulk-webcams': this.webcamsCache,
+      'bulk-parkinglots': this.parkingLotsCache,
+    };
+    return map[snapshotKey] || null;
+  }
+
+  async _getParkBulkSliceFromSnapshot(snapshotKey, parkCode) {
+    const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
+    if (memoryCache && this._isCacheValid(memoryCache) && memoryCache.data) {
+      const fromMemory = this._getGroupedBulkSlice(memoryCache.data, parkCode);
+      if (fromMemory) return fromMemory;
+    }
+
+    try {
+      const snapshot = await this._loadSnapshot(snapshotKey, Infinity);
+      const fromSnapshot = this._getGroupedBulkSlice(snapshot?.data, parkCode);
+      return fromSnapshot || null;
+    } catch (error) {
+      console.warn(`⚠️ Failed bulk snapshot "${snapshotKey}" for ${parkCode}:`, error.message);
+      return null;
+    }
+  }
+
+  async _tryBulkSnapshotForPark(snapshotKey, parkCode, endpointCacheKey, endpointCacheType) {
+    const slice = await this._getParkBulkSliceFromSnapshot(snapshotKey, parkCode);
+    if (!slice) return null;
+    if (endpointCacheKey && endpointCacheType) {
+      this._setEndpointCache(endpointCacheKey, slice, endpointCacheType);
+    }
+    return slice;
+  }
+
   isParksCacheValid() {
     if (!this.parksCache.data || !this.parksCache.timestamp) {
       return false;
@@ -598,6 +663,14 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'activities');
     if (cached) return cached;
 
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-activities',
+      parkCode,
+      cacheKey,
+      'activities'
+    );
+    if (fromBulk) return fromBulk;
+
     if (this._isRateLimited()) return [];
 
     try {
@@ -837,6 +910,14 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'campgrounds');
     if (cached) return cached;
 
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-campgrounds',
+      parkCode,
+      cacheKey,
+      'campgrounds'
+    );
+    if (fromBulk) return fromBulk;
+
     if (this._isRateLimited()) return [];
 
     try {
@@ -950,6 +1031,14 @@ class NPSService {
     const cacheKey = `visitorcenters_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'visitorcenters');
     if (cached) return cached;
+
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-visitorcenters',
+      parkCode,
+      cacheKey,
+      'visitorcenters'
+    );
+    if (fromBulk) return fromBulk;
 
     if (this._isRateLimited()) return [];
 
@@ -1065,6 +1154,14 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'places');
     if (cached) return cached;
 
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-places',
+      parkCode,
+      cacheKey,
+      'places'
+    );
+    if (fromBulk) return fromBulk;
+
     if (this._isRateLimited()) return [];
 
     try {
@@ -1177,6 +1274,14 @@ class NPSService {
     const cacheKey = `tours_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'tours');
     if (cached) return cached;
+
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-tours',
+      parkCode,
+      cacheKey,
+      'tours'
+    );
+    if (fromBulk) return fromBulk;
 
     if (this._isRateLimited()) return [];
 
@@ -1291,6 +1396,14 @@ class NPSService {
     const cached = this._getEndpointCache(cacheKey, 'webcams');
     if (cached) return cached;
 
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-webcams',
+      parkCode,
+      cacheKey,
+      'webcams'
+    );
+    if (fromBulk) return fromBulk;
+
     // Backoff if rate-limited
     if (this._isRateLimited()) return [];
 
@@ -1397,9 +1510,21 @@ class NPSService {
   }
 
   async getParkParkingLots(parkCode) {
+    if (this._isCacheValid(this.parkingLotsCache) && this.parkingLotsCache.data) {
+      return this.parkingLotsCache.data[parkCode] || [];
+    }
+
     const cacheKey = `parkinglots_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'parkinglots');
     if (cached) return cached;
+
+    const fromBulk = await this._tryBulkSnapshotForPark(
+      'bulk-parkinglots',
+      parkCode,
+      cacheKey,
+      'parkinglots'
+    );
+    if (fromBulk) return fromBulk;
 
     if (this._isRateLimited()) return [];
 

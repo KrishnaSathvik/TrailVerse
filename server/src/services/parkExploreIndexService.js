@@ -3,6 +3,20 @@ const npsService = require('./npsService');
 const gtfsCatalogService = require('./gtfsCatalogService');
 
 const INDEX_CACHE_TTL_SEC = 24 * 60 * 60; // 24h — counts mirror slow-changing NPS catalog data
+const SPARSE_INDEX_CACHE_TTL_SEC = 5 * 60; // retry soon when explore-index looks under-counted
+const EXPLORE_INDEX_COUNT_KEYS = [
+  'activities',
+  'places',
+  'tours',
+  'visitorcenters',
+  'campgrounds',
+  'parkinglots',
+  'facilities',
+  'brochures',
+  'gallery',
+  'videos',
+  'webcams',
+];
 const indexCache = new NodeCache({
   stdTTL: INDEX_CACHE_TTL_SEC,
   maxKeys: 600,
@@ -81,7 +95,12 @@ async function buildExploreIndex(parkCode) {
     },
   };
 
-  indexCache.set(code, index);
+  const contentTotal = EXPLORE_INDEX_COUNT_KEYS.reduce(
+    (sum, key) => sum + (index[key] || 0),
+    0
+  );
+  const cacheTtlSec = contentTotal <= 2 ? SPARSE_INDEX_CACHE_TTL_SEC : INDEX_CACHE_TTL_SEC;
+  indexCache.set(code, index, cacheTtlSec);
   return index;
 }
 

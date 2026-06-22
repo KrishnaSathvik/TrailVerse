@@ -123,11 +123,11 @@ export function filterVisibleExploreTabs(allTabs, ctx = {}) {
   const index = exploreIndex;
 
   const tabHasExploreData = (tabId) => {
-    if (indexReady && index) {
-      return exploreTabHasDataFromIndex(tabId, index, tabOpts);
+    if (exploreReady && exploreCache && exploreTabHasData(tabId, exploreCache, tabOpts)) {
+      return true;
     }
-    if (exploreReady && exploreCache) {
-      return exploreTabHasData(tabId, exploreCache, tabOpts);
+    if (indexReady && index && exploreTabHasDataFromIndex(tabId, index, tabOpts)) {
+      return true;
     }
     return false;
   };
