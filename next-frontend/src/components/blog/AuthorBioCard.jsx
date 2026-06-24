@@ -1,18 +1,35 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Facebook, Instagram, Pinterest } from '@components/icons';
 
 const KRISHNA = {
   name: 'Krishna',
-  title: 'Creator of TrailVerse',
-  photo: '/authors/krishna.jpg',
-  bio: 'Astrophotographer and national parks nerd. 17+ parks and counting.',
-  socials: [
-    { name: 'Portfolio', href: 'https://www.astrobykrishna.com/' },
-    { name: 'Instagram', href: 'https://instagram.com/astrobykrishna' },
-    { name: 'Pinterest', href: 'https://pin.it/2N6K1Iz' },
-  ],
+  title: 'TrailVerse & Trailie founder',
+  photo: '/authors/krishna.png',
+  bio: 'I build TrailVerse and Trailie to help travelers plan smarter national park and outdoor trips. I\'m also an astrophotographer and park nerd, with 17+ U.S. national parks visited and counting.',
 };
+
+const AUTHOR_SOCIALS = [
+  {
+    id: 'facebook',
+    label: 'Facebook (@travelswithkrishna)',
+    href: 'https://www.facebook.com/travelswithkrishna/',
+    Icon: Facebook,
+  },
+  {
+    id: 'instagram',
+    label: 'Instagram (@travelswithkrishna)',
+    href: 'https://www.instagram.com/travelswithkrishna/',
+    Icon: Instagram,
+  },
+  {
+    id: 'pinterest',
+    label: 'Pinterest',
+    href: 'https://pin.it/2N6K1Iz',
+    Icon: Pinterest,
+  },
+];
 
 const AUTHOR_MATCHES = ['Krishna Sathvik', 'Krishna', 'TrailVerse Team', 'Admin'];
 
@@ -51,6 +68,38 @@ function AuthorPhoto({ name, photo }) {
   );
 }
 
+function AuthorSocialLinks({ className = '', wrapperStyle }) {
+  return (
+    <div className={className} style={wrapperStyle}>
+      <div className="flex items-center gap-2">
+      {AUTHOR_SOCIALS.map(({ id, label, href, Icon }) => (
+        <a
+          key={id}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={label}
+          title={label}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors"
+          style={{
+            backgroundColor: 'var(--surface-hover)',
+            color: 'var(--text-secondary)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--accent-green)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }}
+        >
+          <Icon className="h-5 w-5" />
+        </a>
+      ))}
+      </div>
+    </div>
+  );
+}
+
 const AuthorBioCard = ({ author, embedded = false }) => {
   if (!isKnownBlogAuthor(author)) {
     return null;
@@ -71,20 +120,7 @@ const AuthorBioCard = ({ author, embedded = false }) => {
           <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {data.bio}
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-            {data.socials.map((social) => (
-              <a
-                key={social.name}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium transition hover:opacity-80"
-                style={{ color: 'var(--accent-green)' }}
-              >
-                {social.name}
-              </a>
-            ))}
-          </div>
+          <AuthorSocialLinks className="mt-2" />
         </div>
       </div>
     );
@@ -113,22 +149,10 @@ const AuthorBioCard = ({ author, embedded = false }) => {
         </div>
       </div>
 
-      <div className="flex gap-3 mt-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-        {data.socials.map((social) => (
-          <a
-            key={social.name}
-            href={social.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-medium transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-green)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            {social.name}
-          </a>
-        ))}
-      </div>
+      <AuthorSocialLinks
+        className="mt-4 pt-3"
+        wrapperStyle={{ borderTop: '1px solid var(--border)' }}
+      />
     </div>
   );
 };
