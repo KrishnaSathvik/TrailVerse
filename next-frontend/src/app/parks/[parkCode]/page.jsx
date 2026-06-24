@@ -19,7 +19,8 @@ import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
 import { canonicalPageMetadata } from '@/lib/seo';
 
-export const revalidate = PARK_PAGE_REVALIDATE_SECONDS;
+/** Segment config must be a build-time literal (not imported). Sync with PARK_PAGE_REVALIDATE_SECONDS. */
+export const revalidate = 604800;
 
 export async function generateStaticParams() {
   try {
