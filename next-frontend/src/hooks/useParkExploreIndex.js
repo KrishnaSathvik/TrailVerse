@@ -2,24 +2,41 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import { CLIENT_CACHE_VERSION } from '@/lib/clientCacheVersion';
 import { EXPLORE_INDEX_STALE_MS, STATIC_TAB_GC_MS } from '@/lib/parkTabCachePolicy';
 
 export function parkExploreIndexQueryKey(parkCode) {
-  return ['parkExploreIndex', parkCode];
+  return ['parkExploreIndex', CLIENT_CACHE_VERSION, parkCode];
 }
 
 /**
  * Lightweight tab availability (counts only) for hiding empty explore tabs.
  * @param {string} parkCode NPS park code
  */
+const EXPLORE_INDEX_TIMEOUT_MS = 20_000;
+
 export async function fetchParkExploreIndex(parkCode, apiUrl = getApiBaseUrl()) {
   const code = String(parkCode || '').toLowerCase();
-  const res = await fetch(`${apiUrl}/parks/${code}/explore-index`);
-  if (!res.ok) {
-    throw new Error(`explore-index failed (${res.status})`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), EXPLORE_INDEX_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(`${apiUrl}/parks/${code}/explore-index`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`explore-index failed (${res.status})`);
+    }
+    const json = await res.json();
+    return json?.data ?? null;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('explore-index timed out');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  const json = await res.json();
-  return json?.data ?? null;
 }
 
 export function useParkExploreIndex(parkCode) {

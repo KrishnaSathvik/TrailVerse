@@ -9,6 +9,7 @@ import {
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Spinner from '@/components/common/Spinner';
 import Button from '@/components/common/Button';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import { logEvent } from '@/utils/analytics';
 
 const UnsubscribeContent = () => {
@@ -43,7 +44,7 @@ const UnsubscribeContent = () => {
     const targetEmail = emailOverride || email;
     try {
       setLoading(true);
-      const response = await fetch(`/api/email/preferences?email=${encodeURIComponent(targetEmail)}`);
+      const response = await fetch(`${getApiBaseUrl()}/email/preferences?email=${encodeURIComponent(targetEmail)}`);
       const data = await response.json();
 
       if (data.success) {
@@ -73,7 +74,7 @@ const UnsubscribeContent = () => {
         token: token || undefined
       };
 
-      const response = await fetch('/api/email/unsubscribe', {
+      const response = await fetch(`${getApiBaseUrl()}/email/unsubscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
@@ -111,7 +112,7 @@ const UnsubscribeContent = () => {
         preferences: { blogNotifications: preferences.blogNotifications }
       };
 
-      const response = await fetch('/api/email/preferences', {
+      const response = await fetch(`${getApiBaseUrl()}/email/preferences`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestData)
@@ -140,7 +141,7 @@ const UnsubscribeContent = () => {
       setSubmitting(true);
       setMessage('');
 
-      const response = await fetch('/api/email/resubscribe', {
+      const response = await fetch(`${getApiBaseUrl()}/email/resubscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

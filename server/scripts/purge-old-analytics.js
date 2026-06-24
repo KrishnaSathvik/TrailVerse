@@ -18,6 +18,9 @@ const Analytics = require('../src/models/Analytics');
 const {
   ANALYTICS_RETENTION_DAYS,
   ANALYTICS_RETENTION_SECONDS,
+  API_CALL_RETENTION_DAYS,
+  API_CALL_RETENTION_SECONDS,
+  NON_API_CALL_EVENT_TYPES,
 } = require('../src/config/analyticsRetention');
 
 const APPLY = process.argv.includes('--apply');
@@ -58,47 +61,87 @@ async function getCollectionStats() {
 async function ensureTtlIndex() {
   const collection = Analytics.collection;
   const indexes = await collection.indexes();
-  const ttlIndexName = 'analytics_timestamp_ttl';
-  const ttlSeconds = ANALYTICS_RETENTION_SECONDS;
-  const ttlDays = ANALYTICS_RETENTION_DAYS;
-  const existingTtl = indexes.find((idx) => idx.name === ttlIndexName);
-  const legacyTimestampIndex = indexes.find(
-    (idx) => idx.key?.timestamp === 1 && idx.name !== ttlIndexName
+  const legacyNames = [
+    'analytics_timestamp_ttl',
+    'analytics_api_call_ttl',
+    'analytics_general_ttl',
+  ];
+  const desired = [
+    {
+      name: 'analytics_api_call_ttl',
+      expireAfterSeconds: API_CALL_RETENTION_SECONDS,
+      partialFilterExpression: { eventType: 'api_call' },
+      label: `${API_CALL_RETENTION_DAYS} days (api_call only)`,
+    },
+    {
+      name: 'analytics_general_ttl',
+      expireAfterSeconds: ANALYTICS_RETENTION_SECONDS,
+      partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } },
+      label: `${ANALYTICS_RETENTION_DAYS} days (non-api_call)`,
+    },
+  ];
+
+  const legacyTimestampIndexes = indexes.filter(
+    (idx) => idx.key?.timestamp === 1 && !legacyNames.includes(idx.name)
   );
 
-  if (
-    existingTtl &&
-    existingTtl.expireAfterSeconds === ttlSeconds
-  ) {
-    console.log(`TTL index "${ttlIndexName}" already exists (${ttlDays} days).`);
-    return;
-  }
-
-  if (!APPLY) {
-    console.log(
-      `Would ensure TTL index "${ttlIndexName}" on timestamp (${ttlDays} days).`
+  const allCurrent = desired.every((spec) => {
+    const existing = indexes.find((idx) => idx.name === spec.name);
+    return (
+      existing &&
+      existing.expireAfterSeconds === spec.expireAfterSeconds &&
+      JSON.stringify(existing.partialFilterExpression) === JSON.stringify(spec.partialFilterExpression)
     );
-    if (legacyTimestampIndex) {
-      console.log(`Would drop legacy index "${legacyTimestampIndex.name}" first.`);
+  });
+
+  if (allCurrent && legacyTimestampIndexes.length === 0) {
+    console.log('TTL indexes already up to date.');
+    for (const spec of desired) {
+      console.log(`  - ${spec.name}: ${spec.label}`);
     }
     return;
   }
 
-  if (legacyTimestampIndex) {
-    await collection.dropIndex(legacyTimestampIndex.name);
-    console.log(`Dropped legacy index "${legacyTimestampIndex.name}".`);
+  if (!APPLY) {
+    console.log('Would ensure partial TTL indexes:');
+    for (const spec of desired) {
+      console.log(`  - ${spec.name}: ${spec.label}`);
+    }
+    for (const legacy of legacyTimestampIndexes) {
+      console.log(`Would drop legacy index "${legacy.name}".`);
+    }
+    if (indexes.find((idx) => idx.name === 'analytics_timestamp_ttl')) {
+      console.log('Would drop legacy index "analytics_timestamp_ttl".');
+    }
+    return;
   }
 
-  if (existingTtl) {
-    await collection.dropIndex(ttlIndexName);
-    console.log(`Dropped outdated TTL index "${ttlIndexName}".`);
+  for (const legacy of legacyTimestampIndexes) {
+    await collection.dropIndex(legacy.name);
+    console.log(`Dropped legacy index "${legacy.name}".`);
   }
 
-  await collection.createIndex(
-    { timestamp: 1 },
-    { expireAfterSeconds: ttlSeconds, name: ttlIndexName }
-  );
-  console.log(`Created TTL index "${ttlIndexName}" (${ttlDays} days).`);
+  if (indexes.find((idx) => idx.name === 'analytics_timestamp_ttl')) {
+    await collection.dropIndex('analytics_timestamp_ttl');
+    console.log('Dropped legacy index "analytics_timestamp_ttl".');
+  }
+
+  for (const spec of desired) {
+    const existing = indexes.find((idx) => idx.name === spec.name);
+    if (existing) {
+      await collection.dropIndex(spec.name);
+      console.log(`Dropped outdated TTL index "${spec.name}".`);
+    }
+    await collection.createIndex(
+      { timestamp: 1 },
+      {
+        expireAfterSeconds: spec.expireAfterSeconds,
+        name: spec.name,
+        partialFilterExpression: spec.partialFilterExpression,
+      }
+    );
+    console.log(`Created TTL index "${spec.name}" (${spec.label}).`);
+  }
 }
 
 async function purgeOldEvents() {

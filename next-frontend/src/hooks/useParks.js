@@ -2,8 +2,8 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import npsApi from '../services/npsApi';
 import { get, set } from 'idb-keyval';
 
-const ALL_PARKS_CACHE_VERSION = 'v4';
-const ALL_PARKS_LITE_CACHE_VERSION = 'v1';
+const ALL_PARKS_CACHE_VERSION = 'v5';
+const ALL_PARKS_LITE_CACHE_VERSION = 'v2';
 const getAllParksCacheKey = (includeActivities = false) =>
   `trailverse_all_parks_${ALL_PARKS_CACHE_VERSION}_${includeActivities ? 'with_activities' : 'basic'}`;
 const getAllParksCacheTimeKey = (includeActivities = false) =>

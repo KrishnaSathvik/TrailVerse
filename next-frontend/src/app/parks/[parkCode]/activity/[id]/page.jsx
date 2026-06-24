@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import ActivityDetailClient from './ActivityDetailClient';
 
+import { PARK_PAGE_REVALIDATE_SECONDS } from '@/lib/parkApi';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
     ? 'https://trailverse.onrender.com/api'
@@ -9,7 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ||
 async function getActivity(activityId) {
   try {
     const res = await fetch(`${API_URL}/activities/${activityId}`, {
-      next: { revalidate: 3600 }
+      next: { revalidate: PARK_PAGE_REVALIDATE_SECONDS }
     });
 
     if (!res.ok) return null;

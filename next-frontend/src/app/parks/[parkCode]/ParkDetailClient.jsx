@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -31,6 +32,8 @@ import ParkReviewPromptDialog from '@/components/park-details/ParkReviewPromptDi
 import ParkAlertsTab from '@/components/park-details/ParkAlertsTab';
 import ParkPermitsTab from '@/components/park-details/ParkPermitsTab';
 import ParkTabSpinner from '@/components/park-details/ParkTabSpinner';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ParkTabEmptyState from '@/components/park-details/ParkTabEmptyState';
 import {
   hasSeenVisitedReviewPrompt,
   markVisitedReviewPromptSeen,
@@ -40,17 +43,15 @@ import ShareButtons from '@/components/common/ShareButtons';
 import PhotoLightbox from '@/components/common/PhotoLightbox';
 import Button from '@/components/common/Button';
 import { getParkPlanVisitCta } from '@/lib/planAiWelcomeCopy';
-import { hrefWithFrom } from '@/lib/returnNavigation';
+import { hrefWithFrom, LANDING_RETURN_PATH } from '@/lib/returnNavigation';
 import { useReturnNavigation } from '@/hooks/useReturnNavigation';
-import { PARK_CORE_TAB_IDS } from '@/lib/parkTabNavigation';
 import { hasCrowdCalendar } from '@/lib/crowdCalendar';
 import ParkPlanOverviewSection from '@/components/park-details/ParkPlanOverviewSection';
 import ParkPlanningFaqSection from '@/components/park-details/ParkPlanningFaqSection';
 import blogService from '@/services/blogService';
-import { useParkExploreIndex } from '@/hooks/useParkExploreIndex';
-import { useParkExploreTabBundle } from '@/hooks/useParkTabData';
+import { useParkExploreTabBundle, prefetchParkExploreTabs } from '@/hooks/useParkTabData';
+import { useParkAlerts, useParkPermits, useParkReviews } from '@/hooks/useParkAuxiliaryTabs';
 import { isExploreDataTab } from '@/lib/parkTabEndpoints';
-import { filterVisibleExploreTabs } from '@/lib/parkExploreTabs';
 import {
   alignPlanningFaqWithTabs,
   planningFaqTabContextFromExplore,
@@ -90,6 +91,7 @@ import {
 const ParkDetailInner = ({
   initialData,
   parkCode,
+  initialTab = 'overview',
   relatedParks = [],
   seoLeadLine = null,
   stateHubSlug = null,
@@ -99,17 +101,26 @@ const ParkDetailInner = ({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const requestedTab = searchParams.get('tab');
+  const queryClient = useQueryClient();
+  const [urlSynced, setUrlSynced] = useState(false);
+  useEffect(() => setUrlSynced(true), []);
+  const requestedTab = urlSynced
+    ? (searchParams.get('tab') || 'overview')
+    : initialTab;
   const { backHref, backLabel } = useReturnNavigation({
-    defaultHref: '/explore',
-    defaultLabel: 'Explore',
+    defaultHref: LANDING_RETURN_PATH,
+    defaultLabel: 'TrailVerse',
   });
   const { isAuthenticated, user, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const { addFavorite, removeFavorite, isParkFavorited, refreshFavorites } = useFavorites();
   const { isParkVisited, markAsVisited, removeVisited, markingAsVisited, removingVisited } = useVisitedParks();
 
-  const npsParkCode = initialData?.park?.parkCode || parkCode;
+  const { park } = initialData;
+  const alertsFromSsr = initialData?.alerts;
+  const permitsFromSsr = initialData?.permits;
+
+  const npsParkCode = park?.parkCode || '';
   const showTransitTab = parkHasGtfs(npsParkCode);
 
   const allTabs = useMemo(() => [
@@ -144,65 +155,25 @@ const ParkDetailInner = ({
   const [activePlacesTag, setActivePlacesTag] = useState('All');
   const [showReviewPromptDialog, setShowReviewPromptDialog] = useState(false);
   const [userHasReviewed, setUserHasReviewed] = useState(false);
-
-  const { park, alerts } = initialData;
-  const permitsFromSsr = initialData?.permits;
-  const [permits, setPermits] = useState(() => (Array.isArray(permitsFromSsr) ? permitsFromSsr : []));
-  const [permitsReady, setPermitsReady] = useState(() => Array.isArray(permitsFromSsr));
-
-  const npsParkCodeForApi = park?.parkCode || npsParkCode;
-  const { index: exploreIndex, ready: indexReady } = useParkExploreIndex(npsParkCodeForApi);
-
-  const alertCount = alerts?.length || 0;
-  const permitCount = permits.length;
-
-  const indexTabs = useMemo(
-    () => filterVisibleExploreTabs(allTabs, {
-      alertCount,
-      permitCount,
-      requestedTab,
-      exploreIndexReady: indexReady,
-      exploreIndex,
-      showTransitTab,
-    }),
-    [allTabs, alertCount, permitCount, requestedTab, indexReady, exploreIndex, showTransitTab]
+  const [reviewCount, setReviewCount] = useState(0);
+  const canonicalShareUrl = useMemo(
+    () => `https://www.nationalparksexplorerusa.com/parks/${parkToSlug(park.fullName)}`,
+    [park.fullName]
   );
+  const [shareUrl, setShareUrl] = useState(canonicalShareUrl);
 
-  const validTabIds = useMemo(() => {
-    const ids = new Set(indexTabs.map((tab) => tab.id));
-    if (requestedTab) ids.add(requestedTab);
-    return [...ids];
-  }, [indexTabs, requestedTab]);
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, [canonicalShareUrl, pathname, searchParams]);
 
-  const faqTabContext = useMemo(
-    () => planningFaqTabContextFromExplore({
-      alertCount,
-      permitCount,
-      exploreIndex,
-      exploreIndexReady: indexReady,
-      showTransitTab,
-    }),
-    [alertCount, permitCount, exploreIndex, indexReady, showTransitTab]
-  );
-
-  const visiblePlanningFaqItems = useMemo(() => {
-    if (!permitsReady) return planningFaqItems;
-    return alignPlanningFaqWithTabs(
-      planningFaqItems,
-      park,
-      parkToSlug(park.fullName),
-      faqTabContext,
-      { permits },
-    );
-  }, [planningFaqItems, park, permits, permitsReady, faqTabContext]);
+  const npsParkCodeForApi = (park?.parkCode || '').toLowerCase();
+  const tabIdSet = useMemo(() => new Set(allTabs.map((tab) => tab.id)), [allTabs]);
 
   const activeTab = useMemo(() => {
     if (!requestedTab) return 'overview';
-    if (validTabIds.includes(requestedTab)) return requestedTab;
-    if (PARK_CORE_TAB_IDS.has(requestedTab)) return requestedTab;
-    if (!indexReady) return requestedTab;
+    if (tabIdSet.has(requestedTab)) return requestedTab;
     return 'overview';
-  }, [requestedTab, validTabIds, indexReady]);
+  }, [requestedTab, tabIdSet]);
 
   const tabIdsToLoad = useMemo(() => {
     const ids = [];
@@ -220,30 +191,75 @@ const ParkDetailInner = ({
   const {
     cache: exploreCache,
     loadingByTabId,
-  } = useParkExploreTabBundle(npsParkCodeForApi, tabIdsToLoad, { enabled: indexReady });
+    fetchedByTabId,
+    errorByTabId,
+  } = useParkExploreTabBundle(npsParkCodeForApi, tabIdsToLoad, { enabled: Boolean(npsParkCodeForApi) });
 
-  const tabs = useMemo(
-    () => filterVisibleExploreTabs(allTabs, {
+  const alertsQuery = useParkAlerts(
+    npsParkCodeForApi,
+    Boolean(npsParkCodeForApi),
+    Array.isArray(alertsFromSsr) ? alertsFromSsr : undefined
+  );
+  const permitsQuery = useParkPermits(
+    npsParkCodeForApi,
+    Boolean(npsParkCodeForApi),
+    Array.isArray(permitsFromSsr) ? permitsFromSsr : undefined
+  );
+  const reviewsQuery = useParkReviews(npsParkCodeForApi, Boolean(npsParkCodeForApi));
+
+  const alerts = alertsQuery.isSuccess
+    ? (alertsQuery.data ?? [])
+    : (Array.isArray(alertsFromSsr) ? alertsFromSsr : []);
+  const permits = permitsQuery.isSuccess
+    ? (permitsQuery.data ?? [])
+    : (Array.isArray(permitsFromSsr) ? permitsFromSsr : []);
+
+  const alertCount = alerts.length;
+  const permitCount = permits.length;
+  const permitsReady = permitsQuery.isSuccess || Array.isArray(permitsFromSsr);
+
+  useEffect(() => {
+    if (reviewsQuery.isSuccess) {
+      setReviewCount(reviewsQuery.data?.count ?? 0);
+    }
+  }, [reviewsQuery.isSuccess, reviewsQuery.data]);
+
+  useEffect(() => {
+    if (!npsParkCodeForApi) return undefined;
+
+    const runPrefetch = () => prefetchParkExploreTabs(queryClient, npsParkCodeForApi);
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(runPrefetch, { timeout: 2500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(runPrefetch, 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, [npsParkCodeForApi, queryClient]);
+
+  const tabs = allTabs;
+
+  const faqTabContext = useMemo(
+    () => planningFaqTabContextFromExplore({
       alertCount,
       permitCount,
-      requestedTab,
-      exploreIndexReady: indexReady,
-      exploreIndex,
-      exploreReady: Boolean(exploreCache),
       exploreCache,
       showTransitTab,
     }),
-    [
-      allTabs,
-      alertCount,
-      permitCount,
-      requestedTab,
-      indexReady,
-      exploreIndex,
-      exploreCache,
-      showTransitTab,
-    ]
+    [alertCount, permitCount, exploreCache, showTransitTab]
   );
+
+  const visiblePlanningFaqItems = useMemo(() => {
+    if (!permitsReady) return planningFaqItems;
+    return alignPlanningFaqWithTabs(
+      planningFaqItems,
+      park,
+      parkToSlug(park.fullName),
+      faqTabContext,
+      { permits },
+    );
+  }, [planningFaqItems, park, permits, permitsReady, faqTabContext]);
 
   const activities = exploreCache?.activities ?? null;
   const campgrounds = exploreCache?.campgrounds ?? null;
@@ -271,49 +287,26 @@ const ParkDetailInner = ({
   const brochuresLoading = Boolean(loadingByTabId.brochures);
   const transitLoading = Boolean(loadingByTabId.transit);
 
-  // Eagerly fetch permits for tab badge (SSR may omit permits until /details includes RIDB)
+  const tabSettled = (tabId) => Boolean(fetchedByTabId[tabId] || errorByTabId[tabId]);
+  const tabErrorMessage = (tabId) => (
+    errorByTabId[tabId]
+      ? 'Could not load this section right now. Please try again in a moment.'
+      : undefined
+  );
+  const showTabSpinner = (tabId, explicitLoading = false) => {
+    if (activeTab !== tabId) return false;
+    if (explicitLoading) return true;
+    return !tabSettled(tabId);
+  };
+
   useEffect(() => {
-    if (!npsParkCodeForApi || permitsReady) return;
-
-    let cancelled = false;
-    fetch(`${getApiBaseUrl()}/parks/${npsParkCodeForApi}/permits`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (!cancelled) {
-          setPermits(Array.isArray(json?.data) ? json.data : []);
-          setPermitsReady(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setPermits([]);
-          setPermitsReady(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [npsParkCodeForApi, permitsReady]);
-
-  // Eagerly fetch review count for the tab badge + whether this user already reviewed
-  const [reviewCount, setReviewCount] = useState(0);
-  useEffect(() => {
-    if (!npsParkCode) return;
-    fetch(`${getApiBaseUrl()}/reviews/${npsParkCode}`)
-      .then(res => res.json())
-      .then(json => {
-        const count = json.stats?.totalReviews || json.total || json.pagination?.totalReviews || 0;
-        setReviewCount(count);
-        const list = json.data || [];
-        if (isAuthenticated && user) {
-          setUserHasReviewed(list.some((r) => reviewBelongsToUser(r, user)));
-        } else {
-          setUserHasReviewed(false);
-        }
-      })
-      .catch(() => {});
-  }, [npsParkCode, isAuthenticated, user]);
+    if (!reviewsQuery.isSuccess || !isAuthenticated || !user) {
+      if (!reviewsQuery.isSuccess) setUserHasReviewed(false);
+      return;
+    }
+    const list = reviewsQuery.data?.list || [];
+    setUserHasReviewed(list.some((r) => reviewBelongsToUser(r, user)));
+  }, [reviewsQuery.isSuccess, reviewsQuery.data, isAuthenticated, user]);
 
   // Merge park.images with gallery photos for the Photos tab and lightbox
   const allPhotos = React.useMemo(() => {
@@ -475,14 +468,6 @@ const ParkDetailInner = ({
   const handleFaqTabNavigate = (tabId) => {
     handleTabChange(tabId === 'overview' ? 'overview' : tabId);
   };
-
-  useEffect(() => {
-    if (!indexReady || !requestedTab) return;
-    if (PARK_CORE_TAB_IDS.has(requestedTab)) return;
-    if (!validTabIds.includes(requestedTab)) {
-      handleTabChange('overview');
-    }
-  }, [indexReady, requestedTab, validTabIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!requestedTab || requestedTab === 'overview') return;
@@ -828,7 +813,7 @@ const ParkDetailInner = ({
                     </Button>
 
                     <ShareButtons
-                      url={typeof window !== 'undefined' ? window.location.href : `https://www.nationalparksexplorerusa.com/parks/${parkCode}`}
+                      url={shareUrl}
                       title={park.fullName}
                       description={park.description}
                       image={park.images?.[0]?.url}
@@ -1046,7 +1031,7 @@ const ParkDetailInner = ({
                       >
                         Things to Do
                       </h2>
-                      {activitiesLoading && (
+                      {showTabSpinner('activities', activitiesLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!activitiesLoading && activities !== null && activities.length > 0 && (
@@ -1303,6 +1288,9 @@ const ParkDetailInner = ({
                           );
                         })()
                       )}
+                      {!activitiesLoading && tabSettled('activities') && !(activities?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('activities')} />
+                      )}
                     </div>
                   )}
 
@@ -1313,7 +1301,7 @@ const ParkDetailInner = ({
                       >
                         Where to Stay
                       </h2>
-                      {campgroundsLoading && (
+                      {showTabSpinner('camping', campgroundsLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!campgroundsLoading && campgrounds !== null && campgrounds.length > 0 && (
@@ -1503,6 +1491,9 @@ const ParkDetailInner = ({
                           ))}
                         </div>
                       )}
+                      {!campgroundsLoading && tabSettled('camping') && !(campgrounds?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('camping')} />
+                      )}
                     </div>
                   )}
 
@@ -1513,7 +1504,7 @@ const ParkDetailInner = ({
                       >
                         Amenities
                       </h2>
-                      {facilitiesLoading && (
+                      {showTabSpinner('facilities', facilitiesLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!facilitiesLoading && facilities && facilities.length > 0 && (() => {
@@ -1706,6 +1697,9 @@ const ParkDetailInner = ({
                           </>
                         );
                       })()}
+                      {!facilitiesLoading && tabSettled('facilities') && !(facilities?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('facilities')} />
+                      )}
                     </div>
                   )}
 
@@ -1721,10 +1715,10 @@ const ParkDetailInner = ({
                           </span>
                         )}
                       </h2>
-                      {galleryLoading && (
+                      {(showTabSpinner('photos', galleryLoading && allPhotos.length === 0)) && (
                         <ParkTabSpinner />
                       )}
-                      {!galleryLoading && allPhotos.length > 0 && (
+                      {allPhotos.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           {allPhotos.map((image, index) => (
                             <button
@@ -1747,6 +1741,14 @@ const ParkDetailInner = ({
                           ))}
                         </div>
                       )}
+                      {!galleryLoading && tabSettled('photos') && allPhotos.length === 0 && (
+                        <ParkTabEmptyState message={tabErrorMessage('photos')} />
+                      )}
+                      {galleryLoading && allPhotos.length > 0 && (
+                        <p className="text-center text-xs mt-4" style={{ color: 'var(--text-tertiary)' }}>
+                          Loading more photos…
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -1762,7 +1764,7 @@ const ParkDetailInner = ({
                           </span>
                         )}
                       </h2>
-                      {videosLoading && (
+                      {showTabSpinner('videos', videosLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!videosLoading && videos !== null && videos.length > 0 && (
@@ -1830,6 +1832,9 @@ const ParkDetailInner = ({
                           })}
                         </div>
                       )}
+                      {!videosLoading && tabSettled('videos') && !(videos?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('videos')} />
+                      )}
                     </div>
                   )}
 
@@ -1840,7 +1845,7 @@ const ParkDetailInner = ({
                       >
                         What to See
                       </h2>
-                      {placesLoading && (
+                      {showTabSpinner('places', placesLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!placesLoading && places !== null && places.length > 0 && (
@@ -2035,6 +2040,9 @@ const ParkDetailInner = ({
                           );
                         })()
                       )}
+                      {!placesLoading && tabSettled('places') && !(places?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('places')} />
+                      )}
                     </div>
                   )}
 
@@ -2046,7 +2054,7 @@ const ParkDetailInner = ({
                         <Landmark className="h-6 w-6" />
                         Visitor Centers
                       </h2>
-                      {visitorCentersLoading && (
+                      {showTabSpinner('visitorcenters', visitorCentersLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!visitorCentersLoading && visitorCenters !== null && visitorCenters.length > 0 && (
@@ -2191,6 +2199,9 @@ const ParkDetailInner = ({
                           })}
                         </div>
                       )}
+                      {!visitorCentersLoading && tabSettled('visitorcenters') && !(visitorCenters?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('visitorcenters')} />
+                      )}
                     </div>
                   )}
 
@@ -2201,7 +2212,7 @@ const ParkDetailInner = ({
                       >
                         Self-Guided Tours
                       </h2>
-                      {toursLoading && (
+                      {showTabSpinner('tours', toursLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!toursLoading && tours !== null && tours.length > 0 && (
@@ -2329,6 +2340,9 @@ const ParkDetailInner = ({
                           ))}
                         </div>
                       )}
+                      {!toursLoading && tabSettled('tours') && !(tours?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('tours')} />
+                      )}
                     </div>
                   )}
 
@@ -2348,7 +2362,7 @@ const ParkDetailInner = ({
                         Parking lots
                       </h3>
 
-                      {parkingLoading && (
+                      {showTabSpinner('parking', parkingLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!parkingLoading && parkingLots !== null && parkingLots.length > 0 && (
@@ -2546,6 +2560,9 @@ const ParkDetailInner = ({
                           })}
                         </div>
                       )}
+                      {!parkingLoading && tabSettled('parking') && !(parkingLots?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('parking')} />
+                      )}
                     </div>
                   )}
 
@@ -2556,7 +2573,7 @@ const ParkDetailInner = ({
                       >
                         Webcams
                       </h2>
-                      {webcamsLoading && (
+                      {showTabSpinner('webcams', webcamsLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!webcamsLoading && webcams !== null && webcams.length > 0 && (
@@ -2699,6 +2716,9 @@ const ParkDetailInner = ({
                           })}
                         </div>
                       )}
+                      {!webcamsLoading && tabSettled('webcams') && !(webcams?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('webcams')} />
+                      )}
                     </div>
                   )}
 
@@ -2710,7 +2730,7 @@ const ParkDetailInner = ({
                         Brochures & Maps
                       </h2>
 
-                      {brochuresLoading && (
+                      {showTabSpinner('brochures', brochuresLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!brochuresLoading && brochureData?.brochures?.length > 0 && (
@@ -2785,15 +2805,25 @@ const ParkDetailInner = ({
                           ))}
                         </div>
                       )}
+                      {!brochuresLoading && tabSettled('brochures') && !(brochureData?.brochures?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('brochures')} />
+                      )}
                     </div>
                   )}
 
                   {activeTab === 'permits' && (
-                    <ParkPermitsTab permits={permits} loading={!permitsReady} />
+                    <ParkPermitsTab
+                      permits={permits}
+                      loading={!permitsReady}
+                    />
                   )}
 
                   {activeTab === 'alerts' && (
-                    <ParkAlertsTab alerts={alerts} />
+                    (alertsQuery.isPending || alertsQuery.isFetching) && !alerts.length ? (
+                      <ParkTabSpinner />
+                    ) : (
+                      <ParkAlertsTab alerts={alerts} />
+                    )
                   )}
 
                   {activeTab === 'transit' && (
@@ -2804,7 +2834,7 @@ const ParkDetailInner = ({
                         Shuttles & Ferries
                       </h2>
 
-                      {transitLoading && (
+                      {showTabSpinner('transit', transitLoading) && (
                         <ParkTabSpinner />
                       )}
                       {!transitLoading && transitData?.hasGtfs && Array.isArray(transitData?.feeds) && transitData.feeds.length > 0 && (
@@ -3090,6 +3120,9 @@ const ParkDetailInner = ({
 
                         </div>
                       )}
+                      {!transitLoading && tabSettled('transit') && !(transitData?.feeds?.length > 0) && (
+                        <ParkTabEmptyState message={tabErrorMessage('transit')} />
+                      )}
                     </div>
                   )}
 
@@ -3098,6 +3131,7 @@ const ParkDetailInner = ({
                       <ReviewSection
                         parkCode={npsParkCode}
                         parkName={park.fullName}
+                        prefetchedReviews={reviewsQuery.isSuccess ? reviewsQuery.data : null}
                         onCountChange={setReviewCount}
                         initialOpenForm={searchParams.get('write') === '1'}
                         onFormOpened={() => handleTabChange('reviews', { keepFilter: true })}
@@ -3492,6 +3526,17 @@ const ParkDetailInner = ({
   );
 };
 
+function ParkDetailLoadingFallback() {
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <Header />
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <LoadingSpinner size="lg" text="Loading park…" label="Loading park" />
+      </div>
+    </div>
+  );
+}
+
 export default function ParkDetailClient({
   relatedParks,
   seoLeadLine,
@@ -3501,7 +3546,7 @@ export default function ParkDetailClient({
   ...props
 }) {
   return (
-    <Suspense>
+    <Suspense fallback={<ParkDetailLoadingFallback />}>
       <ParkDetailInner
         {...props}
         relatedParks={relatedParks}

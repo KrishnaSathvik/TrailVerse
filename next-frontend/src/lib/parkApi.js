@@ -1,11 +1,9 @@
 import { parkToSlug } from '@/utils/parkSlug';
 import parkSlugsData from '@/data/park-slugs.json';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production'
-    ? 'https://trailverse.onrender.com/api'
-    : 'http://localhost:5001/api');
+/** Park HTML shell ISR — explore tabs, alerts, weather, and permits refresh on the client. */
+export const PARK_PAGE_REVALIDATE_SECONDS = 7 * 24 * 60 * 60;
 
 export async function getAllParkCodes() {
   // National parks only (subset of the prebuild slug list)
@@ -34,8 +32,8 @@ export async function getParkDetailsBySlug(slug) {
 
 export async function getParkDetails(parkCode) {
   try {
-    const res = await fetch(`${BASE_URL}/parks/${parkCode}/details`, {
-      next: { revalidate: 3600 },
+    const res = await fetch(`${getApiBaseUrl()}/parks/${parkCode}/details`, {
+      next: { revalidate: PARK_PAGE_REVALIDATE_SECONDS },
     });
 
     if (!res.ok) {

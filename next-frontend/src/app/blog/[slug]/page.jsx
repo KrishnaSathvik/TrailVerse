@@ -28,7 +28,7 @@ function toAbsoluteImageUrl(imageUrl) {
 async function getPostBySlug(slug) {
   try {
     const response = await fetch(`${getApiBaseUrl()}/blogs/${slug}`, {
-      next: { revalidate: 60 }
+      next: { revalidate: 3600 }
     });
 
     if (!response.ok) {

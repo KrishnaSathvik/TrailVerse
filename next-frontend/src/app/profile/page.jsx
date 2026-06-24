@@ -43,6 +43,7 @@ import { useWebSocket } from '@hooks/useWebSocket';
 import userService from '@/services/userService';
 import { getStoredToken } from '@/services/authService';
 import { getBestAvatar } from '@utils/avatarGenerator';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import { logEvent } from '@/utils/analytics';
 
 const ProfilePage = () => {
@@ -614,7 +615,7 @@ const ProfilePage = () => {
 
     try {
 
-      const response = await fetch(`/api/email/preferences/${user.email}`, {
+      const response = await fetch(`${getApiBaseUrl()}/email/preferences/${user.email}`, {
         headers: {
           'Authorization': `Bearer ${getStoredToken()}`
         }
@@ -702,7 +703,7 @@ const ProfilePage = () => {
       setEmailMessage('');
 
 
-      const response = await fetch(`/api/email/preferences/${user.email}`, {
+      const response = await fetch(`${getApiBaseUrl()}/email/preferences/${user.email}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -827,7 +828,7 @@ const ProfilePage = () => {
         return;
       }
 
-      const response = await fetch('/api/user/change-password', {
+      const response = await fetch(`${getApiBaseUrl()}/user/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -879,7 +880,7 @@ const ProfilePage = () => {
       setPrivacyLoading(true);
       setPrivacyError('');
 
-      const response = await fetch('/api/user/data/download', {
+      const response = await fetch(`${getApiBaseUrl()}/user/data/download`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${getStoredToken()}`
@@ -934,7 +935,7 @@ const ProfilePage = () => {
         return;
       }
 
-      const response = await fetch('/api/user/delete-account', {
+      const response = await fetch(`${getApiBaseUrl()}/user/delete-account`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

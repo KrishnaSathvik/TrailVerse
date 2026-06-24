@@ -89,7 +89,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
   );
   const { data: allParksData, isPending: allParksPending, error: allParksError } = useAllParksLite(
     true,
-    true,
+    needsAllParks,
     initialAllParksData
   );
 

@@ -1,9 +1,11 @@
 import { getApiBaseUrl } from './apiBase';
 
+const BLOG_REVALIDATE_SECONDS = 3600;
+
 export async function getBlogCategoriesServer() {
   try {
     const response = await fetch(`${getApiBaseUrl()}/blogs/categories`, {
-      next: { revalidate: 60 }
+      next: { revalidate: BLOG_REVALIDATE_SECONDS }
     });
 
     if (!response.ok) {
@@ -27,7 +29,7 @@ export async function getBlogPostsServer(params = {}) {
     });
 
     const response = await fetch(`${getApiBaseUrl()}/blogs?${query.toString()}`, {
-      next: { revalidate: 60 }
+      next: { revalidate: BLOG_REVALIDATE_SECONDS }
     });
 
     if (!response.ok) {

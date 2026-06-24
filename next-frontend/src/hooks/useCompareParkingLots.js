@@ -1,7 +1,8 @@
 import { useQueries } from '@tanstack/react-query';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
 async function fetchParkingLots(parkCode) {
-  const response = await fetch(`/api/parks/${parkCode}/parkinglots`);
+  const response = await fetch(`${getApiBaseUrl()}/parks/${parkCode}/parkinglots`);
   if (!response.ok) return [];
   const json = await response.json();
   return Array.isArray(json?.data) ? json.data : [];

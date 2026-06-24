@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { cacheMiddleware } = require('../middleware/cache');
 const {
   getAllParks,
   getParkByCode,
@@ -26,7 +27,8 @@ const {
   getRelatedParks,
 } = require('../controllers/parkController');
 
-router.get('/', getAllParks);
+// Parks list changes slowly — cache full-catalog responses 24h in memory per query string.
+router.get('/', cacheMiddleware(86400), getAllParks);
 router.get('/search', searchParks);
 router.get('/map/places', getMapPlaces);
 router.get('/map/campgrounds', getMapCampgrounds);

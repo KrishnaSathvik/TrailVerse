@@ -165,7 +165,11 @@ class NPSService {
 
   // Get cached events if valid
   getCachedEvents() {
-    if (this.isCacheValid()) {
+    if (
+      this.isCacheValid()
+      && Array.isArray(this.eventsCache.data)
+      && this.eventsCache.data.length > 0
+    ) {
       console.log('📦 Returning cached events');
       return this.eventsCache.data;
     }
@@ -174,6 +178,7 @@ class NPSService {
 
   // Set events cache
   setEventsCache(data) {
+    if (!Array.isArray(data) || data.length === 0) return;
     this.eventsCache = {
       ...this.eventsCache,
       data,
@@ -207,7 +212,16 @@ class NPSService {
     return data !== undefined ? data : null;
   }
 
-  _setEndpointCache(key, data, type) {
+  /** Per-park list endpoints — skip cached empty arrays so rate-limit misses can retry. */
+  _getEndpointListCache(key, type) {
+    const cached = this._getEndpointCache(key, type);
+    if (Array.isArray(cached) && cached.length > 0) return cached;
+    return null;
+  }
+
+  _setEndpointCache(key, data, type, { allowEmpty = false } = {}) {
+    if (Array.isArray(data) && data.length === 0 && !allowEmpty) return;
+    if (typeof data === 'number' && data === 0 && !allowEmpty) return;
     const ttlMs = this.endpointCacheTTLs[type] || 30 * 60 * 1000;
     const ttlSeconds = Math.round(ttlMs / 1000);
     try {
@@ -297,27 +311,66 @@ class NPSService {
   // Persist bulk data so deploys don't need to re-fetch from NPS API
 
   async _loadSnapshot(key, ttl) {
-    try {
-      const snapshot = await NpsSnapshot.findOne({ key }).lean();
-      if (!snapshot?.data) return null;
+    const FAST_MS = 8000;
+    const EXTENDED_MS = 25000;
 
+    const applySnapshot = (snapshot) => {
+      if (!snapshot?.data) return null;
       const age = Date.now() - new Date(snapshot.fetchedAt).getTime();
       if (age > ttl) {
         console.log(`🗄️ Snapshot "${key}" is stale (${Math.round(age / 60000)}min old), will refresh`);
         return { data: snapshot.data, stale: true };
       }
-
       console.log(`🗄️ Loaded fresh snapshot "${key}" (${Math.round(age / 60000)}min old)`);
       return { data: snapshot.data, stale: false };
+    };
+
+    try {
+      const snapshot = await Promise.race([
+        NpsSnapshot.findOne({ key }).select('data fetchedAt').lean(),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('snapshot load timeout')), FAST_MS);
+        }),
+      ]);
+      return applySnapshot(snapshot);
     } catch (error) {
-      console.warn(`⚠️ Failed to load snapshot "${key}":`, error.message);
-      return null;
+      if (error.message !== 'snapshot load timeout') {
+        console.warn(`⚠️ Failed to load snapshot "${key}":`, error.message);
+        return null;
+      }
+
+      console.warn(`⚠️ Snapshot "${key}" slow — retrying with extended read`);
+      try {
+        const snapshot = await NpsSnapshot.findOne({ key })
+          .select('data fetchedAt')
+          .lean()
+          .maxTimeMS(EXTENDED_MS);
+        const result = applySnapshot(snapshot);
+        if (result) {
+          console.log(`🗄️ Snapshot "${key}" loaded on extended read (stale=${result.stale})`);
+        }
+        return result;
+      } catch (retryErr) {
+        console.warn(`⚠️ Extended snapshot read failed for "${key}":`, retryErr.message);
+        return null;
+      }
     }
   }
 
   async _saveSnapshot(key, data) {
     try {
-      const itemCount = Array.isArray(data) ? data.length : Object.values(data).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+      const isEmptyArray = Array.isArray(data) && data.length === 0;
+      const isZeroSummary = typeof data === 'number' && data === 0 && String(key).startsWith('events-');
+      if (isEmptyArray || isZeroSummary) {
+        console.warn(`⚠️ Skipping empty snapshot save for "${key}"`);
+        return;
+      }
+
+      const itemCount = Array.isArray(data)
+        ? data.length
+        : (typeof data === 'number'
+          ? data
+          : Object.values(data).reduce((sum, arr) => sum + (arr?.length || 0), 0));
       await NpsSnapshot.updateOne(
         { key },
         { $set: { data, itemCount, fetchedAt: new Date() } },
@@ -364,34 +417,155 @@ class NPSService {
       'bulk-tours': this.toursCache,
       'bulk-webcams': this.webcamsCache,
       'bulk-parkinglots': this.parkingLotsCache,
+      'bulk-alerts': this.alertsCache,
     };
     return map[snapshotKey] || null;
   }
 
   async _getParkBulkSliceFromSnapshot(snapshotKey, parkCode) {
-    const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
-    if (memoryCache && this._isCacheValid(memoryCache) && memoryCache.data) {
-      const fromMemory = this._getGroupedBulkSlice(memoryCache.data, parkCode);
-      if (fromMemory) return fromMemory;
-    }
-
-    try {
-      const snapshot = await this._loadSnapshot(snapshotKey, Infinity);
-      const fromSnapshot = this._getGroupedBulkSlice(snapshot?.data, parkCode);
-      return fromSnapshot || null;
-    } catch (error) {
-      console.warn(`⚠️ Failed bulk snapshot "${snapshotKey}" for ${parkCode}:`, error.message);
-      return null;
-    }
+    const bulkData = await this._ensureBulkDataLoaded(snapshotKey, null);
+    return this._getGroupedBulkSlice(bulkData, parkCode) || null;
   }
 
   async _tryBulkSnapshotForPark(snapshotKey, parkCode, endpointCacheKey, endpointCacheType) {
     const slice = await this._getParkBulkSliceFromSnapshot(snapshotKey, parkCode);
     if (!slice) return null;
     if (endpointCacheKey && endpointCacheType) {
-      this._setEndpointCache(endpointCacheKey, slice, endpointCacheType);
+      this._setEndpointCache(endpointCacheKey, slice, endpointCacheType, { allowEmpty: true });
     }
     return slice;
+  }
+
+  _hasBulkData(data) {
+    if (!data) return false;
+    if (Array.isArray(data)) return data.length > 0;
+    if (typeof data === 'object') return Object.keys(data).length > 0;
+    return false;
+  }
+
+  _hydrateBulkMemoryCache(snapshotKey, data) {
+    const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
+    if (!memoryCache || !data) return;
+    memoryCache.data = data;
+    memoryCache.timestamp = Date.now();
+  }
+
+  /** Load bulk tab data from memory or Mongo (stale OK) before per-park NPS calls. */
+  async _ensureBulkDataLoaded(snapshotKey, getAllFn = null) {
+    const memoryCache = this._bulkSnapshotMemoryCache(snapshotKey);
+    if (memoryCache?.data && this._hasBulkData(memoryCache.data)) {
+      return memoryCache.data;
+    }
+
+    const snapshot = await this._loadSnapshot(snapshotKey, Infinity);
+    if (snapshot?.data && this._hasBulkData(snapshot.data)) {
+      this._hydrateBulkMemoryCache(snapshotKey, snapshot.data);
+      return snapshot.data;
+    }
+
+    if (typeof getAllFn === 'function') {
+      const fetched = await getAllFn();
+      if (this._hasBulkData(fetched)) {
+        return fetched;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Bulk snapshot → per-park endpoint cache → optional NPS fetch.
+   * Skips empty endpoint cache; never caches empty from rate-limit misses.
+   */
+  async _fetchParkTabList({
+    parkCode,
+    snapshotKey = null,
+    cacheKey,
+    cacheType,
+    getAllBulk = null,
+    fetchFromNps,
+    label = cacheType,
+    rethrowOnError = false,
+  }) {
+    const code = this._normalizeParkCode(parkCode);
+    if (!code) return [];
+
+    const cached = this._getEndpointListCache(cacheKey, cacheType);
+    if (cached) return cached;
+
+    let bulkData = null;
+    if (snapshotKey) {
+      bulkData = await this._ensureBulkDataLoaded(snapshotKey, getAllBulk);
+      const fromBulk = bulkData ? this._getGroupedBulkSlice(bulkData, code) : null;
+      if (fromBulk?.length) {
+        this._setEndpointCache(cacheKey, fromBulk, cacheType, { allowEmpty: true });
+        return fromBulk;
+      }
+    }
+
+    if (this._isRateLimited()) {
+      console.warn(`⚠️ NPS rate-limited — trying ${label} for ${code} via bulk/API fallback`);
+    }
+
+    try {
+      const data = await fetchFromNps(code);
+      if (Array.isArray(data) && data.length > 0) {
+        this._setEndpointCache(cacheKey, data, cacheType, { allowEmpty: true });
+        return data;
+      }
+
+      if (snapshotKey) {
+        bulkData = bulkData || await this._ensureBulkDataLoaded(snapshotKey, getAllBulk);
+        const retry = bulkData ? this._getGroupedBulkSlice(bulkData, code) : null;
+        if (retry?.length) {
+          this._setEndpointCache(cacheKey, retry, cacheType, { allowEmpty: true });
+          return retry;
+        }
+      }
+
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      if (snapshotKey) {
+        const fallbackBulk = await this._ensureBulkDataLoaded(snapshotKey, null);
+        const fallback = fallbackBulk ? this._getGroupedBulkSlice(fallbackBulk, code) : null;
+        if (fallback?.length) {
+          this._setEndpointCache(cacheKey, fallback, cacheType, { allowEmpty: true });
+          return fallback;
+        }
+      }
+      if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on ${label} for ${code}`);
+        return [];
+      }
+      console.error(`❌ NPS API Error (${label} for ${code}):`, error.message);
+      if (rethrowOnError) throw error;
+      return [];
+    }
+  }
+
+  /** Warm bulk tab snapshots from Mongo into memory (no NPS calls). */
+  async warmParkTabSnapshots() {
+    const keys = [
+      'bulk-places',
+      'bulk-campgrounds',
+      'bulk-visitorcenters',
+      'bulk-tours',
+      'bulk-webcams',
+      'bulk-parkinglots',
+      'bulk-activities',
+      'bulk-alerts',
+    ];
+    for (const key of keys) {
+      try {
+        const data = await this._ensureBulkDataLoaded(key, null);
+        if (this._hasBulkData(data)) {
+          const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+          console.log(`🗄️ Warmed ${key} in memory (${count} entries)`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to warm ${key}:`, error.message);
+      }
+    }
   }
 
   isParksCacheValid() {
@@ -659,36 +833,23 @@ class NPSService {
 
   // Get park activities (cached)
   async getParkActivities(parkCode) {
-    const cacheKey = `activities_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-activities',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'activities'
-    );
-    if (fromBulk) return fromBulk;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/thingstodo', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-      console.log(`✅ Activities for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'activities');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on activities for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkActivities for ${parkCode}):`, error.message);
-      throw new Error(`Failed to fetch activities for ${parkCode}: ${error.message}`);
-    }
+      snapshotKey: 'bulk-activities',
+      cacheKey: `activities_${parkCode}`,
+      cacheType: 'activities',
+      getAllBulk: () => this.getAllActivities(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/thingstodo', {
+          params: { parkCode: code, limit: 50 },
+        });
+        const data = response.data.data || [];
+        console.log(`✅ Activities for ${code}: ${data.length} found`);
+        return data;
+      },
+      label: 'activities',
+      rethrowOnError: true,
+    });
   }
 
   // Bulk-fetch all alerts from NPS API and group by parkCode
@@ -743,7 +904,7 @@ class NPSService {
       // Group alerts by parkCode
       const alertsByPark = {};
       for (const alert of allAlerts) {
-        const code = alert.parkCode;
+        const code = this._normalizeParkCode(alert.parkCode);
         if (!code) continue;
         if (!alertsByPark[code]) alertsByPark[code] = [];
         alertsByPark[code].push(alert);
@@ -784,35 +945,43 @@ class NPSService {
     }
   }
 
-  // Get park alerts — serves from bulk cache first, falls back to per-park call
+  // Get park alerts — bulk snapshot first, then per-park NPS call
   async getParkAlerts(parkCode) {
-    // Check bulk alerts cache first
-    if (this._isCacheValid(this.alertsCache) && this.alertsCache.data) {
-      return this.alertsCache.data[parkCode] || [];
-    }
-
-    // Check per-endpoint cache
+    const code = this._normalizeParkCode(parkCode);
     const cacheKey = `alerts_${parkCode}`;
     const cached = this._getEndpointCache(cacheKey, 'alerts');
     if (cached) return cached;
 
-    // Backoff if rate-limited
-    if (this._isRateLimited()) return [];
+    const bulkData = await this._ensureBulkDataLoaded('bulk-alerts', () => this.getAllAlerts());
+    const fromBulk = bulkData ? this._getGroupedBulkSlice(bulkData, code) : null;
+    if (fromBulk?.length) {
+      this._setEndpointCache(cacheKey, fromBulk, 'alerts', { allowEmpty: true });
+      return fromBulk;
+    }
+
+    if (this._isRateLimited()) {
+      console.warn(`⚠️ NPS rate-limited — trying alerts for ${code} via bulk/API fallback`);
+    }
 
     try {
       const response = await this.api.get('/alerts', {
-        params: { parkCode }
+        params: { parkCode: code },
       });
-      const data = response.data.data;
-      console.log(`✅ Alerts for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'alerts');
+      const data = response.data.data || [];
+      console.log(`✅ Alerts for ${code}: ${data.length} found`);
+      if (data.length > 0) {
+        this._setEndpointCache(cacheKey, data, 'alerts', { allowEmpty: true });
+      }
       return data;
     } catch (error) {
+      const fallback = bulkData ? this._getGroupedBulkSlice(bulkData, code) : null;
+      if (fallback?.length) return fallback;
       if (error.response?.status === 429) {
+        console.warn(`⚠️ NPS 429 on alerts for ${code}`);
         return [];
       }
-      console.error(`❌ NPS API Error (getParkAlerts for ${parkCode}):`, error.message);
-      throw new Error(`Failed to fetch alerts for ${parkCode}: ${error.message}`);
+      console.error(`❌ NPS API Error (getParkAlerts for ${code}):`, error.message);
+      throw new Error(`Failed to fetch alerts for ${code}: ${error.message}`);
     }
   }
 
@@ -865,7 +1034,7 @@ class NPSService {
 
       const byPark = {};
       for (const cg of allCampgrounds) {
-        const code = cg.parkCode;
+        const code = this._normalizeParkCode(cg.parkCode);
         if (!code) continue;
         if (!byPark[code]) byPark[code] = [];
         byPark[code].push(cg);
@@ -902,40 +1071,23 @@ class NPSService {
 
   // Get park campgrounds — serves from bulk cache first
   async getParkCampgrounds(parkCode) {
-    if (this._isCacheValid(this.campgroundsCache) && this.campgroundsCache.data) {
-      return this.campgroundsCache.data[parkCode] || [];
-    }
-
-    const cacheKey = `campgrounds_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'campgrounds');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-campgrounds',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'campgrounds'
-    );
-    if (fromBulk) return fromBulk;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/campgrounds', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-      console.log(`✅ Campgrounds for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'campgrounds');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on campgrounds for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkCampgrounds for ${parkCode}):`, error.message);
-      throw new Error(`Failed to fetch campgrounds for ${parkCode}: ${error.message}`);
-    }
+      snapshotKey: 'bulk-campgrounds',
+      cacheKey: `campgrounds_${parkCode}`,
+      cacheType: 'campgrounds',
+      getAllBulk: () => this.getAllCampgrounds(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/campgrounds', {
+          params: { parkCode: code, limit: 50 },
+        });
+        const data = response.data.data || [];
+        console.log(`✅ Campgrounds for ${code}: ${data.length} found`);
+        return data;
+      },
+      label: 'campgrounds',
+      rethrowOnError: true,
+    });
   }
 
   // Bulk-fetch all visitor centers and group by parkCode
@@ -987,7 +1139,7 @@ class NPSService {
 
       const byPark = {};
       for (const vc of allVCs) {
-        const code = vc.parkCode;
+        const code = this._normalizeParkCode(vc.parkCode);
         if (!code) continue;
         if (!byPark[code]) byPark[code] = [];
         byPark[code].push(vc);
@@ -1024,40 +1176,23 @@ class NPSService {
 
   // Get park visitor centers — serves from bulk cache first
   async getParkVisitorCenters(parkCode) {
-    if (this._isCacheValid(this.visitorCentersCache) && this.visitorCentersCache.data) {
-      return this.visitorCentersCache.data[parkCode] || [];
-    }
-
-    const cacheKey = `visitorcenters_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'visitorcenters');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-visitorcenters',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'visitorcenters'
-    );
-    if (fromBulk) return fromBulk;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/visitorcenters', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-      console.log(`✅ Visitor Centers for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'visitorcenters');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on visitor centers for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkVisitorCenters for ${parkCode}):`, error.message);
-      throw new Error(`Failed to fetch visitor centers for ${parkCode}: ${error.message}`);
-    }
+      snapshotKey: 'bulk-visitorcenters',
+      cacheKey: `visitorcenters_${parkCode}`,
+      cacheType: 'visitorcenters',
+      getAllBulk: () => this.getAllVisitorCenters(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/visitorcenters', {
+          params: { parkCode: code, limit: 50 },
+        });
+        const data = response.data.data || [];
+        console.log(`✅ Visitor Centers for ${code}: ${data.length} found`);
+        return data;
+      },
+      label: 'visitorcenters',
+      rethrowOnError: true,
+    });
   }
 
   // --- Bulk places ---
@@ -1110,7 +1245,7 @@ class NPSService {
 
       const byPark = {};
       for (const place of allPlaces) {
-        const code = place.relatedParks?.[0]?.parkCode || place.parkCode;
+        const code = this._normalizeParkCode(place.relatedParks?.[0]?.parkCode || place.parkCode);
         if (!code) continue;
         if (!byPark[code]) byPark[code] = [];
         byPark[code].push(place);
@@ -1146,39 +1281,20 @@ class NPSService {
   }
 
   async getParkPlaces(parkCode) {
-    if (this._isCacheValid(this.placesCache) && this.placesCache.data) {
-      return this.placesCache.data[parkCode] || [];
-    }
-
-    const cacheKey = `places_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'places');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-places',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'places'
-    );
-    if (fromBulk) return fromBulk;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/places', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-      this._setEndpointCache(cacheKey, data, 'places');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on places for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkPlaces for ${parkCode}):`, error.message);
-      return [];
-    }
+      snapshotKey: 'bulk-places',
+      cacheKey: `places_${parkCode}`,
+      cacheType: 'places',
+      getAllBulk: () => this.getAllPlaces(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/places', {
+          params: { parkCode: code, limit: 50 },
+        });
+        return response.data.data || [];
+      },
+      label: 'places',
+    });
   }
 
   // --- Bulk tours ---
@@ -1231,7 +1347,7 @@ class NPSService {
 
       const byPark = {};
       for (const tour of allTours) {
-        const code = tour.park?.parkCode || tour.parkCode;
+        const code = this._normalizeParkCode(tour.park?.parkCode || tour.parkCode);
         if (!code) continue;
         if (!byPark[code]) byPark[code] = [];
         byPark[code].push(tour);
@@ -1267,39 +1383,20 @@ class NPSService {
   }
 
   async getParkTours(parkCode) {
-    if (this._isCacheValid(this.toursCache) && this.toursCache.data) {
-      return this.toursCache.data[parkCode] || [];
-    }
-
-    const cacheKey = `tours_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'tours');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-tours',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'tours'
-    );
-    if (fromBulk) return fromBulk;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/tours', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-      this._setEndpointCache(cacheKey, data, 'tours');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on tours for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkTours for ${parkCode}):`, error.message);
-      return [];
-    }
+      snapshotKey: 'bulk-tours',
+      cacheKey: `tours_${parkCode}`,
+      cacheType: 'tours',
+      getAllBulk: () => this.getAllTours(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/tours', {
+          params: { parkCode: code, limit: 50 },
+        });
+        return response.data.data || [];
+      },
+      label: 'tours',
+    });
   }
 
   // --- Bulk webcams ---
@@ -1352,7 +1449,7 @@ class NPSService {
 
       const byPark = {};
       for (const cam of allWebcams) {
-        const code = cam.relatedParks?.[0]?.parkCode || cam.parkCode;
+        const code = this._normalizeParkCode(cam.relatedParks?.[0]?.parkCode || cam.parkCode);
         if (!code) continue;
         if (!byPark[code]) byPark[code] = [];
         byPark[code].push(cam);
@@ -1388,40 +1485,20 @@ class NPSService {
   }
 
   async getParkWebcams(parkCode) {
-    if (this._isCacheValid(this.webcamsCache) && this.webcamsCache.data) {
-      return this.webcamsCache.data[parkCode] || [];
-    }
-
-    const cacheKey = `webcams_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'webcams');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-webcams',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'webcams'
-    );
-    if (fromBulk) return fromBulk;
-
-    // Backoff if rate-limited
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/webcams', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-
-      this._setEndpointCache(cacheKey, data, 'webcams');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkWebcams for ${parkCode}):`, error.message);
-      return [];
-    }
+      snapshotKey: 'bulk-webcams',
+      cacheKey: `webcams_${parkCode}`,
+      cacheType: 'webcams',
+      getAllBulk: () => this.getAllWebcams(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/webcams', {
+          params: { parkCode: code, limit: 50 },
+        });
+        return response.data.data || [];
+      },
+      label: 'webcams',
+    });
   }
 
   // --- Bulk parking lots ---
@@ -1474,7 +1551,7 @@ class NPSService {
 
       const byPark = {};
       for (const lot of allParkingLots) {
-        const code = lot.relatedParks?.[0]?.parkCode || lot.parkCode;
+        const code = this._normalizeParkCode(lot.relatedParks?.[0]?.parkCode || lot.parkCode);
         if (!code) continue;
         if (!byPark[code]) byPark[code] = [];
         byPark[code].push(lot);
@@ -1510,74 +1587,48 @@ class NPSService {
   }
 
   async getParkParkingLots(parkCode) {
-    if (this._isCacheValid(this.parkingLotsCache) && this.parkingLotsCache.data) {
-      return this.parkingLotsCache.data[parkCode] || [];
-    }
-
-    const cacheKey = `parkinglots_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'parkinglots');
-    if (cached) return cached;
-
-    const fromBulk = await this._tryBulkSnapshotForPark(
-      'bulk-parkinglots',
+    return this._fetchParkTabList({
       parkCode,
-      cacheKey,
-      'parkinglots'
-    );
-    if (fromBulk) return fromBulk;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/parkinglots', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data;
-      console.log(`✅ Parking lots for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'parkinglots');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on parking lots for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkParkingLots for ${parkCode}):`, error.message);
-      return [];
-    }
+      snapshotKey: 'bulk-parkinglots',
+      cacheKey: `parkinglots_${parkCode}`,
+      cacheType: 'parkinglots',
+      getAllBulk: () => this.getAllParkingLots(),
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/parkinglots', {
+          params: { parkCode: code, limit: 50 },
+        });
+        const data = response.data.data || [];
+        console.log(`✅ Parking lots for ${code}: ${data.length} found`);
+        return data;
+      },
+      label: 'parkinglots',
+    });
   }
 
   // --- Per-park videos (no bulk fetch — 9,375+ videos across all parks) ---
 
   async getParkVideos(parkCode) {
-    const cacheKey = `videos_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'videos');
-    if (cached) return cached;
-
-    if (this._isRateLimited()) return [];
-
-    try {
-      const response = await this.api.get('/multimedia/videos', {
-        params: { parkCode, limit: 50 }
-      });
-      const data = response.data.data || [];
-      console.log(`🎬 Videos for ${parkCode}: ${data.length} found`);
-      this._setEndpointCache(cacheKey, data, 'videos');
-      return data;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on videos for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkVideos for ${parkCode}):`, error.message);
-      return [];
-    }
+    return this._fetchParkTabList({
+      parkCode,
+      cacheKey: `videos_${parkCode}`,
+      cacheType: 'videos',
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/multimedia/videos', {
+          params: { parkCode: code, limit: 50 },
+        });
+        const data = response.data.data || [];
+        console.log(`🎬 Videos for ${code}: ${data.length} found`);
+        return data;
+      },
+      label: 'videos',
+    });
   }
 
   // --- Per-park curated images from /parks endpoint ---
 
   async getParkImages(parkCode) {
     const cacheKey = `park_images_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities'); // reuse 24h TTL
+    const cached = this._getEndpointListCache(cacheKey, 'activities'); // reuse 24h TTL
     if (cached) return cached;
 
     if (this._isRateLimited()) return [];
@@ -1611,39 +1662,39 @@ class NPSService {
   // --- Per-park gallery photos (no bulk fetch — large dataset) ---
 
   async getParkGalleryPhotos(parkCode) {
-    const cacheKey = `gallery_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'gallery');
-    if (cached) return cached;
+    return this._fetchParkTabList({
+      parkCode,
+      cacheKey: `gallery_${parkCode}`,
+      cacheType: 'gallery',
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/multimedia/galleries/assets', {
+          params: { parkCode: code, limit: 50 },
+        });
+        const assets = response.data.data || [];
 
-    if (this._isRateLimited()) return [];
+        const photos = assets
+          .map((asset) => ({
+            url: asset.fileInfo?.url,
+            altText: asset.altText || asset.title,
+            title: asset.title,
+            caption: asset.description,
+            credit: asset.credit,
+          }))
+          .filter((p) => p.url);
 
-    try {
-      // Fetch individual gallery assets for this park
-      // Image URL is at fileInfo.url, not top-level url
-      const response = await this.api.get('/multimedia/galleries/assets', {
-        params: { parkCode, limit: 50 }
-      });
-      const assets = response.data.data || [];
+        if (!photos.length) {
+          const parkImages = await this.getParkImages(code);
+          if (parkImages.length > 0) {
+            console.log(`🖼️ Gallery fallback to park images for ${code}: ${parkImages.length}`);
+            return parkImages;
+          }
+        }
 
-      const photos = assets.map(asset => ({
-        url: asset.fileInfo?.url,
-        altText: asset.altText || asset.title,
-        title: asset.title,
-        caption: asset.description,
-        credit: asset.credit
-      })).filter(p => p.url);
-
-      console.log(`🖼️ Gallery photos for ${parkCode}: ${photos.length} found`);
-      this._setEndpointCache(cacheKey, photos, 'gallery');
-      return photos;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        console.warn(`⚠️ NPS 429 on gallery for ${parkCode}`);
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkGalleryPhotos for ${parkCode}):`, error.message);
-      return [];
-    }
+        console.log(`🖼️ Gallery photos for ${code}: ${photos.length} found`);
+        return photos;
+      },
+      label: 'gallery',
+    });
   }
 
   // --- Per-park amenities/facilities ---
@@ -1664,9 +1715,11 @@ class NPSService {
   }
 
   _enrichAmenitiesFromPlaces(amenities, parkCode) {
+    const code = this._normalizeParkCode(parkCode);
     const parkPlaces = [];
-    if (this._isCacheValid(this.placesCache) && this.placesCache.data?.[parkCode]) {
-      parkPlaces.push(...this.placesCache.data[parkCode]);
+    if (this.placesCache?.data) {
+      const fromBulk = this._getGroupedBulkSlice(this.placesCache.data, code);
+      if (fromBulk) parkPlaces.push(...fromBulk);
     }
     const cachedPlaces = this._getEndpointCache(`places_${parkCode}`, 'places');
     if (Array.isArray(cachedPlaces)) {
@@ -1696,60 +1749,51 @@ class NPSService {
   }
 
   async getParkAmenities(parkCode) {
-    const cacheKey = `amenities_${parkCode}`;
-    const cached = this._getEndpointCache(cacheKey, 'facilities');
-    if (cached) return cached;
+    await this.getParkPlaces(parkCode);
 
-    // Backoff if rate-limited
-    if (this._isRateLimited()) return [];
+    return this._fetchParkTabList({
+      parkCode,
+      cacheKey: `amenities_${parkCode}`,
+      cacheType: 'facilities',
+      fetchFromNps: async (code) => {
+        const response = await this.api.get('/amenities/parksplaces', {
+          params: { parkCode: code, limit: 500 },
+        });
 
-    try {
-      const response = await this.api.get('/amenities/parksplaces', {
-        params: { parkCode, limit: 500 }
-      });
+        const rawData = response.data.data || [];
+        const amenities = [];
 
-      // NPS amenities/parksplaces returns: data = [[{id, name, parks: [{places: [...]}]}], ...]
-      // Each entry in data is a single-element array wrapping an amenity object
-      const rawData = response.data.data || [];
-      const amenities = [];
+        for (const item of rawData) {
+          const amenityObj = Array.isArray(item) ? item[0] : item;
+          if (!amenityObj) continue;
+          const amenityName = amenityObj.name || '';
+          const parks = amenityObj.parks || [];
 
-      for (const item of rawData) {
-        const amenityObj = Array.isArray(item) ? item[0] : item;
-        if (!amenityObj) continue;
-        const amenityName = amenityObj.name || '';
-        const parks = amenityObj.parks || [];
-
-        for (const park of parks) {
-          const places = park.places || [];
-          for (const place of places) {
-            amenities.push({
-              name: amenityName,
-              placeName: place.title || place.name || '',
-              placeType: place.parkFacilityType || 'General',
-              url: place.url || '',
-              isManagedByNPS: place.isManagedByNPS || place.isManagedByNps || false,
-              placeId: place.id || null,
-              description: this._amenityDescriptionFromPlace(place),
-              images: Array.isArray(place.images) ? place.images : [],
-              latitude: place.latitude ?? null,
-              longitude: place.longitude ?? null,
-            });
+          for (const park of parks) {
+            const places = park.places || [];
+            for (const place of places) {
+              amenities.push({
+                name: amenityName,
+                placeName: place.title || place.name || '',
+                placeType: place.parkFacilityType || 'General',
+                url: place.url || '',
+                isManagedByNPS: place.isManagedByNPS || place.isManagedByNps || false,
+                placeId: place.id || null,
+                description: this._amenityDescriptionFromPlace(place),
+                images: Array.isArray(place.images) ? place.images : [],
+                latitude: place.latitude ?? null,
+                longitude: place.longitude ?? null,
+              });
+            }
           }
         }
-      }
 
-      const enriched = this._enrichAmenitiesFromPlaces(amenities, parkCode);
-
-      console.log(`🏛️ Amenities for ${parkCode}: ${enriched.length} found`);
-      this._setEndpointCache(cacheKey, enriched, 'facilities');
-      return enriched;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        return [];
-      }
-      console.error(`❌ NPS API Error (getParkAmenities for ${parkCode}):`, error.message);
-      return [];
-    }
+        const enriched = this._enrichAmenitiesFromPlaces(amenities, code);
+        console.log(`🏛️ Amenities for ${code}: ${enriched.length} found`);
+        return enriched;
+      },
+      label: 'amenities',
+    });
   }
 
   // Get all events from NPS API with caching — uses bulk paginated fetch
@@ -1801,34 +1845,49 @@ class NPSService {
       }
 
       const snapshot = await this._loadSnapshot('bulk-events', this.eventsCache.ttl);
-      if (snapshot && !snapshot.stale) {
+      if (Array.isArray(snapshot?.data) && snapshot.data.length > 0) {
         const dedupedSnapshot = this._dedupeNpsEvents(snapshot.data);
         this.setEventsCache(dedupedSnapshot);
+        if (snapshot.stale) {
+          console.log(`🗄️ Serving stale bulk-events snapshot (${dedupedSnapshot.length} events)`);
+        }
         return dedupedSnapshot.slice(0, normalizedLimit);
       }
     } else {
       const cachedQueryEvents = this._getEndpointCache(queryCacheKey, 'eventsQuery');
-      if (cachedQueryEvents) {
+      if (Array.isArray(cachedQueryEvents) && cachedQueryEvents.length > 0) {
         console.log(`📦 Returning cached filtered events for ${queryCacheKey}`);
         return cachedQueryEvents.slice(0, normalizedLimit);
       }
 
       const querySnapshot = await this._loadSnapshot(queryCacheKey, this.endpointCacheTTLs.eventsQuery);
-      if (querySnapshot?.data && !querySnapshot.stale) {
+      if (Array.isArray(querySnapshot?.data) && querySnapshot.data.length > 0) {
         const dedupedSnapshot = this._dedupeNpsEvents(querySnapshot.data);
-        this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery');
-        console.log(`🗄️ Returning cached filtered events snapshot for ${queryCacheKey}`);
+        this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery', { allowEmpty: true });
+        if (querySnapshot.stale) {
+          console.log(`🗄️ Serving stale filtered events snapshot for ${queryCacheKey}`);
+        } else {
+          console.log(`🗄️ Returning cached filtered events snapshot for ${queryCacheKey}`);
+        }
         return dedupedSnapshot.slice(0, normalizedLimit);
       }
     }
 
-    // Backoff if rate-limited
+    // When rate-limited, use stale snapshots if available; otherwise still try NPS
+    // so the events page is not blank while other endpoints triggered backoff.
     if (this._isRateLimited()) {
       if (!hasFilters) {
         const staleSnap = await this._loadSnapshot('bulk-events', Infinity);
-        if (staleSnap?.data) return this._dedupeNpsEvents(staleSnap.data).slice(0, normalizedLimit);
+        if (Array.isArray(staleSnap?.data) && staleSnap.data.length > 0) {
+          return this._dedupeNpsEvents(staleSnap.data).slice(0, normalizedLimit);
+        }
+      } else if (queryCacheKey) {
+        const staleQuery = await this._loadSnapshot(queryCacheKey, Infinity);
+        if (Array.isArray(staleQuery?.data) && staleQuery.data.length > 0) {
+          return this._dedupeNpsEvents(staleQuery.data).slice(0, normalizedLimit);
+        }
       }
-      return [];
+      console.warn('⚠️ NPS rate-limited with no events cache — attempting events fetch anyway');
     }
 
     try {
@@ -1897,10 +1956,14 @@ class NPSService {
 
       if (!hasFilters) {
         this.setEventsCache(allEvents);
-        await this._saveSnapshot('bulk-events', allEvents);
+        if (allEvents.length > 0) {
+          await this._saveSnapshot('bulk-events', allEvents);
+        }
       } else if (queryCacheKey) {
-        this._setEndpointCache(queryCacheKey, allEvents, 'eventsQuery');
-        await this._saveSnapshot(queryCacheKey, allEvents);
+        if (allEvents.length > 0) {
+          this._setEndpointCache(queryCacheKey, allEvents, 'eventsQuery', { allowEmpty: true });
+          await this._saveSnapshot(queryCacheKey, allEvents);
+        }
       }
 
       console.log(`✅ Events fetch complete: ${allEvents.length} kept events out of ${totalFetched} total`);
@@ -1913,27 +1976,27 @@ class NPSService {
         }
         if (hasFilters && queryCacheKey) {
           const cachedQueryEvents = this._getEndpointCache(queryCacheKey, 'eventsQuery');
-          if (cachedQueryEvents) {
+          if (Array.isArray(cachedQueryEvents) && cachedQueryEvents.length > 0) {
             console.warn(`⚠️ NPS 429 on filtered events — returning cached query results for ${queryCacheKey}`);
             return cachedQueryEvents.slice(0, normalizedLimit);
           }
           const querySnapshot = await this._loadSnapshot(queryCacheKey, this.endpointCacheTTLs.eventsQuery);
-          if (querySnapshot?.data) {
+          if (Array.isArray(querySnapshot?.data) && querySnapshot.data.length > 0) {
             console.warn(`⚠️ NPS 429 on filtered events — returning snapshot for ${queryCacheKey}`);
             const dedupedSnapshot = this._dedupeNpsEvents(querySnapshot.data);
-            this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery');
+            this._setEndpointCache(queryCacheKey, dedupedSnapshot, 'eventsQuery', { allowEmpty: true });
             return dedupedSnapshot.slice(0, normalizedLimit);
           }
         }
         const snapshot = !hasFilters ? await this._loadSnapshot('bulk-events', this.eventsCache.ttl) : null;
-        if (snapshot?.data) {
+        if (Array.isArray(snapshot?.data) && snapshot.data.length > 0) {
           console.warn('⚠️ NPS 429 on bulk events — returning stale snapshot');
           const dedupedSnapshot = this._dedupeNpsEvents(snapshot.data);
           this.setEventsCache(dedupedSnapshot);
           return dedupedSnapshot.slice(0, normalizedLimit);
         }
         const dbSnapshot = !hasFilters ? await this._loadSnapshot('bulk-events', Infinity) : null;
-        if (dbSnapshot?.data) {
+        if (Array.isArray(dbSnapshot?.data) && dbSnapshot.data.length > 0) {
           console.warn('⚠️ NPS 429 on bulk events — returning DB snapshot');
           const dedupedSnapshot = this._dedupeNpsEvents(dbSnapshot.data);
           this.setEventsCache(dedupedSnapshot);
@@ -1968,16 +2031,17 @@ class NPSService {
     });
 
     const cachedSummary = this._getEndpointCache(summaryCacheKey, 'eventsSummary');
-    if (cachedSummary !== null) {
+    if (typeof cachedSummary === 'number' && cachedSummary > 0) {
       console.log(`📦 Returning cached event summary for ${summaryCacheKey}`);
       return cachedSummary;
     }
 
     const summarySnapshot = await this._loadSnapshot(summaryCacheKey, this.endpointCacheTTLs.eventsSummary);
-    if (summarySnapshot?.data !== undefined && !summarySnapshot.stale) {
-      this._setEndpointCache(summaryCacheKey, summarySnapshot.data, 'eventsSummary');
+    const snapshotTotal = Number(summarySnapshot?.data);
+    if (Number.isFinite(snapshotTotal) && snapshotTotal > 0) {
+      this._setEndpointCache(summaryCacheKey, snapshotTotal, 'eventsSummary', { allowEmpty: true });
       console.log(`🗄️ Returning cached event summary snapshot for ${summaryCacheKey}`);
-      return summarySnapshot.data;
+      return snapshotTotal;
     }
 
     try {
@@ -1995,13 +2059,15 @@ class NPSService {
         }
       });
       const total = Number(response.data?.total || 0);
-      this._setEndpointCache(summaryCacheKey, total, 'eventsSummary');
-      await this._saveSnapshot(summaryCacheKey, total);
+      if (total > 0) {
+        this._setEndpointCache(summaryCacheKey, total, 'eventsSummary', { allowEmpty: true });
+        await this._saveSnapshot(summaryCacheKey, total);
+      }
       return total;
     } catch (error) {
       console.error('NPS API Error (getEventsTotal):', error.message);
-      if (summarySnapshot?.data !== undefined) {
-        return Number(summarySnapshot.data || 0);
+      if (Number.isFinite(snapshotTotal) && snapshotTotal > 0) {
+        return snapshotTotal;
       }
       return 0;
     }
@@ -2212,11 +2278,16 @@ class NPSService {
   }
 
   async getParksForActivityId(activityId) {
-    if (!activityId || this._isRateLimited()) return [];
+    if (!activityId) return [];
 
     const cacheKey = `activity-parks-${activityId}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities');
+    const cached = this._getEndpointListCache(cacheKey, 'activities');
     if (cached) return cached;
+
+    if (this._isRateLimited()) {
+      console.warn(`⚠️ NPS rate-limited — skipping activities/parks for ${activityId}`);
+      return [];
+    }
 
     try {
       const response = await this.api.get('/activities/parks', {
@@ -2241,11 +2312,16 @@ class NPSService {
   }
 
   async getParksForTopicId(topicId) {
-    if (!topicId || this._isRateLimited()) return [];
+    if (!topicId) return [];
 
     const cacheKey = `topic-parks-${topicId}`;
-    const cached = this._getEndpointCache(cacheKey, 'activities');
+    const cached = this._getEndpointListCache(cacheKey, 'activities');
     if (cached) return cached;
+
+    if (this._isRateLimited()) {
+      console.warn(`⚠️ NPS rate-limited — skipping topics/parks for ${topicId}`);
+      return [];
+    }
 
     try {
       const response = await this.api.get('/topics/parks', {
@@ -2368,7 +2444,7 @@ class NPSService {
     if (!title) return null;
 
     const cacheKey = `nps-guide-v2-${slug || title}`.toLowerCase();
-    const cached = this._getEndpointCache(cacheKey, 'activities');
+    const cached = this._getEndpointListCache(cacheKey, 'activities');
     if (cached) return cached;
 
     try {

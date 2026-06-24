@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  exploreTabHasData,
   exploreTabHasDataFromIndex,
   filterVisibleExploreTabs,
 } from '../parkExploreTabs';
@@ -19,34 +20,42 @@ describe('exploreTabHasDataFromIndex', () => {
   });
 });
 
-describe('filterVisibleExploreTabs with explore index', () => {
-  it('hides empty explore tabs after index is ready', () => {
-    const tabs = filterVisibleExploreTabs(ALL_TABS, {
-      exploreIndexReady: true,
-      exploreIndex: { places: 2, activities: 0, tours: 0 },
-    });
+describe('exploreTabHasData', () => {
+  it('reads lazy tab payloads from explore cache', () => {
+    expect(
+      exploreTabHasData('places', { places: [{ id: '1' }], activities: [] }),
+    ).toBe(true);
+    expect(
+      exploreTabHasData('activities', { places: [{ id: '1' }], activities: [] }),
+    ).toBe(false);
+  });
+});
 
-    expect(tabs.map((t) => t.id)).toEqual(['overview', 'places', 'reviews']);
+describe('filterVisibleExploreTabs', () => {
+  it('always returns the full tab catalog (tabs are never hidden)', () => {
+    expect(filterVisibleExploreTabs(ALL_TABS).map((t) => t.id)).toEqual([
+      'overview',
+      'places',
+      'activities',
+      'tours',
+      'reviews',
+    ]);
   });
 
-  it('keeps requested tab visible before index is ready', () => {
-    const tabs = filterVisibleExploreTabs(ALL_TABS, {
-      requestedTab: 'tours',
-      exploreIndexReady: false,
-      exploreIndex: null,
-    });
-
-    expect(tabs.map((t) => t.id)).toContain('tours');
-  });
-
-  it('shows tab when loaded cache has data even if index count is zero', () => {
+  it('ignores explore-index and cache when deciding visibility', () => {
     const tabs = filterVisibleExploreTabs(ALL_TABS, {
       exploreIndexReady: true,
       exploreIndex: { places: 0, activities: 0, tours: 0 },
       exploreReady: true,
-      exploreCache: { places: [{ id: '1' }], activities: [], tours: [] },
+      exploreCache: { places: [], activities: [], tours: [] },
     });
 
-    expect(tabs.map((t) => t.id)).toEqual(['overview', 'places', 'reviews']);
+    expect(tabs.map((t) => t.id)).toEqual([
+      'overview',
+      'places',
+      'activities',
+      'tours',
+      'reviews',
+    ]);
   });
 });

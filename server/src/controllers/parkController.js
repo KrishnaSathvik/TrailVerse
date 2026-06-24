@@ -144,6 +144,7 @@ exports.getAllParks = async (req, res, next) => {
 
     // If client wants all parks (for filtering/searching), return everything
     if (skipPagination) {
+      res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
       return res.status(200).json({
         success: true,
         count: filteredParks.length,

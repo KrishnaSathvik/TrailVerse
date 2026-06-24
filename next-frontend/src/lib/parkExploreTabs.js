@@ -1,3 +1,5 @@
+import { isExploreDataTab } from './parkTabEndpoints';
+
 /** @typedef {{ id: string; label: string; icon: import('react').ComponentType }} ExploreTab */
 
 /**
@@ -7,7 +9,7 @@
  */
 
 /**
- * Whether an explore tab has content worth showing (full cache bundle).
+ * Whether an explore tab payload has items (after a lazy tab fetch).
  * @param {string} tabId
  * @param {Record<string, unknown> | null | undefined} cache
  * @param {{ showTransitTab?: boolean }} [options]
@@ -36,7 +38,7 @@ export function exploreTabHasData(tabId, cache, { showTransitTab = false } = {})
     case 'facilities':
       return listHasItems('facilities');
     case 'brochures':
-      return listHasItems('brochures');
+      return Array.isArray(cache.brochures?.brochures) && cache.brochures.brochures.length > 0;
     case 'photos':
       return listHasItems('gallery');
     case 'videos':
@@ -53,9 +55,7 @@ export function exploreTabHasData(tabId, cache, { showTransitTab = false } = {})
 
 /**
  * Whether an explore tab has content (counts from explore-index).
- * @param {string} tabId
- * @param {ExploreTabIndex | null | undefined} index
- * @param {{ showTransitTab?: boolean }} [options]
+ * @deprecated Prefer lazy tab payloads; kept for FAQ helpers when index is available.
  */
 export function exploreTabHasDataFromIndex(tabId, index, { showTransitTab = false } = {}) {
   if (!index) return false;
@@ -94,50 +94,11 @@ export function exploreTabHasDataFromIndex(tabId, index, { showTransitTab = fals
 }
 
 /**
+ * Park detail tabs — always show the full tab set; empty tabs show copy after lazy fetch.
  * @param {ExploreTab[]} allTabs
- * @param {{
- *   alertCount?: number;
- *   permitCount?: number;
- *   requestedTab?: string | null;
- *   exploreIndexReady?: boolean;
- *   exploreIndex?: ExploreTabIndex | null;
- *   exploreReady?: boolean;
- *   exploreCache?: Record<string, unknown> | null;
- *   showTransitTab?: boolean;
- * }} ctx
  */
-export function filterVisibleExploreTabs(allTabs, ctx = {}) {
-  const {
-    alertCount = 0,
-    permitCount = 0,
-    requestedTab = null,
-    exploreIndexReady = false,
-    exploreIndex = null,
-    exploreReady = false,
-    exploreCache = null,
-    showTransitTab = false,
-  } = ctx;
-
-  const tabOpts = { showTransitTab };
-  const indexReady = exploreIndexReady || exploreReady;
-  const index = exploreIndex;
-
-  const tabHasExploreData = (tabId) => {
-    if (exploreReady && exploreCache && exploreTabHasData(tabId, exploreCache, tabOpts)) {
-      return true;
-    }
-    if (indexReady && index && exploreTabHasDataFromIndex(tabId, index, tabOpts)) {
-      return true;
-    }
-    return false;
-  };
-
-  return allTabs.filter((tab) => {
-    if (tab.id === 'overview' || tab.id === 'reviews') return true;
-    if (tab.id === requestedTab) return true;
-    if (tab.id === 'alerts') return alertCount > 0;
-    if (tab.id === 'permits') return permitCount > 0;
-    if (!indexReady) return false;
-    return tabHasExploreData(tab.id);
-  });
+export function filterVisibleExploreTabs(allTabs) {
+  return allTabs;
 }
+
+export { isExploreDataTab };

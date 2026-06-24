@@ -6,10 +6,12 @@ import {
   getParkTabStaleTimeMs,
 } from '../parkTabCachePolicy';
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
 describe('parkTabCachePolicy', () => {
-  it('uses 24h staleTime for static catalog tabs', () => {
+  it('uses 7-day staleTime for static catalog tabs', () => {
     expect(getParkTabStaleTimeMs('places')).toBe(STATIC_EXPLORE_TAB_STALE_MS);
-    expect(getParkTabStaleTimeMs('activities')).toBe(24 * 60 * 60 * 1000);
+    expect(getParkTabStaleTimeMs('activities')).toBe(SEVEN_DAYS_MS);
     expect(EXPLORE_INDEX_STALE_MS).toBe(STATIC_EXPLORE_TAB_STALE_MS);
   });
 

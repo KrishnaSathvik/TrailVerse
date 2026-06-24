@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import { logEvent } from '@/utils/analytics';
 
 export default function NewsletterWidget({
@@ -21,7 +22,7 @@ export default function NewsletterWidget({
     setStatus('loading');
 
     try {
-      const res = await fetch('/api/subscribers', {
+      const res = await fetch(`${getApiBaseUrl()}/subscribers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

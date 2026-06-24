@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import ParkCard from '@/components/explore/ParkCard';
 import IntentTopMatchesSkeleton from '@/components/intent/IntentTopMatchesSkeleton';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import {
   INTENT_SEARCH_LITE_FIELDS,
   mergeFeaturedParks,
 } from '@/lib/intentLandingApi';
 
 /**
- * Top matches grid — hydrates from SSR when present; otherwise loads via same-origin
- * /api rewrite (reliable on Vercel; avoids empty ISR when build-time backend fetch fails).
+ * Top matches grid — hydrates from SSR when present; otherwise loads from the API directly.
  */
 export default function IntentTopMatches({ landing, initialParks = [], fromPath = null }) {
   const [parks, setParks] = useState(initialParks);
@@ -36,7 +36,7 @@ export default function IntentTopMatches({ landing, initialParks = [], fromPath 
     async function load() {
       setStatus('loading');
       try {
-        const res = await fetch(`/api/parks/search?${params.toString()}`, { cache: 'no-store' });
+        const res = await fetch(`${getApiBaseUrl()}/parks/search?${params.toString()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`search ${res.status}`);
         const json = await res.json();
         const raw = json.data ?? json.parks ?? [];

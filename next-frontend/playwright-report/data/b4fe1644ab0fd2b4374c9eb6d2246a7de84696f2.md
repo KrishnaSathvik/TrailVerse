@@ -1,0 +1,564 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - region "Yellowstone National Park planning guide" [ref=e2]:
+    - heading "Yellowstone National Park — Live Alerts, Weather & Trip Planning" [level=1] [ref=e3]
+    - paragraph [ref=e4]: Located in ID, MT, WY.
+    - paragraph [ref=e5]: Geyser basins, wildlife corridors, and summer crowds need daily planning.
+    - paragraph [ref=e6]: On March 1, 1872, Yellowstone became the first national park for all to enjoy the unique hydrothermal wonders. Today, millions of people come here each year to camp, hike, and enjoy the majesty of the park.
+    - paragraph [ref=e7]: Use this page to check live NPS alerts, weather, things to do, events, fees, campgrounds, and build a day-by-day itinerary with Trailie.
+    - navigation "Plan Yellowstone National Park" [ref=e8]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "Overview" [ref=e11] [cursor=pointer]:
+            - /url: /parks/yellowstone-national-park?tab=overview
+        - listitem [ref=e12]:
+          - link "Current alerts" [ref=e13] [cursor=pointer]:
+            - /url: /parks/yellowstone-national-park?tab=alerts
+        - listitem [ref=e14]:
+          - link "Things to do" [ref=e15] [cursor=pointer]:
+            - /url: /parks/yellowstone-national-park?tab=activities
+        - listitem [ref=e16]:
+          - link "Plan with Trailie" [ref=e17] [cursor=pointer]:
+            - /url: /plan-ai?park=yell&name=Yellowstone%20National%20Park
+        - listitem [ref=e18]:
+          - link "Compare this park" [ref=e19] [cursor=pointer]:
+            - /url: /compare?parks=yell
+        - listitem [ref=e20]:
+          - link "More parks in ID, MT, WY" [ref=e21] [cursor=pointer]:
+            - /url: /parks/state/idaho
+    - generic [ref=e22]:
+      - heading "Nearby parks to explore" [level=2] [ref=e23]
+      - list [ref=e24]:
+        - listitem [ref=e25]:
+          - link "Glacier National Park" [ref=e26] [cursor=pointer]:
+            - /url: /parks/glacier-national-park
+        - listitem [ref=e27]:
+          - link "Grand Teton National Park" [ref=e28] [cursor=pointer]:
+            - /url: /parks/grand-teton-national-park
+        - listitem [ref=e29]:
+          - link "Big Hole National Battlefield" [ref=e30] [cursor=pointer]:
+            - /url: /parks/big-hole-national-battlefield
+        - listitem [ref=e31]:
+          - link "Bighorn Canyon National Recreation Area" [ref=e32] [cursor=pointer]:
+            - /url: /parks/bighorn-canyon-national-recreation-area
+  - generic [ref=e33]:
+    - banner [ref=e34]:
+      - navigation [ref=e35]:
+        - generic [ref=e36]:
+          - link "TrailVerse home" [ref=e38] [cursor=pointer]:
+            - /url: /
+            - img [ref=e39]
+          - generic "Primary navigation" [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e43]:
+                - link "Explore" [ref=e44] [cursor=pointer]:
+                  - /url: /explore
+                - link "Map" [ref=e45] [cursor=pointer]:
+                  - /url: /map
+                - link "Trailie" [ref=e46] [cursor=pointer]:
+                  - /url: /plan-ai
+                - link "Blog" [ref=e47] [cursor=pointer]:
+                  - /url: /blog
+              - button "More" [ref=e49] [cursor=pointer]:
+                - text: More
+                - img
+    - generic [ref=e50]:
+      - img "Yellowstone National Park" [ref=e51]
+      - button "Explore" [ref=e55] [cursor=pointer]:
+        - img
+        - generic: Explore
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - img [ref=e61]
+          - generic [ref=e63]: ID,MT,WY
+        - generic [ref=e64]:
+          - heading "Yellowstone National Park" [level=2] [ref=e66]
+          - generic [ref=e67]:
+            - button "Mark as Visited" [ref=e68] [cursor=pointer]:
+              - img
+              - generic: Mark as Visited
+            - button "Favorite" [ref=e69] [cursor=pointer]:
+              - img
+              - generic: Favorite
+            - button "Share Park" [ref=e72] [cursor=pointer]:
+              - img
+              - generic: Share Park
+    - generic [ref=e75]:
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - img [ref=e81]
+              - heading "Hours" [level=3] [ref=e83]
+            - paragraph [ref=e84]: Open 24 hours
+            - button "View full hours" [ref=e86] [cursor=pointer]
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - img [ref=e90]
+              - heading "Entrance Fee" [level=3] [ref=e92]
+            - paragraph [ref=e93]: $35.00
+            - paragraph [ref=e95]: Entrance - Private Vehicle
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - img [ref=e99]
+              - heading "Contact" [level=3] [ref=e101]
+            - link "307-344-7381" [ref=e103] [cursor=pointer]:
+              - /url: tel:307-344-7381
+            - link "Official Website" [ref=e105] [cursor=pointer]:
+              - /url: https://www.nps.gov/yell/index.htm
+              - img [ref=e106]
+              - generic [ref=e108]: Official Website
+        - region "Build your Yellowstone itinerary" [ref=e109]:
+          - generic [ref=e110]:
+            - generic [ref=e111]:
+              - img "Trailie" [ref=e112]
+              - generic [ref=e113]:
+                - paragraph [ref=e114]: Trailie
+                - heading "Build your Yellowstone itinerary" [level=2] [ref=e115]
+                - paragraph [ref=e116]: Tell Trailie your dates, pace, and interests — get a day-by-day Yellowstone National Park plan with hikes, drives, and must-see stops.
+            - generic [ref=e117]:
+              - heading "Yellowstone at a glance" [level=3] [ref=e118]
+              - generic [ref=e119]:
+                - generic [ref=e120]:
+                  - term [ref=e121]: Best time
+                  - definition [ref=e122]: May, October
+                - generic [ref=e123]:
+                  - term [ref=e124]: Trip length
+                  - definition [ref=e125]: 4–7 days
+                - generic [ref=e126]:
+                  - term [ref=e127]: Don't miss
+                  - definition [ref=e128]: Old Faithful and Grand Prismatic Spring
+                - generic [ref=e129]:
+                  - term [ref=e130]: Nearby city
+                  - definition [ref=e131]: West Yellowstone, MT
+            - generic [ref=e132]:
+              - button "Plan Yellowstone with Trailie" [ref=e133] [cursor=pointer]:
+                - img
+                - generic: Plan Yellowstone with Trailie
+              - link "Compare parks" [ref=e134] [cursor=pointer]:
+                - /url: /compare?park=yell
+                - img [ref=e135]
+                - text: Compare parks
+        - generic [ref=e137]:
+          - paragraph [ref=e138]: Explore this park
+          - tablist "Park detail sections" [ref=e139]:
+            - tab "Overview" [selected] [ref=e140] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Overview
+            - tab "Alerts 4" [ref=e141] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Alerts
+              - generic: "4"
+            - tab "What to See" [ref=e142] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: What to See
+            - tab "Where to Stay" [ref=e143] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Where to Stay
+            - tab "Permits 2" [ref=e144] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Permits
+              - generic: "2"
+            - tab "Reviews 1" [ref=e145] [cursor=pointer]:
+              - generic:
+                - img
+              - generic: Reviews
+              - generic: "1"
+        - generic [ref=e147]:
+          - heading "About Yellowstone National Park" [level=2] [ref=e148]
+          - paragraph [ref=e149]: Geyser basins, wildlife corridors, and summer crowds need daily planning.
+          - paragraph [ref=e150]: On March 1, 1872, Yellowstone became the first national park for all to enjoy the unique hydrothermal wonders. Today, millions of people come here each year to camp, hike, and enjoy the majesty of the park.
+          - generic [ref=e151]:
+            - heading "Weather Information" [level=3] [ref=e152]:
+              - img [ref=e153]
+              - text: Weather Information
+            - paragraph [ref=e155]: Yellowstone's weather can vary quite a bit, even in a single day.
+            - list [ref=e157]:
+              - listitem [ref=e158]:
+                - generic [ref=e159]:
+                  - img [ref=e160]
+                  - generic [ref=e162]: Summer
+                - paragraph [ref=e163]: daytime highs can exceed 70°F (21°C), only to drop 20 or more degrees when a thunderstorm rolls through.
+            - paragraph [ref=e164]: It can snow during any month of the year, and winter lows frequently drop below 0°F (-18°C), especially at night. Bring a range of clothing options, including a warm jacket and rain gear, even in the summer.
+          - generic [ref=e165]:
+            - generic [ref=e166]:
+              - heading "Entrance Fees" [level=3] [ref=e167]:
+                - img [ref=e168]
+                - text: Entrance Fees
+              - generic [ref=e170]:
+                - article [ref=e171]:
+                  - generic [ref=e172]:
+                    - paragraph [ref=e173]: Commercial Entrance - Motor Coach
+                    - generic [ref=e174]: $300.00
+                  - paragraph [ref=e175]: Based upon the total capacity of a vehicle that can carry 26 or more passengers, regardless of the actual number of passengers. A commercial tour is defined as consisting of one or more persons traveling on an itinerary that has been packaged, priced, or sold for leisure or recreational purposes by an organization that realizes financial gain through the provision of the service. Pass is good for seven days as long as it's the same passenger group.
+                - article [ref=e176]:
+                  - generic [ref=e177]:
+                    - paragraph [ref=e178]: Commercial Entrance - Mini-bus
+                    - generic [ref=e179]: $200.00
+                  - paragraph [ref=e180]: Based upon the total capacity of a vehicle that can carry 16-25 passengers, regardless of the actual number of passengers. A commercial tour is defined as consisting of one or more persons traveling on an itinerary that has been packaged, priced, or sold for leisure or recreational purposes by an organization that realizes financial gain through the provision of the service. Pass is good for seven days as long as it's the same passenger group.
+                - article [ref=e181]:
+                  - generic [ref=e182]:
+                    - paragraph [ref=e183]: Commercial Entrance - Van
+                    - generic [ref=e184]: $125.00
+                  - paragraph [ref=e185]: Based upon the total capacity of a vehicle that can carry 7-15 passengers, regardless of the actual number of passengers. A commercial tour is defined as consisting of one or more persons traveling on an itinerary that has been packaged, priced, or sold for leisure or recreational purposes by an organization that realizes financial gain through the provision of the service. Pass is good for seven days as long as it's the same passenger group.
+                - article [ref=e186]:
+                  - generic [ref=e187]:
+                    - paragraph [ref=e188]: Nonresident
+                    - generic [ref=e189]: $100.00
+                  - paragraph [ref=e190]: Each non-US resident aged 16 and older visiting Yellowstone National Park must pay a $100 nonresident fee (in addition to the standard entrance fee), unless admitted with an Annual or America the Beautiful Pass. This includes nonresidents entering as part of a commercial tour group, commercial use authorization (CUA) group, or concessioner tour group.
+                - article [ref=e191]:
+                  - generic [ref=e192]:
+                    - paragraph [ref=e193]: Entrance - Private Vehicle
+                    - generic [ref=e194]: $35.00
+                  - paragraph [ref=e195]: Unlimited entry for one vehicle and all passengers for seven consecutive days, beginning on the day of purchase. Vehicles must be private, non-commercial, and with a seating capacity of 15 or less.
+                - article [ref=e196]:
+                  - generic [ref=e197]:
+                    - paragraph [ref=e198]: Entrance - Motorcycle
+                    - generic [ref=e199]: $30.00
+                  - paragraph [ref=e200]: Valid for 7 days. Admits up to 2 private, non-commercial motorcycles with up to 4 total passengers.
+                - article [ref=e201]:
+                  - generic [ref=e202]:
+                    - paragraph [ref=e203]: Entrance - Snowmobile
+                    - generic [ref=e204]: $30.00
+                  - paragraph [ref=e205]: Valid for 7 days. Admits up to 2 snowmobiles with up to 4 total passengers.
+                - article [ref=e206]:
+                  - generic [ref=e207]:
+                    - paragraph [ref=e208]: Entrance - Non-commercial Groups
+                    - generic [ref=e209]: $20.00
+                  - paragraph [ref=e210]: Non-commercial group (e.g. church groups, scouts) traveling in a vehicle with a capacity of 16 or more people. Cost is per person. Unlimited entry for one vehicle and all passengers for seven consecutive days, beginning on the day of purchase.
+                - article [ref=e211]:
+                  - generic [ref=e212]:
+                    - paragraph [ref=e213]: Entrance - Per Person
+                    - generic [ref=e214]: $20.00
+                  - paragraph [ref=e215]: Entry for visitors on foot, bicycle, ski, etc., when 16 years of age or older.
+                - article [ref=e216]:
+                  - generic [ref=e217]:
+                    - paragraph [ref=e218]: Commercial Entrance - Sedan
+                    - generic [ref=e219]: $20.00
+                  - paragraph [ref=e220]: A commercial tour is defined as consisting of one or more persons traveling on an itinerary that has been packaged, priced, or sold for leisure or recreational purposes by an organization that realizes financial gain through the provision of the service. The cost is $25 + $20 per person. Pass is good for seven days as long as it's the same passenger group.
+            - generic [ref=e221]:
+              - heading "Operating Hours" [level=3] [ref=e222]:
+                - img [ref=e223]
+                - text: Operating Hours
+              - generic [ref=e225]:
+                - generic [ref=e226]:
+                  - paragraph [ref=e227]: All Park Hours
+                  - paragraph [ref=e228]: Yellowstone is open daily, year-round, although activities and services are limited at night and certain times of year. The park has five entrance stations, but not all entrance stations are open year-round. Make sure to carefully read about access at each station at different times of year. And remember, all dates are weather-dependent. Please note that camping is possible only in designated campgrounds.
+                  - list [ref=e229]:
+                    - listitem [ref=e230]:
+                      - generic [ref=e231]: Monday
+                      - generic [ref=e232]: All Day
+                    - listitem [ref=e233]:
+                      - generic [ref=e234]: Tuesday
+                      - generic [ref=e235]: All Day
+                    - listitem [ref=e236]:
+                      - generic [ref=e237]: Wednesday
+                      - generic [ref=e238]: All Day
+                    - listitem [ref=e239]:
+                      - generic [ref=e240]: Thursday
+                      - generic [ref=e241]: All Day
+                    - listitem [ref=e242]:
+                      - generic [ref=e243]: Friday
+                      - generic [ref=e244]: All Day
+                    - listitem [ref=e245]:
+                      - generic [ref=e246]: Saturday
+                      - generic [ref=e247]: All Day
+                    - listitem [ref=e248]:
+                      - generic [ref=e249]: Sunday
+                      - generic [ref=e250]: All Day
+                - generic [ref=e251]:
+                  - paragraph [ref=e252]: West Entrance
+                  - paragraph [ref=e253]: Adjacent to the town of West Yellowstone, Montana, the West Entrance is usually open (weather-dependent) to wheeled vehicles from the third Friday in April through early November, and to tracked-oversnow (snowmobiles and snowcoaches) vehicles from December 15 to March 15.
+                  - list [ref=e254]:
+                    - listitem [ref=e255]:
+                      - generic [ref=e256]: Monday
+                      - generic [ref=e257]: All Day
+                    - listitem [ref=e258]:
+                      - generic [ref=e259]: Tuesday
+                      - generic [ref=e260]: All Day
+                    - listitem [ref=e261]:
+                      - generic [ref=e262]: Wednesday
+                      - generic [ref=e263]: All Day
+                    - listitem [ref=e264]:
+                      - generic [ref=e265]: Thursday
+                      - generic [ref=e266]: All Day
+                    - listitem [ref=e267]:
+                      - generic [ref=e268]: Friday
+                      - generic [ref=e269]: All Day
+                    - listitem [ref=e270]:
+                      - generic [ref=e271]: Saturday
+                      - generic [ref=e272]: All Day
+                    - listitem [ref=e273]:
+                      - generic [ref=e274]: Sunday
+                      - generic [ref=e275]: All Day
+                - generic [ref=e276]:
+                  - paragraph [ref=e277]: North Entrance
+                  - paragraph [ref=e278]: Near the gateway community of Gardiner, Montana, the North Entrance is the only park entrance open to wheeled vehicles all year. November through April, the North Entrance provides the only access to Cooke City, Montana. US Highway 212 east of Cooke City is closed to wheeled vehicles November through April. The road from Mammoth to Norris opens to wheeled vehicles the third Friday in April through early November, and to tracked-oversnow vehicles, conditions permitting, from December 15 to early March.
+                  - list [ref=e279]:
+                    - listitem [ref=e280]:
+                      - generic [ref=e281]: Monday
+                      - generic [ref=e282]: All Day
+                    - listitem [ref=e283]:
+                      - generic [ref=e284]: Tuesday
+                      - generic [ref=e285]: All Day
+                    - listitem [ref=e286]:
+                      - generic [ref=e287]: Wednesday
+                      - generic [ref=e288]: All Day
+                    - listitem [ref=e289]:
+                      - generic [ref=e290]: Thursday
+                      - generic [ref=e291]: All Day
+                    - listitem [ref=e292]:
+                      - generic [ref=e293]: Friday
+                      - generic [ref=e294]: All Day
+                    - listitem [ref=e295]:
+                      - generic [ref=e296]: Saturday
+                      - generic [ref=e297]: All Day
+                    - listitem [ref=e298]:
+                      - generic [ref=e299]: Sunday
+                      - generic [ref=e300]: All Day
+                - generic [ref=e301]:
+                  - paragraph [ref=e302]: East Entrance
+                  - paragraph [ref=e303]: Depending on the weather and conditions, this entrance usually opens to wheeled vehicles the first Friday in May and to tracked-oversnow vehicles December 22 through March 15.
+                  - list [ref=e304]:
+                    - listitem [ref=e305]:
+                      - generic [ref=e306]: Monday
+                      - generic [ref=e307]: All Day
+                    - listitem [ref=e308]:
+                      - generic [ref=e309]: Tuesday
+                      - generic [ref=e310]: All Day
+                    - listitem [ref=e311]:
+                      - generic [ref=e312]: Wednesday
+                      - generic [ref=e313]: All Day
+                    - listitem [ref=e314]:
+                      - generic [ref=e315]: Thursday
+                      - generic [ref=e316]: All Day
+                    - listitem [ref=e317]:
+                      - generic [ref=e318]: Friday
+                      - generic [ref=e319]: All Day
+                    - listitem [ref=e320]:
+                      - generic [ref=e321]: Saturday
+                      - generic [ref=e322]: All Day
+                    - listitem [ref=e323]:
+                      - generic [ref=e324]: Sunday
+                      - generic [ref=e325]: All Day
+                - generic [ref=e326]:
+                  - paragraph [ref=e327]: South Entrance
+                  - paragraph [ref=e328]: Open (weather-dependent) to wheeled vehicles from the second Friday in May through early November and to tracked-oversnow vehicles from December 15 to March 15. Limited services are available near the South Entrance.
+                  - list [ref=e329]:
+                    - listitem [ref=e330]:
+                      - generic [ref=e331]: Monday
+                      - generic [ref=e332]: All Day
+                    - listitem [ref=e333]:
+                      - generic [ref=e334]: Tuesday
+                      - generic [ref=e335]: All Day
+                    - listitem [ref=e336]:
+                      - generic [ref=e337]: Wednesday
+                      - generic [ref=e338]: All Day
+                    - listitem [ref=e339]:
+                      - generic [ref=e340]: Thursday
+                      - generic [ref=e341]: All Day
+                    - listitem [ref=e342]:
+                      - generic [ref=e343]: Friday
+                      - generic [ref=e344]: All Day
+                    - listitem [ref=e345]:
+                      - generic [ref=e346]: Saturday
+                      - generic [ref=e347]: All Day
+                    - listitem [ref=e348]:
+                      - generic [ref=e349]: Sunday
+                      - generic [ref=e350]: All Day
+                - generic [ref=e351]:
+                  - paragraph [ref=e352]: Northeast Entrance
+                  - paragraph [ref=e353]: Near the gateway communities of Silver Gate and Cooke City, Montana, this entrance is open year around for wheeled vehicle access to Cooke City through Gardiner, Montana. US Highway 212 east of Cooke City is closed to wheeled vehicles November through April. Opening dates for roads east of Cooke City vary from year to year, depending on the weather. The Beartooth Highway is open from late May/early June (weather dependent) to mid October.
+                  - list [ref=e354]:
+                    - listitem [ref=e355]:
+                      - generic [ref=e356]: Monday
+                      - generic [ref=e357]: All Day
+                    - listitem [ref=e358]:
+                      - generic [ref=e359]: Tuesday
+                      - generic [ref=e360]: All Day
+                    - listitem [ref=e361]:
+                      - generic [ref=e362]: Wednesday
+                      - generic [ref=e363]: All Day
+                    - listitem [ref=e364]:
+                      - generic [ref=e365]: Thursday
+                      - generic [ref=e366]: All Day
+                    - listitem [ref=e367]:
+                      - generic [ref=e368]: Friday
+                      - generic [ref=e369]: All Day
+                    - listitem [ref=e370]:
+                      - generic [ref=e371]: Saturday
+                      - generic [ref=e372]: All Day
+                    - listitem [ref=e373]:
+                      - generic [ref=e374]: Sunday
+                      - generic [ref=e375]: All Day
+            - generic [ref=e376]:
+              - heading "Entrance Passes" [level=3] [ref=e377]:
+                - img [ref=e378]
+                - text: Entrance Passes
+              - article [ref=e381]:
+                - generic [ref=e382]:
+                  - paragraph [ref=e383]: Annual Entrance - Park
+                  - generic [ref=e384]: $70.00
+                - paragraph [ref=e385]: Provides unlimited entry for one year (valid through the month of purchase) to the pass holder and passengers in the same vehicle, or pass holder and up to three persons where per person fees are charged. Purchase at any entrance station.
+      - complementary [ref=e386]:
+        - generic [ref=e388]:
+          - heading "Weather Forecast" [level=3] [ref=e389]
+          - status "Loading" [ref=e390]
+        - generic [ref=e407]:
+          - heading "Location" [level=3] [ref=e408]:
+            - img [ref=e409]
+            - text: Location
+          - paragraph [ref=e411]:
+            - text: 2 Officers Row
+            - text: Yellowstone National Park, WY 82190
+          - generic [ref=e412]:
+            - button "View on Map" [ref=e413] [cursor=pointer]:
+              - img
+              - text: View on Map
+            - link "Open in Google Maps" [ref=e414] [cursor=pointer]:
+              - /url: https://www.google.com/maps/search/?api=1&query=Yellowstone%20National%20Park%2C%20Yellowstone%20National%20Park%2C%20WY
+              - img [ref=e415]
+              - text: Open in Google Maps
+            - link "Get directions" [ref=e417] [cursor=pointer]:
+              - /url: https://www.google.com/maps/dir/?api=1&destination=44.59824417%2C-110.5471695
+              - img [ref=e418]
+              - text: Get directions
+        - generic [ref=e420]:
+          - heading "Around This Park" [level=3] [ref=e421]:
+            - img [ref=e422]
+            - text: Around This Park
+          - paragraph [ref=e424]: Open nearby essentials in Google Maps without leaving your planning flow.
+          - paragraph [ref=e425]: Results are from Google Maps and may not be up to date — especially in remote areas. Always verify hours, availability, and road conditions before heading out.
+          - generic [ref=e426]:
+            - link "Lodging Hotels, lodges, and stays near the park Open" [ref=e427] [cursor=pointer]:
+              - /url: https://www.google.com/maps/search/?api=1&query=lodging%20near%20Yellowstone%20National%20Park&center=44.59824417,-110.5471695
+              - img [ref=e429]
+              - generic [ref=e431]:
+                - paragraph [ref=e432]: Lodging
+                - paragraph [ref=e433]: Hotels, lodges, and stays near the park
+              - generic [ref=e434]:
+                - generic [ref=e435]: Open
+                - img [ref=e436]
+            - link "Food Restaurants and quick stops nearby Open" [ref=e438] [cursor=pointer]:
+              - /url: https://www.google.com/maps/search/?api=1&query=restaurants%20near%20Yellowstone%20National%20Park&center=44.59824417,-110.5471695
+              - img [ref=e440]
+              - generic [ref=e442]:
+                - paragraph [ref=e443]: Food
+                - paragraph [ref=e444]: Restaurants and quick stops nearby
+              - generic [ref=e445]:
+                - generic [ref=e446]: Open
+                - img [ref=e447]
+            - link "Gas Fuel stops before or after your visit Open" [ref=e449] [cursor=pointer]:
+              - /url: https://www.google.com/maps/search/?api=1&query=gas%20stations%20near%20Yellowstone%20National%20Park&center=44.59824417,-110.5471695
+              - img [ref=e451]
+              - generic [ref=e453]:
+                - paragraph [ref=e454]: Gas
+                - paragraph [ref=e455]: Fuel stops before or after your visit
+              - generic [ref=e456]:
+                - generic [ref=e457]: Open
+                - img [ref=e458]
+            - link "Attractions Nearby points of interest and landmarks Open" [ref=e460] [cursor=pointer]:
+              - /url: https://www.google.com/maps/search/?api=1&query=attractions%20near%20Yellowstone%20National%20Park&center=44.59824417,-110.5471695
+              - img [ref=e462]
+              - generic [ref=e464]:
+                - paragraph [ref=e465]: Attractions
+                - paragraph [ref=e466]: Nearby points of interest and landmarks
+              - generic [ref=e467]:
+                - generic [ref=e468]: Open
+                - img [ref=e469]
+        - generic [ref=e471]:
+          - link "Crowd Calendar When to Visit Yellowstone Month-by-month crowd levels, shoulder seasons, and permit info. View Calendar" [ref=e472] [cursor=pointer]:
+            - /url: /reports/when-to-go?park=YELL&from=%2Fparks%2Fyellowstone-national-park
+            - text: Crowd Calendar
+            - heading "When to Visit Yellowstone" [level=4] [ref=e473]
+            - paragraph [ref=e474]: Month-by-month crowd levels, shoulder seasons, and permit info.
+            - generic [ref=e475]:
+              - text: View Calendar
+              - img [ref=e476]
+          - link "Planning Guides National park trip planning Tool comparisons, permits, how-tos, and ranked park lists. View Guides" [ref=e478] [cursor=pointer]:
+            - /url: /guides?from=%2Fparks%2Fyellowstone-national-park
+            - text: Planning Guides
+            - heading "National park trip planning" [level=4] [ref=e479]
+            - paragraph [ref=e480]: Tool comparisons, permits, how-tos, and ranked park lists.
+            - generic [ref=e481]:
+              - text: View Guides
+              - img [ref=e482]
+    - region "Park planning questions" [ref=e484]:
+      - generic "Planning Yellowstone" [ref=e486]:
+        - paragraph [ref=e487]: Common questions
+        - heading "Planning Yellowstone" [level=2] [ref=e488]
+        - paragraph [ref=e489]: The summary above covers timing and highlights. These go deeper on reservations, crowds, and logistics — check Alerts and Permits for live updates.
+        - generic [ref=e490]:
+          - generic [ref=e491]:
+            - button "Do you need reservations for Yellowstone?" [expanded] [ref=e492] [cursor=pointer]:
+              - generic: Do you need reservations for Yellowstone?
+              - img
+            - generic [ref=e493]:
+              - paragraph [ref=e494]: TrailVerse lists 2 reservation types on the Permits tab, including Yellowstone National Park Backcountry Permits and Yellowstone Non-Commercially Guided Snowmobile Access Program. Recreation.gov listings can change seasonally — confirm current rules before you set dates.
+              - button "See Permits tab →" [ref=e495] [cursor=pointer]
+          - button "When is Yellowstone busiest?" [ref=e497] [cursor=pointer]:
+            - generic: When is Yellowstone busiest?
+            - img
+          - button "How should you plan extra time at Yellowstone?" [ref=e499] [cursor=pointer]:
+            - generic: How should you plan extra time at Yellowstone?
+            - img
+          - button "Where should you book lodging for Yellowstone?" [ref=e501] [cursor=pointer]:
+            - generic: Where should you book lodging for Yellowstone?
+            - img
+          - button "Is Yellowstone good for first-time national park visitors?" [ref=e503] [cursor=pointer]:
+            - generic: Is Yellowstone good for first-time national park visitors?
+            - img
+    - generic [ref=e505]:
+      - generic [ref=e507]:
+        - generic [ref=e508]:
+          - img [ref=e509]
+          - generic [ref=e511]: More in ID,MT,WY
+        - heading "You Might Also Like" [level=2] [ref=e512]
+      - generic [ref=e513]:
+        - link "Glacier National Park MT Glacier National Park" [ref=e514] [cursor=pointer]:
+          - /url: /parks/glacier-national-park
+          - img "Glacier National Park" [ref=e515]
+          - generic [ref=e517]:
+            - generic [ref=e518]:
+              - img [ref=e519]
+              - generic [ref=e521]: MT
+            - heading "Glacier National Park" [level=3] [ref=e522]
+        - link "Grand Teton National Park WY Grand Teton National Park" [ref=e523] [cursor=pointer]:
+          - /url: /parks/grand-teton-national-park
+          - img "Grand Teton National Park" [ref=e524]
+          - generic [ref=e526]:
+            - generic [ref=e527]:
+              - img [ref=e528]
+              - generic [ref=e530]: WY
+            - heading "Grand Teton National Park" [level=3] [ref=e531]
+        - link "Big Hole National Battlefield MT Big Hole National Battlefield" [ref=e532] [cursor=pointer]:
+          - /url: /parks/big-hole-national-battlefield
+          - img "Big Hole National Battlefield" [ref=e533]
+          - generic [ref=e535]:
+            - generic [ref=e536]:
+              - img [ref=e537]
+              - generic [ref=e539]: MT
+            - heading "Big Hole National Battlefield" [level=3] [ref=e540]
+        - link "Bighorn Canyon National Recreation Area MT,WY Bighorn Canyon National Recreation Area" [ref=e541] [cursor=pointer]:
+          - /url: /parks/bighorn-canyon-national-recreation-area
+          - img "Bighorn Canyon National Recreation Area" [ref=e542]
+          - generic [ref=e544]:
+            - generic [ref=e545]:
+              - img [ref=e546]
+              - generic [ref=e548]: MT,WY
+            - heading "Bighorn Canyon National Recreation Area" [level=3] [ref=e549]
+      - link "View All Parks in ID" [ref=e551] [cursor=pointer]:
+        - /url: /parks/state/idaho?from=%2Fparks%2Fyellowstone-national-park
+  - button "Talk to Trailie — voice assistant" [ref=e553] [cursor=pointer]:
+    - img
+  - button "Open Next.js Dev Tools" [ref=e559] [cursor=pointer]:
+    - img [ref=e560]
+  - alert [ref=e563]
+```

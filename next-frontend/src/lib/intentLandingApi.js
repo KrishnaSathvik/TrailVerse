@@ -140,7 +140,7 @@ export async function fetchIntentLandingParksClient(landing, { limit = DEFAULT_L
   }
 
   try {
-    const res = await fetch(`/api/parks/search?${params.toString()}`);
+    const res = await fetch(`${getApiBaseUrl()}/parks/search?${params.toString()}`);
     if (!res.ok) {
       return { parks: [], totalCount: 0 };
     }

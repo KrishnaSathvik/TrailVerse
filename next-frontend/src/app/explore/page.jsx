@@ -2,7 +2,6 @@ import Header from '@/components/common/Header';
 import ExploreSeoShell from '@/components/seo/ExploreSeoShell';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
-import { ALL_PARKS_LITE_FIELDS_MAP } from '@/services/npsApi';
 import { canonicalPageMetadata } from '@/lib/seo';
 
 export async function generateMetadata({ searchParams }) {
@@ -26,39 +25,32 @@ async function getInitialParks() {
   }
 }
 
-async function getInitialAllParks() {
+async function getTotalSitesCount() {
   try {
     const response = await fetch(
-      `${getApiBaseUrl()}/parks?all=true&fields=${encodeURIComponent(ALL_PARKS_LITE_FIELDS_MAP)}`,
-      {
-      next: { revalidate: 86400 },
-      }
+      `${getApiBaseUrl()}/parks?page=1&limit=1&nationalParksOnly=false`,
+      { next: { revalidate: 86400 } }
     );
 
     if (!response.ok) {
       return undefined;
     }
 
-    return response.json();
+    const json = await response.json();
+    return json.total;
   } catch {
     return undefined;
   }
 }
 
 export default async function ExplorePage() {
-  const [initialPaginatedData, initialAllParksData] = await Promise.all([
+  const [initialPaginatedData, totalSitesCount] = await Promise.all([
     getInitialParks(),
-    getInitialAllParks(),
+    getTotalSitesCount(),
   ]);
+  const initialAllParksData = undefined;
 
-  const nationalParksCount =
-    initialPaginatedData?.total ??
-    (Array.isArray(initialAllParksData?.data)
-      ? initialAllParksData.data.filter((park) =>
-          park.designation?.toLowerCase().includes('national park')
-        ).length
-      : 64);
-  const totalSitesCount = initialAllParksData?.data?.length || initialAllParksData?.total;
+  const nationalParksCount = initialPaginatedData?.total ?? 64;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>

@@ -86,29 +86,47 @@ const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
   }
 };
 
-// Middleware to track API calls
+const API_CALL_SAMPLE_RATE = Number(process.env.ANALYTICS_API_CALL_SAMPLE_RATE ?? 0.01);
+const API_CALL_SLOW_MS = Number(process.env.ANALYTICS_API_CALL_SLOW_MS ?? 2000);
+
+function shouldPersistApiCall(statusCode, responseTimeMs) {
+  if (statusCode >= 400) return 'error';
+  if (responseTimeMs >= API_CALL_SLOW_MS) return 'slow';
+  if (Math.random() < API_CALL_SAMPLE_RATE) return 'sample';
+  return null;
+}
+
+// Middleware to track API calls (sampled in production; skipped in development)
 exports.trackApiCall = (req, res, next) => {
   const path = req.path || '';
   if (path.includes('/analytics/track')) {
     return next();
   }
 
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   const startTime = Date.now();
-  
-  // Track the API call
+
   res.on('finish', () => {
     const responseTime = Date.now() - startTime;
+    const statusCode = res.statusCode;
+    const logReason = shouldPersistApiCall(statusCode, responseTime);
+    if (!logReason) return;
+
     const eventCategory = req.user ? 'user' : 'technical';
-    
+
     trackEvent(req, 'api_call', eventCategory, {
       method: req.method,
       endpoint: req.route?.path ? `${req.baseUrl || ''}${req.route.path}` : req.path,
-      statusCode: res.statusCode,
+      statusCode,
       responseTime,
-      userAgent: req.get('User-Agent')
+      userAgent: req.get('User-Agent'),
+      logReason,
     });
   });
-  
+
   next();
 };
 

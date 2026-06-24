@@ -94,18 +94,77 @@ async function fetchParkCodesForTaxonomyItem(fetchParks, item) {
   return codes;
 }
 
-async function buildActivityParkIndex(activities, { force = false } = {}) {
-  if (!force) {
-    const snapshot = await npsService._loadSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
-    if (snapshot && !snapshot.stale && snapshot.data && isParkIndexHealthy(snapshot.data, activities.length)) {
-      return snapshot.data;
-    }
-    if (snapshot?.data && !isParkIndexHealthy(snapshot.data, activities.length)) {
-      console.warn('discover: activity park index unhealthy — rebuilding');
-      await npsService.deleteSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY);
+function extractParkCodesFromThing(thing) {
+  return (thing?.relatedParks || [])
+    .map((p) => (p.parkCode || '').toLowerCase())
+    .filter(Boolean);
+}
+
+/** Build activity→park codes from bulk thingstodo (no per-taxonomy NPS calls). */
+function buildActivityParkIndexFromBulk(activities, thingsToDo) {
+  const index = Object.fromEntries(
+    activities.filter((a) => a.id).map((a) => [a.id, []])
+  );
+
+  for (const thing of thingsToDo || []) {
+    const parkCodes = extractParkCodesFromThing(thing);
+    if (!parkCodes.length || !Array.isArray(thing.activities)) continue;
+
+    for (const activity of thing.activities) {
+      const id = activity?.id;
+      if (!id || !Object.prototype.hasOwnProperty.call(index, id)) continue;
+      index[id] = Array.from(new Set([...index[id], ...parkCodes]));
     }
   }
 
+  return index;
+}
+
+/** Build topic→park codes from bulk thingstodo topics/tags. */
+function buildTopicParkIndexFromBulk(topics, thingsToDo) {
+  const index = Object.fromEntries(
+    topics.filter((t) => t.id).map((t) => [t.id, []])
+  );
+  const topicIdByName = new Map(
+    topics.filter((t) => t.id && t.name).map((t) => [t.name.toLowerCase(), t.id])
+  );
+
+  for (const thing of thingsToDo || []) {
+    const parkCodes = extractParkCodesFromThing(thing);
+    if (!parkCodes.length) continue;
+
+    for (const topic of thing.topics || []) {
+      const id = topic?.id || topicIdByName.get((topic?.name || '').toLowerCase());
+      if (!id || !Object.prototype.hasOwnProperty.call(index, id)) continue;
+      index[id] = Array.from(new Set([...index[id], ...parkCodes]));
+    }
+  }
+
+  return index;
+}
+
+async function loadThingsToDoCatalog() {
+  return npsService.getAllActivities(5000);
+}
+
+async function saveParkIndexSnapshot(key, index, expectedItemCount) {
+  if (!isParkIndexHealthy(index, expectedItemCount)) {
+    console.warn(`discover: skipping unhealthy park index save for ${key}`);
+    return false;
+  }
+  await npsService._saveSnapshot(key, index);
+  return true;
+}
+
+async function loadStaleParkIndex(key) {
+  const snapshot = await npsService._loadSnapshot(key, Infinity);
+  const data = snapshot?.data;
+  if (!data || typeof data !== 'object') return null;
+  const hasData = Object.values(data).some((codes) => Array.isArray(codes) && codes.length > 0);
+  return hasData ? data : null;
+}
+
+async function buildActivityParkIndexViaApi(activities) {
   const index = {};
   await mapWithConcurrency(activities, async (activity) => {
     const id = activity.id;
@@ -115,23 +174,10 @@ async function buildActivityParkIndex(activities, { force = false } = {}) {
       activity
     );
   });
-
-  await npsService._saveSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, index);
   return index;
 }
 
-async function buildTopicParkIndex(topics, { force = false } = {}) {
-  if (!force) {
-    const snapshot = await npsService._loadSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
-    if (snapshot && !snapshot.stale && snapshot.data && isParkIndexHealthy(snapshot.data, topics.length)) {
-      return snapshot.data;
-    }
-    if (snapshot?.data && !isParkIndexHealthy(snapshot.data, topics.length)) {
-      console.warn('discover: topic park index unhealthy — rebuilding');
-      await npsService.deleteSnapshot(TOPIC_INDEX_SNAPSHOT_KEY);
-    }
-  }
-
+async function buildTopicParkIndexViaApi(topics) {
   const index = {};
   await mapWithConcurrency(topics, async (topic) => {
     const id = topic.id;
@@ -141,9 +187,148 @@ async function buildTopicParkIndex(topics, { force = false } = {}) {
       topic
     );
   });
-
-  await npsService._saveSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, index);
   return index;
+}
+
+async function buildActivityParkIndex(activities, { force = false } = {}) {
+  if (!force) {
+    const snapshot = await npsService._loadSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
+    if (snapshot?.data && isParkIndexHealthy(snapshot.data, activities.length)) {
+      return snapshot.data;
+    }
+    if (snapshot?.data && !isParkIndexHealthy(snapshot.data, activities.length)) {
+      console.warn('discover: activity park index unhealthy — rebuilding from bulk');
+      await npsService.deleteSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY);
+    }
+  }
+
+  const thingsToDo = await loadThingsToDoCatalog();
+  const bulkIndex = buildActivityParkIndexFromBulk(activities, thingsToDo);
+  if (isParkIndexHealthy(bulkIndex, activities.length)) {
+    await saveParkIndexSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, bulkIndex, activities.length);
+    return bulkIndex;
+  }
+
+  if (!npsService._isRateLimited()) {
+    const apiIndex = await buildActivityParkIndexViaApi(activities);
+    if (isParkIndexHealthy(apiIndex, activities.length)) {
+      await saveParkIndexSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, apiIndex, activities.length);
+      return apiIndex;
+    }
+  }
+
+  const stale = await loadStaleParkIndex(ACTIVITY_INDEX_SNAPSHOT_KEY);
+  if (stale) return stale;
+  if (Object.values(bulkIndex).some((codes) => codes.length > 0)) return bulkIndex;
+
+  return bulkIndex;
+}
+
+async function buildTopicParkIndex(topics, { force = false } = {}) {
+  if (!force) {
+    const snapshot = await npsService._loadSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
+    if (snapshot?.data && isParkIndexHealthy(snapshot.data, topics.length)) {
+      return snapshot.data;
+    }
+    if (snapshot?.data && !isParkIndexHealthy(snapshot.data, topics.length)) {
+      console.warn('discover: topic park index unhealthy — rebuilding from bulk');
+      await npsService.deleteSnapshot(TOPIC_INDEX_SNAPSHOT_KEY);
+    }
+  }
+
+  const thingsToDo = await loadThingsToDoCatalog();
+  const bulkIndex = buildTopicParkIndexFromBulk(topics, thingsToDo);
+  if (isParkIndexHealthy(bulkIndex, topics.length)) {
+    await saveParkIndexSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, bulkIndex, topics.length);
+    return bulkIndex;
+  }
+
+  if (!npsService._isRateLimited()) {
+    const apiIndex = await buildTopicParkIndexViaApi(topics);
+    if (isParkIndexHealthy(apiIndex, topics.length)) {
+      await saveParkIndexSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, apiIndex, topics.length);
+      return apiIndex;
+    }
+  }
+
+  const stale = await loadStaleParkIndex(TOPIC_INDEX_SNAPSHOT_KEY);
+  if (stale) return stale;
+  if (Object.values(bulkIndex).some((codes) => codes.length > 0)) return bulkIndex;
+
+  return bulkIndex;
+}
+
+function mapTaxonomiesToCatalogItems(activityTaxonomy, topicTaxonomy, activityIndex, topicIndex) {
+  const activities = activityTaxonomy
+    .map((a) => {
+      const slug = slugify(a.name);
+      const parkCodes = activityIndex[a.id] || [];
+      return {
+        id: a.id,
+        name: a.name,
+        slug,
+        parkCount: parkCodes.length,
+        iconKey: activityIconKey(a.name),
+      };
+    })
+    .filter((a) => a.slug)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const topics = topicTaxonomy
+    .map((t) => {
+      const slug = slugify(t.name);
+      const parkCodes = topicIndex[t.id] || [];
+      return {
+        id: t.id,
+        name: t.name,
+        slug,
+        parkCount: parkCodes.length,
+      };
+    })
+    .filter((t) => t.slug)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return { activities, topics };
+}
+
+async function repairCatalogIndexes(catalog) {
+  const activityTaxonomy = (catalog.activities || []).map((a) => ({ id: a.id, name: a.name }));
+  const topicTaxonomy = (catalog.topics || []).map((t) => ({ id: t.id, name: t.name }));
+  if (!activityTaxonomy.length || !topicTaxonomy.length) {
+    return catalog;
+  }
+
+  const thingsToDo = await loadThingsToDoCatalog();
+  let activityIndex = buildActivityParkIndexFromBulk(activityTaxonomy, thingsToDo);
+  let topicIndex = buildTopicParkIndexFromBulk(topicTaxonomy, thingsToDo);
+
+  if (!isParkIndexHealthy(activityIndex, activityTaxonomy.length)) {
+    activityIndex = await buildActivityParkIndex(activityTaxonomy, { force: true });
+  }
+  if (!isParkIndexHealthy(topicIndex, topicTaxonomy.length)) {
+    topicIndex = await buildTopicParkIndex(topicTaxonomy, { force: true });
+  }
+
+  const { activities, topics } = mapTaxonomiesToCatalogItems(
+    activityTaxonomy,
+    topicTaxonomy,
+    activityIndex,
+    topicIndex
+  );
+
+  return {
+    ...catalog,
+    activities,
+    topics,
+    indexes: {
+      activity: activityIndex,
+      topic: topicIndex,
+    },
+    relatedActivities: buildRelatedBySharedParks(activityTaxonomy, activityIndex),
+    relatedTopics: buildRelatedBySharedParks(topicTaxonomy, topicIndex),
+    updatedAt: new Date().toISOString(),
+    stale: false,
+  };
 }
 
 async function clearDiscoverSnapshots() {
@@ -306,34 +491,12 @@ async function buildCatalog({ forceIndexes = false } = {}) {
   const relatedActivities = buildRelatedBySharedParks(activityTaxonomy, activityIndex);
   const relatedTopics = buildRelatedBySharedParks(topicTaxonomy, topicIndex);
 
-  const activities = activityTaxonomy
-    .map((a) => {
-      const slug = slugify(a.name);
-      const parkCodes = activityIndex[a.id] || [];
-      return {
-        id: a.id,
-        name: a.name,
-        slug,
-        parkCount: parkCodes.length,
-        iconKey: activityIconKey(a.name)
-      };
-    })
-    .filter((a) => a.slug)
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const topics = topicTaxonomy
-    .map((t) => {
-      const slug = slugify(t.name);
-      const parkCodes = topicIndex[t.id] || [];
-      return {
-        id: t.id,
-        name: t.name,
-        slug,
-        parkCount: parkCodes.length
-      };
-    })
-    .filter((t) => t.slug)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const { activities, topics } = mapTaxonomiesToCatalogItems(
+    activityTaxonomy,
+    topicTaxonomy,
+    activityIndex,
+    topicIndex
+  );
 
   const catalog = {
     activities,
@@ -385,7 +548,18 @@ async function getCatalog({ force = false } = {}) {
   }
 
   if (!force && snapshot?.data && !catalogIndexesLookHealthy(snapshot.data)) {
-    console.warn('discover: catalog snapshot indexes unhealthy — rebuilding');
+    console.warn('discover: catalog snapshot indexes unhealthy — attempting bulk repair');
+    try {
+      const repaired = await repairCatalogIndexes(snapshot.data);
+      if (catalogIndexesLookHealthy(repaired)) {
+        memoryCatalog = repaired;
+        memoryCatalogAt = Date.now();
+        await npsService._saveSnapshot(CATALOG_SNAPSHOT_KEY, repaired);
+        return repaired;
+      }
+    } catch (repairError) {
+      console.warn('discover: bulk catalog repair failed:', repairError.message);
+    }
     force = true;
   }
 

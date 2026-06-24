@@ -18,6 +18,7 @@ import { logEvent, logReviewCreate } from '../../utils/analytics';
 const ReviewSection = ({
   parkCode,
   parkName,
+  prefetchedReviews = null,
   onCountChange,
   initialOpenForm = false,
   onFormOpened,
@@ -76,9 +77,50 @@ const ReviewSection = ({
     setLightboxOpen(true);
   };
 
+  const applyReviewPayload = (response) => {
+    const list = response?.list ?? response?.data ?? [];
+    setReviews(list);
+    if (response?.stats) {
+      setAverageRating(response.stats.averageRating || 0);
+      setTotalReviews(response.stats.totalReviews || 0);
+    } else {
+      setAverageRating(response?.averageRating || 0);
+      setTotalReviews(
+        response?.count
+        ?? response?.total
+        ?? response?.pagination?.totalReviews
+        ?? list.length
+      );
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await reviewService.getParkReviews(parkCode);
+      applyReviewPayload({
+        list: response.data || [],
+        stats: response.stats,
+        averageRating: response.averageRating,
+        total: response.total,
+        pagination: response.pagination,
+      });
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      showToast('Failed to load reviews', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
+    if (prefetchedReviews != null) {
+      applyReviewPayload(prefetchedReviews);
+      setLoading(false);
+      return;
+    }
     fetchReviews();
-  }, [parkCode]);
+  }, [parkCode, prefetchedReviews]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!initialOpenForm) return;
@@ -150,27 +192,6 @@ const ReviewSection = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
-
-  const fetchReviews = async () => {
-    try {
-      setLoading(true);
-      const response = await reviewService.getParkReviews(parkCode);
-      setReviews(response.data || []);
-      // Handle stats from backend response
-      if (response.stats) {
-        setAverageRating(response.stats.averageRating || 0);
-        setTotalReviews(response.stats.totalReviews || 0);
-      } else {
-        setAverageRating(response.averageRating || 0);
-        setTotalReviews(response.total || response.pagination?.totalReviews || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-      showToast('Failed to load reviews', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Handle image selection
   const handleImageSelect = async (files) => {

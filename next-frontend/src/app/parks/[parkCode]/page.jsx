@@ -1,5 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug } from '@/lib/parkApi';
+import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug, PARK_PAGE_REVALIDATE_SECONDS } from '@/lib/parkApi';
 import {
   buildParkMetaDescription,
   buildParkPageTitle,
@@ -19,7 +19,7 @@ import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
 import { canonicalPageMetadata } from '@/lib/seo';
 
-export const revalidate = 3600; // 1 hour — reduces crawler SSR fan-out; client tabs load lazily
+export const revalidate = PARK_PAGE_REVALIDATE_SECONDS;
 
 export async function generateStaticParams() {
   try {
@@ -84,8 +84,10 @@ export async function generateMetadata({ params, searchParams }) {
   };
 }
 
-export default async function ParkPage({ params }) {
+export default async function ParkPage({ params, searchParams }) {
   const { parkCode } = await params;
+  const sp = await searchParams;
+  const initialTab = typeof sp?.tab === 'string' && sp.tab ? sp.tab : 'overview';
   // If parkCode is longer than 4 chars, it's a slug — look up by slug
   let data = parkCode.length > 4
     ? await getParkDetailsBySlug(parkCode)
@@ -190,7 +192,7 @@ export default async function ParkPage({ params }) {
 
   try {
     const planningRes = await fetch(`${getApiBaseUrl()}/parks/${park.parkCode}/planning`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: PARK_PAGE_REVALIDATE_SECONDS },
     });
     if (planningRes.ok) {
       const planningJson = await planningRes.json();
@@ -220,6 +222,7 @@ export default async function ParkPage({ params }) {
       <ParkDetailClient
         initialData={data}
         parkCode={parkCode}
+        initialTab={initialTab}
         relatedParks={relatedParks}
         seoLeadLine={seoLeadLine}
         stateHubSlug={stateHubSlug}

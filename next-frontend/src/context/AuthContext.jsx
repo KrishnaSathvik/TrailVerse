@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { getApiBaseUrl } from '@/lib/apiBase';
 import authService, { AUTH_SESSION_EXPIRED_EVENT, AUTH_TOKEN_COOKIE } from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
 import { invalidateCache } from '../utils/cacheUtils';
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
         message: 'Saving your chat to your account...'
       });
 
-      const migrationResponse = await fetch('/api/auth/migrate-chat', {
+      const migrationResponse = await fetch(`${getApiBaseUrl()}/auth/migrate-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

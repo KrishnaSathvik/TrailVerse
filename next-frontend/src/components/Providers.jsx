@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { IconContext } from '@phosphor-icons/react';
 import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
@@ -13,6 +12,7 @@ import ScrollToTop from './common/ScrollToTop';
 import NavigationProgress from './common/NavigationProgress';
 import AnalyticsPageTracker from './common/AnalyticsPageTracker';
 import { initGA } from '../utils/analytics';
+import { applyClientCacheMigration } from '@/lib/clientCacheVersion';
 
 export default function Providers({
   children,
@@ -30,6 +30,7 @@ export default function Providers({
   }));
 
   useEffect(() => {
+    applyClientCacheMigration();
     initGA();
     // Register the serwist service worker for offline/PWA support (production only)
     if ("serviceWorker" in navigator && process.env.NODE_ENV === 'production') {
@@ -55,7 +56,6 @@ export default function Providers({
             <AnalyticsPageTracker />
             <ScrollToTop />
             <Analytics />
-            <SpeedInsights />
 
           </AuthProvider>
         </ToastProvider>

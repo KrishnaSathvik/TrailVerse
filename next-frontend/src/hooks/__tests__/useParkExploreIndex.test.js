@@ -4,11 +4,12 @@ import {
   fetchParkTab,
   parkTabQueryKey,
 } from '../useParkTabData';
+import { CLIENT_CACHE_VERSION } from '@/lib/clientCacheVersion';
 import { TAB_ID_TO_ENDPOINT } from '@/lib/parkTabEndpoints';
 
 describe('parkExploreIndexQueryKey', () => {
   it('keys index cache by park code', () => {
-    expect(parkExploreIndexQueryKey('yell')).toEqual(['parkExploreIndex', 'yell']);
+    expect(parkExploreIndexQueryKey('yell')).toEqual(['parkExploreIndex', CLIENT_CACHE_VERSION, 'yell']);
   });
 });
 
@@ -49,6 +50,6 @@ describe('fetchParkTab', () => {
 
   it('maps camping tab to campgrounds endpoint', () => {
     expect(TAB_ID_TO_ENDPOINT.camping).toBe('campgrounds');
-    expect(parkTabQueryKey('yell', 'camping')).toEqual(['parkTab', 'yell', 'camping']);
+    expect(parkTabQueryKey('yell', 'camping')).toEqual(['parkTab', CLIENT_CACHE_VERSION, 'yell', 'camping']);
   });
 });

@@ -1,0 +1,43 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - link "TrailVerse Logo TrailVerse" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - img "TrailVerse Logo" [ref=e6]
+      - generic [ref=e7]: TrailVerse
+    - generic [ref=e8]:
+      - img [ref=e10]
+      - heading "Verification Failed" [level=2] [ref=e12]
+      - paragraph [ref=e13]: Invalid or expired verification token
+      - paragraph [ref=e14]: The verification link may have expired or is invalid. You can request a new verification email below.
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]: Email Address
+          - textbox "Email Address" [ref=e18]:
+            - /placeholder: Enter your email address
+        - button "Resend Verification Email" [disabled] [ref=e19]:
+          - generic: Resend Verification Email
+      - generic [ref=e20]:
+        - link "Sign Up Again" [ref=e21] [cursor=pointer]:
+          - /url: /signup
+          - button "Sign Up Again" [ref=e22]:
+            - generic: Sign Up Again
+        - link "Back to Login" [ref=e23] [cursor=pointer]:
+          - /url: /login
+          - button "Back to Login" [ref=e24]:
+            - generic: Back to Login
+    - paragraph [ref=e25]:
+      - text: Having trouble?
+      - link "Sign up again" [ref=e26] [cursor=pointer]:
+        - /url: /signup
+      - text: or
+      - link "return home" [ref=e27] [cursor=pointer]:
+        - /url: /
+  - button "Talk to Trailie — voice assistant" [ref=e29] [cursor=pointer]:
+    - img
+  - button "Open Next.js Dev Tools" [ref=e35] [cursor=pointer]:
+    - img [ref=e36]
+  - alert [ref=e39]
+```

@@ -1,0 +1,71 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "TrailVerse Logo TrailVerse" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "TrailVerse Logo" [ref=e7]
+          - generic [ref=e8]: TrailVerse
+        - link "← Back to home" [ref=e9] [cursor=pointer]:
+          - /url: /
+      - generic [ref=e10]:
+        - heading "Welcome back!" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Sign in to save your favorite parks, track visited sites, keep your Trailie chat, and pick up right where you left off.
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - heading "Sign in to your account" [level=2] [ref=e17]
+        - paragraph [ref=e18]: Continue planning trips, saving favorites, and tracking the parks you've explored.
+        - paragraph [ref=e19]:
+          - text: Don't have an account?
+          - link "Create one" [ref=e20] [cursor=pointer]:
+            - /url: /signup
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]: Email Address
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - textbox "Enter your email" [ref=e27]
+        - generic [ref=e28]:
+          - generic [ref=e29]: Password
+          - generic [ref=e30]:
+            - img [ref=e31]
+            - textbox "Enter your password" [ref=e33]
+            - button [ref=e34] [cursor=pointer]:
+              - img
+        - generic [ref=e35]:
+          - generic [ref=e36] [cursor=pointer]:
+            - checkbox "Remember me" [ref=e38]
+            - generic [ref=e40]: Remember me
+          - link "Forgot password?" [active] [ref=e41] [cursor=pointer]:
+            - /url: /forgot-password
+        - button "Sign in" [ref=e42] [cursor=pointer]:
+          - generic: Sign in
+      - paragraph [ref=e43]:
+        - text: By signing in, you agree to our
+        - link "Terms" [ref=e44] [cursor=pointer]:
+          - /url: /terms
+        - text: and
+        - link "Privacy Policy" [ref=e45] [cursor=pointer]:
+          - /url: /privacy
+  - generic [ref=e46]:
+    - generic [ref=e47]: Ask Trailie to plan trips, compare parks, or get insider tips
+    - button "Dismiss" [ref=e48] [cursor=pointer]:
+      - img
+  - button "Talk to Trailie — voice assistant" [ref=e50] [cursor=pointer]:
+    - img
+  - progressbar "Loading page"
+  - generic:
+    - status "Loading page"
+    - generic: Loading…
+  - button "Open Next.js Dev Tools" [ref=e56] [cursor=pointer]:
+    - generic [ref=e59]:
+      - text: Rendering
+      - generic [ref=e60]:
+        - generic [ref=e61]: .
+        - generic [ref=e62]: .
+        - generic [ref=e63]: .
+  - alert [ref=e64]
+```

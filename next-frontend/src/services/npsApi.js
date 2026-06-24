@@ -1,8 +1,8 @@
 import enhancedApi from './enhancedApi';
 import globalCacheManager from './globalCacheManager';
 
-const ALL_PARKS_CACHE_VERSION = 'v4';
-const ALL_PARKS_LITE_CACHE_VERSION = 'v1';
+const ALL_PARKS_CACHE_VERSION = 'v5';
+const ALL_PARKS_LITE_CACHE_VERSION = 'v2';
 
 /** Slim index for map (~994 KB) vs full all-parks (~3.66 MB). */
 export const ALL_PARKS_LITE_FIELDS_MAP =

@@ -37,28 +37,16 @@ export function normalizePlanningFaqTabContext(ctx = {}) {
 export function planningFaqTabContextFromExplore({
   alertCount = 0,
   permitCount = 0,
-  exploreIndex = null,
-  exploreIndexReady = false,
   exploreCache = null,
-  exploreReady = false,
   showTransitTab = false,
 } = {}) {
   const tabOpts = { showTransitTab };
-  const indexReady = exploreIndexReady || exploreReady;
-
-  const hasActivities = indexReady && exploreIndex
-    ? exploreTabHasDataFromIndex('activities', exploreIndex, tabOpts)
-    : indexReady && exploreTabHasData('activities', exploreCache, tabOpts);
-
-  const hasPlaces = indexReady && exploreIndex
-    ? exploreTabHasDataFromIndex('places', exploreIndex, tabOpts)
-    : indexReady && exploreTabHasData('places', exploreCache, tabOpts);
 
   return normalizePlanningFaqTabContext({
     alertCount,
     permitCount,
-    hasActivitiesTab: Boolean(hasActivities),
-    hasPlacesTab: Boolean(hasPlaces),
+    hasActivitiesTab: exploreTabHasData('activities', exploreCache, tabOpts),
+    hasPlacesTab: exploreTabHasData('places', exploreCache, tabOpts),
   });
 }
 

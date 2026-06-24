@@ -70,6 +70,13 @@ connectDB().then(async () => {
           console.warn(`⚠️ Bulk alerts warm-up skipped: ${err.message}`);
         });
 
+      // Bulk tab snapshots (places, campgrounds, etc.) — Mongo only, no NPS calls
+      npsService
+        .warmParkTabSnapshots()
+        .catch((err) => {
+          console.warn(`⚠️ Park tab snapshot warm-up skipped: ${err.message}`);
+        });
+
       const discoverCatalogService = require('./src/services/discoverCatalogService');
       const snapshot = await npsService._loadSnapshot('discover-catalog', 7 * 24 * 60 * 60 * 1000);
       const needsRebuild =

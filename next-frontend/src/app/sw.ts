@@ -11,7 +11,7 @@ declare global {
 declare const self: ServiceWorkerGlobalScope;
 
 /** Bump when runtime SW caches should be invalidated on deploy */
-const SW_CACHE_VERSION = "v4";
+const SW_CACHE_VERSION = "v5";
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,

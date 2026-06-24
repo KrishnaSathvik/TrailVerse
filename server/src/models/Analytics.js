@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
-const { ANALYTICS_RETENTION_SECONDS } = require('../config/analyticsRetention');
+const {
+  ANALYTICS_RETENTION_SECONDS,
+  API_CALL_RETENTION_SECONDS,
+  NON_API_CALL_EVENT_TYPES,
+} = require('../config/analyticsRetention');
 
 const analyticsSchema = new mongoose.Schema({
   eventType: {
@@ -145,10 +149,22 @@ analyticsSchema.index({ 'metadata.searchTerm': 1, timestamp: -1 });
 analyticsSchema.index({ 'location.country': 1, timestamp: -1 });
 analyticsSchema.index({ 'device.type': 1, timestamp: -1 });
 analyticsSchema.index({ 'metadata.source': 1, timestamp: -1 });
-// Auto-delete events older than ANALYTICS_RETENTION_SECONDS (90 days by default).
+// api_call rows expire after 7 days; other event types keep the 90-day window.
 analyticsSchema.index(
   { timestamp: 1 },
-  { expireAfterSeconds: ANALYTICS_RETENTION_SECONDS, name: 'analytics_timestamp_ttl' }
+  {
+    expireAfterSeconds: API_CALL_RETENTION_SECONDS,
+    name: 'analytics_api_call_ttl',
+    partialFilterExpression: { eventType: 'api_call' },
+  }
+);
+analyticsSchema.index(
+  { timestamp: 1 },
+  {
+    expireAfterSeconds: ANALYTICS_RETENTION_SECONDS,
+    name: 'analytics_general_ttl',
+    partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } },
+  }
 );
 
 // Compound indexes for common queries
