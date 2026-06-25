@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import commentService from '../../services/commentService';
+import commentService, { getCommentRequestErrorMessage } from '../../services/commentService';
 import { getBestAvatar } from '../../utils/avatarGenerator';
-import { ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare } from '@components/icons';
+import { ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare, Lock } from '@components/icons';
+
+const LOGIN_PROMPT_MESSAGE = 'Sign in to post a comment';
 
 const CommentSection = ({
   postId,
@@ -12,7 +14,7 @@ const CommentSection = ({
   embedded = false,
   unified = false,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, showLoginPrompt } = useAuth();
   const { showToast } = useToast();
   const [comments, setComments] = useState(initialComments);
   const [newComment, setNewComment] = useState('');
@@ -31,12 +33,25 @@ const CommentSection = ({
       setComments(data);
     } catch (error) {
       console.error('Error fetching comments:', error);
-      showToast('Failed to load comments', 'error');
+      showToast(
+        getCommentRequestErrorMessage(error, 'Failed to load comments'),
+        'error'
+      );
     }
+  };
+
+  const promptSignIn = () => {
+    showLoginPrompt(LOGIN_PROMPT_MESSAGE);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      promptSignIn();
+      return;
+    }
+
     if (!newComment.trim()) return;
 
     setSubmitting(true);
@@ -46,7 +61,10 @@ const CommentSection = ({
       setNewComment('');
       showToast('Comment posted successfully!', 'success');
     } catch (error) {
-      showToast('Failed to post comment', 'error');
+      showToast(
+        getCommentRequestErrorMessage(error, 'Failed to post comment'),
+        'error'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -60,18 +78,29 @@ const CommentSection = ({
       setComments(comments.filter(c => c._id !== commentId));
       showToast('Comment deleted successfully', 'success');
     } catch (error) {
-      showToast('Failed to delete comment', 'error');
+      showToast(
+        getCommentRequestErrorMessage(error, 'Failed to delete comment'),
+        'error'
+      );
     }
   };
 
   const handleLike = async (commentId) => {
+    if (!isAuthenticated) {
+      showLoginPrompt('Sign in to like comments');
+      return;
+    }
+
     try {
       const updatedComment = await commentService.likeComment(commentId);
-      setComments(comments.map(c => 
+      setComments(comments.map(c =>
         c._id === commentId ? updatedComment : c
       ));
     } catch (error) {
-      showToast('Failed to like comment', 'error');
+      showToast(
+        getCommentRequestErrorMessage(error, 'Failed to like comment'),
+        'error'
+      );
     }
   };
 
@@ -92,12 +121,12 @@ const CommentSection = ({
     </p>
   ) : null;
 
-  const form = (
+  const form = isAuthenticated ? (
     <form onSubmit={handleSubmit} className={embedded ? 'mb-6' : 'mb-8'}>
       <textarea
         value={newComment}
         onChange={(e) => setNewComment(e.target.value)}
-        placeholder={isAuthenticated ? 'Share your thoughts...' : 'Share your thoughts... (Login to save your comment)'}
+        placeholder="Share your thoughts..."
         rows={embedded ? 3 : 4}
         maxLength={500}
         className="w-full px-4 py-3 rounded-xl outline-none resize-none mb-3 text-sm sm:text-base"
@@ -125,11 +154,38 @@ const CommentSection = ({
         </button>
       </div>
     </form>
+  ) : (
+    <div
+      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl px-4 py-3 ${embedded ? 'mb-6' : 'mb-8'}`}
+      style={{
+        backgroundColor: 'var(--bg-primary)',
+        borderWidth: '1px',
+        borderColor: 'var(--border)',
+      }}
+    >
+      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+        Sign in to join the discussion
+      </p>
+      <button
+        type="button"
+        onClick={promptSignIn}
+        className="inline-flex shrink-0 items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90"
+        style={{
+          backgroundColor: 'var(--surface-hover)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <Lock className="h-4 w-4" aria-hidden />
+        Sign in to comment
+      </button>
+    </div>
   );
 
   const emptyState = embedded ? (
     <p className="text-sm py-2" style={{ color: 'var(--text-tertiary)' }}>
-      No comments yet — be the first to reply.
+      No comments yet.
     </p>
   ) : (
     <div className="text-center py-12">
@@ -143,7 +199,7 @@ const CommentSection = ({
         No comments yet
       </h4>
       <p style={{ color: 'var(--text-secondary)' }}>
-        Be the first to share your thoughts on this post!
+        Be the first to share your thoughts on this post.
       </p>
     </div>
   );

@@ -8,6 +8,7 @@
     "dev": "concurrently -n frontend,backend -c blue,green \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd next-frontend && npm run dev -- --hostname 127.0.0.1",
     "dev:backend": "cd server && npm run dev",
+    "dev:mobile": "cd mobile && npm run start",
     "start": "cd next-frontend && npm run start",
     "build": "cd next-frontend && npm run build",
     "build:ci": "cd next-frontend && CI='' npm run build",

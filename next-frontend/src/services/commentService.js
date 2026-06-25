@@ -1,30 +1,23 @@
 import axios from 'axios';
-import { getStoredToken, notifySessionExpiredIfNeeded } from './authService';
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production'
-    ? 'https://trailverse.onrender.com/api'
-    : 'http://localhost:5001/api');
+import { getApiBaseUrl } from '@/lib/apiBase';
+import { getAuthBearerToken, notifySessionExpiredIfNeeded } from './authService';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = getStoredToken();
+    const token = getAuthBearerToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
@@ -34,6 +27,24 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export function getCommentRequestErrorMessage(error, fallback = 'Something went wrong') {
+  const status = error.response?.status;
+
+  if (status === 401) {
+    return error.response?.data?.error || 'Your session expired. Please sign in again.';
+  }
+
+  if (status === 429) {
+    return (
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      'Too many requests. Please wait a moment and try again.'
+    );
+  }
+
+  return error.response?.data?.error || error.message || fallback;
+}
 
 class CommentService {
   async getComments(blogId) {

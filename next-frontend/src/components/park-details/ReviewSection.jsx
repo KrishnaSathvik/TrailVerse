@@ -14,6 +14,207 @@ import { useToast } from '../../context/ToastContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { getBestAvatar } from '../../utils/avatarGenerator';
 import { logEvent, logReviewCreate } from '../../utils/analytics';
+import ParkTabEmptyState from './ParkTabEmptyState';
+
+const TAB_CARD_STYLE = {
+  backgroundColor: 'var(--surface-hover)',
+  borderWidth: '1px',
+  borderColor: 'var(--border)',
+};
+
+const FORM_CARD_STYLE = {
+  ...TAB_CARD_STYLE,
+  borderLeftWidth: '4px',
+  borderLeftColor: 'var(--accent-green)',
+};
+
+const INPUT_STYLE = {
+  backgroundColor: 'var(--surface)',
+  borderWidth: '1px',
+  borderColor: 'var(--border)',
+  color: 'var(--text-primary)',
+};
+
+const INPUT_CLASS =
+  'w-full px-4 py-3 rounded-xl outline-none transition focus:ring-2 focus:ring-emerald-500/25';
+
+function ReviewStarPicker({
+  value,
+  hoverValue = 0,
+  onChange,
+  onHover,
+  onLeave,
+  starClass = 'h-7 w-7',
+}) {
+  const display = hoverValue || value;
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {[...Array(5)].map((_, i) => {
+        const isActive = i < display;
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onChange(i + 1)}
+            onMouseEnter={() => onHover?.(i + 1)}
+            onMouseLeave={() => onLeave?.()}
+            className="p-0.5 transition-transform hover:scale-110"
+            aria-label={`Rate ${i + 1} out of 5`}
+          >
+            <Star
+              className={`${starClass} transition-all`}
+              weight={isActive ? 'fill' : 'regular'}
+              style={{ color: isActive ? '#facc15' : 'var(--text-tertiary)' }}
+            />
+          </button>
+        );
+      })}
+      <span className="ml-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+        {display} out of 5 stars
+      </span>
+    </div>
+  );
+}
+
+function ReviewFormField({ label, children, optional = false }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+        {label}
+        {optional && (
+          <span className="font-normal ml-1" style={{ color: 'var(--text-tertiary)' }}>
+            (optional)
+          </span>
+        )}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function ReviewImageUpload({
+  fileInputRef,
+  selectedCount,
+  maxImages,
+  maxFileSize,
+  imageErrors,
+  imagePreviews,
+  onSelect,
+  onRemove,
+}) {
+  return (
+    <ReviewFormField label={`Photos (${selectedCount}/${maxImages})`}>
+      <div
+        className="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer hover:border-emerald-500/40"
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+        onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => onSelect(e.target.files)}
+          className="hidden"
+        />
+        <Camera className="h-8 w-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          {selectedCount >= maxImages
+            ? 'Maximum images reached'
+            : 'Click to upload photos or drag and drop'}
+        </p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+          PNG, JPG, GIF up to {maxFileSize / (1024 * 1024)}MB each
+        </p>
+      </div>
+
+      {imageErrors.length > 0 && (
+        <div
+          className="mt-3 p-3 rounded-xl"
+          style={{
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            borderWidth: '1px',
+            borderColor: 'rgba(239, 68, 68, 0.25)',
+          }}
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="text-sm text-red-600 dark:text-red-400">
+              {imageErrors.map((error, index) => (
+                <p key={index}>{error}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {imagePreviews.length > 0 && (
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {imagePreviews.map((preview, index) => (
+            <div key={preview.id} className="relative group">
+              <img
+                src={preview.preview}
+                alt={`Preview ${index + 1}`}
+                className="w-full h-24 object-cover rounded-xl border"
+                style={{ borderColor: 'var(--border)' }}
+              />
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                aria-label="Remove image"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </ReviewFormField>
+  );
+}
+
+function ReviewFormActions({ uploading, submitLabel, onCancel, disabled = false }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 pt-2">
+      <button
+        type="submit"
+        disabled={uploading || disabled}
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
+      >
+        {uploading ? (
+          <>
+            <Spinner size={16} />
+            <span>Uploading...</span>
+          </>
+        ) : (
+          <>
+            <Upload className="h-4 w-4" />
+            <span>{submitLabel}</span>
+          </>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={uploading}
+        className="px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderWidth: '1px',
+          borderColor: 'var(--border)',
+          color: 'var(--text-primary)',
+        }}
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
 
 const ReviewSection = ({
   parkCode,
@@ -430,499 +631,270 @@ const ReviewSection = ({
     return reviewUserId === currentUserId;
   };
 
+  const resetNewReviewForm = () => {
+    setShowReviewForm(false);
+    setSelectedImages([]);
+    setImagePreviews([]);
+    setImageErrors([]);
+    setNewReview({
+      rating: 5,
+      title: '',
+      comment: '',
+      visitYear: new Date().getFullYear(),
+      userName: '',
+    });
+  };
+
+  const visitYearOptions = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+
   if (loading) {
     return <ParkTabSpinner />;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Rating Summary */}
-      <div className="rounded-2xl p-8 backdrop-blur text-center"
-        style={{
-          backgroundColor: 'var(--surface)',
-          borderWidth: '1px',
-          borderColor: 'var(--border)'
-        }}
+    <div>
+      <h2
+        className="text-2xl font-bold mb-6 flex items-center gap-2"
+        style={{ color: 'var(--text-primary)' }}
       >
-        <div className="text-6xl font-bold mb-2"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
-        </div>
-        <div className="flex items-center justify-center gap-1 mb-2">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className="h-6 w-6"
-              weight={i < Math.floor(averageRating) ? 'fill' : 'regular'}
-              style={{
-                color: i < Math.floor(averageRating) ? '#facc15' : '#9ca3af'
-              }}
-            />
-          ))}
-        </div>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Based on {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
-        </p>
-      </div>
+        <MessageSquare className="h-6 w-6" />
+        Reviews
+        {totalReviews > 0 && (
+          <span className="text-base font-normal ml-1" style={{ color: 'var(--text-tertiary)' }}>
+            ({totalReviews})
+          </span>
+        )}
+      </h2>
 
-      <div className="text-center">
-        <button
-          onClick={() => setShowReviewForm(!showReviewForm)}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-forest-500 hover:bg-forest-600 text-white font-semibold transition"
-        >
-          <Plus className="h-4 w-4" />
-          {showReviewForm ? 'Cancel' : 'Write a Review'}
-        </button>
-      </div>
-
-      {/* Review Form */}
-      {showReviewForm && (
-        <div className="rounded-2xl p-6 backdrop-blur"
-          style={{
-            backgroundColor: 'var(--surface)',
-            borderWidth: '1px',
-            borderColor: 'var(--border)'
-          }}
-        >
-          <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-            Write a Review
-          </h3>
-          <form onSubmit={handleSubmitReview} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Rating
-              </label>
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => {
-                  const isActive = i < (hoveredRating || newReview.rating);
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setNewReview({...newReview, rating: i + 1})}
-                      onMouseEnter={() => setHoveredRating(i + 1)}
-                      onMouseLeave={() => setHoveredRating(0)}
-                      className="p-1 transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className="h-8 w-8 transition-all drop-shadow-sm"
-                        weight={isActive ? 'fill' : 'regular'}
-                        style={{
-                          color: isActive ? '#facc15' : '#9ca3af'
-                        }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                {hoveredRating || newReview.rating} out of 5 stars
-              </p>
+      <div
+        className="rounded-xl p-5 sm:p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        style={TAB_CARD_STYLE}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="text-4xl sm:text-5xl font-bold tabular-nums leading-none"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
+          </div>
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className="h-5 w-5"
+                  weight={i < Math.floor(averageRating) ? 'fill' : 'regular'}
+                  style={{
+                    color: i < Math.floor(averageRating) ? '#facc15' : 'var(--text-tertiary)',
+                  }}
+                />
+              ))}
             </div>
-            
-            {!isAuthenticated && (
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Name (Optional)
-                </label>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Based on {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+            </p>
+          </div>
+        </div>
+
+        {!showReviewForm && (
+          <button
+            type="button"
+            onClick={() => setShowReviewForm(true)}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0"
+            style={{
+              backgroundColor: 'var(--accent-green)',
+              color: 'white',
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Write a Review
+          </button>
+        )}
+      </div>
+
+      {showReviewForm && (
+        <div className="rounded-xl overflow-hidden mb-6" style={FORM_CARD_STYLE}>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-5" style={{ color: 'var(--text-primary)' }}>
+              Write a Review
+            </h3>
+            <form onSubmit={handleSubmitReview} className="space-y-5">
+              <ReviewFormField label="Rating">
+                <ReviewStarPicker
+                  value={newReview.rating}
+                  hoverValue={hoveredRating}
+                  onChange={(rating) => setNewReview({ ...newReview, rating })}
+                  onHover={setHoveredRating}
+                  onLeave={() => setHoveredRating(0)}
+                />
+              </ReviewFormField>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {!isAuthenticated && (
+                  <ReviewFormField label="Name" optional>
+                    <input
+                      type="text"
+                      value={newReview.userName || ''}
+                      onChange={(e) => setNewReview({ ...newReview, userName: e.target.value })}
+                      className={INPUT_CLASS}
+                      style={INPUT_STYLE}
+                      placeholder="Guest Explorer"
+                      maxLength="50"
+                    />
+                  </ReviewFormField>
+                )}
+
+                <ReviewFormField label="Visit Year">
+                  <select
+                    value={newReview.visitYear}
+                    onChange={(e) => setNewReview({ ...newReview, visitYear: parseInt(e.target.value, 10) })}
+                    className={INPUT_CLASS}
+                    style={INPUT_STYLE}
+                    required
+                  >
+                    {visitYearOptions.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </ReviewFormField>
+              </div>
+
+              <ReviewFormField label="Title">
                 <input
                   type="text"
-                  value={newReview.userName || ''}
-                  onChange={(e) => setNewReview({...newReview, userName: e.target.value})}
-                  className="w-full px-4 py-2 rounded-lg"
-                  style={{
-                    backgroundColor: 'var(--surface-hover)',
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)'
-                  }}
-                  placeholder="Guest Explorer"
-                  maxLength="50"
+                  value={newReview.title}
+                  onChange={(e) => setNewReview({ ...newReview, title: e.target.value })}
+                  className={INPUT_CLASS}
+                  style={INPUT_STYLE}
+                  placeholder="Give your review a title (5-100 characters)"
+                  required
+                  minLength="5"
+                  maxLength="100"
                 />
-              </div>
-            )}
+              </ReviewFormField>
 
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Title
-              </label>
-              <input
-                type="text"
-                value={newReview.title}
-                onChange={(e) => setNewReview({...newReview, title: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-                placeholder="Give your review a title (5-100 characters)"
-                required
-                minLength="5"
-                maxLength="100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Review
-              </label>
-              <textarea
-                value={newReview.comment}
-                onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-                rows="4"
-                placeholder="Share your experience... (minimum 10 characters)"
-                required
-                minLength="10"
-                maxLength="2000"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Visit Year
-              </label>
-              <select
-                value={newReview.visitYear}
-                onChange={(e) => setNewReview({...newReview, visitYear: parseInt(e.target.value)})}
-                className="w-full px-4 py-2 rounded-lg"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-                required
-              >
-                {Array.from({ length: 10 }, (_, i) => {
-                  const year = new Date().getFullYear() - i;
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            {/* Image Upload Section - Authenticated Only */}
-            {isAuthenticated && (
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                  Photos ({selectedImages.length}/{maxImages})
-                </label>
-                
-                {/* Upload Button */}
-                <div 
-                  className="border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                style={{ borderColor: 'var(--border)' }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => handleImageSelect(e.target.files)}
-                  className="hidden"
+              <ReviewFormField label="Review">
+                <textarea
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                  className={`${INPUT_CLASS} resize-none`}
+                  style={INPUT_STYLE}
+                  rows="5"
+                  placeholder="Share your experience... (minimum 10 characters)"
+                  required
+                  minLength="10"
+                  maxLength="2000"
                 />
-                <Camera className="h-8 w-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {selectedImages.length >= maxImages 
-                    ? 'Maximum images reached' 
-                    : 'Click to upload photos or drag and drop'
-                  }
+                <p className="text-xs mt-2 text-right" style={{ color: 'var(--text-tertiary)' }}>
+                  {newReview.comment.length}/2000
                 </p>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  PNG, JPG, GIF up to 10MB each
-                </p>
-              </div>
+              </ReviewFormField>
 
-              {/* Image Errors */}
-              {imageErrors.length > 0 && (
-                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-red-700">
-                      {imageErrors.map((error, index) => (
-                        <p key={index}>{error}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              {isAuthenticated && (
+                <ReviewImageUpload
+                  fileInputRef={fileInputRef}
+                  selectedCount={selectedImages.length}
+                  maxImages={maxImages}
+                  maxFileSize={maxFileSize}
+                  imageErrors={imageErrors}
+                  imagePreviews={imagePreviews}
+                  onSelect={handleImageSelect}
+                  onRemove={removeImage}
+                />
               )}
 
-              {/* Image Previews */}
-              {imagePreviews.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={preview.id} className="relative group">
-                      <img
-                        src={preview.preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border"
-                        style={{ borderColor: 'var(--border)' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-             </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={uploadingImages}
-                className="px-6 py-2 rounded-full bg-forest-500 hover:bg-forest-600 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {uploadingImages ? (
-                  <>
-                    <Spinner size={16} />
-                    <span>Uploading...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    <span>Submit Review</span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowReviewForm(false);
-                  setSelectedImages([]);
-                  setImagePreviews([]);
-                  setImageErrors([]);
-                  setNewReview({ rating: 5, title: '', comment: '', visitYear: new Date().getFullYear() });
-                }}
-                disabled={uploadingImages}
-                className="px-6 py-2 rounded-full disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--surface-hover)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+              <ReviewFormActions
+                uploading={uploadingImages}
+                submitLabel="Submit Review"
+                onCancel={resetNewReviewForm}
+              />
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Reviews List */}
       {reviews.length > 0 ? (
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-            <MessageSquare className="h-5 w-5" />
-            Reviews ({totalReviews})
-          </h3>
           {reviews.map(review => (
             <div
               key={review._id}
-              className="rounded-2xl p-6 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+              className="rounded-xl overflow-hidden"
+              style={TAB_CARD_STYLE}
             >
+              <div className="p-6">
               {editingReviewId === review._id ? (
-                // Edit Form
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                <div className="space-y-5">
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
                     Edit Review
                   </h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Rating
-                    </label>
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => {
-                        const isActive = i < (editHoveredRating || editedReview.rating);
-                        return (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => setEditedReview({...editedReview, rating: i + 1})}
-                            onMouseEnter={() => setEditHoveredRating(i + 1)}
-                            onMouseLeave={() => setEditHoveredRating(0)}
-                            className="p-1 transition-transform hover:scale-110"
-                          >
-                            <Star
-                              className="h-8 w-8 transition-all drop-shadow-sm"
-                              weight={isActive ? 'fill' : 'regular'}
-                              style={{
-                                color: isActive ? '#facc15' : '#9ca3af'
-                              }}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                      {editHoveredRating || editedReview.rating} out of 5 stars
-                    </p>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Title
-                    </label>
+                  <ReviewFormField label="Rating">
+                    <ReviewStarPicker
+                      value={editedReview.rating}
+                      hoverValue={editHoveredRating}
+                      onChange={(rating) => setEditedReview({ ...editedReview, rating })}
+                      onHover={setEditHoveredRating}
+                      onLeave={() => setEditHoveredRating(0)}
+                    />
+                  </ReviewFormField>
+
+                  <ReviewFormField label="Title">
                     <input
                       type="text"
                       value={editedReview.title}
-                      onChange={(e) => setEditedReview({...editedReview, title: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)',
-                        color: 'var(--text-primary)'
-                      }}
+                      onChange={(e) => setEditedReview({ ...editedReview, title: e.target.value })}
+                      className={INPUT_CLASS}
+                      style={INPUT_STYLE}
                       required
                     />
-                  </div>
+                  </ReviewFormField>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Review
-                    </label>
+                  <ReviewFormField label="Review">
                     <textarea
                       value={editedReview.comment}
-                      onChange={(e) => setEditedReview({...editedReview, comment: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)',
-                        color: 'var(--text-primary)'
-                      }}
-                      rows="4"
+                      onChange={(e) => setEditedReview({ ...editedReview, comment: e.target.value })}
+                      className={`${INPUT_CLASS} resize-none`}
+                      style={INPUT_STYLE}
+                      rows="5"
                       required
                     />
-                  </div>
+                  </ReviewFormField>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Visit Year
-                    </label>
+                  <ReviewFormField label="Visit Year">
                     <select
                       value={editedReview.visitYear}
-                      onChange={(e) => setEditedReview({...editedReview, visitYear: parseInt(e.target.value)})}
-                      className="w-full px-4 py-2 rounded-lg"
-                      style={{
-                        backgroundColor: 'var(--surface-hover)',
-                        borderWidth: '1px',
-                        borderColor: 'var(--border)',
-                        color: 'var(--text-primary)'
-                      }}
+                      onChange={(e) => setEditedReview({ ...editedReview, visitYear: parseInt(e.target.value, 10) })}
+                      className={INPUT_CLASS}
+                      style={INPUT_STYLE}
                     >
-                      {Array.from({ length: 10 }, (_, i) => {
-                        const year = new Date().getFullYear() - i;
-                        return (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        );
-                      })}
+                      {visitYearOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
                     </select>
-                  </div>
+                  </ReviewFormField>
 
-                  {/* Image Upload Section */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      Add Photos ({selectedImages.length}/{maxImages})
-                    </label>
-                    
-                    <div 
-                      className="border-2 border-dashed rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                      style={{ borderColor: 'var(--border)' }}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleImageSelect(e.target.files)}
-                        className="hidden"
-                      />
-                      <Camera className="h-8 w-8 mx-auto mb-2" style={{ color: 'var(--text-tertiary)' }} />
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {selectedImages.length >= maxImages 
-                          ? 'Maximum images reached' 
-                          : 'Click to upload photos or drag and drop'
-                        }
-                      </p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                        PNG, JPG, GIF up to 10MB each
-                      </p>
-                    </div>
+                  <ReviewImageUpload
+                    fileInputRef={fileInputRef}
+                    selectedCount={selectedImages.length}
+                    maxImages={maxImages}
+                    maxFileSize={maxFileSize}
+                    imageErrors={imageErrors}
+                    imagePreviews={imagePreviews}
+                    onSelect={handleImageSelect}
+                    onRemove={removeImage}
+                  />
 
-                    {/* Image Errors */}
-                    {imageErrors.length > 0 && (
-                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <div className="flex items-start space-x-2">
-                          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                          <div className="text-sm text-red-700">
-                            {imageErrors.map((error, index) => (
-                              <p key={index}>{error}</p>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Image Previews */}
-                    {imagePreviews.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {imagePreviews.map((preview, index) => (
-                          <div key={preview.id} className="relative group">
-                            <img
-                              src={preview.preview}
-                              alt={`Preview ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border"
-                              style={{ borderColor: 'var(--border)' }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
                     <button
+                      type="button"
                       onClick={() => handleUpdateReview(review._id)}
                       disabled={uploadingImages}
-                      className="px-6 py-2 rounded-full bg-forest-500 hover:bg-forest-600 text-white font-semibold transition disabled:opacity-50 flex items-center gap-2"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50"
+                      style={{ backgroundColor: 'var(--accent-green)', color: 'white' }}
                     >
                       {uploadingImages ? (
                         <>
@@ -937,14 +909,15 @@ const ReviewSection = ({
                       )}
                     </button>
                     <button
+                      type="button"
                       onClick={handleCancelEdit}
                       disabled={uploadingImages}
-                      className="px-6 py-2 rounded-full disabled:opacity-50"
+                      className="px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50"
                       style={{
-                        backgroundColor: 'var(--surface-hover)',
+                        backgroundColor: 'var(--surface)',
                         borderWidth: '1px',
                         borderColor: 'var(--border)',
-                        color: 'var(--text-primary)'
+                        color: 'var(--text-primary)',
                       }}
                     >
                       Cancel
@@ -952,93 +925,102 @@ const ReviewSection = ({
                   </div>
                 </div>
               ) : (
-                // Display Review
                 <>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex gap-3">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex gap-3 min-w-0">
                       <img
                         src={review.userId?.avatar || getBestAvatar(review.userId || { userName: review.userName }, {}, 'travel')}
                         alt={`${review.userName || review.userId?.name || 'User'}'s avatar`}
-                        className="w-12 h-12 rounded-full object-cover border-2"
+                        className="w-11 h-11 rounded-full object-cover border-2 shrink-0"
                         style={{ borderColor: 'var(--border)' }}
                         onError={(e) => {
-                          // Fallback to initials if image fails to load
                           e.target.style.display = 'none';
                           e.target.nextSibling.style.display = 'flex';
                         }}
                       />
-                      <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white hidden"
-                        style={{ backgroundColor: 'var(--forest-500)' }}
+                      <div
+                        className="w-11 h-11 rounded-full items-center justify-center font-semibold text-white hidden shrink-0"
+                        style={{ backgroundColor: 'var(--accent-green)' }}
                       >
                         {review.userName?.charAt(0)?.toUpperCase() || review.userId?.name?.charAt(0)?.toUpperCase() || 'U'}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            {review.userName || review.userId?.name || 'Anonymous'}
-                          </h4>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1">
+                      <div className="min-w-0">
+                        <h4 className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                          {review.userName || review.userId?.name || 'Anonymous'}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <div className="flex items-center gap-0.5">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
                                 className="h-4 w-4"
                                 weight={i < review.rating ? 'fill' : 'regular'}
                                 style={{
-                                  color: i < review.rating ? '#facc15' : '#9ca3af'
+                                  color: i < review.rating ? '#facc15' : 'var(--text-tertiary)',
                                 }}
                               />
                             ))}
                           </div>
+                          {review.visitYear && (
+                            <span
+                              className="text-xs px-2.5 py-1 rounded-full"
+                              style={{
+                                backgroundColor: 'var(--surface-elevated)',
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              Visited {review.visitYear}
+                            </span>
+                          )}
                           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                            {review.visitYear ? `Visited ${review.visitYear} • ` : ''}{new Date(review.createdAt).toLocaleDateString()}
+                            {new Date(review.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Three-dots menu - only show for review owner */}
+
                     {isReviewOwner(review) && (
-                      <div className="relative">
-                        <button 
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
                           onClick={() => setOpenMenuId(openMenuId === review._id ? null : review._id)}
-                          className="p-1 rounded-lg hover:bg-white/5 transition"
+                          className="p-1.5 rounded-lg transition"
+                          style={{ color: 'var(--text-tertiary)' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; }}
                         >
-                          <MoreVertical className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+                          <MoreVertical className="h-4 w-4" />
                         </button>
-                        
-                        {/* Dropdown Menu */}
+
                         {openMenuId === review._id && (
                           <div
                             className="absolute right-0 mt-2 w-48 rounded-xl shadow-2xl z-50 overflow-hidden border"
                             style={{
                               backgroundColor: 'var(--bg-tertiary)',
                               borderColor: 'var(--border-hover)',
-                              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2)'
+                              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2)',
                             }}
                           >
                             <button
+                              type="button"
                               onClick={() => handleEditClick(review)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 group"
                               style={{
                                 color: 'var(--text-primary)',
-                                borderBottom: '1px solid var(--border)'
+                                borderBottom: '1px solid var(--border)',
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; }}
                             >
-                              <Edit className="h-4 w-4 group-hover:text-forest-500 transition-colors" />
-                              <span className="font-medium group-hover:text-forest-500 transition-colors">Edit Review</span>
+                              <Edit className="h-4 w-4 group-hover:text-emerald-500 transition-colors" />
+                              <span className="font-medium group-hover:text-emerald-500 transition-colors">Edit Review</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDeleteReview(review._id)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-200 group"
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-hover)'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
+                              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; }}
                             >
                               <Trash2 className="h-4 w-4 text-red-500 group-hover:text-red-600 transition-colors" />
                               <span className="font-medium text-red-500 group-hover:text-red-600 transition-colors">Delete Review</span>
@@ -1049,14 +1031,10 @@ const ReviewSection = ({
                     )}
                   </div>
 
-                  <h5 className="font-semibold mb-2"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
+                  <h5 className="text-base font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                     {review.title}
                   </h5>
-                  <p className="text-sm mb-4 whitespace-pre-line"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
+                  <p className="text-sm mb-4 whitespace-pre-line leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     {review.comment || review.content}
                   </p>
                 </>
@@ -1107,40 +1085,37 @@ const ReviewSection = ({
               {/* Helpful button - only show when not editing */}
               {editingReviewId !== review._id && (() => {
                 const userIdToCheck = user?.id || user?._id;
-                const hasUserVoted = review.helpfulUsers?.some(id => 
+                const hasUserVoted = review.helpfulUsers?.some(id =>
                   id === userIdToCheck || id.toString() === userIdToCheck
                 );
-                
+
                 return (
-                  <div className="flex items-center gap-4 text-sm">
-                    <button 
+                  <div className="flex items-center gap-4 text-sm pt-1">
+                    <button
+                      type="button"
                       onClick={() => handleMarkHelpful(review._id)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-all ${
-                        hasUserVoted 
-                          ? 'bg-blue-500/20 hover:bg-blue-500/30' 
-                          : 'hover:bg-gray-500/10'
-                      }`}
-                      style={{ 
-                        color: hasUserVoted ? '#3b82f6' : 'var(--text-tertiary)',
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                      style={{
+                        color: hasUserVoted ? 'var(--accent-green)' : 'var(--text-secondary)',
+                        backgroundColor: hasUserVoted ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface)',
                         borderWidth: '1px',
-                        borderColor: hasUserVoted ? '#3b82f6' : 'transparent'
+                        borderColor: hasUserVoted ? 'rgba(16, 185, 129, 0.35)' : 'var(--border)',
                       }}
                     >
-                      <ThumbsUp 
-                        className={`h-4 w-4 ${hasUserVoted ? 'fill-blue-600' : ''}`}
-                      />
+                      <ThumbsUp className="h-4 w-4" weight={hasUserVoted ? 'fill' : 'regular'} />
                       <span>{hasUserVoted ? 'Helpful' : 'Mark Helpful'} ({review.helpfulVotes || 0})</span>
                     </button>
                   </div>
                 );
               })()}
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        <p style={{ color: 'var(--text-secondary)' }}>
-          No reviews yet. Be the first to share your experience.
-        </p>
+        !showReviewForm && (
+          <ParkTabEmptyState message="No reviews yet. Be the first to share your experience." />
+        )
       )}
 
       {/* Review Image Lightbox */}

@@ -644,19 +644,19 @@ App must exceed “repackaged website.” Ship:
 
 - [ ] Figma: 12 core screens + component library + light/dark
 - [ ] SF Symbol / Phosphor mapping table
-- [ ] `apple-app-site-association` on Vercel
-- [ ] `packages/trailverse-api` scaffold from Swagger
-- [ ] Expo project `mobile/` with theme tokens
+- [x] `apple-app-site-association` on Vercel (route handlers + `APPLE_TEAM_ID` env)
+- [x] `packages/trailverse-api` scaffold from Swagger
+- [x] Expo project `mobile/` with theme tokens
 
 ### Phase 1 — MVP v1.0 (8–10 weeks)
 
 - [ ] 4 tabs + navigation
 - [ ] Explore + park detail (core tabs)
 - [ ] Trailie chat (anonymous + auth)
-- [ ] Map + bottom sheet
+- [x] Map + bottom sheet (MapKit pins; design polish TBD)
 - [ ] You: auth, saved, visited, settings
 - [ ] Compare flow (from explore + park detail)
-- [ ] Universal Links (parks, plan-ai, compare)
+- [x] Universal Links routes (AASA deployed; needs `APPLE_TEAM_ID` on Vercel)
 - [ ] TestFlight internal
 
 ### Phase 2 — v1.1 (4–6 weeks)

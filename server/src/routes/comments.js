@@ -9,7 +9,7 @@ const {
 const { protect, optionalAuth } = require('../middleware/auth');
 
 router.get('/blogs/:blogId/comments', getComments);
-router.post('/blogs/:blogId/comments', optionalAuth, createComment);
+router.post('/blogs/:blogId/comments', protect, createComment);
 router.delete('/comments/:id', protect, deleteComment);
 router.put('/comments/:id/like', optionalAuth, likeComment);
 

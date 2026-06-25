@@ -27,7 +27,7 @@ exports.getComments = async (req, res, next) => {
 
 // @desc    Create comment
 // @route   POST /api/blogs/:blogId/comments
-// @access  Public (optional auth)
+// @access  Private
 exports.createComment = async (req, res, next) => {
   try {
     const { blogId } = req.params;
@@ -42,14 +42,13 @@ exports.createComment = async (req, res, next) => {
       });
     }
     
-    // For anonymous users, use IP address and generate a name
-    const userName = req.user ? req.user.name : `Anonymous User ${req.ip.slice(-4)}`;
-    const userId = req.user ? req.user.id : req.ip;
-    
+    const userId = req.user.id || req.user._id;
+    const userName = req.user.name || req.user.firstName || 'TrailVerse member';
+
     const comment = await Comment.create({
       blogPost: blogId,
       user: userId,
-      userName: userName,
+      userName,
       content
     });
     
