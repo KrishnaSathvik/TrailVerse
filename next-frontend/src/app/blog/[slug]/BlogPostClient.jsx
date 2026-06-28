@@ -88,34 +88,7 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
   const [loading, setLoading] = useState(!initialPost);
   const [readingProgress, setReadingProgress] = useState(0);
 
-  useEffect(() => {
-    if (initialPost?.slug === slug) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchPost = async () => {
-      try {
-        const data = await blogService.getPostBySlug(slug);
-        if (cancelled) {
-          return;
-        }
-        setPost(data);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchPost();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [initialPost?.slug, slug]);
-
+  // Always refetch fresh post data — ISR snapshot may lack featuredImage if hero was added after publish.
   useEffect(() => {
     if (!slug) return;
 
@@ -125,10 +98,15 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
     blogService
       .getPostBySlug(slug)
       .then((data) => {
-        if (cancelled || !data || typeof data.views !== 'number') return;
-        setPost((prev) => (prev ? { ...prev, views: data.views } : data));
+        if (cancelled || !data) return;
+        setPost(data);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -201,11 +179,19 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [post]);
 
-  const formatDate = (date) => new Date(date).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
+  const formatDate = (date) => {
+    const parsed = new Date(date);
+    if (!date || Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const displayDate = formatDate(post?.publishedAt || post?.createdAt || post?.updatedAt);
 
   if (loading) {
     return <BlogPostSkeleton />;
@@ -258,7 +244,9 @@ const BlogPostClient = ({ slug, initialPost = null }) => {
           >
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>By {(post.author && post.author !== 'Admin') ? post.author : 'Krishna'}</span>
-              <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /><span>{formatDate(post.publishedAt)}</span></div>
+              {displayDate ? (
+                <div className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /><span>{displayDate}</span></div>
+              ) : null}
               <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /><span>{post.readTime} min read</span></div>
               <BlogViewCount views={post.views} className="flex items-center gap-1.5" />
             </div>
