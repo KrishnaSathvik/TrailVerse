@@ -52,6 +52,45 @@ describe('activeTripContextService', () => {
     expect(isParkSwitchMessage('Actually switch to Glacier National Park instead', stored.primaryDestination)).toBe(true);
   });
 
+  test('"tell me more about it" inherits stored primary destination', () => {
+    const stored = {
+      primaryDestination: {
+        name: 'Zion National Park',
+        parkCode: 'zion',
+        type: 'nps',
+        confidence: 'high',
+      },
+      lastRecommendationList: [
+        { name: 'Zion National Park', parkCode: 'zion', confidence: 'high' },
+        { name: 'Bryce Canyon National Park', parkCode: 'brca', confidence: 'high' },
+      ],
+    };
+
+    const result = resolveActiveTripContext({
+      lastUserMessage: 'tell me more about it',
+      storedContext: stored,
+    });
+
+    expect(result.activeTripContext.primaryDestination.parkCode).toBe('zion');
+    expect(result.activeTripContext.resolutionSource).toBe('stored_follow_up');
+    expect(result.inheritedDestination).toBe(true);
+  });
+
+  test('"what about the second one?" resolves to second recommendation', () => {
+    const list = [
+      { name: 'Zion National Park', parkCode: 'zion', confidence: 'high' },
+      { name: 'Bryce Canyon National Park', parkCode: 'brca', confidence: 'high' },
+    ];
+
+    const result = resolveActiveTripContext({
+      lastUserMessage: 'what about the second one?',
+      storedContext: { lastRecommendationList: list },
+    });
+
+    expect(result.activeTripContext.primaryDestination.parkCode).toBe('brca');
+    expect(result.activeTripContext.resolutionSource).toBe('ordinal_pick');
+  });
+
   test('ordinal pick resolves from last recommendation list', () => {
     const list = [
       { name: 'Zion National Park', parkCode: 'zion', confidence: 'high' },

@@ -652,6 +652,7 @@ function deriveRiskFlags({
 
 function buildTrailieContext({
   provider,
+  responseMode,
   lastUserMessage,
   constraints,
   intent,
@@ -675,7 +676,7 @@ function buildTrailieContext({
   conversationSummary,
   savedTripPlan,
 }) {
-  const providerMode = provider === 'openai' ? 'architect' : 'buddy';
+  const providerMode = responseMode || (provider === 'openai' ? 'architect' : 'buddy');
   const normalizedConstraints = normalizeConstraints(constraints);
 
   const tripState = buildTripState({

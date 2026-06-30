@@ -43,9 +43,9 @@ const { shouldAttachParkImages } = require('../utils/parkImagePolicy');
 const { buildDrivingTimeContext, enrichItineraryDrivingTimes } = require('../services/drivingTimesContextService');
 
 const STREAM_POST_PROCESS_OPTIONS = {
-  enableConflictRetry: false,
+  enableConflictRetry: true,
   enableRegeneration: false,
-  enableItineraryFallbackExtraction: false,
+  enableItineraryFallbackExtraction: true,
   /** Cap Google Distance Matrix enrichment so `done` is not blocked for many legs */
   maxDrivingEnrichMs: 2500,
 };
@@ -177,6 +177,30 @@ const {
   buildGuestChatPublicUrl,
 } = require('../utils/guestChatUrl');
 const { extractItineraryJSON, validateItineraryFeasibility } = require('../utils/extractItineraryJSON');
+const { extractItineraryFromResponse } = require('../utils/claudeResponseParser');
+const {
+  CREATE_ITINERARY_TOOL,
+  formatItineraryToolInstruction,
+} = require('../utils/itineraryToolSchema');
+const {
+  CLAUDE_FALLBACK_MODELS,
+  CLAUDE_EXTRACTOR_MODEL,
+  OPENAI_PRIMARY_MODEL,
+  OPENAI_FALLBACK_MODELS,
+} = require('../config/aiModels');
+const {
+  autoRouteProvider,
+  resolveResponseMode,
+  getSystemPromptForMode,
+} = require('../utils/trailieResponseMode');
+const { runReviewAndRepair } = require('../services/trailieReviewerService');
+const {
+  callClaudeWithFallback,
+  formatCorrectionNotice,
+  buildPlanDocument,
+  buildAuditTrail,
+  computeContentUnchanged,
+} = require('../utils/trailiePipelineUtils');
 const { parseConstraints, preflightCheck, buildConstraintBlock, validateItineraryConstraints, detectHypothetical, detectConflicts, detectIntent } = require('../utils/constraintEngine');
 const { correctItinerary, computeConfidence, scoreItinerary } = require('../utils/itineraryCorrector');
 const { logAIRequest, extractParksMentioned } = require('../utils/aiLogger');
@@ -361,27 +385,8 @@ async function collectParkImagesForChat(parkCode, need) {
 
 // Helper: fetch images for multiple parks with smart distribution (target 4 total)
 // 1 park → 4 images, 2 parks → 2 each, 3 parks → 2+1+1, 4+ parks → 1 each
-async function saveStreamItineraryToTrip(req, itineraryData) {
-  if (!itineraryData) return;
-  const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
-  if (!tripId) return;
-  try {
-    const TripPlan = require('../models/TripPlan');
-    await TripPlan.findByIdAndUpdate(tripId, {
-      plan: {
-        type: 'itinerary',
-        version: 1,
-        generatedAt: new Date().toISOString(),
-        createdFrom: 'ai',
-        parkName: req.body.metadata?.parkName || null,
-        parkCode: req.body.metadata?.parkCode || null,
-        ...itineraryData,
-      },
-    });
-    console.log(`[AI Stream] Itinerary saved to TripPlan ${tripId}`);
-  } catch (saveErr) {
-    console.error('[AI Stream] Failed to save itinerary:', saveErr.message);
-  }
+async function saveStreamItineraryToTrip(req, itineraryData, meta = {}) {
+  return saveItineraryToTrip(req, itineraryData, meta);
 }
 
 async function fetchMultiParkImages(parks, logPrefix = '[AI]') {
@@ -471,9 +476,10 @@ function formatMetadataAiContext(metadata = {}) {
   return parts.join('\n');
 }
 
-function buildBaseSystemPrompt(provider, systemPrompt, messages, metadata = {}) {
+function buildBaseSystemPrompt(provider, systemPrompt, messages, metadata = {}, responseMode = 'buddy') {
   const defaultPrompt =
-    provider === 'openai' ? openaiService.systemPrompt : claudeService.defaultSystemPrompt;
+    getSystemPromptForMode(responseMode, { claudeService, openaiService }) ||
+    claudeService.defaultSystemPrompt;
   const clientContext = extractClientSystemContext(systemPrompt, messages);
   const aiContextBlock = formatMetadataAiContext(metadata);
   let prompt = defaultPrompt;
@@ -529,10 +535,32 @@ Never open with "you've already given me enough to build this" or label bullets 
 --- END SINGLE-PARK PLANNING ---
 `;
 
-// Helper: auto-route provider based on last user message content
-function autoRouteProvider(messages) {
-  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
-  return isSpecificItineraryRequest(lastUserMsg) ? 'openai' : 'claude';
+// Helper: auto-route provider — Claude default for all turn types
+function resolveProvider(bodyProvider, messages) {
+  if (bodyProvider && bodyProvider !== 'auto') {
+    return bodyProvider;
+  }
+  return autoRouteProvider(messages);
+}
+
+async function saveItineraryToTrip(req, itineraryData, { reviewMeta, auditTrail, parkName, parkCode } = {}) {
+  if (!itineraryData) return;
+  const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
+  if (!tripId) return;
+  try {
+    const TripPlan = require('../models/TripPlan');
+    const planDoc = buildPlanDocument({
+      itineraryData,
+      parkName: parkName || req.body.metadata?.parkName || null,
+      parkCode: parkCode || req.body.metadata?.parkCode || null,
+      reviewMeta,
+      auditTrail,
+    });
+    await TripPlan.findByIdAndUpdate(tripId, { plan: planDoc });
+    console.log(`[AI] Itinerary saved to TripPlan ${tripId}`);
+  } catch (saveErr) {
+    console.error('[AI] Failed to save itinerary:', saveErr.message);
+  }
 }
 
 /**
@@ -683,10 +711,16 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   }
 
   // Auto-route provider if not explicitly set
-  if (!provider || provider === 'auto') {
+  const explicitProvider = provider && provider !== 'auto' ? provider : null;
+  if (!explicitProvider) {
     provider = autoRouteProvider(messages);
     console.log(`${logPrefix} Auto-routed to provider: ${provider}`);
+  } else {
+    provider = explicitProvider;
   }
+
+  const responseMode = resolveResponseMode(messages, metadata);
+  console.log(`${logPrefix} Response mode: ${responseMode}`);
 
   // Smart context management — trim long conversations with structured summary
   const MAX_CONTEXT_MESSAGES = 20;
@@ -981,8 +1015,8 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   // Logging-related variables hoisted for return
   let candidateParksBlock = false;
 
-  // Base persona (Claude vs OpenAI) + client session context from systemPrompt body
-  let enhancedSystemPrompt = buildBaseSystemPrompt(provider, systemPrompt, messages, metadata);
+  // Base persona (responseMode) + client session context from systemPrompt body
+  let enhancedSystemPrompt = buildBaseSystemPrompt(provider, systemPrompt, messages, metadata, responseMode);
 
   // Fee-free block hoisted to top of assembled prompt — models attend most to
   // the start and end of long prompts (lost-in-the-middle effect). Placing this
@@ -1346,6 +1380,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
 
   const trailieContext = buildTrailieContext({
     provider,
+    responseMode,
     lastUserMessage: lastMsg,
     constraints,
     intent,
@@ -1395,9 +1430,12 @@ CRITICAL ISOLATION RULES — follow these exactly:
     (isSpecificItineraryRequest(lastUserMessage) ||
       (resolvedMetadata.parkCode && /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|build\s+(me\s+)?(a\s+)?(plan|itinerary)|help\s+(me\s+)?plan)\b/i.test(lastUserMessage)));
 
-  // Final reinforcement: only day-by-day plan requests get structured itinerary JSON
+  // Final reinforcement: day-by-day plans — prefer create_itinerary tool + legacy JSON fallback
   if (userRequestedItinerary) {
-    enhancedSystemPrompt += `\n\n--- CRITICAL REMINDER ---\nThis is a day-by-day planning request. You MUST include the [ITINERARY_JSON] block at the end of your response with the structured itinerary data. Even if there are conflicts or warnings, include your recommended safe plan in the JSON block. Do NOT skip the JSON block for planning requests.\n--- END REMINDER ---\n`;
+    if (responseMode === 'architect' && provider === 'claude') {
+      enhancedSystemPrompt += formatItineraryToolInstruction();
+    }
+    enhancedSystemPrompt += `\n\n--- CRITICAL REMINDER ---\nThis is a day-by-day planning request. You MUST provide structured itinerary data via the create_itinerary tool when available, OR include the [ITINERARY_JSON] block at the end of your response as fallback. Even if there are conflicts or warnings, include your recommended safe plan. Do NOT skip structured output for planning requests.\n--- END REMINDER ---\n`;
   } else if (resolvedMetadata.dayByDayPlanIntake) {
     enhancedSystemPrompt += formatDayByDayIntakeBlock({
       parkName: resolvedMetadata.intakeParkName || resolvedMetadata.parkName || parkNames[0] || null,
@@ -1420,7 +1458,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext, fetchPlan };
+  return { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext, fetchPlan };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {
@@ -1854,7 +1892,10 @@ async function processAssistantResponse({
   response,
   lastMsg,
   npsFacts,
+  weatherFacts,
   webSearchFacts,
+  astroFacts,
+  feeFreeFacts,
   noParkDetected,
   constraints,
   conflicts,
@@ -1868,6 +1909,8 @@ async function processAssistantResponse({
   augmentedMessages,
   req,
   parksForLinks = [],
+  trailieContext = null,
+  responseMode = 'buddy',
   options = {},
 }) {
   const {
@@ -1879,6 +1922,17 @@ async function processAssistantResponse({
     userRequestedItinerary = false,
     logPrefix = '[AI]',
   } = options;
+
+  let correctionsApplied = [];
+  let contentChangedByValidation = false;
+  let reviewMeta = {
+    reviewerRan: false,
+    reviewerModel: null,
+    reviewerPassed: true,
+    reviewerSeverity: 'none',
+    reviewerIssueTypes: [],
+    repaired: false,
+  };
 
   const hasConflicts = conflicts?.length > 0;
 
@@ -1897,7 +1951,7 @@ async function processAssistantResponse({
         let retryContent;
         if (provider === 'claude' && anthropic) {
           const retryResult = await anthropic.messages.create({
-            model: model || 'claude-sonnet-4-6',
+            model: model || CLAUDE_FALLBACK_MODELS[0],
             max_tokens: maxTokens,
             temperature,
             system: conflictRetryPrompt,
@@ -1907,7 +1961,7 @@ async function processAssistantResponse({
         } else if (provider === 'openai' && openai) {
           const openaiMsgs = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
           const retryResult = await openai.chat.completions.create({
-            model: model || 'gpt-5.4-mini',
+            model: model || OPENAI_PRIMARY_MODEL,
             messages: [{ role: 'system', content: conflictRetryPrompt }, ...openaiMsgs],
             max_completion_tokens: maxTokens,
             temperature,
@@ -1924,7 +1978,14 @@ async function processAssistantResponse({
     }
   }
 
-  let { cleanContent, itineraryData } = extractItineraryJSON(response.content);
+  let { cleanContent, itineraryData } = extractItineraryFromResponse({
+    content: response.content,
+    toolItinerary: response.toolItinerary || null,
+  });
+
+  if (itineraryData && response.toolItinerary) {
+    console.log(`${logPrefix} Itinerary extracted via create_itinerary tool`);
+  }
 
   if (itineraryData && !userRequestedItinerary) {
     console.log(`${logPrefix} Itinerary JSON discarded — user did not request a day-by-day plan`);
@@ -1957,7 +2018,8 @@ ${cleanContent.substring(0, 6000)}`;
       const claudeService = require('../services/claudeService');
       const extractedJSON = await claudeService.chat(
         [{ role: 'user', content: extractionPrompt }],
-        'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.'
+        'You are a JSON extraction tool. Return only valid JSON, no markdown or explanation.',
+        { model: CLAUDE_EXTRACTOR_MODEL, temperature: 0.1 }
       );
       const jsonMatch = extractedJSON.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -2026,6 +2088,8 @@ ${cleanContent.substring(0, 6000)}`;
 
     itineraryData = currentItinerary;
     confidence = computeConfidence(allCorrections, totalRemoved, originalCount);
+    correctionsApplied = allCorrections;
+    contentChangedByValidation = allCorrections.length > 0 || needsRegeneration;
 
     if (allCorrections.length > 0) {
       correctionSummary = `\n\n---\n📍 **Adjusted to fit your constraints:**\n${allCorrections.map((c) => `- ${c}`).join('\n')}`;
@@ -2057,7 +2121,7 @@ ${cleanContent.substring(0, 6000)}`;
       let regenResponse;
       if (provider === 'claude' && anthropic) {
         const regenResult = await anthropic.messages.create({
-          model: model || 'claude-sonnet-4-6',
+          model: model || CLAUDE_FALLBACK_MODELS[0],
           max_tokens: maxTokens,
           temperature,
           system: regenPrompt,
@@ -2067,7 +2131,7 @@ ${cleanContent.substring(0, 6000)}`;
       } else if (provider === 'openai' && openai) {
         const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
         const regenResult = await openai.chat.completions.create({
-          model: model || 'gpt-5.4-mini',
+          model: model || OPENAI_PRIMARY_MODEL,
           messages: [{ role: 'system', content: regenPrompt }, ...openaiMessages],
           max_completion_tokens: maxTokens,
           temperature,
@@ -2076,13 +2140,15 @@ ${cleanContent.substring(0, 6000)}`;
       }
 
       if (regenResponse) {
-        const regen = extractItineraryJSON(regenResponse);
+        const regen = extractItineraryFromResponse({ content: regenResponse });
         if (regen.itineraryData) {
           const regenIssues = validateItineraryConstraints(regen.itineraryData, constraints);
           if (regenIssues.length < constraintIssues.length) {
             cleanContent = regen.cleanContent;
             itineraryData = regen.itineraryData;
             correctionSummary = '';
+            correctionsApplied = [];
+            contentChangedByValidation = true;
             confidence = { level: 'medium', score: 0.7 };
             constraintIssues = regenIssues;
             feasibilityIssues = validateItineraryFeasibility(itineraryData);
@@ -2093,20 +2159,6 @@ ${cleanContent.substring(0, 6000)}`;
     } catch (regenErr) {
       console.error(`${logPrefix} Regeneration failed:`, regenErr.message);
     }
-  }
-
-  // Alert/correction/confidence footers omitted — model weaves facts inline.
-  // Anonymous web-search upsell kept: product CTA for guests on lodging/local queries.
-  const webSearchUpsell =
-    appendAnonymousWebUpsell && !isTrustedMcp
-      ? shouldAppendAnonymousWebSearchUpsell(lastMsg)
-      : { append: false };
-
-  if (webSearchUpsell.append) {
-    cleanContent = stripRedundantLiveDataDisclaimers(cleanContent);
-    response.content = cleanContent + buildWebSearchUpsellSuffix(webSearchUpsell.variant);
-  } else {
-    response.content = cleanContent;
   }
 
   if (itineraryData) {
@@ -2124,6 +2176,52 @@ ${cleanContent.substring(0, 6000)}`;
 
   const planScore = itineraryData ? scoreItinerary(itineraryData, constraints) : null;
 
+  // Generate → Review → Repair loop
+  let finalContent = cleanContent;
+  const reviewRepair = await runReviewAndRepair({
+    anthropic,
+    responseContent: finalContent,
+    itineraryData,
+    constraints,
+    npsFacts,
+    weatherFacts,
+    webSearchFacts,
+    astroFacts,
+    feeFreeFacts,
+    trailieContext,
+    userMessage: lastMsg,
+    responseMode,
+    provider,
+    userRequestedItinerary,
+    correctionsApplied,
+    constraintIssues,
+    logPrefix: `${logPrefix} Reviewer`,
+  });
+
+  finalContent = reviewRepair.content;
+  itineraryData = reviewRepair.itineraryData;
+  reviewMeta = reviewRepair.reviewMeta;
+  if (reviewMeta.repaired) {
+    contentChangedByValidation = true;
+  }
+
+  // Append visible correction notice so prose matches saved itinerary
+  if (correctionsApplied.length > 0) {
+    finalContent += formatCorrectionNotice(correctionsApplied);
+  }
+
+  const webSearchUpsell =
+    appendAnonymousWebUpsell && !isTrustedMcp
+      ? shouldAppendAnonymousWebSearchUpsell(lastMsg)
+      : { append: false };
+
+  if (webSearchUpsell.append) {
+    finalContent = stripRedundantLiveDataDisclaimers(finalContent);
+    response.content = finalContent + buildWebSearchUpsellSuffix(webSearchUpsell.variant);
+  } else {
+    response.content = finalContent;
+  }
+
   return {
     cleanContent: response.content,
     itineraryData,
@@ -2131,6 +2229,9 @@ ${cleanContent.substring(0, 6000)}`;
     planScore,
     constraintIssues,
     feasibilityIssues,
+    correctionsApplied,
+    contentChangedByValidation,
+    reviewMeta,
   };
 }
 
@@ -2145,7 +2246,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       metadata: req.body.metadata
     });
 
-    let { provider, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext } = await prepareChatContext(req.body, '[AI]', { req });
+    let { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext } = await prepareChatContext(req.body, '[AI]', { req });
 
     // Pre-flight BLOCKER — stop before calling AI
     if (preflightResult.blockers.length > 0) {
@@ -2171,98 +2272,30 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
     }
 
     if (provider === 'claude') {
-      // Claude API
       if (!anthropic) {
         return res.status(500).json({ error: 'Claude API key not configured' });
       }
 
-      // Try models in order of preference
-      const modelsToTry = [
-        'claude-sonnet-4-6',           // Claude Sonnet 4.6 (latest, fast)
-        'claude-haiku-4-5-20251001',   // Claude Haiku 4.5 (budget fallback)
-      ];
+      const useItineraryTool = responseMode === 'architect' && userRequestedItinerary;
 
-      let lastError = null;
-      let successfulModel = null;
-
-      for (const model of modelsToTry) {
-        try {
-          console.log(`[Chat] Trying Claude model: ${model}`);
-
-          const claudeResponse = await anthropic.messages.create({
-            model: model || 'claude-sonnet-4-6',
-            max_tokens: maxTokens,
-            temperature: temperature,
-            system: enhancedSystemPrompt,
-            messages: augmentedMessages,
-          });
-
-          response = {
-            content: claudeResponse.content[0].text,
-            provider: 'claude',
-            model: model,
-            usage: {
-              inputTokens: claudeResponse.usage.input_tokens,
-              outputTokens: claudeResponse.usage.output_tokens,
-            }
-          };
-
-          successfulModel = model;
-          console.log(`[Chat] Success with Claude model: ${model}`);
-          break; // Success, exit loop
-
-        } catch (error) {
-          lastError = error;
-          console.error(`[Chat] Model ${model} failed:`, {
-            message: error.message,
-            status: error.status,
-            statusCode: error.statusCode,
-            type: error.type,
-            errorType: error.error?.type,
-            code: error.code
-          });
-
-          // Check if it's a model not found error (404) or not_found_error type
-          // Check multiple possible error locations (Anthropic SDK may structure errors differently)
-          const errorBody = error.error || error.response?.data || error.body || {};
-          const is404Error = error.status === 404 || error.statusCode === 404 ||
-            error.response?.status === 404;
-          const isNotFoundError = error.error?.type === 'not_found_error' ||
-            error.type === 'not_found_error' ||
-            errorBody.type === 'not_found_error' ||
-            errorBody.error?.type === 'not_found_error';
-          const isModelError = (error.message && (
-            error.message.includes('model') ||
-            error.message.includes('not found') ||
-            error.message.includes('not_found')
-          )) || (errorBody.error?.message && errorBody.error.message.includes('model'));
-
-          const isAuthError = error.status === 401 || error.statusCode === 401 ||
-            error.status === 403 || error.statusCode === 403;
-
-          // If it's a 404 or not_found_error, try next model
-          if (is404Error || isNotFoundError || isModelError) {
-            console.log(`[Chat] Model ${model} not available (404/not_found), trying next...`);
-            continue; // Try next model
-          }
-
-          // For auth errors on first model, try next model (might be API key issue with specific model)
-          if (isAuthError && modelsToTry.indexOf(model) === 0) {
-            console.log(`[Chat] Authentication error with ${model}, trying next model...`);
-            continue;
-          }
-
-          // For other errors, throw immediately (network errors, rate limits, etc.)
-          throw error;
-        }
-      }
-
-      if (!response) {
+      try {
+        response = await callClaudeWithFallback({
+          anthropic,
+          modelsToTry: CLAUDE_FALLBACK_MODELS,
+          maxTokens,
+          temperature,
+          system: enhancedSystemPrompt,
+          messages: augmentedMessages,
+          tools: useItineraryTool ? [CREATE_ITINERARY_TOOL] : undefined,
+          toolChoice: useItineraryTool ? { type: 'auto' } : undefined,
+          logPrefix: '[Chat]',
+        });
+      } catch (claudeErr) {
         console.error('[Chat] All Claude models failed');
         return res.status(400).json({
           error: 'No Claude models available with your API key',
-          details: lastError?.message || 'Unknown error',
-          availableModels: modelsToTry
+          details: claudeErr.message || 'Unknown error',
+          availableModels: CLAUDE_FALLBACK_MODELS,
         });
       }
 
@@ -2272,24 +2305,44 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
         return res.status(500).json({ error: 'OpenAI API key not configured' });
       }
 
-      const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
+      const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
+      let openaiResponse = null;
+      let openaiModelUsed = model || OPENAI_PRIMARY_MODEL;
+      let lastOpenAiError = null;
 
-      const openaiResponse = await openai.chat.completions.create({
-        model: model || 'gpt-5.4-mini',
-        messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-        max_completion_tokens: maxTokens,
-        temperature: temperature,
-        top_p: top_p,
-      });
+      for (const modelId of OPENAI_FALLBACK_MODELS) {
+        try {
+          openaiResponse = await openai.chat.completions.create({
+            model: modelId,
+            messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
+            max_completion_tokens: maxTokens,
+            temperature,
+            top_p,
+          });
+          openaiModelUsed = modelId;
+          break;
+        } catch (err) {
+          lastOpenAiError = err;
+          if (err.status === 404 || err.code === 'model_not_found') continue;
+          throw err;
+        }
+      }
+
+      if (!openaiResponse) {
+        return res.status(400).json({
+          error: 'No OpenAI models available',
+          details: lastOpenAiError?.message,
+        });
+      }
 
       response = {
         content: openaiResponse.choices[0].message.content,
         provider: 'openai',
-        model: 'gpt-5.4-mini',
+        model: openaiModelUsed,
         usage: {
           inputTokens: openaiResponse.usage.prompt_tokens,
           outputTokens: openaiResponse.usage.completion_tokens,
-        }
+        },
       };
 
     } else {
@@ -2300,13 +2353,16 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       response,
       lastMsg,
       npsFacts,
+      weatherFacts,
       webSearchFacts,
+      astroFacts,
+      feeFreeFacts,
       noParkDetected,
       constraints,
       conflicts,
       hypothetical,
-      provider,
-      model,
+      provider: response.provider,
+      model: response.model,
       maxTokens,
       temperature,
       top_p,
@@ -2314,6 +2370,8 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
       augmentedMessages,
       req,
       parksForLinks: allExtractedParks,
+      trailieContext,
+      responseMode,
       options: {
         enableConflictRetry: true,
         enableRegeneration: true,
@@ -2327,31 +2385,31 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
     const confidence = processed.confidence;
     const planScore = processed.planScore;
 
+    response.content = processed.cleanContent;
     response.hasItinerary = !!itineraryData;
     response.itineraryData = itineraryData || null;
 
-    // Save CORRECTED itinerary to DB
+    const auditTrail = buildAuditTrail({
+      provider: response.provider,
+      model: response.model,
+      responseMode,
+      confidence,
+      planScore,
+      correctionsApplied: processed.correctionsApplied,
+      npsFacts,
+      weatherFacts,
+      webSearchFacts,
+      astroFacts,
+      feeFreeFacts,
+    });
+
     if (itineraryData) {
-      const tripId = req.body.tripId || req.body.conversationId || req.body.metadata?.tripId;
-      if (tripId) {
-        try {
-          const TripPlan = require('../models/TripPlan');
-          await TripPlan.findByIdAndUpdate(tripId, {
-            plan: {
-              type: 'itinerary',
-              version: 1,
-              generatedAt: new Date().toISOString(),
-              createdFrom: 'ai',
-              parkName: req.body.metadata?.parkName || null,
-              parkCode: req.body.metadata?.parkCode || null,
-              ...itineraryData
-            }
-          });
-          console.log(`[AI] Corrected itinerary saved to TripPlan ${tripId}`);
-        } catch (saveErr) {
-          console.error('[AI] Failed to save itinerary:', saveErr.message);
-        }
-      }
+      await saveItineraryToTrip(req, itineraryData, {
+        reviewMeta: processed.reviewMeta,
+        auditTrail,
+        parkName: req.body.metadata?.parkName || resolvedMetadata.parkName,
+        parkCode: req.body.metadata?.parkCode || resolvedMetadata.parkCode,
+      });
     }
 
     const displayMeta = await finalizeParkImagesAndMetadata({
@@ -2515,6 +2573,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
 
       let {
         provider,
+        responseMode,
         model,
         temperature,
         top_p,
@@ -2614,7 +2673,10 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         response,
         lastMsg,
         npsFacts,
+        weatherFacts,
         webSearchFacts,
+        astroFacts,
+        feeFreeFacts,
         noParkDetected,
         constraints,
         conflicts,
@@ -2628,14 +2690,38 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         augmentedMessages,
         req,
         parksForLinks: allExtractedParks,
+        trailieContext,
+        responseMode,
         options: {
           ...STREAM_POST_PROCESS_OPTIONS,
+          enableRegeneration: userRequestedItinerary,
           userRequestedItinerary,
           logPrefix: '[AI Stream]',
         },
       });
 
       response.content = processed.cleanContent;
+
+      const auditTrail = buildAuditTrail({
+        provider: response.provider,
+        model: response.model,
+        responseMode,
+        confidence: processed.confidence,
+        planScore: processed.planScore,
+        correctionsApplied: processed.correctionsApplied,
+        npsFacts,
+        weatherFacts,
+        webSearchFacts,
+        astroFacts,
+        feeFreeFacts,
+      });
+
+      void saveStreamItineraryToTrip(req, processed.itineraryData, {
+        reviewMeta: processed.reviewMeta,
+        auditTrail,
+        parkName: req.body.metadata?.parkName || resolvedMetadata.parkName,
+        parkCode: req.body.metadata?.parkCode || resolvedMetadata.parkCode,
+      });
 
       const displayMeta = await finalizeParkImagesAndMetadata({
         validatedContent: response.content,
@@ -2649,7 +2735,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
       });
 
       const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
-      const contentUnchanged = processed.cleanContent === strippedStreamContent;
+      const contentUnchanged = computeContentUnchanged(processed, strippedStreamContent);
 
       writeSseEvent(
         res,
@@ -2690,8 +2776,6 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
         )
       );
       res.end();
-
-      void saveStreamItineraryToTrip(req, processed.itineraryData);
 
       const requestEndTime = Date.now();
       extractParksMentioned(response.content || '')
@@ -2860,6 +2944,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
 
       let {
         provider: ctxProvider,
+        responseMode: anonResponseMode,
         model: ctxModel,
         temperature: ctxTemperature,
         top_p: ctxTopP,
@@ -2962,7 +3047,10 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         response,
         lastMsg,
         npsFacts,
+        weatherFacts,
         webSearchFacts,
+        astroFacts,
+        feeFreeFacts,
         noParkDetected: anonNoParkDetected,
         constraints: anonConstraints,
         conflicts: anonConflicts,
@@ -2976,8 +3064,11 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         augmentedMessages,
         req,
         parksForLinks: allExtractedParks,
+        trailieContext: anonTrailieContext,
+        responseMode: anonResponseMode,
         options: {
           ...STREAM_POST_PROCESS_OPTIONS,
+          enableRegeneration: anonUserRequestedItinerary,
           appendAnonymousWebUpsell: true,
           isTrustedMcp: !!req.isTrustedMcp,
           userRequestedItinerary: anonUserRequestedItinerary,
@@ -3001,7 +3092,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       });
 
       const { cleanContent: strippedStreamContent } = extractItineraryJSON(streamResult.fullContent);
-      const contentUnchanged = processed.cleanContent === strippedStreamContent;
+      const contentUnchanged = computeContentUnchanged(processed, strippedStreamContent);
 
       writeSseEvent(
         res,
@@ -3232,6 +3323,7 @@ router.post('/chat-anonymous', async (req, res) => {
 
     let {
       provider: ctxProvider,
+      responseMode: anonResponseMode,
       model: ctxModel,
       temperature: ctxTemperature,
       top_p: ctxTopP,
@@ -3300,98 +3392,30 @@ router.post('/chat-anonymous', async (req, res) => {
     }
 
     if (provider === 'claude') {
-      // Claude API
       if (!anthropic) {
         return res.status(500).json({ error: 'Claude API key not configured' });
       }
 
-      // Try models in order of preference
-      const modelsToTry = [
-        'claude-sonnet-4-6',           // Claude Sonnet 4.6 (latest, fast)
-        'claude-haiku-4-5-20251001',   // Claude Haiku 4.5 (budget fallback)
-      ];
+      const useItineraryTool = anonResponseMode === 'architect' && anonUserRequestedItinerary;
 
-      let lastError = null;
-      let successfulModel = null;
-
-      for (const model of modelsToTry) {
-        try {
-          console.log(`[Chat] Trying Claude model for anonymous user: ${model}`);
-
-          const claudeResponse = await anthropic.messages.create({
-            model: model || 'claude-sonnet-4-6',
-            max_tokens: maxTokens,
-            temperature: temperature,
-            system: enhancedSystemPrompt,
-            messages: augmentedMessages,
-          });
-
-          response = {
-            content: claudeResponse.content[0].text,
-            provider: 'claude',
-            model: model,
-            usage: {
-              inputTokens: claudeResponse.usage.input_tokens,
-              outputTokens: claudeResponse.usage.output_tokens,
-            }
-          };
-
-          successfulModel = model;
-          console.log(`[Chat] Success with Claude model for anonymous user: ${model}`);
-          break; // Success, exit loop
-
-        } catch (error) {
-          lastError = error;
-          console.error(`[Chat] Model ${model} failed for anonymous user:`, {
-            message: error.message,
-            status: error.status,
-            statusCode: error.statusCode,
-            type: error.type,
-            errorType: error.error?.type,
-            code: error.code
-          });
-
-          // Check if it's a model not found error (404) or not_found_error type
-          // Check multiple possible error locations (Anthropic SDK may structure errors differently)
-          const errorBody = error.error || error.response?.data || error.body || {};
-          const is404Error = error.status === 404 || error.statusCode === 404 ||
-            error.response?.status === 404;
-          const isNotFoundError = error.error?.type === 'not_found_error' ||
-            error.type === 'not_found_error' ||
-            errorBody.type === 'not_found_error' ||
-            errorBody.error?.type === 'not_found_error';
-          const isModelError = (error.message && (
-            error.message.includes('model') ||
-            error.message.includes('not found') ||
-            error.message.includes('not_found')
-          )) || (errorBody.error?.message && errorBody.error.message.includes('model'));
-
-          const isAuthError = error.status === 401 || error.statusCode === 401 ||
-            error.status === 403 || error.statusCode === 403;
-
-          // If it's a 404 or not_found_error, try next model
-          if (is404Error || isNotFoundError || isModelError) {
-            console.log(`[Chat] Model ${model} not available (404/not_found) for anonymous user, trying next...`);
-            continue; // Try next model
-          }
-
-          // For auth errors on first model, try next model (might be API key issue with specific model)
-          if (isAuthError && modelsToTry.indexOf(model) === 0) {
-            console.log(`[Chat] Authentication error with ${model} for anonymous user, trying next model...`);
-            continue;
-          }
-
-          // For other errors, throw immediately (network errors, rate limits, etc.)
-          throw error;
-        }
-      }
-
-      if (!response) {
+      try {
+        response = await callClaudeWithFallback({
+          anthropic,
+          modelsToTry: CLAUDE_FALLBACK_MODELS,
+          maxTokens,
+          temperature,
+          system: enhancedSystemPrompt,
+          messages: augmentedMessages,
+          tools: useItineraryTool ? [CREATE_ITINERARY_TOOL] : undefined,
+          toolChoice: useItineraryTool ? { type: 'auto' } : undefined,
+          logPrefix: '[Chat Anon]',
+        });
+      } catch (claudeErr) {
         console.error('[Chat] All Claude models failed for anonymous user');
         return res.status(400).json({
           error: 'No Claude models available with your API key',
-          details: lastError?.message || 'Unknown error',
-          availableModels: modelsToTry
+          details: claudeErr.message || 'Unknown error',
+          availableModels: CLAUDE_FALLBACK_MODELS,
         });
       }
 
@@ -3401,24 +3425,44 @@ router.post('/chat-anonymous', async (req, res) => {
         return res.status(500).json({ error: 'OpenAI API key not configured' });
       }
 
-      const openaiMessages = augmentedMessages.map(m => ({ role: m.role, content: m.content }));
+      const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
+      let openaiResponse = null;
+      let openaiModelUsed = model || OPENAI_PRIMARY_MODEL;
+      let lastOpenAiError = null;
 
-      const openaiResponse = await openai.chat.completions.create({
-        model: model || 'gpt-5.4-mini',
-        messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
-        max_completion_tokens: maxTokens,
-        temperature: temperature,
-        top_p: top_p,
-      });
+      for (const modelId of OPENAI_FALLBACK_MODELS) {
+        try {
+          openaiResponse = await openai.chat.completions.create({
+            model: modelId,
+            messages: [{ role: 'system', content: enhancedSystemPrompt }, ...openaiMessages],
+            max_completion_tokens: maxTokens,
+            temperature,
+            top_p,
+          });
+          openaiModelUsed = modelId;
+          break;
+        } catch (err) {
+          lastOpenAiError = err;
+          if (err.status === 404 || err.code === 'model_not_found') continue;
+          throw err;
+        }
+      }
+
+      if (!openaiResponse) {
+        return res.status(400).json({
+          error: 'No OpenAI models available',
+          details: lastOpenAiError?.message,
+        });
+      }
 
       response = {
         content: openaiResponse.choices[0].message.content,
         provider: 'openai',
-        model: 'gpt-5.4-mini',
+        model: openaiModelUsed,
         usage: {
           inputTokens: openaiResponse.usage.prompt_tokens,
           outputTokens: openaiResponse.usage.completion_tokens,
-        }
+        },
       };
 
     } else {
@@ -3429,13 +3473,16 @@ router.post('/chat-anonymous', async (req, res) => {
       response,
       lastMsg,
       npsFacts,
+      weatherFacts,
       webSearchFacts,
+      astroFacts,
+      feeFreeFacts,
       noParkDetected: anonNoParkDetected,
       constraints: anonConstraints,
       conflicts: anonConflicts,
       hypothetical: anonHypothetical,
-      provider,
-      model,
+      provider: response.provider,
+      model: response.model,
       maxTokens,
       temperature,
       top_p,
@@ -3443,6 +3490,8 @@ router.post('/chat-anonymous', async (req, res) => {
       augmentedMessages,
       req,
       parksForLinks: allExtractedParks,
+      trailieContext: anonTrailieContext,
+      responseMode: anonResponseMode,
       options: {
         enableConflictRetry: true,
         enableRegeneration: true,
@@ -3456,6 +3505,10 @@ router.post('/chat-anonymous', async (req, res) => {
     const anonItineraryData = processed.itineraryData;
     const anonConfidence = processed.confidence;
     const anonPlanScore = processed.planScore;
+
+    response.content = processed.cleanContent;
+    response.provider = response.provider || provider;
+    response.model = response.model || model;
 
     // Add AI response to session
     await session.addMessage({
@@ -3735,10 +3788,7 @@ router.get('/test-models', protect, async (req, res) => {
     return res.status(503).json({ error: 'Claude not configured' });
   }
 
-  const modelsToTest = [
-    'claude-sonnet-4-6',           // Claude Sonnet 4.6 (latest)
-    'claude-haiku-4-5-20251001',   // Claude Haiku 4.5 (budget)
-  ];
+  const modelsToTest = CLAUDE_FALLBACK_MODELS;
 
   const results = [];
 

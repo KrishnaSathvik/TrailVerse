@@ -115,6 +115,24 @@ describe('buildTrailieContext', () => {
     expect(ctx.providerMode).toBe('architect');
   });
 
+  test('responseMode architect on Claude maps to architect mode', () => {
+    const ctx = buildTrailieContext({
+      ...baseArgs,
+      provider: 'claude',
+      responseMode: 'architect',
+    });
+    expect(ctx.providerMode).toBe('architect');
+  });
+
+  test('responseMode compare maps to compare mode', () => {
+    const ctx = buildTrailieContext({
+      ...baseArgs,
+      provider: 'claude',
+      responseMode: 'compare',
+    });
+    expect(ctx.providerMode).toBe('compare');
+  });
+
   test('preflightPassed false when blockers present', () => {
     const ctx = buildTrailieContext({
       ...baseArgs,

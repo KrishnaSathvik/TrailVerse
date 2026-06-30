@@ -12,6 +12,20 @@ const { protect } = require('../middleware/auth');
 const TripPlan = require('../models/TripPlan');
 const User = require('../models/User');
 
+function stripInternalTrailiePlanMeta(plan) {
+  if (!plan || typeof plan !== 'object') return plan;
+
+  const sanitized = Array.isArray(plan) ? [...plan] : { ...plan };
+
+  delete sanitized.reviewMeta;
+  delete sanitized.auditTrail;
+  delete sanitized.promptHash;
+  delete sanitized.rawReviewerOutput;
+  delete sanitized.rawRepairOutput;
+
+  return sanitized;
+}
+
 // View shared trip (public, no auth) — must be before router.use(protect)
 router.get('/shared/:shareId', async (req, res) => {
   const trip = await TripPlan.findOne({ shareId: req.params.shareId });
@@ -38,7 +52,7 @@ router.get('/shared/:shareId', async (req, res) => {
       parkName: trip.parkName,
       formData: trip.formData,
       conversation: trip.conversation,
-      plan: trip.plan,
+      plan: stripInternalTrailiePlanMeta(trip.plan),
       createdAt: trip.createdAt,
       sharedBy,
     }

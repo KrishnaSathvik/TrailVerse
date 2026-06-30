@@ -1,7 +1,13 @@
 /**
  * Stream raw LLM tokens to an open SSE response (chunk events only).
  * Post-processing (itinerary, anonymous upsell, etc.) stays in the route handler.
+ * TODO: Add create_itinerary tool streaming once evals pass — legacy [ITINERARY_JSON] for now.
  */
+
+const {
+  CLAUDE_PRIMARY_MODEL,
+  OPENAI_PRIMARY_MODEL,
+} = require('../config/aiModels');
 
 async function streamRawLLMToSse(res, {
   anthropic,
@@ -33,7 +39,7 @@ async function streamRawLLMToSse(res, {
       return null;
     }
 
-    resolvedModel = model || 'claude-sonnet-4-6';
+    resolvedModel = model || CLAUDE_PRIMARY_MODEL;
     const stream = await anthropic.messages.create(
       {
         model: resolvedModel,
@@ -63,7 +69,7 @@ async function streamRawLLMToSse(res, {
       return null;
     }
 
-    resolvedModel = model || 'gpt-5.4-mini';
+    resolvedModel = model || OPENAI_PRIMARY_MODEL;
     const openaiMessages = augmentedMessages.map((m) => ({ role: m.role, content: m.content }));
     const stream = await openai.chat.completions.create(
       {
