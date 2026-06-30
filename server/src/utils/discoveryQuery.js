@@ -24,7 +24,8 @@ const SPECIFIC_ITINERARY_PLAN_PATTERNS = [
   /\bhelp\s+(me\s+)?plan\b/i,
   /\bbuild\s+(me\s+)?(a\s+)?(day[- ]?by[- ]?day\s+)?(trip|plan|itinerary)\b/i,
   /\bcreate\s+(a\s+)?(day[- ]?by[- ]?day\s+)?(trip|plan|itinerary)\b/i,
-  /\b(make|draft)\s+(me\s+)?(a\s+)?(trip|plan|itinerary)\b/i,
+  /\b(make|draft)\s+(me\s+)?(?:a\s+)?(?:[\w-]+\s+){0,4}?(trip|plan|itinerary)\b/i,
+  /\b(choose one|pick one|okay choose|go with one)\b[\s\S]{0,80}\b(itinerary|plan)\b/i,
   /\bschedule\s+(my|our|the)\s+(trip|visit|days)\b/i,
   /\bday\s+\d\b/i,
   /\b\d[\s-]*day\s+(trip|itinerary|visit|schedule|plan)\b/i,
@@ -67,6 +68,26 @@ function isSpecificItineraryRequest(message) {
   return SPECIFIC_ITINERARY_PLAN_PATTERNS.some((re) => re.test(text));
 }
 
+/** User confirms a compare pick and wants a plan built (e.g. "choose one and make a relaxed itinerary"). */
+function isItineraryCommitRequest(message) {
+  const text = normalizeMessage(message);
+  if (!text) return false;
+  return (
+    /\b(choose one|pick one|okay choose|go with one|choose it)\b[\s\S]{0,80}\b(itinerary|plan)\b/i.test(text) ||
+    /\b(choose one|pick one|okay choose|go with one)\b[\s\S]{0,80}\b(make|draft)\b[\s\S]{0,40}\b(itinerary|plan)\b/i.test(text)
+  );
+}
+
+function getActivePlanDestination(metadata = {}) {
+  const ctx = metadata.activeTripContext || {};
+  return ctx.lockedPlanDestination || ctx.primaryDestination || ctx.recommendedOption || null;
+}
+
+function hasActivePlanDestination(metadata = {}) {
+  const dest = getActivePlanDestination(metadata);
+  return !!(dest?.parkCode || dest?.name);
+}
+
 /**
  * Whether Trailie should emit/process structured [ITINERARY_JSON] for this turn.
  * Discovery questions ("weekend hiking trip from Denver under $500") are NOT itinerary requests.
@@ -93,10 +114,16 @@ function shouldRequestItineraryJson({
   const text = normalizeMessage(userMessage);
   if (!text) return false;
   if (metadata.dayByDayPlanIntake) return false;
-  if (openEndedDiscovery) return false;
+
+  const commitWithDestination =
+    isItineraryCommitRequest(text) && hasActivePlanDestination(metadata);
+  const effectiveOpenEnded = openEndedDiscovery && !commitWithDestination;
+
+  if (effectiveOpenEnded) return false;
 
   const wantsPlan =
     isSpecificItineraryRequest(text) ||
+    commitWithDestination ||
     (metadata.parkCode && SINGLE_PARK_PLAN_VERB_PATTERN.test(text));
   if (!wantsPlan) return false;
 
@@ -107,6 +134,7 @@ function shouldRequestItineraryJson({
     allExtractedParks,
     conversationUserText: conversationUserText || text,
     skipUserContext,
+    assumeDefaults: skipUserContext || commitWithDestination || hasActivePlanDestination(metadata),
   });
   return readiness.ready;
 }
@@ -292,6 +320,9 @@ module.exports = {
   isTravelRelated,
   isOffTopic,
   isSpecificItineraryRequest,
+  isItineraryCommitRequest,
+  getActivePlanDestination,
+  hasActivePlanDestination,
   shouldRequestItineraryJson,
   isOpenEndedDestinationQuery,
   shouldInjectParkDiscovery,

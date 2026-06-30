@@ -2,29 +2,56 @@
  * Extracts and strips the [ITINERARY_JSON] block from AI response content.
  * Returns clean content (for frontend) and structured itinerary data (for DB).
  */
+
+/**
+ * Final safety pass — remove itinerary JSON artifacts even when malformed/truncated.
+ * @param {string} content
+ * @returns {string}
+ */
+function stripAnyItineraryJsonArtifacts(content = '') {
+  if (!content || typeof content !== 'string') return content;
+
+  let cleaned = content;
+
+  // Complete block
+  cleaned = cleaned.replace(/\[ITINERARY_JSON\][\s\S]*?\[\/ITINERARY_JSON\]/gi, '');
+
+  // Truncated block: remove from opening marker to end
+  cleaned = cleaned.replace(/\[ITINERARY_JSON\][\s\S]*$/gi, '');
+
+  // Orphan closing marker
+  cleaned = cleaned.replace(/\[\/ITINERARY_JSON\]/gi, '');
+
+  // Fenced JSON blocks explicitly labeled as itinerary
+  cleaned = cleaned.replace(
+    /```(?:json)?\s*(?:\n|\r\n)?\s*(?:ITINERARY_JSON|itinerary[\s_-]?json)[\s\S]*?```/gi,
+    ''
+  );
+
+  // Defensive cleanup for visible labels
+  cleaned = cleaned.replace(/^\s*ITINERARY_JSON\s*:?\s*$/gim, '');
+
+  return cleaned.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 function extractItineraryJSON(content) {
   if (!content || typeof content !== 'string') {
     return { cleanContent: content, itineraryData: null };
   }
 
-  const match = content.match(/\[ITINERARY_JSON\]([\s\S]*?)\[\/ITINERARY_JSON\]/);
-  if (!match) {
-    return { cleanContent: content, itineraryData: null };
+  const match = content.match(/\[ITINERARY_JSON\]([\s\S]*?)\[\/ITINERARY_JSON\]/i);
+  let itineraryData = null;
+
+  if (match) {
+    try {
+      itineraryData = JSON.parse(match[1].trim());
+    } catch (err) {
+      console.warn('[extractItineraryJSON] Failed to parse JSON block:', err.message);
+    }
   }
 
-  // Strip the block from content regardless of parse success
-  const cleanContent = content
-    .replace(/\[ITINERARY_JSON\][\s\S]*?\[\/ITINERARY_JSON\]/, '')
-    .replace(/\n{3,}/g, '\n\n')  // collapse extra blank lines left behind
-    .trim();
-
-  try {
-    const itineraryData = JSON.parse(match[1].trim());
-    return { cleanContent, itineraryData };
-  } catch (err) {
-    console.warn('[extractItineraryJSON] Failed to parse JSON block:', err.message);
-    return { cleanContent, itineraryData: null };
-  }
+  const cleanContent = stripAnyItineraryJsonArtifacts(content);
+  return { cleanContent, itineraryData };
 }
 
 /**
@@ -117,4 +144,8 @@ function validateItineraryFeasibility(itineraryData) {
   return warnings;
 }
 
-module.exports = { extractItineraryJSON, validateItineraryFeasibility };
+module.exports = {
+  extractItineraryJSON,
+  stripAnyItineraryJsonArtifacts,
+  validateItineraryFeasibility,
+};

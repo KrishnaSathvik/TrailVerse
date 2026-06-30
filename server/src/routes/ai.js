@@ -31,9 +31,13 @@ const {
   isDiscoveryRefinementReply,
   buildDiscoverySearchQuery,
   isSpecificItineraryRequest,
+  isItineraryCommitRequest,
+  hasActivePlanDestination,
   shouldRequestItineraryJson,
   shouldShowDayByDayPlanCta,
 } = require('../utils/discoveryQuery');
+const { isItineraryRefinementFollowUp } = require('../services/trailieFetchPlanner');
+const { stripAnyItineraryJsonArtifacts } = require('../utils/extractItineraryJSON');
 const {
   assessItineraryReadiness,
   formatItineraryGatheringBlock,
@@ -120,12 +124,14 @@ function buildClientActiveTripContext({
   assistantContent,
   resolvedMetadata,
   openEndedDiscovery,
+  hasItinerary = false,
 }) {
   return finalizeActiveTripContextForClient({
     activeTripContext,
     assistantContent,
     resolvedMetadata,
     openEndedDiscovery,
+    hasItinerary,
   });
 }
 
@@ -802,11 +808,26 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
 
   const discoveryRefinement = isDiscoveryRefinementReply(filteredMessages);
   const discoverySearchQuery = buildDiscoverySearchQuery(filteredMessages);
+  const storedTripContext = metadata.activeTripContext || null;
+  const refinementFollowUp = isItineraryRefinementFollowUp(lastUserMessage);
+  const itineraryCommitTurn = isItineraryCommitRequest(lastUserMessage);
+  const hasLockedOrStoredDestination =
+    hasActivePlanDestination({ activeTripContext: storedTripContext }) ||
+    !!storedTripContext?.lockedPlanDestination;
 
-  const openEndedDiscovery =
+  let openEndedDiscovery =
     shouldInjectParkDiscovery(lastUserMessage, {
       namedParkCount: initialMessageParks.length,
     }) || discoveryRefinement;
+
+  if (
+    (refinementFollowUp || itineraryCommitTurn || hasLockedOrStoredDestination) &&
+    (storedTripContext?.lockedPlanDestination ||
+      storedTripContext?.primaryDestination ||
+      storedTripContext?.recommendedOption)
+  ) {
+    openEndedDiscovery = false;
+  }
 
   const {
     activeTripContext,
@@ -856,7 +877,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
       lat: resolvedMetadata.lat,
       lon: resolvedMetadata.lon,
     }];
-  } else if (openEndedDiscovery) {
+  } else if (openEndedDiscovery && !hasLockedOrStoredDestination && !refinementFollowUp) {
     resolvedMetadata.parkCode = null;
     resolvedMetadata.parkName = null;
     resolvedMetadata.lat = resolvedMetadata.lat || null;
@@ -894,12 +915,17 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   }
 
   const constraints = parseConstraints(resolvedMetadata, conversationUserText || lastUserMessage);
+  const assumeItineraryDefaults =
+    skipUserContext ||
+    itineraryCommitTurn ||
+    hasActivePlanDestination(resolvedMetadata);
   const itineraryReadiness = assessItineraryReadiness({
     constraints,
     metadata: resolvedMetadata,
     allExtractedParks,
     conversationUserText,
     skipUserContext,
+    assumeDefaults: assumeItineraryDefaults,
   });
 
   // Detect state park queries (not NPS — no parkCode will exist)
@@ -1467,7 +1493,7 @@ CRITICAL ISOLATION RULES — follow these exactly:
     });
   } else if (wantsDayByDayPlan && !itineraryReadiness.ready) {
     enhancedSystemPrompt += formatItineraryGatheringBlock(itineraryReadiness.missing, {
-      assumeDefaults: skipUserContext,
+      assumeDefaults: skipUserContext || assumeItineraryDefaults,
     });
   } else if (openEndedDiscovery) {
     enhancedSystemPrompt += `\n\n--- DISCOVERY RESPONSE (NO ITINERARY JSON) ---\nThis is an open-ended destination or recommendation question. Recommend 2–4 specific parks or destinations with brief why-each. Do NOT include a [ITINERARY_JSON] block. Do NOT produce a day-by-day schedule unless the user explicitly asks for one. Driving times and distances in prose are fine.\n--- END DISCOVERY ---\n`;
@@ -2259,6 +2285,9 @@ ${cleanContent.substring(0, 6000)}`;
     response.content = finalContent;
   }
 
+  // Final safety pass — never leak raw itinerary JSON markers to the user
+  response.content = stripAnyItineraryJsonArtifacts(response.content);
+
   return {
     cleanContent: response.content,
     itineraryData,
@@ -2514,6 +2543,7 @@ router.post('/chat', protect, trackTokenUsage, async (req, res) => {
             assistantContent: response.content,
             resolvedMetadata,
             openEndedDiscovery,
+            hasItinerary: !!itineraryData,
           }),
           showDayByDayPlanCta: shouldShowDayByDayPlanCta({
             openEndedDiscovery,
@@ -2798,6 +2828,7 @@ router.post('/chat-stream', protect, trackTokenUsage, async (req, res) => {
               assistantContent: response.content,
               resolvedMetadata,
               openEndedDiscovery,
+              hasItinerary: !!processed.itineraryData,
             }),
             showDayByDayPlanCta: shouldShowDayByDayPlanCta({
               openEndedDiscovery,
@@ -3158,6 +3189,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
               assistantContent: response.content,
               resolvedMetadata,
               openEndedDiscovery: anonOpenEndedDiscovery,
+              hasItinerary: !!processed.itineraryData,
             }),
             showDayByDayPlanCta: shouldShowDayByDayPlanCta({
               openEndedDiscovery: anonOpenEndedDiscovery,
@@ -3630,6 +3662,7 @@ router.post('/chat-anonymous', async (req, res) => {
             assistantContent: response.content,
             resolvedMetadata,
             openEndedDiscovery: anonOpenEndedDiscovery,
+            hasItinerary: !!anonItineraryData,
           }),
           showDayByDayPlanCta: shouldShowDayByDayPlanCta({
             openEndedDiscovery: anonOpenEndedDiscovery,

@@ -117,4 +117,22 @@ describe('shouldRequestItineraryJson with readiness', () => {
       })
     ).toBe(false);
   });
+
+  test('commit request with recommended destination assumes defaults and requests JSON', () => {
+    expect(
+      shouldRequestItineraryJson({
+        userMessage: 'Okay choose one and make a relaxed itinerary.',
+        metadata: {
+          activeTripContext: {
+            recommendedOption: {
+              name: 'North Cascades National Park',
+              parkCode: 'noca',
+            },
+          },
+        },
+        allExtractedParks: [],
+        conversationUserText: 'Should I pick Mount Rainier, Olympic, or North Cascades?',
+      })
+    ).toBe(true);
+  });
 });

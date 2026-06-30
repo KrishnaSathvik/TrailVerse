@@ -60,21 +60,30 @@ function assessItineraryReadiness({
   allExtractedParks = [],
   conversationUserText = '',
   skipUserContext = false,
+  assumeDefaults = false,
 }) {
   const text = conversationUserText || '';
   const missing = [];
-  const assumeDefaults = skipUserContext || metadata.skipUserContext === true;
+  const useAssumptions = assumeDefaults || skipUserContext || metadata.skipUserContext === true;
+
+  const activeDest =
+    metadata?.activeTripContext?.lockedPlanDestination ||
+    metadata?.activeTripContext?.primaryDestination ||
+    metadata?.activeTripContext?.recommendedOption ||
+    null;
 
   const parkCode =
     metadata?.parkCode ||
     constraints?.parkCode ||
     allExtractedParks[0]?.parkCode ||
+    activeDest?.parkCode ||
     null;
   const namedPlace =
     inferNamedDestinationFromText(text) ||
     metadata?.resolvedPlaceName ||
     metadata?.parkName ||
     allExtractedParks[0]?.parkName ||
+    activeDest?.name ||
     null;
   const namedDestination =
     parkCode ||
@@ -98,7 +107,10 @@ function assessItineraryReadiness({
   if (!groupSize) {
     groupSize = inferGroupFromText(text);
   }
-  if (!groupSize && assumeDefaults && hasDestination && numDays) {
+  if (!numDays && useAssumptions && hasDestination) {
+    numDays = inferDurationFromText(text) || 2;
+  }
+  if (!groupSize && useAssumptions && hasDestination) {
     groupSize = 2;
   }
 

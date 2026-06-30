@@ -2,6 +2,7 @@
 
 const { extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { isShortFollowUp, isItineraryRefinementFollowUp } = require('./trailieFetchPlanner');
+const { isItineraryCommitRequest } = require('../utils/discoveryQuery');
 
 const PARK_SWITCH_PATTERNS =
   /\b(actually|instead|rather|switch|change to|let'?s do|go with|prefer|rather than|not\s+\w+\s+but|move to|plan for)\b/i;
@@ -12,6 +13,9 @@ const ORDINAL_PICK_RULES = [
   { re: /\b(third|3rd|#3)\b/i, index: 2 },
   { re: /\b(fourth|4th|#4)\b/i, index: 3 },
 ];
+
+const WINNER_PICK_PATTERNS =
+  /\b(your pick|the winner|the one you (?:recommended|chose|picked)|go with that|that one you said|the one you'?d pick)\b/i;
 
 const FOLLOW_UP_NEEDS_DESTINATION =
   /\b(restaurant|restaurants|hotel|hotels|permit|permits|stay|lodging|shuttle|campground|weather|restaurants?)\b/i;
@@ -29,6 +33,7 @@ function toPrimaryDestination(entry) {
     lon: entry.lon ?? null,
     source: entry.source || 'unknown',
     confidence: entry.confidence || 'medium',
+    ordinal: entry.ordinal ?? null,
   };
 }
 
@@ -57,6 +62,126 @@ function enrichDestinationWithParkCode(dest) {
   };
 }
 
+function isCompareListMessage(userMessage = '') {
+  const parks = extractAllParksFromMessage(userMessage);
+  if (parks.length < 2) return false;
+  return /\b(choose|pick|compare|versus|vs\.?|between|which|should we|should i|or)\b/i.test(userMessage);
+}
+
+/**
+ * Extract user-provided compare options in original list order (not assistant recommendation order).
+ */
+function extractUserOrderedCompareOptions(userMessage = '') {
+  if (!userMessage || typeof userMessage !== 'string') return [];
+
+  const chooseMatch = userMessage.match(
+    /(?:should we choose|should i choose|choose between|choose|pick between|pick|compare|decide between|should i pick|should we pick)\s+(.+?)\??\s*$/i
+  );
+  let rawParts = [];
+
+  if (chooseMatch) {
+    rawParts = chooseMatch[1]
+      .split(/\s*,\s*|\s+or\s+/i)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  } else if (
+    /\b(choose|pick|compare|versus|vs\.?|between|which|should we|should i)\b/i.test(userMessage)
+  ) {
+    const orListMatch = userMessage.match(/(.+?),\s*(.+?),\s*(?:or|and)\s+(.+?)(?:\?|$)/i);
+    if (orListMatch) {
+      rawParts = [orListMatch[1], orListMatch[2], orListMatch[3]]
+        .map((part) => part.trim())
+        .filter(Boolean);
+    }
+  }
+
+  if (rawParts.length < 2) return [];
+
+  const options = [];
+  const seen = new Set();
+
+  rawParts.forEach((rawName, index) => {
+    const parks = extractAllParksFromMessage(rawName);
+    const entry = parks[0]
+      ? {
+          name: parks[0].parkName,
+          parkCode: parks[0].parkCode,
+          lat: parks[0].lat,
+          lon: parks[0].lon,
+          type: 'nps',
+          source: 'user_order',
+          confidence: 'high',
+          ordinal: index + 1,
+        }
+      : enrichDestinationWithParkCode({
+          name: rawName.replace(/\?.*$/, '').trim(),
+          source: 'user_order',
+          confidence: 'medium',
+          ordinal: index + 1,
+        });
+
+    const key = (entry.parkCode || entry.name || '').toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    options.push(entry);
+  });
+
+  return options;
+}
+
+function extractLastUserCompareOptions(filteredMessages = []) {
+  for (let i = filteredMessages.length - 1; i >= 0; i -= 1) {
+    const msg = filteredMessages[i];
+    if (msg?.role !== 'user' || !msg.content) continue;
+    const options = extractUserOrderedCompareOptions(msg.content);
+    if (options.length >= 2) return options;
+  }
+  return [];
+}
+
+function matchComparedOptionByName(fragment, lastComparedOptions = []) {
+  if (!fragment || lastComparedOptions.length === 0) return null;
+  const lower = fragment.toLowerCase().trim();
+
+  for (const option of lastComparedOptions) {
+    const nameLower = (option.name || '').toLowerCase();
+    if (!nameLower) continue;
+    const shortName = nameLower.replace(/\s+national park$/i, '').trim();
+    if (lower.includes(shortName) || shortName.includes(lower)) {
+      return option;
+    }
+    const headToken = nameLower.split(/\s+/).find((token) => token.length >= 4);
+    if (headToken && lower.includes(headToken)) {
+      return option;
+    }
+  }
+  return null;
+}
+
+function extractRecommendedOptionFromContent(assistantContent = '', lastComparedOptions = []) {
+  if (!assistantContent || lastComparedOptions.length === 0) return null;
+
+  const patterns = [
+    /\b(?:go with|i'?d (?:pick|choose|go with)|my pick is|pick|choose|recommend)\s+([A-Z][^.\n—–,:]{2,55})/i,
+    /\b(?:winner|best (?:pick|choice))\s*(?:is|:)\s*([A-Z][^.\n]{2,55})/i,
+  ];
+
+  for (const re of patterns) {
+    const match = assistantContent.match(re);
+    if (!match) continue;
+    const candidate = matchComparedOptionByName(match[1], lastComparedOptions);
+    if (candidate) {
+      return enrichDestinationWithParkCode({
+        ...candidate,
+        source: 'recommended_pick',
+        confidence: 'high',
+      });
+    }
+  }
+
+  return null;
+}
+
 function extractRecommendationListFromMessages(filteredMessages = []) {
   const list = [];
   const seen = new Set();
@@ -73,6 +198,7 @@ function extractRecommendationListFromMessages(filteredMessages = []) {
     for (const match of numberedMatches) {
       const rawName = match[1]?.trim();
       if (!rawName) continue;
+      if (/^(don't forget|estimated costs|sun |water |hat |layer)/i.test(rawName)) continue;
       const key = rawName.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
@@ -127,13 +253,31 @@ function isParkSwitchMessage(userMessage, storedPrimary = null) {
   return false;
 }
 
-function resolveOrdinalOrNamedPick(userMessage, lastRecommendationList = []) {
-  if (!userMessage || lastRecommendationList.length === 0) return null;
+function resolveOrdinalOrNamedPick(userMessage, options = {}) {
+  const {
+    lastComparedOptions = [],
+    lastRecommendationList = [],
+    recommendedOption = null,
+  } = options;
+
+  if (!userMessage) return null;
+
+  if (WINNER_PICK_PATTERNS.test(userMessage) && recommendedOption) {
+    return enrichDestinationWithParkCode({
+      ...recommendedOption,
+      source: 'recommended_pick',
+      confidence: 'high',
+    });
+  }
+
+  const ordinalList =
+    lastComparedOptions.length >= 2 ? lastComparedOptions : lastRecommendationList;
+  if (ordinalList.length === 0) return null;
 
   for (const rule of ORDINAL_PICK_RULES) {
-    if (rule.re.test(userMessage) && lastRecommendationList[rule.index]) {
+    if (rule.re.test(userMessage) && ordinalList[rule.index]) {
       return enrichDestinationWithParkCode({
-        ...lastRecommendationList[rule.index],
+        ...ordinalList[rule.index],
         source: 'ordinal_pick',
         confidence: 'high',
       });
@@ -143,7 +287,7 @@ function resolveOrdinalOrNamedPick(userMessage, lastRecommendationList = []) {
   const lower = userMessage.toLowerCase();
   if (!/\b(option|one|choice|that|those|yes)\b/i.test(lower)) return null;
 
-  for (const item of lastRecommendationList) {
+  for (const item of ordinalList) {
     const nameLower = (item.name || '').toLowerCase();
     if (!nameLower) continue;
     const shortName = nameLower.replace(/\s+national park$/i, '').trim();
@@ -179,6 +323,14 @@ function resolveActiveTripContext({
 }) {
   const messageParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
   const storedPrimary = storedContext?.primaryDestination || null;
+  const lockedPlan = storedContext?.lockedPlanDestination || null;
+  const recommendedOption = storedContext?.recommendedOption || null;
+
+  const userCompareOptions = extractLastUserCompareOptions(filteredMessages);
+  const lastComparedOptions =
+    userCompareOptions.length >= 2
+      ? userCompareOptions
+      : storedContext?.lastComparedOptions || [];
 
   const freshRecommendations = extractRecommendationListFromMessages(filteredMessages);
   const lastRecommendationList =
@@ -190,12 +342,20 @@ function resolveActiveTripContext({
   let resolutionSource = null;
   let lowConfidenceClarification = null;
 
-  if (openEndedDiscovery) {
+  const refinementFollowUp = isItineraryRefinementFollowUp(lastUserMessage);
+  const shortFollowUp = isShortFollowUp(lastUserMessage);
+  const compareListTurn = isCompareListMessage(lastUserMessage);
+  const commitTurn = isItineraryCommitRequest(lastUserMessage);
+
+  if (openEndedDiscovery && !lockedPlan && !refinementFollowUp && !commitTurn) {
     return {
       activeTripContext: {
         primaryDestination: null,
+        lockedPlanDestination: lockedPlan,
         mentionedDestinations: messageParks.map((p) => toPrimaryDestination({ ...p, source: 'user_message' })).filter(Boolean),
         lastRecommendationList,
+        lastComparedOptions,
+        recommendedOption,
         resolutionSource: 'open_ended_discovery',
         lowConfidenceClarification: null,
         lastUserOverrideAt: storedContext?.lastUserOverrideAt || null,
@@ -205,8 +365,8 @@ function resolveActiveTripContext({
     };
   }
 
-  if (messageParks.length > 0) {
-    const switched = isParkSwitchMessage(lastUserMessage, storedPrimary);
+  if (messageParks.length > 0 && !compareListTurn) {
+    const switched = isParkSwitchMessage(lastUserMessage, storedPrimary || lockedPlan);
     primaryDestination = toPrimaryDestination({
       ...messageParks[0],
       source: switched ? 'user_switch' : 'user_message',
@@ -214,14 +374,27 @@ function resolveActiveTripContext({
     });
     resolutionSource = switched ? 'park_switch' : 'explicit_message';
   } else {
-    const picked = resolveOrdinalOrNamedPick(lastUserMessage, lastRecommendationList);
+    const picked = resolveOrdinalOrNamedPick(lastUserMessage, {
+      lastComparedOptions,
+      lastRecommendationList,
+      recommendedOption,
+    });
     if (picked) {
       primaryDestination = toPrimaryDestination(picked);
-      resolutionSource = picked.source === 'ordinal_pick' ? 'ordinal_pick' : 'named_pick';
-    } else if ((isShortFollowUp(lastUserMessage) || isItineraryRefinementFollowUp(lastUserMessage)) && storedPrimary) {
+      resolutionSource = picked.source === 'ordinal_pick' ? 'ordinal_pick' : picked.source;
+    } else if (commitTurn && (recommendedOption || lockedPlan || storedPrimary)) {
+      primaryDestination = toPrimaryDestination(recommendedOption || lockedPlan || storedPrimary);
+      resolutionSource = 'itinerary_commit';
+    } else if (refinementFollowUp && lockedPlan) {
+      primaryDestination = { ...lockedPlan };
+      resolutionSource = 'locked_plan_refinement';
+    } else if ((shortFollowUp || refinementFollowUp) && storedPrimary) {
       primaryDestination = { ...storedPrimary };
-      resolutionSource = 'stored_follow_up';
-    } else if (isItineraryRefinementFollowUp(lastUserMessage) || isShortFollowUp(lastUserMessage)) {
+      resolutionSource = refinementFollowUp ? 'itinerary_refinement' : 'stored_follow_up';
+    } else if (lockedPlan && (refinementFollowUp || shortFollowUp)) {
+      primaryDestination = { ...lockedPlan };
+      resolutionSource = 'locked_plan_refinement';
+    } else if (refinementFollowUp && !storedPrimary && !lockedPlan) {
       const convParks = extractAllParksFromMessage(conversationUserText);
       if (convParks.length > 0) {
         primaryDestination = toPrimaryDestination({
@@ -229,9 +402,7 @@ function resolveActiveTripContext({
           source: 'conversation_history',
           confidence: 'high',
         });
-        resolutionSource = isItineraryRefinementFollowUp(lastUserMessage)
-          ? 'itinerary_refinement'
-          : 'conversation_history';
+        resolutionSource = 'itinerary_refinement';
       }
     } else if (storedPrimary) {
       primaryDestination = { ...storedPrimary };
@@ -241,7 +412,7 @@ function resolveActiveTripContext({
 
   if (
     !primaryDestination &&
-    isShortFollowUp(lastUserMessage) &&
+    shortFollowUp &&
     FOLLOW_UP_NEEDS_DESTINATION.test(lastUserMessage)
   ) {
     lowConfidenceClarification =
@@ -249,22 +420,29 @@ function resolveActiveTripContext({
   }
 
   const allExtractedParks =
-    messageParks.length > 0
+    compareListTurn
       ? messageParks
-      : primaryDestination
-        ? [destinationToExtractedPark(primaryDestination)].filter((p) => p?.parkName || p?.parkCode)
-        : [];
+      : messageParks.length > 0
+        ? messageParks
+        : primaryDestination
+          ? [destinationToExtractedPark(primaryDestination)].filter((p) => p?.parkName || p?.parkCode)
+          : [];
 
   const activeTripContext = {
     primaryDestination,
+    lockedPlanDestination: lockedPlan,
     mentionedDestinations: messageParks
       .map((p) => toPrimaryDestination({ ...p, source: 'user_message', confidence: 'high' }))
       .filter(Boolean),
     lastRecommendationList,
+    lastComparedOptions,
+    recommendedOption,
     resolutionSource,
     lowConfidenceClarification,
     lastUserOverrideAt:
-      messageParks.length > 0 ? new Date().toISOString() : storedContext?.lastUserOverrideAt || null,
+      messageParks.length > 0 && !compareListTurn
+        ? new Date().toISOString()
+        : storedContext?.lastUserOverrideAt || null,
   };
 
   return {
@@ -303,19 +481,36 @@ function finalizeActiveTripContextForClient({
   assistantContent = '',
   resolvedMetadata = {},
   openEndedDiscovery = false,
+  hasItinerary = false,
 }) {
   const base = activeTripContext || {
     primaryDestination: null,
+    lockedPlanDestination: null,
     mentionedDestinations: [],
     lastRecommendationList: [],
+    lastComparedOptions: [],
+    recommendedOption: null,
     resolutionSource: null,
     lowConfidenceClarification: null,
     lastUserOverrideAt: null,
   };
 
+  const lastComparedOptions =
+    base.lastComparedOptions?.length >= 2 ? base.lastComparedOptions : [];
+
+  const recommendedFromReply = extractRecommendedOptionFromContent(
+    assistantContent,
+    lastComparedOptions
+  );
+  const recommendedOption = recommendedFromReply || base.recommendedOption || null;
+
   const assistantRecommendations = extractRecommendationsFromAssistantContent(assistantContent);
   const lastRecommendationList =
-    assistantRecommendations.length > 0 ? assistantRecommendations : base.lastRecommendationList;
+    lastComparedOptions.length >= 2
+      ? lastComparedOptions
+      : assistantRecommendations.length > 0
+        ? assistantRecommendations
+        : base.lastRecommendationList;
 
   let primaryDestination = base.primaryDestination;
 
@@ -329,14 +524,30 @@ function finalizeActiveTripContextForClient({
       source: primaryDestination?.source || 'turn_resolution',
       confidence: 'high',
     });
+  } else if (openEndedDiscovery && recommendedOption) {
+    primaryDestination = toPrimaryDestination(recommendedOption);
   } else if (openEndedDiscovery && assistantRecommendations.length > 0) {
     primaryDestination = null;
   }
 
+  let lockedPlanDestination = base.lockedPlanDestination || null;
+  if (hasItinerary && primaryDestination) {
+    lockedPlanDestination = { ...primaryDestination };
+  } else if (lockedPlanDestination) {
+    lockedPlanDestination = { ...lockedPlanDestination };
+  }
+
+  if (lockedPlanDestination && !primaryDestination) {
+    primaryDestination = { ...lockedPlanDestination };
+  }
+
   return {
     primaryDestination,
+    lockedPlanDestination,
     mentionedDestinations: base.mentionedDestinations || [],
     lastRecommendationList,
+    lastComparedOptions,
+    recommendedOption,
     resolutionSource: base.resolutionSource,
     lowConfidenceClarification: null,
     lastUserOverrideAt: base.lastUserOverrideAt,
@@ -344,16 +555,24 @@ function finalizeActiveTripContextForClient({
 }
 
 function formatActiveTripContextPromptBlock(activeTripContext) {
-  if (!activeTripContext?.primaryDestination?.name) return '';
+  const dest =
+    activeTripContext?.lockedPlanDestination ||
+    activeTripContext?.primaryDestination;
+  if (!dest?.name) return '';
 
-  const dest = activeTripContext.primaryDestination;
   let block = `\n\n--- ACTIVE TRIP CONTEXT ---`;
   block += `\nActive destination: ${dest.name}${dest.parkCode ? ` (${dest.parkCode})` : ''}.`;
   block += `\nTreat this as the user's current trip focus unless they explicitly switch destinations.`;
-  if (activeTripContext.lastRecommendationList?.length > 1) {
-    const names = activeTripContext.lastRecommendationList.map((r) => r.name).join('; ');
-    block += `\nRecent options you suggested: ${names}.`;
-    block += `\nIf the user says "the first one" or names an option, use that list — do not guess.`;
+  if (activeTripContext.lastComparedOptions?.length > 1) {
+    const names = activeTripContext.lastComparedOptions
+      .map((r, i) => `${i + 1}. ${r.name}`)
+      .join('; ');
+    block += `\nUser's original compare list (ordinal order): ${names}.`;
+    block += `\nIf the user says "the second one", use that numbered list — not your recommendation order.`;
+  }
+  if (activeTripContext.recommendedOption?.name) {
+    block += `\nYour recommended pick: ${activeTripContext.recommendedOption.name}.`;
+    block += `\nUse this only when the user asks for "your pick" or "the winner" — not for ordinals like "second one".`;
   }
   block += `\n--- END ACTIVE TRIP CONTEXT ---\n`;
   return block;
@@ -369,7 +588,15 @@ function summarizeActiveTripContext(activeTripContext) {
           confidence: activeTripContext.primaryDestination.confidence,
         }
       : null,
+    lockedPlanDestination: activeTripContext.lockedPlanDestination
+      ? {
+          name: activeTripContext.lockedPlanDestination.name,
+          parkCode: activeTripContext.lockedPlanDestination.parkCode,
+        }
+      : null,
+    recommendedOption: activeTripContext.recommendedOption?.name || null,
     resolutionSource: activeTripContext.resolutionSource,
+    compareOptionCount: activeTripContext.lastComparedOptions?.length || 0,
     recommendationCount: activeTripContext.lastRecommendationList?.length || 0,
     needsClarification: !!activeTripContext.lowConfidenceClarification,
   };
@@ -382,6 +609,9 @@ module.exports = {
   formatActiveTripContextPromptBlock,
   summarizeActiveTripContext,
   extractRecommendationListFromMessages,
+  extractUserOrderedCompareOptions,
+  extractLastUserCompareOptions,
+  extractRecommendedOptionFromContent,
   isParkSwitchMessage,
   resolveOrdinalOrNamedPick,
 };

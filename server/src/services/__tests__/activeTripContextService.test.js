@@ -4,6 +4,7 @@ const {
   resolveOrdinalOrNamedPick,
   isParkSwitchMessage,
   extractRecommendationListFromMessages,
+  extractUserOrderedCompareOptions,
 } = require('../activeTripContextService');
 
 describe('activeTripContextService', () => {
@@ -72,7 +73,7 @@ describe('activeTripContextService', () => {
     });
 
     expect(result.activeTripContext.primaryDestination.parkCode).toBe('zion');
-    expect(result.activeTripContext.resolutionSource).toBe('stored_follow_up');
+    expect(result.activeTripContext.resolutionSource).toBe('itinerary_refinement');
     expect(result.inheritedDestination).toBe(true);
   });
 
@@ -97,7 +98,9 @@ describe('activeTripContextService', () => {
       { name: 'Bryce Canyon National Park', parkCode: 'brca', confidence: 'high' },
     ];
 
-    const picked = resolveOrdinalOrNamedPick('Tell me more about the second one', list);
+    const picked = resolveOrdinalOrNamedPick('Tell me more about the second one', {
+      lastRecommendationList: list,
+    });
     expect(picked.parkCode).toBe('brca');
 
     const result = resolveActiveTripContext({
@@ -188,5 +191,152 @@ describe('activeTripContextService', () => {
 
     expect(finalized.lastRecommendationList.length).toBeGreaterThanOrEqual(2);
     expect(finalized.primaryDestination).toBeNull();
+  });
+
+  test('extracts user compare list in original order (Acadia, Shenandoah, Smokies)', () => {
+    const compareMsg =
+      'For a first national park trip with my wife, should we choose Acadia, Shenandoah, or Great Smoky Mountains?';
+    const options = extractUserOrderedCompareOptions(compareMsg);
+    expect(options).toHaveLength(3);
+    expect(options[0].parkCode).toBe('acad');
+    expect(options[1].parkCode).toBe('shen');
+    expect(options[2].parkCode).toBe('grsm');
+  });
+
+  test('"second one" resolves to Shenandoah using user compare order, not winner', () => {
+    const compareMsg =
+      'For a first national park trip with my wife, should we choose Acadia, Shenandoah, or Great Smoky Mountains?';
+    const lastComparedOptions = extractUserOrderedCompareOptions(compareMsg);
+    const storedContext = {
+      lastComparedOptions,
+      recommendedOption: lastComparedOptions[0],
+      primaryDestination: lastComparedOptions[0],
+    };
+
+    const result = resolveActiveTripContext({
+      lastUserMessage: 'Tell me more about the second one and make it a 2-day plan.',
+      storedContext,
+    });
+
+    expect(result.activeTripContext.primaryDestination.parkCode).toBe('shen');
+    expect(result.activeTripContext.resolutionSource).toBe('ordinal_pick');
+  });
+
+  test('"third one" resolves to Great Smoky Mountains from user order', () => {
+    const compareMsg =
+      'For a first national park trip with my wife, should we choose Acadia, Shenandoah, or Great Smoky Mountains?';
+    const lastComparedOptions = extractUserOrderedCompareOptions(compareMsg);
+    const storedContext = {
+      lastComparedOptions,
+      recommendedOption: lastComparedOptions[0],
+    };
+
+    const picked = resolveOrdinalOrNamedPick('Tell me about the third one', {
+      lastComparedOptions,
+      recommendedOption: lastComparedOptions[0],
+    });
+    expect(picked.parkCode).toBe('grsm');
+  });
+
+  test('"your pick" resolves to recommended winner (Acadia)', () => {
+    const compareMsg =
+      'For a first national park trip with my wife, should we choose Acadia, Shenandoah, or Great Smoky Mountains?';
+    const lastComparedOptions = extractUserOrderedCompareOptions(compareMsg);
+    const recommendedOption = lastComparedOptions[0];
+
+    const picked = resolveOrdinalOrNamedPick('Plan a trip for your pick', {
+      lastComparedOptions,
+      recommendedOption,
+    });
+    expect(picked.parkCode).toBe('acad');
+    expect(picked.source).toBe('recommended_pick');
+  });
+
+  test('finalize preserves lastComparedOptions and sets recommendedOption separately', () => {
+    const compareMsg =
+      'For a first national park trip with my wife, should we choose Acadia, Shenandoah, or Great Smoky Mountains?';
+    const lastComparedOptions = extractUserOrderedCompareOptions(compareMsg);
+    const assistantContent =
+      'For a first-timer couple, I would go with Acadia National Park — ocean views and manageable trails.';
+
+    const finalized = finalizeActiveTripContextForClient({
+      activeTripContext: {
+        primaryDestination: null,
+        lastComparedOptions,
+        recommendedOption: null,
+        lastRecommendationList: [],
+        resolutionSource: 'open_ended_discovery',
+      },
+      assistantContent,
+      resolvedMetadata: {},
+      openEndedDiscovery: false,
+    });
+
+    expect(finalized.lastComparedOptions).toHaveLength(3);
+    expect(finalized.lastComparedOptions[1].parkCode).toBe('shen');
+    expect(finalized.recommendedOption.parkCode).toBe('acad');
+    expect(finalized.lastRecommendationList[0].parkCode).toBe('acad');
+  });
+
+  test('itinerary refinement keeps locked North Cascades destination', () => {
+    const lockedPlan = {
+      name: 'North Cascades National Park',
+      parkCode: 'noca',
+      type: 'nps',
+      confidence: 'high',
+    };
+    const storedContext = {
+      primaryDestination: lockedPlan,
+      lockedPlanDestination: lockedPlan,
+      lastComparedOptions: [
+        { name: 'Mount Rainier National Park', parkCode: 'mora', ordinal: 1 },
+        { name: 'Olympic National Park', parkCode: 'olym', ordinal: 2 },
+        { name: 'North Cascades National Park', parkCode: 'noca', ordinal: 3 },
+      ],
+      recommendedOption: lockedPlan,
+    };
+
+    const rainResult = resolveActiveTripContext({
+      lastUserMessage: 'What if it rains one day?',
+      conversationUserText:
+        'Should I pick Mount Rainier, Olympic, or North Cascades?\nWhat if it rains one day?',
+      filteredMessages: [
+        { role: 'user', content: 'Should I pick Mount Rainier, Olympic, or North Cascades?' },
+        { role: 'assistant', content: 'Go with North Cascades for easy alpine lakes.' },
+        { role: 'user', content: 'What if it rains one day?' },
+      ],
+      storedContext,
+      openEndedDiscovery: false,
+    });
+
+    expect(rainResult.activeTripContext.primaryDestination.parkCode).toBe('noca');
+    expect(rainResult.activeTripContext.resolutionSource).toBe('locked_plan_refinement');
+  });
+
+  test('locked plan destination set after itinerary generation', () => {
+    const primary = {
+      name: 'North Cascades National Park',
+      parkCode: 'noca',
+      type: 'nps',
+      confidence: 'high',
+    };
+
+    const finalized = finalizeActiveTripContextForClient({
+      activeTripContext: {
+        primaryDestination: primary,
+        lockedPlanDestination: null,
+        lastComparedOptions: [],
+        recommendedOption: primary,
+        lastRecommendationList: [],
+        resolutionSource: 'itinerary_commit',
+      },
+      assistantContent: '## At a glance — relaxed North Cascades weekend',
+      resolvedMetadata: { parkCode: 'noca', parkName: 'North Cascades National Park' },
+      openEndedDiscovery: false,
+      hasItinerary: true,
+    });
+
+    expect(finalized.lockedPlanDestination.parkCode).toBe('noca');
+    expect(finalized.primaryDestination.parkCode).toBe('noca');
   });
 });
