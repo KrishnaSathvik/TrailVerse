@@ -126,8 +126,15 @@ function parseConstraints(metadata, userMessage) {
 
   // Regex fallback for dates from message
   if (!startDate && !numDays) {
+    const hyphenDayMatch = msg.match(/\b(\d+)\s*[-–]\s*day\b/i);
+    if (hyphenDayMatch) numDays = parseInt(hyphenDayMatch[1], 10);
+  }
+  if (!startDate && !numDays) {
     const dayMatch = msg.match(/(\d+)\s*(?:day|night)/i);
     if (dayMatch) numDays = parseInt(dayMatch[1], 10);
+  }
+  if (!startDate && !numDays && /\bweekend\b/i.test(msg)) {
+    numDays = /\blong weekend\b/i.test(msg) ? 3 : 2;
   }
 
   if (!startDate && !endDate) {
@@ -162,8 +169,11 @@ function parseConstraints(metadata, userMessage) {
     if (budgetMatch) budget = budgetMatch[1].replace(/,/g, '');
   }
 
-  // Fitness level
+  // Fitness level — honor easy-to-moderate range before single-word extraction
   let fitnessLevel = fd.fitnessLevel || fd.fitness || fd.difficulty || null;
+  if (!fitnessLevel && /\beasy\s*[-–to]+\s*moderate\b/i.test(msg)) {
+    fitnessLevel = 'moderate';
+  }
   if (!fitnessLevel) {
     // Try structured format first: "fitness level: moderate"
     const fitMatch = msg.match(/(?:fitness|difficulty|experience)\s*(?:level|is)?\s*:?\s*(beginner|easy|moderate|intermediate|advanced|hard|strenuous|experienced)/i);
@@ -559,7 +569,10 @@ function detectHypothetical(userMessage) {
  * Detects contradictions between parsed constraints AND between constraints
  * and the user's message. Returns structured conflicts for prompt injection.
  */
-function detectConflicts(constraints, userMessage) {
+function detectConflicts(constraints, userMessage, options = {}) {
+  if (options.skipUserContext) {
+    return [];
+  }
   const conflicts = [];
   const msg = (userMessage || '').toLowerCase();
 

@@ -1,7 +1,7 @@
 'use strict';
 
 const { extractAllParksFromMessage } = require('../utils/parkExtractor');
-const { isShortFollowUp } = require('./trailieFetchPlanner');
+const { isShortFollowUp, isItineraryRefinementFollowUp } = require('./trailieFetchPlanner');
 
 const PARK_SWITCH_PATTERNS =
   /\b(actually|instead|rather|switch|change to|let'?s do|go with|prefer|rather than|not\s+\w+\s+but|move to|plan for)\b/i;
@@ -218,18 +218,20 @@ function resolveActiveTripContext({
     if (picked) {
       primaryDestination = toPrimaryDestination(picked);
       resolutionSource = picked.source === 'ordinal_pick' ? 'ordinal_pick' : 'named_pick';
-    } else if (isShortFollowUp(lastUserMessage) && storedPrimary) {
+    } else if ((isShortFollowUp(lastUserMessage) || isItineraryRefinementFollowUp(lastUserMessage)) && storedPrimary) {
       primaryDestination = { ...storedPrimary };
       resolutionSource = 'stored_follow_up';
-    } else if (isShortFollowUp(lastUserMessage)) {
+    } else if (isItineraryRefinementFollowUp(lastUserMessage) || isShortFollowUp(lastUserMessage)) {
       const convParks = extractAllParksFromMessage(conversationUserText);
       if (convParks.length > 0) {
         primaryDestination = toPrimaryDestination({
           ...convParks[convParks.length - 1],
           source: 'conversation_history',
-          confidence: 'medium',
+          confidence: 'high',
         });
-        resolutionSource = 'conversation_history';
+        resolutionSource = isItineraryRefinementFollowUp(lastUserMessage)
+          ? 'itinerary_refinement'
+          : 'conversation_history';
       }
     } else if (storedPrimary) {
       primaryDestination = { ...storedPrimary };

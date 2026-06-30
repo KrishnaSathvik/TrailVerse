@@ -100,11 +100,13 @@ function shouldRequestItineraryJson({
     (metadata.parkCode && SINGLE_PARK_PLAN_VERB_PATTERN.test(text));
   if (!wantsPlan) return false;
 
+  const skipUserContext = metadata.skipUserContext === true;
   const readiness = assessItineraryReadiness({
     constraints,
     metadata,
     allExtractedParks,
     conversationUserText: conversationUserText || text,
+    skipUserContext,
   });
   return readiness.ready;
 }

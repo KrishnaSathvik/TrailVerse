@@ -342,12 +342,15 @@ function buildTripState({
   lastUserMessage,
   conversationSummary,
   savedTripPlan,
+  skipUserContext = false,
 }) {
   let state = emptyTripState();
 
-  mergeInto(state, layerFromAiContext(metadata.aiContext));
+  if (!skipUserContext) {
+    mergeInto(state, layerFromAiContext(metadata.aiContext));
+    mergeInto(state, layerFromSavedTripPlan(savedTripPlan));
+  }
   mergeInto(state, conversationSummary);
-  mergeInto(state, layerFromSavedTripPlan(savedTripPlan));
   mergeInto(state, layerFromFormData(metadata.formData, metadata));
   mergeInto(
     state,

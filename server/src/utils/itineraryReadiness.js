@@ -2,12 +2,21 @@
  * Decide whether there is enough context to build a structured day-by-day itinerary.
  */
 
+const KNOWN_NON_NPS_DESTINATIONS = [
+  { pattern: /\bvalley of fire\b/i, name: 'Valley of Fire' },
+  { pattern: /\bhocking hills\b/i, name: 'Hocking Hills' },
+  { pattern: /\bred river gorge\b/i, name: 'Red River Gorge' },
+  { pattern: /\bsmith rock\b/i, name: 'Smith Rock' },
+];
+
 function inferDurationFromText(text) {
   if (!text) return null;
   if (/\blong weekend\b/i.test(text)) return 3;
   if (/\bweekend\b/i.test(text)) return 2;
   if (/\b(one|a)\s+week\b/i.test(text)) return 7;
   if (/\btwo weeks\b/i.test(text)) return 14;
+  const hyphenDayMatch = text.match(/\b(\d+)\s*[-–]\s*day\b/i);
+  if (hyphenDayMatch) return parseInt(hyphenDayMatch[1], 10);
   const dayMatch = text.match(/(\d+)\s*(?:day|night)s?\b/i);
   if (dayMatch) return parseInt(dayMatch[1], 10);
   return null;
@@ -23,12 +32,25 @@ function inferGroupFromText(text) {
   return null;
 }
 
+function inferNamedDestinationFromText(text) {
+  if (!text) return null;
+  for (const dest of KNOWN_NON_NPS_DESTINATIONS) {
+    if (dest.pattern.test(text)) return dest.name;
+  }
+  if (/\bstate park\b/i.test(text)) {
+    const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+State Park)\b/);
+    if (match) return match[1];
+  }
+  return null;
+}
+
 /**
  * @param {{
  *   constraints?: object,
- *   metadata?: { parkCode?: string },
- *   allExtractedParks?: Array<{ parkCode?: string }>,
+ *   metadata?: { parkCode?: string, parkName?: string, resolvedPlaceName?: string, skipUserContext?: boolean },
+ *   allExtractedParks?: Array<{ parkCode?: string, parkName?: string }>,
  *   conversationUserText?: string,
+ *   skipUserContext?: boolean,
  * }} input
  * @returns {{ ready: boolean, missing: string[], inferred: { numDays?: number, groupSize?: number, parkCode?: string } }}
  */
@@ -37,20 +59,28 @@ function assessItineraryReadiness({
   metadata = {},
   allExtractedParks = [],
   conversationUserText = '',
+  skipUserContext = false,
 }) {
   const text = conversationUserText || '';
   const missing = [];
+  const assumeDefaults = skipUserContext || metadata.skipUserContext === true;
 
   const parkCode =
     metadata?.parkCode ||
     constraints?.parkCode ||
     allExtractedParks[0]?.parkCode ||
     null;
+  const namedPlace =
+    inferNamedDestinationFromText(text) ||
+    metadata?.resolvedPlaceName ||
+    metadata?.parkName ||
+    allExtractedParks[0]?.parkName ||
+    null;
   const namedDestination =
     parkCode ||
-    allExtractedParks.length === 1 ||
+    allExtractedParks.length >= 1 ||
     metadata?.intakeParkName ||
-    metadata?.parkName;
+    namedPlace;
   const hasDestination = Boolean(namedDestination);
 
   let numDays = constraints?.dates?.numDays || null;
@@ -67,6 +97,9 @@ function assessItineraryReadiness({
   }
   if (!groupSize) {
     groupSize = inferGroupFromText(text);
+  }
+  if (!groupSize && assumeDefaults && hasDestination && numDays) {
+    groupSize = 2;
   }
 
   if (!hasDestination) {
@@ -90,8 +123,18 @@ function assessItineraryReadiness({
   };
 }
 
-function formatItineraryGatheringBlock(missing) {
+function formatItineraryGatheringBlock(missing, { assumeDefaults = false } = {}) {
   const list = missing.length > 0 ? missing.join('; ') : 'key trip details';
+  if (assumeDefaults) {
+    return `
+--- DAY-BY-DAY PLAN — REASONABLE ASSUMPTIONS OK ---
+The user wants a day-by-day itinerary. Missing: ${list}.
+Assume reasonable defaults (e.g. a standard weekend, traveling as a couple unless stated otherwise) and state your assumptions in one short line.
+You MUST still deliver a full starter plan opening with **At a glance** or **Logistics summary**, then day-by-day detail.
+Include structured itinerary data via create_itinerary or [ITINERARY_JSON] — do NOT respond with intake questions only.
+--- END ASSUMPTIONS ---
+`;
+  }
   return `
 --- DAY-BY-DAY PLAN — GATHER INFO FIRST ---
 The user wants a day-by-day itinerary but these details are still missing: ${list}.
@@ -122,4 +165,5 @@ module.exports = {
   formatDayByDayIntakeBlock,
   inferDurationFromText,
   inferGroupFromText,
+  inferNamedDestinationFromText,
 };

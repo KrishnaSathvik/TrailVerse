@@ -198,17 +198,28 @@ async function fetchScenarioLive(scenario, token) {
     const messages = [];
     const capturedTurns = [];
     let lastData = {};
+    let sessionMetadata = { ...(scenario.metadata || {}) };
 
     for (let turnIndex = 0; turnIndex < scenario.turns.length; turnIndex += 1) {
       const turn = scenario.turns[turnIndex];
       messages.push({ role: 'user', content: turn.question });
+      const turnMetadata = {
+        ...sessionMetadata,
+        ...(turn.metadata || {}),
+      };
       const data = await postChat({
         scenario,
         token,
         messages,
-        turnMetadata: turn.metadata || scenario.metadata,
+        turnMetadata,
       });
       lastData = data;
+      if (data.activeTripContext) {
+        sessionMetadata = {
+          ...sessionMetadata,
+          activeTripContext: data.activeTripContext,
+        };
+      }
       const rawContent = data.content || '';
       const hasGuestUpsell = /Want live prices and ratings\?/i.test(rawContent);
       const answer = normalizeDemoLinks(

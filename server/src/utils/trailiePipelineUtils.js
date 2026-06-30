@@ -5,6 +5,15 @@ const { parseClaudeMessageResponse } = require('./claudeResponseParser');
 
 function isClaudeModelUnavailable(error) {
   const errorBody = error.error || error.response?.data || error.body || {};
+  const message = (error.message || errorBody.error?.message || '').toLowerCase();
+
+  if (message.includes('temperature') && message.includes('deprecated')) {
+    return false;
+  }
+  if (message.includes('top_p') && message.includes('deprecated')) {
+    return false;
+  }
+
   const is404Error =
     error.status === 404 ||
     error.statusCode === 404 ||
@@ -22,6 +31,10 @@ function isClaudeModelUnavailable(error) {
     (errorBody.error?.message && errorBody.error.message.includes('model'));
 
   return is404Error || isNotFoundError || isModelError;
+}
+
+function shouldOmitClaudeSamplingParams(model) {
+  return /^claude-(sonnet-5|opus-5)/i.test(model || '');
 }
 
 /**
@@ -51,10 +64,13 @@ async function callClaudeWithFallback({
       const params = {
         model,
         max_tokens: maxTokens,
-        temperature,
         system,
         messages,
       };
+
+      if (!shouldOmitClaudeSamplingParams(model) && temperature != null) {
+        params.temperature = temperature;
+      }
 
       if (tools && tools.length > 0) {
         params.tools = tools;
@@ -78,6 +94,11 @@ async function callClaudeWithFallback({
       };
     } catch (error) {
       lastError = error;
+      const errorBody = error.error || error.response?.data || error.body || {};
+      const attemptedModel = model;
+      const modelIndex = modelsToTry.indexOf(model);
+      const fallbackModel = modelsToTry[modelIndex + 1] || null;
+
       console.error(`${logPrefix} Model ${model} failed:`, error.message);
 
       const isAuthError =
@@ -86,13 +107,24 @@ async function callClaudeWithFallback({
         error.status === 403 ||
         error.statusCode === 403;
 
+      const willFallback =
+        isClaudeModelUnavailable(error) || (isAuthError && modelIndex === 0);
+
+      if (willFallback && fallbackModel) {
+        console.warn('[Claude Model Fallback]', {
+          attemptedModel,
+          fallbackModel,
+          status: error.status || error.statusCode || error.response?.status,
+          message: error.message,
+          type: error.type || errorBody.type || errorBody.error?.type,
+        });
+      }
+
       if (isClaudeModelUnavailable(error)) {
-        console.log(`${logPrefix} Model ${model} not available, trying next...`);
         continue;
       }
 
-      if (isAuthError && modelsToTry.indexOf(model) === 0) {
-        console.log(`${logPrefix} Auth error with ${model}, trying next model...`);
+      if (isAuthError && modelIndex === 0) {
         continue;
       }
 

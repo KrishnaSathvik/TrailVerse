@@ -7,10 +7,16 @@ const parseModelList = (value, fallback) =>
 const CLAUDE_PRIMARY_MODEL =
   process.env.CLAUDE_PRIMARY_MODEL || 'claude-sonnet-5';
 
-const CLAUDE_FALLBACK_MODELS = parseModelList(
+const CLAUDE_FALLBACK_TAIL = parseModelList(
   process.env.CLAUDE_FALLBACK_MODELS,
-  'claude-sonnet-5,claude-sonnet-4-6,claude-haiku-4-5-20251001'
+  'claude-sonnet-4-6,claude-haiku-4-5-20251001'
 );
+
+/** Primary first, then fallbacks (deduped). */
+const CLAUDE_FALLBACK_MODELS = [
+  CLAUDE_PRIMARY_MODEL,
+  ...CLAUDE_FALLBACK_TAIL.filter((model) => model !== CLAUDE_PRIMARY_MODEL),
+];
 
 const CLAUDE_REVIEWER_MODEL =
   process.env.CLAUDE_REVIEWER_MODEL || CLAUDE_PRIMARY_MODEL;

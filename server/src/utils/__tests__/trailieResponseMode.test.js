@@ -33,6 +33,42 @@ describe('trailieResponseMode', () => {
     expect(mode).toBe('buddy');
   });
 
+  test('resolveResponseMode returns architect for zion couple demo prompt', () => {
+    const mode = resolveResponseMode(
+      [{
+        role: 'user',
+        content:
+          'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.',
+      }],
+      { skipUserContext: true }
+    );
+    expect(mode).toBe('architect');
+  });
+
+  test('resolveResponseMode returns architect for Valley of Fire weekend', () => {
+    const mode = resolveResponseMode(
+      [{
+        role: 'user',
+        content:
+          'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.',
+      }],
+      { skipUserContext: true }
+    );
+    expect(mode).toBe('architect');
+  });
+
+  test('resolveResponseMode returns compare for yosemite vs sequoia demo', () => {
+    const mode = resolveResponseMode(
+      [{
+        role: 'user',
+        content:
+          'I have 3 days in late September. Should I choose Yosemite or Sequoia for easy hikes, photography, and fewer crowds?',
+      }],
+      { skipUserContext: true }
+    );
+    expect(mode).toBe('compare');
+  });
+
   test('metadata.responseMode overrides auto detection', () => {
     const mode = resolveResponseMode(
       [{ role: 'user', content: 'Plan 2 days in Zion' }],

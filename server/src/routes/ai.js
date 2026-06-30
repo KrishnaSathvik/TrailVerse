@@ -481,7 +481,7 @@ function buildBaseSystemPrompt(provider, systemPrompt, messages, metadata = {}, 
     getSystemPromptForMode(responseMode, { claudeService, openaiService }) ||
     claudeService.defaultSystemPrompt;
   const clientContext = extractClientSystemContext(systemPrompt, messages);
-  const aiContextBlock = formatMetadataAiContext(metadata);
+  const aiContextBlock = metadata.skipUserContext ? '' : formatMetadataAiContext(metadata);
   let prompt = defaultPrompt;
   if (clientContext) {
     prompt += `\n\n--- SESSION CONTEXT ---\n${clientContext}\n--- END SESSION CONTEXT ---\n`;
@@ -690,6 +690,8 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     metadata = {} // { parkCode, parkName, lat, lon, userId }
   } = body;
 
+  const skipUserContext = metadata.skipUserContext === true;
+
   if (!messages || !Array.isArray(messages)) {
     throw Object.assign(new Error('Messages array is required'), { statusCode: 400 });
   }
@@ -699,7 +701,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
 
   let savedTripPlan = null;
   const tripId = metadata.tripId || body.tripId;
-  if (tripId) {
+  if (tripId && !skipUserContext) {
     try {
       const TripPlan = require('../models/TripPlan');
       savedTripPlan = await TripPlan.findById(tripId)
@@ -870,12 +872,34 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   const parkNames = allExtractedParks.map(p => p.parkName).filter(Boolean);
   resolvedMetadata.parksForDisplay = allExtractedParks;
 
+  // Geocode non-NPS destinations before itinerary readiness (Valley of Fire, etc.)
+  if ((!resolvedMetadata.lat || !resolvedMetadata.lon) && !resolvedMetadata.parkCode) {
+    try {
+      const { resolvePlaceFromMessage } = require('../services/geocodePlaceService');
+      const place = await resolvePlaceFromMessage(lastUserMessage || conversationUserText);
+      if (place) {
+        resolvedMetadata.lat = place.lat;
+        resolvedMetadata.lon = place.lon;
+        resolvedMetadata.resolvedPlaceName = place.name;
+        if (!resolvedMetadata.parkName) {
+          resolvedMetadata.parkName = place.name;
+        }
+        console.log(
+          `${logPrefix} Geocoded place from message: ${place.name} (${place.lat}, ${place.lon}) via ${place.source}`
+        );
+      }
+    } catch (geoErr) {
+      console.warn(`${logPrefix} Place geocode error:`, geoErr.message);
+    }
+  }
+
   const constraints = parseConstraints(resolvedMetadata, conversationUserText || lastUserMessage);
   const itineraryReadiness = assessItineraryReadiness({
     constraints,
     metadata: resolvedMetadata,
     allExtractedParks,
     conversationUserText,
+    skipUserContext,
   });
 
   // Detect state park queries (not NPS — no parkCode will exist)
@@ -907,7 +931,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
     }
   }
 
-  if ((!resolvedMetadata.lat || !resolvedMetadata.lon) && !resolvedMetadata.parkCode) {
+  if ((!resolvedMetadata.lat || !resolvedMetadata.lon) && !resolvedMetadata.parkCode && !resolvedMetadata.resolvedPlaceName) {
     try {
       const { resolvePlaceFromMessage } = require('../services/geocodePlaceService');
       const place = await resolvePlaceFromMessage(lastUserMessage);
@@ -1345,7 +1369,7 @@ async function prepareChatContext(body, logPrefix = '[AI]', options = {}) {
   }
 
   // Detect and inject conflicts
-  const conflicts = detectConflicts(constraints, lastMsg);
+  const conflicts = detectConflicts(constraints, lastMsg, { skipUserContext });
   if (conflicts.length > 0) {
     enhancedSystemPrompt += `\n\n--- CONSTRAINT CONFLICTS DETECTED ---\nThe user's request contains CONTRADICTORY constraints. You MUST address each conflict — do NOT silently merge them into a generic plan.\n`;
     for (const conflict of conflicts) {
@@ -1442,7 +1466,9 @@ CRITICAL ISOLATION RULES — follow these exactly:
       missing: itineraryReadiness.missing,
     });
   } else if (wantsDayByDayPlan && !itineraryReadiness.ready) {
-    enhancedSystemPrompt += formatItineraryGatheringBlock(itineraryReadiness.missing);
+    enhancedSystemPrompt += formatItineraryGatheringBlock(itineraryReadiness.missing, {
+      assumeDefaults: skipUserContext,
+    });
   } else if (openEndedDiscovery) {
     enhancedSystemPrompt += `\n\n--- DISCOVERY RESPONSE (NO ITINERARY JSON) ---\nThis is an open-ended destination or recommendation question. Recommend 2–4 specific parks or destinations with brief why-each. Do NOT include a [ITINERARY_JSON] block. Do NOT produce a day-by-day schedule unless the user explicitly asks for one. Driving times and distances in prose are fine.\n--- END DISCOVERY ---\n`;
   }
@@ -1458,7 +1484,18 @@ CRITICAL ISOLATION RULES — follow these exactly:
   // Prevent AI from leaking internal JSON mechanism to the user
   enhancedSystemPrompt += `\n\n--- OUTPUT RULES ---\nThe [ITINERARY_JSON] block is an internal data format automatically extracted from your response. NEVER mention JSON, code blocks, data formats, or offer to "regenerate the JSON" or "output the updated JSON" in your user-facing text. Speak naturally about the itinerary as a travel plan. If the user has an existing itinerary and asks for modifications, describe the specific changes in plain language — do not regenerate the entire plan unless they explicitly ask for a full replan.\n--- END OUTPUT RULES ---\n`;
 
-  return { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext, fetchPlan };
+  console.log(`${logPrefix} Trip planning context:`, {
+    responseMode,
+    skipUserContext,
+    userRequestedItinerary,
+    itineraryReadinessReady: itineraryReadiness.ready,
+    itineraryReadinessMissing: itineraryReadiness.missing,
+    activeDestination: activeTripContext?.primaryDestination?.name || null,
+    activeResolutionSource: activeTripContext?.resolutionSource || null,
+    parkCode: resolvedMetadata.parkCode || null,
+  });
+
+  return { provider, responseMode, model, temperature, top_p, maxTokens, enhancedSystemPrompt, augmentedMessages, metadata, npsFacts, weatherFacts, webSearchFacts, astroFacts, feeFreeFacts, webSearchUnavailable, userCity, candidateParksBlock, resolvedMetadata, parkNames, allExtractedParks, noParkDetected, constraints, preflightResult, hypothetical, conflicts, intent, parkImages, alreadyShownImages, attachParkImages, openEndedDiscovery, discoveryRefinement, lastMsg, trailieContext, userRequestedItinerary, activeTripContext, fetchPlan, skipUserContext };
 }
 
 function appendUserContextToPrompt(enhancedSystemPrompt, userContext, personalizedRecommendations = false) {

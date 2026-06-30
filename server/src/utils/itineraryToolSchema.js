@@ -87,8 +87,25 @@ function isValidToolItinerary(input) {
   return input.days.every((d) => Array.isArray(d.stops));
 }
 
+function renderProseFromToolItinerary(toolItinerary) {
+  if (!isValidToolItinerary(toolItinerary)) return '';
+
+  const lines = ['**At a glance**', ''];
+  for (const day of toolItinerary.days) {
+    const heading = day.label || `Day ${day.dayNumber}`;
+    lines.push(`**${heading}**`);
+    for (const stop of day.stops || []) {
+      const note = stop.note || stop.why || '';
+      lines.push(`- **${stop.name}**${note ? ` — ${note}` : ''}`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n').trim();
+}
+
 module.exports = {
   CREATE_ITINERARY_TOOL,
   formatItineraryToolInstruction,
   isValidToolItinerary,
+  renderProseFromToolItinerary,
 };

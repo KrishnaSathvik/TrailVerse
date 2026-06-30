@@ -11,6 +11,37 @@ describe('itineraryReadiness', () => {
     expect(inferGroupFromText('trip with my wife')).toBe(2);
   });
 
+  test('infers hyphenated day count from message', () => {
+    expect(inferDurationFromText('Plan a realistic 2-day Zion trip for a couple')).toBe(2);
+  });
+
+  test('ready for zion couple 2-day plan with skipUserContext', () => {
+    const text =
+      'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.';
+    const result = assessItineraryReadiness({
+      metadata: { parkCode: 'zion', skipUserContext: true },
+      allExtractedParks: [{ parkCode: 'zion', parkName: 'Zion National Park' }],
+      conversationUserText: text,
+      skipUserContext: true,
+    });
+    expect(result.ready).toBe(true);
+    expect(result.inferred.numDays).toBe(2);
+    expect(result.inferred.groupSize).toBe(2);
+  });
+
+  test('ready for Valley of Fire weekend with skipUserContext defaults', () => {
+    const text =
+      'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.';
+    const result = assessItineraryReadiness({
+      metadata: { resolvedPlaceName: 'Valley of Fire, Nevada', skipUserContext: true },
+      conversationUserText: text,
+      skipUserContext: true,
+    });
+    expect(result.ready).toBe(true);
+    expect(result.inferred.numDays).toBe(2);
+    expect(result.inferred.groupSize).toBe(2);
+  });
+
   test('ready when destination, duration, and group are known', () => {
     const result = assessItineraryReadiness({
       metadata: { parkCode: 'romo', intakeParkName: 'Rocky Mountain National Park' },
@@ -39,6 +70,31 @@ describe('shouldRequestItineraryJson with readiness', () => {
         conversationUserText: 'Weekend hiking trip from Denver under $500',
       })
     ).toBe(false);
+  });
+
+  test('plan request with 2-day zion couple is ready for JSON', () => {
+    const text =
+      'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.';
+    expect(
+      shouldRequestItineraryJson({
+        userMessage: text,
+        metadata: { parkCode: 'zion', skipUserContext: true },
+        allExtractedParks: [{ parkCode: 'zion' }],
+        conversationUserText: text,
+      })
+    ).toBe(true);
+  });
+
+  test('Valley of Fire weekend plan is ready for JSON with skipUserContext', () => {
+    const text =
+      'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.';
+    expect(
+      shouldRequestItineraryJson({
+        userMessage: text,
+        metadata: { resolvedPlaceName: 'Valley of Fire, Nevada', skipUserContext: true },
+        conversationUserText: text,
+      })
+    ).toBe(true);
   });
 
   test('complete plan request is ready for JSON', () => {

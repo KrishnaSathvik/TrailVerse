@@ -4,7 +4,11 @@ const {
 
 function isCompareQuery(message) {
   if (!message || typeof message !== 'string') return false;
-  return /\b(vs\.?|versus)\b/i.test(message.trim());
+  const text = message.trim();
+  if (/\b(vs\.?|versus)\b/i.test(text)) return true;
+  if (/\bcompare\b/i.test(text)) return true;
+  if (/\b(choose|pick|should i (?:choose|go with))\b[\s\S]{0,120}\bor\b/i.test(text)) return true;
+  return false;
 }
 
 const VALID_RESPONSE_MODES = new Set([

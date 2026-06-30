@@ -19,7 +19,7 @@ const ITINERARY_PATTERNS =
   /\b(plan|itinerary|schedule|day[- ]?by[- ]?day|things to do)\b|\b\d{1,2}\s*[- ]?day\b/i;
 
 const FOLLOW_UP_PATTERNS =
-  /\b(any|what about|where|how about|tell me more|more on|first one|second one|that option|yes,? the|those|that place|same trip|same dates)\b/i;
+  /\b(any|what about|where|how about|tell me more|more on|first one|second one|that option|yes,? the|those|that place|same trip|same dates|make it|refine it|update it|change it|adjust it|more relaxed|easier|less rushed)\b/i;
 
 const PERMIT_BOOKING_PATTERNS =
   /\b(permit|reservation|lottery|timed[- ]?entry|pass required|when do .* open|booking window|release date)\b/i;
@@ -118,12 +118,22 @@ function isItineraryPlanningQuery(userMessage) {
   return hasItineraryIntent(userMessage);
 }
 
+const ITINERARY_REFINEMENT_PATTERNS =
+  /\b(make it|refine it|update it|change it|adjust it|more relaxed|easier|less rushed|avoid|add (?:a|one)|actually|can you also|one good)\b/i;
+
+function isItineraryRefinementFollowUp(userMessage) {
+  if (!userMessage) return false;
+  const trimmed = userMessage.trim();
+  if (trimmed.length > 200) return false;
+  return ITINERARY_REFINEMENT_PATTERNS.test(trimmed) || /\b(it|this plan|the plan)\b/i.test(trimmed);
+}
+
 function isShortFollowUp(userMessage) {
   if (!userMessage) return false;
   const trimmed = userMessage.trim();
   if (trimmed.length > 140) return false;
   const words = trimmed.split(/\s+/).length;
-  return words <= 10 || FOLLOW_UP_PATTERNS.test(trimmed);
+  return words <= 10 || FOLLOW_UP_PATTERNS.test(trimmed) || isItineraryRefinementFollowUp(trimmed);
 }
 
 function isOpenEndedParkDiscoveryQuery(userMessage) {
@@ -467,6 +477,7 @@ module.exports = {
   hasItineraryIntent,
   isItineraryPlanningQuery,
   isShortFollowUp,
+  isItineraryRefinementFollowUp,
   resolveFactFetchMessage,
   planTrailieFetches,
   summarizeFetchPlan,

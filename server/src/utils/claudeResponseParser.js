@@ -1,4 +1,4 @@
-const { isValidToolItinerary } = require('./itineraryToolSchema');
+const { isValidToolItinerary, renderProseFromToolItinerary } = require('./itineraryToolSchema');
 const { extractItineraryJSON } = require('./extractItineraryJSON');
 
 /**
@@ -28,8 +28,10 @@ function parseClaudeMessageResponse(claudeResponse) {
 function extractItineraryFromResponse({ content, toolItinerary = null }) {
   if (toolItinerary && isValidToolItinerary(toolItinerary)) {
     const { cleanContent } = extractItineraryJSON(content || '');
+    const prose =
+      cleanContent?.trim() || renderProseFromToolItinerary(toolItinerary);
     return {
-      cleanContent,
+      cleanContent: prose,
       itineraryData: toolItinerary,
       extractionSource: 'tool_use',
     };

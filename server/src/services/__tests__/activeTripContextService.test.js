@@ -144,6 +144,36 @@ describe('activeTripContextService', () => {
     expect(result.activeTripContext.lowConfidenceClarification).toMatch(/Which park/i);
   });
 
+  test('zion itinerary refinement inherits destination from conversation history', () => {
+    const conversationUserText =
+      'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.\n' +
+      'Actually make it more relaxed, avoid shuttle-heavy parts if possible, and add one good sunset spot.';
+
+    const result = resolveActiveTripContext({
+      lastUserMessage:
+        'Actually make it more relaxed, avoid shuttle-heavy parts if possible, and add one good sunset spot.',
+      conversationUserText,
+      filteredMessages: [
+        {
+          role: 'user',
+          content:
+            'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.',
+        },
+        { role: 'assistant', content: 'At a glance — Zion weekend plan...' },
+        {
+          role: 'user',
+          content:
+            'Actually make it more relaxed, avoid shuttle-heavy parts if possible, and add one good sunset spot.',
+        },
+      ],
+      storedContext: null,
+    });
+
+    expect(result.activeTripContext.primaryDestination.parkCode).toBe('zion');
+    expect(result.activeTripContext.resolutionSource).toBe('itinerary_refinement');
+    expect(result.inheritedDestination).toBe(true);
+  });
+
   test('finalize context updates recommendations after assistant reply', () => {
     const finalized = finalizeActiveTripContextForClient({
       activeTripContext: {

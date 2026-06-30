@@ -40,15 +40,18 @@ async function streamRawLLMToSse(res, {
     }
 
     resolvedModel = model || CLAUDE_PRIMARY_MODEL;
+    const claudeParams = {
+      model: resolvedModel,
+      max_tokens: maxTokens,
+      system: enhancedSystemPrompt,
+      messages: augmentedMessages,
+      stream: true,
+    };
+    if (!/^claude-(sonnet-5|opus-5)/i.test(resolvedModel) && temperature != null) {
+      claudeParams.temperature = temperature;
+    }
     const stream = await anthropic.messages.create(
-      {
-        model: resolvedModel,
-        max_tokens: maxTokens,
-        temperature,
-        system: enhancedSystemPrompt,
-        messages: augmentedMessages,
-        stream: true,
-      },
+      claudeParams,
       signal ? { signal } : undefined
     );
 

@@ -22,6 +22,22 @@ describe('claudeResponseParser', () => {
     expect(result.extractionSource).toBe('itinerary_json');
     expect(result.itineraryData.days).toHaveLength(1);
   });
+
+  test('renders prose from tool-only response when text is empty', () => {
+    const toolItinerary = {
+      days: [
+        {
+          id: 'day-1',
+          dayNumber: 1,
+          label: 'Day 1 — Valley of Fire',
+          stops: [{ id: 's1', order: 0, type: 'trail', name: 'Fire Wave', note: 'Easy loop' }],
+        },
+      ],
+    };
+    const result = extractItineraryFromResponse({ content: '', toolItinerary });
+    expect(result.cleanContent).toMatch(/At a glance/i);
+    expect(result.cleanContent).toMatch(/Fire Wave/i);
+  });
 });
 
 describe('itineraryToolSchema', () => {

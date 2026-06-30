@@ -675,6 +675,7 @@ function buildTrailieContext({
   userCity,
   conversationSummary,
   savedTripPlan,
+  skipUserContext = false,
 }) {
   const providerMode = responseMode || (provider === 'openai' ? 'architect' : 'buddy');
   const normalizedConstraints = normalizeConstraints(constraints);
@@ -688,6 +689,7 @@ function buildTrailieContext({
     lastUserMessage,
     conversationSummary,
     savedTripPlan,
+    skipUserContext: skipUserContext || metadata?.skipUserContext === true,
   });
 
   const liveData = normalizeLiveData({
