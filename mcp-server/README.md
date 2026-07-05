@@ -1,10 +1,12 @@
 # TrailVerse MCP Server
 
-A ChatGPT app (MCP server) that brings TrailVerse's AI-powered national park
-planner into ChatGPT conversations. Built for the [OpenAI Apps SDK](https://developers.openai.com/apps-sdk)
-using Python + FastMCP.
+A ChatGPT app and **Claude MCP connector** that brings TrailVerse's AI trip
+planner into ChatGPT and Claude conversations. Built for the
+[OpenAI Apps SDK](https://developers.openai.com/apps-sdk) using Python + FastMCP.
 
-**Live TrailVerse site:** https://www.nationalparksexplorerusa.com
+**Live TrailVerse site:** https://www.nationalparksexplorerusa.com  
+**Claude install guide:** https://www.nationalparksexplorerusa.com/mcp  
+**ChatGPT app:** https://www.nationalparksexplorerusa.com/chatgpt
 
 ---
 
@@ -61,16 +63,17 @@ ChatGPT user
 
 | Tool | Purpose | Backend endpoint |
 |---|---|---|
-| `plan_trip` | AI-powered constraint-aware itinerary — the crown jewel | `POST /api/ai/chat-anonymous` |
-| `get_park_details` | Rich park info with live alerts, weather, campgrounds, permits | `GET /api/parks/:code/details` + `/alerts` + `/weather` + `/campgrounds` + `/permits` + `/api/feed/park-of-day` |
-| `compare_parks` | Side-by-side 2–4 park comparison | `POST /api/parks/compare` + `/compare/summary` |
-| `search_parks` | Search/filter by name, state, activity | `GET /api/parks/search` |
-| `find_events` | Ranger programs and park events | `GET /api/events/` |
+| `plan_trip` | AI-powered constraint-aware itinerary for **any US destination** (NPS, state parks, cities, road trips) | `POST /api/ai/chat-anonymous` |
+| `get_park_details` | Rich **NPS site** info with live alerts, weather, campgrounds, permits | `GET /api/parks/:code/details` + `/alerts` + `/weather` + `/campgrounds` + `/permits` + `/api/feed/park-of-day` |
+| `compare_parks` | Side-by-side **2–4 NPS parks** with auto-computed highlights | `POST /api/parks/compare` + `/compare/summary` |
+| `search_parks` | Search/filter **NPS catalog** by name, state, activity | `GET /api/parks/search` |
+| `find_events` | Ranger programs and **NPS** park events | `GET /api/events/` |
 
 All tools are **read-only** (`readOnlyHint: true`) and use the **anonymous AI
-endpoint** (no auth required, 5 messages per 48h per IP). This is intentional:
-it makes the OpenAI review process trivial (no demo account needed) and
-funnels power users back to nationalparksexplorerusa.com for unlimited access.
+endpoint** (no auth required). Production MCP traffic sends
+`X-TrailVerse-MCP-Key` so the backend skips the website guest cap (5 msg/48h)
+and enables web search for `plan_trip`. Website upsell is for **saved trips,
+PDF export, and the Plan Workspace** — see `/mcp` and `/chatgpt` landing pages.
 
 ## Project structure
 
@@ -267,8 +270,8 @@ Key reviewer notes (critical for approval):
   OpenAI's submission guidelines.
 - Tools are clearly described and correctly annotated with `readOnlyHint:
   true` and `openWorldHint: true`.
-- The app does **not** sell digital goods — free 5 msg/48h is just a rate
-  limit. Unlimited access requires signing up on TrailVerse.com, which is
+- The app does **not** sell digital goods — free in ChatGPT/Claude. Saved trips
+  and the Plan Workspace require a free TrailVerse.com account, which is
   external and compliant.
 - No write/destructive operations, no user data collection, no personal
   info accessed.
@@ -305,13 +308,14 @@ formatter.
 
 ### AI planner rate-limited too aggressively
 
-The backend limits anonymous AI chat to 5 messages per 48h per IP. In
-production, all ChatGPT calls flow through the single MCP server IP, so
-without the `MCP_BYPASS_KEY` header the anonymous limit will be hit almost
-immediately. Make sure the bypass key is set on both the MCP server and
-the Express backend (see [docs/BACKEND_CHANGES.md](docs/BACKEND_CHANGES.md)).
-For local dev, point `TRAILVERSE_API_BASE` at your local backend where
-you can temporarily relax the limit.
+Website guests are capped at 5 messages per 48h. In production, all ChatGPT
+and Claude MCP calls flow through the single MCP server IP, so without the
+`MCP_BYPASS_KEY` header the Express anonymous rate limit (60 req/15min) will
+be hit almost immediately. Make sure the bypass key is set on both the MCP
+server and the Express backend (see [docs/BACKEND_CHANGES.md](docs/BACKEND_CHANGES.md)).
+Trusted MCP also skips the website 5-msg session cap for `plan_trip`. For
+local dev, point `TRAILVERSE_API_BASE` at your local backend where you can
+temporarily relax limits.
 
 ---
 

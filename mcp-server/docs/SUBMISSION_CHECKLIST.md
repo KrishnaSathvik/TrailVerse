@@ -76,7 +76,7 @@ for rejection. "TrailVerse" is specific and trademarkable.
 ### Tagline / short description (one line)
 
 ```
-Plan your next US national park trip with live park data.
+Live NPS data and AI trip planning for 470+ sites — plus any US destination.
 ```
 
 ### Full description
@@ -84,37 +84,62 @@ Plan your next US national park trip with live park data.
 ```
 TrailVerse brings your universe of national parks exploration into ChatGPT.
 
-Plan a trip to any of 470+ US national parks, monuments, and historic sites
-with an AI planner that understands constraints. Tell it you're a beginner
-with kids visiting Zion in July and it won't send you up Angels Landing —
-it'll swap in an appropriate trail, warn you about timed-entry permits, and
-build a pace-matched itinerary grounded in live NPS alerts and weather.
+Deep live data for 470+ US national parks, monuments, and historic sites —
+plus day-by-day trip planning for any US destination, including state parks,
+cities, beaches, and road trips. Tell Trailie you're a beginner with kids
+visiting Zion in July and it can steer you toward family-friendly trails, flag
+timed-entry and permit requirements, and build a pace-matched plan grounded in
+live NPS alerts and weather. Always confirm safety-critical details on NPS.gov
+before you go.
 
 Five focused capabilities:
 
 • Plan a trip — Constraint-aware day-by-day itineraries with confidence
-  scoring. Validates fitness, group size, and kids against every trail.
-  Choose The Planner (structured, thorough) or The Local (casual,
+  scoring. Post-validates plans for fitness level, family pacing, and
+  feasibility. Works for NPS sites and beyond (state parks, cities, mixed road
+  trips). Two voices: The Planner (structured, thorough) or The Local (casual,
   opinionated insider picks).
 
-• Park details — Rich info for any park with current weather, 5-day
-  forecast, active NPS alerts, entrance fees, and top activities.
+• Park details — Rich live info for NPS sites: current weather, 5-day forecast
+  when available, active alerts, entrance fees, and top activities.
 
-• Compare parks — Side-by-side up to 4 parks with auto-computed
-  highlights: best overall, warmest right now, fewer crowds.
+• Compare parks — Side-by-side 2–4 NPS parks with auto-computed highlights:
+  best overall, warmest right now, and lower-crowd option.
 
-• Search parks — Find parks by state, activity, or free-text query.
+• Search parks — Find NPS sites by state, activity, or free-text query across
+  the full catalog.
 
-• Find events — Upcoming ranger programs, guided tours, and festivals.
+• Find events — Upcoming ranger programs, guided tours, and park-hosted events
+  at NPS sites.
 
-All data is grounded in the official National Park Service API, live
-weather, and TrailVerse's own constraint validation pipeline. The AI
-planner is limited to 5 messages per 48 hours for free; for unlimited
-planning, web search integration, and trip saving, continue at
-nationalparksexplorerusa.com.
+Read tools pull from the official National Park Service API and live weather;
+itineraries run through TrailVerse's constraint validation pipeline. Free to
+use in ChatGPT with generous limits on park lookup tools. For saved trips,
+PDF export, the visual Plan Workspace, and your full Trailie history, continue
+free at nationalparksexplorerusa.com/plan-ai.
 ```
 
-(~1,200 characters — within typical store limits)
+(~1,450 characters — within typical store limits)
+
+### Full description (short variant)
+
+Use if the submission form has a tighter character cap:
+
+```
+TrailVerse puts 470+ NPS parks and sites inside ChatGPT with live data — not
+stale training answers. Plan a trip works for any US destination (national
+parks, state parks, cities, road trips); the other four tools are NPS-focused
+for live weather, alerts, compare, search, and events.
+
+Ask for a Zion trip with kids in July and get family-paced itineraries, permit
+warnings, and plans grounded in live alerts and weather. Five tools: Plan a
+trip (constraint-aware, confidence-scored; The Planner or The Local), Park
+details, Compare (2–4 parks), Search, and Find events.
+
+Data comes from the NPS API, live weather, and TrailVerse's validation
+pipeline. Free in ChatGPT. Save trips, export PDFs, and use the full Plan
+Workspace at nationalparksexplorerusa.com/plan-ai.
+```
 
 ### Category
 
@@ -173,26 +198,63 @@ cause of rejection**. Each tool in `server/main.py` has:
 
 | Tool | readOnlyHint | openWorldHint | idempotentHint | destructiveHint |
 |---|---|---|---|---|
-| `plan_trip` | ✓ true | ✓ true | false | — |
-| `get_park_details` | ✓ true | ✓ true | ✓ true | — |
-| `compare_parks` | ✓ true | ✓ true | ✓ true | — |
-| `search_parks` | ✓ true | ✓ true | ✓ true | — |
-| `find_events` | ✓ true | ✓ true | ✓ true | — |
+| `plan_trip` | ✓ true | ✓ true | false | ✓ false |
+| `get_park_details` | ✓ true | ✓ true | ✓ true | ✓ false |
+| `compare_parks` | ✓ true | ✓ true | ✓ true | ✓ false |
+| `search_parks` | ✓ true | ✓ true | ✓ true | ✓ false |
+| `find_events` | ✓ true | ✓ true | ✓ true | ✓ false |
 
 **Justification for each** (paste in the submission form if asked):
 
-- **readOnlyHint: true** — all tools read data and render it. None create,
-  update, or delete anything on TrailVerse or any external system.
-- **openWorldHint: true** — tools interact with external systems (the
-  National Park Service API, OpenWeatherMap) that are outside ChatGPT and
-  TrailVerse's direct control.
-- **idempotentHint: true** — for the four read-only lookup tools, calling
-  them multiple times with the same arguments produces equivalent results
-  (modulo live data changes like weather).
-- **idempotentHint: false** — for `plan_trip` only, because the AI planner
-  returns varied creative output even with identical inputs.
+See per-tool blocks below. All five tools set **`destructiveHint: false`** — none delete
+data, cancel bookings, or overwrite user-owned records.
 
-No destructive tools. No write operations. No user data stored server-side.
+### `plan_trip`
+
+| Annotation | Value | Justification |
+|---|---|---|
+| **readOnlyHint** | `true` | Returns a generated itinerary only. Does not create or modify user accounts, saved trips, NPS records, reservations, or any third-party system. The backend may append messages to an ephemeral anonymous session (TTL ~48h) for multi-turn follow-ups like “add day 4”; that is internal session state, not a user-visible write or booking action. |
+| **openWorldHint** | `true` | Calls the TrailVerse Express API, which fetches live NPS facts, weather (OpenWeatherMap), and optionally web search for non-NPS destinations. Also stores short-lived conversation context in MCP memory. All inputs/outputs depend on external live data outside ChatGPT. |
+| **destructiveHint** | `false` | Does not delete, overwrite, or irreversibly change any user data, park data, or external resource. Cannot cancel reservations, remove saved trips, or mutate NPS content — it only returns planning text. |
+| **idempotentHint** | `false` | Same inputs can yield different AI-generated itineraries (creative LLM output, live weather/alerts may change between calls). |
+
+### `get_park_details`
+
+| Annotation | Value | Justification |
+|---|---|---|
+| **readOnlyHint** | `true` | Issues parallel **GET** requests only: park details, alerts, weather, campgrounds, permits, and optional daily feed. No POST/PUT/PATCH/DELETE to TrailVerse, NPS, or user data. |
+| **openWorldHint** | `true` | Aggregates live data from the National Park Service API and OpenWeatherMap via TrailVerse backend proxies. Results change as real-world conditions change. |
+| **destructiveHint** | `false` | Read-only lookup. Cannot modify park records, alerts, or user preferences. |
+| **idempotentHint** | `true` | Repeated calls with the same `park_code` perform the same read operations; output may differ only because upstream live data (weather, alerts) changed. |
+
+### `compare_parks`
+
+| Annotation | Value | Justification |
+|---|---|---|
+| **readOnlyHint** | `true` | Calls `POST /api/parks/compare` and `/compare/summary`, which **compute** a side-by-side view from existing park data. These endpoints do not persist comparison results to user accounts or alter source records — they are stateless aggregation reads. |
+| **openWorldHint** | `true` | Pulls current weather, crowd signals, fees, and activities for 2–4 parks from live backend/NPS/OpenWeather sources. |
+| **destructiveHint** | `false` | No deletes or updates. Cannot change park data or user saved lists — only returns a comparison table and recommendation text. |
+| **idempotentHint** | `true` | Same park codes trigger the same comparison logic; live fields (temperature, crowd level) may drift between calls. |
+
+### `search_parks`
+
+| Annotation | Value | Justification |
+|---|---|---|
+| **readOnlyHint** | `true` | Single **GET** to `/api/parks/search` with optional query expansion retry. Returns ranked NPS catalog matches only — no writes. |
+| **openWorldHint** | `true` | Searches TrailVerse’s live NPS catalog (470+ sites) with trait scoring; results depend on current catalog and query intent, not closed-world training data. |
+| **destructiveHint** | `false` | Search is read-only. Does not add/remove favorites, modify profiles, or change any stored data. |
+| **idempotentHint** | `true` | Identical query/state/activity/limit parameters hit the same search endpoint; ranking is deterministic for a given catalog snapshot. |
+
+### `find_events`
+
+| Annotation | Value | Justification |
+|---|---|---|
+| **readOnlyHint** | `true` | **GET** `/api/events` with optional park, state, and category filters. Lists upcoming ranger programs and park events — does not register, cancel, or modify events. |
+| **openWorldHint** | `true` | Event listings come from TrailVerse’s live events feed (NPS/RIDB-sourced data), which updates as schedules change. |
+| **destructiveHint** | `false` | Cannot cancel event registrations or alter event records — read-only listing. |
+| **idempotentHint** | `true` | Same filters return the same query; event lists may change as new programs are published or dates pass. |
+
+No destructive tools. No user-account writes. No bookings or reservations.
 
 ---
 
@@ -248,11 +310,12 @@ Does this app sell anything? No.
 Does it link to paid products? No.
 ```
 
-The 5-message/48h free tier is a rate limit, not a paywall. Unlimited
-access requires creating a free account on TrailVerse.com — no payment,
-no subscription in-app. This stays inside the App Submission Guidelines
-rule that **digital goods and subscriptions cannot be sold through
-ChatGPT apps**.
+The website guest tier (5 messages / 48h on TrailVerse.com) is a rate limit,
+not a paywall. ChatGPT traffic uses the trusted MCP bypass and does not share
+that per-session website cap. Upsell on the website is for **saved trips,
+PDF export, and the Plan Workspace** — no payment, no subscription in-app.
+This stays inside the App Submission Guidelines rule that **digital goods and
+subscriptions cannot be sold through ChatGPT apps**.
 
 ---
 
@@ -322,11 +385,10 @@ Once published:
 - [ ] Respond to user reports promptly (OpenAI reviews reports and may
       restrict apps with repeated complaints)
 - [ ] Consider V2 features:
-  - OAuth-gated authenticated mode for logged-in TrailVerse users (lifts
-    the 5 msg/48h limit, enables save & share)
+  - OAuth-gated authenticated mode for logged-in TrailVerse users (saved
+    trips, share links, and Plan Workspace inside ChatGPT)
   - Additional tools: `get_daily_feed`, `get_local_take` (Claude persona
     as a separate tool)
-  - Web search integration (requires authenticated mode)
 
 ---
 
@@ -337,15 +399,16 @@ authenticated tools. That's deliberate:
 
 1. **Faster approval.** Zero friction for reviewers. Biggest single
    rejection vector eliminated.
-2. **Cleaner story.** "Free tier in ChatGPT, unlimited on our site" is
+2. **Cleaner story.** "Free in ChatGPT; save and workspace on our site" is
    the same playbook Canva, Figma, and Notion use for ChatGPT apps.
-3. **Top-of-funnel for TrailVerse.** Every user who hits the 5-msg limit
-   is directly invited to continue at nationalparksexplorerusa.com —
-   this makes ChatGPT an acquisition channel, not a replacement.
+3. **Top-of-funnel for TrailVerse.** ChatGPT users who want saved trips,
+   PDF export, or the visual Plan Workspace continue at
+   nationalparksexplorerusa.com — acquisition channel, not a replacement.
 4. **The moat is still visible.** The constraint engine, dual personas,
-   plan scoring, and smart replacement all work in anonymous mode. What's
-   *gated* is web search, unlimited messages, and save/share — exactly
-   the features worth signing up for.
+   plan scoring, and post-validation all work via the anonymous endpoint.
+   Production MCP uses `MCP_BYPASS_KEY` (skips the website 5-msg/48h cap and
+   enables web search for `plan_trip`). What's still *website-only* is
+   **trip persistence, share links, PDF export, and the Plan Workspace**.
 
 V2 can add OAuth later without rejection risk since the app will already
 be approved and live.

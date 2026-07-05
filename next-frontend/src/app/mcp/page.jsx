@@ -11,11 +11,11 @@ const DIST_CHANNEL = 'mcp';
 export const metadata = {
   title: 'TrailVerse for Claude — MCP Integration',
   description:
-    'Connect Claude to live National Park Service data. Plan trips, compare parks, check weather and alerts, find ranger programs — all 470+ NPS sites, right inside Claude.',
+    'Connect Claude to TrailVerse — live NPS data for 470+ sites plus AI trip planning for any US destination. Alerts, weather, compare, search, and events via MCP.',
   openGraph: {
     title: 'TrailVerse for Claude — MCP Integration',
     description:
-      'Plan trips, compare parks, check live weather and alerts, find ranger programs — all 470+ NPS sites, right inside Claude.',
+      'Trailie in Claude — 470+ NPS sites with live data, plus day-by-day trip planning for any US destination.',
     url: 'https://www.nationalparksexplorerusa.com/mcp',
     type: 'website',
     images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse MCP for Claude' }],
@@ -24,7 +24,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'TrailVerse for Claude — MCP Integration',
     description:
-      'Plan trips, compare parks, check live weather and alerts — all 470+ NPS sites, right inside Claude.',
+      'Live NPS data and AI trip planning in Claude — 470+ sites plus state parks, cities, and road trips.',
     images: ['/og-image-trailverse.jpg'],
   },
   alternates: {
@@ -36,31 +36,34 @@ const tools = [
   {
     icon: 'Map',
     title: 'Plan a Trip',
-    description: 'Trailie day-by-day itineraries with live alerts, weather, and crowd data',
+    description:
+      'Day-by-day itineraries for any US destination — NPS parks, state parks, cities, and road trips — with constraint-aware planning and live context when available',
     accent: 'var(--accent-green)',
   },
   {
     icon: 'Mountain',
     title: 'Park Details',
-    description: 'Live weather, alerts, entrance fees, hours, campgrounds, permits, activities, and Google Maps',
+    description:
+      'For NPS sites: live weather, 5-day forecast when available, alerts, entrance fees, hours, campgrounds, permits, and activities',
     accent: 'var(--accent-blue)',
   },
   {
     icon: 'ArrowsLeftRight',
     title: 'Compare Parks',
-    description: 'Side-by-side comparison of 2\u20134 parks on weather, crowds, fees, activities',
+    description:
+      'Side-by-side comparison of 2\u20134 NPS parks with auto-computed highlights on weather, crowds, fees, and activities',
     accent: 'var(--accent-orange)',
   },
   {
     icon: 'Search',
     title: 'Search Parks',
-    description: 'Find parks by state, activity, or name across all NPS sites',
+    description: 'Find NPS sites by state, activity, or free-text query across the full catalog',
     accent: 'var(--accent-green)',
   },
   {
     icon: 'Calendar',
     title: 'Find Events',
-    description: 'Ranger programs, guided tours, and special events with dates and locations',
+    description: 'Ranger programs, guided tours, and park-hosted events at NPS sites with dates and locations',
     accent: 'var(--accent-blue)',
   },
   {
@@ -73,11 +76,11 @@ const tools = [
 
 const examplePrompts = [
   'Plan a 5-day trip to Yellowstone in September with my fianc\u00e9e',
-  'Is Going-to-the-Sun Road open right now?',
+  'Plan a 3-day Valley of Fire State Park trip for easy hikes and photography',
   'Compare Zion and Grand Canyon for a family trip in June',
   'What national parks are in Washington state?',
   'Are there star parties at Bryce this month?',
-  'Plan a 3-day photography road trip through Utah\u2019s parks',
+  'Plan a San Diego weekend with beach time and a day in Joshua Tree',
 ];
 
 const MCP_URL = 'https://trailverse-mcp.onrender.com/mcp';
@@ -139,8 +142,8 @@ export default function MCPPage() {
             </h1>
 
             <p className="text-lg sm:text-xl leading-relaxed mb-10 text-white/90 max-w-3xl mx-auto">
-              Connect Claude to live National Park Service data. Real alerts, real weather,
-              real itineraries &mdash; for all 470+ NPS sites.
+              Connect Claude to live National Park Service data for all 470+ NPS sites &mdash; plus
+              day-by-day trip planning for any US destination.
             </p>
 
             <TrackedCtaLink
@@ -161,7 +164,7 @@ export default function MCPPage() {
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
-              <SectionBadge>Real-time NPS Data</SectionBadge>
+              <SectionBadge>Live NPS Data &amp; US Planning</SectionBadge>
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-4"
                 style={{ color: 'var(--text-primary)' }}
@@ -169,8 +172,10 @@ export default function MCPPage() {
                 What You Get
               </h2>
               <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                TrailVerse connects Claude to live National Park Service data so your trip
-                planning is grounded in real-time conditions, not outdated training data.
+                Five MCP tools on the same server as the ChatGPT app. Park details, search, compare,
+                and events cover the <strong>NPS catalog</strong>; Plan a trip also works for{' '}
+                <strong>state parks, cities, and road trips</strong> — grounded in live data, not
+                stale training answers.
               </p>
             </div>
 
@@ -218,8 +223,8 @@ export default function MCPPage() {
                 Real Conversations, Real Data
               </h2>
               <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                TrailVerse gives Claude live park data &mdash; road closures, weather,
-                crowds, fees &mdash; so every answer is grounded in what&rsquo;s actually happening.
+                TrailVerse gives Claude live NPS data — road closures, weather, crowds, fees — plus
+                constraint-aware itineraries for any US destination when you use Plan a trip.
               </p>
             </div>
 
@@ -588,7 +593,18 @@ export default function MCPPage() {
             </div>
 
             <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
-              Using ChatGPT instead?{' '}
+              Free to use with generous tool limits. Save trips and use the Plan Workspace on{' '}
+              <TrackedCtaLink
+                channel={DIST_CHANNEL}
+                ctaId="install_plan_ai"
+                label="TrailVerse.com"
+                href="/plan-ai"
+                className="underline underline-offset-2"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                TrailVerse.com
+              </TrackedCtaLink>
+              . Using ChatGPT instead?{' '}
               <TrackedCtaLink
                 channel={DIST_CHANNEL}
                 ctaId="cross_link_chatgpt"
@@ -692,8 +708,9 @@ export default function MCPPage() {
                   Data source
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  All park data comes from the National Park Service API (nps.gov). Weather data
-                  from OpenWeatherMap. We do not sell or share any data.
+                  NPS catalog data from the National Park Service API (nps.gov) and weather from
+                  OpenWeatherMap. Non-NPS trip planning may also use live web context. We do not sell
+                  or share any data.
                 </p>
               </div>
 
@@ -702,8 +719,19 @@ export default function MCPPage() {
                   Limits
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Free to use. Trip planning is rate-limited to 5 requests per 48 hours;
-                  park details, search, compare, and events have generous shared limits.
+                  Free to use with generous tool limits. Park details, search, compare, and events
+                  cover the NPS catalog; Plan a trip also works for state parks, cities, and road
+                  trips. For saved trips, PDF export, and the visual Plan Workspace, use{' '}
+                  <TrackedCtaLink
+                    channel={DIST_CHANNEL}
+                    ctaId="faq_plan_ai"
+                    label="Trailie"
+                    href="/plan-ai"
+                    className="underline underline-offset-2"
+                  >
+                    Trailie
+                  </TrackedCtaLink>{' '}
+                  on the website.
                 </p>
               </div>
             </div>
@@ -731,8 +759,8 @@ export default function MCPPage() {
                 className="text-base leading-7 mb-8"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Install TrailVerse in Claude and start planning your next trip
-                with live data from 470+ NPS sites.
+                Install TrailVerse in Claude — live NPS data from 470+ sites and trip planning for
+                any US destination.
               </p>
               <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
                 Using ChatGPT instead?{' '}
