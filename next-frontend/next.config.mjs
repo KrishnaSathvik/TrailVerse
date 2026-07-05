@@ -66,6 +66,13 @@ const nextConfig = {
       { source: '/activity', destination: '/explore', permanent: true },
       { source: '/blog/', destination: '/blog', permanent: true },
 
+      // Legacy blog category path Google indexed (flat slug is canonical)
+      {
+        source: '/blog/national-parks/:slug',
+        destination: '/blog/:slug',
+        permanent: true,
+      },
+
       // Guide slug rename (2026 metadata pack)
       {
         source: '/guides/national-park-planning-in-chatgpt',

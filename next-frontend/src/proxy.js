@@ -65,6 +65,16 @@ async function getPublicSettings() {
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
+  const reportHtmlPaths = new Set([
+    '/reports/when-to-go.html',
+    '/reports/national-parks-2025.html',
+  ]);
+  if (reportHtmlPaths.has(pathname) && request.nextUrl.searchParams.toString()) {
+    const response = NextResponse.next();
+    response.headers.set('X-Robots-Tag', 'noindex, follow');
+    return response;
+  }
+
   if (pathname.startsWith('/blog/') && pathname !== '/blog') {
     const slug = pathname.replace(/^\/blog\//, '').split('/')[0];
     if (slug) {
@@ -130,6 +140,7 @@ export const config = {
     '/parks/:path*',
     '/home',
     '/blog/:path*',
+    '/reports/:path*',
     '/admin',
     '/admin/:path*',
     '/offline',

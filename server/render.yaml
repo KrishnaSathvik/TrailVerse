@@ -1,0 +1,16 @@
+# Render blueprint for TrailVerse Express API
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: trailverse
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=512

@@ -149,6 +149,10 @@ class NPSService {
       videos: 30 * 24 * 60 * 60 * 1000,
       facilities: 30 * 24 * 60 * 60 * 1000,
     };
+
+    // Bulk NPS refresh coordination — dedupe concurrent callers + serialize heavy jobs
+    this._bulkInFlight = new Map();
+    this._bulkRefreshChain = Promise.resolve();
   }
 
   // --- Generic named-cache helpers ---
@@ -310,6 +314,230 @@ class NPSService {
   // --- MongoDB snapshot helpers for all bulk data ---
   // Persist bulk data so deploys don't need to re-fetch from NPS API
 
+  _withBulkInFlight(key, fn) {
+    const inflight = this._bulkInFlight.get(key);
+    if (inflight) return inflight;
+
+    const promise = Promise.resolve()
+      .then(fn)
+      .finally(() => {
+        this._bulkInFlight.delete(key);
+      });
+
+    this._bulkInFlight.set(key, promise);
+    return promise;
+  }
+
+  _withSerializedBulkRefresh(fn) {
+    const run = this._bulkRefreshChain.then(() => fn());
+    this._bulkRefreshChain = run.catch(() => {});
+    return run;
+  }
+
+  _countGroupedItems(data) {
+    if (Array.isArray(data)) return data.length;
+    if (typeof data === 'number') return data;
+    if (!data || typeof data !== 'object') return 0;
+    return Object.values(data).reduce(
+      (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
+      0
+    );
+  }
+
+  _isGroupedBulkSnapshot(key, data) {
+    return Boolean(
+      String(key).startsWith('bulk-')
+      && data
+      && typeof data === 'object'
+      && !Array.isArray(data)
+    );
+  }
+
+  _hydrateBulkMemoryCacheRef(memoryCache, data) {
+    memoryCache.data = data;
+    memoryCache.timestamp = Date.now();
+  }
+
+  _resolveBulkSnapshotOrRateLimit(memoryCache, snapshot) {
+    if (snapshot && !snapshot.stale) {
+      this._hydrateBulkMemoryCacheRef(memoryCache, snapshot.data);
+      return snapshot.data;
+    }
+
+    if (this._isRateLimited()) {
+      if (snapshot?.data) {
+        this._hydrateBulkMemoryCacheRef(memoryCache, snapshot.data);
+        return snapshot.data;
+      }
+      return {};
+    }
+
+    return null;
+  }
+
+  async _resolveBulk429Fallback(key, memoryCache, snapshot, label) {
+    if (memoryCache.data) {
+      console.warn(`⚠️ NPS 429 on bulk ${label} — returning stale cache`);
+      return memoryCache.data;
+    }
+    if (snapshot?.data) {
+      console.warn(`⚠️ NPS 429 on bulk ${label} — returning stale snapshot`);
+      this._hydrateBulkMemoryCacheRef(memoryCache, snapshot.data);
+      return snapshot.data;
+    }
+    const dbSnapshot = await this._loadSnapshot(key, Infinity);
+    if (dbSnapshot?.data) {
+      console.warn(`⚠️ NPS 429 on bulk ${label} — returning DB snapshot`);
+      this._hydrateBulkMemoryCacheRef(memoryCache, dbSnapshot.data);
+      return dbSnapshot.data;
+    }
+    console.warn(`⚠️ NPS 429 on bulk ${label} — no cache available, returning empty`);
+    return {};
+  }
+
+  async _finalizeBulkGroupedFetch(key, memoryCache, byPark, totalCount, label) {
+    this._hydrateBulkMemoryCacheRef(memoryCache, byPark);
+    console.log(
+      `✅ Total ${label} fetched (bulk): ${totalCount} across ${Object.keys(byPark).length} parks`
+    );
+    await this._saveSnapshot(key, byPark);
+    return byPark;
+  }
+
+  async _fetchGroupedBulkFromNps({
+    key,
+    memoryCache,
+    endpoint,
+    emoji,
+    label,
+    maxPages,
+    pageSize = 50,
+    extractParkCode,
+    staleSnapshot,
+  }) {
+    console.log(`🔄 Fetching all ${label} from NPS API (bulk)...`);
+
+    const byPark = {};
+    let totalCount = 0;
+    let start = 0;
+
+    try {
+      for (let page = 0; page < maxPages; page++) {
+        const response = await this.api.get(endpoint, {
+          params: { limit: pageSize, start },
+        });
+
+        const items = response.data.data;
+        if (!items || items.length === 0) break;
+
+        for (const item of items) {
+          const code = extractParkCode(item);
+          if (!code) continue;
+          if (!byPark[code]) byPark[code] = [];
+          byPark[code].push(item);
+          totalCount += 1;
+        }
+
+        start += pageSize;
+        console.log(`${emoji} Fetched page at offset ${start}, ${totalCount} ${label} so far`);
+
+        if (items.length < pageSize) break;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      return this._finalizeBulkGroupedFetch(key, memoryCache, byPark, totalCount, label);
+    } catch (error) {
+      if (error.response?.status === 429) {
+        return this._resolveBulk429Fallback(key, memoryCache, staleSnapshot, label);
+      }
+      console.error(`NPS API Error (bulk ${label}):`, error.message);
+      return {};
+    }
+  }
+
+  async _runBulkGroupedFetch({
+    key,
+    memoryCache,
+    cacheLogLabel,
+    endpoint,
+    emoji,
+    fetchLabel,
+    maxPages,
+    extractParkCode,
+  }) {
+    if (this._isCacheValid(memoryCache) && memoryCache.data) {
+      console.log(`📦 Returning cached bulk ${cacheLogLabel}`);
+      return memoryCache.data;
+    }
+
+    return this._withBulkInFlight(key, async () => {
+      if (this._isCacheValid(memoryCache) && memoryCache.data) {
+        return memoryCache.data;
+      }
+
+      const snapshot = await this._loadSnapshot(key, memoryCache.ttl);
+      const resolved = this._resolveBulkSnapshotOrRateLimit(memoryCache, snapshot);
+      if (resolved !== null) {
+        return resolved;
+      }
+
+      return this._withSerializedBulkRefresh(async () => {
+        if (this._isCacheValid(memoryCache) && memoryCache.data) {
+          return memoryCache.data;
+        }
+
+        const freshSnapshot = await this._loadSnapshot(key, memoryCache.ttl);
+        const freshResolved = this._resolveBulkSnapshotOrRateLimit(memoryCache, freshSnapshot);
+        if (freshResolved !== null) {
+          return freshResolved;
+        }
+
+        return this._fetchGroupedBulkFromNps({
+          key,
+          memoryCache,
+          endpoint,
+          emoji,
+          label: fetchLabel,
+          maxPages,
+          extractParkCode,
+          staleSnapshot: snapshot,
+        });
+      });
+    });
+  }
+
+  async _saveGroupedSnapshotChunked(key, byPark) {
+    const entries = Object.entries(byPark);
+    const itemCount = this._countGroupedItems(byPark);
+    const CHUNK_SIZE = 40;
+    const fetchedAt = new Date();
+
+    await NpsSnapshot.updateOne(
+      { key },
+      { $set: { data: {}, itemCount: 0, fetchedAt } },
+      { upsert: true }
+    );
+
+    for (let i = 0; i < entries.length; i += CHUNK_SIZE) {
+      const chunk = entries.slice(i, i + CHUNK_SIZE);
+      const $set = { fetchedAt };
+      for (const [parkCode, items] of chunk) {
+        $set[`data.${parkCode}`] = items;
+      }
+      await NpsSnapshot.updateOne({ key }, { $set });
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+
+    await NpsSnapshot.updateOne(
+      { key },
+      { $set: { itemCount, fetchedAt } }
+    );
+
+    console.log(
+      `🗄️ Saved snapshot "${key}" (${itemCount} items, ${entries.length} parks, chunked)`
+    );
+  }
+
   async _loadSnapshot(key, ttl) {
     const FAST_MS = 8000;
     const EXTENDED_MS = 25000;
@@ -366,11 +594,13 @@ class NPSService {
         return;
       }
 
-      const itemCount = Array.isArray(data)
-        ? data.length
-        : (typeof data === 'number'
-          ? data
-          : Object.values(data).reduce((sum, arr) => sum + (arr?.length || 0), 0));
+      const itemCount = this._countGroupedItems(data);
+
+      if (this._isGroupedBulkSnapshot(key, data) && Object.keys(data).length > 10) {
+        await this._saveGroupedSnapshotChunked(key, data);
+        return;
+      }
+
       await NpsSnapshot.updateOne(
         { key },
         { $set: { data, itemCount, fetchedAt: new Date() } },
@@ -854,95 +1084,16 @@ class NPSService {
 
   // Bulk-fetch all alerts from NPS API and group by parkCode
   async getAllAlerts() {
-    if (this._isCacheValid(this.alertsCache) && this.alertsCache.data) {
-      console.log('📦 Returning cached bulk alerts');
-      return this.alertsCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-alerts', this.alertsCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    // If rate-limited and we have a stale snapshot, use it rather than hammering NPS
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all alerts from NPS API (bulk)...');
-
-    let allAlerts = [];
-    const pageSize = 50;
-    const maxPages = 40;
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/alerts', {
-          params: { limit: pageSize, start }
-        });
-
-        const alerts = response.data.data;
-        if (!alerts || alerts.length === 0) break;
-
-        allAlerts = allAlerts.concat(alerts);
-        start += pageSize;
-
-        console.log(`🚨 Fetched page at offset ${start}, ${allAlerts.length} alerts so far`);
-
-        if (alerts.length < pageSize) break;
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      // Group alerts by parkCode
-      const alertsByPark = {};
-      for (const alert of allAlerts) {
-        const code = this._normalizeParkCode(alert.parkCode);
-        if (!code) continue;
-        if (!alertsByPark[code]) alertsByPark[code] = [];
-        alertsByPark[code].push(alert);
-      }
-
-      this.alertsCache = {
-        ...this.alertsCache,
-        data: alertsByPark,
-        timestamp: Date.now()
-      };
-
-      console.log(`✅ Total alerts fetched (bulk): ${allAlerts.length} across ${Object.keys(alertsByPark).length} parks`);
-      await this._saveSnapshot('bulk-alerts', alertsByPark);
-      return alertsByPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.alertsCache.data) {
-          console.warn('⚠️ NPS 429 on bulk alerts — returning stale cache');
-          return this.alertsCache.data;
-        }
-        // Fall back to snapshot even if stale
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk alerts — returning stale snapshot');
-          this.alertsCache = { ...this.alertsCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-alerts', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk alerts — returning DB snapshot');
-          this.alertsCache = { ...this.alertsCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk alerts — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllAlerts):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-alerts',
+      memoryCache: this.alertsCache,
+      cacheLogLabel: 'alerts',
+      endpoint: '/alerts',
+      emoji: '🚨',
+      fetchLabel: 'alerts',
+      maxPages: 40,
+      extractParkCode: (alert) => this._normalizeParkCode(alert.parkCode),
+    });
   }
 
   // Get park alerts — bulk snapshot first, then per-park NPS call
@@ -987,86 +1138,16 @@ class NPSService {
 
   // Bulk-fetch all campgrounds and group by parkCode
   async getAllCampgrounds() {
-    if (this._isCacheValid(this.campgroundsCache) && this.campgroundsCache.data) {
-      console.log('📦 Returning cached bulk campgrounds');
-      return this.campgroundsCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-campgrounds', this.campgroundsCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all campgrounds from NPS API (bulk)...');
-
-    let allCampgrounds = [];
-    const pageSize = 50;
-    const maxPages = 40;
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/campgrounds', {
-          params: { limit: pageSize, start }
-        });
-
-        const campgrounds = response.data.data;
-        if (!campgrounds || campgrounds.length === 0) break;
-
-        allCampgrounds = allCampgrounds.concat(campgrounds);
-        start += pageSize;
-
-        console.log(`⛺ Fetched page at offset ${start}, ${allCampgrounds.length} campgrounds so far`);
-
-        if (campgrounds.length < pageSize) break;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const byPark = {};
-      for (const cg of allCampgrounds) {
-        const code = this._normalizeParkCode(cg.parkCode);
-        if (!code) continue;
-        if (!byPark[code]) byPark[code] = [];
-        byPark[code].push(cg);
-      }
-
-      this.campgroundsCache = { ...this.campgroundsCache, data: byPark, timestamp: Date.now() };
-      console.log(`✅ Total campgrounds fetched (bulk): ${allCampgrounds.length} across ${Object.keys(byPark).length} parks`);
-      await this._saveSnapshot('bulk-campgrounds', byPark);
-      return byPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.campgroundsCache.data) {
-          console.warn('⚠️ NPS 429 on bulk campgrounds — returning stale cache');
-          return this.campgroundsCache.data;
-        }
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk campgrounds — returning stale snapshot');
-          this.campgroundsCache = { ...this.campgroundsCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-campgrounds', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk campgrounds — returning DB snapshot');
-          this.campgroundsCache = { ...this.campgroundsCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk campgrounds — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllCampgrounds):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-campgrounds',
+      memoryCache: this.campgroundsCache,
+      cacheLogLabel: 'campgrounds',
+      endpoint: '/campgrounds',
+      emoji: '⛺',
+      fetchLabel: 'campgrounds',
+      maxPages: 40,
+      extractParkCode: (cg) => this._normalizeParkCode(cg.parkCode),
+    });
   }
 
   // Get park campgrounds — serves from bulk cache first
@@ -1092,86 +1173,16 @@ class NPSService {
 
   // Bulk-fetch all visitor centers and group by parkCode
   async getAllVisitorCenters() {
-    if (this._isCacheValid(this.visitorCentersCache) && this.visitorCentersCache.data) {
-      console.log('📦 Returning cached bulk visitor centers');
-      return this.visitorCentersCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-visitorcenters', this.visitorCentersCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all visitor centers from NPS API (bulk)...');
-
-    let allVCs = [];
-    const pageSize = 50;
-    const maxPages = 40;
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/visitorcenters', {
-          params: { limit: pageSize, start }
-        });
-
-        const vcs = response.data.data;
-        if (!vcs || vcs.length === 0) break;
-
-        allVCs = allVCs.concat(vcs);
-        start += pageSize;
-
-        console.log(`🏛️ Fetched page at offset ${start}, ${allVCs.length} visitor centers so far`);
-
-        if (vcs.length < pageSize) break;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const byPark = {};
-      for (const vc of allVCs) {
-        const code = this._normalizeParkCode(vc.parkCode);
-        if (!code) continue;
-        if (!byPark[code]) byPark[code] = [];
-        byPark[code].push(vc);
-      }
-
-      this.visitorCentersCache = { ...this.visitorCentersCache, data: byPark, timestamp: Date.now() };
-      console.log(`✅ Total visitor centers fetched (bulk): ${allVCs.length} across ${Object.keys(byPark).length} parks`);
-      await this._saveSnapshot('bulk-visitorcenters', byPark);
-      return byPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.visitorCentersCache.data) {
-          console.warn('⚠️ NPS 429 on bulk visitor centers — returning stale cache');
-          return this.visitorCentersCache.data;
-        }
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk visitorcenters — returning stale snapshot');
-          this.visitorCentersCache = { ...this.visitorCentersCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-visitorcenters', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk visitorcenters — returning DB snapshot');
-          this.visitorCentersCache = { ...this.visitorCentersCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk visitor centers — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllVisitorCenters):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-visitorcenters',
+      memoryCache: this.visitorCentersCache,
+      cacheLogLabel: 'visitor centers',
+      endpoint: '/visitorcenters',
+      emoji: '🏛️',
+      fetchLabel: 'visitor centers',
+      maxPages: 40,
+      extractParkCode: (vc) => this._normalizeParkCode(vc.parkCode),
+    });
   }
 
   // Get park visitor centers — serves from bulk cache first
@@ -1198,86 +1209,18 @@ class NPSService {
   // --- Bulk places ---
 
   async getAllPlaces() {
-    if (this._isCacheValid(this.placesCache) && this.placesCache.data) {
-      console.log('📦 Returning cached bulk places');
-      return this.placesCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-places', this.placesCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all places from NPS API (bulk)...');
-
-    let allPlaces = [];
-    const pageSize = 50;
-    const maxPages = 60; // places dataset is large
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/places', {
-          params: { limit: pageSize, start }
-        });
-
-        const places = response.data.data;
-        if (!places || places.length === 0) break;
-
-        allPlaces = allPlaces.concat(places);
-        start += pageSize;
-
-        console.log(`📍 Fetched page at offset ${start}, ${allPlaces.length} places so far`);
-
-        if (places.length < pageSize) break;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const byPark = {};
-      for (const place of allPlaces) {
-        const code = this._normalizeParkCode(place.relatedParks?.[0]?.parkCode || place.parkCode);
-        if (!code) continue;
-        if (!byPark[code]) byPark[code] = [];
-        byPark[code].push(place);
-      }
-
-      this.placesCache = { ...this.placesCache, data: byPark, timestamp: Date.now() };
-      console.log(`✅ Total places fetched (bulk): ${allPlaces.length} across ${Object.keys(byPark).length} parks`);
-      await this._saveSnapshot('bulk-places', byPark);
-      return byPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.placesCache.data) {
-          console.warn('⚠️ NPS 429 on bulk places — returning stale cache');
-          return this.placesCache.data;
-        }
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk places — returning stale snapshot');
-          this.placesCache = { ...this.placesCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-places', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk places — returning DB snapshot');
-          this.placesCache = { ...this.placesCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk places — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllPlaces):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-places',
+      memoryCache: this.placesCache,
+      cacheLogLabel: 'places',
+      endpoint: '/places',
+      emoji: '📍',
+      fetchLabel: 'places',
+      maxPages: 60,
+      extractParkCode: (place) => this._normalizeParkCode(
+        place.relatedParks?.[0]?.parkCode || place.parkCode
+      ),
+    });
   }
 
   async getParkPlaces(parkCode) {
@@ -1300,86 +1243,16 @@ class NPSService {
   // --- Bulk tours ---
 
   async getAllTours() {
-    if (this._isCacheValid(this.toursCache) && this.toursCache.data) {
-      console.log('📦 Returning cached bulk tours');
-      return this.toursCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-tours', this.toursCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all tours from NPS API (bulk)...');
-
-    let allTours = [];
-    const pageSize = 50;
-    const maxPages = 40;
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/tours', {
-          params: { limit: pageSize, start }
-        });
-
-        const tours = response.data.data;
-        if (!tours || tours.length === 0) break;
-
-        allTours = allTours.concat(tours);
-        start += pageSize;
-
-        console.log(`🗺️ Fetched page at offset ${start}, ${allTours.length} tours so far`);
-
-        if (tours.length < pageSize) break;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const byPark = {};
-      for (const tour of allTours) {
-        const code = this._normalizeParkCode(tour.park?.parkCode || tour.parkCode);
-        if (!code) continue;
-        if (!byPark[code]) byPark[code] = [];
-        byPark[code].push(tour);
-      }
-
-      this.toursCache = { ...this.toursCache, data: byPark, timestamp: Date.now() };
-      console.log(`✅ Total tours fetched (bulk): ${allTours.length} across ${Object.keys(byPark).length} parks`);
-      await this._saveSnapshot('bulk-tours', byPark);
-      return byPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.toursCache.data) {
-          console.warn('⚠️ NPS 429 on bulk tours — returning stale cache');
-          return this.toursCache.data;
-        }
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk tours — returning stale snapshot');
-          this.toursCache = { ...this.toursCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-tours', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk tours — returning DB snapshot');
-          this.toursCache = { ...this.toursCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk tours — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllTours):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-tours',
+      memoryCache: this.toursCache,
+      cacheLogLabel: 'tours',
+      endpoint: '/tours',
+      emoji: '🗺️',
+      fetchLabel: 'tours',
+      maxPages: 40,
+      extractParkCode: (tour) => this._normalizeParkCode(tour.park?.parkCode || tour.parkCode),
+    });
   }
 
   async getParkTours(parkCode) {
@@ -1402,86 +1275,18 @@ class NPSService {
   // --- Bulk webcams ---
 
   async getAllWebcams() {
-    if (this._isCacheValid(this.webcamsCache) && this.webcamsCache.data) {
-      console.log('📦 Returning cached bulk webcams');
-      return this.webcamsCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-webcams', this.webcamsCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all webcams from NPS API (bulk)...');
-
-    let allWebcams = [];
-    const pageSize = 50;
-    const maxPages = 20;
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/webcams', {
-          params: { limit: pageSize, start }
-        });
-
-        const webcams = response.data.data;
-        if (!webcams || webcams.length === 0) break;
-
-        allWebcams = allWebcams.concat(webcams);
-        start += pageSize;
-
-        console.log(`📹 Fetched page at offset ${start}, ${allWebcams.length} webcams so far`);
-
-        if (webcams.length < pageSize) break;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const byPark = {};
-      for (const cam of allWebcams) {
-        const code = this._normalizeParkCode(cam.relatedParks?.[0]?.parkCode || cam.parkCode);
-        if (!code) continue;
-        if (!byPark[code]) byPark[code] = [];
-        byPark[code].push(cam);
-      }
-
-      this.webcamsCache = { ...this.webcamsCache, data: byPark, timestamp: Date.now() };
-      console.log(`✅ Total webcams fetched (bulk): ${allWebcams.length} across ${Object.keys(byPark).length} parks`);
-      await this._saveSnapshot('bulk-webcams', byPark);
-      return byPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.webcamsCache.data) {
-          console.warn('⚠️ NPS 429 on bulk webcams — returning stale cache');
-          return this.webcamsCache.data;
-        }
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk webcams — returning stale snapshot');
-          this.webcamsCache = { ...this.webcamsCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-webcams', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk webcams — returning DB snapshot');
-          this.webcamsCache = { ...this.webcamsCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk webcams — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllWebcams):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-webcams',
+      memoryCache: this.webcamsCache,
+      cacheLogLabel: 'webcams',
+      endpoint: '/webcams',
+      emoji: '📹',
+      fetchLabel: 'webcams',
+      maxPages: 20,
+      extractParkCode: (cam) => this._normalizeParkCode(
+        cam.relatedParks?.[0]?.parkCode || cam.parkCode
+      ),
+    });
   }
 
   async getParkWebcams(parkCode) {
@@ -1504,86 +1309,18 @@ class NPSService {
   // --- Bulk parking lots ---
 
   async getAllParkingLots() {
-    if (this._isCacheValid(this.parkingLotsCache) && this.parkingLotsCache.data) {
-      console.log('📦 Returning cached bulk parking lots');
-      return this.parkingLotsCache.data;
-    }
-
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-parkinglots', this.parkingLotsCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
-      return snapshot.data;
-    }
-
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
-        this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
-        return snapshot.data;
-      }
-      return {};
-    }
-
-    console.log('🔄 Fetching all parking lots from NPS API (bulk)...');
-
-    let allParkingLots = [];
-    const pageSize = 50;
-    const maxPages = 40;
-    let start = 0;
-
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/parkinglots', {
-          params: { limit: pageSize, start }
-        });
-
-        const lots = response.data.data;
-        if (!lots || lots.length === 0) break;
-
-        allParkingLots = allParkingLots.concat(lots);
-        start += pageSize;
-
-        console.log(`🅿️ Fetched page at offset ${start}, ${allParkingLots.length} parking lots so far`);
-
-        if (lots.length < pageSize) break;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      const byPark = {};
-      for (const lot of allParkingLots) {
-        const code = this._normalizeParkCode(lot.relatedParks?.[0]?.parkCode || lot.parkCode);
-        if (!code) continue;
-        if (!byPark[code]) byPark[code] = [];
-        byPark[code].push(lot);
-      }
-
-      this.parkingLotsCache = { ...this.parkingLotsCache, data: byPark, timestamp: Date.now() };
-      console.log(`✅ Total parking lots fetched (bulk): ${allParkingLots.length} across ${Object.keys(byPark).length} parks`);
-      await this._saveSnapshot('bulk-parkinglots', byPark);
-      return byPark;
-    } catch (error) {
-      if (error.response?.status === 429) {
-        if (this.parkingLotsCache.data) {
-          console.warn('⚠️ NPS 429 on bulk parking lots — returning stale cache');
-          return this.parkingLotsCache.data;
-        }
-        if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk parkinglots — returning stale snapshot');
-          this.parkingLotsCache = { ...this.parkingLotsCache, data: snapshot.data, timestamp: Date.now() };
-          return snapshot.data;
-        }
-        const dbSnapshot = await this._loadSnapshot('bulk-parkinglots', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk parkinglots — returning DB snapshot');
-          this.parkingLotsCache = { ...this.parkingLotsCache, data: dbSnapshot.data, timestamp: Date.now() };
-          return dbSnapshot.data;
-        }
-        console.warn('⚠️ NPS 429 on bulk parking lots — no cache available, returning empty');
-        return {};
-      }
-      console.error('NPS API Error (getAllParkingLots):', error.message);
-      return {};
-    }
+    return this._runBulkGroupedFetch({
+      key: 'bulk-parkinglots',
+      memoryCache: this.parkingLotsCache,
+      cacheLogLabel: 'parking lots',
+      endpoint: '/parkinglots',
+      emoji: '🅿️',
+      fetchLabel: 'parking lots',
+      maxPages: 40,
+      extractParkCode: (lot) => this._normalizeParkCode(
+        lot.relatedParks?.[0]?.parkCode || lot.parkCode
+      ),
+    });
   }
 
   async getParkParkingLots(parkCode) {
@@ -2101,78 +1838,90 @@ class NPSService {
       return cachedActivities.slice(0, limit);
     }
 
-    // Try MongoDB snapshot before hitting NPS API
-    const snapshot = await this._loadSnapshot('bulk-activities', this.activitiesCache.ttl);
-    if (snapshot && !snapshot.stale) {
-      this.setActivitiesCache(snapshot.data);
-      return snapshot.data.slice(0, limit);
-    }
+    return this._withBulkInFlight('bulk-activities', async () => {
+      const cachedAgain = this.getCachedActivities();
+      if (cachedAgain) {
+        return cachedAgain.slice(0, limit);
+      }
 
-    if (this._isRateLimited()) {
-      if (snapshot?.data) {
+      const snapshot = await this._loadSnapshot('bulk-activities', this.activitiesCache.ttl);
+      if (snapshot && !snapshot.stale) {
         this.setActivitiesCache(snapshot.data);
         return snapshot.data.slice(0, limit);
       }
-      return [];
-    }
 
-    try {
-      console.log('🔄 Fetching all activities from NPS API (bulk)...');
-
-      let allActivities = [];
-      const pageSize = 50;
-      const maxPages = 40;
-      let start = 0;
-
-      for (let page = 0; page < maxPages; page++) {
-        const response = await this.api.get('/thingstodo', {
-          params: { limit: pageSize, start }
-        });
-
-        const activities = response.data.data;
-        if (!activities || activities.length === 0) break;
-
-        allActivities = allActivities.concat(activities);
-        start += pageSize;
-
-        console.log(`🎯 Fetched page at offset ${start}, ${allActivities.length} activities so far`);
-
-        if (activities.length < pageSize) break; // last page
-        if (allActivities.length >= limit) break;
-
-        // Small delay between pages
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      this.setActivitiesCache(allActivities);
-
-      console.log(`✅ Total activities fetched (bulk): ${allActivities.length}`);
-      await this._saveSnapshot('bulk-activities', allActivities);
-      return allActivities.slice(0, limit);
-    } catch (error) {
-      // On 429, return stale cache or empty array — don't crash the warm-up
-      if (error.response?.status === 429) {
-        if (this.activitiesCache.data) {
-          console.warn('⚠️ NPS 429 rate limit on activities — returning stale cache');
-          return this.activitiesCache.data.slice(0, limit);
-        }
+      if (this._isRateLimited()) {
         if (snapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk activities — returning stale snapshot');
           this.setActivitiesCache(snapshot.data);
           return snapshot.data.slice(0, limit);
         }
-        const dbSnapshot = await this._loadSnapshot('bulk-activities', Infinity);
-        if (dbSnapshot?.data) {
-          console.warn('⚠️ NPS 429 on bulk activities — returning DB snapshot');
-          this.setActivitiesCache(dbSnapshot.data);
-          return dbSnapshot.data.slice(0, limit);
-        }
-        console.warn('⚠️ NPS 429 rate limit on activities — no cache available, returning empty');
         return [];
       }
-      console.error('NPS API Error (getAllActivities):', error.message);
-      throw new Error(`Failed to fetch all activities: ${error.message}`);
-    }
+
+      return this._withSerializedBulkRefresh(async () => {
+        if (this.getCachedActivities()) {
+          return this.getCachedActivities().slice(0, limit);
+        }
+
+        try {
+          console.log('🔄 Fetching all activities from NPS API (bulk)...');
+
+          const allActivities = [];
+          const pageSize = 50;
+          const maxPages = 40;
+          let start = 0;
+
+          for (let page = 0; page < maxPages; page++) {
+            const response = await this.api.get('/thingstodo', {
+              params: { limit: pageSize, start },
+            });
+
+            const activities = response.data.data;
+            if (!activities || activities.length === 0) break;
+
+            for (const activity of activities) {
+              allActivities.push(activity);
+            }
+            start += pageSize;
+
+            console.log(`🎯 Fetched page at offset ${start}, ${allActivities.length} activities so far`);
+
+            if (activities.length < pageSize) break;
+            if (allActivities.length >= limit) break;
+
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          }
+
+          this.setActivitiesCache(allActivities);
+
+          console.log(`✅ Total activities fetched (bulk): ${allActivities.length}`);
+          await this._saveSnapshot('bulk-activities', allActivities);
+          return allActivities.slice(0, limit);
+        } catch (error) {
+          if (error.response?.status === 429) {
+            if (this.activitiesCache.data) {
+              console.warn('⚠️ NPS 429 rate limit on activities — returning stale cache');
+              return this.activitiesCache.data.slice(0, limit);
+            }
+            if (snapshot?.data) {
+              console.warn('⚠️ NPS 429 on bulk activities — returning stale snapshot');
+              this.setActivitiesCache(snapshot.data);
+              return snapshot.data.slice(0, limit);
+            }
+            const dbSnapshot = await this._loadSnapshot('bulk-activities', Infinity);
+            if (dbSnapshot?.data) {
+              console.warn('⚠️ NPS 429 on bulk activities — returning DB snapshot');
+              this.setActivitiesCache(dbSnapshot.data);
+              return dbSnapshot.data.slice(0, limit);
+            }
+            console.warn('⚠️ NPS 429 rate limit on activities — no cache available, returning empty');
+            return [];
+          }
+          console.error('NPS API Error (getAllActivities):', error.message);
+          throw new Error(`Failed to fetch all activities: ${error.message}`);
+        }
+      });
+    });
   }
 
   // Get activity by ID
