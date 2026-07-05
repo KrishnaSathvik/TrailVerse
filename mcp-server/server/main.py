@@ -652,7 +652,6 @@ def _send_analytics(event: dict[str, Any]) -> None:
 async def plan_trip(
     message: str,
     park_code: str | None = None,
-    persona: str = "planner",
     days: int | None = None,
     group_size: int | None = None,
     fitness_level: str | None = None,
@@ -677,7 +676,6 @@ async def plan_trip(
             payload = PlanTripInput(
                 message=message,
                 park_code=park_code,
-                persona=persona,  # type: ignore[arg-type]
                 days=days,
                 group_size=group_size,
                 fitness_level=fitness_level,  # type: ignore[arg-type]
@@ -733,7 +731,6 @@ async def plan_trip(
                 resp = await client.plan_trip_anonymous(
                     message=payload.message,
                     park_code=resolved_park_code,
-                    persona=payload.persona,
                     form_data=form_data or None,
                     messages=conv.messages,
                     anonymous_id=conv.anonymous_id,

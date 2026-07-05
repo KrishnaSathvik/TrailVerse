@@ -44,7 +44,7 @@ export default function PrivacyPageContent() {
           <h3 className="text-lg font-semibold mb-3 mt-4">Third-Party Data</h3>
           <p className="mb-4">
             We integrate with: National Park Service API (park info, events, alerts), OpenWeather API (weather forecasts), 
-            OpenAI & Anthropic (Trailie planning — anonymized), Google Maps Platform (maps, places, directions), and Resend (email delivery).
+            Anthropic Claude Sonnet 5 (Trailie chat — anonymized), OpenAI (Trailie Voice — anonymized), Google Maps Platform (maps, places, directions), and Resend (email delivery).
           </p>
         </>
       )
@@ -79,7 +79,7 @@ export default function PrivacyPageContent() {
           <p className="mb-4">We only share information with:</p>
           <ul className="list-disc pl-6 mb-4 space-y-2">
             <li><strong>Service Providers:</strong> Secure database cloud providers, application hosting providers, 
-            OpenAI & Anthropic (anonymized AI queries), Google Maps Platform, OpenWeather API, Resend (emails), Google Analytics</li>
+            Anthropic Claude Sonnet 5 (Trailie chat), OpenAI (Trailie Voice — anonymized), Google Maps Platform, OpenWeather API, Resend (emails), Google Analytics</li>
             <li><strong>Public Content:</strong> Your reviews, ratings, comments, and testimonials are visible to all users</li>
             <li><strong>Legal Requirements:</strong> When required by law or to protect rights and safety</li>
           </ul>
@@ -164,7 +164,7 @@ export default function PrivacyPageContent() {
             </div>
             <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1">AI Providers</p>
-              <p className="text-sm">OpenAI • Anthropic Claude (queries are anonymized)</p>
+              <p className="text-sm">Anthropic Claude Sonnet 5 (Trailie chat) • OpenAI (Trailie Voice — anonymized)</p>
             </div>
             <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1">Infrastructure</p>

@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 
 Fitness = Literal["easy", "moderate", "challenging"]
 Accommodation = Literal["camping", "hotel", "mixed"]
-Persona = Literal["planner", "local"]
 
 
 # ---------- plan_trip ----------
@@ -36,13 +35,6 @@ class PlanTripInput(BaseModel):
             "Optional NPS park code or name (e.g. 'yell', 'Yellowstone', 'zion'). "
             "Prefer 4-letter codes. Do not use website URL slugs. "
             "If omitted, the backend extracts the park from the message."
-        ),
-    )
-    persona: Persona = Field(
-        "planner",
-        description=(
-            "Which AI voice to use. 'planner' (default) produces a structured, "
-            "time-blocked itinerary. 'local' gives casual, opinionated insider picks."
         ),
     )
     days: int | None = Field(

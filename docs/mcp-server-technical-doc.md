@@ -127,7 +127,6 @@ Builds a day-by-day itinerary for any US trip destination. Works for national pa
 |---|---|---|---|
 | `message` | string (3-1000 chars) | Yes | Natural language trip request |
 | `park_code` | string | No | NPS park code (e.g., "zion"); auto-resolved from message |
-| `persona` | "planner" \| "local" | No | AI voice: "planner" = structured (GPT), "local" = casual (Claude) |
 | `days` | int (1-14) | No | Trip length |
 | `group_size` | int (1-20) | No | Number of travelers |
 | `fitness_level` | "easy" \| "moderate" \| "challenging" | No | Affects trail recommendations |
@@ -143,7 +142,7 @@ Builds a day-by-day itinerary for any US trip destination. Works for national pa
 2. Resolves park name to NPS code if needed (via search API)
 3. Manages conversation continuity — retrieves or creates a session, appends the user message
 4. Calls the Express backend anonymous AI planner with conversation history
-5. Backend auto-routes to OpenAI (structured itineraries) or Claude (casual responses) based on the `persona` parameter
+5. Backend runs **Trailie on Claude Sonnet 5** (`provider: claude`) with live NPS/weather context and constraint validation
 6. Formats the response into widget JSON + Markdown text
 7. Fetches hero image (base64, SSRF-safe) for inline rendering in Claude
 8. Appends Google Maps direction links per itinerary day

@@ -388,7 +388,6 @@ async def test_plan_trip() -> None:
     result = await plan_trip(
         message="Plan a 2-day trip to Zion for beginners in May",
         park_code="zion",
-        persona="planner",
         days=2,
     )
     sc = sc_from_result(result)

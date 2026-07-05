@@ -15,8 +15,7 @@ planner into ChatGPT and Claude conversations. Built for the
 TrailVerse already has:
 
 - 470+ NPS sites (parks, monuments, historic sites) with live NPS API data
-- A sophisticated **AI trip planner** with dual-model personas (The Planner on
-  GPT-5.4 Mini, The Local on Claude), constraint engine, intent detection, conflict
+- A unified **Trailie** trip planner on **Claude Sonnet 5**, with constraint engine, intent detection, conflict
   detection, post-generation validation, smart replacement, plan scoring, and
   regeneration — documented in `article-ai-architecture.md` in the main repo.
 - Side-by-side park comparison, events, daily nature feed, reviews, blog.
@@ -56,7 +55,7 @@ ChatGPT user
 └──────────────┬──────────────┘
                │
                ▼
-   MongoDB · NPS API · Claude · GPT-5.4 Mini · OpenWeatherMap
+   MongoDB · NPS API · Claude Sonnet 5 · OpenWeatherMap
 ```
 
 ## The five tools
@@ -456,4 +455,4 @@ Built on top of:
 - [FastMCP](https://github.com/modelcontextprotocol/python-sdk) Python SDK
 
 Park data from the [National Park Service API](https://www.nps.gov/subjects/developer/).
-Weather from OpenWeatherMap. AI from Anthropic Claude and OpenAI GPT-5.4 Mini.
+Weather from OpenWeatherMap. AI trip planning from Trailie on Anthropic Claude Sonnet 5.

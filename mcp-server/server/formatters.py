@@ -257,10 +257,8 @@ def format_plan_trip(
         "parkName": park_name,
         "parkCode": park_code,
         "parkImages": park_images,
-        # Legacy persona label — both are now "Trailie" in the UI, but the
-        # provider-based routing (openai=structured, claude=casual) still applies.
-        "persona": "planner" if data.get("provider") == "openai" else "local",
-        "provider": data.get("provider"),
+        "persona": "trailie",
+        "provider": data.get("provider") or "claude",
         "model": data.get("model"),
         "hasItinerary": bool(itinerary),
         "intent": data.get("intent"),

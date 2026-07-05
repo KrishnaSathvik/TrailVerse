@@ -134,7 +134,7 @@ export default function TermsPageContent() {
               <strong>Google:</strong> Maps JavaScript API, Analytics 4 (subject to Google's Terms & Privacy)
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <strong>AI:</strong> OpenAI, Anthropic Claude (anonymized queries, subject to their Terms & Privacy)
+              <strong>AI:</strong> Anthropic Claude Sonnet 5 (Trailie chat), OpenAI (Trailie Voice — anonymized queries, subject to their Terms & Privacy)
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <strong>APIs:</strong> National Park Service API, OpenWeather API (public data, subject to their terms)

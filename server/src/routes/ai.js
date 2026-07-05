@@ -191,9 +191,27 @@ const {
 const {
   CLAUDE_FALLBACK_MODELS,
   CLAUDE_EXTRACTOR_MODEL,
+  CLAUDE_PRIMARY_MODEL,
   OPENAI_PRIMARY_MODEL,
   OPENAI_FALLBACK_MODELS,
 } = require('../config/aiModels');
+function formatClaudeModelLabel(model = CLAUDE_PRIMARY_MODEL) {
+  if (/sonnet-5/i.test(model)) return 'Claude Sonnet 5';
+  if (/sonnet-4-6/i.test(model)) return 'Claude Sonnet 4.6';
+  return model;
+}
+
+function getTrailieProviders() {
+  if (!anthropic || !process.env.ANTHROPIC_API_KEY) return [];
+  return [{
+    id: 'claude',
+    name: 'Trailie',
+    model: formatClaudeModelLabel(),
+    description: 'Live NPS data, constraint-aware trip planning, and insider park picks',
+    available: true,
+  }];
+}
+
 const {
   autoRouteProvider,
   resolveResponseMode,
@@ -3786,27 +3804,7 @@ router.get('/session-status/:anonymousId', async (req, res) => {
 
 // Get available providers (anonymous version)
 router.get('/providers-anonymous', (req, res) => {
-  const providers = [];
-
-  if (anthropic && process.env.ANTHROPIC_API_KEY) {
-    providers.push({
-      id: 'claude',
-      name: 'Trailie',
-      model: 'Claude Sonnet 4.6',
-      description: 'Opinionated picks & insider tips',
-      available: true
-    });
-  }
-
-  if (openai && process.env.OPENAI_API_KEY) {
-    providers.push({
-      id: 'openai',
-      name: 'Trailie',
-      model: 'GPT-5.4 Mini',
-      description: 'Structured plans with times & logistics',
-      available: true
-    });
-  }
+  const providers = getTrailieProviders();
 
   if (providers.length === 0) {
     return res.status(503).json({
@@ -3820,27 +3818,7 @@ router.get('/providers-anonymous', (req, res) => {
 
 // Get available providers (authenticated version)
 router.get('/providers', protect, (req, res) => {
-  const providers = [];
-
-  if (anthropic && process.env.ANTHROPIC_API_KEY) {
-    providers.push({
-      id: 'claude',
-      name: 'Trailie',
-      model: 'Claude Sonnet 4.6',
-      description: 'Opinionated picks & insider tips',
-      available: true
-    });
-  }
-
-  if (openai && process.env.OPENAI_API_KEY) {
-    providers.push({
-      id: 'openai',
-      name: 'Trailie',
-      model: 'GPT-5.4 Mini',
-      description: 'Structured plans with times & logistics',
-      available: true
-    });
-  }
+  const providers = getTrailieProviders();
 
   if (providers.length === 0) {
     return res.status(503).json({

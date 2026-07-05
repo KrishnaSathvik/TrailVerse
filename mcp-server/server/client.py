@@ -201,20 +201,17 @@ class TrailVerseClient:
         self,
         message: str,
         park_code: str | None = None,
-        persona: str = "planner",
         form_data: dict[str, Any] | None = None,
         messages: list[dict[str, str]] | None = None,
         anonymous_id: str | None = None,
     ) -> dict[str, Any]:
         """
-        Call the anonymous AI planner.
+        Call the anonymous AI planner (Trailie on Claude Sonnet 5).
 
-        persona: "planner" (GPT-5.4 Mini, structured) or "local" (Claude, casual).
         form_data: optional structured constraints (dates, groupSize, budget, etc.).
         messages: full conversation history for multi-turn continuity.
         anonymous_id: stable session identity for backend session lookup.
         """
-        provider = "openai" if persona == "planner" else "claude"
         metadata: dict[str, Any] = {}
         if park_code:
             metadata["parkCode"] = self._validate_park_code(park_code)
@@ -222,7 +219,7 @@ class TrailVerseClient:
             metadata["formData"] = form_data
         body: dict[str, Any] = {
             "messages": messages if messages else [{"role": "user", "content": message}],
-            "provider": provider,
+            "provider": "claude",
             "metadata": metadata,
         }
         if anonymous_id:

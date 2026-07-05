@@ -86,10 +86,10 @@ const faqStructuredData = {
     },
     {
       '@type': 'Question',
-      name: 'How does Trailie pick which AI to use?',
+      name: 'What AI powers Trailie?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: "Trailie automatically routes each message to the best AI for the job. Quick questions and casual asks go to Claude for insider-style tips, while planning and itinerary requests go to OpenAI for structured day-by-day plans. You don't need to choose — Trailie handles it seamlessly, and your trip history is always saved."
+        text: "Trailie runs on Anthropic Claude Sonnet 5 — one assistant for quick tips and full day-by-day itineraries. You don't pick a model; Trailie uses live NPS data and web search (when signed in) to keep answers current. Signed-in trips save to your chat history automatically."
       }
     },
     {
@@ -105,7 +105,7 @@ const faqStructuredData = {
       name: 'Are my Trailie conversations private?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes! Your Trailie conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats.'
+        text: 'Yes! Your Trailie conversations are private and stored securely. Website chat goes to Anthropic (Claude Sonnet 5); Talk to Trailie voice uses OpenAI Realtime — all without personal identifiers in the prompts we send. You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats.'
       }
     },
     {

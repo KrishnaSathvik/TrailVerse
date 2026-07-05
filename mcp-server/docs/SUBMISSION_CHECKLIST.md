@@ -97,8 +97,7 @@ Five focused capabilities:
 • Plan a trip — Constraint-aware day-by-day itineraries with confidence
   scoring. Post-validates plans for fitness level, family pacing, and
   feasibility. Works for NPS sites and beyond (state parks, cities, mixed road
-  trips). Two voices: The Planner (structured, thorough) or The Local (casual,
-  opinionated insider picks).
+  trips). Powered by **Trailie** on Claude Sonnet 5.
 
 • Park details — Rich live info for NPS sites: current weather, 5-day forecast
   when available, active alerts, entrance fees, and top activities.
@@ -133,7 +132,7 @@ for live weather, alerts, compare, search, and events.
 
 Ask for a Zion trip with kids in July and get family-paced itineraries, permit
 warnings, and plans grounded in live alerts and weather. Five tools: Plan a
-trip (constraint-aware, confidence-scored; The Planner or The Local), Park
+trip (constraint-aware, confidence-scored; Trailie on Claude Sonnet 5), Park
 details, Compare (2–4 parks), Search, and Find events.
 
 Data comes from the NPS API, live weather, and TrailVerse's validation
@@ -286,9 +285,8 @@ Data accessed from the user:
 Data sent to third parties:
 - User prompts are sent to the TrailVerse backend
   (trailverse.onrender.com) for AI trip planning
-- TrailVerse forwards the prompt to OpenAI (GPT-5.4 Mini) or Anthropic
-  (Claude) depending on the persona
-- No data is stored server-side for anonymous users
+- TrailVerse forwards prompts to Anthropic (**Claude Sonnet 5**) for AI trip planning
+- No data is stored server-side for anonymous users beyond ephemeral session state
 
 Data retained:
 - Backend logs retain request metadata (IP, timestamp, park code) for
@@ -387,8 +385,7 @@ Once published:
 - [ ] Consider V2 features:
   - OAuth-gated authenticated mode for logged-in TrailVerse users (saved
     trips, share links, and Plan Workspace inside ChatGPT)
-  - Additional tools: `get_daily_feed`, `get_local_take` (Claude persona
-    as a separate tool)
+  - Additional tools: `get_daily_feed`, `get_local_take`
 
 ---
 
@@ -404,8 +401,8 @@ authenticated tools. That's deliberate:
 3. **Top-of-funnel for TrailVerse.** ChatGPT users who want saved trips,
    PDF export, or the visual Plan Workspace continue at
    nationalparksexplorerusa.com — acquisition channel, not a replacement.
-4. **The moat is still visible.** The constraint engine, dual personas,
-   plan scoring, and post-validation all work via the anonymous endpoint.
+4. **The moat is still visible.** The constraint engine, plan scoring, and
+   post-validation all work via the anonymous endpoint.
    Production MCP uses `MCP_BYPASS_KEY` (skips the website 5-msg/48h cap and
    enables web search for `plan_trip`). What's still *website-only* is
    **trip persistence, share links, PDF export, and the Plan Workspace**.

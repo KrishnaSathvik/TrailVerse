@@ -97,7 +97,6 @@ TESTS = {
     "plan_trip": lambda: plan_trip(
         message="Plan a relaxed 3-day trip to Zion for a beginner with kids in May",
         park_code="zion",
-        persona="planner",
         days=3,
         group_size=3,
         fitness_level="easy",
@@ -109,7 +108,6 @@ TESTS = {
             "Plan a 3-day itinerary for Custer State Park in South Dakota "
             "for two adults who like wildlife drives and moderate hikes."
         ),
-        persona="planner",
         days=3,
         group_size=2,
         fitness_level="moderate",

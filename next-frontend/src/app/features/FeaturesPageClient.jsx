@@ -61,9 +61,9 @@ const FeaturesPage = () => {
       items: [
         {
           icon: Bot,
-          title: 'Trailie routing',
-          description: 'Trailie picks the best model for each message — Claude for quick tips, OpenAI for structured itineraries. No toggles required.',
-          benefits: ['5 guest messages on site', 'Automatic provider selection', 'Streaming when signed in', 'Trip history when signed in'],
+          title: 'Trailie on Claude Sonnet 5',
+          description: 'One Trailie assistant for every message — quick tips and structured day-by-day itineraries alike. No model toggles required.',
+          benefits: ['5 guest messages on site', 'Claude Sonnet 5', 'Streaming when signed in', 'Trip history when signed in'],
         },
         {
           icon: Route,
@@ -153,7 +153,7 @@ const FeaturesPage = () => {
     {
       icon: MessageSquare,
       title: 'TrailVerse for ChatGPT',
-      description: 'Use Trailie inside ChatGPT for NPS catalog trips — compare parks, weather, alerts, search, and ranger programs across 470+ sites. No TrailVerse account required; state parks and web search are on the website.',
+      description: 'Use Trailie inside ChatGPT for live NPS data across 470+ sites — compare parks, weather, alerts, search, and ranger programs. plan_trip works for any US destination (NPS, state parks, cities, road trips). No TrailVerse account required; saved trips and web search are on the website.',
       href: '/chatgpt',
       cta: 'Install ChatGPT app',
       benefits: ['5 MCP tools (NPS-focused)', 'Multi-turn planning', 'Live NPS catalog data', 'Website sign-in for state parks'],
@@ -172,8 +172,8 @@ const FeaturesPage = () => {
     {
       icon: Sparkles,
       title: 'Trailie + live data',
-      description: "Trailie auto-routes each message to Claude or OpenAI based on what you're asking. Both are enriched with real-time NPS data \u2014 not just training data.",
-      comparison: 'Other apps: single model, static data. TrailVerse: Trailie routing, live NPS.',
+      description: "Trailie runs on Claude Sonnet 5 and is enriched with real-time NPS data \u2014 not just training data. Talk to Trailie voice uses OpenAI Realtime with the same live park tools.",
+      comparison: 'Other apps: static data. TrailVerse: Trailie + live NPS.',
     },
     {
       icon: GripVertical,

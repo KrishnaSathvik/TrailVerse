@@ -45,8 +45,8 @@ const faqCategories = [
         answer: "Trailie analyzes your preferences, travel dates, interests, and available time to create personalized itineraries. It weaves in live NPS data when available — weather, closures, permits — and can use web search for state parks when you are signed in. Tell Trailie where you want to go and what matters; it builds a day-by-day plan from there."
       },
       {
-        question: "How does Trailie pick which AI to use?",
-        answer: "Trailie automatically routes each message to the best AI for the job. Quick questions and casual asks go to Claude for insider-style tips, while planning and itinerary requests go to OpenAI for structured day-by-day plans. You don't need to choose \u2014 Trailie handles it seamlessly, and your trip history is always saved."
+        question: "What AI powers Trailie?",
+        answer: "Trailie runs on Anthropic Claude Sonnet 5 \u2014 one assistant for quick tips and full day-by-day itineraries. You don't pick a model; Trailie uses live NPS data and web search (when signed in) to keep answers current. Signed-in trips save to your chat history automatically."
       },
       {
         question: "How does trip history and archiving work?",
@@ -54,7 +54,7 @@ const faqCategories = [
       },
       {
         question: "Are my Trailie conversations private?",
-        answer: "Yes! Your Trailie conversations are private and stored securely. We send anonymized queries to OpenAI and Anthropic (without personal identifiers). You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats."
+        answer: "Yes! Your Trailie conversations are private and stored securely. Website chat goes to Anthropic (Claude Sonnet 5); Talk to Trailie voice uses OpenAI Realtime \u2014 all without personal identifiers in the prompts we send. You can delete any conversation from your trip history at any time. Do not enter sensitive personal information into Trailie chats."
       },
       {
         question: "How is TrailVerse different from using ChatGPT alone?",

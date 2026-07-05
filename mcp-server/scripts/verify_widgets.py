@@ -112,7 +112,7 @@ WIDGET_CHECKS = {
     "itinerary": {
         "call": lambda: plan_trip(
             message="Plan a 2-day trip to Zion for beginners in May",
-            park_code="zion", persona="planner", days=2,
+            park_code="zion", days=2,
         ),
         "required_keys": ["parkName", "itinerary", "sessionId"],
         "optional_keys": ["narrative", "persona", "intent", "dayMaps", "parkImages", "links"],
