@@ -530,7 +530,7 @@ Use **Dynamic Type text styles** — test at AX3 minimum.
 
 | Layer | Choice | Rationale |
 |-------|--------|-----------|
-| App | **Expo (React Native)** + Expo Router | Team knows React; Android later; API-heavy app |
+| App | **SwiftUI** (native iOS) | Live Activities, WidgetKit, SwiftData, MapKit, StoreKit 2 |
 | API client | `packages/trailverse-api` (TS) | Port from `next-frontend/src/services/` |
 | Auth token | **Keychain** | Not cookies |
 | Maps v1 | **MapKit** | No extra key; Apple Maps handoff |
@@ -646,7 +646,8 @@ App must exceed “repackaged website.” Ship:
 - [ ] SF Symbol / Phosphor mapping table
 - [x] `apple-app-site-association` on Vercel (route handlers + `APPLE_TEAM_ID` env)
 - [x] `packages/trailverse-api` scaffold from Swagger
-- [x] Expo project `mobile/` with theme tokens
+- [x] Expo prototype archived (`git tag trailverse-expo-archive`) — superseded by `ios/`
+- [ ] Native SwiftUI project `ios/` with design system
 
 ### Phase 1 — MVP v1.0 (8–10 weeks)
 
@@ -703,7 +704,7 @@ App must exceed “repackaged website.” Ship:
 | # | Question | Options | Recommendation |
 |---|----------|---------|----------------|
 | 1 | 5th tab for Compare? | Yes / No | No for v1; toolbar entry |
-| 2 | Expo vs SwiftUI | RN / Native | Expo unless widgets day-one |
+| 2 | Expo vs SwiftUI | RN / Native | **SwiftUI** — trip companion requires ActivityKit, SwiftData, native MapKit |
 | 3 | Blog article renderer | WebView / native HTML | WebView v1.2 |
 | 4 | Map provider | MapKit / Google | MapKit v1 |
 | 5 | Voice in v1? | Yes / No | No — text Trailie first |

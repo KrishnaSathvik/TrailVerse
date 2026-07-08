@@ -33,6 +33,7 @@ When writing marketing copy, demos, or capability docs for Trailie → read **[d
 
 - **ChatGPT app**: [nationalparksexplorerusa.com/chatgpt](https://www.nationalparksexplorerusa.com/chatgpt) → OpenAI Apps SDK
 - **Claude MCP**: [nationalparksexplorerusa.com/mcp](https://www.nationalparksexplorerusa.com/mcp) → `https://trailverse-mcp.onrender.com/mcp`
+- **iOS app**: Native SwiftUI in `ios/` — Expo prototype archived at `trailverse-expo-archive`
 - **Implementation**: `mcp-server/` (Python), deployed via `mcp-server/render.yaml`
 
 ## Quick start
