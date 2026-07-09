@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from server.plan_trip_service import (
     build_plan_trip_form_data,
     build_plan_trip_message,
+    slim_plan_trip_structured,
     transform_itinerary_days,
     validate_plan_trip_business_rules,
 )
@@ -123,6 +124,42 @@ def test_transform_itinerary_blocks():
     assert len(days[0]["evening"]) >= 1
 
 
+def test_slim_plan_trip_structured_includes_session_and_planner_mode():
+    slim = slim_plan_trip_structured({
+        "kind": "itinerary",
+        "status": "success",
+        "sessionId": "mcp-test-session",
+        "plannerMode": "deterministic",
+        "days": [{"day": 1}],
+        "hasItinerary": True,
+        "park": {"code": "shen", "name": "Shenandoah National Park"},
+        "parkImages": [{"url": "https://example.com/x.jpg"}],
+    })
+    assert slim["session_id"] == "mcp-test-session"
+    assert slim["sessionId"] == "mcp-test-session"
+    assert slim["planner_mode"] == "deterministic"
+    assert slim["days"] == [{"day": 1}]
+    assert "parkImages" not in slim
+
+
+def test_plan_trip_schema_advertises_field_descriptions():
+    from server.main import mcp
+
+    async def _list_tools():
+        return await mcp.list_tools()
+
+    tools = asyncio.run(_list_tools())
+    plan = next(tool for tool in tools if tool.name == "plan_trip")
+    schema = plan.inputSchema
+    start_date = schema["properties"]["start_date"]
+    difficulty = schema["properties"]["difficulty"]
+    session_id = schema["properties"]["session_id"]
+
+    assert "YYYY-MM-DD" in start_date["description"]
+    assert "easy, moderate, challenging" in difficulty["description"]
+    assert "previous successful plan_trip" in session_id["description"]
+
+
 def test_search_rerank_prefers_exact_acadia():
     resp = {
         "data": {
@@ -164,6 +201,41 @@ async def test_plan_trip_timeout_returns_controlled_error():
     structured = result.structuredContent or {}
     assert structured.get("status") == "error"
     assert structured["error"]["code"] == "UPSTREAM_TIMEOUT"
+
+
+@pytest.mark.asyncio
+async def test_plan_trip_success_returns_machine_readable_structured():
+    from server.main import plan_trip
+
+    mock_resp = {
+        "data": {
+            "content": "# Shenandoah plan\n\nDay 1 overview.",
+            "itinerary": {"days": [{"dayNumber": 1, "stops": []}], "parkCode": "shen"},
+            "plannerMode": "deterministic",
+        }
+    }
+
+    with patch("server.main.ENABLE_WIDGETS", False), patch("server.main.TrailVerseClient") as client_cls:
+        client = MagicMock()
+        client.__aenter__ = AsyncMock(return_value=client)
+        client.__aexit__ = AsyncMock(return_value=None)
+        client.plan_trip_anonymous = AsyncMock(return_value=mock_resp)
+        client.get_park_details = AsyncMock(return_value={"data": {"park": {"fullName": "Shenandoah National Park"}}})
+        client_cls.return_value = client
+
+        result = await plan_trip(
+            park_code="shen",
+            start_date="2026-10-15",
+            number_of_days=3,
+            adults=2,
+        )
+
+    assert result.isError is False
+    structured = result.structuredContent or {}
+    assert structured.get("session_id")
+    assert structured.get("sessionId") == structured.get("session_id")
+    assert structured.get("planner_mode") == "deterministic"
+    assert structured.get("status") == "success"
 
 
 @pytest.mark.asyncio

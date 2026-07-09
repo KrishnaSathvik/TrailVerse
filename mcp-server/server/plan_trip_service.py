@@ -295,6 +295,32 @@ def transform_itinerary_days(itinerary: dict[str, Any] | None) -> list[dict[str,
     return structured_days
 
 
+def slim_plan_trip_structured(structured: dict[str, Any]) -> dict[str, Any]:
+    """Machine-readable plan_trip payload when HTML widgets are disabled."""
+    session_id = structured.get("sessionId") or structured.get("session_id")
+    planner_mode = structured.get("plannerMode") or structured.get("planner_mode")
+
+    slim: dict[str, Any] = {
+        "kind": structured.get("kind", "itinerary"),
+        "status": structured.get("status", "success"),
+    }
+    if session_id:
+        slim["session_id"] = session_id
+        slim["sessionId"] = session_id
+    if planner_mode:
+        slim["planner_mode"] = planner_mode
+        slim["plannerMode"] = planner_mode
+    if structured.get("days") is not None:
+        slim["days"] = structured["days"]
+    if "hasItinerary" in structured:
+        slim["hasItinerary"] = structured["hasItinerary"]
+    if structured.get("park"):
+        slim["park"] = structured["park"]
+    if structured.get("error"):
+        slim["error"] = structured["error"]
+    return slim
+
+
 def build_plan_trip_structured(
     *,
     status: str,

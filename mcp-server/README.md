@@ -90,9 +90,13 @@ Structured fields (preferred over a single free-text `message`):
 | `difficulty` | Optional | `easy`, `moderate`, `challenging` (synonyms accepted) |
 | `lodging_area` | Optional | e.g. `Luray, Virginia` |
 | `sunrise`, `sunset`, `relaxed_afternoon` | Optional | Preference booleans |
-| `session_id` + `revision_request` | Revisions | Pass `sessionId` from prior response |
+| `session_id` + `revision_request` | Revisions | Returned in structured output (`session_id`) and text |
 
 Validation errors return machine-readable JSON: `{ status: "error", error: { code, message, field, received, expected } }`.
+
+Even with HTML widgets disabled (`MCP_ENABLE_WIDGETS=false`), successful `plan_trip`
+responses still include slim structured output with `session_id`, `planner_mode`,
+`status`, and `days` for reliable multi-turn revisions.
 
 `plan_trip` uses a **30s** bounded timeout (`PLAN_TRIP_TIMEOUT`) and returns `UPSTREAM_TIMEOUT` with optional `partial` context instead of hanging ~70s.
 

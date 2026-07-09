@@ -286,6 +286,7 @@ def format_plan_trip(
             "provider": data.get("provider") or "claude",
             "model": data.get("model"),
             "hasItinerary": bool(itinerary),
+            "plannerMode": data.get("plannerMode") or data.get("planner_mode"),
             "intent": data.get("intent"),
             "confidence": {
                 "level": confidence.get("level"),

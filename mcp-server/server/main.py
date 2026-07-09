@@ -42,9 +42,34 @@ from .formatters import (
     format_plan_trip,
     format_search,
 )
+from .plan_trip_schema import (
+    ACCOMMODATION,
+    ADULTS,
+    CHILDREN,
+    DAYS,
+    DIFFICULTY,
+    FITNESS_LEVEL,
+    GROUP_SIZE,
+    HAS_KIDS,
+    INTERESTS,
+    LODGING_AREA,
+    MAX_HIKE_MILES,
+    MESSAGE,
+    NUMBER_OF_DAYS,
+    PARK_CODE,
+    PARK_NAME,
+    RELAXED_AFTERNOON,
+    REVISION_REQUEST,
+    SESSION_ID,
+    START_DATE,
+    SUNRISE,
+    SUNSET,
+    TRAVEL_MONTH,
+)
 from .plan_trip_service import (
     build_plan_trip_form_data,
     build_plan_trip_message,
+    slim_plan_trip_structured,
     validate_plan_trip_business_rules,
 )
 from .rate_limit import plan_trip_limiter, read_tool_limiter
@@ -550,11 +575,16 @@ def _tool_result(
     structured: dict[str, Any],
     content: str | list[dict[str, str]],
     meta_extra: dict[str, Any],
+    *,
+    machine_readable: bool = False,
 ) -> CallToolResult:
     """Return a CallToolResult with TextContent blocks for the LLM.
 
     content can be a plain text string or a list of {"type": "text", "text": ...}
     dicts. Images are embedded as markdown ![alt](url) in the text itself.
+
+    When machine_readable is True, always attach structuredContent even if HTML
+    widgets are disabled — using a slim payload for plan_trip session continuity.
     """
     if isinstance(content, str):
         blocks = [TextContent(type="text", text=content)]
@@ -564,9 +594,10 @@ def _tool_result(
             for block in content
         ]
     kwargs: dict[str, Any] = {"content": blocks, "_meta": meta_extra}
-    # Omit structuredContent in markdown-only mode (ChatGPT widgets unreliable).
     if ENABLE_WIDGETS:
         kwargs["structuredContent"] = structured
+    elif machine_readable:
+        kwargs["structuredContent"] = slim_plan_trip_structured(structured)
     return CallToolResult(**kwargs)
 
 
@@ -657,29 +688,28 @@ def _send_analytics(event: dict[str, Any]) -> None:
     meta=_tool_meta(invoking="Planning your trip with live park data…", invoked="Itinerary ready"),
 )
 async def plan_trip(
-    park_code: str | None = None,
-    park_name: str | None = None,
-    start_date: str | None = None,
-    travel_month: str | None = None,
-    number_of_days: int | None = None,
-    adults: int = 1,
-    children: int = 0,
-    interests: list[str] | None = None,
-    max_hike_miles: float | None = None,
-    difficulty: list[str] | None = None,
-    lodging_area: str | None = None,
-    sunrise: bool | None = None,
-    sunset: bool | None = None,
-    relaxed_afternoon: bool | None = None,
-    session_id: str | None = None,
-    revision_request: str | None = None,
-    message: str | None = None,
-    # Legacy aliases — accepted for backward compatibility, not advertised in schema.
-    days: int | None = None,
-    group_size: int | None = None,
-    fitness_level: str | None = None,
-    has_kids: bool | None = None,
-    accommodation: str | None = None,
+    park_code: Annotated[str | None, Field(description=PARK_CODE)] = None,
+    park_name: Annotated[str | None, Field(description=PARK_NAME)] = None,
+    start_date: Annotated[str | None, Field(description=START_DATE)] = None,
+    travel_month: Annotated[str | None, Field(description=TRAVEL_MONTH)] = None,
+    number_of_days: Annotated[int | None, Field(description=NUMBER_OF_DAYS)] = None,
+    adults: Annotated[int, Field(description=ADULTS)] = 1,
+    children: Annotated[int, Field(description=CHILDREN)] = 0,
+    interests: Annotated[list[str] | None, Field(description=INTERESTS)] = None,
+    max_hike_miles: Annotated[float | None, Field(description=MAX_HIKE_MILES)] = None,
+    difficulty: Annotated[list[str] | None, Field(description=DIFFICULTY)] = None,
+    lodging_area: Annotated[str | None, Field(description=LODGING_AREA)] = None,
+    sunrise: Annotated[bool | None, Field(description=SUNRISE)] = None,
+    sunset: Annotated[bool | None, Field(description=SUNSET)] = None,
+    relaxed_afternoon: Annotated[bool | None, Field(description=RELAXED_AFTERNOON)] = None,
+    session_id: Annotated[str | None, Field(description=SESSION_ID)] = None,
+    revision_request: Annotated[str | None, Field(description=REVISION_REQUEST)] = None,
+    message: Annotated[str | None, Field(description=MESSAGE)] = None,
+    days: Annotated[int | None, Field(description=DAYS)] = None,
+    group_size: Annotated[int | None, Field(description=GROUP_SIZE)] = None,
+    fitness_level: Annotated[str | None, Field(description=FITNESS_LEVEL)] = None,
+    has_kids: Annotated[bool | None, Field(description=HAS_KIDS)] = None,
+    accommodation: Annotated[str | None, Field(description=ACCOMMODATION)] = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
     _start = time.monotonic()
@@ -837,7 +867,14 @@ async def plan_trip(
                     structured.setdefault("park", {})["name"] = display
 
         structured["sessionId"] = conv.session_id
+        structured["session_id"] = conv.session_id
         structured["status"] = "success"
+        planner_mode = None
+        if isinstance(resp_data, dict):
+            planner_mode = resp_data.get("plannerMode") or resp_data.get("planner_mode")
+        if planner_mode:
+            structured["plannerMode"] = planner_mode
+            structured["planner_mode"] = planner_mode
 
         park_images = structured.get("parkImages") or []
         image_md = _markdown_images(
@@ -862,7 +899,7 @@ async def plan_trip(
             invoking="Planning your trip with live park data…",
             invoked="Itinerary ready",
         )
-        return _tool_result(structured, content_blocks, meta)
+        return _tool_result(structured, content_blocks, meta, machine_readable=True)
     except Exception as exc:
         _success = False
         _error_msg = str(exc)
