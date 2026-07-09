@@ -152,6 +152,20 @@ describe('fastItineraryPlannerService', () => {
     );
     expect(built.days).toHaveLength(3);
   });
+
+  test('relaxed afternoon constraint does not trigger revision mode', () => {
+    const req = normalizePlanRequest({
+      messages: [
+        {
+          role: 'user',
+          content:
+            'Plan a 3-day itinerary for shen starting 2026-10-15 with one relaxed afternoon.',
+        },
+      ],
+      metadata: { parkCode: 'shen', formData: { startDate: '2026-10-15', numDays: 3 } },
+    });
+    expect(req.revisionRequest).toBeNull();
+  });
 });
 
 describe('executePlanItineraryRequest AI fallback', () => {

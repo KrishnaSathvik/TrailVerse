@@ -59,7 +59,11 @@ function extractRevisionRequest(messages = []) {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
   if (!lastUser?.content) return null;
   const text = String(lastUser.content).trim();
-  if (/relaxed afternoon|make day|revise|change day|keep the rest/i.test(text)) {
+  // Do not match planning constraints like "one relaxed afternoon" — only explicit revisions.
+  if (/make day\s*\d+|revise|change day|keep the rest/i.test(text)) {
+    return text;
+  }
+  if (/relaxed afternoon/i.test(text) && /make day|day\s*\d+|keep the rest|while preserving/i.test(text)) {
     return text;
   }
   return null;
