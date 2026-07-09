@@ -789,8 +789,26 @@ async def plan_trip(
                 )
             return _error_result(err_text)
 
-        assistant_content = ""
+        if resp.get("success") is False:
+            err = resp.get("error") or {}
+            return validation_error_result(
+                validation_error(
+                    code=err.get("code", "PLANNER_ERROR"),
+                    message=err.get("message", "Itinerary planning failed"),
+                    field=err.get("field"),
+                )
+            )
+
         resp_data = resp.get("data", resp)
+        if isinstance(resp_data, dict) and resp_data.get("success") is False:
+            err = resp_data.get("error") or {}
+            return validation_error_result(
+                validation_error(
+                    code=err.get("code", "PLANNER_ERROR"),
+                    message=err.get("message", "Itinerary planning failed"),
+                    field=err.get("field"),
+                )
+            )
         if isinstance(resp_data, dict):
             assistant_content = resp_data.get("content", "")
         if assistant_content:

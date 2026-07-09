@@ -80,6 +80,14 @@ def validate_plan_trip_business_rules(payload: PlanTripInput) -> dict[str, Any] 
             expected="only one date field",
         )
 
+    if not payload.start_date and not payload.travel_month:
+        return validation_error(
+            code="MISSING_TRAVEL_DATE",
+            message="Provide start_date (YYYY-MM-DD) or travel_month for seasonal planning.",
+            field="start_date",
+            expected="YYYY-MM-DD or month name such as October",
+        )
+
     if payload.travel_month:
         month = payload.travel_month.strip().lower()
         if month not in MONTH_NAMES and not re.match(r"^\d{4}-\d{2}$", month):

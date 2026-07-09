@@ -62,7 +62,7 @@ ChatGPT user
 
 | Tool | Purpose | Backend endpoint |
 |---|---|---|
-| `plan_trip` | AI-powered constraint-aware itinerary for **any US destination** (NPS, state parks, cities, road trips) | `POST /api/ai/chat-anonymous` |
+| `plan_trip` | Structured constraint-aware itinerary for national parks (MCP) | `POST /api/ai/plan-itinerary` |
 | `get_park_details` | Rich **NPS site** info with live alerts, weather, campgrounds, permits | `GET /api/parks/:code/details` + `/alerts` + `/weather` + `/campgrounds` + `/permits` + `/api/feed/park-of-day` |
 | `compare_parks` | Side-by-side **2–4 NPS parks** with auto-computed highlights | `POST /api/parks/compare` + `/compare/summary` |
 | `search_parks` | Search/filter **NPS catalog** by name, state, activity | `GET /api/parks/search` |

@@ -2,7 +2,7 @@
 Async HTTP client for the TrailVerse Express backend.
 
 All methods call public (unauthenticated) endpoints except plan_trip,
-which uses /api/ai/chat-anonymous (rate-limited but no auth needed).
+which uses /api/ai/plan-itinerary (rate-limited but no auth needed).
 """
 from __future__ import annotations
 
@@ -262,7 +262,7 @@ class TrailVerseClient:
         if anonymous_id:
             body["anonymousId"] = anonymous_id
         return await self._post_with_timeout(
-            "/api/ai/chat-anonymous",
+            "/api/ai/plan-itinerary",
             body,
             timeout=self.plan_trip_timeout,
         )

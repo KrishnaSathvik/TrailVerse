@@ -1,0 +1,156 @@
+{
+  "shen": [
+    {
+      "name": "Dark Hollow Falls",
+      "type": "trail",
+      "difficulty": "easy",
+      "distanceMiles": 1.4,
+      "elevationGainFt": 440,
+      "durationMin": 90,
+      "tags": ["waterfall", "photography", "wildlife"],
+      "why": "Short forest walk to a popular waterfall — good first-day warm-up."
+    },
+    {
+      "name": "Stony Man Summit",
+      "type": "trail",
+      "difficulty": "easy",
+      "distanceMiles": 1.6,
+      "elevationGainFt": 340,
+      "durationMin": 90,
+      "tags": ["scenic", "sunset", "photography"],
+      "why": "Wide summit views without a long climb."
+    },
+    {
+      "name": "Little Stony Man Overlook",
+      "type": "landmark",
+      "difficulty": "easy",
+      "distanceMiles": 0.9,
+      "elevationGainFt": 120,
+      "durationMin": 45,
+      "tags": ["scenic", "photography"],
+      "why": "Quick payoff viewpoint on Skyline Drive."
+    },
+    {
+      "name": "Limberlost Trail",
+      "type": "trail",
+      "difficulty": "easy",
+      "distanceMiles": 1.3,
+      "elevationGainFt": 50,
+      "durationMin": 60,
+      "tags": ["wildlife", "scenic-drives"],
+      "why": "Flat, fern-lined loop — strong wildlife and forest photography."
+    },
+    {
+      "name": "Hawksbill Summit",
+      "type": "trail",
+      "difficulty": "moderate",
+      "distanceMiles": 2.1,
+      "elevationGainFt": 520,
+      "durationMin": 120,
+      "tags": ["scenic", "photography"],
+      "why": "Highest point in the park with big valley views."
+    },
+    {
+      "name": "Cedar Run Falls",
+      "type": "trail",
+      "difficulty": "moderate",
+      "distanceMiles": 2.8,
+      "elevationGainFt": 800,
+      "durationMin": 150,
+      "tags": ["waterfall", "photography"],
+      "why": "Rewarding waterfall hike that stays under three miles."
+    },
+    {
+      "name": "Skyline Drive Scenic Overlook",
+      "type": "landmark",
+      "difficulty": "easy",
+      "distanceMiles": 0,
+      "elevationGainFt": 0,
+      "durationMin": 30,
+      "tags": ["scenic-drives", "sunrise", "sunset", "photography"],
+      "why": "Flexible pull-off for sunrise or sunset without hiking."
+    },
+    {
+      "name": "Thornton Gap Visitor Center",
+      "type": "visitor_center",
+      "difficulty": "easy",
+      "distanceMiles": 0,
+      "elevationGainFt": 0,
+      "durationMin": 45,
+      "tags": [],
+      "why": "Maps, restrooms, and current road/alert info near Thornton Gap."
+    }
+  ],
+  "acad": [
+    {
+      "name": "Jordan Pond Path",
+      "type": "trail",
+      "difficulty": "easy",
+      "distanceMiles": 3.2,
+      "elevationGainFt": 40,
+      "durationMin": 120,
+      "tags": ["photography", "scenic"],
+      "why": "Classic lakeside loop with Bubbles views — flat and photogenic."
+    },
+    {
+      "name": "Ocean Path",
+      "type": "trail",
+      "difficulty": "easy",
+      "distanceMiles": 2.2,
+      "elevationGainFt": 150,
+      "durationMin": 90,
+      "tags": ["photography", "scenic", "sunrise"],
+      "why": "Coastal walk linking Sand Beach and Otter Cliff."
+    },
+    {
+      "name": "Cadillac Mountain Summit",
+      "type": "landmark",
+      "difficulty": "easy",
+      "distanceMiles": 0.5,
+      "elevationGainFt": 50,
+      "durationMin": 60,
+      "tags": ["sunrise", "photography", "scenic"],
+      "why": "Iconic sunrise perch — verify vehicle reservation rules separately."
+    },
+    {
+      "name": "Beehive Trail",
+      "type": "trail",
+      "difficulty": "moderate",
+      "distanceMiles": 1.6,
+      "elevationGainFt": 520,
+      "durationMin": 120,
+      "tags": ["scenic", "photography"],
+      "why": "Short but steep loop with iron rungs — skip if heights are an issue."
+    },
+    {
+      "name": "Great Head Trail",
+      "type": "trail",
+      "difficulty": "moderate",
+      "distanceMiles": 1.7,
+      "elevationGainFt": 360,
+      "durationMin": 90,
+      "tags": ["photography", "scenic"],
+      "why": "Sand Beach headland loop with ocean panoramas."
+    },
+    {
+      "name": "Park Loop Road Overlook",
+      "type": "landmark",
+      "difficulty": "easy",
+      "distanceMiles": 0,
+      "elevationGainFt": 0,
+      "durationMin": 30,
+      "tags": ["scenic-drives", "sunset", "photography"],
+      "why": "Flexible scenic-drive stop when you want views without mileage."
+    },
+    {
+      "name": "Hulls Cove Visitor Center",
+      "type": "visitor_center",
+      "difficulty": "easy",
+      "distanceMiles": 0,
+      "elevationGainFt": 0,
+      "durationMin": 45,
+      "tags": [],
+      "why": "Orientation, restrooms, and current alerts near Bar Harbor."
+    }
+  ]
+}

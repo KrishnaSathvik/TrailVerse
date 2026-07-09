@@ -48,6 +48,14 @@ def test_missing_number_of_days_error():
     assert err["field"] == "number_of_days"
 
 
+def test_missing_travel_date_error():
+    payload = PlanTripInput(park_code="shen", number_of_days=3, adults=2)
+    err = validate_plan_trip_business_rules(payload)
+    assert err is not None
+    assert err["code"] == "MISSING_TRAVEL_DATE"
+    assert err["field"] == "start_date"
+
+
 def test_invalid_start_date_error():
     with pytest.raises(ValidationError):
         PlanTripInput(park_code="acad", number_of_days=3, start_date="October")

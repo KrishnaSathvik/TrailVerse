@@ -45,6 +45,7 @@ const {
 } = require('../utils/itineraryReadiness');
 const { shouldAttachParkImages } = require('../utils/parkImagePolicy');
 const { buildDrivingTimeContext, enrichItineraryDrivingTimes } = require('../services/drivingTimesContextService');
+const { executePlanItineraryRequest } = require('../services/fastItineraryPlannerService');
 
 const STREAM_POST_PROCESS_OPTIONS = {
   enableConflictRetry: true,
@@ -4350,6 +4351,91 @@ router.post('/voice-tool', async (req, res) => {
   } catch (err) {
     console.error('[Voice] Tool execution error:', err);
     res.status(500).json({ error: 'Tool execution failed' });
+  }
+});
+
+// Structured itinerary planner — fast deterministic path for MCP plan_trip
+router.post('/plan-itinerary', async (req, res) => {
+  const requestStart = Date.now();
+  try {
+    const body = req.body || {};
+    let anonymousId = body.anonymousId;
+    if (!anonymousId) {
+      anonymousId = generateAnonymousIdFromRequest(req).anonymousId;
+    }
+
+    const session = await AnonymousSession.findOrCreateSession(anonymousId, {
+      ipAddress: req.ip || 'unknown',
+      userAgent: req.get('user-agent') || 'mcp',
+      browserFingerprint: 'mcp-plan-itinerary',
+    });
+
+    const priorItinerary = session.formData?.lastItinerary || null;
+    const enrichedBody = {
+      ...body,
+      anonymousId,
+      metadata: {
+        ...(body.metadata || {}),
+        priorItinerary,
+        skipUserContext: true,
+        source: body.metadata?.source || 'mcp',
+      },
+    };
+
+    const result = await executePlanItineraryRequest({ ...req, body: enrichedBody });
+
+    session.formData = {
+      ...(session.formData || {}),
+      lastItinerary: {
+        parkCode: result.parkCode,
+        parkName: result.parkName,
+        days: result.itinerary?.days || [],
+        criticalNotices: result.criticalNotices || [],
+        unverified: result.unverified || [],
+      },
+      parkCode: result.parkCode,
+    };
+    session.parkCode = result.parkCode;
+    session.parkName = result.parkName;
+    session.lastActivity = new Date();
+    await session.save();
+
+    const userMessage = enrichedBody.messages?.slice(-1)[0]?.content || 'Plan itinerary';
+    await session.addMessage({ role: 'user', content: userMessage });
+    await session.addMessage({
+      role: 'assistant',
+      content: result.content,
+      responseTime: Date.now() - requestStart,
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        ...result,
+        anonymousId,
+        sessionId: anonymousId,
+        executionTimeMs: Date.now() - requestStart,
+      },
+    });
+  } catch (error) {
+    if (error.code) {
+      return res.json({
+        success: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          field: error.field || null,
+        },
+      });
+    }
+    console.error('[AI Plan Itinerary] Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'PLANNER_ERROR',
+        message: 'Failed to build itinerary',
+      },
+    });
   }
 });
 
