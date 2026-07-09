@@ -435,6 +435,14 @@ async function executePlanItineraryRequest(req) {
     const revised = applyRevision(request.priorItinerary, request.revisionRequest);
     const narrative = `Updated your plan: ${request.revisionRequest}`;
     timing.totalMs = Date.now() - timing.startedAt;
+    console.info(
+      '[PlanItinerary]',
+      JSON.stringify({
+        parkCode: revised.parkCode,
+        plannerMode: 'revision',
+        totalMs: timing.totalMs,
+      })
+    );
     return {
       content: renderProse(revised, narrative),
       itinerary: { parkCode: revised.parkCode, parkName: revised.parkName, days: revised.days },
@@ -465,6 +473,17 @@ async function executePlanItineraryRequest(req) {
   const narrative = await maybeRefineNarrative(built, request, timing);
   const content = renderProse(built, narrative);
   timing.totalMs = Date.now() - timing.startedAt;
+
+  console.info(
+    '[PlanItinerary]',
+    JSON.stringify({
+      parkCode: built.parkCode,
+      days: request.numberOfDays,
+      plannerMode: 'deterministic',
+      totalMs: timing.totalMs,
+      stages: timing.stages,
+    })
+  );
 
   return {
     content,
