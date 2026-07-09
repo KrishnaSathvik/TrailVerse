@@ -20,7 +20,8 @@ import httpx
 logger = logging.getLogger(__name__)
 
 API_BASE = os.getenv("TRAILVERSE_API_BASE", "https://trailverse.onrender.com").rstrip("/")
-TIMEOUT = float(os.getenv("BACKEND_TIMEOUT", "120"))
+TIMEOUT = float(os.getenv("BACKEND_TIMEOUT", "30"))
+PLAN_TRIP_TIMEOUT = float(os.getenv("PLAN_TRIP_TIMEOUT", "30"))
 USER_AGENT = os.getenv("BACKEND_USER_AGENT", "TrailVerse-MCP/1.0")
 MCP_BYPASS_KEY = os.getenv("MCP_BYPASS_KEY", "")
 
@@ -32,9 +33,15 @@ class TrailVerseAPIError(Exception):
 class TrailVerseClient:
     """Thin async wrapper around the TrailVerse public API."""
 
-    def __init__(self, base_url: str = API_BASE, timeout: float = TIMEOUT) -> None:
+    def __init__(
+        self,
+        base_url: str = API_BASE,
+        timeout: float = TIMEOUT,
+        plan_trip_timeout: float = PLAN_TRIP_TIMEOUT,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.plan_trip_timeout = plan_trip_timeout
         self._client: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> "TrailVerseClient":
@@ -89,6 +96,33 @@ class TrailVerseClient:
         try:
             resp = await self._client.post(path, json=body)
             resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.error("POST %s returned %s", path, e.response.status_code)
+            if e.response.status_code >= 500:
+                raise TrailVerseAPIError("Backend service temporarily unavailable") from e
+            elif e.response.status_code == 429:
+                raise TrailVerseAPIError("Rate limit exceeded, please try again later") from e
+            else:
+                raise TrailVerseAPIError(f"Request failed (status {e.response.status_code})") from e
+        except httpx.HTTPError as e:
+            logger.error("POST %s failed: %s", path, e)
+            raise TrailVerseAPIError("Backend service unreachable") from e
+        return resp.json()
+
+    async def _post_with_timeout(
+        self,
+        path: str,
+        body: dict[str, Any],
+        *,
+        timeout: float,
+    ) -> dict[str, Any]:
+        assert self._client is not None, "Use 'async with TrailVerseClient()'"
+        try:
+            resp = await self._client.post(path, json=body, timeout=timeout)
+            resp.raise_for_status()
+        except httpx.TimeoutException as e:
+            logger.error("POST %s timed out after %ss", path, timeout)
+            raise TrailVerseAPIError(f"Request timed out after {int(timeout)} seconds") from e
         except httpx.HTTPStatusError as e:
             logger.error("POST %s returned %s", path, e.response.status_code)
             if e.response.status_code >= 500:
@@ -212,7 +246,10 @@ class TrailVerseClient:
         messages: full conversation history for multi-turn continuity.
         anonymous_id: stable session identity for backend session lookup.
         """
-        metadata: dict[str, Any] = {}
+        metadata: dict[str, Any] = {
+            "skipUserContext": True,
+            "source": "mcp",
+        }
         if park_code:
             metadata["parkCode"] = self._validate_park_code(park_code)
         if form_data:
@@ -224,7 +261,11 @@ class TrailVerseClient:
         }
         if anonymous_id:
             body["anonymousId"] = anonymous_id
-        return await self._post("/api/ai/chat-anonymous", body)
+        return await self._post_with_timeout(
+            "/api/ai/chat-anonymous",
+            body,
+            timeout=self.plan_trip_timeout,
+        )
 
 
 # ---------- Image fetching for MCP inline images ----------

@@ -29,11 +29,11 @@ from typing import Annotated, Any
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.resources import FunctionResource
 from mcp.types import CallToolResult, Icon, TextContent
-from pydantic import AnyUrl, Field
+from pydantic import AnyUrl, Field, ValidationError
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 
-from .client import TrailVerseAPIError, TrailVerseClient
+from .client import TrailVerseAPIError, TrailVerseClient, PLAN_TRIP_TIMEOUT
 from .conversations import conversation_store
 from .formatters import (
     format_compare,
@@ -42,14 +42,26 @@ from .formatters import (
     format_plan_trip,
     format_search,
 )
+from .plan_trip_service import (
+    build_plan_trip_form_data,
+    build_plan_trip_message,
+    validate_plan_trip_business_rules,
+)
 from .rate_limit import plan_trip_limiter, read_tool_limiter
 from .search_query import count_search_results, expand_search_query
+from .search_ranking import rerank_search_results
 from .types import (
     CompareParksInput,
     FindEventsInput,
     GetParkDetailsInput,
     PlanTripInput,
     SearchParksInput,
+)
+from .validation import (
+    timeout_error_result,
+    validation_error,
+    validation_error_from_pydantic,
+    validation_error_result,
 )
 
 logging.basicConfig(
@@ -628,17 +640,12 @@ def _send_analytics(event: dict[str, Any]) -> None:
 @mcp.tool(
     name="plan_trip",
     description=(
-        "Build a day-by-day itinerary for any US trip. Use when the user wants "
-        "a structured plan, schedule, or list of things to do — 'plan 3 days "
-        "in Zion', 'weekend trip to San Diego', 'road trip from LA to Vegas', "
-        "'what should I do at Yellowstone for 2 days?', 'I'm visiting Yosemite "
-        "next week', 'things to do near Grand Canyon', 'how many days do I "
-        "need at Glacier?'. Also use when the user states they're going to a "
-        "destination and would benefit from a plan. Works for national parks, "
-        "state parks, cities, beaches, road trips, or mixed destinations. "
-        "Returns morning/afternoon/evening blocks, recommended hikes with "
-        "stats, scenic drives, lodging, and Google Maps directions. 1–14 days, "
-        "any group size. Supports multi-turn: pass session_id to refine."
+        "Build or revise a day-by-day national-park itinerary with structured fields. "
+        "Use for trip planning requests with explicit park, duration, travelers, hike "
+        "constraints, and preferences (sunrise, sunset, relaxed afternoon, lodging area). "
+        "For revisions, pass session_id from the prior response plus revision_request. "
+        "Returns morning/afternoon/evening blocks, driving estimates, buffers, and "
+        "unverified-data labels. New trips require park_code or park_name and number_of_days."
     ),
     annotations={
         "title": "Plan a US trip",
@@ -650,15 +657,29 @@ def _send_analytics(event: dict[str, Any]) -> None:
     meta=_tool_meta(invoking="Planning your trip with live park data…", invoked="Itinerary ready"),
 )
 async def plan_trip(
-    message: str,
     park_code: str | None = None,
+    park_name: str | None = None,
+    start_date: str | None = None,
+    travel_month: str | None = None,
+    number_of_days: int | None = None,
+    adults: int = 1,
+    children: int = 0,
+    interests: list[str] | None = None,
+    max_hike_miles: float | None = None,
+    difficulty: list[str] | None = None,
+    lodging_area: str | None = None,
+    sunrise: bool | None = None,
+    sunset: bool | None = None,
+    relaxed_afternoon: bool | None = None,
+    session_id: str | None = None,
+    revision_request: str | None = None,
+    message: str | None = None,
+    # Legacy aliases — accepted for backward compatibility, not advertised in schema.
     days: int | None = None,
     group_size: int | None = None,
     fitness_level: str | None = None,
     has_kids: bool | None = None,
-    interests: list[str] | None = None,
     accommodation: str | None = None,
-    session_id: str | None = None,
     ctx: Context | None = None,
 ) -> CallToolResult:
     _start = time.monotonic()
@@ -668,68 +689,86 @@ async def plan_trip(
     _park_codes: list[str] = []
 
     try:
-        # Global MCP-side fuse (defense-in-depth behind backend bypass key)
         if (limited := await _check_rate_limit("plan_trip")):
             return limited
-        # Validate with pydantic so bad inputs fail fast with clear messages
+
         try:
             payload = PlanTripInput(
-                message=message,
                 park_code=park_code,
+                park_name=park_name,
+                start_date=start_date,
+                travel_month=travel_month,
+                number_of_days=number_of_days,
+                adults=adults,
+                children=children,
+                interests=interests,
+                max_hike_miles=max_hike_miles,
+                difficulty=difficulty,
+                lodging_area=lodging_area,
+                sunrise=sunrise,
+                sunset=sunset,
+                relaxed_afternoon=relaxed_afternoon,
+                session_id=session_id,
+                revision_request=revision_request,
+                message=message,
                 days=days,
                 group_size=group_size,
-                fitness_level=fitness_level,  # type: ignore[arg-type]
+                fitness_level=fitness_level,
                 has_kids=has_kids,
-                interests=interests,
-                accommodation=accommodation,  # type: ignore[arg-type]
-                session_id=session_id,
+                accommodation=accommodation,
             )
-        except Exception as e:
-            logger.warning("Validation failed: %s", e)
-            return _error_result("Invalid input — please check your parameters and try again.")
+        except ValidationError as exc:
+            logger.warning("Validation failed: %s", exc)
+            return validation_error_result(validation_error_from_pydantic(exc))
 
-        # Resolve park_code if provided (names, NPS codes, or website slugs).
+        if business_err := validate_plan_trip_business_rules(payload):
+            return validation_error_result(business_err)
+
+        user_message = build_plan_trip_message(payload)
+
         resolved_park_code = None
-        if payload.park_code:
-            resolved_park_code = await _resolve_park_code(payload.park_code)
-            _park_codes = [resolved_park_code]
+        park_lookup = payload.park_code or payload.park_name
+        if park_lookup:
+            candidate = await _resolve_park_code(park_lookup)
+            if re.fullmatch(r"[a-z0-9]{2,10}", candidate):
+                resolved_park_code = candidate
+                _park_codes = [resolved_park_code]
+            elif payload.park_code:
+                return validation_error_result(
+                    validation_error(
+                        code="UNKNOWN_PARK",
+                        message=f"Could not resolve park_code '{payload.park_code}' to a known NPS code.",
+                        field="park_code",
+                        received=payload.park_code,
+                        expected="known NPS park code",
+                    )
+                )
 
-        trip_days = payload.days
-        if trip_days is None:
-            day_match = re.search(r"\b(\d{1,2})\s*[- ]?\s*day", payload.message, re.I)
-            if day_match:
-                trip_days = int(day_match.group(1))
-
-        # --- Conversation continuity ---
         conv = None
         if payload.session_id:
             conv = conversation_store.get(payload.session_id)
             if not conv:
-                logger.warning("Session %s expired or unknown — starting fresh", payload.session_id)
+                return validation_error_result(
+                    validation_error(
+                        code="SESSION_EXPIRED",
+                        message=(
+                            "session_id expired or unknown. Start a new itinerary without "
+                            "session_id, then pass the returned sessionId for revisions."
+                        ),
+                        field="session_id",
+                        received=payload.session_id,
+                    )
+                )
         if not conv:
             conv = conversation_store.create()
 
-        # Append the new user message to the conversation
-        conv.append_message("user", payload.message)
-
-        form_data: dict[str, Any] = {}
-        if trip_days is not None:
-            form_data["days"] = trip_days
-        if payload.group_size is not None:
-            form_data["groupSize"] = payload.group_size
-        if payload.fitness_level:
-            form_data["fitnessLevel"] = payload.fitness_level
-        if payload.has_kids is not None:
-            form_data["hasKids"] = payload.has_kids
-        if payload.interests:
-            form_data["interests"] = payload.interests
-        if payload.accommodation:
-            form_data["accommodation"] = payload.accommodation
+        conv.append_message("user", user_message)
+        form_data = build_plan_trip_form_data(payload)
 
         try:
             async with TrailVerseClient() as client:
                 resp = await client.plan_trip_anonymous(
-                    message=payload.message,
+                    message=user_message,
                     park_code=resolved_park_code,
                     form_data=form_data or None,
                     messages=conv.messages,
@@ -737,9 +776,19 @@ async def plan_trip(
                 )
         except TrailVerseAPIError as e:
             logger.exception("plan_trip backend call failed")
-            return _error_result(str(e))
+            err_text = str(e)
+            if "timed out" in err_text.lower():
+                partial = {
+                    "parkCode": resolved_park_code,
+                    "numberOfDays": payload.number_of_days,
+                    "message": user_message,
+                }
+                return timeout_error_result(
+                    PLAN_TRIP_TIMEOUT,
+                    partial=partial,
+                )
+            return _error_result(err_text)
 
-        # Extract assistant content and store in conversation history
         assistant_content = ""
         resp_data = resp.get("data", resp)
         if isinstance(resp_data, dict):
@@ -753,20 +802,24 @@ async def plan_trip(
 
         structured, text = format_plan_trip(
             resp,
-            user_message=payload.message,
+            user_message=user_message,
             park_code_hint=resolved_park_code or "",
             park_name_hint=park_name_hint,
         )
 
-        if not structured.get("parkName"):
-            code_for_name = structured.get("parkCode") or resolved_park_code or ""
+        if not structured.get("park", {}).get("name"):
+            code_for_name = (
+                structured.get("park", {}).get("code")
+                or resolved_park_code
+                or ""
+            )
             if code_for_name:
                 display = await _park_display_name(code_for_name)
                 if display:
-                    structured["parkName"] = display
+                    structured.setdefault("park", {})["name"] = display
 
-        # Inject session_id so the client can pass it back on follow-up calls.
         structured["sessionId"] = conv.session_id
+        structured["status"] = "success"
 
         park_images = structured.get("parkImages") or []
         image_md = _markdown_images(
@@ -1125,6 +1178,8 @@ async def search_parks(
         except TrailVerseAPIError as e:
             logger.exception("search_parks backend call failed")
             return _error_result(str(e))
+
+        resp = rerank_search_results(resp, raw_query)
 
         structured, text = format_search(resp, query=raw_query or query)
 

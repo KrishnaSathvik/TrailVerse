@@ -95,23 +95,26 @@ TESTS = {
     "compare_parks": lambda: compare_parks(park_codes=["zion", "brca"]),
     "find_events": lambda: find_events(limit=3),
     "plan_trip": lambda: plan_trip(
-        message="Plan a relaxed 3-day trip to Zion for a beginner with kids in May",
-        park_code="zion",
-        days=3,
-        group_size=3,
-        fitness_level="easy",
-        has_kids=True,
-        interests=["photography", "family-friendly"],
+        park_code="shen",
+        number_of_days=3,
+        adults=2,
+        children=0,
+        travel_month="October",
+        difficulty=["easy", "moderate"],
+        max_hike_miles=3,
+        interests=["photography", "wildlife", "scenic-drives"],
+        sunrise=True,
+        sunset=True,
+        relaxed_afternoon=True,
+        lodging_area="Luray, Virginia",
     ),
     "plan_trip_state_park": lambda: plan_trip(
-        message=(
-            "Plan a 3-day itinerary for Custer State Park in South Dakota "
-            "for two adults who like wildlife drives and moderate hikes."
-        ),
-        days=3,
-        group_size=2,
-        fitness_level="moderate",
+        park_name="Custer State Park",
+        number_of_days=3,
+        adults=2,
+        difficulty=["moderate"],
         interests=["wildlife", "hiking"],
+        message="South Dakota wildlife drives and moderate hikes.",
     ),
 }
 

@@ -74,6 +74,36 @@ endpoint** (no auth required). Production MCP traffic sends
 and enables web search for `plan_trip`. Website upsell is for **saved trips,
 PDF export, and the Plan Workspace** — see `/mcp` and `/chatgpt` landing pages.
 
+### `plan_trip` V1 input schema
+
+Structured fields (preferred over a single free-text `message`):
+
+| Field | Required | Notes |
+|---|---|---|
+| `park_code` or `park_name` | New trips | NPS code (`shen`) or full name |
+| `number_of_days` | New trips | 1–14 |
+| `start_date` | Optional | `YYYY-MM-DD` |
+| `travel_month` | Optional | e.g. `October` when exact date unknown |
+| `adults`, `children` | Optional | Traveler counts |
+| `interests` | Optional | e.g. `photography`, `wildlife` |
+| `max_hike_miles` | Optional | Per-hike distance cap |
+| `difficulty` | Optional | `easy`, `moderate`, `challenging` (synonyms accepted) |
+| `lodging_area` | Optional | e.g. `Luray, Virginia` |
+| `sunrise`, `sunset`, `relaxed_afternoon` | Optional | Preference booleans |
+| `session_id` + `revision_request` | Revisions | Pass `sessionId` from prior response |
+
+Validation errors return machine-readable JSON: `{ status: "error", error: { code, message, field, received, expected } }`.
+
+`plan_trip` uses a **30s** bounded timeout (`PLAN_TRIP_TIMEOUT`) and returns `UPSTREAM_TIMEOUT` with optional `partial` context instead of hanging ~70s.
+
+### Canonical tool surface (no duplicates)
+
+The MCP server registers **exactly five tools** in `server/main.py`. MCP **prompts**
+(`welcome`, `plan_my_trip`, etc.) are starter templates — not callable tools. If a
+client shows two TrailVerse tool families, check for a duplicate MCP connector or
+legacy ChatGPT action alongside the published app connector. Only one connector
+should point at `https://trailverse-mcp.onrender.com/mcp`.
+
 ## Project structure
 
 ```

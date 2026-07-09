@@ -15,10 +15,32 @@ from typing import Any
 from urllib.parse import quote
 
 from .client import extract_itinerary, strip_itinerary_block
+from .plan_trip_service import DEFAULT_UNVERIFIED, build_plan_trip_structured
 
 WEB_BASE = os.getenv(
     "TRAILVERSE_WEB_BASE", "https://www.nationalparksexplorerusa.com"
 ).rstrip("/")
+
+def _normalize_event_date(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return dt.date().isoformat()
+    except (ValueError, AttributeError, TypeError):
+        text = str(value).strip()
+        return text or None
+
+
+def _normalize_event_time(event: dict[str, Any]) -> str | None:
+    raw = event.get("time") or event.get("startTime") or event.get("timeinfo")
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text or text.lower() in {"unknown", "tbd", "n/a", "na"}:
+        return None
+    return text
+
 
 def _format_forecast_date(date_str: str | None) -> str:
     """Convert an ISO date string to a readable format like 'Thu May 08'."""
@@ -217,7 +239,6 @@ def _build_day_maps_url(stops: list[dict[str, Any]]) -> str | None:
     return f"https://www.google.com/maps/dir/{'/'.join(waypoints)}"
 
 
-# ---------- plan_trip ----------
 
 def format_plan_trip(
     resp: dict[str, Any],
@@ -252,32 +273,40 @@ def format_plan_trip(
         if isinstance(img, dict) and img.get("url")
     ]
 
-    structured = {
-        "kind": "itinerary",
-        "parkName": park_name,
-        "parkCode": park_code,
-        "parkImages": park_images,
-        "persona": "trailie",
-        "provider": data.get("provider") or "claude",
-        "model": data.get("model"),
-        "hasItinerary": bool(itinerary),
-        "intent": data.get("intent"),
-        "confidence": {
-            "level": confidence.get("level"),
-            "score": confidence.get("score"),
+    structured = build_plan_trip_structured(
+        status="success",
+        park_code=park_code,
+        park_name=park_name,
+        itinerary=itinerary,
+        critical_notices=[],
+        unverified=list(DEFAULT_UNVERIFIED),
+        extra={
+            "parkImages": park_images,
+            "persona": "trailie",
+            "provider": data.get("provider") or "claude",
+            "model": data.get("model"),
+            "hasItinerary": bool(itinerary),
+            "intent": data.get("intent"),
+            "confidence": {
+                "level": confidence.get("level"),
+                "score": confidence.get("score"),
+            },
+            "planScore": {
+                "overall": plan_score.get("overall"),
+                "label": plan_score.get("label"),
+                "dimensions": plan_score.get("dimensions") or {},
+            },
+            "narrative": clean_text,
+            "itinerary": itinerary,
+            "links": {
+                "continueOnWebsite": f"{WEB_BASE}/plan-ai",
+                "parkDetail": f"{WEB_BASE}/parks/{park_code}" if park_code else None,
+            },
+            # Backward-compatible flat keys for widget consumers
+            "parkName": park_name,
+            "parkCode": park_code,
         },
-        "planScore": {
-            "overall": plan_score.get("overall"),
-            "label": plan_score.get("label"),
-            "dimensions": plan_score.get("dimensions") or {},
-        },
-        "narrative": clean_text,
-        "itinerary": itinerary,
-        "links": {
-            "continueOnWebsite": f"{WEB_BASE}/plan-ai",
-            "parkDetail": f"{WEB_BASE}/parks/{park_code}" if park_code else None,
-        },
-    }
+    )
 
     # Text content the model sees — include the full narrative so LLMs that
     # don't render structuredContent widgets (e.g. Claude) can still give a
@@ -1086,11 +1115,12 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
             "title": e.get("title") or e.get("name"),
             "parkCode": e.get("parkCode"),
             "parkName": e.get("parkName"),
-            "date": date_start,
-            "dateEnd": date_end,
+            "date": _normalize_event_date(date_start),
+            "dateEnd": _normalize_event_date(date_end) if date_end else None,
             "recurring": recurring,
             "totalDates": len(all_dates) if recurring else 1,
-            "time": e.get("time") or e.get("startTime") or e.get("timeinfo"),
+            "time": _normalize_event_time(e),
+            "timezone": e.get("timezone") or e.get("timeZone") or None,
             "duration": e.get("duration"),
             "category": e.get("category") or e.get("type"),
             "description": _strip_html((e.get("description") or ""))[:240],
@@ -1129,7 +1159,7 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
     def _format_event(e: dict[str, Any]) -> list[str]:
         lines = []
         title = e.get("title", "Untitled")
-        time_str = e.get("time") or ""
+        time_str = e.get("time")
         category = e.get("category") or ""
         is_special = category.lower() in ("special event", "festival") if category else False
         already_says_free = "free" in title.lower()
@@ -1138,6 +1168,8 @@ def format_events(resp: dict[str, Any]) -> tuple[dict[str, Any], str]:
         line = f"- {'⭐ ' if is_special else ''}**{title}**{free_tag}"
         if time_str:
             line += f" — {time_str}"
+        elif e.get("date"):
+            line += " — time not provided"
         lines.append(line)
 
         # Show recurrence range

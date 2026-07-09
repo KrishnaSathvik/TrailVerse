@@ -48,10 +48,13 @@ function haystackMatchesToken(haystack, token) {
   const needles = [token, ...(TOKEN_ALIASES[token] || [])];
   const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
 
-  return needles.some(
-    (needle) =>
-      words.some((word) => word === needle || word.startsWith(needle)) ||
-      (needle.length >= 4 && haystack.includes(needle))
+  return needles.some((needle) =>
+    words.some((word) => {
+      if (word === needle) return true;
+      // Long tokens (e.g. acadia) must match whole words — avoids "acadian" false positives.
+      if (needle.length >= 5) return false;
+      return word.startsWith(needle);
+    })
   );
 }
 
