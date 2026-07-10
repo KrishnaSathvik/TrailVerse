@@ -1,13 +1,15 @@
 const axios = require('axios');
 const NodeCache = require('node-cache');
 const npsService = require('./npsService');
+const { safeCacheSet } = require('../utils/safeCacheSet');
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
 const OPENWEATHER_BASE = 'https://api.openweathermap.org/data/2.5';
 
 class EnhancedParkService {
   constructor() {
-    this.cache = new NodeCache({ stdTTL: 1800, maxKeys: 300, checkperiod: 120 });
+    // weather/crowd/best-time/facilities × ~470 parks needs more than 300 keys
+    this.cache = new NodeCache({ stdTTL: 1800, maxKeys: 2000, checkperiod: 120 });
   }
 
   // Get cached data or fetch new data
@@ -16,7 +18,7 @@ class EnhancedParkService {
   }
 
   setCachedData(key, data) {
-    this.cache.set(key, data);
+    safeCacheSet(this.cache, key, data);
   }
 
   // Enhanced weather data with seasonal averages

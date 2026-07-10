@@ -1,10 +1,11 @@
 const NodeCache = require('node-cache');
+const { safeCacheSet } = require('../utils/safeCacheSet');
 
 // Create cache instance
 const cache = new NodeCache({
   stdTTL: 300, // 5 minutes default
   checkperiod: 60, // Check for expired keys every 60 seconds
-  maxKeys: 500 // Prevent unbounded growth
+  maxKeys: 1000 // Headroom for park/detail traffic on Standard
 });
 
 // Cache middleware
@@ -27,7 +28,7 @@ const cacheMiddleware = (duration = 300) => {
 
     // Override res.json
     res.json = (body) => {
-      cache.set(key, body, duration);
+      safeCacheSet(cache, key, body, duration);
       return originalJson(body);
     };
 

@@ -1,11 +1,12 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const NodeCache = require('node-cache');
+const { safeCacheSet } = require('../utils/safeCacheSet');
 
 const router = express.Router();
 const cache = new NodeCache({
   stdTTL: 60 * 60 * 24 * 3, // 3 days default
-  maxKeys: 200,
+  maxKeys: 400,
   checkperiod: 300,
 });
 const KEY = process.env.GMAPS_SERVER_KEY;
@@ -112,7 +113,7 @@ router.get('/place/:placeId', async (req, res) => {
       website: r.website || null
     };
     
-    cache.set(k, minimal);
+    safeCacheSet(cache, k, minimal);
     res.json(minimal);
   } catch (error) {
     console.error('Place Details Error:', error);
@@ -369,7 +370,7 @@ router.get('/nearby', async (req, res) => {
       user_ratings_total: item.user_ratings_total
     })));
     
-    cache.set(k, top10, 60 * 60 * 24); // 1 day
+    safeCacheSet(cache, k, top10, 60 * 60 * 24); // 1 day
     res.json(top10);
   } catch (error) {
     console.error('Nearby Search Error:', error);
@@ -440,7 +441,7 @@ router.get('/photo', async (req, res) => {
     const response = await fetch(url, { redirect: 'follow' });
     const buffer = Buffer.from(await response.arrayBuffer());
 
-    cache.set(k, buffer, 60 * 60 * 24 * 30); // 30 days
+    safeCacheSet(cache, k, buffer, 60 * 60 * 24 * 30); // 30 days
     res.set('Cache-Control', 'public, max-age=2592000');
     res.type('image/jpeg').send(buffer);
   } catch (error) {
@@ -513,7 +514,7 @@ router.get('/static', async (req, res) => {
     const response = await fetch(url, { redirect: 'follow' });
     const buffer = Buffer.from(await response.arrayBuffer());
 
-    cache.set(k, buffer, 60 * 60 * 24 * 30); // 30 days
+    safeCacheSet(cache, k, buffer, 60 * 60 * 24 * 30); // 30 days
     res.set('Cache-Control', 'public, max-age=2592000');
     res.type('image/png').send(buffer);
   } catch (error) {
@@ -614,7 +615,7 @@ router.get('/placedetails', async (req, res) => {
     };
 
     // Cache for 3 days
-    cache.set(k, processedData, 60 * 60 * 24 * 3);
+    safeCacheSet(cache, k, processedData, 60 * 60 * 24 * 3);
     
     console.log('✅ Place details fetched and cached for:', result.name);
     res.json(processedData);
