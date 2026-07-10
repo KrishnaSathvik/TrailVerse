@@ -24,6 +24,12 @@ import ParkPreviewCard from './ParkPreviewCard';
 import ParkSearch from './ParkSearch';
 import useParkMapState from './useParkMapState';
 
+/** Keeps preview cards inside the map pane so they never slide under the sticky header. */
+const DESKTOP_PREVIEW_PANEL =
+  'pointer-events-none absolute top-36 bottom-8 right-10 z-30 flex w-full max-w-[28rem] flex-col justify-end';
+const DESKTOP_PREVIEW_SCROLL =
+  'pointer-events-auto max-h-full overflow-y-auto overscroll-contain rounded-[32px]';
+
 export default function DesktopMapLayout() {
   const router = useRouter();
   const returnPath = useReturnPath();
@@ -84,7 +90,7 @@ export default function DesktopMapLayout() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Header />
 
-      <div className="relative h-[calc(100dvh-72px)] px-6 pb-6 pt-4">
+      <div className="relative h-[calc(100dvh-72px)] overflow-hidden px-6 pb-6 pt-4">
         <MapCanvas
           parks={allParks}
           places={allPlaces}
@@ -126,44 +132,47 @@ export default function DesktopMapLayout() {
         </div>
 
         {previewPark && (
-          <div className="pointer-events-none absolute bottom-8 right-10 z-20 w-full max-w-[28rem]">
-            <ParkPreviewCard
-              park={previewPark}
-              rating={getRating(previewPark.parkCode)}
-              onClose={mapState.clearSelection}
-              onViewDetails={() => {
-                signalNavigation();
-                router.push(parkDetailHref(parkToSlug(previewPark.fullName), returnPath));
-              }}
-              onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
-              className="pointer-events-auto"
-            />
+          <div className={DESKTOP_PREVIEW_PANEL}>
+            <div className={DESKTOP_PREVIEW_SCROLL}>
+              <ParkPreviewCard
+                park={previewPark}
+                rating={getRating(previewPark.parkCode)}
+                onClose={mapState.clearSelection}
+                onViewDetails={() => {
+                  signalNavigation();
+                  router.push(parkDetailHref(parkToSlug(previewPark.fullName), returnPath));
+                }}
+                onCompare={(parkCode) => router.push(`/compare?park=${parkCode}`)}
+              />
+            </div>
           </div>
         )}
 
         {selectedCampground && !mapState.selectedPark && !selectedPlace && (
-          <div className="pointer-events-none absolute bottom-8 right-10 z-20 w-full max-w-[28rem]">
-            <CampgroundPreviewCard
-              campground={selectedCampground}
-              campgroundDetails={campgroundDetails}
-              onClose={mapState.clearSelection}
-              onViewPark={goToParkCamping}
-              compact={false}
-              className="pointer-events-auto"
-            />
+          <div className={DESKTOP_PREVIEW_PANEL}>
+            <div className={DESKTOP_PREVIEW_SCROLL}>
+              <CampgroundPreviewCard
+                campground={selectedCampground}
+                campgroundDetails={campgroundDetails}
+                onClose={mapState.clearSelection}
+                onViewPark={goToParkCamping}
+                compact={false}
+              />
+            </div>
           </div>
         )}
 
         {selectedPlace && !mapState.selectedPark && !selectedCampground && (
-          <div className="pointer-events-none absolute bottom-8 right-10 z-20 w-full max-w-[28rem]">
-            <PlacePreviewCard
-              place={selectedPlace}
-              placeDetails={placeDetails}
-              onClose={mapState.clearSelection}
-              onViewPark={goToParkPlaces}
-              compact={false}
-              className="pointer-events-auto"
-            />
+          <div className={DESKTOP_PREVIEW_PANEL}>
+            <div className={DESKTOP_PREVIEW_SCROLL}>
+              <PlacePreviewCard
+                place={selectedPlace}
+                placeDetails={placeDetails}
+                onClose={mapState.clearSelection}
+                onViewPark={goToParkPlaces}
+                compact={false}
+              />
+            </div>
           </div>
         )}
       </div>

@@ -152,15 +152,13 @@ export default function IntentLandingClient({ landing, canonicalUrl, children })
           </div>
         ) : null}
 
-        <div className="max-w-3xl">
-          <TrailiePlanningCta
-            title={planCta.title}
-            body={planCta.body}
-            planLabel={planCta.planLabel}
-            compareLabel={planCta.compareLabel}
-            intentPath={landing.path}
-          />
-        </div>
+        <TrailiePlanningCta
+          title={planCta.title}
+          body={planCta.body}
+          planLabel={planCta.planLabel}
+          compareLabel={planCta.compareLabel}
+          intentPath={landing.path}
+        />
 
         {landing.intro ? (
           <p
@@ -172,11 +170,11 @@ export default function IntentLandingClient({ landing, canonicalUrl, children })
         ) : null}
 
         {landing.standouts?.length > 0 ? (
-          <section id="standouts" className="scroll-mt-28 max-w-3xl">
+          <section id="standouts" className="scroll-mt-28">
             <h2 className={`${ARTICLE_H2} mb-6`} style={{ color: 'var(--text-primary)' }}>
               The standouts
             </h2>
-            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-7">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-10 lg:gap-x-14 gap-y-7">
               {landing.standouts.map((item) => (
                 <li
                   key={item.parkCode}

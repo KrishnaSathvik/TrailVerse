@@ -1,5 +1,6 @@
 /**
- * Blocking theme init — runs in <head> before <body> to set .dark/.light on <html> immediately.
+ * Blocking theme init — kept for direct /theme-init.js loads.
+ * Primary path is the inline script from src/lib/themeInitScript.js in app/layout.js.
  */
 (function () {
   var STORAGE_KEY = 'theme';

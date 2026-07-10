@@ -100,7 +100,10 @@ export default function PlacePreviewCard({
         color: 'var(--text-primary)',
       }}
     >
-      <div className="flex items-start justify-between px-5 pt-5">
+      <div
+        className="sticky top-0 z-10 flex items-start justify-between px-5 pt-5 pb-2"
+        style={{ backgroundColor: 'var(--surface)' }}
+      >
         <div
           className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
           style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)', color: '#7c3aed' }}

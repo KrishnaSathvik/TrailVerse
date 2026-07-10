@@ -1,6 +1,5 @@
 "use client";
 import React, { createContext, useContext, useState, useLayoutEffect, useEffect, useRef } from 'react';
-import { useServerInsertedHTML } from 'next/navigation';
 import { getStoredToken } from '../services/authService';
 import { setThemeCookie } from '../lib/themeCookie';
 
@@ -68,8 +67,7 @@ export const ThemeProvider = ({
   initialTheme = 'system',
   initialResolvedTheme = 'light',
 }) => {
-  useServerInsertedHTML(() => <script src="/theme-init.js" suppressHydrationWarning />);
-
+  // Theme FOUC is handled by beforeInteractive /theme-init.js in app/layout.js.
   const [theme, setTheme] = useState(initialTheme);
   const [resolvedTheme, setResolvedTheme] = useState(initialResolvedTheme);
   const hasHydratedTheme = useRef(false);

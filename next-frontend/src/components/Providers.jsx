@@ -16,6 +16,8 @@ import { applyClientCacheMigration } from '@/lib/clientCacheVersion';
 
 export default function Providers({
   children,
+  // Auth/theme hints used to come from root cookies(); that forced the whole app dynamic.
+  // Defaults keep the shell cacheable; client providers hydrate real state after mount.
   initialAuthHint = false,
   initialTheme = 'system',
   initialResolvedTheme = 'light',

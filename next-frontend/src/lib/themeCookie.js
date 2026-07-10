@@ -1,4 +1,4 @@
-/** Cookie mirror of localStorage `theme` — lets SSR emit .dark/.light on <html> before paint. */
+/** Cookie mirror of localStorage `theme` — kept in sync for analytics/legacy; FOUC uses inline script. */
 export const THEME_COOKIE = 'theme';
 export const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 

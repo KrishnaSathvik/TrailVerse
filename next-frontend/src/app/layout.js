@@ -1,20 +1,10 @@
 import "./globals.css";
 
 import Script from "next/script";
-import { cookies } from "next/headers";
 import Providers from "../components/Providers";
 import GoogleMapsLoader from "../components/maps/GoogleMapsLoader";
 import VoiceButton from "../components/voice/VoiceButton";
 import { indexablePageRobots } from "@/lib/seo";
-import {
-  normalizeThemePreference,
-  resolveServerHtmlTheme,
-  resolvedThemeFromServerClass,
-} from "@/lib/themeCookie";
-import { AUTH_TOKEN_COOKIE } from "@/services/authService";
-
-/** Theme cookie must affect SSR html class — never serve a shared cached shell. */
-export const dynamic = "force-dynamic";
 
 const JSON_LD = {
   '@context': 'https://schema.org',
@@ -33,32 +23,17 @@ const JSON_LD = {
   },
 };
 
-export async function generateViewport() {
-  const cookieStore = await cookies();
-  const themePreference = cookieStore.get("theme")?.value;
-
-  const base = {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  };
-
-  if (themePreference === "dark") {
-    return { ...base, themeColor: "#0A0E0F", colorScheme: "dark" };
-  }
-  if (themePreference === "light") {
-    return { ...base, themeColor: "#FEFCF9", colorScheme: "light" };
-  }
-
-  return {
-    ...base,
-    themeColor: [
-      { media: "(prefers-color-scheme: dark)", color: "#0A0E0F" },
-      { media: "(prefers-color-scheme: light)", color: "#FEFCF9" },
-    ],
-  };
-}
+/** System-aware chrome colors — root layout stays cacheable (no request cookies). */
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0A0E0F" },
+    { media: "(prefers-color-scheme: light)", color: "#FEFCF9" },
+  ],
+};
 
 export const metadata = {
   title: "TrailVerse — Explore 470+ U.S. Parks, Monuments & Historic Sites",
@@ -105,31 +80,14 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }) {
+export default function RootLayout({ children }) {
   const gaId = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
-  const cookieStore = await cookies();
-  const initialAuthHint = Boolean(cookieStore.get(AUTH_TOKEN_COOKIE)?.value);
-  const themePreference = cookieStore.get("theme")?.value;
-  const serverThemeClass = resolveServerHtmlTheme(themePreference);
-  const initialTheme = normalizeThemePreference(themePreference);
-  const initialResolvedTheme = resolvedThemeFromServerClass(serverThemeClass);
-  const htmlClassName = ["h-full", "antialiased", serverThemeClass].filter(Boolean).join(" ");
-  const htmlStyle =
-    serverThemeClass === "dark"
-      ? { backgroundColor: "#0A0E0F", colorScheme: "dark" }
-      : serverThemeClass === "light"
-        ? { backgroundColor: "#FEFCF9", colorScheme: "light" }
-        : undefined;
-  const bodyStyle =
-    serverThemeClass === "dark"
-      ? { backgroundColor: "#0A0E0F", color: "#FFFFFF" }
-      : serverThemeClass === "light"
-        ? { backgroundColor: "#FEFCF9", color: "#2D2B28" }
-        : undefined;
 
   return (
-    <html lang="en" className={htmlClassName} style={htmlStyle} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col font-sans" style={bodyStyle} suppressHydrationWarning>
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
+        {/* beforeInteractive theme bootstrap — keeps root layout cacheable */}
+        <Script id="theme-init" src="/theme-init.js" strategy="beforeInteractive" />
         <Script
           id="json-ld"
           type="application/ld+json"
@@ -170,11 +128,7 @@ export default async function RootLayout({ children }) {
           }}
         />
         <GoogleMapsLoader />
-        <Providers
-          initialAuthHint={initialAuthHint}
-          initialTheme={initialTheme}
-          initialResolvedTheme={initialResolvedTheme}
-        >
+        <Providers>
           {children}
           <VoiceButton />
         </Providers>
