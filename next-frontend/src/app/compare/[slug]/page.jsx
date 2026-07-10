@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import Header from '@/components/common/Header';
 import CompareLandingSeo from '@/components/compare/CompareLandingSeo';
 import ComparePageClient from '../ComparePageClient';
 import { COMPARE_LANDINGS, getCompareLanding } from '@/data/compareLandings';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export function generateStaticParams() {
   return COMPARE_LANDINGS.map((landing) => ({ slug: landing.slug }));
@@ -51,7 +53,15 @@ export default async function CompareLandingPage({ params }) {
     <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <CompareLandingSeo landing={landing} />
-      <ComparePageClient initialParkCodes={landing.codes} />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <LoadingSpinner size="lg" text="Loading comparison…" />
+          </div>
+        }
+      >
+        <ComparePageClient initialParkCodes={landing.codes} />
+      </Suspense>
     </div>
   );
 }

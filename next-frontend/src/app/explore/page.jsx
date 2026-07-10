@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import Header from '@/components/common/Header';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ExploreSeoShell from '@/components/seo/ExploreSeoShell';
 import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
@@ -59,10 +61,18 @@ export default async function ExplorePage() {
         nationalParksCount={nationalParksCount}
         totalSitesCount={totalSitesCount}
       />
-      <ExplorePageClient
-        initialPaginatedData={initialPaginatedData}
-        initialAllParksData={initialAllParksData}
-      />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <LoadingSpinner size="lg" text="Loading parks…" />
+          </div>
+        }
+      >
+        <ExplorePageClient
+          initialPaginatedData={initialPaginatedData}
+          initialAllParksData={initialAllParksData}
+        />
+      </Suspense>
     </div>
   );
 }

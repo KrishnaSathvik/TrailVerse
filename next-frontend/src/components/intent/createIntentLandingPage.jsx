@@ -71,14 +71,22 @@ export function createIntentLandingPageExports(path) {
         <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
           <Header />
           <main>
-            <IntentLandingClient
-              landing={landing}
-              canonicalUrl={getIntentLandingCanonicalUrl(landing)}
+            <Suspense
+              fallback={
+                <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                  <IntentTopMatchesSkeleton />
+                </div>
+              }
             >
-              <Suspense fallback={<IntentTopMatchesSkeleton />}>
-                <IntentLandingParksSection landing={landing} />
-              </Suspense>
-            </IntentLandingClient>
+              <IntentLandingClient
+                landing={landing}
+                canonicalUrl={getIntentLandingCanonicalUrl(landing)}
+              >
+                <Suspense fallback={<IntentTopMatchesSkeleton />}>
+                  <IntentLandingParksSection landing={landing} />
+                </Suspense>
+              </IntentLandingClient>
+            </Suspense>
           </main>
           <Footer />
         </div>

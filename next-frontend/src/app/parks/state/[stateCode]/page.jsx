@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { parkToSlug } from '@/utils/parkSlug';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import StateParkPageClient from './StateParkPageClient';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { fetchNpsGuide } from '@/lib/discoverApi';
 import { canonicalPageMetadata } from '@/lib/seo';
 
@@ -168,12 +170,20 @@ export default async function StateParkPage({ params }) {
       <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <Header />
         <main>
-          <StateParkPageClient
-            stateName={state.name}
-            parks={parks}
-            intro={intro}
-            npsGuide={npsGuide}
-          />
+          <Suspense
+            fallback={
+              <div className="flex min-h-[40vh] items-center justify-center">
+                <LoadingSpinner size="lg" text="Loading parks…" />
+              </div>
+            }
+          >
+            <StateParkPageClient
+              stateName={state.name}
+              parks={parks}
+              intro={intro}
+              npsGuide={npsGuide}
+            />
+          </Suspense>
         </main>
         <Footer />
       </div>

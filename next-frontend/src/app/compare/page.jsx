@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import Header from '@/components/common/Header';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ComparePageSeo from './ComparePageSeo';
 import ComparePageClient from './ComparePageClient';
 import { canonicalPageMetadata } from '@/lib/seo';
@@ -30,7 +32,15 @@ export default async function ComparePage({ searchParams }) {
     <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
       <ComparePageSeo />
-      <ComparePageClient initialParkCodes={initialParkCodes} />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <LoadingSpinner size="lg" text="Loading comparison…" />
+          </div>
+        }
+      >
+        <ComparePageClient initialParkCodes={initialParkCodes} />
+      </Suspense>
     </div>
   );
 }

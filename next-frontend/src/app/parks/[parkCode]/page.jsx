@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug, PARK_PAGE_REVALIDATE_SECONDS } from '@/lib/parkApi';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/lib/parkPlanningContent';
 import ParkSeoOverview from '@/components/seo/ParkSeoOverview';
 import ParkDetailClient from './ParkDetailClient';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { canonicalPageMetadata } from '@/lib/seo';
 
 /** Segment config must be a build-time literal (not imported). Sync with PARK_PAGE_REVALIDATE_SECONDS. */
@@ -220,16 +222,24 @@ export default async function ParkPage({ params, searchParams }) {
         stateHubSlug={stateHubSlug}
         relatedParks={relatedParks}
       />
-      <ParkDetailClient
-        initialData={data}
-        parkCode={parkCode}
-        initialTab={initialTab}
-        relatedParks={relatedParks}
-        seoLeadLine={seoLeadLine}
-        stateHubSlug={stateHubSlug}
-        planningSnapshot={planningSnapshot}
-        planningFaqItems={planningFaqItems}
-      />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <LoadingSpinner size="lg" text="Loading park…" />
+          </div>
+        }
+      >
+        <ParkDetailClient
+          initialData={data}
+          parkCode={parkCode}
+          initialTab={initialTab}
+          relatedParks={relatedParks}
+          seoLeadLine={seoLeadLine}
+          stateHubSlug={stateHubSlug}
+          planningSnapshot={planningSnapshot}
+          planningFaqItems={planningFaqItems}
+        />
+      </Suspense>
     </>
   );
 }
