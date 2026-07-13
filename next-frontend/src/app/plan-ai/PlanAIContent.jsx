@@ -85,7 +85,6 @@ const PlanAIContent = ({ tripId }) => {
         intentContext: intentContext || null,
         formData: effectiveFormData,
         currentPlan: null,
-        isGenerating: false,
         hasUserMessages: false,
         resolvedParkName: effectiveParkName,
       }),

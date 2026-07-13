@@ -30,7 +30,7 @@ function formatTripDates(formData) {
   return fmt(formData.startDate);
 }
 
-function buildDateSubtitle(formData, currentPlan, isGenerating) {
+function buildDateSubtitle(formData, currentPlan) {
   const dates = formatTripDates(formData);
   const dayCount = currentPlan?.days?.length || 0;
   const parts = [];
@@ -38,7 +38,6 @@ function buildDateSubtitle(formData, currentPlan, isGenerating) {
   if (dayCount > 0) parts.push(`${dayCount}-day plan`);
   else if (formData?.groupSize > 1) parts.push(`${formData.groupSize} travelers`);
   if (parts.length) return parts.join(' · ');
-  if (isGenerating) return 'Planning…';
   return null;
 }
 
@@ -93,6 +92,7 @@ export function resolvePlanningParkName({ parkName = '', messages = [] } = {}) {
 
 /**
  * Shell title/subtitle for Plan AI — entry source (sticky per session) + park from URL or chat.
+ * Generation progress lives in the typing indicator, not the shell subtitle.
  */
 export function derivePlanAiHeaderMeta({
   entryMode = PLAN_AI_ENTRY.GENERAL,
@@ -103,7 +103,6 @@ export function derivePlanAiHeaderMeta({
   intentContext = null,
   formData = null,
   currentPlan = null,
-  isGenerating = false,
   hasUserMessages = false,
   resolvedParkName = '',
 }) {
@@ -129,7 +128,7 @@ export function derivePlanAiHeaderMeta({
 
   const planningPark = resolvedParkName || parkName;
   const parkLabel = shortParkLabel(planningPark);
-  const dateSubtitle = buildDateSubtitle(formData, currentPlan, isGenerating);
+  const dateSubtitle = buildDateSubtitle(formData, currentPlan);
 
   switch (mode) {
     case PLAN_AI_ENTRY.PARK:
@@ -143,7 +142,7 @@ export function derivePlanAiHeaderMeta({
       const parksHint = suggestText ? truncatePlainText(suggestText, 72) : null;
       return {
         title: "Let's plan a road trip",
-        subtitle: isGenerating ? 'Planning…' : parksHint || null,
+        subtitle: parksHint || dateSubtitle || null,
         showSubHeader: true,
       };
     }
@@ -164,7 +163,7 @@ export function derivePlanAiHeaderMeta({
     case PLAN_AI_ENTRY.CHAT_HISTORY:
       return {
         title: parkLabel ? `Planning ${parkLabel}` : 'Your trip',
-        subtitle: dateSubtitle || (isGenerating ? 'Planning…' : null),
+        subtitle: dateSubtitle || null,
         showSubHeader: true,
       };
 
@@ -173,12 +172,12 @@ export function derivePlanAiHeaderMeta({
       if (hasUserMessages && parkLabel) {
         return {
           title: `Planning ${parkLabel}`,
-          subtitle: dateSubtitle || (isGenerating ? 'Planning…' : null),
+          subtitle: dateSubtitle || null,
           showSubHeader: true,
         };
       }
       return {
-        title: isGenerating ? 'Planning…' : 'Outdoor trip planning',
+        title: 'Outdoor trip planning',
         subtitle: dateSubtitle || null,
         showSubHeader: true,
       };

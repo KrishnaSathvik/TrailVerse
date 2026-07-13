@@ -385,7 +385,6 @@ const TripPlannerChat = ({
         intentContext,
         formData,
         currentPlan,
-        isGenerating,
         hasUserMessages,
         resolvedParkName,
       })
@@ -400,7 +399,6 @@ const TripPlannerChat = ({
     intentContext,
     formData,
     currentPlan,
-    isGenerating,
     hasUserMessages,
     resolvedParkName,
   ]);

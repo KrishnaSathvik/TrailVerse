@@ -4,18 +4,8 @@ import TrailieAvatar from '@components/plan-ai/TrailieAvatar';
 
 const TypingIndicator = ({ text = 'AI is thinking...', sources = [], inlineAvatarLayout = false }) => {
   const isSearching = sources?.includes('web');
-  const showLiveWeb = sources?.includes('web');
-  const showLiveNps = !showLiveWeb && sources?.some((s) => s === 'nps' || s === 'weather');
 
-  const inlineHeaderLabel = showLiveWeb || showLiveNps ? (
-    <div
-      className="flex items-center gap-1.5 min-w-0 text-[11px] font-medium"
-      style={{ color: 'var(--accent-green)' }}
-    >
-      <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--accent-green)' }} />
-      <span>{showLiveWeb ? 'Live web search' : 'Live NPS data'}</span>
-    </div>
-  ) : (
+  const brandHeader = (
     <span
       className="text-[11px] font-semibold uppercase tracking-[0.2em]"
       style={{ color: 'var(--accent-green)' }}
@@ -101,7 +91,7 @@ const TypingIndicator = ({ text = 'AI is thinking...', sources = [], inlineAvata
             style={{ borderColor: 'var(--border)' }}
           >
             <TrailieAvatar className="!h-8 !w-8 shrink-0 sm:!h-9 sm:!w-9" />
-            {inlineHeaderLabel}
+            {brandHeader}
           </div>
           {typingBody}
           {sourceBadges}

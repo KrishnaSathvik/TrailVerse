@@ -73,6 +73,18 @@ const nextConfig = {
         permanent: true,
       },
 
+      // Discover type aliases (docs / guessed slugs → catalog slugs)
+      {
+        source: '/discover/type/national-park',
+        destination: '/discover/type/parks',
+        permanent: true,
+      },
+      {
+        source: '/discover/type/national-monument',
+        destination: '/discover/type/monuments',
+        permanent: true,
+      },
+
       // Guide slug rename (2026 metadata pack)
       {
         source: '/guides/national-park-planning-in-chatgpt',

@@ -106,8 +106,8 @@ Slug = full park name in kebab-case (`parkToSlug(fullName)`). Short NPS codes re
 | Dimension | Hub | Example detail |
 |-----------|-----|----------------|
 | Activities | `/discover/activities` | `/discover/activity/hiking` |
-| Park types | `/discover/types` | `/discover/type/national-monument` |
-| States | `/discover/states` | `/discover/state/utah` (state grids use `/parks/state/{state}`) |
+| Park types | `/discover/types` | `/discover/type/monuments` |
+| States | `/discover/states` | `/parks/state/utah` |
 | Topics | `/discover/topics` | `/discover/topic/stargazing` |
 
 **Nav label:** “Explore by Activity” (URL stays `/discover`).
