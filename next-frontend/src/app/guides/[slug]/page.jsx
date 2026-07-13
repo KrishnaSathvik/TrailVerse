@@ -9,10 +9,10 @@ import {
 } from '@/data/guides';
 
 const GUIDE_OG_IMAGE = {
-  url: '/og-image-trailverse.jpg',
+  url: '/og/guides.jpg',
   width: 1200,
   height: 630,
-  alt: 'TrailVerse — National Park Planning Guides',
+  alt: 'TrailVerse — National park planning guides',
 };
 
 export async function generateStaticParams() {

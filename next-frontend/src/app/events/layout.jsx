@@ -8,13 +8,13 @@ export const metadata = {
     url: 'https://www.nationalparksexplorerusa.com/events',
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse — National Park Events' }],
+    images: [{ url: '/og/events.jpg', width: 1200, height: 630, alt: 'TrailVerse — National park events' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'National Park Events Calendar | TrailVerse',
     description: 'Ranger programs, guided hikes, and seasonal events across U.S. national parks.',
-    images: ['/og-image-trailverse.jpg'],
+    images: ['/og/events.jpg'],
   },
 };
 

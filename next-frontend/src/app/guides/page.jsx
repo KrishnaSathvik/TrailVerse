@@ -18,6 +18,14 @@ export const metadata = {
     url: 'https://www.nationalparksexplorerusa.com/guides',
     siteName: 'TrailVerse',
     type: 'website',
+    images: [{ url: '/og/guides.jpg', width: 1200, height: 630, alt: 'TrailVerse — National park planning guides' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'National Park Planning Guides | TrailVerse',
+    description:
+      'Planning guides and ranked park picks for national park trips — tools, comparisons, and live search results.',
+    images: ['/og/guides.jpg'],
   },
 };
 

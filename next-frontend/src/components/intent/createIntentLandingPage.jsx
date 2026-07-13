@@ -31,11 +31,13 @@ export function createIntentLandingPageExports(path) {
         url: canonical,
         siteName: 'TrailVerse',
         type: 'website',
+        images: [{ url: '/og/guides.jpg', width: 1200, height: 630, alt: landing.metadataTitle }],
       },
       twitter: {
-        card: 'summary',
+        card: 'summary_large_image',
         title: landing.metadataTitle,
         description: landing.metaDescription,
+        images: ['/og/guides.jpg'],
       },
       ...canonicalPageMetadata(path, params),
     };

@@ -6,18 +6,18 @@ function SharedTripStopRow({ stop }) {
   const note = stop.note || stop.why;
 
   return (
-    <div className="flex gap-3 border-l-2 pl-3" style={{ borderColor: 'var(--border)' }}>
-      <div className="w-14 shrink-0 pt-0.5">
-        <p className="text-xs font-semibold tabular-nums" style={{ color: 'var(--accent-green)' }}>
+    <div className="flex gap-2.5 border-l-2 pl-3 sm:gap-3" style={{ borderColor: 'var(--border)' }}>
+      <div className="w-12 shrink-0 pt-0.5 sm:w-14">
+        <p className="text-[11px] font-semibold tabular-nums leading-tight sm:text-xs" style={{ color: 'var(--accent-green)' }}>
           {time || '—'}
         </p>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>
+        <p className="text-sm font-semibold leading-snug break-words" style={{ color: 'var(--text-primary)' }}>
           {stop.name}
         </p>
         {note ? (
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mt-1 text-xs leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>
             {note}
           </p>
         ) : null}
@@ -69,7 +69,7 @@ export default function SharedTripDayCard({ day, dayIndex }) {
         ) : null}
       </div>
 
-      <div className="space-y-4 px-5 py-4">
+      <div className="space-y-3.5 px-4 py-4 sm:space-y-4 sm:px-5">
         {stops.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>No stops listed for this day.</p>
         ) : (

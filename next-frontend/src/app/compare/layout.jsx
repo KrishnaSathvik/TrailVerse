@@ -8,13 +8,13 @@ export const metadata = {
     url: 'https://www.nationalparksexplorerusa.com/compare',
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse — Compare Parks & Sites' }],
+    images: [{ url: '/og/compare.jpg', width: 1200, height: 630, alt: 'TrailVerse — Compare parks side by side' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Compare Parks & Sites – Fees, Amenities & Crowds | TrailVerse',
     description: 'Compare entrance fees, parking costs, amenities, and crowd levels across 470+ NPS parks and sites.',
-    images: ['/og-image-trailverse.jpg'],
+    images: ['/og/compare.jpg'],
   },
 };
 

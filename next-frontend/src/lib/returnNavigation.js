@@ -51,6 +51,7 @@ const FROM_LABEL_BY_PREFIX = [
   ['/explore', 'Explore'],
   ['/discover', BROWSE_HUB_TITLE],
   ['/guides', 'All planning guides'],
+  ['/itineraries', 'All sample itineraries'],
   ['/map', 'Map'],
   ['/compare', 'Compare'],
   ['/plan-ai', 'Trailie'],

@@ -30,13 +30,13 @@ export async function generateMetadata({ params }) {
       url,
       siteName: 'TrailVerse',
       type: 'website',
-      images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: landing.headline }],
+      images: [{ url: '/og/compare.jpg', width: 1200, height: 630, alt: landing.headline }],
     },
     twitter: {
       card: 'summary_large_image',
       title: landing.headline,
       description: landing.description,
-      images: ['/og-image-trailverse.jpg'],
+      images: ['/og/compare.jpg'],
     },
   };
 }

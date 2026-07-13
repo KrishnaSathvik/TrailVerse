@@ -10,14 +10,14 @@ export const metadata = {
     url: 'https://www.nationalparksexplorerusa.com/plan-ai',
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'Trailie on TrailVerse' }],
+    images: [{ url: '/og/trailie.jpg', width: 1200, height: 630, alt: 'Trailie — Your national park trip planner on TrailVerse' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Trailie \u2014 Outdoor & National Park Trip Planning | TrailVerse',
     description:
       'Trailie on TrailVerse \u2014 day-by-day outdoor trips, 470+ NPS sites with live data, state parks when you sign in.',
-    images: ['/og-image-trailverse.jpg'],
+    images: ['/og/trailie.jpg'],
   },
 };
 

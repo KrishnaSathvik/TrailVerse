@@ -12,6 +12,7 @@ const ShareButtons = ({
   type = 'default',
   showPrint = null,
   blogPost = null,
+  trip = null,
   heroOverlay = false,
 }) => {
   const { showToast } = useToast();
@@ -20,7 +21,7 @@ const ShareButtons = ({
 
   const shouldShowPdf = showPrint !== null
     ? showPrint
-    : Boolean(blogPost);
+    : Boolean(blogPost || trip);
 
   const generatePublicUrl = () => {
     if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
@@ -113,20 +114,36 @@ const ShareButtons = ({
   };
 
   const handleSavePdf = async () => {
-    if (!blogPost) {
+    if (!blogPost && !trip) {
       showToast('PDF export is not available for this page.', 'info');
       return;
     }
 
     setIsExportingPdf(true);
     try {
-      const { exportBlogPdf } = await import('@/lib/pdf/exportBlogPdf');
-      await exportBlogPdf({
-        ...blogPost,
-        canonicalUrl: blogPost.canonicalUrl || shareUrl || url,
-      });
-      logShare('save_pdf', title || blogPost.title, type);
-      showToast('Article saved as PDF!', 'success');
+      if (trip) {
+        const { exportTripPdf } = await import('@/lib/pdf/exportTripPdf');
+        await exportTripPdf({
+          title: trip.title || title,
+          parkName: trip.parkName || null,
+          parkCode: trip.parkCode || null,
+          tripId: trip.tripId || trip._id || null,
+          shareId: trip.shareId || null,
+          formData: trip.formData || {},
+          plan: trip.plan || null,
+          heroImage: trip.heroImage || image || null,
+        });
+        logShare('save_pdf', title || trip.title, type);
+        showToast('Trip plan exported as PDF!', 'success');
+      } else {
+        const { exportBlogPdf } = await import('@/lib/pdf/exportBlogPdf');
+        await exportBlogPdf({
+          ...blogPost,
+          canonicalUrl: blogPost.canonicalUrl || shareUrl || url,
+        });
+        logShare('save_pdf', title || blogPost.title, type);
+        showToast('Article saved as PDF!', 'success');
+      }
     } catch (error) {
       console.error('PDF export error:', error);
       showToast('Failed to export PDF. Please try again.', 'error');
@@ -176,7 +193,7 @@ const ShareButtons = ({
   ];
 
   const supportsNativeShare = typeof navigator !== 'undefined' && navigator.share;
-  const isCompactShareMenu = type === 'park' || type === 'article';
+  const isCompactShareMenu = type === 'park' || type === 'article' || type === 'itinerary';
   const pdfButtonLabel = isExportingPdf ? 'Exporting...' : 'Save as PDF';
 
   const pdfButton = shouldShowPdf ? (
@@ -196,9 +213,15 @@ const ShareButtons = ({
   ) : null;
 
   if (isCompactShareMenu) {
-    const isArticleStyle = type === 'article';
-    const buttonLabel = isArticleStyle ? 'Share Article' : 'Share Park';
-    const menuLabel = isArticleStyle ? 'Share This Article' : 'Share This Park';
+    const isArticleStyle = type === 'article' || type === 'itinerary';
+    const buttonLabel =
+      type === 'article' ? 'Share Article' : type === 'itinerary' ? 'Share' : 'Share Park';
+    const menuLabel =
+      type === 'article'
+        ? 'Share This Article'
+        : type === 'itinerary'
+          ? 'Share This Itinerary'
+          : 'Share This Park';
     const heroButtonStyle = heroOverlay
       ? {
           backgroundColor: 'rgba(255, 255, 255, 0.12)',
@@ -262,7 +285,7 @@ const ShareButtons = ({
                     </div>
                     <div>
                       <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Share This Article
+                        {menuLabel}
                       </h3>
                       <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                         Choose how to share

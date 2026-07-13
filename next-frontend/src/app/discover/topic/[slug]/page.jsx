@@ -23,6 +23,13 @@ export async function generateMetadata({ params, searchParams }) {
       url: siteCanonical(`/discover/topic/${slug}`),
       siteName: 'TrailVerse',
       type: 'website',
+      images: [{ url: '/og/discover.jpg', width: 1200, height: 630, alt: detail.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${detail.title} | ${BROWSE_HUB_PAGE_SUFFIX}`,
+      description: detail.intro?.slice(0, 160),
+      images: ['/og/discover.jpg'],
     },
   };
 }

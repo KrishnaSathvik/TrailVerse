@@ -17,13 +17,13 @@ export const metadata = {
     url: CANONICAL,
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'Trailie demo on TrailVerse' }],
+    images: [{ url: '/og/trailie.jpg', width: 1200, height: 630, alt: 'Trailie — Your national park trip planner on TrailVerse' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Trailie Demo — Outdoor & National Park Planning',
     description: DESCRIPTION,
-    images: ['/og-image-trailverse.jpg'],
+    images: ['/og/trailie.jpg'],
   },
 };
 

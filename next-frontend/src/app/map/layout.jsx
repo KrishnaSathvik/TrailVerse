@@ -9,13 +9,13 @@ export const metadata = {
     url: 'https://www.nationalparksexplorerusa.com/map',
     siteName: 'TrailVerse',
     type: 'website',
-    images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse — Interactive National Parks Map' }],
+    images: [{ url: '/og/map.jpg', width: 1200, height: 630, alt: 'TrailVerse — Interactive parks map' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Interactive National Parks Map | TrailVerse',
     description: 'Interactive map of all 470+ U.S. national parks and sites.',
-    images: ['/og-image-trailverse.jpg'],
+    images: ['/og/map.jpg'],
   },
 };
 

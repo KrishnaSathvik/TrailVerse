@@ -21,6 +21,9 @@ import {
   LANDING_HERO_SUBTITLE,
   LANDING_PAGE_TITLE,
 } from '@/lib/landingHeroCopy';
+import { ogImageMeta } from '@/lib/ogImages';
+
+const landingOg = ogImageMeta('landing');
 
 export const metadata = {
   title: LANDING_PAGE_TITLE,
@@ -31,10 +34,16 @@ export const metadata = {
   openGraph: {
     title: LANDING_PAGE_TITLE,
     description: LANDING_HERO_META_DESCRIPTION,
+    url: 'https://www.nationalparksexplorerusa.com',
+    siteName: 'TrailVerse',
+    type: 'website',
+    images: landingOg.openGraphImages,
   },
   twitter: {
+    card: 'summary_large_image',
     title: LANDING_PAGE_TITLE,
     description: LANDING_HERO_META_DESCRIPTION,
+    images: landingOg.twitterImages,
   },
 };
 

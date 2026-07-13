@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
+import ReturnNavLink from '@/components/common/ReturnNavLink';
+import ShareButtons from '@/components/common/ShareButtons';
 import SharedConversation from '@/components/ai-chat/SharedConversation';
 import SharedTripDayCard from '@/components/shared-trip/SharedTripDayCard';
 import TrailiePlanCtaCard from '@/components/plan-ai/TrailiePlanCtaCard';
@@ -12,6 +14,9 @@ import {
   resolveSharedTripHeadline,
   resolveSharedTripParkLink,
 } from '@/utils/sharedTripConversation';
+import {
+  getSampleItineraryByShareId,
+} from '@/data/sampleItineraries';
 import { getBestAvatar } from '@/utils/avatarGenerator';
 import { Compass } from '@components/icons';
 
@@ -96,7 +101,7 @@ function EstimatedCostCard({ estimatedCost }) {
   );
 }
 
-export default function SharedTripPageClient({ trip }) {
+export default function SharedTripPageClient({ trip, shareId }) {
   const formData = trip.formData || {};
   const plan = trip.plan || {};
   const days = plan.days || [];
@@ -119,6 +124,27 @@ export default function SharedTripPageClient({ trip }) {
     );
   const featuredPark = resolveSharedTripParkLink(trip);
   const tripTitle = resolveSharedTripHeadline(trip, featuredPark);
+  const sampleItinerary = useMemo(
+    () => getSampleItineraryByShareId(shareId),
+    [shareId]
+  );
+  const conversation = trip.conversation;
+  const shareUrl = useMemo(
+    () => `https://www.nationalparksexplorerusa.com/plan-ai/shared/${shareId}`,
+    [shareId]
+  );
+  const tripForShare = useMemo(
+    () => ({
+      title: tripTitle,
+      parkName: trip.parkName || featuredPark?.name || null,
+      parkCode: trip.parkCode || featuredPark?.parkCode || null,
+      shareId,
+      formData,
+      plan,
+    }),
+    [tripTitle, trip.parkName, trip.parkCode, featuredPark, shareId, formData, plan]
+  );
+  const canExportPdf = days.some((day) => (day.stops || []).length > 0);
 
   const metaLine = [
     `Shared by ${sharedByLabel}`,
@@ -148,49 +174,73 @@ export default function SharedTripPageClient({ trip }) {
   }, [featuredPark]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      <main>
-        <section className="border-b px-4 py-6 sm:px-6 sm:py-8 lg:px-8" style={{ borderColor: 'var(--border)' }}>
-          <div className="mx-auto max-w-4xl">
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div
-                className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--border)]"
-                style={{ backgroundColor: 'var(--surface)' }}
-              >
-                <img
-                  src={sharedByAvatar}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
+      <main className="min-w-0">
+        <section className="border-b px-4 py-5 sm:px-6 sm:py-8 lg:px-8" style={{ borderColor: 'var(--border)' }}>
+          <div className="mx-auto max-w-4xl min-w-0">
+            {sampleItinerary ? (
+              <ReturnNavLink
+                defaultHref="/itineraries"
+                defaultLabel="All sample itineraries"
+                className="mb-4 inline-flex max-w-full items-center gap-2 text-sm font-medium transition hover:opacity-80 sm:mb-5"
+                style={{ color: 'var(--text-secondary)' }}
+              />
+            ) : null}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+              <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
+                <div
+                  className="h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--border)] sm:h-11 sm:w-11"
+                  style={{ backgroundColor: 'var(--surface)' }}
+                >
+                  <img
+                    src={sharedByAvatar}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+                    Shared plan
+                  </p>
+                  <h1
+                    className="mt-1 text-xl font-bold leading-snug break-words sm:text-2xl lg:text-3xl"
+                    style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
+                  >
+                    {tripTitle}
+                  </h1>
+                  <p className="mt-2 text-sm leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>
+                    {metaLine}
+                  </p>
+                  {meta.schedule ? (
+                    <p className="mt-1 text-sm break-words" style={{ color: 'var(--text-secondary)' }}>
+                      {meta.schedule}
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-                  Shared plan
-                </p>
-                <h1
-                  className="mt-1 text-2xl font-bold leading-tight sm:text-3xl"
-                  style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-                >
-                  {tripTitle}
-                </h1>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {metaLine}
-                </p>
-                {meta.schedule ? (
-                  <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    {meta.schedule}
-                  </p>
-                ) : null}
+              <div className="w-full shrink-0 sm:w-auto sm:pt-1">
+                <ShareButtons
+                  url={shareUrl}
+                  title={tripTitle}
+                  description={
+                    sampleItinerary?.excerpt ||
+                    `A ${trip.parkName || 'national park'} trip plan created with Trailie on TrailVerse.`
+                  }
+                  type="itinerary"
+                  showPrint={canExportPdf}
+                  trip={canExportPdf ? tripForShare : null}
+                />
               </div>
             </div>
           </div>
         </section>
 
-        <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl min-w-0 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           {days.length > 0 ? (
             <section className="mb-10">
               <SectionHeading>Day-by-day itinerary</SectionHeading>
@@ -225,9 +275,9 @@ export default function SharedTripPageClient({ trip }) {
 
           <EstimatedCostCard estimatedCost={plan.estimatedCost} />
 
-          {trip.conversation?.length > 0 ? (
+          {conversation?.length > 0 ? (
             <section className="mb-10">
-              <SharedConversation conversation={trip.conversation} sharedBy={sharedBy} />
+              <SharedConversation conversation={conversation} sharedBy={sharedBy} />
             </section>
           ) : null}
 
