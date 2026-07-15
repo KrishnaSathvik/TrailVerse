@@ -546,7 +546,8 @@ exports.serveImage = async (req, res, next) => {
 
     // Set appropriate headers
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    // Match /uploads static: long-lived browser + CDN cache (filenames are content-addressed)
+    res.setHeader('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
     res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS for images
 
     // Stream the file

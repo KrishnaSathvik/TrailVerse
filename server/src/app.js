@@ -154,7 +154,18 @@ app.use(compression({
 }));
 
 // Serve uploaded files from a configurable root so production can use a persistent disk.
-app.use('/uploads', express.static(getUploadsDir()));
+// Filenames are content-addressed (timestamp-random), so they are safe to cache forever.
+// Without this, express.static defaults to max-age=0 and every blog/image hit is origin egress.
+app.use('/uploads', express.static(getUploadsDir(), {
+  maxAge: '365d',
+  immutable: true,
+  setHeaders(res) {
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=31536000, s-maxage=31536000, immutable'
+    );
+  },
+}));
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
