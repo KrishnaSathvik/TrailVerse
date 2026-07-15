@@ -26,9 +26,16 @@ const cacheMiddleware = (duration = 300) => {
     // Store original res.json
     const originalJson = res.json.bind(res);
 
-    // Override res.json
+    // Override res.json — never cache error / failure payloads (they replay as HTTP 200)
     res.json = (body) => {
-      safeCacheSet(cache, key, body, duration);
+      const statusCode = res.statusCode || 200;
+      const isFailure =
+        statusCode >= 400 ||
+        (body && typeof body === 'object' && body.success === false);
+
+      if (!isFailure) {
+        safeCacheSet(cache, key, body, duration);
+      }
       return originalJson(body);
     };
 

@@ -48,12 +48,14 @@ exports.getAllPosts = async (req, res, next) => {
       query.featured = featured === 'true';
     }
 
-    // Build sort object
+    // Build sort object — text search prefers relevance, else publishedAt/views
     let sort = {};
-    if (sortBy === 'views') {
+    let select = '-content'; // Exclude heavy content field
+    if (search) {
+      select = { content: 0, score: { $meta: 'textScore' } };
+      sort = { score: { $meta: 'textScore' }, publishedAt: -1 };
+    } else if (sortBy === 'views') {
       sort = { views: -1 };
-    } else if (sortBy === 'publishedAt') {
-      sort = { publishedAt: -1 };
     } else {
       sort = { publishedAt: -1 };
     }
@@ -61,7 +63,7 @@ exports.getAllPosts = async (req, res, next) => {
     // Execute query with pagination
     const [posts, total] = await Promise.all([
       BlogPost.find(query)
-        .select('-content') // Exclude heavy content field
+        .select(select)
         .sort(sort)
         .limit(parseInt(limit))
         .skip(skip)

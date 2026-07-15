@@ -16,9 +16,14 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false, embedded = false }) =>
   useEffect(() => {
     if (post) {
       if (user) {
-        const userId = user._id || user.id;
-        setIsLiked(post.likes?.includes(userId) || false);
-        setIsFavorited(post.favorites?.includes(userId) || false);
+        const userId = String(user._id || user.id || '');
+        const liked = (post.likes || []).some((id) => String(id) === userId);
+        const favorited = (post.favorites || []).some((id) => String(id) === userId);
+        setIsLiked(liked);
+        setIsFavorited(favorited);
+      } else {
+        setIsLiked(false);
+        setIsFavorited(false);
       }
       setLikesCount(post.likes?.length || 0);
       setFavoritesCount(post.favorites?.length || 0);
@@ -33,12 +38,12 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false, embedded = false }) =>
       setLikesCount(result.likesCount);
       
       if (onUpdate) {
-        const userId = user?._id || user?.id;
+        const userId = String(user?._id || user?.id || '');
         onUpdate({
           ...post,
           likes: result.isLiked 
             ? [...(post.likes || []), userId]
-            : (post.likes || []).filter(id => id !== userId)
+            : (post.likes || []).filter((id) => String(id) !== userId)
         });
       }
     } catch (error) {
@@ -57,12 +62,12 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false, embedded = false }) =>
       setFavoritesCount(result.favoritesCount);
       
       if (onUpdate) {
-        const userId = user?._id || user?.id;
+        const userId = String(user?._id || user?.id || '');
         onUpdate({
           ...post,
           favorites: result.isFavorited 
             ? [...(post.favorites || []), userId]
-            : (post.favorites || []).filter(id => id !== userId)
+            : (post.favorites || []).filter((id) => String(id) !== userId)
         });
       }
     } catch (error) {
@@ -92,7 +97,7 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false, embedded = false }) =>
       >
         <Heart
           size={embedded ? 16 : 18}
-          className={isLiked ? 'fill-current' : ''}
+          weight={isLiked ? 'fill' : 'regular'}
         />
         <span>{likesCount}</span>
         {embedded ? (
@@ -119,7 +124,7 @@ const LikeFavorite = ({ post, onUpdate, isPublic = false, embedded = false }) =>
       >
         <Bookmark
           size={embedded ? 16 : 18}
-          className={isFavorited ? 'fill-current' : ''}
+          weight={isFavorited ? 'fill' : 'regular'}
         />
         <span>{favoritesCount}</span>
         {embedded ? (

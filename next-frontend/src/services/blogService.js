@@ -99,29 +99,72 @@ class BlogService {
   }
 
   async getParkGuides(parkCode, parkName = '') {
-    const nameWords = parkName.replace(/\s+national\s+park$/i, '').toLowerCase().trim();
+    // Strip common NPS designations so "Denali National Park and Preserve" → "denali"
+    const nameWords = String(parkName || '')
+      .replace(
+        /\s+national\s+park(\s+and\s+preserve)?$/i,
+        ''
+      )
+      .replace(
+        /\s+national\s+(monument|seashore|lakeshore|preserve|recreation\s+area|historical\s+park|historic\s+site|battlefield|parkway|river|reserve)$/i,
+        ''
+      )
+      .toLowerCase()
+      .trim();
 
     const cacheOpts = { cacheType: 'blogPosts', ttl: 60 * 60 * 1000 };
+    const MULTI_PARK_RE =
+      /\b(best|top|vs\.?|versus|compare|weekend|thanksgiving|memorial day|july 4|fee[- ]free|itinerary)\b/i;
 
-    // Check if a post is specifically about this park (not a generic multi-park article)
-    const isParkSpecific = (post) => {
-      if (!post) return false;
+    const parkSlugHint = nameWords.replace(/\s+/g, '-');
+    const codeHint = String(parkCode || '').toLowerCase();
+
+    /** Prefer true park guides over posts that only mention the park in body text. */
+    const scoreParkPost = (post) => {
+      if (!post || !nameWords) return 0;
       const title = (post.title || '').toLowerCase();
       const excerpt = (post.excerpt || '').toLowerCase();
-      const parkLower = nameWords.toLowerCase();
-      return title.includes(parkLower) || excerpt.includes(parkLower);
+      const slug = (post.slug || '').toLowerCase();
+      const inTitle = title.includes(nameWords);
+      const inExcerpt = excerpt.includes(nameWords);
+      const inSlug = Boolean(parkSlugHint) && slug.includes(parkSlugHint);
+      if (!inTitle && !inExcerpt && !inSlug) return 0;
+
+      let score = 0;
+      if (inTitle) score += 100;
+      if (inSlug) score += 80;
+      if (inExcerpt) score += 40;
+      if (title.startsWith(nameWords)) score += 30;
+
+      const category = normalizeBlogCategory(post.category);
+      if (category === 'astrophotography' || category === 'national-parks' || category === 'park-guides') {
+        score += 25;
+      }
+      if (MULTI_PARK_RE.test(title) || MULTI_PARK_RE.test(slug)) score -= 50;
+      if (codeHint.length > 4 && slug.includes(codeHint)) score += 20;
+
+      return score;
     };
 
     try {
-      // Single API call — search by park name, return up to 5 results
       if (!nameWords) return { guide: null, astro: null };
 
-      const result = await enhancedApi.get('/blogs', { search: nameWords, limit: 5, page: 1 }, cacheOpts);
-      const posts = (result.data?.data || []).filter(isParkSpecific);
+      // Phrase search + higher limit: body-only mentions used to crowd out real guides at limit:5
+      const search = nameWords.includes(' ') ? `"${nameWords}"` : nameWords;
+      const result = await enhancedApi.get(
+        '/blogs',
+        { search, limit: 25, page: 1 },
+        cacheOpts
+      );
+      const ranked = (result.data?.data || [])
+        .map((post) => ({ post, score: scoreParkPost(post) }))
+        .filter((row) => row.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map((row) => row.post);
 
       const isAstroPost = (post) => normalizeBlogCategory(post?.category) === 'astrophotography';
-      const astro = posts.find(isAstroPost) || null;
-      const guide = posts.find((p) => !isAstroPost(p)) || null;
+      const astro = ranked.find(isAstroPost) || null;
+      const guide = ranked.find((p) => !isAstroPost(p)) || null;
 
       return { guide, astro };
     } catch {

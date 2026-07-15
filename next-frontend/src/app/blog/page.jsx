@@ -3,7 +3,7 @@ import Footer from '@/components/common/Footer';
 import BlogPageClient from './BlogPageClient';
 import BlogSubscribeToast from './BlogSubscribeToast';
 import { getBlogCategoriesServer, getBlogPostsServer } from '@/lib/blogApi';
-import { blogCategoryLabel } from '@/lib/blogCategories';
+import { mapBlogNavCategories } from '@/lib/blogCategories';
 import { canonicalPageMetadata } from '@/lib/seo';
 
 const ARCHIVE_PAGE_SIZE = 9;
@@ -38,11 +38,7 @@ export default async function BlogPage({ searchParams }) {
 
   const initialData = {
     initialTag,
-    categories: (categoriesData.data || []).map((category) => ({
-      id: category._id,
-      label: category.label || blogCategoryLabel(category._id),
-      count: category.count,
-    })),
+    categories: mapBlogNavCategories(categoriesData.data),
     featuredPosts: featuredData.data || [],
     popularPosts: (popularData.data || []).slice(0, 2),
     posts,

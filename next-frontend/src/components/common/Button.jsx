@@ -11,6 +11,7 @@ const Button = ({
   loading = false,
   icon: Icon,
   iconPosition = 'left',
+  iconWeight,
   className = '',
   style = {},
   onClick,
@@ -189,6 +190,7 @@ const Button = ({
   const iconElement = Icon && (
     <Icon 
       size={iconSizePx}
+      weight={iconWeight}
       className="flex-shrink-0"
       style={{
         color: 'inherit',

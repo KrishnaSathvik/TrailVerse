@@ -66,3 +66,28 @@ export function blogCategoryLabel(slugOrLegacy) {
   const slug = normalizeBlogCategory(slugOrLegacy);
   return BLOG_CATEGORIES[slug]?.name || slugOrLegacy || 'Park Guides';
 }
+
+/**
+ * Map API category rows for BlogCategoryNav. Falls back to the static catalog
+ * when the API fails or returns an empty list so the hub never loses chips.
+ */
+export function mapBlogNavCategories(rows) {
+  const fromApi = (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const id = normalizeBlogCategory(row?._id || row?.id);
+      if (!id || !BLOG_CATEGORIES[id]) return null;
+      return {
+        id,
+        label: row.label || blogCategoryLabel(id),
+        count: typeof row.count === 'number' ? row.count : undefined,
+      };
+    })
+    .filter(Boolean);
+
+  if (fromApi.length > 0) return fromApi;
+
+  return BLOG_CATEGORY_SLUGS.map((id) => ({
+    id,
+    label: BLOG_CATEGORIES[id].name,
+  }));
+}

@@ -9,12 +9,17 @@ export async function getBlogCategoriesServer() {
     });
 
     if (!response.ok) {
-      return { data: [], totalCount: 0 };
+      return { success: false, data: [], totalCount: 0 };
     }
 
-    return response.json();
+    const body = await response.json();
+    if (!body || body.success === false || !Array.isArray(body.data)) {
+      return { success: false, data: [], totalCount: 0 };
+    }
+
+    return body;
   } catch {
-    return { data: [], totalCount: 0 };
+    return { success: false, data: [], totalCount: 0 };
   }
 }
 
@@ -33,11 +38,16 @@ export async function getBlogPostsServer(params = {}) {
     });
 
     if (!response.ok) {
-      return { data: [], total: 0 };
+      return { success: false, data: [], total: 0 };
     }
 
-    return response.json();
+    const body = await response.json();
+    if (!body || body.success === false || !Array.isArray(body.data)) {
+      return { success: false, data: [], total: 0 };
+    }
+
+    return body;
   } catch {
-    return { data: [], total: 0 };
+    return { success: false, data: [], total: 0 };
   }
 }

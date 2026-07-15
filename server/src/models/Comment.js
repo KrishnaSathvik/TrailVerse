@@ -20,6 +20,13 @@ const commentSchema = new mongoose.Schema({
     required: [true, 'Comment content is required'],
     maxlength: [500, 'Comment cannot exceed 500 characters']
   },
+  /** Top-level when null; otherwise a reply to that comment (one level deep). */
+  parent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Comment',
+    default: null,
+    index: true,
+  },
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -37,6 +44,7 @@ commentSchema.index({ blogPost: 1, createdAt: -1 });
 commentSchema.index({ user: 1, createdAt: -1 });
 commentSchema.index({ isApproved: 1 });
 commentSchema.index({ blogPost: 1, isApproved: 1 });
+commentSchema.index({ blogPost: 1, parent: 1, createdAt: 1 });
 commentSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Comment', commentSchema);

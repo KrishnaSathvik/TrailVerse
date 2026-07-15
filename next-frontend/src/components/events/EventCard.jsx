@@ -52,6 +52,7 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
                 variant={isSaved ? 'danger' : 'ghost'}
                 size="sm"
                 icon={isSaved ? Heart : HeartOff}
+                iconWeight={isSaved ? 'fill' : undefined}
                 className="p-2"
                 title={isSaved ? 'Remove from saved events' : 'Save event'}
               />

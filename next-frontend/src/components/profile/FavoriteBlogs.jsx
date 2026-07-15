@@ -208,7 +208,7 @@ const FavoriteBlogs = ({ onCountChange }) => {
                   className="flex-shrink-0 p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition-all duration-200 hover:scale-105"
                   title="Remove from favorites"
                 >
-                  <Heart className="h-4 w-4 fill-current" />
+                  <Heart className="h-4 w-4" weight="fill" />
                 </button>
               </div>
 

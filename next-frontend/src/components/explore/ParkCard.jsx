@@ -241,7 +241,7 @@ const ParkCard = memo(({
               isSaved ? 'bg-red-500' : 'bg-white/20 hover:bg-white/30'
             }`}
           >
-            <Heart className={`h-4 w-4 ${isSaved ? 'fill-white text-white' : 'text-white'}`} />
+            <Heart className="h-4 w-4 text-white" weight={isSaved ? 'fill' : 'regular'} />
           </button>
         ) : null}
 

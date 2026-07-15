@@ -88,7 +88,7 @@ const EventListItem = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isS
                   title={isSaved ? 'Remove from saved events' : 'Save event'}
                 >
                   {isSaved ? (
-                    <Heart className="h-3 w-3 fill-current" />
+                    <Heart className="h-3 w-3" weight="fill" />
                   ) : (
                     <HeartOff className="h-3 w-3" />
                   )}

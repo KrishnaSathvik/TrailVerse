@@ -6,7 +6,7 @@ import Button from '@/components/common/Button';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
 import BlogCard from '@/components/blog/BlogCard';
 import BlogCategoryNav from '@/components/blog/BlogCategoryNav';
-import { BLOG_CATEGORIES, blogCategoryLabel } from '@/lib/blogCategories';
+import { BLOG_CATEGORIES, mapBlogNavCategories } from '@/lib/blogCategories';
 import { getBlogCategoriesServer, getBlogPostsServer } from '@/lib/blogApi';
 
 const CATEGORIES = BLOG_CATEGORIES;
@@ -53,11 +53,7 @@ export default async function BlogCategoryPage({ params }) {
 
   const navCategories = [
     { id: 'all', label: 'Blog Home' },
-    ...((categoriesData.data || []).map((row) => ({
-      id: row._id,
-      label: row.label || blogCategoryLabel(row._id),
-      count: row.count,
-    }))),
+    ...mapBlogNavCategories(categoriesData.data),
   ];
 
   // CollectionPage schema

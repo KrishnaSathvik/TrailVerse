@@ -800,6 +800,7 @@ const ParkDetailInner = ({
                       variant={isSaved ? 'danger' : 'secondary'}
                       size="sm"
                       icon={Heart}
+                      iconWeight={isSaved ? 'fill' : 'regular'}
                       className="backdrop-blur w-full sm:w-auto shrink-0"
                       style={{
                         backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255, 255, 255, 0.12)',

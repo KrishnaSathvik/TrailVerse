@@ -19,6 +19,7 @@ import Button from '@/components/common/Button';
 import blogService from '@/services/blogService';
 import NewsletterWidget from '@/components/blog/NewsletterWidget';
 import BlogCategoryNav from '@/components/blog/BlogCategoryNav';
+import { mapBlogNavCategories } from '@/lib/blogCategories';
 import { reportHref } from '@/lib/reportLinks';
 
 const ARCHIVE_PAGE_SIZE = 9;
@@ -73,14 +74,6 @@ const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
 
 const BLOG_PATH = '/blog';
 
-function mapCategories(categoriesData) {
-  return (categoriesData.data || []).map((category) => ({
-    id: category._id,
-    label: category.label || category._id,
-    count: category.count,
-  }));
-}
-
 const BlogContent = ({ initialData }) => {
   const router = useRouter();
   const [selectedTag, setSelectedTag] = useState(initialData?.initialTag || '');
@@ -109,15 +102,17 @@ const BlogContent = ({ initialData }) => {
     const refreshFromApi = async () => {
       blogService.clearBlogCache();
       try {
-        const [featuredData, popularData] = await Promise.all([
+        const [categoriesData, featuredData, popularData] = await Promise.all([
+          blogService.getBlogCategories(),
           blogService.getFeaturedPosts(2),
           blogService.getPopularPosts(2),
         ]);
         if (cancelled) return;
+        setCategories(mapBlogNavCategories(categoriesData?.data));
         setFeaturedPosts(featuredData.data || []);
         setPopularPosts((popularData.data || []).slice(0, 2));
       } catch {
-        // background refresh
+        // background refresh — keep SSR / fallback chips
       }
     };
 
@@ -144,7 +139,7 @@ const BlogContent = ({ initialData }) => {
           blogService.getPopularPosts(2),
         ]);
 
-        setCategories(mapCategories(categoriesData));
+        setCategories(mapBlogNavCategories(categoriesData?.data));
         setFeaturedPosts(featuredData.data || []);
         setPopularPosts((popularData.data || []).slice(0, 2));
 

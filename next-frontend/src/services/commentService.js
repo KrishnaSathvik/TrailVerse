@@ -52,8 +52,10 @@ class CommentService {
     return response.data.data;
   }
 
-  async createComment(blogId, content) {
-    const response = await api.post(`/blogs/${blogId}/comments`, { content });
+  async createComment(blogId, content, parentId = null) {
+    const body = { content };
+    if (parentId) body.parent = parentId;
+    const response = await api.post(`/blogs/${blogId}/comments`, body);
     return response.data.data;
   }
 

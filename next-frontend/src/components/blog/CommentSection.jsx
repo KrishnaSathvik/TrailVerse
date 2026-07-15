@@ -1,16 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import commentService, { getCommentRequestErrorMessage } from '../../services/commentService';
 import { getBestAvatar } from '../../utils/avatarGenerator';
-import { ThumbsUp, Reply, MoreVertical, Trash2, MessageSquare, Lock } from '@components/icons';
+import { ThumbsUp, Reply, Trash2, MessageSquare, Lock, X } from '@components/icons';
 
 const LOGIN_PROMPT_MESSAGE = 'Sign in to post a comment';
+
+function currentUserId(user) {
+  return user?._id || user?.id || null;
+}
+
+function userLikedComment(comment, user) {
+  const uid = String(currentUserId(user) || '');
+  if (!uid) return false;
+  return (comment.likes || []).some((id) => String(id) === uid);
+}
+
+function updateCommentTree(comments, commentId, updater) {
+  return comments.map((comment) => {
+    if (String(comment._id) === String(commentId)) {
+      return updater(comment);
+    }
+    if (comment.replies?.length) {
+      return {
+        ...comment,
+        replies: updateCommentTree(comment.replies, commentId, updater),
+      };
+    }
+    return comment;
+  });
+}
+
+function removeFromCommentTree(comments, commentId) {
+  return comments
+    .filter((c) => String(c._id) !== String(commentId))
+    .map((c) => ({
+      ...c,
+      replies: c.replies ? removeFromCommentTree(c.replies, commentId) : [],
+    }));
+}
 
 const CommentSection = ({
   postId,
   comments: initialComments = [],
-  isPublic = false,
   embedded = false,
   unified = false,
 }) => {
@@ -18,14 +51,21 @@ const CommentSection = ({
   const { showToast } = useToast();
   const [comments, setComments] = useState(initialComments);
   const [newComment, setNewComment] = useState('');
-  const [, setReplyTo] = useState(null);
+  const [replyTo, setReplyTo] = useState(null); // { id, userName }
   const [submitting, setSubmitting] = useState(false);
+  const replyTextareaRef = useRef(null);
 
   useEffect(() => {
     if (!initialComments.length && postId) {
       fetchComments();
     }
   }, [postId, initialComments.length]);
+
+  useEffect(() => {
+    if (replyTo && replyTextareaRef.current) {
+      replyTextareaRef.current.focus();
+    }
+  }, [replyTo]);
 
   const fetchComments = async () => {
     try {
@@ -40,8 +80,8 @@ const CommentSection = ({
     }
   };
 
-  const promptSignIn = () => {
-    showLoginPrompt(LOGIN_PROMPT_MESSAGE);
+  const promptSignIn = (message = LOGIN_PROMPT_MESSAGE) => {
+    showLoginPrompt(message);
   };
 
   const handleSubmit = async (e) => {
@@ -52,14 +92,31 @@ const CommentSection = ({
       return;
     }
 
-    if (!newComment.trim()) return;
+    const content = newComment.trim();
+    if (!content) return;
 
     setSubmitting(true);
     try {
-      const comment = await commentService.createComment(postId, newComment);
-      setComments([comment, ...comments]);
+      const comment = await commentService.createComment(
+        postId,
+        content,
+        replyTo?.id || null
+      );
+
+      if (replyTo?.id) {
+        setComments((prev) =>
+          updateCommentTree(prev, replyTo.id, (parent) => ({
+            ...parent,
+            replies: [...(parent.replies || []), { ...comment, replies: [] }],
+          }))
+        );
+        setReplyTo(null);
+      } else {
+        setComments((prev) => [{ ...comment, replies: [] }, ...prev]);
+      }
+
       setNewComment('');
-      showToast('Comment posted successfully!', 'success');
+      showToast(replyTo ? 'Reply posted!' : 'Comment posted successfully!', 'success');
     } catch (error) {
       showToast(
         getCommentRequestErrorMessage(error, 'Failed to post comment'),
@@ -75,7 +132,10 @@ const CommentSection = ({
 
     try {
       await commentService.deleteComment(commentId);
-      setComments(comments.filter(c => c._id !== commentId));
+      setComments((prev) => removeFromCommentTree(prev, commentId));
+      if (replyTo && String(replyTo.id) === String(commentId)) {
+        setReplyTo(null);
+      }
       showToast('Comment deleted successfully', 'success');
     } catch (error) {
       showToast(
@@ -87,15 +147,21 @@ const CommentSection = ({
 
   const handleLike = async (commentId) => {
     if (!isAuthenticated) {
-      showLoginPrompt('Sign in to like comments');
+      promptSignIn('Sign in to like comments');
       return;
     }
 
     try {
       const updatedComment = await commentService.likeComment(commentId);
-      setComments(comments.map(c =>
-        c._id === commentId ? updatedComment : c
-      ));
+      setComments((prev) =>
+        updateCommentTree(prev, commentId, (existing) => ({
+          ...existing,
+          ...updatedComment,
+          replies: updatedComment.replies?.length
+            ? updatedComment.replies
+            : existing.replies || [],
+        }))
+      );
     } catch (error) {
       showToast(
         getCommentRequestErrorMessage(error, 'Failed to like comment'),
@@ -103,6 +169,16 @@ const CommentSection = ({
       );
     }
   };
+
+  const startReply = (comment) => {
+    if (!isAuthenticated) {
+      promptSignIn('Sign in to reply');
+      return;
+    }
+    setReplyTo({ id: comment._id, userName: comment.userName });
+  };
+
+  const cancelReply = () => setReplyTo(null);
 
   const header = unified ? null : (
     <h3
@@ -123,10 +199,36 @@ const CommentSection = ({
 
   const form = isAuthenticated ? (
     <form onSubmit={handleSubmit} className={embedded ? 'mb-6' : 'mb-8'}>
+      {replyTo && (
+        <div
+          className="mb-2 flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm"
+          style={{
+            backgroundColor: 'var(--surface-hover)',
+            borderWidth: '1px',
+            borderColor: 'var(--border)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <span>
+            Replying to <strong style={{ color: 'var(--text-primary)' }}>{replyTo.userName}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={cancelReply}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium hover:opacity-80"
+            style={{ color: 'var(--text-tertiary)' }}
+            aria-label="Cancel reply"
+          >
+            <X className="h-3.5 w-3.5" />
+            Cancel
+          </button>
+        </div>
+      )}
       <textarea
+        ref={replyTextareaRef}
         value={newComment}
         onChange={(e) => setNewComment(e.target.value)}
-        placeholder="Share your thoughts..."
+        placeholder={replyTo ? `Reply to ${replyTo.userName}…` : 'Share your thoughts...'}
         rows={embedded ? 3 : 4}
         maxLength={500}
         className="w-full px-4 py-3 rounded-xl outline-none resize-none mb-3 text-sm sm:text-base"
@@ -150,7 +252,7 @@ const CommentSection = ({
             color: 'white',
           }}
         >
-          {submitting ? 'Posting...' : 'Post comment'}
+          {submitting ? 'Posting...' : replyTo ? 'Post reply' : 'Post comment'}
         </button>
       </div>
     </form>
@@ -168,7 +270,7 @@ const CommentSection = ({
       </p>
       <button
         type="button"
-        onClick={promptSignIn}
+        onClick={() => promptSignIn()}
         className="inline-flex shrink-0 items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90"
         style={{
           backgroundColor: 'var(--surface-hover)',
@@ -211,10 +313,10 @@ const CommentSection = ({
           key={comment._id}
           comment={comment}
           user={user}
-          isAuthenticated={isAuthenticated}
-          onReply={(id) => setReplyTo(id)}
+          onReply={startReply}
           onDelete={handleDelete}
           onLike={handleLike}
+          activeReplyId={replyTo?.id}
         />
       ))}
     </div>
@@ -247,86 +349,108 @@ const CommentSection = ({
   );
 };
 
-const Comment = ({ comment, user, isAuthenticated, onReply, onDelete, onLike, isReply = false }) => {
+const Comment = ({
+  comment,
+  user,
+  onReply,
+  onDelete,
+  onLike,
+  isReply = false,
+  activeReplyId = null,
+}) => {
+  const liked = userLikedComment(comment, user);
+  const canDelete =
+    String(currentUserId(user) || '') === String(comment.user?._id || comment.user || '') ||
+    user?.role === 'admin';
+  const isActiveReplyTarget = activeReplyId && String(activeReplyId) === String(comment._id);
+
   return (
-    <div className={`flex gap-4 ${isReply ? 'ml-12' : ''}`}>
+    <div className={`flex gap-2.5 sm:gap-4 ${isReply ? 'ml-3 sm:ml-8 pl-3 sm:pl-4 border-l-2' : ''}`}
+      style={isReply ? { borderColor: 'var(--border)' } : undefined}
+    >
       <img
         src={comment.user?.avatar || getBestAvatar(comment.user || { userName: comment.userName }, {}, 'travel')}
         alt={comment.userName}
-        className="w-10 h-10 rounded-full flex-shrink-0"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
       />
       <div className="flex-1 min-w-0">
-        <div className="rounded-2xl p-4"
+        <div
+          className="rounded-2xl p-3 sm:p-4"
           style={{
-            backgroundColor: 'var(--surface-hover)',
+            backgroundColor: isActiveReplyTarget
+              ? 'color-mix(in srgb, var(--accent-green) 8%, var(--surface-hover))'
+              : 'var(--surface-hover)',
             borderWidth: '1px',
-            borderColor: 'var(--border)'
+            borderColor: isActiveReplyTarget
+              ? 'color-mix(in srgb, var(--accent-green) 35%, var(--border))'
+              : 'var(--border)',
           }}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {comment.userName}
-            </h4>
-            <button className="p-1 rounded-lg hover:bg-white/5">
-              <MoreVertical className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
-            </button>
-          </div>
-          <p className="text-sm mb-3"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+          <h4 className="font-semibold mb-2 text-sm sm:text-base" style={{ color: 'var(--text-primary)' }}>
+            {comment.userName}
+          </h4>
+          <p className="text-sm mb-3 break-words" style={{ color: 'var(--text-secondary)' }}>
             {comment.content}
           </p>
-          <div className="flex items-center gap-4 text-xs"
+          <div
+            className="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            <span>
+            <span className="pr-2 tabular-nums">
               {new Date(comment.createdAt).toLocaleDateString()}
             </span>
-            <button 
+
+            <button
+              type="button"
               onClick={() => onLike(comment._id)}
-              className={`flex items-center gap-1 hover:text-purple-400 transition ${
-                comment.likes?.includes(user?._id) ? 'text-purple-400' : ''
-              }`}
+              aria-pressed={liked}
+              aria-label={liked ? 'Unlike comment' : 'Like comment'}
+              className="inline-flex items-center gap-1 min-h-9 min-w-9 px-2 rounded-lg transition hover:opacity-80"
+              style={{ color: liked ? 'var(--accent-green)' : 'var(--text-tertiary)' }}
             >
-              <ThumbsUp className="h-3 w-3" />
-              {comment.likes?.length > 0 && <span>{comment.likes.length}</span>}
+              <ThumbsUp className="h-4 w-4" weight={liked ? 'fill' : 'regular'} />
+              {(comment.likes?.length > 0) && <span>{comment.likes.length}</span>}
             </button>
+
             {!isReply && (
               <button
-                onClick={() => onReply(comment._id)}
-                className="flex items-center gap-1 hover:text-purple-400 transition"
+                type="button"
+                onClick={() => onReply(comment)}
+                aria-label={`Reply to ${comment.userName}`}
+                className="inline-flex items-center gap-1.5 min-h-9 px-2 rounded-lg transition hover:opacity-80"
+                style={{ color: isActiveReplyTarget ? 'var(--accent-green)' : 'var(--text-tertiary)' }}
               >
-                <Reply className="h-3 w-3" />
-                Reply
+                <Reply className="h-4 w-4" />
+                <span>Reply</span>
               </button>
             )}
-            {(user?._id === comment.user?._id || user?.role === 'admin') && (
+
+            {canDelete && (
               <button
+                type="button"
                 onClick={() => onDelete(comment._id)}
-                className="flex items-center gap-1 hover:text-red-400 transition"
+                aria-label="Delete comment"
+                className="inline-flex items-center gap-1.5 min-h-9 px-2 rounded-lg transition hover:text-red-400"
               >
-                <Trash2 className="h-3 w-3" />
-                Delete
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Delete</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Replies */}
         {comment.replies && comment.replies.length > 0 && (
-          <div className="mt-4 space-y-4">
+          <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
             {comment.replies.map((reply) => (
-              <Comment 
-                key={reply._id} 
-                comment={reply} 
+              <Comment
+                key={reply._id}
+                comment={reply}
                 user={user}
-                isAuthenticated={isAuthenticated}
                 onReply={onReply}
                 onDelete={onDelete}
                 onLike={onLike}
-                isReply 
+                isReply
+                activeReplyId={activeReplyId}
               />
             ))}
           </div>

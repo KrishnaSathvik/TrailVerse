@@ -82,7 +82,7 @@ const SavedParks = ({ savedParks, onRemove }) => {
                 onClick={(e) => handleRemove(e, park.parkCode)}
                 className="absolute top-4 left-4 p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition z-10"
               >
-                <Heart className="h-4 w-4 fill-current" />
+                <Heart className="h-4 w-4" weight="fill" />
               </button>
 
               {/* State badge - top right */}

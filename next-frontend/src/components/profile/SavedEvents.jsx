@@ -157,7 +157,7 @@ const SavedEvents = ({ savedEvents, loading, onRemove, onClearAll }) => {
                     className="p-2 rounded-full bg-red-500/90 hover:bg-red-600 text-white transition-all duration-200 hover:scale-105"
                     title="Remove from saved events"
                   >
-                    <Heart className="h-4 w-4 fill-current" />
+                    <Heart className="h-4 w-4" weight="fill" />
                   </button>
                 </div>
               </div>

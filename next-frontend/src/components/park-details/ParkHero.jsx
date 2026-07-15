@@ -51,7 +51,7 @@ const ParkHero = ({ park, isSaved, onSave, onShare }) => {
                   : 'bg-white/10 hover:bg-white/20 backdrop-blur text-white'
               }`}
             >
-              <Heart className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
+              <Heart className="h-5 w-5" weight={isSaved ? 'fill' : 'regular'} />
               {isSaved ? 'Saved' : 'Save'}
             </button>
 
