@@ -9,20 +9,31 @@ function getApiBaseUrl() {
   return configuredUrl.endsWith('/api') ? configuredUrl : `${configuredUrl}/api`;
 }
 
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://trailverse.onrender.com/api').replace(/\/api\/?$/, '');
-
 function toAbsoluteImageUrl(imageUrl) {
   if (!imageUrl || imageUrl.trim() === '' || imageUrl.startsWith('data:')) {
     return `${SITE_URL}/og-image-trailverse.jpg`;
   }
 
   // Social crawlers need a direct image URL — /_next/image routes don't work.
-  // Blog images are relative paths like /uploads/blog/... served by the Express backend.
+  // Prefer www so OG previews use the site rewrite + cache, not direct Render egress.
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    try {
+      const parsed = new URL(imageUrl);
+      if (
+        parsed.hostname === 'trailverse.onrender.com' ||
+        parsed.hostname === 'www.nationalparksexplorerusa.com' ||
+        parsed.hostname === 'nationalparksexplorerusa.com' ||
+        parsed.hostname === 'localhost'
+      ) {
+        return `${SITE_URL}${parsed.pathname}`;
+      }
+    } catch {
+      // fall through
+    }
     return imageUrl;
   }
   const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  return `${API_ORIGIN}${path}`;
+  return `${SITE_URL}${path}`;
 }
 
 async function getPostBySlug(slug) {

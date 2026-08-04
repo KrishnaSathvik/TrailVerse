@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 
-// Normalize image URL - convert HTTP to HTTPS and handle relative paths
+/**
+ * Normalize image URL for display.
+ * Uploads stay same-origin (/uploads/...) so Vercel can rewrite + edge-cache
+ * instead of sending browsers straight to trailverse.onrender.com (Render egress).
+ */
 const normalizeImageUrl = (url) => {
   if (!url || url.trim() === '') {
     return null;
@@ -13,20 +17,14 @@ const normalizeImageUrl = (url) => {
     return url;
   }
 
-  // Detect invalid URLs - just filenames without protocols or proper paths
-  // Valid URLs should start with http://, https://, or /, or contain /uploads/
-  // If it's just a filename like "image.jpg" without any path indicators, it's likely invalid
   const trimmedUrl = url.trim();
   
   // Check for just a filename without proper path (e.g., "image.jpg")
-  // Note: Timestamp-based filenames like "1762743485952-599403375.jpg" are valid uploads
   if (!trimmedUrl.startsWith('http://') && 
       !trimmedUrl.startsWith('https://') && 
       !trimmedUrl.startsWith('/') && 
       !trimmedUrl.includes('/') && 
       trimmedUrl.includes('.')) {
-    // This looks like just a filename (e.g., "image.jpg") without a proper path
-    // Likely invalid - return null to use default image
     if (process.env.NODE_ENV === 'development') {
       console.warn('Invalid image URL detected (just filename without path):', url);
     }
@@ -34,54 +32,55 @@ const normalizeImageUrl = (url) => {
   }
 
   const isDevelopment = process.env.NODE_ENV === 'development';
-  let apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? 'http://localhost:5001' : 'https://trailverse.onrender.com');
   
-  // Normalize apiBaseUrl - remove trailing /api if present
-  if (apiBaseUrl.endsWith('/api')) {
-    apiBaseUrl = apiBaseUrl.slice(0, -4);
-  }
-  
-  // If already a full HTTPS URL from external domain (like nps.gov), return as is
-  // This handles park images from NPS API
-  if (url.startsWith('https://') && !url.includes('trailverse.onrender.com') && !url.includes('localhost')) {
-    return url;
-  }
-  
-  // Handle localhost URLs in production - convert to production API URL
-  if (!isDevelopment && url.includes('localhost:5001')) {
-    // Replace localhost with production API URL
-    url = url.replace(/http:\/\/localhost:5001/g, 'https://trailverse.onrender.com');
-  }
-  
-  // Convert HTTP to HTTPS (for production)
-  if (!isDevelopment && url.startsWith('http://')) {
-    url = url.replace('http://', 'https://');
-  }
-  
-  // If it's a trailverse.onrender.com/uploads/ URL or relative /uploads/ path, use API endpoint
-  // Only convert if it's from our domain or a relative path (not external domains)
-  if (url.startsWith('/uploads/') || 
-      url.includes('trailverse.onrender.com/uploads/') || 
-      (url.includes('localhost:5001/uploads/') && isDevelopment)) {
-    // Extract the path after /uploads/ (e.g., "general/1762611045214-709377760.jpg")
-    const uploadsIndex = url.indexOf('/uploads/');
-    if (uploadsIndex !== -1) {
-      const filePath = url.substring(uploadsIndex + '/uploads/'.length);
-      // Try API endpoint first (better error handling)
-      const apiUrl = `${apiBaseUrl}/api/images/file/${filePath}`;
-      
-      // In production, hit the backend directly. Vercel does not proxy these paths.
-      return apiUrl;
-    }
+  // External HTTPS (nps.gov, unsplash, etc.) — leave alone
+  if (
+    trimmedUrl.startsWith('https://') &&
+    !trimmedUrl.includes('trailverse.onrender.com') &&
+    !trimmedUrl.includes('localhost') &&
+    !trimmedUrl.includes('nationalparksexplorerusa.com')
+  ) {
+    return trimmedUrl;
   }
 
-  // If already HTTPS or relative, return as is
-  if (url.startsWith('https://') || url.startsWith('/')) {
-    return url;
+  let working = trimmedUrl;
+
+  // Strip known absolute origins down to a site-relative path
+  working = working
+    .replace(/^https?:\/\/trailverse\.onrender\.com/i, '')
+    .replace(/^https?:\/\/(www\.)?nationalparksexplorerusa\.com/i, '')
+    .replace(/^https?:\/\/localhost:5001/i, '');
+
+  if (!isDevelopment && working.startsWith('http://')) {
+    working = working.replace('http://', 'https://');
   }
 
-  // If it's a relative path without leading slash, add it
-  return `/${url}`;
+  // /uploads/... → keep as same-origin relative (Next rewrites to Render)
+  if (working.startsWith('/uploads/')) {
+    return working;
+  }
+
+  // Legacy API file path — also same-origin relative
+  if (working.startsWith('/api/images/file/')) {
+    return working;
+  }
+
+  // Absolute onrender /api/images/file already stripped above; handle leftover
+  const uploadsIndex = working.indexOf('/uploads/');
+  if (uploadsIndex !== -1) {
+    return working.substring(uploadsIndex);
+  }
+
+  const apiFileIndex = working.indexOf('/api/images/file/');
+  if (apiFileIndex !== -1) {
+    return working.substring(apiFileIndex);
+  }
+
+  if (working.startsWith('https://') || working.startsWith('/')) {
+    return working;
+  }
+
+  return `/${working}`;
 };
 
 const OptimizedImage = ({ 
@@ -93,45 +92,22 @@ const OptimizedImage = ({
   objectFit = 'cover',
   loading = 'lazy'
 }) => {
-  // Memoize normalized URL to avoid recalculating on every render
   const normalizedSrc = useMemo(() => normalizeImageUrl(src), [src]);
   
-  // Memoize fallback URL calculation
+  // Fallback: if /api/images/file fails, try /uploads equivalent
   const fallbackSrc = useMemo(() => {
-    if (!src) return null;
-
-    // Only set fallback for /uploads/ paths
-    if (src.includes('trailverse.onrender.com/uploads/') || src.includes('/uploads/') || src.includes('localhost:5001/uploads/')) {
-      let processedSrc = src;
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      
-      if (!isDevelopment && src.includes('localhost:5001')) {
-        processedSrc = src.replace(/http:\/\/localhost:5001/g, 'https://trailverse.onrender.com');
-      }
-      
-      const uploadsIndex = processedSrc.indexOf('/uploads/');
-      if (uploadsIndex !== -1) {
-        const filePath = processedSrc.substring(uploadsIndex); // This is /uploads/...
-        let apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? 'http://localhost:5001' : 'https://trailverse.onrender.com');
-        
-        // Normalize apiBaseUrl - remove trailing /api if present
-        if (apiBaseUrl.endsWith('/api')) {
-          apiBaseUrl = apiBaseUrl.slice(0, -4);
-        }
-        
-        // Fallback should be the backend's direct /uploads/ path.
-        return `${apiBaseUrl}${filePath}`;
-      }
+    if (!normalizedSrc) return null;
+    if (normalizedSrc.startsWith('/api/images/file/')) {
+      return normalizedSrc.replace('/api/images/file/', '/uploads/');
     }
     return null;
-  }, [src]);
+  }, [normalizedSrc]);
 
   const [error, setError] = useState(false);
   const [imageSrc, setImageSrc] = useState(normalizedSrc);
   const [attemptCount, setAttemptCount] = useState(0);
   const DEFAULT_IMAGE = '/og-image-trailverse.jpg';
 
-  // Update image source if normalized src changes (only when it actually changes)
   useEffect(() => {
     if (normalizedSrc && normalizedSrc !== imageSrc) {
       setImageSrc(normalizedSrc);
@@ -141,25 +117,20 @@ const OptimizedImage = ({
   }, [normalizedSrc]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageError = (e) => {
-    // Suppress default browser error logging for missing images
     e.preventDefault();
     
-    // First attempt: try fallback URL if we have one and are using API endpoint
     if (attemptCount === 0 && fallbackSrc && imageSrc && imageSrc.includes('/api/images/file/')) {
       setImageSrc(fallbackSrc);
       setAttemptCount(1);
       setError(false);
-      return; // Exit early to wait for fallback result
+      return;
     } 
-    // Second attempt: try default image (skip fallback if we don't have one or it already failed)
     if (attemptCount <= 1 && imageSrc !== DEFAULT_IMAGE) {
       setImageSrc(DEFAULT_IMAGE);
       setAttemptCount(2);
       setError(false);
-      return; // Exit early to wait for default image result
+      return;
     } 
-    // All attempts failed, show placeholder
-    // Only log in development when we've exhausted all options
     if (process.env.NODE_ENV === 'development' && attemptCount >= 2) {
       console.warn('Image failed to load after all attempts:', imageSrc);
     }

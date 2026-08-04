@@ -21,7 +21,7 @@ export const useVisitedParks = () => {
   } = useQuery({
     queryKey: ['visitedParks'],
     queryFn: userService.getVisitedParks,
-    enabled: isAuthenticated,
+    enabled: Boolean(isAuthenticated),
     staleTime: 0, // Always consider stale so refetchOnMount works
     refetchOnMount: true, // Always refetch when component mounts to get fresh data
     refetchOnWindowFocus: false, // Don't refetch on window focus - WebSocket handles this

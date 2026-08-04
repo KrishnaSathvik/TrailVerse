@@ -78,8 +78,9 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
     states: []
   });
 
-  const hasActiveFilters = searchTerm || filters.states.length > 0;
-  const needsAllParks = !filters.nationalParksOnly || hasActiveFilters || sortBy === 'state';
+  const hasActiveFilters = Boolean(searchTerm.trim()) || filters.states.length > 0;
+  const needsAllParks =
+    !filters.nationalParksOnly || hasActiveFilters || sortBy === 'state';
 
   const { data: paginatedData, isPending: paginatedPending, error: paginatedError } = useParks(
     currentPage,

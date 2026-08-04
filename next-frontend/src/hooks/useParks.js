@@ -88,7 +88,7 @@ export const useAllParks = (initialData = undefined, includeActivities = false, 
         throw error;
       }
     },
-    enabled,
+    enabled: Boolean(enabled),
     staleTime: 1000 * 60 * 60 * 24, // 24 hours - parks data rarely changes
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
     refetchOnWindowFocus: false,
@@ -128,7 +128,7 @@ export const useAllParksLite = (
       }
       return response;
     },
-    enabled,
+    enabled: Boolean(enabled),
     staleTime: 1000 * 60 * 60 * 24,
     gcTime: 1000 * 60 * 60 * 24,
     refetchOnWindowFocus: false,

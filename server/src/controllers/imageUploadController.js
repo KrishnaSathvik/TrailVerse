@@ -5,6 +5,7 @@ const sharp = require('sharp');
 const ImageUpload = require('../models/ImageUpload');
 const { protect } = require('../middleware/auth');
 const { getUploadsDir } = require('../utils/uploads');
+const { compressImageFile } = require('../utils/imageCompression');
 
 const uploadsDir = getUploadsDir();
 
@@ -127,19 +128,48 @@ exports.uploadImages = async (req, res, next) => {
         let metadata;
         let thumbnailPath = null;
         let thumbnailRelativePath = null;
+        let workingPath = file.path;
+        let workingFilename = file.filename;
+        let workingMimeType = file.mimetype;
+        let workingSize = file.size;
         
         if (!isSvg) {
+          // Compress original before thumb/DB — prevents multi‑MB hero egress on Render
           try {
-            metadata = await sharp(file.path).metadata();
+            const compressed = await compressImageFile(file.path, {
+              mimeType: file.mimetype,
+              replaceOriginal: true,
+            });
+            workingPath = compressed.path;
+            workingFilename = compressed.filename;
+            workingMimeType = compressed.mimeType;
+            workingSize = compressed.size;
+            file.path = workingPath;
+            file.filename = workingFilename;
+            file.mimetype = workingMimeType;
+            file.size = workingSize;
+            if (!compressed.skipped) {
+              console.log('🗜️  Compressed upload:', {
+                fromBytes: compressed.originalBytes,
+                toBytes: compressed.size,
+                filename: compressed.filename,
+              });
+            }
+          } catch (compressError) {
+            console.error('❌ Compression failed, keeping original:', compressError.message);
+          }
+
+          try {
+            metadata = await sharp(workingPath).metadata();
           } catch (sharpError) {
             console.error('❌ Sharp error processing image:', sharpError);
             throw new Error(`Failed to process image: ${sharpError.message}`);
           }
           
           // Generate thumbnail (always save as JPEG for consistency)
-          thumbnailPath = file.path.replace(path.extname(file.path), '_thumb.jpg');
+          thumbnailPath = workingPath.replace(path.extname(workingPath), '_thumb.jpg');
           try {
-            await sharp(file.path)
+            await sharp(workingPath)
               .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
               .jpeg({ quality: 80 })
               .toFile(thumbnailPath);
@@ -171,7 +201,7 @@ exports.uploadImages = async (req, res, next) => {
 
         // Generate URLs - store as relative paths for easier normalization
         // The client will normalize these to the correct format based on environment
-        const relativePath = path.relative(uploadsDir, file.path).replace(/\\/g, '/');
+        const relativePath = path.relative(uploadsDir, workingPath).replace(/\\/g, '/');
         
         // Store as relative path - client will normalize to full URL or API endpoint as needed
         // Format: /uploads/category/filename.jpg
@@ -181,9 +211,9 @@ exports.uploadImages = async (req, res, next) => {
         const imageUploadData = {
           userId: userId, // Already validated above
           originalName: file.originalname,
-          filename: file.filename,
-          mimeType: file.mimetype,
-          size: file.size,
+          filename: workingFilename,
+          mimeType: workingMimeType,
+          size: workingSize,
           url: imageUrl,
           thumbnailUrl: thumbnailUrl,
           category,

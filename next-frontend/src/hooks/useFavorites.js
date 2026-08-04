@@ -31,7 +31,7 @@ export const useFavorites = () => {
       console.log('[useFavorites] Favorites parkCodes:', favoritesData.map(f => f.parkCode));
       return favoritesData;
     },
-    enabled: isAuthenticated && !!(user?.id || user?._id),
+    enabled: Boolean(isAuthenticated && (user?.id || user?._id)),
     staleTime: 0, // Always consider stale so refetchOnMount works
     refetchOnMount: true, // Always refetch when component mounts to get fresh data
     refetchOnWindowFocus: false, // Don't refetch on window focus - WebSocket handles this
