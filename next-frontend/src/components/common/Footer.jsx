@@ -108,6 +108,7 @@ const Footer = () => {
               <li><Link href="/plan-ai" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Plan with Trailie</Link></li>
               <li><Link href="/itineraries" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Sample Itineraries</Link></li>
               <li><Link href="/explore" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Explore Parks</Link></li>
+              <li><Link href="/where-next" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Where Next</Link></li>
               <li><Link href="/features" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Features</Link></li>
               <li><Link href="/faq" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
               <li><Link href="/testimonials" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Testimonials</Link></li>

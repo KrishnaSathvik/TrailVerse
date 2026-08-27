@@ -1,4 +1,4 @@
-const LAST_UPDATED = 'April 6, 2026';
+const LAST_UPDATED = 'August 27, 2026';
 
 export default function PrivacyPageContent() {
   const sections = [
@@ -33,6 +33,14 @@ export default function PrivacyPageContent() {
           <p className="mb-4">
             We collect: favorite parks/blogs/events, visited parks with dates, Trailie trip conversations, reviews with up to 5 photos per review, 
             blog comments and likes, saved events, trip history (active & archived), search queries, map interactions, and filter preferences.
+          </p>
+
+          <h3 className="text-lg font-semibold mb-3 mt-4">Where Next destination picks</h3>
+          <p className="mb-4">
+            If you use Where Next, we store an anonymous session identifier, the destination you chose
+            (including free-text names when they are not in our park catalog), and an optional travel window
+            (for example Summer 2027). We use this to show your pick, operate rankings for destinations we
+            already understand, and understand demand. We do not sell this information.
           </p>
 
           <h3 className="text-lg font-semibold mb-3 mt-4">Technical & Analytics Data</h3>

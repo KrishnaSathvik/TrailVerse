@@ -1,6 +1,7 @@
 import ReactGA from 'react-ga4';
 import { track as vercelTrack } from '@vercel/analytics';
 import { getApiBaseUrl } from '@/lib/apiBase';
+import { sanitizeWhereNextAnalytics } from '@/lib/whereNext';
 
 const VERCEL_FIELD_MAX = 255;
 const getTrackingId = () => process.env.NEXT_PUBLIC_GA_TRACKING_ID;
@@ -744,4 +745,15 @@ export const optOutAnalytics = () => {
 
 export const optInAnalytics = () => {
   localStorage.removeItem('analytics_opt_out');
+};
+
+export const logWhereNext = (action, metadata = {}) => {
+  const safe = sanitizeWhereNextAnalytics(metadata);
+  emitProductEvent({
+    vercelName: action,
+    eventType: 'user_action',
+    eventCategory: 'engagement',
+    metadata: { action, ...safe },
+    ga: { category: 'WhereNext', action, label: safe.parkCode || null },
+  });
 };
