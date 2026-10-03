@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 exports.protect = async (req, res, next) => {
+  res.set('Cache-Control', 'private, no-store');
   let token;
 
   // Check for token in headers
@@ -70,6 +71,8 @@ exports.optionalAuth = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
+
+  if (token) res.set('Cache-Control', 'private, no-store');
 
   // If no token, continue without user (anonymous)
   if (!token) {

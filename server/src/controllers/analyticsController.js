@@ -1,3 +1,5 @@
+const { classifyBot } = require('../utils/botClassifier');
+const { persistAnalytics } = require('../services/analyticsWriter');
 const Analytics = require('../models/Analytics');
 const { normalizeClientEvent } = require('../utils/analyticsNormalize');
 const User = require('../models/User');
@@ -519,8 +521,15 @@ exports.trackEvents = async (req, res, next) => {
       });
     }
 
+    if (classifyBot(req.get('User-Agent')).isBot) {
+      return res.status(200).json({ success: true, message: 'Events processed' });
+    }
+    if (events.length > 100) {
+      return res.status(400).json({ success: false, error: 'Maximum 100 events per batch' });
+    }
+
     // Process events in batch
-    const analyticsData = events.map((event) =>
+    const analyticsData = events.filter(event => event && !classifyBot(event.userAgent).isBot).map((event) =>
       normalizeClientEvent(event, {
         sessionId,
         userId,
@@ -530,7 +539,9 @@ exports.trackEvents = async (req, res, next) => {
     );
 
     // Save to database
-    await Analytics.insertMany(analyticsData, { ordered: false });
+    if (analyticsData.length) {
+      await persistAnalytics(() => Analytics.insertMany(analyticsData, { ordered: false }));
+    }
 
     res.status(200).json({
       success: true,
@@ -538,7 +549,7 @@ exports.trackEvents = async (req, res, next) => {
     });
   } catch (error) {
     // Don't fail the request if analytics tracking fails
-    console.error('Analytics tracking error:', error);
+    console.error('Analytics tracking error:', error?.name || 'Error');
     res.status(200).json({
       success: true,
       message: 'Events processed'

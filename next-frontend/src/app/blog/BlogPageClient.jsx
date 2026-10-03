@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   X,
@@ -74,6 +74,14 @@ const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
 
 const BLOG_PATH = '/blog';
 
+// Keep query reading in a small client boundary so the public hub can be ISR.
+function BlogQueryState({ onTagChange }) {
+  const searchParams = useSearchParams();
+  const tag = (searchParams.get('tag') || '').trim();
+  useEffect(() => { onTagChange(tag); }, [tag, onTagChange]);
+  return null;
+}
+
 const BlogContent = ({ initialData }) => {
   const router = useRouter();
   const [selectedTag, setSelectedTag] = useState(initialData?.initialTag || '');
@@ -92,34 +100,9 @@ const BlogContent = ({ initialData }) => {
   const showArchive = Boolean(selectedTag);
   const heroFeaturedPosts = featuredPosts.slice(0, 2);
 
-  useEffect(() => {
-    setSelectedTag(initialData?.initialTag || '');
-  }, [initialData?.initialTag]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const refreshFromApi = async () => {
-      blogService.clearBlogCache();
-      try {
-        const [categoriesData, featuredData, popularData] = await Promise.all([
-          blogService.getBlogCategories(),
-          blogService.getFeaturedPosts(2),
-          blogService.getPopularPosts(2),
-        ]);
-        if (cancelled) return;
-        setCategories(mapBlogNavCategories(categoriesData?.data));
-        setFeaturedPosts(featuredData.data || []);
-        setPopularPosts((popularData.data || []).slice(0, 2));
-      } catch {
-        // background refresh — keep SSR / fallback chips
-      }
-    };
-
-    refreshFromApi();
-    return () => {
-      cancelled = true;
-    };
+  const onTagChange = useCallback(tag => {
+    setSelectedTag(tag);
+    setCurrentPage(1);
   }, []);
 
   useEffect(() => {
@@ -128,20 +111,22 @@ const BlogContent = ({ initialData }) => {
       return;
     }
 
+    let cancelled = false;
     const fetchData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const [categoriesData, featuredData, popularData] = await Promise.all([
-          blogService.getBlogCategories(),
-          blogService.getFeaturedPosts(2),
-          blogService.getPopularPosts(2),
-        ]);
-
-        setCategories(mapBlogNavCategories(categoriesData?.data));
-        setFeaturedPosts(featuredData.data || []);
-        setPopularPosts((popularData.data || []).slice(0, 2));
+        // SSR already supplied the shared hub data; tag/page changes only need posts.
+        if (!initialData) {
+          const [categoriesData, featuredData, popularData] = await Promise.all([
+            blogService.getBlogCategories(), blogService.getFeaturedPosts(2), blogService.getPopularPosts(2),
+          ]);
+          if (cancelled) return;
+          setCategories(mapBlogNavCategories(categoriesData?.data));
+          setFeaturedPosts(featuredData.data || []);
+          setPopularPosts((popularData.data || []).slice(0, 2));
+        }
 
         if (!selectedTag) {
           setPosts([]);
@@ -156,17 +141,19 @@ const BlogContent = ({ initialData }) => {
         };
 
         const data = await blogService.getAllPosts(params);
+        if (cancelled) return;
         setPosts(data.data || []);
         setTotalPages(Math.max(1, Math.ceil((data.total || 0) / ARCHIVE_PAGE_SIZE)));
       } catch {
-        setError('Failed to load blog posts. Please try again later.');
+        if (!cancelled) setError('Failed to load blog posts. Please try again later.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchData();
-  }, [currentPage, selectedTag]);
+    return () => { cancelled = true; };
+  }, [currentPage, selectedTag, initialData]);
 
   useEffect(() => {
     if (!shouldScrollToResultsRef.current || loading) {
@@ -185,6 +172,7 @@ const BlogContent = ({ initialData }) => {
 
   return (
     <>
+      <Suspense fallback={null}><BlogQueryState onTagChange={onTagChange} /></Suspense>
       <section className="relative overflow-hidden border-b py-5 sm:py-8" style={{ borderColor: 'var(--border)' }}>
         <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           <div>
@@ -311,6 +299,7 @@ const BlogContent = ({ initialData }) => {
                           disabled={currentPage === 1}
                           variant="secondary"
                           size="sm"
+                          aria-label="Previous page"
                           icon={ChevronLeft}
                         />
 
@@ -339,6 +328,7 @@ const BlogContent = ({ initialData }) => {
                           disabled={currentPage === totalPages}
                           variant="secondary"
                           size="sm"
+                          aria-label="Next page"
                           icon={ChevronRight}
                         />
                       </div>

@@ -1,6 +1,8 @@
 const Analytics = require('../models/Analytics');
 const { v4: uuidv4 } = require('uuid');
 const { hoistAnalyticsFields } = require('../utils/analyticsNormalize');
+const { classifyBot } = require('../utils/botClassifier');
+const { persistAnalytics } = require('../services/analyticsWriter');
 
 // Session ID for analytics — Express has no express-session, so req.session is usually undefined.
 const generateSessionId = (req) => {
@@ -47,6 +49,7 @@ const parseUserAgent = (userAgent) => {
 // Track analytics event
 const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
   try {
+    if (classifyBot(req.get('User-Agent')).isBot) return;
     const sessionId = generateSessionId(req);
     const deviceInfo = parseUserAgent(req.get('User-Agent'));
     
@@ -77,9 +80,7 @@ const trackEvent = async (req, eventType, eventCategory, metadata = {}) => {
     if (req.params.reviewId) analyticsData.reviewId = req.params.reviewId;
 
     // Save to database (async, don't wait)
-    Analytics.create(analyticsData).catch(error => {
-      console.error('Analytics tracking error:', error);
-    });
+    await persistAnalytics(() => Analytics.create(analyticsData));
 
   } catch (error) {
     console.error('Analytics middleware error:', error);

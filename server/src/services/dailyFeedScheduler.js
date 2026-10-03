@@ -1,12 +1,10 @@
 const { generateAndSaveDailyFeed } = require('../controllers/dailyFeedController');
-const DailyFeed = require('../models/DailyFeed');
 const {
   FEED_TIMEZONE,
   FEED_GENERATION_HOUR,
   getFeedDateKey,
   isPastFeedWindowStart,
   isScheduledGenerationMinute,
-  shouldGenerateFeed,
 } = require('../utils/dailyFeedDate');
 
 let generating = false;
@@ -23,16 +21,10 @@ const ensureTodaysFeed = async ({ force = false, reason = 'scheduler' } = {}) =>
   }
 
   const feedDate = getFeedDateKey();
-  const existing = await DailyFeed.findOne({ date: feedDate, isShared: true });
-
-  if (!shouldGenerateFeed({ feedDoc: existing, feedDate, force })) {
-    return;
-  }
-
   generating = true;
   try {
     console.log(`🌅 Generating daily feed (${reason}) for ${feedDate} @ ${FEED_GENERATION_HOUR}:00 ${FEED_TIMEZONE}…`);
-    const feed = await generateAndSaveDailyFeed({ force: true, feedDate });
+    const feed = await generateAndSaveDailyFeed({ force, feedDate });
     console.log(`🌅 Daily feed ready — ${feed?.parkOfDay?.name || 'unknown park'} (${feedDate})`);
     _lastScheduledFeedDate = feedDate;
   } catch (error) {

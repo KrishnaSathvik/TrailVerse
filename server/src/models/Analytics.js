@@ -134,7 +134,9 @@ const analyticsSchema = new mongoose.Schema({
     default: Date.now,
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  // Index changes are an explicit migration, never an application-start side effect.
+  autoIndex: false
 });
 
 // Add indexes for efficient querying

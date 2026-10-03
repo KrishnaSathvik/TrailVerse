@@ -1,5 +1,21 @@
 import { NextResponse } from 'next/server';
 
+const sharedDirectoryPaths = new Set([
+  '/explore',
+  '/parks-for-couples',
+  '/parks-for-photography',
+  '/ocean-national-parks',
+  '/fall-color-parks',
+  '/quiet-national-parks',
+  '/dark-sky-parks',
+  '/parks-for-families',
+  '/parks-for-first-timers',
+  '/dog-friendly-parks',
+  '/winter-national-parks',
+  '/accessible-national-parks',
+  '/wildlife-national-parks',
+]);
+
 // Protected routes that require authentication
 const protectedRoutes = ['/profile', '/chat-history', '/dashboard', '/settings', '/home'];
 
@@ -64,6 +80,14 @@ async function getPublicSettings() {
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
+  if (sharedDirectoryPaths.has(pathname)) {
+    // These pages did not run maintenance/auth proxy work previously.
+    const response = NextResponse.next();
+    if ([...request.nextUrl.searchParams.values()].some(value => value.trim())) {
+      response.headers.set('X-Robots-Tag', 'noindex, follow');
+    }
+    return response;
+  }
 
   const reportHtmlPaths = new Set([
     '/reports/when-to-go.html',
@@ -124,11 +148,29 @@ export async function proxy(request) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  // Keep query variants out of search without making park HTML request-dependent.
+  if ((pathname.startsWith('/parks/') || pathname === '/blog') && [...request.nextUrl.searchParams.values()].some(value => value.trim())) {
+    response.headers.set('X-Robots-Tag', 'noindex, follow');
+  }
+  return response;
 }
 
 export const config = {
   matcher: [
+  '/explore',
+  '/parks-for-couples',
+  '/parks-for-photography',
+  '/ocean-national-parks',
+  '/fall-color-parks',
+  '/quiet-national-parks',
+  '/dark-sky-parks',
+  '/parks-for-families',
+  '/parks-for-first-timers',
+  '/dog-friendly-parks',
+  '/winter-national-parks',
+  '/accessible-national-parks',
+  '/wildlife-national-parks',
     '/profile/:path*',
     '/chat-history/:path*',
     '/dashboard/:path*',

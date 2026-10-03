@@ -23,7 +23,10 @@ function BlogSubscribeToastInner() {
     }
 
     if (subscribed || unsubscribed || subscribeError) {
-      router.replace(pathname, { scroll: false });
+      const remaining = new URLSearchParams(searchParams.toString());
+      ['subscribed', 'unsubscribed', 'subscribe_error'].forEach(key => remaining.delete(key));
+      const query = remaining.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }
   }, [searchParams, router, pathname]);
 
