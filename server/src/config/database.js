@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { assessMongoTarget } = require('./mongoTargetGuard');
+const { ensureApplicationIndexes, provisionLocalIndexes } = require('./applicationIndexes');
 
 const connectDB = async () => {
   // Refuse remote databases outside production BEFORE connecting — local dev
@@ -11,12 +12,12 @@ const connectDB = async () => {
   });
   if (!target.allowed) {
     console.error(`🛑 Refusing to start: ${target.reason}`);
-    process.exit(1);
+    throw new Error(target.reason);
   }
 
   try {
     const options = {
-      // This application release never creates collections or changes live indexes.
+      // Explicit provisioning owns indexes; normal runtime never builds them implicitly.
       autoIndex: false,
       autoCreate: false,
       maxPoolSize: 10, // Maximum number of connections
@@ -27,6 +28,8 @@ const connectDB = async () => {
     };
 
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+
+    await ensureApplicationIndexes({ apply: provisionLocalIndexes() });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 
@@ -48,7 +51,8 @@ const connectDB = async () => {
 
   } catch (error) {
     console.error(`❌ Error: ${error.message}`);
-    process.exit(1);
+    await mongoose.disconnect();
+    throw error;
   }
 };
 

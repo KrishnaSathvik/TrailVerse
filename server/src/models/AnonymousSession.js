@@ -183,7 +183,7 @@ const AnonymousSessionSchema = new mongoose.Schema({
 AnonymousSessionSchema.index({ lastActivity: 1 }, { expireAfterSeconds: ANONYMOUS_SESSION_TTL_SECONDS });
 
 // Index for finding sessions by anonymousId
-AnonymousSessionSchema.index({ anonymousId: 1 });
+// anonymousId already has a unique index; a second plain declaration conflicts.
 
 // Method to add a message
 AnonymousSessionSchema.methods.addMessage = function(message) {

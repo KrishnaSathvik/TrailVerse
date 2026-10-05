@@ -31,7 +31,10 @@
     "bump:blog-views:apply": "node scripts/bump-blog-views.js --apply",
     "bump:blog-recent": "node scripts/bump-recent-blog-views.js",
     "bump:blog-recent:apply": "node scripts/bump-recent-blog-views.js --apply",
-    "test:evidence-persistence": "TRAILIE_TRANSACTIONAL_MONGO=1 jest src/services/__tests__/evidenceStorePersistenceTopology.test.js"
+    "test:evidence-persistence": "TRAILIE_TRANSACTIONAL_MONGO=1 jest src/services/__tests__/evidenceStorePersistenceTopology.test.js",
+    "indexes:inventory": "node scripts/provision-application-indexes.js --inventory",
+    "indexes:check": "node scripts/provision-application-indexes.js --check",
+    "indexes:apply": "node scripts/provision-application-indexes.js --apply"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

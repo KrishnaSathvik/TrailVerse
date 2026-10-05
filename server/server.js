@@ -59,6 +59,13 @@ const { loadDynamicMap } = require('./src/utils/parkExtractor');
 connectDB().then(async () => {
   // Data migrations are separate, explicitly approved operations.
 
+  // No HTTP/WebSocket traffic until required database indexes are verified.
+  const PORT = process.env.PORT || 5001;
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`📡 WebSocket server ready for real-time updates`);
+  });
+
   // Start schedulers after database connection is established
   startScheduler();
   startDailyFeedScheduler();
@@ -146,13 +153,6 @@ connectDB().then(async () => {
 }).catch((err) => {
   console.error('❌ Failed to connect to database:', err);
   process.exit(1);
-});
-
-const PORT = process.env.PORT || 5001;
-
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-  console.log(`📡 WebSocket server ready for real-time updates`);
 });
 
 // Graceful shutdown handler
