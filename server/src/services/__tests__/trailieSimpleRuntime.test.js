@@ -1,6 +1,7 @@
 'use strict';
 
 const { createSimpleRuntime } = require('../trailieSimpleRuntime');
+const { stubMemoryVerifier } = require('../../../tests/helpers/memoryAuthority');
 const { createSimpleModel } = require('../trailieSimpleModel');
 const { createEvidenceReader: createSimpleTravelTools } = require('../trailieSimpleTools');
 const { normalizeEvidenceLocation } = require('../../utils/trailieCanonicalLocation');
@@ -26,7 +27,7 @@ function harness(outputs, options = {}) {
   const model = jest.fn();
   for (const output of outputs) model.mockResolvedValueOnce(output);
   const travelTools = tools();
-  return { model, travelTools, run: createSimpleRuntime({ model, travelTools, now: () => NOW, ...options }) };
+  return { model, travelTools, run: createSimpleRuntime({ model, travelTools, verifyMemory: stubMemoryVerifier(), now: () => NOW, ...options }) };
 }
 
 test('ordinary conversation reaches the model unchanged without preparation or state writes', async () => {
@@ -88,9 +89,9 @@ test.each([
 });
 
 test('a concrete correction can succeed without escalation', async () => {
-  const h = harness([proposal({ response: 'Done', memory_updates: [{ field: 'dates', value: { startDate: 'bad' }, sourceQuote: 'October 1' }] }),
-    proposal({ response: 'Noted.', memory_updates: [{ field: 'dates', value: { startDate: '2026-10-01' }, sourceQuote: 'October 1' }] })]);
-  expect((await h.run({ message: 'October 1' })).mutation.planningState.dates.startDate).toBe('2026-10-01');
+  const h = harness([proposal({ response: 'Done', memory_updates: [{ field: 'dates', value: { startDate: 'bad' }, sourceQuote: 'October 1, 2026' }] }),
+    proposal({ response: 'Noted.', memory_updates: [{ field: 'dates', value: { startDate: '2026-10-01' }, sourceQuote: 'October 1, 2026' }] })]);
+  expect((await h.run({ message: 'October 1, 2026' })).mutation.planningState.dates.startDate).toBe('2026-10-01');
 });
 
 test('plan creation requires grounded identity; forged coordinates cannot survive', () => {
@@ -302,13 +303,18 @@ test('rejected mutation leaves the entire durable trip untouched', async () => {
   expect(store.commit).not.toHaveBeenCalled();
 });
 
-test('typed dates must describe a real, internally consistent window', () => {
-  const check = dates => validateSimpleMutation({ message: 'September 30 through October 1, two days', proposal: {
-    response: 'Noted', memory_updates: [{ field: 'dates', value: dates, sourceQuote: 'September 30 through October 1, two days' }],
-  } });
-  expect(check({ startDate: '2026-09-30', endDate: '2026-10-01', durationDays: 2 }).ok).toBe(true);
-  expect(check({ startDate: '2026-09-01', endDate: '2026-09-30', durationDays: 2 }).issues).toContain('date_duration_mismatch');
-  expect(check({ durationDays: 2.5 }).issues).toContain('duration_days_invalid');
+test('typed dates must describe a real, internally consistent window', async () => {
+  const message = 'September 30 through October 1, 2026, two days';
+  const check = async dates => {
+    const update = { field: 'dates', value: dates, sourceQuote: message };
+    // Synthetic approval isolates deterministic calendar validation here.
+    const { receipt } = await stubMemoryVerifier()({ message, updates: [update] });
+    return validateSimpleMutation({ message, memoryAuthority: receipt,
+      proposal: { response: 'Noted', memory_updates: [update] } });
+  };
+  expect((await check({ startDate: '2026-09-30', endDate: '2026-10-01', durationDays: 2 })).ok).toBe(true);
+  expect((await check({ startDate: '2026-09-01', endDate: '2026-09-30', durationDays: 2 })).issues).toContain('date_duration_mismatch');
+  expect((await check({ durationDays: 2.5 })).issues).toContain('duration_days_invalid');
 });
 
 test('an empty day skeleton cannot be published as an accepted plan', () => {

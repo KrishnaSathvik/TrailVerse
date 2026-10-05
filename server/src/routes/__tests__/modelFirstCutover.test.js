@@ -13,10 +13,12 @@ const AnonymousSession = require('../../models/AnonymousSession');
 const { hashPayload } = require('../../utils/canonicalResponse');
 const { selectTrailieRuntime } = require('../../config/trailieRuntimeSelection');
 const { mintGuestSessionId } = require('../../utils/anonymousIdGenerator');
+const { stubMemoryVerifier } = require('../../../tests/helpers/memoryAuthority');
+const mockVerifyMemory = jest.fn();
 const mockModel = jest.fn();
 const mockExecute = jest.fn();
 const mockObserve = jest.fn();
-const mockDependencies = jest.fn(() => ({ model: mockModel,
+const mockDependencies = jest.fn(() => ({ model: mockModel, verifyMemory: mockVerifyMemory,
   travelTools: { definitions: [], execute: mockExecute } }));
 const legacyModules = ['../../services/trailieIntentClassifier', '../../services/trailieTravelerJobResolver',
   '../../utils/turnSufficiencyDecision', '../../services/tripMutationCommit', '../../services/artifactFulfillment',
@@ -44,6 +46,7 @@ let token, owner;
 beforeEach(async () => {
   process.env.TRAILIE_RUNTIME = 'model_first';
   mockModel.mockReset().mockResolvedValue(answer('A useful answer.'));
+  mockVerifyMemory.mockReset().mockImplementation(stubMemoryVerifier());
   mockExecute.mockReset().mockResolvedValue({ status: 'fulfilled', evidence: [] });
   mockDependencies.mockClear(); mockObserve.mockClear();
   for (const modulePath of legacyModules) for (const value of Object.values(require(modulePath))) value?.mockClear?.();
@@ -154,11 +157,11 @@ test('guest model timeout is reported as a resolved failure without a retry or s
 test('guest memory commits only after the model proposes a current-turn grounded update', async () => {
   const anonymousId = mintGuestSessionId();
   mockModel.mockResolvedValueOnce(tool('propose_trip_update', { response: 'Noted.', memory_updates: [
-    { field: 'dates', value: { startDate: '2026-09-30', endDate: '2026-10-01', durationDays: 2 }, sourceQuote: 'September 30 through October 1' },
+    { field: 'dates', value: { startDate: '2026-09-30', endDate: '2026-10-01', durationDays: 2 }, sourceQuote: 'September 30 through October 1, 2026' },
     { field: 'lodging', value: { baseTown: 'New town', booked: true }, sourceQuote: 'booked New town' },
   ] }));
   const res = await request(app).post('/api/ai/chat-anonymous').send({ anonymousId,
-    message: 'September 30 through October 1; booked New town', metadata: { planningState: { dates: { startDate: '1900-01-01' } } } });
+    message: 'September 30 through October 1, 2026; booked New town', metadata: { planningState: { dates: { startDate: '1900-01-01' } } } });
   expect(res.status).toBe(200);
   const state = res.body.data.planningState;
   expect(state.dates).toEqual({ startDate: '2026-09-30', endDate: '2026-10-01', durationDays: 2 });
@@ -259,4 +262,25 @@ test.each(['/chat-stream', '/chat-anonymous-stream'])('%s disconnect aborts the 
     expect(await AnonymousSession.countDocuments({ anonymousId, completedTurnCount: { $gt: 0 } })).toBe(0);
     expect(await AnonymousSession.countDocuments({ anonymousId, 'turns.status': 'pending' })).toBe(0);
   } finally { controller.abort(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+});
+
+
+test.each(['/chat-anonymous', '/chat'])('%s persists conversation but never unsupported memory', async endpoint => {
+  const anonymousId = mintGuestSessionId();
+  mockVerifyMemory.mockImplementation(stubMemoryVerifier('unsupported'));
+  mockModel.mockResolvedValueOnce(tool('propose_trip_update', { response: 'Car saved.', memory_updates: [
+    { field: 'transportation', value: { rentalCar: true }, sourceQuote: 'I want to visit Zion.' },
+  ] }));
+  let req = request(app).post('/api/ai' + endpoint);
+  if (endpoint === '/chat') req = req.set('Authorization', 'Bearer ' + token);
+  const res = await req.send({ anonymousId, message: 'I want to visit Zion.',
+    memoryAuthority: { supported: true, relationship: 'explicit' } });
+  expect(res.status).toBe(200);
+  expect(res.body.data.content).toBe('A useful answer.');
+  expect(res.body.data.planningState?.transportation).toBeUndefined();
+  const saved = endpoint === '/chat'
+    ? await TripPlan.findById(res.body.data.tripId).lean()
+    : await AnonymousSession.findOne({ anonymousId }).lean();
+  expect(saved.planningState?.transportation).toBeUndefined();
+  expect(mockVerifyMemory).toHaveBeenCalledTimes(1);
 });

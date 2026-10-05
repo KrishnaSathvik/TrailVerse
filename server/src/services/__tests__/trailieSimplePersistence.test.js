@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const TripPlan = require('../../models/TripPlan');
 const { createSimpleTripStore } = require('../trailieSimpleStore');
 const { createSimpleRuntime } = require('../trailieSimpleRuntime');
+const { stubMemoryVerifier } = require('../../../tests/helpers/memoryAuthority');
 
 const travelTools = { definitions: [], execute: async () => { throw new Error('No provider calls permitted'); } };
 const response = output => ({ completionStatus: 'completed', provider: 'openai', model: 'gpt-6-sol',
@@ -25,7 +26,7 @@ test('real Mongo accepts one of two full runtime turns from N and publishes only
         value: { baseTown: 'New town' }, sourceQuote: 'Move my booking to New town' }],
     } }] });
   };
-  const run = createSimpleRuntime({ model, travelTools, store });
+  const run = createSimpleRuntime({ model, travelTools, store, verifyMemory: stubMemoryVerifier() });
   const input = { userId: String(userId), tripId: String(trip._id), message: 'Move my booking to New town' };
   const outcomes = await Promise.all([run(input), run(input)]);
   expect(outcomes.map(o => o.status).sort()).toEqual(['complete', 'conflict']);

@@ -9,6 +9,7 @@ const { hashPayload } = require('../utils/canonicalResponse');
 const { usableEvidence } = require('./trailieSimpleTools');
 const { validLocation } = require('../utils/trailieCanonicalLocation');
 const { supportedDurationMaximum } = require('../utils/evidenceActivityDuration');
+const { memoryAdmission } = require('./trailieMemoryAuthority');
 const { operationalFactsFromBundle, indexFactsByPlace, factsForStop } = require('../utils/operationalFactExtraction');
 const { canAuthorizeDrivingIntent, reconcileTransportationDrivingPolicy, DRIVING_POLICY_VALUES,
   DRIVING_POLICY_REASONS } = require('../utils/transportConstraintContract');
@@ -38,7 +39,7 @@ function withoutDescriptions(value) {
 
 const PROPOSE_TOOL = { name: 'propose_trip_update', description:
   'Required when creating or materially changing the traveler’s trip: prose alone does not create the product itinerary. Also use for source-grounded memory changes. Supply the answer and requested update together. '
-  + 'Quote the current traveler message for memory updates. Use plan_patch for an accepted plan; otherwise plan for creation. '
+  + 'Quote the current traveler message for memory updates. Every exact field/value must be explicitly supported; an independent verifier rejects unrelated, negated, hypothetical or uncertain claims. Do not infer an unstated year. Use plan_patch for an accepted plan; otherwise plan for creation. '
   + 'Stops must reference retrieved evidence. Do not claim a change was saved until this operation succeeds. '
   + 'Never overwrite dates or constraints using a default or an assumption.',
   input_schema: { type: 'object', additionalProperties: false, required: ['response'], properties: {
@@ -89,7 +90,7 @@ function typed(value, type) {
   return typeof value === type && (type !== 'string' || value.trim().length > 0 && value.length <= 2000);
 }
 
-function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [], scope = null, now = new Date() }) {
+function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [], scope = null, now = new Date(), memoryAuthority = null }) {
   const issues = [];
   const reject = code => issues.push(code);
   if (!object(proposal) || !conforms(proposal, PROPOSE_TOOL.input_schema) || !(typeof proposal.response === 'string' && proposal.response.trim() && proposal.response.length <= 16000)
@@ -98,7 +99,7 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
   }
   const updates = proposal.memory_updates || [];
   if (!Array.isArray(updates) || updates.length > 16) return { ok: false, issues: ['memory_schema_invalid'] };
-  const state = clone(snapshot.planningState || {});
+  let state = clone(snapshot.planningState || {});
   for (const update of updates) {
     const shape = FIELDS[update?.field];
     if (!shape || !object(update.value) || !Object.keys(update.value).length
@@ -107,6 +108,10 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
     }
     if (!typed(update.sourceQuote, 'string') || !message.includes(update.sourceQuote)) {
       reject('memory_source_missing'); continue;
+    }
+    const authority = memoryAdmission(memoryAuthority, message, update);
+    if (authority !== 'explicit') {
+      reject(`memory_authority_${authority}`); continue;
     }
     if (update.field === 'lodging') {
       // Reuse the typed transition, NEVER its phrase recognizer. The old location
@@ -132,8 +137,13 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
       || value.drivingPolicy && !DRIVING_POLICY_VALUES.includes(value.drivingPolicy)
       || value.drivingPolicyReason && !DRIVING_POLICY_REASONS.includes(value.drivingPolicyReason)) reject('transport_memory_invalid');
   }
-  if (updates.some(u => u.field === 'transportation')) reconcileTransportationDrivingPolicy(state.transportation);
-  if (updates.length) state.simpleMemoryProvenance = updates.map(u => ({ field: u.field, sourceQuote: u.sourceQuote }));
+  if (updates.some(u => u.field === 'transportation') && !issues.some(code => code.startsWith('memory_'))) reconcileTransportationDrivingPolicy(state.transportation);
+  if (updates.length && !issues.some(code => code.startsWith('memory_'))) {
+    state.simpleMemoryProvenance = updates.map(u => ({ field: u.field, sourceQuote: u.sourceQuote, authority: 'semantic_verified' }));
+  }
+  // Rejected memory is atomic: even a supported sibling must not leak into
+  // route authorization or the returned candidate state on a failed proposal.
+  if (issues.some(code => code.startsWith('memory_'))) state = clone(snapshot.planningState || {});
   const prior = snapshot.plan || null;
   let plan = null;
   let touched = null;

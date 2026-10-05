@@ -1,5 +1,6 @@
 'use strict';
 const { validateSimpleMutation } = require('../trailieSimpleGuard');
+const { stubMemoryVerifier } = require('../../../tests/helpers/memoryAuthority');
 const now = new Date();
 const source = value => ({ evidenceId: 'e', topic: 'activities', claim: { identity: 'official-e',
   normalizedValue: { name: 'Recorded place', ...value } }, source: { provider: 'nps', sourceClass: 'official_owner' },
@@ -21,14 +22,17 @@ test('soft fitness and pace no longer act as deterministic quality gates', () =>
     message: 'Plan a visit', evidence: [source({})], now }).ok).toBe(true);
 });
 
-test('budget and booking facts require current-turn provenance', () => {
-  const response = validateSimpleMutation({ message: 'We booked New town and have 500 dollars.', proposal: {
-    response: 'Noted.', memory_updates: [
-      { field: 'budget', value: { amount: 500, currency: 'USD', scope: 'trip' }, sourceQuote: '500 dollars' },
-      { field: 'lodging', value: { baseTown: 'New town', booked: true }, sourceQuote: 'booked New town' },
-    ],
-  } });
+test('budget and booking facts require verified current-turn provenance', async () => {
+  const message = 'We booked lodging in New town. Our total trip budget is 500 USD.';
+  const updates = [
+    { field: 'budget', value: { amount: 500, currency: 'USD', scope: 'trip' }, sourceQuote: 'Our total trip budget is 500 USD.' },
+    { field: 'lodging', value: { baseTown: 'New town', booked: true }, sourceQuote: 'We booked lodging in New town.' },
+  ];
+  const { receipt } = await stubMemoryVerifier()({ message, updates });
+  const response = validateSimpleMutation({ message, memoryAuthority: receipt,
+    proposal: { response: 'Noted.', memory_updates: updates } });
   expect(response.ok).toBe(true);
   expect(response.planningState.budget.amount).toBe(500);
   expect(response.planningState.lodging.booked).toBe(true);
+  expect(validateSimpleMutation({ message, proposal: { response: 'Noted.', memory_updates: updates } }).ok).toBe(false);
 });

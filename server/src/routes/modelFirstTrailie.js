@@ -21,6 +21,8 @@ const PATHS = ['/chat', '/chat-stream', '/chat-anonymous', '/chat-anonymous-stre
 function createDependencies() {
   require('../config/providerTestPolicy').assertLiveProviderAllowed({ provider: 'openai', phase: 'constructor' });
   const { createSimpleModel } = require('../services/trailieSimpleModel');
+  const { createMemoryAuthorityVerifier } = require('../services/trailieMemoryAuthority');
+  const { createMemoryVerificationModel } = require('../services/trailieMemoryVerificationModel');
   const { createSimpleTravelTools } = require('../services/trailieSimpleTools');
   const { createDefaultEvidenceProviders } = require('../services/evidenceBrokerRuntime');
   const { createEvidenceBroker } = require('../services/evidenceBrokerService');
@@ -28,8 +30,9 @@ function createDependencies() {
   const broker = createEvidenceBroker({ providers: createDefaultEvidenceProviders(),
     acquireLease: async () => { throw new Error('ephemeral_only'); },
     releaseLease: async () => {}, recordRefreshEvent: async () => {} });
-  return { model: createSimpleModel({ client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY,
-    maxRetries: 0, timeout: 180000 }) }), travelTools: createSimpleTravelTools({ broker }) };
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 180000 });
+  return { model: createSimpleModel({ client }), travelTools: createSimpleTravelTools({ broker }),
+    verifyMemory: createMemoryAuthorityVerifier({ model: createMemoryVerificationModel({ client }) }) };
 }
 
 function createModelFirstRouter({ dependencies = createDependencies,

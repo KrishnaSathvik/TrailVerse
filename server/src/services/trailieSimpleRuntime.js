@@ -6,7 +6,7 @@ const { PROPOSE_TOOL, validateSimpleMutation } = require('./trailieSimpleGuard')
 
 const { TRAILIE_TRAVEL_POLICY: INSTRUCTIONS } = require('../prompts/trailieModelFirstPolicy');
 
-function createSimpleRuntime({ model, travelTools, store = null, observe = () => {}, now = () => new Date(),
+function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = null, observe = () => {}, now = () => new Date(),
   maxModelCalls = 3, maxToolCalls = 1, maxCorrections = 1 } = {}) {
   if (typeof model !== 'function' || typeof travelTools?.execute !== 'function') throw new TypeError('Explicit model and travel tools required');
   if (!Number.isInteger(maxModelCalls) || maxModelCalls < 2 || maxModelCalls > 3
@@ -87,7 +87,8 @@ function createSimpleRuntime({ model, travelTools, store = null, observe = () =>
         canonicalPlan: saved.canonicalPlan || response.itineraryData,
         ...(saved.quota ? { quota: saved.quota } : {}) });
     };
-    let researched = false, correcting = false;
+    let researched = false, correcting = false, memoryOnlyRejection = false;
+    let memoryAuthority = null, memoryVerificationAttempted = false;
     const mutationFailure = explanation => finish('mutation_rejected', null, { persisted: false,
       failureContent: explanation?.trim() || (snapshot.plan
         ? 'I couldn’t safely apply that change, so your saved trip is unchanged.'
@@ -126,7 +127,7 @@ function createSimpleRuntime({ model, travelTools, store = null, observe = () =>
       const calls = generation.toolCalls || [];
       if (!calls.length) {
         if (!generation.outputText?.trim()) return finish('model_incomplete');
-        if (correcting) return mutationFailure(generation.outputText);
+        if (correcting && !memoryOnlyRejection) return mutationFailure(generation.outputText);
         return accept(generation.outputText, null, generation);
       }
       // Never execute a mutation alongside another action or accept partial prose
@@ -152,19 +153,47 @@ function createSimpleRuntime({ model, travelTools, store = null, observe = () =>
         const validationStarted = Date.now();
         let verdict;
         try { verdict = validateSimpleMutation({ proposal: mutationCall.input, snapshot, message,
-          evidence: [...evidence.values()], scope, now: now() }); }
+          evidence: [...evidence.values()], scope, now: now(), memoryAuthority }); }
         catch { verdict = { ok: false, issues: ['mutation_schema_invalid'] }; }
+        if (!memoryVerificationAttempted && typeof verifyMemory === 'function'
+          && verdict.issues?.includes('memory_authority_unverified')
+          && !verdict.issues.some(code => ['mutation_schema_invalid', 'memory_schema_invalid', 'memory_source_missing'].includes(code))) {
+          memoryVerificationAttempted = true;
+          let verification;
+          try { verification = await verifyMemory({ message, updates: structuredClone(mutationCall.input.memory_updates), signal }); }
+          catch { verification = { status: 'unavailable', receipt: null }; }
+          memoryAuthority = verification.receipt || null;
+          telemetry.memoryVerification = { status: verification.status, attempts: 1,
+            acceptedFacts: verification.acceptedFacts || 0, rejectedFacts: verification.rejectedFacts || 0 };
+          const verifiedGeneration = verification.generation;
+          if (verifiedGeneration || verification.modelAttempt) {
+            const attempt = verifiedGeneration?.modelAttempt || verification.modelAttempt;
+            telemetry.calls.push({ ...attempt, purpose: 'memory_verification',
+              usage: verifiedGeneration?.usage || null, costUsd: verifiedGeneration?.costUsd ?? null });
+            if (verifiedGeneration?.costStatus === 'priced' && Number.isFinite(verifiedGeneration.costUsd)) telemetry.modelCostUsd += verifiedGeneration.costUsd;
+            else telemetry.costStatus = 'unknown';
+          }
+          if (cancelled()) return finish('cancelled');
+          try { verdict = validateSimpleMutation({ proposal: mutationCall.input, snapshot, message,
+            evidence: [...evidence.values()], scope, now: now(), memoryAuthority }); }
+          catch { verdict = { ok: false, issues: ['mutation_schema_invalid'] }; }
+        }
         telemetry.timings.validationMs += Date.now() - validationStarted;
         telemetry.mutationIssues = verdict.issues || [];
         if (verdict.ok) return accept(mutationCall.input.response, verdict, generation);
-        if (telemetry.corrections >= maxCorrections || telemetry.modelCalls >= maxModelCalls) return mutationFailure();
+        memoryOnlyRejection = !mutationCall.input.plan && !mutationCall.input.plan_patch
+          && verdict.issues.length > 0 && verdict.issues.every(code => code.startsWith('memory_authority_'));
+        if (telemetry.corrections >= maxCorrections || telemetry.modelCalls >= maxModelCalls) {
+          if (memoryOnlyRejection) return accept('I’ll keep that detail unconfirmed for now.', null, generation);
+          return mutationFailure();
+        }
         telemetry.corrections += 1; correcting = true;
         input.push({ type: 'function_call_output', call_id: mutationCall.id,
           output: JSON.stringify({ accepted: false, issues: verdict.issues,
             originalProposal: mutationCall.input, existingCanonicalPlan: snapshot.plan || null,
             groundedPlaces: [...evidence.values()].filter(e => e.claim?.normalizedValue?.name).map(e => ({ evidenceRef:e.evidenceId, name:e.claim.normalizedValue.name, value:e.claim.normalizedValue })),
             unresolvedPlaces: telemetry.finalization?.unresolved || [],
-            correctionPurpose: 'Correct the proposed trip using available grounded information. If no valid trip can be produced, explain why without claiming success. No more research.',
+            correctionPurpose: 'Correct the proposed trip using available grounded information. Rejected memory was NOT saved: omit unsupported facts and never claim they were remembered. No further semantic verification call is available after the first; only already verified identical facts can be reused. For a memory-only rejection you may answer normally without a mutation, asking clarification only if needed. If no valid trip can be produced, explain why without claiming success. No more research.',
             correctionOpportunitiesRemaining: 1 }) });
         continue;
       }

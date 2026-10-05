@@ -52,6 +52,8 @@ router.post('/', async (req, res) => {
       budget.settle(reservation.id, raw); return raw;
     } } };
     const model = createSimpleModel({ client });
+    const { createMemoryAuthorityVerifier } = require('../services/trailieMemoryAuthority');
+    const { createMemoryVerificationModel } = require('../services/trailieMemoryVerificationModel');
     const providers = createDefaultEvidenceProviders().map(provider => ({ ...provider,
       classifyError: error => ({ ...provider.classifyError(error), retryable: false }) }));
     const broker = createEvidenceBroker({ providers, acquireLease: async () => { throw new Error('ephemeral_only'); },
@@ -59,6 +61,7 @@ router.post('/', async (req, res) => {
     const travel = createSimpleTravelTools({ broker });
     const store = createSimpleTripStore({ TripPlan: require('../models/TripPlan') });
     const runtime = createSimpleRuntime({ maxCorrections: 0, stopOnToolFailure: true,
+      verifyMemory: createMemoryAuthorityVerifier({ model: createMemoryVerificationModel({ client }) }),
       model: async args => { const output = await model(args); trace.modelCalls.push(output); return output; },
       travelTools: { definitions: travel.definitions, execute: async (...args) => {
         const output = await travel.execute(...args); trace.tools.push({ name: args[0], arguments: args[1], output });
