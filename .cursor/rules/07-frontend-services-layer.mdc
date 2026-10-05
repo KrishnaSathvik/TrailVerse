@@ -31,6 +31,7 @@ Browser API access is centralized in `next-frontend/src/services/`. Prefer these
 | `testimonialService.js` | Testimonials |
 | `discoverApi` is in `lib/discoverApi.js` (not services/) | Discover catalog SSR |
 | `analyticsService.js` | Client analytics track |
+| `whereNextService.js` | Where Next pick/stats (`/api/where-next`) |
 | `feedbackService.js` | AI feedback |
 | `websocketService.js` | Socket.IO realtime |
 | `imageUploadService.js` | Image uploads |

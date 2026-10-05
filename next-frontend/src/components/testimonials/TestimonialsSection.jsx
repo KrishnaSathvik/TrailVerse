@@ -10,7 +10,7 @@ import {
   TESTIMONIALS_SECTION_SUBTITLE
 } from './testimonialsCopy';
 import { LANDING_SECTION, LANDING_SECTION_HEADER_MB } from '@/lib/landingLayout';
-import TestimonialBadge from './TestimonialBadge';
+import TestimonialBadge from './TestimonialBadge.jsx';
 
 function TestimonialAttribution({ testimonial }) {
   if (testimonial.sourceUrl) {

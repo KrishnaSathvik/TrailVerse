@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { validateProductionEmail } = require('../validation/emailValidation');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -24,10 +25,10 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Please provide a valid email'
-    ]
+    validate: {
+      validator: (value) => validateProductionEmail(value).ok,
+      message: 'Please provide a valid email'
+    }
   },
   password: {
     type: String,
@@ -164,13 +165,26 @@ userSchema.index({ createdAt: -1 });
 userSchema.index({ 'savedParks.parkCode': 1 });
 userSchema.index({ lastActiveAt: -1 });
 
-// Encrypt password before saving
-userSchema.pre('save', async function(next) {
+// Encrypt password before saving.
+//
+// The `return` on the unmodified path is load-bearing. Without it the hook
+// called next() and then kept running, so every save of a document that had its
+// password loaded re-hashed an already-hashed value — and every save of a
+// document loaded through `select('-password')` (which is what `protect` does)
+// hashed `undefined`. Both raced the save's own serialization, which is why the
+// damage was intermittent rather than constant.
+userSchema.pre('save', async function hashPasswordWhenChanged(next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    return next();
+  } catch (error) {
+    return next(error);
+  }
 });
 
 // Compare password method

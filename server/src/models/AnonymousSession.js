@@ -1,5 +1,62 @@
 const mongoose = require('mongoose');
 const { ANONYMOUS_USER_MESSAGE_LIMIT, ANONYMOUS_SESSION_TTL_SECONDS } = require('../config/anonymousChatLimits');
+const { countCompletedTurns, remainingAllowance } = require('../utils/guestTurnQuota');
+
+/**
+ * Stage 14.8A.2 §3 — one guest quota unit is ONE logical turn:
+ *   one admitted user message + one successful terminal assistant response.
+ *
+ * The turn record carries that lifecycle explicitly so quota can never be
+ * inferred from raw message-array length. `messages` therefore holds COMPLETED
+ * history only; a pending or failed turn lives solely in `turns`.
+ */
+const GuestTurnMessageSchema = new mongoose.Schema({
+  role: { type: String, enum: ['user', 'assistant'], required: true },
+  content: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  provider: String,
+  model: String,
+  responseTime: Number,
+  travelLogistics: mongoose.Schema.Types.Mixed,
+  canonicalPlan: mongoose.Schema.Types.Mixed,
+  responseArtifacts: mongoose.Schema.Types.Mixed,
+  intent: mongoose.Schema.Types.Mixed,
+  presentation: mongoose.Schema.Types.Mixed,
+  // WP-TU Phase 3 Task 8B — same additive field as TripPlan.js's conversation
+  // subdocument; persisted the same way intent/presentation already are.
+  activeTripPresentation: mongoose.Schema.Types.Mixed,
+  // WP-TU Phase 4 Task 10 — same additive field as TripPlan.js's
+  // conversation subdocument; persisted the same way (Task 8B's recipe).
+  targetTripId: String,
+  itineraryHash: String,
+  contentHash: String,
+  responseId: String,
+  responseVersion: Number,
+  responseRevision: Number,
+  lifecycleStatus: String,
+  presentationKind: String,
+  parkName: String,
+  parkNames: [String],
+  hasLiveData: Boolean,
+  hasWebSearch: Boolean
+}, { _id: false });
+
+const GuestTurnSchema = new mongoose.Schema({
+  turnId: { type: String, required: true },
+  clientTurnId: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'failed'],
+    required: true,
+    default: 'pending'
+  },
+  userMessage: { type: GuestTurnMessageSchema, required: true },
+  assistantMessage: { type: GuestTurnMessageSchema, default: undefined },
+  admittedAt: { type: Date, required: true },
+  completedAt: { type: Date, default: undefined },
+  failedAt: { type: Date, default: undefined },
+  failureCode: { type: String, default: undefined }
+}, { _id: false });
 
 const AnonymousSessionSchema = new mongoose.Schema({
   anonymousId: {
@@ -34,10 +91,50 @@ const AnonymousSessionSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     },
+    historyOrigin: String,
     provider: String,
     model: String,
-    responseTime: Number
+    responseTime: Number,
+    travelLogistics: mongoose.Schema.Types.Mixed,
+    canonicalPlan: mongoose.Schema.Types.Mixed,
+    responseArtifacts: mongoose.Schema.Types.Mixed,
+    intent: mongoose.Schema.Types.Mixed,
+    presentation: mongoose.Schema.Types.Mixed,
+    // WP-TU Phase 3 Task 8B — same additive field, kept in sync with
+    // GuestTurnMessageSchema above (these two are hand-duplicated).
+    activeTripPresentation: mongoose.Schema.Types.Mixed,
+    // WP-TU Phase 4 Task 10 — same additive field, kept in sync with
+    // GuestTurnMessageSchema above (these two are hand-duplicated).
+    targetTripId: String,
+    itineraryHash: String,
+    contentHash: String,
+    responseId: String,
+    responseVersion: Number,
+    responseRevision: Number,
+    lifecycleStatus: String,
+    presentationKind: String,
+    parkName: String,
+    parkNames: [String],
+    hasLiveData: Boolean,
+    hasWebSearch: Boolean
   }],
+  /**
+   * Explicit logical-turn records. Authoritative for quota (Stage 14.8A.2 §4).
+   * Completed turns are never pruned; failed turns are pruned to a bounded
+   * diagnostic window by the turn ledger.
+   */
+  turns: {
+    type: [GuestTurnSchema],
+    default: []
+  },
+  /**
+   * Performance cache only. `turns` remains authoritative — drift is a detected
+   * defect, never a quota source (Stage 14.8A.2 §4).
+   */
+  completedTurnCount: {
+    type: Number,
+    default: 0
+  },
   parkName: {
     type: String,
     default: 'General Planning'
@@ -47,6 +144,14 @@ const AnonymousSessionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
+  planningState: {
+    type: mongoose.Schema.Types.Mixed,
+    default: undefined
+  },
+  entryContext: {
+    type: mongoose.Schema.Types.Mixed,
+    default: undefined
+  },
   messageCount: {
     type: Number,
     default: 0
@@ -55,6 +160,8 @@ const AnonymousSessionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  historyRecoveryHash: String,
+  convertedTripId: { type: mongoose.Schema.Types.ObjectId, ref: 'TripPlan' },
   isConverted: {
     type: Boolean,
     default: false
@@ -86,10 +193,21 @@ AnonymousSessionSchema.methods.addMessage = function(message) {
   return this.save();
 };
 
-// Method to check if user can send more messages
+/**
+ * Stage 14.8A.2 §4 — completion-coupled. A guest may send again while fewer
+ * than ANONYMOUS_USER_MESSAGE_LIMIT logical turns have COMPLETED. Pending and
+ * failed turns, and raw user-role messages, never consume allowance.
+ */
+AnonymousSessionSchema.methods.completedGuestTurns = function() {
+  return countCompletedTurns(this.turns);
+};
+
+AnonymousSessionSchema.methods.remainingGuestAllowance = function() {
+  return remainingAllowance(this.completedGuestTurns(), ANONYMOUS_USER_MESSAGE_LIMIT);
+};
+
 AnonymousSessionSchema.methods.canSendMessage = function() {
-  const userMessageCount = this.messages.filter(msg => msg.role === 'user').length;
-  return userMessageCount <= ANONYMOUS_USER_MESSAGE_LIMIT;
+  return this.completedGuestTurns() < ANONYMOUS_USER_MESSAGE_LIMIT;
 };
 
 // Method to get conversation summary

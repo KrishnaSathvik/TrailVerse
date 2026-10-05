@@ -3151,6 +3151,7 @@ const ParkDetailInner = ({
               {/* Weather Widget */}
               {park.latitude && park.longitude && (
                 <WeatherWidget
+                  parkCode={park.parkCode}
                   latitude={park.latitude}
                   longitude={park.longitude}
                   parkName={park.fullName}

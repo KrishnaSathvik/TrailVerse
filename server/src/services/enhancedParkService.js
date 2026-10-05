@@ -1,6 +1,6 @@
 const axios = require('axios');
 const NodeCache = require('node-cache');
-const npsService = require('./npsService');
+const { getNpsService } = require('./npsService');
 const { safeCacheSet } = require('../utils/safeCacheSet');
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
@@ -22,13 +22,14 @@ class EnhancedParkService {
   }
 
   // Enhanced weather data with seasonal averages
-  async getWeatherData(parkOrLocation) {
+  async getWeatherData(parkOrLocation, { includeForecast = false } = {}) {
     const isPark = !!parkOrLocation.parkCode;
     const lat = parseFloat(parkOrLocation.latitude);
     const lon = parseFloat(parkOrLocation.longitude);
-    const cacheKey = isPark
+    const locationCacheKey = isPark
       ? `weather-${parkOrLocation.parkCode}`
       : `weather-${lat.toFixed(3)},${lon.toFixed(3)}`;
+    const cacheKey = includeForecast ? `${locationCacheKey}-widget-v1` : locationCacheKey;
     const cached = this.getCachedData(cacheKey);
     if (cached) {
       console.log(`Using cached weather data for ${isPark ? parkOrLocation.parkCode : `${lat},${lon}`}`);
@@ -36,7 +37,7 @@ class EnhancedParkService {
     }
 
     try {
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || (includeForecast && (Math.abs(lat) > 90 || Math.abs(lon) > 180))) {
         throw new Error('Invalid coordinates');
       }
 
@@ -106,11 +107,33 @@ class EnhancedParkService {
         lastUpdated: new Date().toISOString()
       };
 
+      if (includeForecast) {
+        // Explicit display-only fields: never forward Axios objects or provider metadata.
+        weatherData.widget = {
+          current: {
+            main: { temp: current.main.temp, humidity: current.main.humidity },
+            weather: [{ description: current.weather[0].description, icon: current.weather[0].icon }],
+            wind: { speed: current.wind.speed },
+            visibility: current.visibility,
+          },
+          forecast: { list: forecast.list.map(item => ({
+            dt: item.dt,
+            main: { temp: item.main.temp },
+            weather: [{ icon: item.weather[0].icon }],
+          })) },
+        };
+      }
+
       this.setCachedData(cacheKey, weatherData);
       return weatherData;
 
     } catch (error) {
-      console.error(`Weather API Error for ${cacheKey}:`, error.message);
+      console.error('Weather provider request failed', { status: error.response?.status || null });
+      if (includeForecast) {
+        const unavailable = new Error('Weather data temporarily unavailable');
+        unavailable.statusCode = 503;
+        throw unavailable;
+      }
       
       // Only return fallback if coordinates are valid
       if (Number.isFinite(lat) && Number.isFinite(lon)) {
@@ -267,7 +290,7 @@ class EnhancedParkService {
     try {
       // Get additional data for better prediction
       const [alerts, events] = await Promise.all([
-        npsService.getParkAlerts(park.parkCode).catch(() => []),
+        getNpsService().getParkAlerts(park.parkCode).catch(() => []),
         this.getParkEvents(park.parkCode, date).catch(() => [])
       ]);
 
@@ -447,7 +470,7 @@ class EnhancedParkService {
   // Get park events for a specific date
   async getParkEvents(parkCode, date) {
     try {
-      const events = await npsService.getEventsByPark(parkCode);
+      const events = await getNpsService().getEventsByPark(parkCode);
       const targetDate = date.toISOString().split('T')[0];
       
       return events.filter(event => {
@@ -650,8 +673,8 @@ class EnhancedParkService {
 
     try {
       const [campgrounds, visitorCenters] = await Promise.all([
-        npsService.getParkCampgrounds(park.parkCode).catch(() => []),
-        npsService.getParkVisitorCenters(park.parkCode).catch(() => [])
+        getNpsService().getParkCampgrounds(park.parkCode).catch(() => []),
+        getNpsService().getParkVisitorCenters(park.parkCode).catch(() => [])
       ]);
 
       const facilities = {
@@ -829,7 +852,7 @@ class EnhancedParkService {
           try {
             // Get things to do for all parks (same as park details page uses)
             const activityPromises = parks.map(park => 
-              npsService.getParkActivities(park.parkCode).catch(() => [])
+              getNpsService().getParkActivities(park.parkCode).catch(() => [])
             );
             
             const allThingsToDo = await Promise.all(activityPromises);

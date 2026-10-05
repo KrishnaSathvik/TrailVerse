@@ -1,0 +1,14 @@
+[
+  {"name":"ordinary stops","csv":"stop_id,stop_name,stop_lat,stop_lon\ns1,Visitor Center,35.5,-105.5\n","expected":[{"stop_id":"s1","stop_name":"Visitor Center","stop_lat":"35.5","stop_lon":"-105.5"}]},
+  {"name":"quoted comma and escaped quotes","csv":"stop_id,stop_name\ns1,\"Visitor Center, \"\"North\"\"\"\n","expected":[{"stop_id":"s1","stop_name":"Visitor Center, \"North\""}]},
+  {"name":"quoted multiline field","csv":"stop_id,stop_name\ns1,\"Visitor\nCenter\"\n","expected":[{"stop_id":"s1","stop_name":"Visitor\nCenter"}]},
+  {"name":"UTF-8 BOM and CRLF","csv":"﻿stop_id,stop_name\r\ns1,Visitor Center\r\n","expected":[{"stop_id":"s1","stop_name":"Visitor Center"}]},
+  {"name":"blank lines and trimmed fields","csv":"stop_id,stop_name\n\n s1 , Visitor Center \n\n","expected":[{"stop_id":"s1","stop_name":"Visitor Center"}]},
+  {"name":"empty fields","csv":"stop_id,stop_name,stop_desc\ns1,,\n","expected":[{"stop_id":"s1","stop_name":"","stop_desc":""}]},
+  {"name":"extra record columns retain existing relaxed policy","csv":"stop_id,stop_name\ns1,Visitor Center,extra\n","expected":[{"stop_id":"s1","stop_name":"Visitor Center"}]},
+  {"name":"short record retains existing relaxed policy","csv":"stop_id,stop_name,stop_desc\ns1,Visitor Center\n","expected":[{"stop_id":"s1","stop_name":"Visitor Center"}]},
+  {"name":"literal quote in unquoted field retains existing policy","csv":"stop_id,stop_name\ns1,Visitor \"North\" Center\n","expected":[{"stop_id":"s1","stop_name":"Visitor \"North\" Center"}]},
+  {"name":"unclosed quoted field remains rejected","csv":"stop_id,stop_name\ns1,\"Visitor Center\n","error":"CSV_QUOTE_NOT_CLOSED"},
+  {"name":"calendar dates and after-midnight stop times stay strings","csv":"trip_id,arrival_time,departure_time,stop_id,stop_sequence\n001,25:05:00,25:06:00,s1,01\n","expected":[{"trip_id":"001","arrival_time":"25:05:00","departure_time":"25:06:00","stop_id":"s1","stop_sequence":"01"}]},
+  {"name":"Unicode stop names","csv":"stop_id,stop_name\ns1,Peña Blanca – shuttle\n","expected":[{"stop_id":"s1","stop_name":"Peña Blanca – shuttle"}]}
+]

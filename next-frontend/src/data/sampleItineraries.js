@@ -129,6 +129,11 @@ export function getSampleItineraryHref(itinerary) {
   if (itinerary?.shareId) {
     return `/plan-ai/shared/${itinerary.shareId}?from=/itineraries`;
   }
+  // No captured share page — send the curated prompt straight to live Trailie
+  // instead of dropping the visitor on an empty planner.
+  if (itinerary?.prompt) {
+    return `/plan-ai?ask=${encodeURIComponent(itinerary.prompt)}`;
+  }
   return '/plan-ai';
 }
 

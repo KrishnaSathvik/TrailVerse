@@ -30,11 +30,8 @@ The issue is likely one of these:
 Run the diagnostic script to identify the issue:
 
 ```bash
-# In production (Render/Railway/Vercel)
+# On an operator machine / Render shell only. Do not expose key material over HTTP.
 node server/scripts/diagnose-gmaps.js
-
-# Or check the debug endpoint
-curl https://trailverse.onrender.com/api/gmaps/debug
 ```
 
 ### Step 2: Fix API Key Configuration
@@ -114,46 +111,19 @@ curl https://trailverse.onrender.com/api/gmaps/debug
 ### Step 4: Test the Fix
 
 1. **Deploy the changes**
-2. **Test the debug endpoint**:
-   ```bash
-   curl https://your-domain.com/api/gmaps/debug
-   ```
-   Should return:
-   ```json
-   {
-     "hasKey": true,
-     "keyLength": 39,
-     "keyPrefix": "AIzaSyAmSU...",
-     "environment": "production"
-   }
-   ```
-
+2. **Confirm the server key is present via the operator diagnostic** (`node server/scripts/diagnose-gmaps.js` on the host). Do not probe Maps keys over HTTP.
 3. **Test a real API call**:
    ```bash
    curl "https://your-domain.com/api/gmaps/nearby?lat=40.7128&lng=-74.0060&type=restaurant&radius=1000"
    ```
 
-## 🔧 Enhanced Error Handling
+## Error handling
 
-I've updated the server code to provide better error messages:
-
-### New Debug Endpoint
-- `GET /api/gmaps/debug` - Shows API key status
-- `GET /api/gmaps/debug-places` - Tests Google Places API directly
-
-### Enhanced Error Responses
-The `/api/gmaps/nearby` endpoint now returns detailed error information:
+`/api/gmaps/nearby` returns a short error payload only — never key prefixes, env names, or provider URLs.
 
 ```json
 {
-  "error": "Google Places API access denied. Check API key and billing.",
-  "status": "REQUEST_DENIED",
-  "message": "The provided API key is not valid.",
-  "debug": {
-    "hasKey": true,
-    "keyLength": 39,
-    "url": "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=40.7128,-74.0060&radius=1000&type=restaurant&key=HIDDEN_KEY"
-  }
+  "error": "Google Maps API key not configured"
 }
 ```
 
@@ -164,7 +134,7 @@ The `/api/gmaps/nearby` endpoint now returns detailed error information:
 - [ ] Billing is enabled on Google Cloud project
 - [ ] API key has no application restrictions (for server-side usage)
 - [ ] API key has Places API enabled in restrictions
-- [ ] Debug endpoint returns `hasKey: true`
+- [ ] Nearby call returns restaurant data (or a short error, never a key)
 - [ ] Test API call returns restaurant data
 - [ ] Client-side maps still work (different API key)
 

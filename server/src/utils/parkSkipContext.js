@@ -110,6 +110,8 @@ function keysForPark(park) {
 
 /**
  * Drop parks whose every mention in `text` sits in a skip/avoid sentence.
+ * A positive park-identity mention keeps the park even when a subordinate
+ * landmark for the same code appears only in an avoid/skip clause.
  * @param {string} text
  * @param {Array<{ parkCode: string, parkName: string, [key: string]: unknown }>} parks
  */
@@ -118,23 +120,28 @@ function filterParksNotSkipOnly(text, parks) {
   const lower = text.toLowerCase();
 
   return parks.filter((park) => {
+    let sawMention = false;
+    let sawNonSkipMention = false;
+
     for (const key of keysForPark(park)) {
       if (!key || key.length < 3) continue;
       const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const re = new RegExp(escaped, 'gi');
       let match;
-      let hasMention = false;
-      let allSkip = true;
       while ((match = re.exec(lower)) !== null) {
-        hasMention = true;
+        sawMention = true;
         if (!isParkMentionInSkipContext(text, match.index, match[0].length)) {
-          allSkip = false;
+          sawNonSkipMention = true;
           break;
         }
       }
-      if (hasMention && allSkip) return false;
+      if (sawNonSkipMention) break;
     }
-    return true;
+
+    // No catalog mention found for this park object — keep it (caller-owned).
+    if (!sawMention) return true;
+    // Keep when at least one mention is outside skip/avoid context.
+    return sawNonSkipMention;
   });
 }
 

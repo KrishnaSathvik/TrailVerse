@@ -73,6 +73,7 @@ From server props or `/api/parks/:code/enhanced`:
 
 - `StateParkPageClient.jsx` — lists parks in state
 - Slugs match sitemap list in `sitemap.ts` (kebab-case state names)
+- Fetch `GET /api/parks?state=UT&all=true`. `notFound()` only for unknown state slugs; API failure renders an error, not a 404.
 
 ## GTFS transit
 

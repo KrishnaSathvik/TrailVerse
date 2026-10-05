@@ -1,0 +1,700 @@
+{
+  "schemaVersion": 2,
+  "scenarios": [
+    {
+      "id": "valley-of-fire-weekend",
+      "label": "Valley of Fire",
+      "chatTitle": "Valley of Fire weekend",
+      "kind": "itinerary",
+      "turns": [
+        {
+          "question": "Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.",
+          "prose": "Spend the weekend on Valley of Fire’s short, low-effort walks, leaving the hottest parts of the day loose rather than trying to cover every pullout. Start with the canyon-and-petroglyph side, then give the second day to the east entrance formations and colorful overlooks.",
+          "content": "Spend the weekend on Valley of Fire’s short, low-effort walks, leaving the hottest parts of the day loose rather than trying to cover every pullout. Start with the canyon-and-petroglyph side, then give the second day to the east entrance formations and colorful overlooks.",
+          "plan": {
+            "days": [
+              {
+                "dayNumber": 1,
+                "label": "Mouse’s Tank canyon walk and CCC-cabins sunset",
+                "stops": [
+                  {
+                    "name": "Mouse's Tank Trail",
+                    "timeWindow": "Early morning",
+                    "duration": 75,
+                    "note": "Make this the early outdoor anchor: follow the short canyon walk toward the natural basin and look for petroglyphs. It is heat-sensitive, so bring water and shift it earlier or later if the day is warm; confirm access before setting out.",
+                    "why": "It gives you a genuine, easy hike without turning the day into a long outing.",
+                    "alternatives": [
+                      {
+                        "name": "Rainbow Vista",
+                        "note": "Use the short colorful-overlook walk later in softer light if the canyon walk is unavailable."
+                      }
+                    ]
+                  },
+                  {
+                    "name": "The Beehives",
+                    "timeWindow": "Late morning",
+                    "duration": 45,
+                    "note": "Take an unhurried look at the roadside sandstone formations, using the short walks between pullouts for photographs.",
+                    "why": "A light, scenic contrast to the canyon walk that leaves plenty of downtime."
+                  },
+                  {
+                    "name": "Valley of Fire Scenic Drive viewpoints",
+                    "timeWindow": "Afternoon",
+                    "duration": 75,
+                    "note": "Use a relaxed afternoon loop of the park-road pullouts, stopping only where the light and energy feel right.",
+                    "why": "The pullouts provide big desert scenery without asking for another substantial hike."
+                  },
+                  {
+                    "name": "Cabins / historic CCC cabins area",
+                    "timeWindow": "Sunset",
+                    "duration": 60,
+                    "note": "Settle in for sunset views around the historic cabins; this is a useful evening-light stop when longer trails are no longer appealing.",
+                    "why": "This is the strongest dedicated sunset finish, with an easy walk and open views."
+                  }
+                ]
+              },
+              {
+                "dayNumber": 2,
+                "label": "Elephant Rock and Rainbow Vista in softer light",
+                "stops": [
+                  {
+                    "name": "Elephant Rock",
+                    "timeWindow": "Morning",
+                    "duration": 45,
+                    "note": "Begin with the short walk to the named sandstone formation near the east entrance corridor; take your time with the formation and photos.",
+                    "why": "It is an easy, distinctive start that feels different from the previous day’s canyon walk."
+                  },
+                  {
+                    "name": "Atlatl Rock",
+                    "timeWindow": "Late morning",
+                    "duration": 45,
+                    "note": "Visit the petroglyph panels via the short stair access. Check that the stairs and heat feel comfortable for your group, and confirm access before you go.",
+                    "why": "The panels add a cultural stop without needing a long hike."
+                  },
+                  {
+                    "name": "Rainbow Vista",
+                    "timeWindow": "Late afternoon into golden hour",
+                    "duration": 75,
+                    "note": "Save the short walk to the colorful overlook for late afternoon, when the light is generally more flattering. Bring water and use sun protection.",
+                    "why": "It provides the weekend’s second scenic high point and a gentler alternative to chasing a tightly timed sunset."
+                  }
+                ]
+              }
+            ],
+            "intro": "Spend the weekend on Valley of Fire’s short, low-effort walks, leaving the hottest parts of the day loose rather than trying to cover every pullout. Start with the canyon-and-petroglyph side, then give the second day to the east entrance formations and colorful overlooks.",
+            "narrativeSections": [
+              {
+                "placement": "after_plan",
+                "heading": "Why this pace works",
+                "markdown": "Each day has one easy walking anchor, then short formations or overlooks instead of a long checklist. The middle of both days is deliberately flexible for a slow lunch, a heat break, or simply returning to Las Vegas earlier; the outdoor stops have no verified live-access status here, so check park information before departure."
+              }
+            ],
+            "alternatives": [
+              {
+                "name": "Rainbow Vista",
+                "note": "Use the short colorful-overlook walk later in softer light if the canyon walk is unavailable."
+              }
+            ]
+          },
+          "canonicalPlan": {
+            "days": [
+              {
+                "dayNumber": 1,
+                "label": "Mouse’s Tank canyon walk and CCC-cabins sunset",
+                "stops": [
+                  {
+                    "name": "Mouse's Tank Trail",
+                    "timeWindow": "Early morning",
+                    "duration": 75,
+                    "note": "Make this the early outdoor anchor: follow the short canyon walk toward the natural basin and look for petroglyphs. It is heat-sensitive, so bring water and shift it earlier or later if the day is warm; confirm access before setting out.",
+                    "why": "It gives you a genuine, easy hike without turning the day into a long outing.",
+                    "alternatives": [
+                      {
+                        "name": "Rainbow Vista",
+                        "note": "Use the short colorful-overlook walk later in softer light if the canyon walk is unavailable."
+                      }
+                    ]
+                  },
+                  {
+                    "name": "The Beehives",
+                    "timeWindow": "Late morning",
+                    "duration": 45,
+                    "note": "Take an unhurried look at the roadside sandstone formations, using the short walks between pullouts for photographs.",
+                    "why": "A light, scenic contrast to the canyon walk that leaves plenty of downtime."
+                  },
+                  {
+                    "name": "Valley of Fire Scenic Drive viewpoints",
+                    "timeWindow": "Afternoon",
+                    "duration": 75,
+                    "note": "Use a relaxed afternoon loop of the park-road pullouts, stopping only where the light and energy feel right.",
+                    "why": "The pullouts provide big desert scenery without asking for another substantial hike."
+                  },
+                  {
+                    "name": "Cabins / historic CCC cabins area",
+                    "timeWindow": "Sunset",
+                    "duration": 60,
+                    "note": "Settle in for sunset views around the historic cabins; this is a useful evening-light stop when longer trails are no longer appealing.",
+                    "why": "This is the strongest dedicated sunset finish, with an easy walk and open views."
+                  }
+                ]
+              },
+              {
+                "dayNumber": 2,
+                "label": "Elephant Rock and Rainbow Vista in softer light",
+                "stops": [
+                  {
+                    "name": "Elephant Rock",
+                    "timeWindow": "Morning",
+                    "duration": 45,
+                    "note": "Begin with the short walk to the named sandstone formation near the east entrance corridor; take your time with the formation and photos.",
+                    "why": "It is an easy, distinctive start that feels different from the previous day’s canyon walk."
+                  },
+                  {
+                    "name": "Atlatl Rock",
+                    "timeWindow": "Late morning",
+                    "duration": 45,
+                    "note": "Visit the petroglyph panels via the short stair access. Check that the stairs and heat feel comfortable for your group, and confirm access before you go.",
+                    "why": "The panels add a cultural stop without needing a long hike."
+                  },
+                  {
+                    "name": "Rainbow Vista",
+                    "timeWindow": "Late afternoon into golden hour",
+                    "duration": 75,
+                    "note": "Save the short walk to the colorful overlook for late afternoon, when the light is generally more flattering. Bring water and use sun protection.",
+                    "why": "It provides the weekend’s second scenic high point and a gentler alternative to chasing a tightly timed sunset."
+                  }
+                ]
+              }
+            ],
+            "intro": "Spend the weekend on Valley of Fire’s short, low-effort walks, leaving the hottest parts of the day loose rather than trying to cover every pullout. Start with the canyon-and-petroglyph side, then give the second day to the east entrance formations and colorful overlooks.",
+            "narrativeSections": [
+              {
+                "placement": "after_plan",
+                "heading": "Why this pace works",
+                "markdown": "Each day has one easy walking anchor, then short formations or overlooks instead of a long checklist. The middle of both days is deliberately flexible for a slow lunch, a heat break, or simply returning to Las Vegas earlier; the outdoor stops have no verified live-access status here, so check park information before departure."
+              }
+            ],
+            "alternatives": [
+              {
+                "name": "Rainbow Vista",
+                "note": "Use the short colorful-overlook walk later in softer light if the canyon walk is unavailable."
+              }
+            ]
+          },
+          "travelLogistics": null,
+          "responseArtifacts": null,
+          "intent": {
+            "primaryIntent": "simple_itinerary",
+            "travelerJob": "day_by_day_itinerary",
+            "verticals": [
+              "activities",
+              "itinerary"
+            ],
+            "depth": "planning",
+            "freshness": "current",
+            "confidence": 0.97
+          },
+          "presentation": {
+            "schemaVersion": 1,
+            "presentationKind": "itinerary",
+            "refinement": {
+              "isRefinement": false,
+              "changes": [],
+              "changedDayNumbers": []
+            },
+            "primaryArtifact": {
+              "kind": "itinerary",
+              "source": "canonicalPlan"
+            },
+            "supportingModules": [],
+            "prosePolicy": "full",
+            "ending": {
+              "caveat": null,
+              "beforeYouGo": null,
+              "followups": []
+            }
+          },
+          "source": "live-envelope",
+          "liveData": {
+            "nps": true,
+            "web": false
+          },
+          "awaitingRecapture": false,
+          "questionUpdated": false,
+          "parkName": "Valley of Fire State Park"
+        }
+      ]
+    },
+    {
+      "id": "compare-acadia-shenandoah",
+      "label": "Compare",
+      "chatTitle": "Acadia vs Shenandoah",
+      "kind": "conversation",
+      "turns": [
+        {
+          "question": "I have 3 days in October. Should I choose Acadia or Shenandoah for fall colors, easy hikes, and photography? Pick one and explain why.",
+          "prose": "**Choose Acadia.**\n\nFor a three-day October trip centered on **fall color, easy hiking, and photography**, Acadia gives you the more distinctive mix: autumn foliage set against rocky coastline, lakes, and ocean views. That variety makes it especially rewarding for photography even if you keep the walks short and relaxed.\n\nThe main tradeoff is timing. Acadia’s foliage often turns earlier than Shenandoah’s, so it is the stronger choice for an **early-to-mid October** visit. If your dates land in the **last part of October**, Shenandoah could become the better foliage bet, with its long ridgelines and overlooks.\n\nFor an October trip without a firm week yet, though, I’d take **Acadia** for the more memorable photographic landscape and an easier three-day balance of scenic stops and gentle walks.",
+          "content": "**Choose Acadia.**\n\nFor a three-day October trip centered on **fall color, easy hiking, and photography**, Acadia gives you the more distinctive mix: autumn foliage set against rocky coastline, lakes, and ocean views. That variety makes it especially rewarding for photography even if you keep the walks short and relaxed.\n\nThe main tradeoff is timing. Acadia’s foliage often turns earlier than Shenandoah’s, so it is the stronger choice for an **early-to-mid October** visit. If your dates land in the **last part of October**, Shenandoah could become the better foliage bet, with its long ridgelines and overlooks.\n\nFor an October trip without a firm week yet, though, I’d take **Acadia** for the more memorable photographic landscape and an easier three-day balance of scenic stops and gentle walks.",
+          "plan": null,
+          "canonicalPlan": null,
+          "travelLogistics": null,
+          "responseArtifacts": null,
+          "intent": {
+            "primaryIntent": "compare",
+            "travelerJob": "destination_compare",
+            "verticals": [
+              "parks",
+              "activities"
+            ],
+            "depth": "standard",
+            "freshness": "stable",
+            "confidence": 0.96
+          },
+          "presentation": {
+            "schemaVersion": 1,
+            "presentationKind": "comparison",
+            "refinement": {
+              "isRefinement": false,
+              "changes": [],
+              "changedDayNumbers": []
+            },
+            "primaryArtifact": {
+              "kind": "comparison",
+              "source": "content"
+            },
+            "supportingModules": [],
+            "prosePolicy": "full",
+            "ending": {
+              "caveat": null,
+              "beforeYouGo": null,
+              "followups": []
+            }
+          },
+          "source": "live-envelope",
+          "liveData": {
+            "nps": true,
+            "web": true
+          },
+          "awaitingRecapture": false,
+          "questionUpdated": false,
+          "parkName": "Acadia"
+        }
+      ]
+    },
+    {
+      "id": "yellowstone-relaxed",
+      "label": "Yellowstone",
+      "chatTitle": "Two days in Yellowstone",
+      "kind": "itinerary",
+      "turns": [
+        {
+          "question": "Plan a relaxed 2-day Yellowstone trip for first-time visitors who want geysers, wildlife, and scenic drives without rushing.",
+          "prose": "Start in the Mammoth area for an easy introduction to Yellowstone’s terraces, wildlife, and a scenic drive, then give the Upper Geyser Basin a separate, unhurried day. This keeps the two big Yellowstone moods distinct rather than turning the trip into a long list of stops.",
+          "content": "Start in the Mammoth area for an easy introduction to Yellowstone’s terraces, wildlife, and a scenic drive, then give the Upper Geyser Basin a separate, unhurried day. This keeps the two big Yellowstone moods distinct rather than turning the trip into a long list of stops.",
+          "plan": {
+            "days": [
+              {
+                "dayNumber": 1,
+                "label": "Mammoth terraces, elk, and Upper Terrace Drive",
+                "stops": [
+                  {
+                    "name": "Mammoth Hot Springs - Lower Terraces",
+                    "timeWindow": "Morning",
+                    "duration": 90,
+                    "note": "Take an easy-paced walk among the terraced hot-spring formations; pause often rather than trying to make this a quick pass-through. Check same-day access and follow all posted thermal-area instructions.",
+                    "why": "It is a gentle, iconic first Yellowstone experience and leaves room to absorb the unfamiliar landscape."
+                  },
+                  {
+                    "name": "Elk in Mammoth Hot Springs",
+                    "timeWindow": "Late morning",
+                    "duration": 45,
+                    "note": "Look for elk around Mammoth Hot Springs from a respectful distance; never approach or block an animal’s path.",
+                    "why": "This gives first-time visitors a focused wildlife stop without turning the day into a chase for sightings."
+                  },
+                  {
+                    "name": "Upper Terrace Drive",
+                    "timeWindow": "Afternoon",
+                    "duration": 75,
+                    "note": "Take the easy scenic drive at a deliberately slow pace, stopping where conditions and parking allow. It can also work as a gentle late-day finish; confirm same-day road access before setting out.",
+                    "why": "It adds a classic Yellowstone drive and another perspective on Mammoth without asking for a strenuous afternoon."
+                  }
+                ]
+              },
+              {
+                "dayNumber": 2,
+                "label": "Upper Geyser Basin’s geyser country",
+                "stops": [
+                  {
+                    "name": "Geyser Hill",
+                    "timeWindow": "Morning",
+                    "duration": 120,
+                    "note": "Make this the main morning walk: Geyser Hill holds more than 50 geysers in the Upper Geyser Basin. Give yourselves time to linger and watch the changing thermal landscape; check access that morning.",
+                    "why": "It delivers the dense, memorable geyser experience first-time Yellowstone visitors come for, without a hard hike."
+                  },
+                  {
+                    "name": "Aurum Geyser",
+                    "timeWindow": "Late morning",
+                    "duration": 30,
+                    "note": "Pause at this Upper Geyser Basin geyser as part of an easygoing basin exploration, following posted thermal-area rules.",
+                    "why": "A focused stop lets the day feel personal and observant rather than like a rushed circuit."
+                  },
+                  {
+                    "name": "Solitary Geyser",
+                    "timeWindow": "Early afternoon",
+                    "duration": 60,
+                    "note": "Continue to the geyser set up the hillside from the main concentration of Old Faithful-area geysers, allowing time for the quieter setting.",
+                    "why": "It provides a calmer counterpoint to the busiest part of the basin and suits the relaxed pace."
+                  },
+                  {
+                    "name": "Artemisia Geyser",
+                    "timeWindow": "Mid-afternoon",
+                    "duration": 45,
+                    "note": "End with this large thermal pool in the Upper Geyser Basin, then leave time to revisit the basin feature that held your attention most.",
+                    "why": "A final, distinctive thermal feature makes room for wonder without adding another far-flung area."
+                  }
+                ]
+              }
+            ],
+            "intro": "Start in the Mammoth area for an easy introduction to Yellowstone’s terraces, wildlife, and a scenic drive, then give the Upper Geyser Basin a separate, unhurried day. This keeps the two big Yellowstone moods distinct rather than turning the trip into a long list of stops.",
+            "narrativeSections": [
+              {
+                "placement": "after_plan",
+                "heading": "Why this pace works",
+                "markdown": "Mammoth and the Upper Geyser Basin each deserve their own day: one combines wildlife, terraces, and a scenic drive, while the other is reserved for geothermal wandering. The tradeoff is that this is not a park-wide highlights sprint; it prioritizes time at a few defining Yellowstone landscapes and leaves room for wildlife pauses and unplanned lingering."
+              }
+            ]
+          },
+          "canonicalPlan": {
+            "days": [
+              {
+                "dayNumber": 1,
+                "label": "Mammoth terraces, elk, and Upper Terrace Drive",
+                "stops": [
+                  {
+                    "name": "Mammoth Hot Springs - Lower Terraces",
+                    "timeWindow": "Morning",
+                    "duration": 90,
+                    "note": "Take an easy-paced walk among the terraced hot-spring formations; pause often rather than trying to make this a quick pass-through. Check same-day access and follow all posted thermal-area instructions.",
+                    "why": "It is a gentle, iconic first Yellowstone experience and leaves room to absorb the unfamiliar landscape."
+                  },
+                  {
+                    "name": "Elk in Mammoth Hot Springs",
+                    "timeWindow": "Late morning",
+                    "duration": 45,
+                    "note": "Look for elk around Mammoth Hot Springs from a respectful distance; never approach or block an animal’s path.",
+                    "why": "This gives first-time visitors a focused wildlife stop without turning the day into a chase for sightings."
+                  },
+                  {
+                    "name": "Upper Terrace Drive",
+                    "timeWindow": "Afternoon",
+                    "duration": 75,
+                    "note": "Take the easy scenic drive at a deliberately slow pace, stopping where conditions and parking allow. It can also work as a gentle late-day finish; confirm same-day road access before setting out.",
+                    "why": "It adds a classic Yellowstone drive and another perspective on Mammoth without asking for a strenuous afternoon."
+                  }
+                ]
+              },
+              {
+                "dayNumber": 2,
+                "label": "Upper Geyser Basin’s geyser country",
+                "stops": [
+                  {
+                    "name": "Geyser Hill",
+                    "timeWindow": "Morning",
+                    "duration": 120,
+                    "note": "Make this the main morning walk: Geyser Hill holds more than 50 geysers in the Upper Geyser Basin. Give yourselves time to linger and watch the changing thermal landscape; check access that morning.",
+                    "why": "It delivers the dense, memorable geyser experience first-time Yellowstone visitors come for, without a hard hike."
+                  },
+                  {
+                    "name": "Aurum Geyser",
+                    "timeWindow": "Late morning",
+                    "duration": 30,
+                    "note": "Pause at this Upper Geyser Basin geyser as part of an easygoing basin exploration, following posted thermal-area rules.",
+                    "why": "A focused stop lets the day feel personal and observant rather than like a rushed circuit."
+                  },
+                  {
+                    "name": "Solitary Geyser",
+                    "timeWindow": "Early afternoon",
+                    "duration": 60,
+                    "note": "Continue to the geyser set up the hillside from the main concentration of Old Faithful-area geysers, allowing time for the quieter setting.",
+                    "why": "It provides a calmer counterpoint to the busiest part of the basin and suits the relaxed pace."
+                  },
+                  {
+                    "name": "Artemisia Geyser",
+                    "timeWindow": "Mid-afternoon",
+                    "duration": 45,
+                    "note": "End with this large thermal pool in the Upper Geyser Basin, then leave time to revisit the basin feature that held your attention most.",
+                    "why": "A final, distinctive thermal feature makes room for wonder without adding another far-flung area."
+                  }
+                ]
+              }
+            ],
+            "intro": "Start in the Mammoth area for an easy introduction to Yellowstone’s terraces, wildlife, and a scenic drive, then give the Upper Geyser Basin a separate, unhurried day. This keeps the two big Yellowstone moods distinct rather than turning the trip into a long list of stops.",
+            "narrativeSections": [
+              {
+                "placement": "after_plan",
+                "heading": "Why this pace works",
+                "markdown": "Mammoth and the Upper Geyser Basin each deserve their own day: one combines wildlife, terraces, and a scenic drive, while the other is reserved for geothermal wandering. The tradeoff is that this is not a park-wide highlights sprint; it prioritizes time at a few defining Yellowstone landscapes and leaves room for wildlife pauses and unplanned lingering."
+              }
+            ]
+          },
+          "travelLogistics": null,
+          "responseArtifacts": null,
+          "intent": {
+            "primaryIntent": "simple_itinerary",
+            "travelerJob": "day_by_day_itinerary",
+            "verticals": [
+              "transport",
+              "activities",
+              "itinerary"
+            ],
+            "depth": "planning",
+            "freshness": "current",
+            "confidence": 0.97
+          },
+          "presentation": {
+            "schemaVersion": 1,
+            "presentationKind": "itinerary",
+            "refinement": {
+              "isRefinement": false,
+              "changes": [],
+              "changedDayNumbers": []
+            },
+            "primaryArtifact": {
+              "kind": "itinerary",
+              "source": "canonicalPlan"
+            },
+            "supportingModules": [],
+            "prosePolicy": "full",
+            "ending": {
+              "caveat": null,
+              "beforeYouGo": null,
+              "followups": []
+            }
+          },
+          "source": "live-envelope",
+          "liveData": {
+            "nps": true,
+            "web": false
+          },
+          "awaitingRecapture": false,
+          "questionUpdated": false,
+          "parkName": "Yellowstone National Park"
+        }
+      ]
+    },
+    {
+      "id": "rocky-mountain-one-day",
+      "label": "Rocky Mountain",
+      "chatTitle": "One day in Rocky Mountain",
+      "kind": "conversation",
+      "turns": [
+        {
+          "question": "I only have one full day in Rocky Mountain National Park. What should I prioritize, and what's a good backup if Bear Lake parking or access doesn't work out?",
+          "prose": "Prioritize the **Bear Lake Road Corridor** for your one full day—it’s the most efficient way to concentrate your time on Rocky Mountain’s signature alpine scenery. If you’re visiting during the timed-entry season, make sure your reservation is the **Timed Entry + Bear Lake Road** option; standard Timed Entry does not include that corridor.\n\nIf Bear Lake parking or access doesn’t work out, pivot to **Trail Ridge Road and Forest Canyon Overlook**—**provided Trail Ridge Road is open**. It gives you a distinctly high-alpine experience without relying on Bear Lake: take the scenic drive, stop at Forest Canyon Overlook for the expansive views, and add Lava Cliffs or Milner Pass if conditions and road access allow. It’s a strong same-day substitute because it still delivers the park’s big mountain landscapes rather than turning the day into a parking search.",
+          "content": "Prioritize the **Bear Lake Road Corridor** for your one full day—it’s the most efficient way to concentrate your time on Rocky Mountain’s signature alpine scenery. If you’re visiting during the timed-entry season, make sure your reservation is the **Timed Entry + Bear Lake Road** option; standard Timed Entry does not include that corridor.\n\nIf Bear Lake parking or access doesn’t work out, pivot to **Trail Ridge Road and Forest Canyon Overlook**—**provided Trail Ridge Road is open**. It gives you a distinctly high-alpine experience without relying on Bear Lake: take the scenic drive, stop at Forest Canyon Overlook for the expansive views, and add Lava Cliffs or Milner Pass if conditions and road access allow. It’s a strong same-day substitute because it still delivers the park’s big mountain landscapes rather than turning the day into a parking search.",
+          "plan": null,
+          "canonicalPlan": null,
+          "travelLogistics": null,
+          "responseArtifacts": null,
+          "intent": {
+            "primaryIntent": "general_qa",
+            "travelerJob": "access_contingency",
+            "verticals": [
+              "parks",
+              "transport"
+            ],
+            "depth": "standard",
+            "freshness": "current",
+            "confidence": 0.96
+          },
+          "presentation": {
+            "schemaVersion": 1,
+            "presentationKind": "plain_answer",
+            "refinement": {
+              "isRefinement": false,
+              "changes": [],
+              "changedDayNumbers": []
+            },
+            "primaryArtifact": {
+              "kind": "plain_answer",
+              "source": "content"
+            },
+            "supportingModules": [],
+            "prosePolicy": "full",
+            "ending": {
+              "caveat": null,
+              "beforeYouGo": null,
+              "followups": []
+            }
+          },
+          "source": "live-envelope",
+          "liveData": {
+            "nps": true,
+            "web": true
+          },
+          "awaitingRecapture": false,
+          "questionUpdated": false,
+          "parkName": "Rocky Mountain National Park"
+        }
+      ]
+    },
+    {
+      "id": "zion-couple-itinerary",
+      "label": "Zion",
+      "chatTitle": "Easy Zion for two",
+      "kind": "itinerary",
+      "turns": [
+        {
+          "question": "Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.",
+          "prose": "This two-day Zion plan keeps the hikes easy and low-exposure, pairing canyon walks with broad scenic overlooks rather than exposed routes. The first day stays in Zion Canyon; the second combines an easy riverside outing with a scenic-drive-oriented overlook.",
+          "content": "This two-day Zion plan keeps the hikes easy and low-exposure, pairing canyon walks with broad scenic overlooks rather than exposed routes. The first day stays in Zion Canyon; the second combines an easy riverside outing with a scenic-drive-oriented overlook.",
+          "plan": {
+            "days": [
+              {
+                "dayNumber": 1,
+                "label": "Zion Canyon walks: Emerald Pools and Sinawava",
+                "stops": [
+                  {
+                    "name": "Lower Emerald Pool Trail",
+                    "timeWindow": "Morning",
+                    "duration": 120,
+                    "note": "Take the rough paved trail through pinyon-juniper woodland to the Lower Emerald Pool and any seasonal waterfalls; do not enter the water.",
+                    "why": "It gives you a classic Zion canyon hike with a gentle, low-exposure feel to start the trip."
+                  },
+                  {
+                    "name": "Temple of Sinawava",
+                    "timeWindow": "Afternoon",
+                    "duration": 90,
+                    "note": "Spend time walking and taking in the canyon setting; check access conditions before heading out.",
+                    "why": "This adds a second, distinct canyon experience without moving onto exposed terrain."
+                  }
+                ]
+              },
+              {
+                "dayNumber": 2,
+                "label": "Pa'rus riverside views and Lava Point",
+                "stops": [
+                  {
+                    "name": "Pa'rus - Diversion Dam",
+                    "timeWindow": "Morning",
+                    "duration": 90,
+                    "note": "Walk at an easy pace and pause for the river-and-canyon views along the way.",
+                    "why": "It is an easy, low-exposure walk that gives the second day a relaxed hiking anchor."
+                  },
+                  {
+                    "name": "Lava Point Overlook",
+                    "timeWindow": "Late afternoon",
+                    "duration": 60,
+                    "note": "Make this your scenic-drive-oriented afternoon destination and allow time to take in the wide overlook views. It can also work near sunset; check access conditions before leaving the main canyon.",
+                    "why": "The overlook supplies the expansive scenery you want while retaining a confirmed low-exposure setting."
+                  }
+                ]
+              }
+            ],
+            "intro": "This two-day Zion plan keeps the hikes easy and low-exposure, pairing canyon walks with broad scenic overlooks rather than exposed routes. The first day stays in Zion Canyon; the second combines an easy riverside outing with a scenic-drive-oriented overlook.",
+            "narrativeSections": [
+              {
+                "placement": "after_plan",
+                "heading": "Why this sequence works",
+                "markdown": "Start with the canyon’s close-up scenery while your legs are fresh, then save the broad overlook for the second afternoon. Every selected hike or viewpoint has a low-exposure designation, so the plan avoids turning the scenic portions of Zion into a nerve-testing experience."
+              }
+            ]
+          },
+          "canonicalPlan": {
+            "days": [
+              {
+                "dayNumber": 1,
+                "label": "Zion Canyon walks: Emerald Pools and Sinawava",
+                "stops": [
+                  {
+                    "name": "Lower Emerald Pool Trail",
+                    "timeWindow": "Morning",
+                    "duration": 120,
+                    "note": "Take the rough paved trail through pinyon-juniper woodland to the Lower Emerald Pool and any seasonal waterfalls; do not enter the water.",
+                    "why": "It gives you a classic Zion canyon hike with a gentle, low-exposure feel to start the trip."
+                  },
+                  {
+                    "name": "Temple of Sinawava",
+                    "timeWindow": "Afternoon",
+                    "duration": 90,
+                    "note": "Spend time walking and taking in the canyon setting; check access conditions before heading out.",
+                    "why": "This adds a second, distinct canyon experience without moving onto exposed terrain."
+                  }
+                ]
+              },
+              {
+                "dayNumber": 2,
+                "label": "Pa'rus riverside views and Lava Point",
+                "stops": [
+                  {
+                    "name": "Pa'rus - Diversion Dam",
+                    "timeWindow": "Morning",
+                    "duration": 90,
+                    "note": "Walk at an easy pace and pause for the river-and-canyon views along the way.",
+                    "why": "It is an easy, low-exposure walk that gives the second day a relaxed hiking anchor."
+                  },
+                  {
+                    "name": "Lava Point Overlook",
+                    "timeWindow": "Late afternoon",
+                    "duration": 60,
+                    "note": "Make this your scenic-drive-oriented afternoon destination and allow time to take in the wide overlook views. It can also work near sunset; check access conditions before leaving the main canyon.",
+                    "why": "The overlook supplies the expansive scenery you want while retaining a confirmed low-exposure setting."
+                  }
+                ]
+              }
+            ],
+            "intro": "This two-day Zion plan keeps the hikes easy and low-exposure, pairing canyon walks with broad scenic overlooks rather than exposed routes. The first day stays in Zion Canyon; the second combines an easy riverside outing with a scenic-drive-oriented overlook.",
+            "narrativeSections": [
+              {
+                "placement": "after_plan",
+                "heading": "Why this sequence works",
+                "markdown": "Start with the canyon’s close-up scenery while your legs are fresh, then save the broad overlook for the second afternoon. Every selected hike or viewpoint has a low-exposure designation, so the plan avoids turning the scenic portions of Zion into a nerve-testing experience."
+              }
+            ]
+          },
+          "travelLogistics": null,
+          "responseArtifacts": null,
+          "intent": {
+            "primaryIntent": "simple_itinerary",
+            "travelerJob": "day_by_day_itinerary",
+            "verticals": [
+              "activities",
+              "itinerary"
+            ],
+            "depth": "planning",
+            "freshness": "current",
+            "confidence": 0.97
+          },
+          "presentation": {
+            "schemaVersion": 1,
+            "presentationKind": "itinerary",
+            "refinement": {
+              "isRefinement": false,
+              "changes": [],
+              "changedDayNumbers": []
+            },
+            "primaryArtifact": {
+              "kind": "itinerary",
+              "source": "canonicalPlan"
+            },
+            "supportingModules": [],
+            "prosePolicy": "full",
+            "ending": {
+              "caveat": null,
+              "beforeYouGo": null,
+              "followups": []
+            }
+          },
+          "source": "live-envelope",
+          "liveData": {
+            "nps": true,
+            "web": false
+          },
+          "awaitingRecapture": false,
+          "questionUpdated": false,
+          "parkName": "Zion National Park"
+        }
+      ]
+    }
+  ]
+}

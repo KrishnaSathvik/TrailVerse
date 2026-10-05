@@ -4,7 +4,7 @@ import Spinner from '../common/Spinner';
 import weatherService from '../../services/weatherService.ts';
 import { logWeatherWidgetUsage } from '../../utils/analytics';
 
-const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
+const WeatherWidget = ({ parkCode, latitude, longitude, parkName: _parkName }) => {
   const [weatherData, setWeatherData] = useState(null);
   const [forecastData, setForecastData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
 
   useEffect(() => {
     const fetchWeatherData = async () => {
-      if (!latitude || !longitude) {
+      if (!parkCode || !latitude || !longitude) {
         setLoading(false);
         return;
       }
@@ -24,11 +24,7 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
         setLoading(true);
         setError(null);
 
-        // Fetch current weather and forecast in parallel
-        const [currentWeather, forecast] = await Promise.all([
-          weatherService.getWeather(latitude, longitude),
-          weatherService.getForecast(latitude, longitude)
-        ]);
+        const { current: currentWeather, forecast } = await weatherService.getParkWeather(parkCode);
 
         setWeatherData(currentWeather);
         setForecastData(forecast);
@@ -61,7 +57,7 @@ const WeatherWidget = ({ latitude, longitude, parkName: _parkName }) => {
     };
 
     fetchWeatherData();
-  }, [latitude, longitude]);
+  }, [parkCode, latitude, longitude]);
 
   // Process weather data for display
   const getDisplayWeather = () => {

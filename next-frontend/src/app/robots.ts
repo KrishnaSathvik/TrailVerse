@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
+    rules: [{
       userAgent: '*',
       allow: '/',
       disallow: [
@@ -26,7 +26,11 @@ export default function robots(): MetadataRoute.Robots {
         '/plan-ai/shared/',
         '/plan-ai/guest/',
       ],
-    },
+    }, {
+      // Supplement the targeted Vercel Firewall block for excessive crawling.
+      userAgent: 'meta-externalagent',
+      disallow: '/',
+    }],
     sitemap: 'https://www.nationalparksexplorerusa.com/sitemap.xml',
   };
 }

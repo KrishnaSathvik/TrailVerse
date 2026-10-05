@@ -9,7 +9,9 @@ import Header from '../common/Header';
 import usePlanWorkspace from '../../hooks/usePlanWorkspace';
 import ItineraryMapView, { DAY_COLORS } from './ItineraryMapView';
 import DayCardList from './DayCardList';
+import { buildTripMapModel } from '@/lib/itineraryMapStops';
 import AddPlaceInput from '../maps/AddPlaceInput';
+import { logPdfExport } from '@/utils/analytics';
 
 function buildTripMapsUrl(dayList) {
   const stops = (dayList || []).flatMap((day) => day?.stops || [])
@@ -38,6 +40,9 @@ export default function PlanWorkspace({ tripId }) {
     removeStopById, moveStopBetweenDays, addStopFromMap,
   } = usePlanWorkspace(tripId);
 
+  const canonicalMap = days.some(day => day.stops?.some(stop => stop.location));
+  const mapDays = canonicalMap ? buildTripMapModel({ days }).days : days;
+
   // ── Unified day selection — default to first day ──
   const [activeDayId, setActiveDayId] = useState(null);
 
@@ -61,7 +66,7 @@ export default function PlanWorkspace({ tripId }) {
 
   // Mobile responsiveness
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState('map');
+  const [activeTab, setActiveTab] = useState('list');
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -145,6 +150,7 @@ export default function PlanWorkspace({ tripId }) {
         formData: trip?.formData || {},
         plan: { ...(trip?.plan || {}), days },
       });
+      logPdfExport({ tripId, parkCode: trip?.parkCode || null });
       showToast('Trip plan exported as PDF!', 'success');
     } catch (err) {
       console.error('PDF export error:', err);
@@ -361,7 +367,8 @@ export default function PlanWorkspace({ tripId }) {
             >
               {hasStops ? (
                 <ItineraryMapView
-                  days={days}
+                  days={mapDays}
+                  pathMode={canonicalMap ? 'abstract-edges' : 'directions'}
                   activeDayId={activeDayId || 'all'}
                   parkCenter={parkCenter}
                   selectedStopId={selectedStopId}

@@ -1,5 +1,5 @@
 const NodeCache = require('node-cache');
-const npsService = require('./npsService');
+const { getNpsService } = require('./npsService');
 const gtfsCatalogService = require('./gtfsCatalogService');
 
 const INDEX_CACHE_TTL_SEC = 24 * 60 * 60; // 24h — counts mirror slow-changing NPS catalog data
@@ -57,20 +57,20 @@ async function buildExploreIndex(parkCode) {
     webcams,
     transitFeedCount,
   ] = await Promise.all([
-    safeArrayCount(() => npsService.getParkActivities(code)),
-    safeArrayCount(() => npsService.getParkPlaces(code)),
-    safeArrayCount(() => npsService.getParkTours(code)),
-    safeArrayCount(() => npsService.getParkVisitorCenters(code)),
-    safeArrayCount(() => npsService.getParkCampgrounds(code)),
-    safeArrayCount(() => npsService.getParkParkingLots(code)),
-    safeArrayCount(() => npsService.getParkAmenities(code)),
+    safeArrayCount(() => getNpsService().getParkActivities(code)),
+    safeArrayCount(() => getNpsService().getParkPlaces(code)),
+    safeArrayCount(() => getNpsService().getParkTours(code)),
+    safeArrayCount(() => getNpsService().getParkVisitorCenters(code)),
+    safeArrayCount(() => getNpsService().getParkCampgrounds(code)),
+    safeArrayCount(() => getNpsService().getParkParkingLots(code)),
+    safeArrayCount(() => getNpsService().getParkAmenities(code)),
     Promise.resolve().then(() => {
       const { getBrochureCountForIndex } = require('../controllers/parkController');
       return getBrochureCountForIndex(code);
     }),
-    safeArrayCount(() => npsService.getParkGalleryPhotos(code)),
-    safeArrayCount(() => npsService.getParkVideos(code)),
-    safeArrayCount(() => npsService.getParkWebcams(code)),
+    safeArrayCount(() => getNpsService().getParkGalleryPhotos(code)),
+    safeArrayCount(() => getNpsService().getParkVideos(code)),
+    safeArrayCount(() => getNpsService().getParkWebcams(code)),
     gtfsCatalogService
       .getFeedsForPark(code)
       .then(({ feeds }) => (Array.isArray(feeds) ? feeds.length : 0))

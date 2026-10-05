@@ -16,10 +16,12 @@ describe('astro facts pipeline', () => {
   });
 
   test('fetchAstroFacts returns waning gibbous for July 1 2026 window', () => {
+    // Explicit year — relative "July first week" rolls to next July after July
+    // of the current year (correct product behavior; not a moon-calc bug).
     const text = fetchAstroFacts({
       lat: 39.5896,
       lon: -120.3674,
-      userMessage: 'astrophotography in Sierraville, CA? July first week',
+      userMessage: 'astrophotography in Sierraville, CA? July first week 2026',
       locationName: 'Sierraville, CA',
     });
     expect(text).toMatch(/Waning Gibbous/);

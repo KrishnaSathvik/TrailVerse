@@ -1,0 +1,326 @@
+{
+  "slug": "rushmore",
+  "source": "artifacts/trailie-gate3-constructor-2026-08-24/conversation-C/C1-rushmore-black-hills-two-days",
+  "constraints": {
+    "pace": "relaxed",
+    "avoidExposure": null,
+    "fitness": null,
+    "interests": [
+      "scenic-drives"
+    ],
+    "walkingTolerance": null,
+    "wheelchair": null,
+    "stroller": null,
+    "avoidStairs": null,
+    "requiresFrequentBreaks": null,
+    "mobilityRaw": {
+      "maxWalkMilesPerSegment": null,
+      "walkingTolerance": null,
+      "requiresFrequentBreaks": null,
+      "wheelchair": null,
+      "stroller": null,
+      "avoidStairs": null
+    },
+    "durationDays": 2,
+    "season": null,
+    "visitWindow": {
+      "startDate": null,
+      "endDate": null,
+      "durationDays": 2
+    },
+    "lodging": {
+      "type": null,
+      "stayPreference": null,
+      "baseTown": null,
+      "booked": null
+    },
+    "departureCity": null,
+    "destination": {
+      "parkCode": "moru",
+      "parkName": null,
+      "region": null,
+      "state": null
+    }
+  },
+  "terminalReason": null,
+  "attemptLadder": [
+    {
+      "attempt": 1,
+      "model": "gpt-5.6-terra",
+      "validationStatus": "pass",
+      "validationStage": null,
+      "reasonCodes": [],
+      "latencyMs": 18761,
+      "costUsd": 0.046141875
+    }
+  ],
+  "canonicalPlan": {
+    "intro": "For a relaxed two-day visit, I’d make Mount Rushmore the fixed centerpiece on the first day, then use the second for the memorial’s interpretive side and an unhurried Black Hills scenery day rather than trying to squeeze in a long list of distant stops. The limitation is that I can’t responsibly name or sequence specific Black Hills drives or highlights from the details I have, so I’ve left that portion flexible instead of pretending a route is verified. Mount Rushmore itself does not require a reservation, and the grounds are open daily when weather permits. Start each day with the current-conditions check; South Dakota road information is available through 511, and the Sculptor’s Studio can close temporarily during high heat.",
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": "Pacing note",
+        "markdown": "If you want the second day to include a particular Black Hills route or attraction, tell me your lodging town or the places you most want to see and I’ll turn the flexible scenery block into a geographically coherent day. As written, this deliberately avoids overcommitting you to unverified driving and access details."
+      }
+    ],
+    "days": [
+      {
+        "id": "day-1-mount-rushmore-highlights",
+        "dayNumber": 1,
+        "label": "Mount Rushmore’s main highlights",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "day1-conditions",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Mount Rushmore Information Center",
+            "note": "Begin with orientation and a same-day check on weather and road conditions before settling into the memorial. The center opens at 8:00 AM daily, except December 25.",
+            "parkCode": "moru",
+            "parkName": "Mount Rushmore National Memorial",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 30,
+            "difficulty": "easy",
+            "why": "A calm start that helps you decide how much walking and outdoor time feels right.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "day1-presidential",
+            "order": 2,
+            "type": "trail",
+            "name": "Presidential Trail",
+            "note": "Make this the day’s outdoor anchor for a closer memorial experience, moving at an unhurried pace and turning around whenever it feels like enough. I couldn’t verify the trail’s current status, distance, or difficulty from the information here, so confirm conditions with park staff before setting out.",
+            "parkCode": "moru",
+            "parkName": "Mount Rushmore National Memorial",
+            "startTime": "",
+            "timeWindow": "Late morning",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 90,
+            "difficulty": null,
+            "why": "It is the named walking experience at the memorial and gives the first day a purpose beyond a quick photograph.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "day1-memorial-viewing",
+            "order": 3,
+            "type": "landmark",
+            "name": "Mount Rushmore Memorial grounds",
+            "note": "After a relaxed lunch break, spend time simply taking in the sculpture and the grounds rather than adding another demanding outing. This works well as the day’s low-pressure scenic finish.",
+            "parkCode": "moru",
+            "parkName": "Mount Rushmore National Memorial",
+            "startTime": "",
+            "timeWindow": "Early afternoon",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 75,
+            "difficulty": null,
+            "why": "Keeps the first day centered on the signature landmark without rushing it.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "moru"
+        ]
+      },
+      {
+        "id": "day-2-black-hills-flexible-scenery",
+        "dayNumber": 2,
+        "label": "Interpretation and flexible Black Hills scenery",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "day2-borglum",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Lincoln Borglum Visitor Center",
+            "note": "Use the film and museum exhibits for the story behind the carving, with a relaxed start rather than an early long drive. It opens at 8:00 AM daily, except December 25.",
+            "parkCode": "moru",
+            "parkName": "Mount Rushmore National Memorial",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 75,
+            "difficulty": "easy",
+            "why": "A distinct experience from the first day’s outdoor focus.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "day2-studio",
+            "order": 2,
+            "type": "historic",
+            "name": "Sculptor’s Studio",
+            "note": "Visit the studio as the day’s main interpretive stop if it is operating. Ask park staff on arrival: it may close temporarily during periods of high heat.",
+            "parkCode": "moru",
+            "parkName": "Mount Rushmore National Memorial",
+            "startTime": "",
+            "timeWindow": "Late morning",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 45,
+            "difficulty": null,
+            "why": "Adds the human and artistic side of Mount Rushmore without making the day strenuous.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "day2-black-hills-scenery",
+            "order": 3,
+            "type": "scenic_drive",
+            "name": "Black Hills scenery drive",
+            "note": "Reserve the afternoon for a leisurely drive through the Black Hills, choosing the actual route only after checking 511 and local conditions. I have not named a route here because I could not verify road-specific details from the information available.",
+            "parkCode": null,
+            "parkName": null,
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "physicalDifficulty": null,
+            "exposureLevel": null,
+            "duration": 180,
+            "difficulty": null,
+            "why": "Preserves the scenic-drive focus and the relaxed pace without inventing a route, road time, or access conditions.",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "moru"
+        ]
+      }
+    ],
+    "alternatives": []
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "modelTier": "gpt-5.6-terra",
+      "rawPlan": {
+        "intro": "For a relaxed two-day visit, I’d make Mount Rushmore the fixed centerpiece on the first day, then use the second for the memorial’s interpretive side and an unhurried Black Hills scenery day rather than trying to squeeze in a long list of distant stops. The limitation is that I can’t responsibly name or sequence specific Black Hills drives or highlights from the details I have, so I’ve left that portion flexible instead of pretending a route is verified. Mount Rushmore itself does not require a reservation, and the grounds are open daily when weather permits. Start each day with the current-co",
+        "narrativeSections": [
+          {
+            "placement": "after_plan",
+            "heading": "Pacing note",
+            "markdown": "If you want the second day to include a particular Black Hills route or attraction, tell me your lodging town or the places you most want to see and I’ll turn the flexible scenery block into a geographically coherent day. As written, this deliberately avoids overcommitting you to unverified driving and access details."
+          }
+        ],
+        "days": [
+          {
+            "day": 1,
+            "label": "Mount Rushmore’s main highlights",
+            "stops": [
+              {
+                "name": "Mount Rushmore Information Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 30,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Begin with orientation and a same-day check on weather and road conditions before settling into the memorial. The center opens at 8:00 AM daily, except December 25.",
+                "why": "A calm start that helps you decide how much walking and outdoor time feels right.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Presidential Trail",
+                "type": "trail",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning",
+                "duration": 90,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Make this the day’s outdoor anchor for a closer memorial experience, moving at an unhurried pace and turning around whenever it feels like enough. I couldn’t verify the trail’s current status, distance, or difficulty from the information he",
+                "why": "It is the named walking experience at the memorial and gives the first day a purpose beyond a quick photograph.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Mount Rushmore Memorial grounds",
+                "type": "landmark",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 75,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "After a relaxed lunch break, spend time simply taking in the sculpture and the grounds rather than adding another demanding outing. This works well as the day’s low-pressure scenic finish.",
+                "why": "Keeps the first day centered on the signature landmark without rushing it.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 2,
+            "label": "Interpretation and flexible Black Hills scenery",
+            "stops": [
+              {
+                "name": "Lincoln Borglum Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 75,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Use the film and museum exhibits for the story behind the carving, with a relaxed start rather than an early long drive. It opens at 8:00 AM daily, except December 25.",
+                "why": "A distinct experience from the first day’s outdoor focus.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Sculptor’s Studio",
+                "type": "historic",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning",
+                "duration": 45,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Visit the studio as the day’s main interpretive stop if it is operating. Ask park staff on arrival: it may close temporarily during periods of high heat.",
+                "why": "Adds the human and artistic side of Mount Rushmore without making the day strenuous.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Black Hills scenery drive",
+                "type": "scenic_drive",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 180,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Reserve the afternoon for a leisurely drive through the Black Hills, choosing the actual route only after checking 511 and local conditions. I have not named a route here because I could not verify road-specific details from the information",
+                "why": "Preserves the scenic-drive focus and the relaxed pace without inventing a route, road time, or access conditions.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          }
+        ],
+        "alternatives": [],
+        "backupOptions": [],
+        "contingency": [],
+        "fallback": []
+      },
+      "reasonCodes": [],
+      "dayDiagnostics": []
+    }
+  ]
+}

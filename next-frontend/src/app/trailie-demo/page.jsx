@@ -26,8 +26,8 @@ export default function TrailieDemoPage() {
               className="mx-auto max-w-3xl text-lg leading-relaxed text-pretty sm:text-xl"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Watch Trailie answer real outdoor trip questions — national parks, state parks outside NPS, drive times,
-              comparisons, and multi-day itineraries — then try your own plan free.
+              Watch Trailie answer real outdoor trip questions — a Valley of Fire weekend, Acadia vs Shenandoah,
+              Yellowstone, Rocky Mountain, and an easy Zion trip — then try your own plan free.
             </p>
           </div>
         </section>

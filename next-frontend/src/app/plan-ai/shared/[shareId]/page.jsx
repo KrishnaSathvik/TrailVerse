@@ -53,7 +53,7 @@ export async function generateMetadata({ params }) {
     description: `Shared ${trip.parkName || 'national park'} trip plan created with Trailie on TrailVerse.`,
     openGraph: {
       title,
-      description: `A ${trip.parkName || 'national park'} trip plan made with TrailVerse AI`,
+      description: `A ${trip.parkName || 'national park'} trip planned with Trailie`,
       url: `https://www.nationalparksexplorerusa.com/plan-ai/shared/${shareId}`,
       siteName: 'TrailVerse',
       type: 'article',
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }) {
     twitter: {
       card: 'summary_large_image',
       title,
-      description: `A ${trip.parkName || 'national park'} trip plan made with TrailVerse AI`,
+      description: `A ${trip.parkName || 'national park'} trip planned with Trailie`,
       images: [ogImage],
     },
     robots: privatePageRobots,

@@ -1,0 +1,1055 @@
+{
+  "source": {
+    "capture": "trailie-core-final-resume-2.jsonl",
+    "row": 12
+  },
+  "prompt": "The canyon road is closed. What should we do instead?",
+  "response": "I couldn't apply that change to your saved itinerary, so your current plan has not been changed. Please try that change again.",
+  "attempts": [
+    {
+      "stage": "itinerary_completeness",
+      "reasonCodes": [
+        "insufficient_day_coverage",
+        "duplicate_base_experience"
+      ]
+    },
+    {
+      "stage": "stop_identity",
+      "reasonCodes": [
+        "stop_identity_unresolved"
+      ]
+    },
+    {
+      "stage": "itinerary_completeness",
+      "reasonCodes": [
+        "insufficient_day_coverage"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "response": "If by \u201ccanyon road\u201d you mean Zion Canyon Scenic Drive, don\u2019t try to reach the canyon stops around a closure. I\u2019ve shifted the three days toward Pa\u2019rus and the visitor-center area, with stargazing only if nighttime access is allowed. It\u2019s a much thinner, more repetitive trip until we know what\u2019s closed. Which road is closed, and on what dates? The NPS notice I have describes Scenic Drive access controls when parking fills, not a blanket closure; a separate notice describes possible nighttime Zion\u2013Mt. Carmel Tunnel closures (https://www.nps.gov/zion/index.htm). Check the current road status with NPS before setting out.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 1,
+          "day": {
+            "id": "d1",
+            "dayNumber": 1,
+            "label": "An easy Pa\u2019rus outing near the south entrance",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "parus",
+                "order": 1,
+                "type": "walk",
+                "name": "Pa'rus - Footprints in Time",
+                "note": "Take a relaxed out-and-back and turn around whenever you like. Before setting out, confirm that its access point is reachable without using the closed road.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 60,
+                "latitude": 37.20652976664211,
+                "longitude": -112.97939658164978,
+                "why": "A flexible outdoor outing is a better first choice than committing to stops along the reported closure.",
+                "alternatives": [
+                  {
+                    "name": "Zion Canyon Visitor Center",
+                    "note": "If the Pa\u2019rus access point is affected, visit the outdoor exhibits if the south-entrance area is accessible."
+                  }
+                ]
+              },
+              {
+                "id": "visitorcenter",
+                "order": 2,
+                "type": "visitor_center",
+                "name": "Zion Canyon Visitor Center",
+                "note": "Browse the outdoor exhibits and ask about the exact road closure and which places can be reached without crossing it. Confirm the south-entrance area is accessible first.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 40,
+                "physicalDifficulty": "easy",
+                "difficulty": "easy",
+                "exposureLevel": "low",
+                "latitude": 37.20007883740497,
+                "longitude": -112.98688895601737,
+                "why": "It gives you a practical way to check the rest of your plans while keeping the first day relaxed."
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "parus",
+                "targetStopId": "visitorcenter",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 2,
+          "day": {
+            "id": "d2",
+            "dayNumber": 2,
+            "label": "A flexible south-entrance day",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d2-parus",
+                "order": 1,
+                "type": "walk",
+                "name": "Pa'rus - Footprints in Time",
+                "note": "If access is unaffected by the closure, take another easygoing out-and-back at your own pace; there is no need to complete a set distance.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Late morning",
+                "duration": 75,
+                "latitude": 37.20652976664211,
+                "longitude": -112.97939658164978,
+                "why": "Revisiting a flexible walk is preferable to planning a canyon-road stop that may be unreachable.",
+                "alternatives": [
+                  {
+                    "name": "Zion Canyon Visitor Center",
+                    "note": "If the walk's access point is affected but the visitor-center area is accessible, spend time at the outdoor exhibits instead."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 3,
+          "day": {
+            "id": "d3",
+            "dayNumber": 3,
+            "label": "Visitor-center views and a Zion night sky",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d3-visitorcenter",
+                "order": 1,
+                "type": "visitor_center",
+                "name": "Zion Canyon Visitor Center",
+                "note": "If the south-entrance area is accessible, spend an unhurried afternoon at the outdoor exhibits and check whether nighttime visitation is permitted where you plan to go.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 45,
+                "physicalDifficulty": "easy",
+                "difficulty": "easy",
+                "exposureLevel": "low",
+                "latitude": 37.20007883740497,
+                "longitude": -112.98688895601737,
+                "why": "This keeps the final daytime outing flexible while road access remains uncertain."
+              },
+              {
+                "id": "stars",
+                "order": 2,
+                "type": "viewpoint",
+                "name": "Stargazing in Zion",
+                "note": "Go only if you can identify a publicly accessible place where nighttime visitation is allowed without using the closed road; bring a light and skip this outing if access cannot be confirmed.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "After dark",
+                "duration": 45,
+                "latitude": 37.2095431601,
+                "longitude": -112.980319726,
+                "why": "A quiet night-sky finish offers something different from another daytime walk without relying on a canyon-road viewpoint.",
+                "alternatives": [
+                  {
+                    "name": "Pa'rus - Footprints in Time",
+                    "note": "If nighttime access is not permitted, use this as a daylight walk instead, provided its access point is reachable."
+                  }
+                ]
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d3-visitorcenter",
+                "targetStopId": "stars",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "response": "I\u2019ve shifted the three days away from the stops along Zion Canyon Scenic Drive. Pa\u2019rus, the south-entrance area, and time in Springdale are the safer starting points; stargazing remains conditional on nighttime access. If the entire canyon road is closed\u2014not just closed to private cars\u2014don\u2019t try to reach Big Bend, Temple of Sinawava, Riverside Walk, or Emerald Pools. This makes the trip quieter and more repetitive than the original canyon plan. Before heading out, check with Zion about the closure\u2019s exact limits and whether the shuttle can still reach any canyon stops.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 1,
+          "day": {
+            "id": "d1",
+            "dayNumber": 1,
+            "label": "Pa\u2019rus walk and south-entrance orientation",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "parus",
+                "order": 1,
+                "type": "walk",
+                "name": "Pa'rus - Footprints in Time",
+                "note": "Make this an unhurried out-and-back walk, turning around when you feel ready. Check whether the trail entrance is accessible under the closure before setting out.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 90,
+                "why": "This gives you a flexible outdoor Zion outing without depending on the canyon-road stops."
+              },
+              {
+                "id": "d1visitorcenter",
+                "order": 2,
+                "type": "visitor_center",
+                "name": "Zion Canyon Visitor Center",
+                "note": "Browse the outdoor exhibits and ask about the precise road closure and shuttle access before planning the rest of the trip.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 50,
+                "physicalDifficulty": "easy",
+                "exposureLevel": "low",
+                "why": "The south-entrance stop pairs naturally with your walk and lets you check whether any canyon outing becomes possible."
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "parus",
+                "targetStopId": "d1visitorcenter",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 2,
+          "day": {
+            "id": "d2",
+            "dayNumber": 2,
+            "label": "A slow Springdale day and Zion after dark",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d2springdale",
+                "order": 1,
+                "type": "walk",
+                "name": "Springdale",
+                "note": "Take a leisurely town walk at your own pace, with plenty of time to pause and eat; this outing does not depend on the canyon road.",
+                "startTime": "",
+                "timeWindow": "Late morning to early afternoon",
+                "duration": 120,
+                "physicalDifficulty": "easy",
+                "why": "Staying close to your base keeps the day workable while canyon access is uncertain."
+              },
+              {
+                "id": "d2stars",
+                "order": 2,
+                "type": "viewpoint",
+                "name": "Stargazing in Zion",
+                "note": "Only go if nighttime entry to your chosen public location is permitted and accessible despite the road closure; bring a light and do not pass barriers.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "After dark",
+                "duration": 60,
+                "why": "The night sky adds a different Zion experience without relying on a daytime canyon-road stop.",
+                "alternatives": [
+                  {
+                    "name": "Springdale",
+                    "note": "If the park location is not accessible after dark, spend the evening in Springdale instead; do not enter a closed road."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 3,
+          "day": {
+            "id": "d3",
+            "dayNumber": 3,
+            "label": "Springdale photography and south-entrance exhibits",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d3springdale",
+                "order": 1,
+                "type": "photography",
+                "name": "Springdale",
+                "note": "Use the morning for a relaxed photo outing around town, choosing public places where you can stop safely.",
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 90,
+                "why": "This is a slower, camera-focused visit rather than another long walk or a drive toward the closure."
+              },
+              {
+                "id": "visitorcenter",
+                "order": 2,
+                "type": "visitor_center",
+                "name": "Zion Canyon Visitor Center",
+                "note": "Spend time with the outdoor exhibits, and check whether the road situation has changed before considering any other park outing.",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 45,
+                "physicalDifficulty": "easy",
+                "exposureLevel": "low",
+                "why": "It offers a low-key stop near the entrance without committing you to a closed canyon road."
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d3springdale",
+                "targetStopId": "visitorcenter",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "response": "I\u2019ve taken the upper-canyon outings out of all three days and kept your Springdale base. If you mean Zion Canyon Scenic Drive, my first choice instead is Pa'rus - Footprints in Time: take an unhurried out-and-back walk and turn around whenever you feel ready, provided the South Entrance and trail access remain open. The museum offers exhibits, a 22-minute film, and outdoor views of the Towers of the Virgin and Bridge Mountain; stargazing gives you a different evening experience.\n\nThese are three much lighter days\u2014not three full sightseeing days. I wouldn\u2019t pad them with repeated walks or send you toward the same closure for another trail. Does the closure stop the park shuttles too, or only private cars? That determines whether we can restore the canyon outings.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 1,
+          "day": {
+            "id": "d1",
+            "dayNumber": 1,
+            "label": "Pa\u2019rus and the South Entrance",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "visitorcenter",
+                "order": 1,
+                "type": "visitor_center",
+                "name": "Zion Canyon Visitor Center",
+                "note": "Browse the outdoor exhibits. Before the walk, confirm whether the closure affects South Entrance pedestrian access and Pa\u2019rus, and whether canyon shuttles are operating.",
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 40,
+                "physicalDifficulty": "easy",
+                "difficulty": "easy",
+                "exposureLevel": "low",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "latitude": 37.20007883740497,
+                "longitude": -112.98688895601737,
+                "why": "This puts the access decision before your outing rather than sending you toward the closed road."
+              },
+              {
+                "id": "parus",
+                "order": 2,
+                "type": "walk",
+                "name": "Pa'rus - Footprints in Time",
+                "note": "Use this outing only if the trail is accessible outside the closure. Take a relaxed out-and-back stroll, with pauses to enjoy the scenery and a turnaround whenever you are ready.",
+                "startTime": "",
+                "timeWindow": "Late morning into early afternoon",
+                "duration": 90,
+                "physicalDifficulty": null,
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "latitude": 37.20652976664211,
+                "longitude": -112.97939658164978,
+                "why": "A flexible walk is a better fit for your relaxed pace than trying to replace the canyon road with a long hike.",
+                "alternatives": [
+                  {
+                    "name": "Zion Human History Museum Patio",
+                    "note": "If Pa\u2019rus access is affected, use the patio for an outdoor scenery break only if museum access remains outside the closure; do not cross a closed area to reach it."
+                  }
+                ]
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "visitorcenter",
+                "targetStopId": "parus",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 2,
+          "day": {
+            "id": "d2",
+            "dayNumber": 2,
+            "label": "Canyon history and museum views",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "museum",
+                "order": 1,
+                "type": "museum",
+                "name": "Human History Museum",
+                "note": "Check museum hours and access from the South Entrance before setting out. Explore the exhibits, watch the 22-minute orientation film, and spend time outside enjoying the Towers of the Virgin and Bridge Mountain. Leave the afternoon free rather than adding another visit to the same scenery.",
+                "startTime": "",
+                "timeWindow": "Late morning into early afternoon",
+                "duration": 120,
+                "physicalDifficulty": "easy",
+                "difficulty": "easy",
+                "exposureLevel": "low",
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "why": "History and outdoor views give this lighter day a different focus from the Pa\u2019rus walk.",
+                "alternatives": [
+                  {
+                    "name": "Zion Human History Museum Patio",
+                    "note": "If the indoor museum is closed but the grounds are accessible, make this an outdoor view stop instead; it is a shorter outing, not a full replacement for the museum visit."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "op": "update_day",
+          "dayNumber": 3,
+          "day": {
+            "id": "d3",
+            "dayNumber": 3,
+            "label": "An unhurried Zion night sky",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "stars",
+                "order": 1,
+                "type": "viewpoint",
+                "name": "Stargazing in Zion",
+                "note": "Keep daytime unscheduled. For the evening, confirm a publicly accessible viewing location outside the road closure where nighttime visitation is allowed. Bring a light and skip the outing if safe, legal access cannot be established.",
+                "startTime": "",
+                "timeWindow": "After dark",
+                "duration": 75,
+                "physicalDifficulty": null,
+                "parkCode": "zion",
+                "parkName": "Zion National Park",
+                "latitude": 37.2095431601,
+                "longitude": -112.980319726,
+                "why": "The night sky offers a genuinely different experience without repeating the first two days, though it leaves this as an evening outing rather than a full sightseeing day."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "priorPlan": {
+    "intro": "Three relaxed days based in Springdale give you time for Zion\u2019s canyon scenery without stacking long hikes. I\u2019d mix short, flexible outings with a museum visit and an evening under the stars; check access and in-park transportation for your dates before setting out.",
+    "days": [
+      {
+        "id": "d1",
+        "dayNumber": 1,
+        "label": "Canyon history and a gentle Pa\u2019rus walk",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "museum",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Human History Museum",
+            "note": "Explore the exhibits and 22-minute orientation film, then enjoy the views of the Towers of the Virgin and Bridge Mountain from outside. Check opening hours for your visit.",
+            "timeWindow": "Morning",
+            "duration": 75,
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "It gives you a sense of the canyon before your first unhurried outdoor outing.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:14fff0f14e9c0ddcb412bafde7200b9eec74e2086ddf599bb3663e46a5f9abf0",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:14fff0f14e9c0ddcb412bafde7200b9eec74e2086ddf599bb3663e46a5f9abf0",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "parus",
+            "order": 2,
+            "type": "hike",
+            "name": "Pa'rus - Footprints in Time",
+            "note": "Take an easygoing out-and-back stroll, turning around whenever you\u2019re ready. Check access before heading over; plan the length of this walk to suit your energy.",
+            "timeWindow": "Afternoon",
+            "duration": 60,
+            "why": "A flexible walk leaves room for a leisurely lunch and a relaxed first day.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:0feee05d5f20b4d12f35182af4e3ad68096b50bd0248bdc1378bbb0a8089655d",
+            "canonicalPlaceName": "Pa'rus - Footprints in Time",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:0feee05d5f20b4d12f35182af4e3ad68096b50bd0248bdc1378bbb0a8089655d",
+            "latitude": 37.20652976664211,
+            "longitude": -112.97939658164978,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "name": "Court of the Patriarchs",
+            "type": "hike",
+            "duration": 30,
+            "note": "Walk the short path to the viewpoint for a clear look at the three towering sandstone peaks known as the Court of the Patriarchs.",
+            "why": "A quick, striking canyon panorama makes time for both scenery and photography without a strenuous climb.",
+            "evidenceEntityId": "nps:park:zion:place:76FE3917-EB2C-4F31-A585-DF2B3DA905B9",
+            "timeWindow": "",
+            "startTime": "",
+            "difficulty": "easy",
+            "exposureLevel": null,
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:855b6634b4e171900a73aa4551d33d8e7ea96b091cbb6128ff6ca84e4d11d92e",
+            "canonicalPlaceName": "Court of the Patriarchs",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:855b6634b4e171900a73aa4551d33d8e7ea96b091cbb6128ff6ca84e4d11d92e",
+            "latitude": 37.237028394,
+            "longitude": -112.960583105,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "name": "Riverside Walk",
+            "type": "hike",
+            "duration": 100,
+            "note": "Follow the paved path beside the Virgin River to the entrance of the Narrows, then return the same way. The path may have some sandy sections.",
+            "why": "The riverside walk brings you between increasingly tall canyon walls while keeping the hike accessible and unhurried.",
+            "evidenceEntityId": "nps:park:zion:thingstodo:823A078C-D324-4648-B910-F15507E67244",
+            "timeWindow": "",
+            "startTime": "",
+            "difficulty": "easy",
+            "exposureLevel": "moderate",
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:c885160a0fa0972414b12d103aa85a8ebe93e083f9d06161666bdaa075ad591b",
+            "canonicalPlaceName": "Riverside Walk",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:c885160a0fa0972414b12d103aa85a8ebe93e083f9d06161666bdaa075ad591b",
+            "latitude": 37.2852131123,
+            "longitude": -112.947693774,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "museum",
+            "targetStopId": "parus",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "d2",
+        "dayNumber": 2,
+        "label": "Big Bend and Temple of Sinawava",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "bigbend",
+            "order": 1,
+            "type": "hike",
+            "name": "Big Bend",
+            "note": "Pause for canyon views rather than treating this as a hiking day. Check access and how to get here on your travel dates.",
+            "timeWindow": "Morning",
+            "duration": 45,
+            "why": "A scenic stop gives you time to take in the landscape without rushing onward.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:143fb2f27a4e801e1db2b90ff1b5d7b141100c5b2cdac78ac47f592db994e2fb",
+            "canonicalPlaceName": "Big Bend",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:143fb2f27a4e801e1db2b90ff1b5d7b141100c5b2cdac78ac47f592db994e2fb",
+            "latitude": 37.27299663,
+            "longitude": -112.946344205,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "temple",
+            "order": 2,
+            "type": "hike",
+            "name": "Temple of Sinawava",
+            "note": "Spend time taking in the setting and keep any walking optional. Confirm access and transportation before committing to the outing.",
+            "timeWindow": "Afternoon",
+            "duration": 75,
+            "why": "It makes a distinct second canyon experience while keeping the day light.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:29cb79bd3a8b7578fb199f55ab7cd1a2112caba109755d031e741d30bce25a00",
+            "canonicalPlaceName": "Temple of Sinawava",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:29cb79bd3a8b7578fb199f55ab7cd1a2112caba109755d031e741d30bce25a00",
+            "latitude": 37.2851874507,
+            "longitude": -112.947408632,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "bigbend",
+            "targetStopId": "temple",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "d3",
+        "dayNumber": 3,
+        "label": "Emerald Pool and a Zion night sky",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "lowerpool",
+            "order": 1,
+            "type": "hike",
+            "name": "Lower Emerald Pool Trail",
+            "note": "If the trail is accessible on your dates, allow an unhurried walk and turn back as needed. Check the current trail status before setting out.",
+            "timeWindow": "Morning",
+            "duration": 90,
+            "why": "This is your main walking outing, with no need to pack another hike into the day.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "moderate",
+            "evidenceRef": "ev:26e004b7d0e79f07721cc632e0dab0ab1d23add45a7c09d570d58038c38bd944",
+            "canonicalPlaceName": "Lower Emerald Pool Trail",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:26e004b7d0e79f07721cc632e0dab0ab1d23add45a7c09d570d58038c38bd944",
+            "latitude": 37.2510388047,
+            "longitude": -112.958668734,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "visitorcenter",
+            "order": 2,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "note": "Browse the outdoor exhibits and ask rangers any remaining questions about canyon access.",
+            "timeWindow": "Afternoon",
+            "duration": 40,
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "It makes a useful low-key afternoon break after your walk.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:7e1fa8f6d978928ae27f4eb493fc81a1104d607c851bc94486fe460a6833021b",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:7e1fa8f6d978928ae27f4eb493fc81a1104d607c851bc94486fe460a6833021b",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "stars",
+            "order": 3,
+            "type": "viewpoint",
+            "name": "Stargazing in Zion",
+            "note": "If you\u2019re up for a late outing, choose a publicly accessible place where nighttime visitation is allowed; confirm access in advance and bring a light.",
+            "timeWindow": "After dark",
+            "duration": 45,
+            "why": "It ends the trip with a different view of Zion, without asking for more daytime mileage.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:155cec41ea4d569b047c30b56171ece7398f436714a6ed7c0d7ab0a617383da7",
+            "canonicalPlaceName": "Stargazing in Zion",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:155cec41ea4d569b047c30b56171ece7398f436714a6ed7c0d7ab0a617383da7",
+            "latitude": 37.2095431601,
+            "longitude": -112.980319726,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "lowerpool",
+            "targetStopId": "visitorcenter",
+            "relationship": "transfer"
+          },
+          {
+            "sourceStopId": "visitorcenter",
+            "targetStopId": "stars",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": null,
+        "markdown": "The longer pauses are intentional: each day has a different focus, with plenty of space for meals and breaks. Your dates and transportation aren\u2019t set yet, so confirm trail access, museum hours, and how you\u2019ll reach the canyon stops before locking in the order."
+      }
+    ],
+    "alternatives": [],
+    "itineraryHash": "f420a349d8f2005ba02b05443014ee44db3109eb96cb21cd65c30d87eab75dee",
+    "feasibilityIssues": []
+  },
+  "acceptedPlan": {
+    "intro": "Three relaxed days based in Springdale give you time for Zion\u2019s canyon scenery without stacking long hikes. I\u2019d mix short, flexible outings with a museum visit and an evening under the stars; check access and in-park transportation for your dates before setting out.",
+    "days": [
+      {
+        "id": "d1",
+        "dayNumber": 1,
+        "label": "Canyon history and a gentle Pa\u2019rus walk",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "museum",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Human History Museum",
+            "note": "Explore the exhibits and 22-minute orientation film, then enjoy the views of the Towers of the Virgin and Bridge Mountain from outside. Check opening hours for your visit.",
+            "timeWindow": "Morning",
+            "duration": 75,
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "It gives you a sense of the canyon before your first unhurried outdoor outing.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:14fff0f14e9c0ddcb412bafde7200b9eec74e2086ddf599bb3663e46a5f9abf0",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:14fff0f14e9c0ddcb412bafde7200b9eec74e2086ddf599bb3663e46a5f9abf0",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "parus",
+            "order": 2,
+            "type": "hike",
+            "name": "Pa'rus - Footprints in Time",
+            "note": "Take an easygoing out-and-back stroll, turning around whenever you\u2019re ready. Check access before heading over; plan the length of this walk to suit your energy.",
+            "timeWindow": "Afternoon",
+            "duration": 60,
+            "why": "A flexible walk leaves room for a leisurely lunch and a relaxed first day.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:0feee05d5f20b4d12f35182af4e3ad68096b50bd0248bdc1378bbb0a8089655d",
+            "canonicalPlaceName": "Pa'rus - Footprints in Time",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:0feee05d5f20b4d12f35182af4e3ad68096b50bd0248bdc1378bbb0a8089655d",
+            "latitude": 37.20652976664211,
+            "longitude": -112.97939658164978,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "name": "Court of the Patriarchs",
+            "type": "hike",
+            "duration": 30,
+            "note": "Walk the short path to the viewpoint for a clear look at the three towering sandstone peaks known as the Court of the Patriarchs.",
+            "why": "A quick, striking canyon panorama makes time for both scenery and photography without a strenuous climb.",
+            "evidenceEntityId": "nps:park:zion:place:76FE3917-EB2C-4F31-A585-DF2B3DA905B9",
+            "timeWindow": "",
+            "startTime": "",
+            "difficulty": "easy",
+            "exposureLevel": null,
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:855b6634b4e171900a73aa4551d33d8e7ea96b091cbb6128ff6ca84e4d11d92e",
+            "canonicalPlaceName": "Court of the Patriarchs",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:855b6634b4e171900a73aa4551d33d8e7ea96b091cbb6128ff6ca84e4d11d92e",
+            "latitude": 37.237028394,
+            "longitude": -112.960583105,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "name": "Riverside Walk",
+            "type": "hike",
+            "duration": 100,
+            "note": "Follow the paved path beside the Virgin River to the entrance of the Narrows, then return the same way. The path may have some sandy sections.",
+            "why": "The riverside walk brings you between increasingly tall canyon walls while keeping the hike accessible and unhurried.",
+            "evidenceEntityId": "nps:park:zion:thingstodo:823A078C-D324-4648-B910-F15507E67244",
+            "timeWindow": "",
+            "startTime": "",
+            "difficulty": "easy",
+            "exposureLevel": "moderate",
+            "alternatives": [],
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:c885160a0fa0972414b12d103aa85a8ebe93e083f9d06161666bdaa075ad591b",
+            "canonicalPlaceName": "Riverside Walk",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:c885160a0fa0972414b12d103aa85a8ebe93e083f9d06161666bdaa075ad591b",
+            "latitude": 37.2852131123,
+            "longitude": -112.947693774,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "museum",
+            "targetStopId": "parus",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "d2",
+        "dayNumber": 2,
+        "label": "Big Bend and Temple of Sinawava",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "bigbend",
+            "order": 1,
+            "type": "hike",
+            "name": "Big Bend",
+            "note": "Pause for canyon views rather than treating this as a hiking day. Check access and how to get here on your travel dates.",
+            "timeWindow": "Morning",
+            "duration": 45,
+            "why": "A scenic stop gives you time to take in the landscape without rushing onward.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:143fb2f27a4e801e1db2b90ff1b5d7b141100c5b2cdac78ac47f592db994e2fb",
+            "canonicalPlaceName": "Big Bend",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:143fb2f27a4e801e1db2b90ff1b5d7b141100c5b2cdac78ac47f592db994e2fb",
+            "latitude": 37.27299663,
+            "longitude": -112.946344205,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "temple",
+            "order": 2,
+            "type": "hike",
+            "name": "Temple of Sinawava",
+            "note": "Spend time taking in the setting and keep any walking optional. Confirm access and transportation before committing to the outing.",
+            "timeWindow": "Afternoon",
+            "duration": 75,
+            "why": "It makes a distinct second canyon experience while keeping the day light.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "low",
+            "evidenceRef": "ev:29cb79bd3a8b7578fb199f55ab7cd1a2112caba109755d031e741d30bce25a00",
+            "canonicalPlaceName": "Temple of Sinawava",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:29cb79bd3a8b7578fb199f55ab7cd1a2112caba109755d031e741d30bce25a00",
+            "latitude": 37.2851874507,
+            "longitude": -112.947408632,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "bigbend",
+            "targetStopId": "temple",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "d3",
+        "dayNumber": 3,
+        "label": "Emerald Pool and a Zion night sky",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "lowerpool",
+            "order": 1,
+            "type": "hike",
+            "name": "Lower Emerald Pool Trail",
+            "note": "If the trail is accessible on your dates, allow an unhurried walk and turn back as needed. Check the current trail status before setting out.",
+            "timeWindow": "Morning",
+            "duration": 90,
+            "why": "This is your main walking outing, with no need to pack another hike into the day.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "exposureLevel": "moderate",
+            "evidenceRef": "ev:26e004b7d0e79f07721cc632e0dab0ab1d23add45a7c09d570d58038c38bd944",
+            "canonicalPlaceName": "Lower Emerald Pool Trail",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:26e004b7d0e79f07721cc632e0dab0ab1d23add45a7c09d570d58038c38bd944",
+            "latitude": 37.2510388047,
+            "longitude": -112.958668734,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "visitorcenter",
+            "order": 2,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "note": "Browse the outdoor exhibits and ask rangers any remaining questions about canyon access.",
+            "timeWindow": "Afternoon",
+            "duration": 40,
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "It makes a useful low-key afternoon break after your walk.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:7e1fa8f6d978928ae27f4eb493fc81a1104d607c851bc94486fe460a6833021b",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:7e1fa8f6d978928ae27f4eb493fc81a1104d607c851bc94486fe460a6833021b",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "stars",
+            "order": 3,
+            "type": "viewpoint",
+            "name": "Stargazing in Zion",
+            "note": "If you\u2019re up for a late outing, choose a publicly accessible place where nighttime visitation is allowed; confirm access in advance and bring a light.",
+            "timeWindow": "After dark",
+            "duration": 45,
+            "why": "It ends the trip with a different view of Zion, without asking for more daytime mileage.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion National Park",
+            "evidenceRef": "ev:155cec41ea4d569b047c30b56171ece7398f436714a6ed7c0d7ab0a617383da7",
+            "canonicalPlaceName": "Stargazing in Zion",
+            "resolutionStatus": "resolved",
+            "parkIdentityEvidenceId": "ev:155cec41ea4d569b047c30b56171ece7398f436714a6ed7c0d7ab0a617383da7",
+            "latitude": 37.2095431601,
+            "longitude": -112.980319726,
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "lowerpool",
+            "targetStopId": "visitorcenter",
+            "relationship": "transfer"
+          },
+          {
+            "sourceStopId": "visitorcenter",
+            "targetStopId": "stars",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": null,
+        "markdown": "The longer pauses are intentional: each day has a different focus, with plenty of space for meals and breaks. Your dates and transportation aren\u2019t set yet, so confirm trail access, museum hours, and how you\u2019ll reach the canyon stops before locking in the order."
+      }
+    ],
+    "alternatives": [],
+    "itineraryHash": "f420a349d8f2005ba02b05443014ee44db3109eb96cb21cd65c30d87eab75dee",
+    "feasibilityIssues": []
+  },
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [],
+        "fitness": null,
+        "pace": "relaxed",
+        "riskTolerance": null,
+        "avoidExposure": null,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": null,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": null,
+        "photographyTiming": null,
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  }
+}

@@ -9,7 +9,7 @@ const SEND_SIZE = 54;
 export default function DemoChatComposer({
   value = '',
   isTyping = false,
-  placeholder = 'Ask me about your trip...',
+  placeholder = 'Where are you thinking of going?',
 }) {
   const canSend = Boolean(value.trim());
 

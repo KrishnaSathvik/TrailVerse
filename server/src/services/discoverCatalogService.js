@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const npsService = require('./npsService');
+const { getNpsService } = require('./npsService');
 const BlogPost = require('../models/BlogPost');
 const {
   slugify,
@@ -144,7 +144,7 @@ function buildTopicParkIndexFromBulk(topics, thingsToDo) {
 }
 
 async function loadThingsToDoCatalog() {
-  return npsService.getAllActivities(5000);
+  return getNpsService().getAllActivities(5000);
 }
 
 async function saveParkIndexSnapshot(key, index, expectedItemCount) {
@@ -152,12 +152,12 @@ async function saveParkIndexSnapshot(key, index, expectedItemCount) {
     console.warn(`discover: skipping unhealthy park index save for ${key}`);
     return false;
   }
-  await npsService._saveSnapshot(key, index);
+  await getNpsService()._saveSnapshot(key, index);
   return true;
 }
 
 async function loadStaleParkIndex(key) {
-  const snapshot = await npsService._loadSnapshot(key, Infinity);
+  const snapshot = await getNpsService()._loadSnapshot(key, Infinity);
   const data = snapshot?.data;
   if (!data || typeof data !== 'object') return null;
   const hasData = Object.values(data).some((codes) => Array.isArray(codes) && codes.length > 0);
@@ -170,7 +170,7 @@ async function buildActivityParkIndexViaApi(activities) {
     const id = activity.id;
     if (!id) return;
     index[id] = await fetchParkCodesForTaxonomyItem(
-      (activityId) => npsService.getParksForActivityId(activityId),
+      (activityId) => getNpsService().getParksForActivityId(activityId),
       activity
     );
   });
@@ -183,7 +183,7 @@ async function buildTopicParkIndexViaApi(topics) {
     const id = topic.id;
     if (!id) return;
     index[id] = await fetchParkCodesForTaxonomyItem(
-      (topicId) => npsService.getParksForTopicId(topicId),
+      (topicId) => getNpsService().getParksForTopicId(topicId),
       topic
     );
   });
@@ -192,13 +192,13 @@ async function buildTopicParkIndexViaApi(topics) {
 
 async function buildActivityParkIndex(activities, { force = false } = {}) {
   if (!force) {
-    const snapshot = await npsService._loadSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
+    const snapshot = await getNpsService()._loadSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
     if (snapshot?.data && isParkIndexHealthy(snapshot.data, activities.length)) {
       return snapshot.data;
     }
     if (snapshot?.data && !isParkIndexHealthy(snapshot.data, activities.length)) {
       console.warn('discover: activity park index unhealthy — rebuilding from bulk');
-      await npsService.deleteSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY);
+      await getNpsService().deleteSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY);
     }
   }
 
@@ -209,7 +209,7 @@ async function buildActivityParkIndex(activities, { force = false } = {}) {
     return bulkIndex;
   }
 
-  if (!npsService._isRateLimited()) {
+  if (!getNpsService()._isRateLimited()) {
     const apiIndex = await buildActivityParkIndexViaApi(activities);
     if (isParkIndexHealthy(apiIndex, activities.length)) {
       await saveParkIndexSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY, apiIndex, activities.length);
@@ -226,13 +226,13 @@ async function buildActivityParkIndex(activities, { force = false } = {}) {
 
 async function buildTopicParkIndex(topics, { force = false } = {}) {
   if (!force) {
-    const snapshot = await npsService._loadSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
+    const snapshot = await getNpsService()._loadSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
     if (snapshot?.data && isParkIndexHealthy(snapshot.data, topics.length)) {
       return snapshot.data;
     }
     if (snapshot?.data && !isParkIndexHealthy(snapshot.data, topics.length)) {
       console.warn('discover: topic park index unhealthy — rebuilding from bulk');
-      await npsService.deleteSnapshot(TOPIC_INDEX_SNAPSHOT_KEY);
+      await getNpsService().deleteSnapshot(TOPIC_INDEX_SNAPSHOT_KEY);
     }
   }
 
@@ -243,7 +243,7 @@ async function buildTopicParkIndex(topics, { force = false } = {}) {
     return bulkIndex;
   }
 
-  if (!npsService._isRateLimited()) {
+  if (!getNpsService()._isRateLimited()) {
     const apiIndex = await buildTopicParkIndexViaApi(topics);
     if (isParkIndexHealthy(apiIndex, topics.length)) {
       await saveParkIndexSnapshot(TOPIC_INDEX_SNAPSHOT_KEY, apiIndex, topics.length);
@@ -333,9 +333,9 @@ async function repairCatalogIndexes(catalog) {
 
 async function clearDiscoverSnapshots() {
   await Promise.all([
-    npsService.deleteSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY),
-    npsService.deleteSnapshot(TOPIC_INDEX_SNAPSHOT_KEY),
-    npsService.deleteSnapshot(CATALOG_SNAPSHOT_KEY)
+    getNpsService().deleteSnapshot(ACTIVITY_INDEX_SNAPSHOT_KEY),
+    getNpsService().deleteSnapshot(TOPIC_INDEX_SNAPSHOT_KEY),
+    getNpsService().deleteSnapshot(CATALOG_SNAPSHOT_KEY)
   ]);
   memoryCatalog = null;
   memoryCatalogAt = 0;
@@ -477,15 +477,15 @@ function buildTypeCounts(allParks) {
 
 async function buildCatalog({ forceIndexes = false } = {}) {
   const [allParks, activityTaxonomy, topicTaxonomy] = await Promise.all([
-    npsService.getAllParks(),
-    npsService.getActivityTaxonomy(),
-    npsService.getTopicTaxonomy()
+    getNpsService().getAllParks(),
+    getNpsService().getActivityTaxonomy(),
+    getNpsService().getTopicTaxonomy()
   ]);
 
   const [activityIndex, topicIndex, amenities] = await Promise.all([
     buildActivityParkIndex(activityTaxonomy, { force: forceIndexes }),
     buildTopicParkIndex(topicTaxonomy, { force: forceIndexes }),
-    npsService.getAmenityTaxonomy()
+    getNpsService().getAmenityTaxonomy()
   ]);
 
   const relatedActivities = buildRelatedBySharedParks(activityTaxonomy, activityIndex);
@@ -514,7 +514,7 @@ async function buildCatalog({ forceIndexes = false } = {}) {
     stale: false
   };
 
-  await npsService._saveSnapshot(CATALOG_SNAPSHOT_KEY, catalog);
+  await getNpsService()._saveSnapshot(CATALOG_SNAPSHOT_KEY, catalog);
   memoryCatalog = catalog;
   memoryCatalogAt = Date.now();
   return catalog;
@@ -540,7 +540,7 @@ async function getCatalog({ force = false } = {}) {
     force = true;
   }
 
-  const snapshot = await npsService._loadSnapshot(CATALOG_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
+  const snapshot = await getNpsService()._loadSnapshot(CATALOG_SNAPSHOT_KEY, 7 * 24 * 60 * 60 * 1000);
   if (!force && snapshot?.data && !snapshot.stale && catalogIndexesLookHealthy(snapshot.data)) {
     memoryCatalog = snapshot.data;
     memoryCatalogAt = Date.now();
@@ -554,7 +554,7 @@ async function getCatalog({ force = false } = {}) {
       if (catalogIndexesLookHealthy(repaired)) {
         memoryCatalog = repaired;
         memoryCatalogAt = Date.now();
-        await npsService._saveSnapshot(CATALOG_SNAPSHOT_KEY, repaired);
+        await getNpsService()._saveSnapshot(CATALOG_SNAPSHOT_KEY, repaired);
         return repaired;
       }
     } catch (repairError) {
@@ -651,7 +651,7 @@ function buildRichIntro({ dimension, title, parkCount, editorialIntro, programs,
 
 async function resolveDiscoverEntry(dimension, slug) {
   const catalog = await getCatalog();
-  const allParks = await npsService.getAllParks();
+  const allParks = await getNpsService().getAllParks();
 
   let title;
   let taxonomyId;
@@ -664,7 +664,7 @@ async function resolveDiscoverEntry(dimension, slug) {
     taxonomyId = item.id;
     parkCodes = catalog.indexes?.activity?.[taxonomyId] || [];
     if (!parkCodes.length && taxonomyId) {
-      const parks = await npsService.getParksForActivityId(taxonomyId);
+      const parks = await getNpsService().getParksForActivityId(taxonomyId);
       parkCodes = parks.map((p) => (p.parkCode || '').toLowerCase()).filter(Boolean);
     }
   } else if (dimension === 'topic') {
@@ -674,7 +674,7 @@ async function resolveDiscoverEntry(dimension, slug) {
     taxonomyId = item.id;
     parkCodes = catalog.indexes?.topic?.[taxonomyId] || [];
     if (!parkCodes.length && taxonomyId) {
-      const parks = await npsService.getParksForTopicId(taxonomyId);
+      const parks = await getNpsService().getParksForTopicId(taxonomyId);
       parkCodes = parks.map((p) => (p.parkCode || '').toLowerCase()).filter(Boolean);
     }
   } else if (dimension === 'type') {
@@ -736,21 +736,21 @@ async function getDetail(dimension, slug) {
 
   const npsGuide =
     dimension === 'activity' || dimension === 'topic' || dimension === 'type'
-      ? await npsService.getNpsGuideForDiscover({ title, slug: resolved.slug })
+      ? await getNpsService().getNpsGuideForDiscover({ title, slug: resolved.slug })
       : null;
 
   const programs =
     dimension === 'activity'
-      ? await npsService.getThingsToDoForActivityName(title, 15, { includeLongDescription: true })
+      ? await getNpsService().getThingsToDoForActivityName(title, 15, { includeLongDescription: true })
       : dimension === 'topic'
-        ? await npsService.getThingsToDoForTopicName(title, 15, { includeLongDescription: true })
+        ? await getNpsService().getThingsToDoForTopicName(title, 15, { includeLongDescription: true })
         : [];
 
   const eventParkCodes = sampleParkCodesForEvents(
     parkCodes.length ? parkCodes : featuredParks.map((p) => p.parkCode),
     30
   );
-  const rawEvents = await npsService.getUpcomingEventsForParkCodes(eventParkCodes, 12);
+  const rawEvents = await getNpsService().getUpcomingEventsForParkCodes(eventParkCodes, 12);
   const events = normalizeDiscoverEvents(rawEvents, resolved.allParks, 12);
 
   const relatedContent = {

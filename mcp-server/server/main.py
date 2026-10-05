@@ -108,6 +108,9 @@ ENABLE_WIDGETS = (
     not MARKDOWN_ONLY
     and os.getenv("MCP_ENABLE_WIDGETS", "false").lower() in ("1", "true", "yes")
 )
+# Isolated park UI experiment; does not enable the planner or other widgets.
+PARK_BROWSER_POC = os.getenv("MCP_PARK_BROWSER_POC", "false").lower() in ("1", "true", "yes")
+PARK_WIDGET_KEYS = {"park-list", "park-details"}
 
 # Public base URL for icon references in MCP server metadata.
 # In production this is https://trailverse-mcp.onrender.com (MCP_SERVER_BASE);
@@ -338,7 +341,10 @@ When you receive data from a TrailVerse tool, treat it as the source of truth:
 
 def _register_widgets() -> None:
     for key, (uri, filename) in WIDGET_MAP.items():
-        html = _load_widget(filename)
+        if not ENABLE_WIDGETS and key not in PARK_WIDGET_KEYS:
+            continue
+        park_poc = PARK_BROWSER_POC and key in PARK_WIDGET_KEYS
+        html = _load_widget("park-browser-poc.html" if park_poc else filename)
         # Bind key for the closure
         def _make_reader(h: str) -> Any:
             def _reader() -> str:
@@ -351,14 +357,17 @@ def _register_widgets() -> None:
             description=f"TrailVerse {key} widget",
             mime_type=MCP_APPS_MIME,
             fn=_make_reader(html),
+            meta={"ui": {"prefersBorder": True, "csp": {
+                "connectDomains": [], "resourceDomains": [],
+            }}} if park_poc else None,
         )
         mcp.add_resource(resource)
         logger.info("Registered widget resource %s -> %s", uri, filename)
 
 
-if ENABLE_WIDGETS:
+if ENABLE_WIDGETS or PARK_BROWSER_POC:
     _register_widgets()
-    logger.info("MCP HTML widgets enabled (MCP_ENABLE_WIDGETS=true)")
+    logger.info("MCP HTML widgets enabled (all=%s, park_poc=%s)", ENABLE_WIDGETS, PARK_BROWSER_POC)
 else:
     logger.info("MCP markdown-only mode (widgets disabled)")
 
@@ -547,12 +556,20 @@ async def _resolve_park_code(name_or_code: str) -> str:
 
 # ---------- Tool helpers ----------
 
-def _tool_meta(invoking: str, invoked: str) -> dict[str, Any]:
-    """Progress strings for ChatGPT tool invocation UI only (no widget templates)."""
-    return {
+def _tool_meta(invoking: str, invoked: str, widget: str | None = None) -> dict[str, Any]:
+    """Progress strings, plus resource linkage for the opt-in park experiment."""
+    meta = {
         "openai/toolInvocation/invoking": invoking,
         "openai/toolInvocation/invoked": invoked,
     }
+    if PARK_BROWSER_POC and widget in PARK_WIDGET_KEYS:
+        uri = WIDGET_MAP[widget][0]
+        meta.update({
+            "ui": {"resourceUri": uri, "visibility": ["model", "app"]},
+            "openai/outputTemplate": uri,
+            "openai/widgetAccessible": True,
+        })
+    return meta
 
 
 def _text_content(full_markdown: str) -> list[dict[str, str]]:
@@ -594,7 +611,7 @@ def _tool_result(
             for block in content
         ]
     kwargs: dict[str, Any] = {"content": blocks, "_meta": meta_extra}
-    if ENABLE_WIDGETS:
+    if ENABLE_WIDGETS or (PARK_BROWSER_POC and structured.get("kind") in {"park_list", "park_details"}):
         kwargs["structuredContent"] = structured
     elif machine_readable:
         kwargs["structuredContent"] = slim_plan_trip_structured(structured)
@@ -840,6 +857,11 @@ async def plan_trip(
                 )
             )
         if isinstance(resp_data, dict):
+            backend_session = resp_data.get("anonymousId")
+            if isinstance(backend_session, str) and backend_session:
+                # The backend may replace a legacy MCP ID with its bounded
+                # bearer ID. Keep that authority for the next planning turn.
+                conv.anonymous_id = backend_session
             assistant_content = resp_data.get("content", "")
         if assistant_content:
             conv.append_message("assistant", assistant_content)
@@ -947,7 +969,7 @@ async def plan_trip(
         "destructiveHint": False,
         "idempotentHint": True,
     },
-    meta=_tool_meta(invoking="Looking up park details…", invoked="Park details ready"),
+    meta=_tool_meta(invoking="Looking up park details…", invoked="Park details ready", widget="park-details"),
 )
 async def get_park_details(park_code: str, ctx: Context | None = None) -> CallToolResult:
     _start = time.monotonic()
@@ -1154,7 +1176,7 @@ async def compare_parks(park_codes: list[str], ctx: Context | None = None) -> Ca
         "destructiveHint": False,
         "idempotentHint": True,
     },
-    meta=_tool_meta(invoking="Searching NPS sites…", invoked="Results ready"),
+    meta=_tool_meta(invoking="Searching NPS sites…", invoked="Results ready", widget="park-list"),
 )
 async def search_parks(
     query: str | None = None,

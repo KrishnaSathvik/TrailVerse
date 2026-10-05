@@ -10,7 +10,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
 import AuthShell from '@/components/auth/AuthShell';
-import { logEvent } from '@/utils/analytics';
 
 const SignupPage = () => {
   const router = useRouter();
@@ -94,7 +93,6 @@ const SignupPage = () => {
       );
       
       console.log('✅ SignupPage: Signup successful, response:', response);
-      logEvent('Auth', 'signup_success', 'email');
 
       // Show appropriate message based on email status
       if (response.emailSent) {

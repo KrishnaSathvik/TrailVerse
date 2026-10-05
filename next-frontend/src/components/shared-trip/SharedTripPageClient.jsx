@@ -155,6 +155,19 @@ export default function SharedTripPageClient({ trip, shareId }) {
     .join(' · ');
 
   const planCta = useMemo(() => {
+    // A sample itinerary is a prompt starter, not a second demo system: its CTA
+    // hands the curated prompt to live Trailie via `?ask=`, which replays it
+    // through the normal send path rather than showing pre-generated content.
+    if (sampleItinerary?.prompt) {
+      const park = featuredPark?.shortLabel || sampleItinerary.parkName || 'trip';
+      return {
+        title: `Plan your own ${park} trip`,
+        body: 'Trailie will build this same plan live for your dates, group, and pace — ask it yourself and adjust from there.',
+        button: `Plan my ${park} trip`,
+        href: `/plan-ai?ask=${encodeURIComponent(sampleItinerary.prompt)}`,
+      };
+    }
+
     if (featuredPark) {
       const park = featuredPark.shortLabel;
       return {
@@ -171,7 +184,7 @@ export default function SharedTripPageClient({ trip, shareId }) {
       button: 'Plan with Trailie',
       href: '/plan-ai',
     };
-  }, [featuredPark]);
+  }, [featuredPark, sampleItinerary]);
 
   return (
     <div className="min-h-screen overflow-x-clip" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -241,7 +254,7 @@ export default function SharedTripPageClient({ trip, shareId }) {
         </section>
 
         <div className="mx-auto max-w-4xl min-w-0 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-          {days.length > 0 ? (
+          {days.length > 0 && !conversation?.length ? (
             <section className="mb-10">
               <SectionHeading>Day-by-day itinerary</SectionHeading>
               <div className="space-y-4">
@@ -277,7 +290,11 @@ export default function SharedTripPageClient({ trip, shareId }) {
 
           {conversation?.length > 0 ? (
             <section className="mb-10">
-              <SharedConversation conversation={conversation} sharedBy={sharedBy} />
+              <SharedConversation
+                conversation={conversation}
+                sharedBy={sharedBy}
+                canonicalPlan={plan}
+              />
             </section>
           ) : null}
 

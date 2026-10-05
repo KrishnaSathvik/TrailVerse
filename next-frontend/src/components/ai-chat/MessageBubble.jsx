@@ -151,6 +151,7 @@ const MessageBubble = ({
   parkImages = [],
   afterContent = null,
   belowBubbleContent = null,
+  variant = 'default',
 }) => {
   const [copied, setCopied] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -193,6 +194,9 @@ const MessageBubble = ({
   const useInlineLayout = inlineAvatarLayout && !hideAvatar;
   const useInlineAssistantLayout = useInlineLayout && !isUser;
   const useInlineUserLayout = useInlineLayout && isUser;
+  const isOpening = useInlineAssistantLayout && variant === 'opening';
+  const isConversion = useInlineAssistantLayout && variant === 'conversion';
+  const isOpenAssistant = useInlineAssistantLayout && !isConversion;
   const avatarSize = dense ? 'h-7 w-7' : 'h-8 w-8 sm:h-9 sm:w-9';
   const trailieAvatarSize = dense ? '!h-7 !w-7' : '!h-8 !w-8 sm:!h-9 sm:!w-9';
 
@@ -227,41 +231,6 @@ const MessageBubble = ({
       }
     }
   };
-
-  const sourceLabelText = !isUser && !isStreaming && !isFinalizing && (hasLiveData || hasWebSearch)
-    ? (() => {
-        if (hasWebSearch) return 'Checked live info';
-        if (hasLiveData && liveDataParks.length > 0) return 'Checked park info';
-        if (hasLiveData) return 'Checked trip info';
-        return null;
-      })()
-    : null;
-
-  const sourcePill = sourceLabelText ? (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-      style={{
-        backgroundColor: 'var(--surface-hover)',
-        color: 'var(--accent-green)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      <span
-        className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-        style={{ backgroundColor: 'var(--accent-green)' }}
-      />
-      {sourceLabelText}
-    </span>
-  ) : null;
-
-  const liveDataIndicator = sourcePill ? (
-    <div
-      className="mb-3 pb-2.5 border-b"
-      style={{ borderColor: 'var(--border)' }}
-    >
-      {sourcePill}
-    </div>
-  ) : null;
 
   const messageContentCore = (
     <>
@@ -378,25 +347,23 @@ const MessageBubble = ({
 
   const inlineAssistantHeader = (
     <div
-      className="mb-3 flex items-center gap-2.5 border-b pb-2.5 sm:gap-3"
-      style={{ borderColor: 'var(--border)' }}
+      className="mb-3 flex items-center gap-2.5 sm:gap-3"
     >
       <TrailieAvatar className={`${trailieAvatarSize} shrink-0`} />
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span
-          className="text-[11px] font-semibold uppercase tracking-[0.2em]"
-          style={{ color: 'var(--accent-green)' }}
+          className="text-sm font-semibold leading-none"
+          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
         >
           Trailie
         </span>
-        {sourcePill}
       </div>
     </div>
   );
 
   const userAvatarBubble = (
     <div
-      className={`${avatarSize} flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-gray-200`}
+      className={`trailie-user-avatar ${avatarSize} flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-gray-200`}
       style={{ backgroundColor: 'var(--surface)' }}
     >
       {userAvatar && !avatarError ? (
@@ -413,10 +380,9 @@ const MessageBubble = ({
   );
 
   const inlineUserRow = (
-    <div className="flex items-center gap-2.5 sm:gap-3">
-      {userAvatarBubble}
+    <div className="flex items-center justify-end">
       <div
-        className="min-w-0 flex-1 text-sm leading-relaxed"
+        className="min-w-0 text-sm leading-relaxed sm:text-[15px]"
         style={{ color: 'var(--text-primary)', overflowWrap: 'anywhere', wordBreak: 'normal' }}
       >
         {message}
@@ -424,18 +390,13 @@ const MessageBubble = ({
     </div>
   );
 
-  const messageBody = (
-    <>
-      {liveDataIndicator}
-      {messageContentCore}
-    </>
-  );
+  const messageBody = messageContentCore;
 
   return (
     <div
       className={`group ${
         useInlineLayout
-          ? 'w-full'
+          ? `w-full ${useInlineUserLayout ? 'trailie-turn--user flex justify-end' : 'trailie-turn--assistant'}`
           : `flex items-start ${dense ? 'gap-2' : 'gap-3 sm:gap-4'} ${isUser ? 'flex-row-reverse' : 'flex-row'}`
       } ${hideAvatar && !useInlineLayout ? 'gap-0' : ''} ${
         dense ? 'mb-1.5 sm:mb-2' : compact ? 'mb-2 sm:mb-3' : 'mb-5 sm:mb-7'
@@ -470,21 +431,29 @@ const MessageBubble = ({
         <TrailieAvatar className={dense ? '!h-8 !w-8' : undefined} />
       ))}
 
-      <div className={`${useInlineLayout ? 'w-full' : 'flex-1 min-w-0'} ${!useInlineLayout && isUser ? 'flex justify-end' : ''}`}>
-        <div className={`flex flex-col gap-1.5 ${!useInlineLayout && isUser ? 'items-end' : ''}`}>
+      <div className={`${useInlineLayout ? (useInlineUserLayout ? 'flex w-full min-w-0 justify-end' : 'w-full') : 'flex-1 min-w-0'} ${!useInlineLayout && isUser ? 'flex justify-end' : ''}`}>
+        <div className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : ''} ${useInlineUserLayout ? 'max-w-[36rem]' : 'w-full'}`}>
           <div
             className={`${
-              useInlineLayout
-                ? 'w-full !max-w-full'
+              useInlineUserLayout
+                ? 'trailie-user-message w-fit max-w-full rounded-2xl px-4 py-3 sm:px-4 sm:py-3'
+                : isOpenAssistant
+                  ? `${isOpening ? 'trailie-opening' : 'trailie-open-message'} w-full max-w-[68rem]`
+                  : isConversion
+                    ? 'trailie-conversion-message w-full max-w-[48rem] rounded-2xl px-4 py-4 sm:px-5 sm:py-5'
+                    : useInlineLayout
+                      ? 'w-full !max-w-full'
                 : isUser
                   ? 'w-fit max-w-full sm:max-w-[94%] lg:max-w-[88%]'
                   : 'inline-block max-w-full sm:max-w-[94%] lg:max-w-[88%]'
-            } rounded-[24px] chat-message-bubble ${
-              useInlineLayout ? 'chat-message-bubble--inline ' : ''
+            } ${isOpenAssistant ? '' : 'chat-message-bubble'} ${
+              isConversion ? 'chat-message-bubble--inline ' : ''
             }${
-              isUser ? 'chat-message-bubble--user' : 'chat-message-bubble--assistant'
+              isOpenAssistant ? '' : isUser ? 'chat-message-bubble--user' : 'chat-message-bubble--assistant'
             } ${
-              dense
+              useInlineUserLayout || isOpenAssistant || isConversion
+                ? ''
+                : dense
                 ? 'px-3 py-2 sm:px-3.5 sm:py-2.5'
                 : compact
                   ? 'px-3.5 py-2.5 sm:px-4 sm:py-3'
@@ -493,13 +462,25 @@ const MessageBubble = ({
               useInlineLayout ? '' : isUser ? 'rounded-tr-sm' : 'rounded-tl-sm'
             }`}
             style={{
-              backgroundColor: isUser ? 'var(--accent-green-light)' : 'var(--surface)',
-              borderWidth: '1px',
-              borderColor: 'var(--border)',
+              backgroundColor: useInlineUserLayout
+                ? 'color-mix(in srgb, var(--accent-green) 9%, var(--surface))'
+                : isConversion
+                  ? 'color-mix(in srgb, #b7791f 7%, var(--surface))'
+                  : isOpenAssistant
+                    ? 'transparent'
+                    : isUser ? 'var(--accent-green-light)' : 'var(--surface)',
+              borderWidth: isOpenAssistant ? '0' : '1px',
+              borderColor: isConversion
+                ? 'color-mix(in srgb, #b7791f 28%, var(--border))'
+                : isUser ? 'color-mix(in srgb, var(--accent-green) 18%, var(--border))' : 'var(--border)',
               color: 'var(--text-primary)',
-              boxShadow: isUser
-                ? '0 16px 32px rgba(67, 160, 106, 0.10)'
-                : '0 18px 38px rgba(15, 23, 42, 0.06)',
+              boxShadow: useInlineUserLayout || isOpenAssistant
+                ? 'none'
+                : isConversion
+                  ? '0 10px 28px rgba(71, 52, 28, 0.06)'
+                  : isUser
+                    ? '0 16px 32px rgba(67, 160, 106, 0.10)'
+                    : '0 18px 38px rgba(15, 23, 42, 0.06)',
               overflowWrap: 'anywhere',
               wordBreak: 'normal',
               hyphens: 'none',
@@ -561,7 +542,8 @@ function messageBubblePropsAreEqual(prev, next) {
     prev.liveDataParks === next.liveDataParks &&
     prev.parkImages === next.parkImages &&
     prev.afterContent === next.afterContent &&
-    prev.belowBubbleContent === next.belowBubbleContent
+    prev.belowBubbleContent === next.belowBubbleContent &&
+    prev.variant === next.variant
   );
 }
 

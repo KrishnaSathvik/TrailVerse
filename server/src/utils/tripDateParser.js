@@ -37,10 +37,7 @@ function toIsoDate(year, monthIndex, day) {
 
 function inferYearForMonth(monthIndex, referenceDate) {
   const ref = referenceDate || new Date();
-  const refMonth = ref.getMonth();
-  const refYear = ref.getFullYear();
-  if (monthIndex < refMonth) return refYear + 1;
-  return refYear;
+  return ref.getFullYear(); // Full-range past detection happens at the public boundary.
 }
 
 function daysInMonth(year, monthIndex) {
@@ -63,7 +60,7 @@ function monthFromToken(token) {
  * @param {Date} [referenceDate=new Date()]
  * @returns {{ startDate: string, endDate: string, numDays: number, label: string }|null}
  */
-function parseTripDatesFromMessage(userMessage, referenceDate = new Date()) {
+function parseCandidateDates(userMessage, referenceDate = new Date()) {
   if (!userMessage || !userMessage.trim()) return null;
   const msg = userMessage.toLowerCase();
   const explicitYear = parseExplicitYear(msg);
@@ -95,10 +92,15 @@ function parseTripDatesFromMessage(userMessage, referenceDate = new Date()) {
     const year = parseInt(match[2], 10);
     if (monthIndex != null) {
       const lastDay = daysInMonth(year, monthIndex);
+      // A bare month is WHEN, not HOW LONG. Reporting numDays here made
+      // "somewhere in October" a 31-day trip. `windowDays` keeps the span for
+      // anything that legitimately needs the width of the window.
       return {
         startDate: toIsoDate(year, monthIndex, 1),
         endDate: toIsoDate(year, monthIndex, lastDay),
-        numDays: lastDay,
+        numDays: null,
+        windowDays: lastDay,
+        windowOnly: true,
         label: `${match[1]} ${year}`,
       };
     }
@@ -203,15 +205,53 @@ function parseTripDatesFromMessage(userMessage, referenceDate = new Date()) {
     if (monthIndex == null) return null;
     const year = explicitYear ?? inferYearForMonth(monthIndex, referenceDate);
     const lastDay = daysInMonth(year, monthIndex);
+    // Same rule as the explicit "October 2026" form above: a month names the
+    // window the traveler is shopping in, never the length of their trip.
     return {
       startDate: toIsoDate(year, monthIndex, 1),
       endDate: toIsoDate(year, monthIndex, lastDay),
-      numDays: lastDay,
+      numDays: null,
+      windowDays: lastDay,
+      windowOnly: true,
       label: `${match[1].charAt(0).toUpperCase()}${match[1].slice(1)} ${year}`,
     };
   }
 
   return null;
+}
+
+// Local calendar comparisons avoid UTC rollover and month-only inference.
+function localIso(date) {
+  return toIsoDate(date.getFullYear(), date.getMonth(), date.getDate());
+}
+function calendarWindowDays(start, end) {
+  const valid = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '')
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  if (!valid(start) || !valid(end) || end < start) return null;
+  return Math.round((Date.parse(end) - Date.parse(start)) / 86400000) + 1;
+}
+function parseTripDatesFromMessage(userMessage, referenceDate = new Date()) {
+  const text = String(userMessage || '');
+  const iso = text.match(/\b(\d{4}-\d{2}-\d{2})\s*(?:to|through|until|[-–—])\s*(\d{4}-\d{2}-\d{2})\b/i);
+  let parsed = iso ? { startDate: iso[1], endDate: iso[2], numDays: calendarWindowDays(iso[1], iso[2]), label: iso[0] }
+    : parseCandidateDates(text, referenceDate);
+  if (!parsed || !calendarWindowDays(parsed.startDate, parsed.endDate)) return null;
+  const explicit = /\b\d{4}\b/.test(text);
+  if (!explicit && parsed.endDate < localIso(referenceDate)) {
+    // Find the next valid occurrence, including leap-day ranges, without
+    // rolling invalid dates or treating a proposed year as confirmed truth.
+    let year = Number(parsed.startDate.slice(0,4)) + 1;
+    const yearSpan = Number(parsed.endDate.slice(0,4)) - Number(parsed.startDate.slice(0,4));
+    let start, end;
+    do { start = `${year}${parsed.startDate.slice(4)}`; end = `${year + yearSpan}${parsed.endDate.slice(4)}`; year++; }
+    while (!calendarWindowDays(start, end));
+    return { startDate: null, endDate: null, numDays: null,
+      temporalResolutionStatus: 'pending_confirmation',
+      pendingTemporalResolution: { kind: 'date_range', sourceText: text.slice(0,800),
+        candidateStartDate: start, candidateEndDate: end, yearSource: 'inferred',
+        confirmationRequired: true, reason: 'yearless_range_already_past', sourceTurnId: null } };
+  }
+  return parsed;
 }
 
 /**
@@ -234,11 +274,13 @@ function resolveAstroWindow(tripDates, userMessage, referenceDate = new Date()) 
       label: startDate === endDate ? startDate : `${startDate} to ${endDate}`,
     };
   }
-  return parseTripDatesFromMessage(userMessage, referenceDate);
+  const parsed = parseTripDatesFromMessage(userMessage, referenceDate);
+  return parsed?.pendingTemporalResolution ? null : parsed;
 }
 
 module.exports = {
   parseTripDatesFromMessage,
+  calendarWindowDays,
   resolveAstroWindow,
   inferYearForMonth,
   MONTHS,

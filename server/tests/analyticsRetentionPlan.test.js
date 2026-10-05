@@ -7,11 +7,11 @@ function indexes() {
     { name: 'analytics_general_ttl', key: { timestamp: 1 }, expireAfterSeconds: 2592000, partialFilterExpression: { eventType: { $in: NON_API_CALL_EVENT_TYPES } } },
   ];
 }
-test('release preserves baseline TTL declarations and disables automatic index mutation', () => {
-  expect(ANALYTICS_RETENTION_SECONDS).toBe(7776000);
+test('local model has seven-day TTL declarations without automatic index mutation', () => {
+  expect(ANALYTICS_RETENTION_SECONDS).toBe(604800);
   expect(Analytics.schema.options.autoIndex).toBe(false);
   expect(Analytics.schema.indexes().filter(([, options]) => options.expireAfterSeconds != null)
-    .map(([, options]) => options.expireAfterSeconds)).toEqual([604800, 7776000]);
+    .map(([, options]) => options.expireAfterSeconds)).toEqual([604800, 604800]);
 });
 test('preview only reads analytics and names existing indexes for collMod', async () => {
   const collection = { listIndexes: () => ({ toArray: async () => indexes() }), countDocuments: jest.fn().mockResolvedValue(10) };
@@ -30,7 +30,7 @@ test('preserves the inspected older production filter and reports uncovered even
   live[1].partialFilterExpression.eventType.$in = NON_API_CALL_EVENT_TYPES.filter(type => type !== 'crowd_calendar_view');
   const collection = { listIndexes: () => ({ toArray: async () => live }), countDocuments: jest.fn().mockResolvedValue(4) };
   const plan = await buildPlan({ databaseName: 'trailverse', collection: () => collection });
-  expect(plan.configuredEventTypesNotCovered).toEqual(NON_API_CALL_EVENT_TYPES.includes('crowd_calendar_view') ? ['crowd_calendar_view'] : []);
+  expect(plan.configuredEventTypesNotCovered).toEqual(['crowd_calendar_view']);
   expect(plan.changes[0].partialFilterExpression).toEqual(live[1].partialFilterExpression);
   expect(collection.countDocuments.mock.calls[0][0].$and[0]).toEqual(live[1].partialFilterExpression);
   const unexpected = indexes();

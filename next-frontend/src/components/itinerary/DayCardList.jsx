@@ -27,6 +27,7 @@ const DIFFICULTY_COLORS = {
 
 function formatTime12(timeStr) {
   if (!timeStr) return '';
+  if (!/^\d{1,2}:\d{2}$/.test(timeStr)) return timeStr;
   const [h, m] = timeStr.split(':').map(Number);
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
@@ -51,8 +52,14 @@ function groupStopsByPeriod(stops) {
   const evening = [];
 
   sorted.forEach(stop => {
-    if (!stop.startTime) {
+    if (!stop.startTime && !stop.timeWindow) {
       afternoon.push(stop);  // unbucketed → middle
+      return;
+    }
+    if (stop.timeWindow) {
+      if (/morning|first light|sunrise/i.test(stop.timeWindow)) morning.push(stop);
+      else if (/evening|golden hour|sunset/i.test(stop.timeWindow)) evening.push(stop);
+      else afternoon.push(stop);
       return;
     }
     const hour = parseInt(stop.startTime.split(':')[0], 10);
@@ -105,9 +112,9 @@ function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, on
     >
       {/* Row 1: Time + type pill + difficulty pill + menu */}
       <div className="flex items-center gap-1.5 mb-1">
-        {stop.startTime && (
+        {(stop.startTime || stop.timeWindow) && (
           <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-            {formatTime12(stop.startTime)}
+            {stop.timeWindow || formatTime12(stop.startTime)}
           </span>
         )}
         <span

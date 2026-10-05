@@ -6,7 +6,7 @@ alwaysApply: false
 
 # TrailVerse Backend API
 
-Entry: `server/server.js` → `server/src/app.js`. Base path: **`/api`**. Swagger: `/api-docs`. Health (not under `/api`): **`GET /health/ping`** for Render/uptime liveness; **`GET /health`** for full check (DB + memory); **`GET /health/database`** for DB diagnostics.
+Entry: `server/server.js` → `server/src/app.js`. Base path: **`/api`**. Swagger: `/api-docs`. Health (not under `/api`): **`GET /health/ping`** for Render/uptime liveness; **`GET /health`** for full check (DB + memory); **`GET /health/database`** for DB diagnostics; **`GET /health/product`** for parks count + Utah state-query sanity.
 
 ## Auth middleware (`server/src/middleware/auth.js`)
 
@@ -30,7 +30,7 @@ JWT: `JWT_SECRET`, `JWT_EXPIRE` (default 7d). Token generation: `utils/generateT
 `signup`, `login`, `logout`, `me`, `forgot-password`, `reset-password/:token`, `verify-email/:token`, `migrate-chat` (protect)
 
 ### `/api/parks` + enhanced
-- List, `/:parkCode` and sub-resources: alerts, activities, campgrounds, places, tours, webcams, videos, gallery, parkinglots, transit, brochures, permits, facilities
+- List (`?all=true`, `?state=UT` two-letter NPS code, `?nationalParksOnly=true`, `?fields=`), `/:parkCode` and sub-resources: alerts, activities, campgrounds, places, tours, webcams, videos, gallery, parkinglots, transit, brochures, permits, facilities
 - **Search** (intent landings + MCP): `GET /search?q=` — token match + trait scoring; optional `pinned=` (comma-separated park codes). Match copy: `server/src/catalog/matchExplanation.js`, traits: `traitBuilder.js`, query intent: `queryTraitIntent.js`, pins: `server/data/search-intent-pins.json`
 - Enhanced: `/:parkCode/enhanced`, `weather`, `crowd`, `best-time`, `reviews`
 - Compare: `GET|POST /compare`, `/compare/summary`

@@ -67,7 +67,7 @@ const compileTemplate = async (templateName, data) => {
       helpUrl: 'https://www.nationalparksexplorerusa.com/faq',
       dashboardUrl: 'https://www.nationalparksexplorerusa.com/profile',
       twitterUrl: 'https://twitter.com/TrailVerse',
-      instagramUrl: 'https://instagram.com/trailverse',
+      instagramUrl: 'https://www.instagram.com/trailverseapp/',
       facebookUrl: 'https://www.facebook.com/travelswithkrishna/',
       unsubscribeUrl: `https://www.nationalparksexplorerusa.com/unsubscribe?email=${data.email || ''}`,
       supportEmail: 'trailverseteam@gmail.com',

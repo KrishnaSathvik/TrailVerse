@@ -1,0 +1,209 @@
+{
+  "provenance": "Exact rejected primary plus visitor-service claims transcribed from saved PUBLIC EVIDENCE. Fixture-local IDs; not the complete frozen bundle or its 30 repair candidates.",
+  "plan": {
+    "intro": "I\u2019d keep these four Zion days unhurried: start with the canyon\u2019s history and views, give Kolob Canyons its own outing, then explore the east-side road and the park\u2019s nature exhibits. Since you haven\u2019t set dates, the summer-only Nature Center is a conditional fourth-day stop.",
+    "days": [
+      {
+        "id": "zion-day-1",
+        "dayNumber": 1,
+        "label": "Human History Museum and canyon views",
+        "stops": [
+          {
+            "id": "d1-museum",
+            "order": 1,
+            "type": "museum",
+            "name": "Human History Museum",
+            "duration": 90,
+            "exposureLevel": "low",
+            "timeWindow": "Morning",
+            "note": "Explore the exhibits and, if it's showing during your visit, the 22-minute orientation film.",
+            "why": "The stories give context to the canyon before the rest of your trip."
+          },
+          {
+            "id": "d1-views",
+            "order": 2,
+            "type": "viewpoint",
+            "name": "Towers of the Virgin and Bridge Mountain views outside Human History Museum",
+            "duration": 30,
+            "exposureLevel": "low",
+            "timeWindow": "Late morning",
+            "note": "Step outside the museum to take in the named mountain views; linger for photos if the light appeals.",
+            "why": "This gives the first day a landscape experience as well as an indoor visit."
+          }
+        ]
+      },
+      {
+        "id": "zion-day-2",
+        "dayNumber": 2,
+        "label": "Kolob Canyons and its northern landscape",
+        "stops": [
+          {
+            "id": "d2-center",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Kolob Canyons Visitor Center",
+            "duration": 45,
+            "exposureLevel": "low",
+            "timeWindow": "Morning, outside the noon\u20131 PM closure",
+            "note": "See the geology, vegetation, and wildlife exhibits, and ask a ranger which places in Kolob Canyons suit the day's conditions.",
+            "why": "It's a useful starting point for a separate outing to Zion's northern area."
+          },
+          {
+            "id": "d2-kolob",
+            "order": 2,
+            "type": "landmark",
+            "name": "Kolob Canyons",
+            "duration": 120,
+            "timeWindow": "Late morning to afternoon",
+            "note": "Spend an easygoing block exploring the area after checking locally where to go; no particular trail, viewpoint, or walking distance is assumed here.",
+            "why": "Giving Kolob time of its own is more rewarding than treating the northern entrance as a quick stop."
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d2-center",
+            "targetStopId": "d2-kolob",
+            "relationship": "transfer"
+          }
+        ]
+      },
+      {
+        "id": "zion-day-3",
+        "dayNumber": 3,
+        "label": "Zion\u2013Mt. Carmel Highway toward the East Entrance",
+        "stops": [
+          {
+            "id": "d3-highway",
+            "order": 1,
+            "type": "scenic_drive",
+            "name": "Zion-Mt. Carmel Highway",
+            "duration": 120,
+            "timeWindow": "Daylight",
+            "note": "Take a leisurely road outing between Canyon Junction and the East Entrance, allowing time to enjoy the changing landscape without assuming any particular pullout is available. Check the road and tunnel status before setting off.",
+            "why": "A road-based day changes the perspective after the museum and Kolob outings."
+          }
+        ]
+      },
+      {
+        "id": "zion-day-4",
+        "dayNumber": 4,
+        "label": "Zion Nature Center and canyon orientation",
+        "stops": [
+          {
+            "id": "d4-nature",
+            "order": 1,
+            "type": "museum",
+            "name": "Zion Nature Center",
+            "duration": 90,
+            "exposureLevel": "low",
+            "timeWindow": "Morning, if operating during your summer visit",
+            "note": "Explore the interactive habitats and animal displays; ranger activities may be offered. This is described by the park as a summer visit, so confirm it is operating on your dates.",
+            "why": "It shifts the focus from geology and history to the park's living landscapes."
+          },
+          {
+            "id": "d4-canyon-center",
+            "order": 2,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "duration": 60,
+            "exposureLevel": "low",
+            "timeWindow": "Afternoon",
+            "note": "Browse the outdoor exhibits and ask rangers about any final Zion Canyon outing suited to your interests and the day's access.",
+            "why": "The outdoor exhibits and ranger advice make a flexible finish when your dates and walking preferences aren't set yet."
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d4-nature",
+            "targetStopId": "d4-canyon-center",
+            "relationship": "transfer"
+          }
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "markdown": "The Nature Center is described as a summer venue, so a non-summer trip would need a different fourth-day anchor. If your dates fall September 21\u201330, check the Zion\u2013Mt. Carmel Tunnel's nighttime construction closures before the highway day; the park says active closures can run 9 PM\u20136 AM."
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "evidenceId": "capture:0",
+      "topic": "visitor_services",
+      "claim": {
+        "text": "Human History Museum: Immerse yourself in the human history of Zion National Park! Rangers staff an information desk during operating hours. Indoor exhibits explore the people, places, and stories of Zion. Rotating exhibits feature regional artists, local discoveries, and more. A 22-minute orientation film examines the history of the canyon and highlights the dramatic landscapes of the park. Visit the bookstore for books, gifts, and souvenirs. There are also dramatic views of the Towers of the Virgin and Bridge Mountain outside.",
+        "normalizedValue": {
+          "name": "Human History Museum",
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "description": "Human History Museum: Immerse yourself in the human history of Zion National Park! Rangers staff an information desk during operating hours. Indoor exhibits explore the people, places, and stories of Zion. Rotating exhibits feature regional artists, local discoveries, and more. A 22-minute orientation film examines the history of the canyon and highlights the dramatic landscapes of the park. Visit the bookstore for books, gifts, and souvenirs. There are also dramatic views of the Towers of the Virgin and Bridge Mountain outside."
+        }
+      },
+      "source": {
+        "title": "Human History Museum"
+      }
+    },
+    {
+      "evidenceId": "capture:1",
+      "topic": "visitor_services",
+      "claim": {
+        "text": "Kolob Canyons Visitor Center: Closed daily from 12pm-1pm This is the entry point to the Kolob Canyons area of the park. It is located 45 miles north of Springdale and 17 miles south of Cedar City at Exit 40 on Interstate 15. Park rangers are available to answer questions. Exhibits explore the geology, vegetation, and wildlife of this unique landscape.",
+        "normalizedValue": {
+          "name": "Kolob Canyons Visitor Center",
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "description": "Kolob Canyons Visitor Center: Closed daily from 12pm-1pm This is the entry point to the Kolob Canyons area of the park. It is located 45 miles north of Springdale and 17 miles south of Cedar City at Exit 40 on Interstate 15. Park rangers are available to answer questions. Exhibits explore the geology, vegetation, and wildlife of this unique landscape."
+        }
+      },
+      "source": {
+        "title": "Kolob Canyons Visitor Center"
+      }
+    },
+    {
+      "evidenceId": "capture:2",
+      "topic": "visitor_services",
+      "claim": {
+        "text": "Zion Canyon Visitor Center: Located near the South Entrance of the park, the Zion Canyon Visitor Center is an excellent place to begin your exploration of Zion Canyon. Park rangers and outdoor exhibits will help you plan your visit and make the most of your time. Inquire at the Zion Canyon Wilderness Desk about permits for backpacking, canyoneering, and other trips into the wilderness. Visit the bookstore for maps, books, and gifts.",
+        "normalizedValue": {
+          "name": "Zion Canyon Visitor Center",
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "description": "Zion Canyon Visitor Center: Located near the South Entrance of the park, the Zion Canyon Visitor Center is an excellent place to begin your exploration of Zion Canyon. Park rangers and outdoor exhibits will help you plan your visit and make the most of your time. Inquire at the Zion Canyon Wilderness Desk about permits for backpacking, canyoneering, and other trips into the wilderness. Visit the bookstore for maps, books, and gifts."
+        }
+      },
+      "source": {
+        "title": "Zion Canyon Visitor Center"
+      }
+    },
+    {
+      "evidenceId": "capture:3",
+      "topic": "visitor_services",
+      "claim": {
+        "text": "Zion Nature Center: During the summer, come visit the Zion Nature Center! This is a perfect place to learn about geology, animals, and the history of Zion. Take a break from the sun to explore different habitats, enjoy bird songs, listen to canyon tree frog calls, and participate in Junior Ranger programs. The inside of the Nature Center has a variety of interactive exhibits, animal models, changing activities, and crafts. Park rangers host educational programs throughout the day.",
+        "normalizedValue": {
+          "name": "Zion Nature Center",
+          "activityTypes": [
+            "visitor_center",
+            "exhibits",
+            "orientation"
+          ],
+          "description": "Zion Nature Center: During the summer, come visit the Zion Nature Center! This is a perfect place to learn about geology, animals, and the history of Zion. Take a break from the sun to explore different habitats, enjoy bird songs, listen to canyon tree frog calls, and participate in Junior Ranger programs. The inside of the Nature Center has a variety of interactive exhibits, animal models, changing activities, and crafts. Park rangers host educational programs throughout the day."
+        }
+      },
+      "source": {
+        "title": "Zion Nature Center"
+      }
+    }
+  ]
+}

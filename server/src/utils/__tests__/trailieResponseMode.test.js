@@ -5,8 +5,8 @@ const {
 } = require('../trailieResponseMode');
 
 describe('trailieResponseMode', () => {
-  test('autoRouteProvider defaults to Claude', () => {
-    expect(autoRouteProvider()).toBe('claude');
+  test('autoRouteProvider defaults to OpenAI (WP12 Phase 4)', () => {
+    expect(autoRouteProvider()).toBe('openai');
   });
 
   test('resolveResponseMode returns architect for itinerary requests', () => {

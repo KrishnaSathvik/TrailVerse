@@ -3,6 +3,23 @@
  * builds constraint blocks for AI prompts, and validates itinerary compliance.
  */
 
+const {
+  validateDestinationCoverage,
+  validateDestinationSequence,
+  validateMaxDailyDrive,
+  validateRouteLegCoverage,
+  validateOvernightDestinationIdentity,
+  collectDayDriveMinutes,
+  GLOBAL_MAX_ACTIVE_MINUTES,
+} = require('./roadTripValidators');
+const {
+  parseMaxDailyDriveMinutes,
+  buildTripScopeFromMessage,
+  detectDrivingFeasibilityConstraint,
+} = require('./roadTripContract');
+const { evaluateRouteLegsAgainstDailyDriveCap } = require('./routeEvidenceDriveBridge');
+const { drivingVerificationInstruction } = require('./drivingVerificationCoverage');
+
 // ── Static Data ──────────────────────────────────────────────────────────────
 
 /**
@@ -105,6 +122,42 @@ const FITNESS_TO_MAX_DIFFICULTY = {
 };
 
 const { extractMessageConstraintOverrides } = require('./messageConstraintOverrides');
+const {
+  extractGroupSizeFromMessage,
+  extractNumericBudget,
+  extractTravelPartySemantics,
+  extractChildrenCount,
+  resolveInterestMutation,
+  normalizeInterestList,
+  normalizeTravelParty,
+  userAvoidsTrailExposure,
+} = require('./planningInputContract');
+const {
+  parseBudgetConstraint,
+  deriveTripCeiling,
+  extractUserSuppliedCosts,
+  assessBudget,
+  validateBudgetConstraints,
+  validateBudgetClaim,
+  legacyBudgetFromConstraint,
+  buildBudgetPromptBlock,
+  isExplicitBudgetClear,
+} = require('./budgetContract');
+const {
+  extractSpokenDuration,
+  extractMobilityConstraints,
+  extractPartyExtras,
+  extractActivityPreferences,
+  extractTransportConstraints,
+} = require('./travelerStateExtraction');
+const { applyTurnConstraintsToRuntime } = require('./canonicalConstraintTranslation');
+const { resolvePace } = require('./constraintFamilies');
+const {
+  normalizePersistedPlanningState,
+  planningStateToConstraintSeed,
+  applyTripScopeRefinement,
+  buildPlanningStateFromRuntime,
+} = require('./planningState');
 
 // ── parseConstraints ─────────────────────────────────────────────────────────
 
@@ -112,126 +165,442 @@ const { extractMessageConstraintOverrides } = require('./messageConstraintOverri
  * Extract structured constraints from metadata.formData + user message fallback.
  * Latest explicit user-message corrections override stale Quick Fill formData.
  */
-function parseConstraints(metadata, userMessage) {
+function parseConstraints(metadata, userMessage, { now = new Date(), sourceTurnId = null } = {}) {
   const fd = metadata?.formData || {};
   const msg = userMessage || '';
 
+  // Pass #5 — persisted planningState is structured base (beats conversation history).
+  let persisted = null;
+  if (metadata?.planningState) {
+    const n = normalizePersistedPlanningState(metadata.planningState);
+    if (n.ok) persisted = n.state;
+  }
+  const seed = persisted ? planningStateToConstraintSeed(persisted) : {};
+
+  const pick = (seedVal, formVal) => {
+    if (seedVal === null || seedVal === undefined) return formVal;
+    if (Array.isArray(seedVal) && seedVal.length === 0) return formVal;
+    return seedVal;
+  };
+
   // Park code — from metadata or message
-  const parkCode = fd.parkCode || metadata?.parkCode || null;
+  const parkCode = pick(seed.parkCode, fd.parkCode || metadata?.parkCode || null);
 
   // Dates
-  let startDate = fd.startDate || fd.dates?.start || null;
-  let endDate = fd.endDate || fd.dates?.end || null;
-  let numDays = fd.numDays || fd.days || null;
+  let startDate = pick(seed.startDate, fd.startDate || fd.dates?.start || null);
+  let endDate = pick(seed.endDate, fd.endDate || fd.dates?.end || null);
+  let numDays = pick(seed.numDays, fd.numDays || fd.days || null);
 
-  // Regex fallback for dates from message
-  if (!startDate && !numDays) {
-    const hyphenDayMatch = msg.match(/\b(\d+)\s*[-–]\s*day\b/i);
-    if (hyphenDayMatch) numDays = parseInt(hyphenDayMatch[1], 10);
-  }
-  if (!startDate && !numDays) {
-    const dayMatch = msg.match(/(\d+)\s*(?:day|night)/i);
-    if (dayMatch) numDays = parseInt(dayMatch[1], 10);
-  }
-  if (!startDate && !numDays && /\bweekend\b/i.test(msg)) {
+  // Explicit day-count in the (latest) message overrides persisted/seed days.
+  // Prefer the *last* mention so concatenated conversation text
+  // ("5 days… Actually make it 6 days") keeps the refinement.
+  const spokenDuration = extractSpokenDuration(msg);
+  const hyphenDayMatches = [...msg.matchAll(/\b(\d+)\s*[-–]\s*day\b/gi)];
+  const dayMatches = [...msg.matchAll(/(\d+)\s*(?:day|night)/gi)];
+  if (hyphenDayMatches.length) {
+    numDays = parseInt(hyphenDayMatches[hyphenDayMatches.length - 1][1], 10);
+  } else if (dayMatches.length) {
+    numDays = parseInt(dayMatches[dayMatches.length - 1][1], 10);
+  } else if (spokenDuration.durationDays != null) {
+    numDays = spokenDuration.durationDays;
+  } else if (!startDate && !numDays && /\bweekend\b/i.test(msg)) {
     numDays = /\blong weekend\b/i.test(msg) ? 3 : 2;
   }
 
-  if (!startDate && !endDate) {
-    const { parseTripDatesFromMessage } = require('./tripDateParser');
-    const parsedDates = parseTripDatesFromMessage(msg);
-    if (parsedDates) {
-      startDate = parsedDates.startDate;
-      endDate = parsedDates.endDate;
-      if (!numDays) numDays = parsedDates.numDays;
-    }
-  }
+  const temporalResolution = require('./temporalState').resolveTemporalState({
+    text: msg, previous: persisted, confirmedDates: { startDate, endDate }, now, sourceTurnId,
+  });
+  startDate = temporalResolution.dates.startDate;
+  endDate = temporalResolution.dates.endDate;
+  // A travel window is not a request to resize the canonical itinerary.
 
-  if (startDate && endDate && !numDays) {
-    const s = new Date(startDate);
-    const e = new Date(endDate);
-    if (!isNaN(s) && !isNaN(e)) {
-      numDays = Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1);
-    }
-  }
-
-  // Group size
-  let groupSize = fd.groupSize || fd.travelers || null;
+  // Group size — digits or one..twelve word numbers
+  let groupSize = pick(seed.groupSize, fd.groupSize || fd.travelers || null);
   if (!groupSize) {
-    const groupMatch = msg.match(/(\d+)\s*(?:people|person|adults?|of us|travelers?)/i);
-    if (groupMatch) groupSize = parseInt(groupMatch[1], 10);
+    groupSize = extractGroupSizeFromMessage(msg);
+  }
+  if (!groupSize && /\b(couple|two of us|with my (?:wife|husband|partner|girlfriend|boyfriend))\b/i.test(msg)) {
+    groupSize = 2;
+  }
+  if (!groupSize && /\b(solo|alone|just me|by myself)\b/i.test(msg)) {
+    groupSize = 1;
   }
 
-  // Budget
-  let budget = fd.budget || null;
-  if (!budget) {
-    const budgetMatch = msg.match(/(?:budget|spend)\s*(?:is|of|around|about)?\s*\$?([\d,]+)/i);
-    if (budgetMatch) budget = budgetMatch[1].replace(/,/g, '');
+  // Travel party — null when Quick Fill only supplies a count
+  let travelParty = normalizeTravelParty(
+    pick(seed.travelParty, fd.travelParty || fd.groupType || null)
+  );
+  const partyFromMsg = extractTravelPartySemantics(msg);
+  if (partyFromMsg.travelParty) travelParty = partyFromMsg.travelParty;
+  if (partyFromMsg.groupSize != null && !fd.groupSize) {
+    // Prefer explicit party-derived size when formData had no count
+    groupSize = groupSize || partyFromMsg.groupSize;
+  } else if (partyFromMsg.groupSize != null && !groupSize) {
+    groupSize = partyFromMsg.groupSize;
+  }
+
+  // Budget — normalized budgetConstraint (Pass #4); legacy budget retained
+  let budget = pick(seed.budget, fd.budget || null);
+  if (seed.clearBudget) budget = null;
+  if (!budget && !seed.clearBudget && !seed.budgetConstraint) {
+    const numeric = extractNumericBudget(msg);
+    if (numeric) budget = numeric;
+  }
+
+  let budgetConstraint = parseBudgetConstraint(msg, {
+    // When structured previous exists, do not re-infer scope from digit-only legacyBudget
+    // on silent reloads (empty message would collapse per_person → trip_total).
+    legacyBudget:
+      seed.budgetConstraint && !seed.budgetConstraint.cleared ? null : budget,
+    groupSize: null,
+    tripDays: numDays,
+    previous: seed.budgetConstraint || metadata?.persistedBudgetConstraint || null,
+  });
+  if (seed.clearBudget && !extractNumericBudget(msg) && !/\b\$\s*\d+/.test(msg)) {
+    // Only keep cleared if message isn't setting a new budget
+    if (isExplicitBudgetClear(msg) || !budgetConstraint.explicit || budgetConstraint.cleared) {
+      budgetConstraint = {
+        ...budgetConstraint,
+        cleared: true,
+        kind: null,
+        amount: null,
+        derivedTripCeiling: null,
+        derivationBasis: 'explicit_budget_cleared',
+        explicit: true,
+      };
+      budget = null;
+    }
+  }
+  if (budgetConstraint.cleared) {
+    budget = null;
+  } else {
+    const legacy = legacyBudgetFromConstraint(budgetConstraint);
+    if (legacy != null) budget = legacy;
   }
 
   // Fitness level — honor easy-to-moderate range before single-word extraction
-  let fitnessLevel = fd.fitnessLevel || fd.fitness || fd.difficulty || null;
+  let fitnessLevel = pick(seed.fitnessLevel, fd.fitnessLevel || fd.fitness || fd.difficulty || null);
   if (!fitnessLevel && /\beasy\s*[-–to]+\s*moderate\b/i.test(msg)) {
     fitnessLevel = 'moderate';
   }
   if (!fitnessLevel) {
-    // Try structured format first: "fitness level: moderate"
     const fitMatch = msg.match(/(?:fitness|difficulty|experience)\s*(?:level|is)?\s*:?\s*(beginner|easy|moderate|intermediate|advanced|hard|strenuous|experienced)/i);
     if (fitMatch) {
       fitnessLevel = fitMatch[1].toLowerCase();
     } else {
-      // Fallback: natural phrasing like "beginner hiker", "I'm a beginner", "easy hiker"
       const naturalMatch = msg.match(/\b(beginner|novice|easy|moderate|intermediate|advanced|experienced|expert)\s*(?:hiker|climber|trekker|traveler|level)?\b/i);
       if (naturalMatch) fitnessLevel = naturalMatch[1].toLowerCase();
     }
   }
   if (fitnessLevel) {
     fitnessLevel = fitnessLevel.toLowerCase();
-    // Normalize synonyms
     if (fitnessLevel === 'novice') fitnessLevel = 'beginner';
   }
 
   // Accommodation
-  let accommodation = fd.accommodation || fd.lodging || null;
-  if (!accommodation) {
-    const accomMatch = msg.match(/(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb)/i);
-    if (accomMatch) accommodation = accomMatch[1].toLowerCase();
+  let accommodation = pick(seed.accommodation, fd.accommodation || fd.lodging || null);
+  const lodgingTargetRe =
+    /\b(?:hotel|lodge|cabin|glamping|airbnb|lodging|motel)\b/i;
+  const campingTargetRe = /\b(?:camp(?:ing)?|tent|rv|backcountry)\b/i;
+  const correctionCueRe = /\b(?:actually|instead|rather|switch|change|let'?s|replace)\b/i;
+  const fromToAccom = msg.match(
+    /\b(?:switch|change|replace)\s+from\s+[\w\s-]{0,40}?\s+to\s+(?:a\s+|an\s+)?(cabin|hotel|lodge|lodging|motel|airbnb|glamping|camping|tent|rv|backcountry)\b/i
+  );
+
+  if (fromToAccom) {
+    const raw = fromToAccom[1].toLowerCase();
+    accommodation = raw === 'camp' ? 'camping' : raw;
+  } else if (!accommodation) {
+    const accomMatch = msg.match(/\b(camping|tent|rv|car camping|backcountry|lodge|hotel|cabin|glamping|airbnb|camp)\b/i);
+    if (accomMatch) {
+      const raw = accomMatch[1].toLowerCase();
+      accommodation = raw === 'camp' ? 'camping' : raw;
+    }
+  } else {
+    // Only reinterpret accommodation from the *latest* utterance when a
+    // correction cue is present — avoid "instead" (city change) collapsing a
+    // prior "lodge" preference into coarse "lodging" / unknown stayPreference.
+    const focusMsg = (msg.split(/\n+/).filter(Boolean).pop() || msg);
+    if (lodgingTargetRe.test(focusMsg) && correctionCueRe.test(focusMsg)) {
+      const lodgeMatch = focusMsg.match(/\b(hotel|lodge|cabin|glamping|airbnb|lodging|motel)\b/i);
+      if (lodgeMatch) {
+        accommodation = lodgeMatch[1].toLowerCase();
+      }
+    } else if (campingTargetRe.test(focusMsg) && correctionCueRe.test(focusMsg)) {
+      const campMatch = focusMsg.match(/\b(camping|tent|rv|car camping|backcountry|camp)\b/i);
+      if (campMatch) {
+        const raw = campMatch[1].toLowerCase();
+        accommodation = raw === 'camp' ? 'camping' : raw;
+      }
+    }
   }
 
-  // Interests
-  let interests = fd.interests || [];
-  if (typeof interests === 'string') interests = interests.split(',').map(s => s.trim());
+  // Interests — presence-aware:
+  //   seed.interests as Array (including []) = authoritative
+  //   seed.interests absent = may fall back to formData (legacy compat)
+  let interests;
+  if (Object.prototype.hasOwnProperty.call(seed, 'interests') && Array.isArray(seed.interests)) {
+    interests = normalizeInterestList(seed.interests);
+  } else {
+    interests = normalizeInterestList(
+      typeof fd.interests === 'string'
+        ? fd.interests.split(',').map((s) => s.trim())
+        : fd.interests || []
+    );
+  }
 
   // Children
-  let hasChildren = fd.hasChildren || fd.children || false;
-  if (!hasChildren) {
-    hasChildren = /\b(?:kids?|children|toddler|family|infant|baby)\b/i.test(msg);
+  let hasChildren = seed.hasChildren != null ? seed.hasChildren : !!(fd.hasChildren || fd.children);
+  let childrenCount =
+    seed.childrenCount != null
+      ? seed.childrenCount
+      : fd.childrenCount != null && Number.isFinite(Number(fd.childrenCount))
+        ? Number(fd.childrenCount)
+        : null;
+
+  if (partyFromMsg.clearChildren) {
+    hasChildren = false;
+    childrenCount = null;
+  } else {
+    if (partyFromMsg.hasChildren === true) hasChildren = true;
+    if (partyFromMsg.childrenCount != null) childrenCount = partyFromMsg.childrenCount;
+    if (!hasChildren && /\b(?:kids?|children|toddler|family|infant|baby)\b/i.test(msg)) {
+      hasChildren = true;
+    }
+    if (childrenCount == null) {
+      const kids = extractChildrenCount(msg);
+      if (kids != null) childrenCount = kids;
+    }
   }
 
-  const overrides = extractMessageConstraintOverrides(msg);
+  // Couple+kids size when neither seed nor formData had an explicit count
+  if (
+    partyFromMsg.groupSize != null &&
+    partyFromMsg.travelParty === 'family' &&
+    partyFromMsg.childrenCount != null &&
+    !fd.groupSize &&
+    seed.groupSize == null
+  ) {
+    groupSize = partyFromMsg.groupSize;
+  } else if (partyFromMsg.groupSize != null && !groupSize) {
+    groupSize = partyFromMsg.groupSize;
+  }
+
+  const overrides = extractMessageConstraintOverrides(msg, { interests });
   if (overrides.groupSize != null) groupSize = overrides.groupSize;
   if (overrides.budget != null) budget = overrides.budget;
+  if (overrides.clearBudget) {
+    budget = null;
+    budgetConstraint = {
+      ...budgetConstraint,
+      kind: null,
+      amount: null,
+      currency: null,
+      scope: 'unknown',
+      qualitativeTier: null,
+      explicit: true,
+      cleared: true,
+      derivedTripCeiling: null,
+      derivationBasis: 'explicit_budget_cleared',
+    };
+  } else if (overrides.budgetConstraint) {
+    budgetConstraint = deriveTripCeiling(overrides.budgetConstraint, {
+      groupSize,
+      tripDays: overrides.numDays != null ? overrides.numDays : numDays,
+    });
+    const legacy = legacyBudgetFromConstraint(budgetConstraint);
+    if (legacy != null) budget = legacy;
+  }
   if (overrides.fitnessLevel != null) fitnessLevel = overrides.fitnessLevel;
   if (overrides.accommodation != null) accommodation = overrides.accommodation;
   if (overrides.numDays != null) numDays = overrides.numDays;
   if (overrides.startDate != null) startDate = overrides.startDate;
   if (overrides.endDate != null) endDate = overrides.endDate;
-  if (overrides.interests != null) interests = overrides.interests;
-  if (overrides.hasChildren != null) hasChildren = overrides.hasChildren;
+  if (overrides.travelParty != null) travelParty = overrides.travelParty;
+  if (overrides.clearChildren) {
+    hasChildren = false;
+    childrenCount = null;
+  } else {
+    if (overrides.hasChildren != null) hasChildren = overrides.hasChildren;
+    if (overrides.childrenCount != null) childrenCount = overrides.childrenCount;
+  }
 
-  const hasConstraints = !!(parkCode || numDays || groupSize || budget || fitnessLevel || accommodation || interests.length > 0 || hasChildren);
+  if (overrides.interests != null) {
+    interests = normalizeInterestList(overrides.interests);
+  } else {
+    const mutation = resolveInterestMutation(msg, interests);
+    if (mutation.interests && mutation.mode !== 'none') {
+      interests = normalizeInterestList(mutation.interests);
+    }
+  }
 
-  return {
-    parkCode,
-    dates: { start: startDate, end: endDate, numDays },
+  // Family stop-cap signal: normalized travelParty=family OR hasChildren
+  const isFamilyParty = travelParty === 'family' || hasChildren === true;
+
+  if (travelParty === 'solo' && groupSize == null) groupSize = 1;
+  if (travelParty === 'couple' && groupSize == null) groupSize = 2;
+
+  // Re-derive ceiling now that groupSize / numDays are final (Pass #4).
+  // Pass #5 — always pass previous so a silent follow-up keeps persisted budget.
+  if (!budgetConstraint.cleared) {
+    if (!overrides.budgetConstraint && !overrides.clearBudget) {
+      budgetConstraint = parseBudgetConstraint(msg, {
+        legacyBudget:
+          seed.budgetConstraint && !seed.budgetConstraint.cleared ? null : budget,
+        groupSize,
+        tripDays: numDays,
+        previous: seed.budgetConstraint || budgetConstraint,
+      });    } else {
+      budgetConstraint = deriveTripCeiling(budgetConstraint, { groupSize, tripDays: numDays });
+    }
+    if (budgetConstraint.cleared) budget = null;
+    else {
+      const legacy = legacyBudgetFromConstraint(budgetConstraint);
+      if (legacy != null) budget = legacy;
+    }
+  }
+
+  const msgCosts = extractUserSuppliedCosts(msg);
+  const seedCosts = Array.isArray(seed.costComponents) ? seed.costComponents : [];
+  let userCostComponents;
+  if (msgCosts.length === 0) {
+    userCostComponents = seedCosts.filter((c) => c?.basis === 'user_supplied');
+  } else {
+    const merged = [...seedCosts.filter((c) => c?.basis === 'user_supplied')];
+    for (const c of msgCosts) {
+      const dup = merged.some(
+        (x) => x.category === c.category && Number(x.amountMin) === Number(c.amountMin)
+      );
+      if (!dup) merged.push(c);
+    }
+    userCostComponents = merged;
+  }
+  // Pass #3 — multi-destination / road-trip contract (offline catalog resolver)
+  // Pass #5 — when persisted tripScope exists, patch from latest message only.
+  let tripScope = seed.tripScope
+    ? applyTripScopeRefinement(seed.tripScope, msg)
+    : buildTripScopeFromMessage(msg);
+  const maxDailyDriveMinutes =
+    tripScope.maxDailyDriveMinutes ??
+    parseMaxDailyDriveMinutes(msg) ??
+    seed.maxDailyDriveMinutes ??
+    null;
+  if (maxDailyDriveMinutes != null && tripScope) {
+    tripScope = { ...tripScope, maxDailyDriveMinutes };
+  }
+  // Sticky — once a traveler asks for realistic/manageable driving it stays true for
+  // the trip even if a later refinement message doesn't repeat the phrasing.
+  const drivingFeasibilityRequired = Boolean(
+    tripScope.drivingFeasibilityRequired ||
+    detectDrivingFeasibilityConstraint(msg) ||
+    maxDailyDriveMinutes != null ||
+    seed.drivingFeasibilityRequired
+  );
+  if (drivingFeasibilityRequired && tripScope) {
+    tripScope = { ...tripScope, drivingFeasibilityRequired: true };
+  }
+
+  // Pace — one family, not a second regex authority.
+  let pace = seed.pace || null;
+  const resolvedPace = resolvePace(msg);
+  if (resolvedPace.value) pace = resolvedPace.value;
+
+  // Hard user preference — avoid exposed trails (semantic, not raw regex match)
+  let avoidExposure = seed.avoidExposure === true ? true : null;
+  if (userAvoidsTrailExposure(msg)) avoidExposure = true;
+
+  const mobility = extractMobilityConstraints(msg);
+  const partyExtras = extractPartyExtras(msg);
+  // Phase 9C.1F.1 — explicit trip-level transport constraint (durable via
+  // planningState.transportation.drivingPolicy). Never inferred from silence.
+  const transportConstraint = extractTransportConstraints(msg);
+  const activityPreferences = extractActivityPreferences(msg);
+  if (activityPreferences.avoidExposure) avoidExposure = true;
+  const availableHours = spokenDuration.availableHours;
+
+  const finalBudgetAssessment = assessBudget({
+    budgetConstraint,
+    components: userCostComponents,
+    accommodation,
+    tripScope,
     groupSize,
+    tripDays: numDays,
+  });
+
+  const hasConstraints = !!(
+    parkCode ||
+    numDays ||
+    groupSize ||
+    budget ||
+    fitnessLevel ||
+    accommodation ||
+    interests.length > 0 ||
+    hasChildren ||
+    travelParty ||
+    pace ||
+    avoidExposure ||
+    maxDailyDriveMinutes != null ||
+    drivingFeasibilityRequired ||
+    (tripScope.type !== 'single_destination' && tripScope.destinations.length > 0) ||
+    (budgetConstraint.explicit && !budgetConstraint.cleared)
+  );
+
+  const constraintsOut = {
+    parkCode,
+    dates: { start: startDate, end: endDate, numDays, tripWindowDays: temporalResolution.tripWindowDays },
+    ...(temporalResolution.action !== 'unchanged' || temporalResolution.pendingTemporalResolution ? { temporalResolution } : {}),
+    groupSize,
+    travelParty,
     budget,
+    budgetConstraint,
+    budgetAssessment: finalBudgetAssessment,
+    costComponents: userCostComponents,
     fitnessLevel,
     accommodation,
     interests,
     hasChildren,
+    childrenCount,
+    isFamilyParty,
+    maxDailyDriveMinutes,
+    drivingFeasibilityRequired,
+    tripScope,
+    pace,
+    avoidExposure,
+    mobility,
+    time: { availableHours },
+    hasOlderTravelers: partyExtras.hasOlderTravelers,
+    activityPreferences,
+    transportConstraint,
     hasConstraints,
   };
+
+  // ONE canonical constraint-translation boundary. Grounded constraint families
+  // (exposure aversion and its explicit reversal, numeric and non-numeric
+  // mobility, pace) are applied here so every downstream consumer reads
+  // canonical state instead of re-parsing raw conversation text. Current-message
+  // values outrank persisted state; untouched fields survive.
+  const translated = applyTurnConstraintsToRuntime(constraintsOut, { messageText: msg });
+  constraintsOut.hasConstraints = constraintsOut.hasConstraints
+    || translated.fields.length > 0
+    || constraintsOut.avoidExposure === true
+    || constraintsOut.pace != null
+    || constraintsOut.mobility?.walkingTolerance != null
+    || constraintsOut.mobility?.maxWalkMilesPerSegment != null
+    || transportConstraint.drivingPolicy != null
+    || transportConstraint.clearDrivingPolicy === true
+    || transportConstraint.rentalCar === true;
+
+  // Rebuild durable planning snapshot for this turn (evidence excluded).
+  constraintsOut.planningState = buildPlanningStateFromRuntime({
+    constraints: constraintsOut,
+    previous: persisted,
+    formData: fd,
+    parkCode,
+    userSuppliedCosts: userCostComponents,
+    messageText: msg,
+  });
+
+  return constraintsOut;
 }
 
 // ── preflightCheck ───────────────────────────────────────────────────────────
@@ -288,7 +657,7 @@ function preflightCheck(constraints, parkCode) {
   }
 
   // Family + short trip warning
-  if (constraints.hasChildren && constraints.dates?.numDays && constraints.dates.numDays <= 2) {
+  if ((constraints.isFamilyParty || constraints.hasChildren) && constraints.dates?.numDays && constraints.dates.numDays <= 2) {
     warnings.push(`A ${constraints.dates.numDays}-day trip with children is tight. The plan will keep days shorter with fewer stops.`);
   }
 
@@ -300,8 +669,8 @@ function preflightCheck(constraints, parkCode) {
 /**
  * Builds a prompt injection block with explicit user constraints.
  */
-function buildConstraintBlock(constraints) {
-  if (!constraints.hasConstraints) return '';
+function buildConstraintBlock(constraints, { routeCoverage = null } = {}) {
+  if (!constraints?.hasConstraints && !constraints?.tripScope) return '';
 
   const lines = ['--- USER CONSTRAINTS (MUST RESPECT) ---'];
 
@@ -317,8 +686,17 @@ function buildConstraintBlock(constraints) {
   if (constraints.groupSize) {
     lines.push(`Group size: ${constraints.groupSize} people`);
   }
-  if (constraints.hasChildren) {
-    lines.push(`HARD RULE: Family with children — max 4 stops per day, no strenuous trails, kid-friendly activities only.`);
+  if (constraints.travelParty) {
+    lines.push(`Travel party: ${constraints.travelParty}`);
+  }
+  if (constraints.isFamilyParty || constraints.hasChildren) {
+    const kidsBit =
+      constraints.childrenCount != null
+        ? ` (${constraints.childrenCount} children)`
+        : '';
+    lines.push(
+      `HARD RULE: Family with children${kidsBit} — max 4 stops per day, no strenuous trails, kid-friendly activities only.`
+    );
   }
   if (constraints.fitnessLevel) {
     const maxDiff = FITNESS_TO_MAX_DIFFICULTY[constraints.fitnessLevel] || 'moderate';
@@ -330,8 +708,92 @@ function buildConstraintBlock(constraints) {
   if (constraints.budget) {
     lines.push(`Budget: $${constraints.budget}`);
   }
-  if (constraints.interests.length > 0) {
+  if (constraints.budgetAssessment) {
+    const budgetBlock = buildBudgetPromptBlock(constraints.budgetAssessment);
+    if (budgetBlock) {
+      // Insert after legacy budget line; strip leading newlines for join consistency
+      lines.push(...budgetBlock.trim().split('\n'));
+    }
+  } else if (constraints.budgetConstraint?.explicit) {
+    const stub = assessBudget({
+      budgetConstraint: constraints.budgetConstraint,
+      components: constraints.costComponents || [],
+      accommodation: constraints.accommodation,
+      tripScope: constraints.tripScope,
+      groupSize: constraints.groupSize,
+      tripDays: constraints.dates?.numDays,
+    });
+    const budgetBlock = buildBudgetPromptBlock(stub);
+    if (budgetBlock) lines.push(...budgetBlock.trim().split('\n'));
+  }
+  if (constraints.interests?.length > 0) {
     lines.push(`Interests: ${constraints.interests.join(', ')}`);
+  }
+  if (constraints.maxDailyDriveMinutes != null) {
+    lines.push(
+      `HARD RULE: Maximum daily driving = ${constraints.maxDailyDriveMinutes} minutes. ` +
+      `Do NOT schedule a day whose drive legs exceed this user preference.`
+    );
+  }
+
+  // Phase 8D.6.1 truthfulness: generation precedes stop-route verification.
+  // If a caller has attempt coverage, distinguish none/partial/full edge checks
+  // without implying that unrepresented journey legs were verified.
+  if (
+    constraints.drivingFeasibilityRequired &&
+    constraints.tripScope?.type !== 'road_trip' &&
+    constraints.tripScope?.type !== 'multi_destination'
+  ) {
+    lines.push(
+      'HARD RULE: Traveler explicitly asked to keep driving realistic/manageable. ' +
+      drivingVerificationInstruction(routeCoverage)
+    );
+  }
+
+  const scope = constraints.tripScope;
+  if (scope && (scope.type === 'multi_destination' || scope.type === 'road_trip')) {
+    lines.push('--- TRIP SCOPE (MUST RESPECT) ---');
+    lines.push(`Trip scope type: ${scope.type}`);
+    if (scope.origin?.displayName) {
+      lines.push(`Origin: ${scope.origin.displayName} (${scope.origin.entityId || 'unresolved'})`);
+    }
+    if (scope.destinations?.length) {
+      const ordered = scope.destinations
+        .map((d, i) => `${i + 1}. ${d.displayName || d.entityId}${d.entityId ? ` [${d.entityId}]` : ''}`)
+        .join('; ');
+      lines.push(`Ordered destinations: ${ordered}`);
+      lines.push(
+        scope.destinationOrderExplicit && scope.userSuppliedOrder
+          ? 'HARD RULE: Preserve the traveler\'s explicit destination order. Do NOT reorder.'
+          : scope.optimizationRequested
+            ? 'Traveler asked for efficient order — do not invent drive times; use route evidence only.'
+            : 'Preserve destination coverage for every requested destination entity.'
+      );
+    }
+    if (scope.routeShape && scope.routeShape !== 'unknown') {
+      lines.push(`Route shape: ${scope.routeShape}`);
+    }
+    if (scope.transportMode) lines.push(`Transport mode: ${scope.transportMode}`);
+    if (scope.routeLegs?.length) {
+      const legLines = scope.routeLegs.map((leg) => {
+        const label = `${leg.fromDisplayName || leg.fromEntityId} → ${leg.toDisplayName || leg.toEntityId}`;
+        return leg.status === 'requires_driving_evidence'
+          ? `${label} (requires verified driving evidence — do NOT invent duration)`
+          : `${label} (${leg.status} — feasibility unverified)`;
+      });
+      lines.push(`Route legs: ${legLines.join('; ')}`);
+    }
+    if (scope.unresolvedRouteLegs?.length) {
+      lines.push(
+        `HARD RULE: ${scope.unresolvedRouteLegs.length} route leg(s) lack coordinates/evidence. ` +
+        `Say driving feasibility still needs verification — never invent hours.`
+      );
+    }
+    lines.push(
+      'HARD RULE: Allocate meaningful structured time to every requested destination entity id. ' +
+      'Coverage is validated on TripPlan destinationEntityId / parkCode — prose mentions do not count.'
+    );
+    lines.push('--- END TRIP SCOPE ---');
   }
 
   lines.push('--- END USER CONSTRAINTS ---');
@@ -344,8 +806,10 @@ function buildConstraintBlock(constraints) {
  * Validates a parsed itinerary against user constraints.
  * Returns array of structured issues.
  */
-function validateItineraryConstraints(itineraryData, constraints) {
-  if (!itineraryData || !itineraryData.days || !constraints?.hasConstraints) return [];
+function validateItineraryConstraints(itineraryData, constraints, options = {}) {
+  if (!itineraryData || !itineraryData.days) return [];
+  const tripScope = constraints?.tripScope || options.tripScope || null;
+  if (!constraints?.hasConstraints && !tripScope) return [];
 
   const issues = [];
 
@@ -429,8 +893,8 @@ function validateItineraryConstraints(itineraryData, constraints) {
     }
   }
 
-  // 4. Stop count for families
-  if (constraints.hasChildren) {
+  // 4. Stop count for families (normalized travelParty=family or hasChildren)
+  if (constraints.isFamilyParty || constraints.hasChildren) {
     for (let di = 0; di < itineraryData.days.length; di++) {
       const day = itineraryData.days[di];
       if (!day.stops) continue;
@@ -446,23 +910,30 @@ function validateItineraryConstraints(itineraryData, constraints) {
     }
   }
 
-  // 5. Schedule overflow (>14h active)
+  // 5. Schedule overflow — GLOBAL FEASIBILITY GUARD (14h/day).
+  // Distinct from user preference maxDailyDriveMinutes (section 7).
+  // Uses the same canonical daily drive total as validateMaxDailyDrive
+  // (stop drivingTimeFromPreviousMin + day.totalDriveMinutes).
   for (let di = 0; di < itineraryData.days.length; di++) {
     const day = itineraryData.days[di];
     if (!day.stops || day.stops.length === 0) continue;
 
-    let totalMinutes = 0;
+    let totalMinutes = Number(day.bufferMinutes) || 0;
+    totalMinutes += collectDayDriveMinutes(day);
     for (const stop of day.stops) {
-      totalMinutes += (stop.duration || 0) + (stop.drivingTimeFromPreviousMin || 0);
+      totalMinutes += (stop.duration || 0);
     }
 
-    if (totalMinutes > 14 * 60) {
+    if (totalMinutes > GLOBAL_MAX_ACTIVE_MINUTES) {
       issues.push({
         type: 'schedule_overflow',
         severity: 'feasibility',
-        details: `Day ${day.dayNumber || di + 1} has ${Math.round(totalMinutes / 60 * 10) / 10}h of activity — exceeds 14h max`,
+        reasonCode: 'drive_activity_day_overflow',
+        details: `Day ${day.dayNumber || di + 1} has ${Math.round(totalMinutes / 60 * 10) / 10}h of activity — exceeds ${GLOBAL_MAX_ACTIVE_MINUTES / 60}h max`,
         dayIndex: di,
         totalMinutes,
+        globalMaxActiveMinutes: GLOBAL_MAX_ACTIVE_MINUTES,
+        guardType: 'global_feasibility',
       });
     }
   }
@@ -491,6 +962,47 @@ function validateItineraryConstraints(itineraryData, constraints) {
           });
         }
       }
+    }
+  }
+
+  // 7. Multi-destination / road-trip contract (Pass #3)
+  if (tripScope) {
+    issues.push(...validateDestinationCoverage(itineraryData, tripScope));
+    issues.push(...validateDestinationSequence(itineraryData, tripScope));
+    // Intrinsic: a single mandatory verified leg already > daily cap.
+    issues.push(...evaluateRouteLegsAgainstDailyDriveCap({
+      tripScope,
+      drivingLegs: options.drivingEvidenceLegs || [],
+      maxDailyDriveMinutes:
+        tripScope.maxDailyDriveMinutes ?? constraints?.maxDailyDriveMinutes ?? null,
+    }));
+    issues.push(...validateMaxDailyDrive(itineraryData, tripScope, constraints));
+    if (tripScope.type === 'road_trip') {
+      issues.push(...validateRouteLegCoverage(tripScope, options));
+    }
+    issues.push(...validateOvernightDestinationIdentity(itineraryData, tripScope));
+  } else if (constraints?.maxDailyDriveMinutes != null) {
+    issues.push(...validateMaxDailyDrive(itineraryData, null, constraints));
+  }
+
+  // 8. Budget realism (Pass #4)
+  const assessment =
+    options.budgetAssessment ||
+    constraints?.budgetAssessment ||
+    (constraints?.budgetConstraint
+      ? assessBudget({
+        budgetConstraint: constraints.budgetConstraint,
+        components: options.costComponents || constraints.costComponents || [],
+        accommodation: constraints.accommodation,
+        tripScope,
+        groupSize: constraints.groupSize,
+        tripDays: constraints.dates?.numDays,
+      })
+      : null);
+  if (assessment) {
+    issues.push(...validateBudgetConstraints(assessment));
+    if (options.budgetClaimText) {
+      issues.push(...validateBudgetClaim(options.budgetClaimText, assessment));
     }
   }
 
@@ -583,7 +1095,9 @@ function detectConflicts(constraints, userMessage, options = {}) {
 
     // Check if user message requests activities above their fitness level
     const wantsHard = /\b(?:challenging|strenuous|hardest|toughest|most difficult|extreme|intense|demanding|ambitious)\b/i.test(msg);
-    const wantsSpecificHard = /\b(?:angels landing|half dome|highline trail|the narrows|chains|scramble|exposed|class \d)\b/i.test(msg);
+    const specificHardPattern = /\b(?:angels landing|half dome|highline trail|the narrows|chains|scramble|exposed|class \d)\b/i;
+    const rejectsSpecificHard = /\b(?:no|not|avoid|skip|without|don't|do not)\b[^.!?]{0,45}\b(?:angels landing|half dome|highline trail|the narrows|chains|scrambl(?:e|ing)|expos(?:ed|ure)|class \d)\b/i.test(msg);
+    const wantsSpecificHard = specificHardPattern.test(msg) && !rejectsSpecificHard;
 
     if ((wantsHard || wantsSpecificHard) && maxIdx <= 1) { // easy or moderate
       conflicts.push({
@@ -772,4 +1286,7 @@ module.exports = {
   PERMIT_PARKS,
   DIFFICULTY_ORDER,
   FITNESS_TO_MAX_DIFFICULTY,
+  validateBudgetClaim,
+  validateBudgetConstraints,
+  assessBudget,
 };

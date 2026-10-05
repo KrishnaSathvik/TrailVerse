@@ -11,6 +11,7 @@ const Event = require('../models/Event');
 const BlogPost = require('../models/BlogPost');
 const Comment = require('../models/Comment');
 const Testimonial = require('../models/Testimonial');
+const { assessTrailieEvidenceRefreshReadiness } = require('../config/trailieEvidenceRefreshSecret');
 
 // Health check endpoint
 router.get('/', async (req, res) => {
@@ -217,20 +218,48 @@ router.get('/ping', (req, res) => {
 // Readiness check (for Kubernetes/Docker)
 router.get('/ready', async (req, res) => {
   try {
+    const evidenceRefresh = assessTrailieEvidenceRefreshReadiness();
+
     // Check if database is connected
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
         status: 'not ready',
-        message: 'Database not connected'
+        message: 'Database not connected',
+        checks: {
+          evidenceRefresh: {
+            status: evidenceRefresh.status,
+            secretPresent: evidenceRefresh.secretPresent,
+          },
+        },
       });
     }
 
     // Simple database query to ensure it's responsive
     await mongoose.connection.db.admin().ping();
 
+    if (!evidenceRefresh.ready) {
+      return res.status(503).json({
+        status: 'not ready',
+        message: 'Trailie evidence refresh is not configured',
+        code: evidenceRefresh.code,
+        checks: {
+          evidenceRefresh: {
+            status: evidenceRefresh.status,
+            secretPresent: evidenceRefresh.secretPresent,
+          },
+        },
+      });
+    }
+
     res.json({
       status: 'ready',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      checks: {
+        evidenceRefresh: {
+          status: evidenceRefresh.status,
+          secretPresent: evidenceRefresh.secretPresent,
+        },
+      },
     });
 
   } catch (error) {
@@ -249,6 +278,39 @@ router.get('/live', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+router.get('/product', async (req, res) => {
+  const MIN_PARKS = Number(process.env.HEALTH_MIN_PARKS || 400);
+  try {
+    const { getNpsService } = require('../services/npsService');
+    const { filterParksByState } = require('../utils/parkListFilters');
+    const parks = await getNpsService().getAllParks();
+    const utah = filterParksByState(parks, 'UT');
+    const checks = {
+      parksCount: {
+        status: parks.length >= MIN_PARKS ? 'healthy' : 'unhealthy',
+        count: parks.length,
+        min: MIN_PARKS,
+      },
+      utahStateQuery: {
+        status: utah.length > 0 ? 'healthy' : 'unhealthy',
+        count: utah.length,
+      },
+    };
+    const healthy = Object.values(checks).every((check) => check.status === 'healthy');
+    return res.status(healthy ? 200 : 503).json({
+      status: healthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      checks,
+    });
+  } catch (error) {
+    return res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+    });
+  }
 });
 
 module.exports = router;

@@ -36,6 +36,7 @@ const DIFFICULTY_COLORS = {
 
 function formatTime12(timeStr) {
   if (!timeStr) return '';
+  if (!/^\d{1,2}:\d{2}$/.test(timeStr)) return timeStr;
   const [h, m] = timeStr.split(':').map(Number);
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
@@ -73,7 +74,7 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
     setIsEditing(false);
   };
 
-  const hasTime = stop.startTime || stop.duration;
+  const hasTime = stop.startTime || stop.timeWindow || stop.duration;
 
   return (
     <div
@@ -115,8 +116,8 @@ export default function StopCard({ stop, dayId, dragHandleProps, onRemove, onUpd
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               <Clock className="h-3 w-3 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
               <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                {stop.startTime ? formatTime12(stop.startTime) : ''}
-                {stop.startTime && stop.duration ? ' · ' : ''}
+                {stop.timeWindow || (stop.startTime ? formatTime12(stop.startTime) : '')}
+                {(stop.timeWindow || stop.startTime) && stop.duration ? ' · ' : ''}
                 {stop.duration ? formatDuration(stop.duration) : ''}
               </p>
               {stop.drivingTimeFromPreviousMin > 0 && (

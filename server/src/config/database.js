@@ -1,6 +1,19 @@
 const mongoose = require('mongoose');
+const { assessMongoTarget } = require('./mongoTargetGuard');
 
 const connectDB = async () => {
+  // Refuse remote databases outside production BEFORE connecting — local dev
+  // must never write to a shared cluster by accident (audit 2026-08-31).
+  const target = assessMongoTarget({
+    uri: process.env.MONGODB_URI,
+    nodeEnv: process.env.NODE_ENV,
+    allowRemoteHosts: process.env.MONGODB_DANGEROUSLY_ALLOW_REMOTE_HOSTS,
+  });
+  if (!target.allowed) {
+    console.error(`🛑 Refusing to start: ${target.reason}`);
+    process.exit(1);
+  }
+
   try {
     const options = {
       // This application release never creates collections or changes live indexes.

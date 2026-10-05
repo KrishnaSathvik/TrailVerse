@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 const BlogPost = require('../models/BlogPost');
 
 // @desc    Generate dynamic sitemap
@@ -68,7 +68,7 @@ router.get('/sitemap.xml', async (req, res) => {
 
     // Add all parks
     try {
-      const parks = await npsService.getAllParks();
+      const parks = await getNpsService().getAllParks();
       const nationalParks = parks.filter(p => p.designation === 'National Park');
       
       nationalParks.forEach(park => {

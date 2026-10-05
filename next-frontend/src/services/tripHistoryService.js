@@ -10,6 +10,8 @@
  */
 
 import tripService from './tripService';
+import { isDeclaredUiOnly } from '../lib/messageOwnership';
+import { isValidGuestSessionId } from '../lib/guestSessionIdentity';
 
 const LEGACY_TRIP_HISTORY_KEY = 'npe_usa_trip_history';
 const TEMP_CHAT_STATE_KEY = 'planai-chat-state';
@@ -168,7 +170,7 @@ export function getGuestAnonymousSessionId() {
     const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw);
-    if ((session.messageCount || 0) > 0 && session.anonymousId) {
+    if ((session.messageCount || 0) > 0 && isValidGuestSessionId(session.anonymousId)) {
       return session.anonymousId;
     }
   } catch (error) {
@@ -197,7 +199,7 @@ export const hasActivePlanAiConversation = () => {
     const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
     if (raw) {
       const session = JSON.parse(raw);
-      if ((session.messageCount || 0) > 0) return true;
+      if ((session.messageCount || 0) > 0 && isValidGuestSessionId(session.anonymousId)) return true;
     }
   } catch (error) {
     console.error('[TripHistory] Error checking active conversation:', error);
@@ -227,11 +229,27 @@ export const normalizeStoredMessages = (messages = []) =>
     timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
   }));
 
-/** Drop in-flight stream flags and partial assistant placeholders before persisting trips. */
+/**
+ * Drop in-flight stream flags, partial assistant placeholders and UI-only chrome
+ * before persisting trips.
+ *
+ * Stage 14.8H.1 — the chrome filter is here because this is the single choke
+ * point every canonical write passes through (revision 1, revision 2, the
+ * terminal write and the legacy path). Stage 14.8H persisted the Trailie welcome
+ * copy as a second assistant turn because nothing on this path could tell
+ * presentation copy from a real turn; ownership is now declared at creation and
+ * read here. See lib/messageOwnership.js.
+ */
 export const sanitizeMessagesForPersistence = (messages = []) =>
   messages
     .filter((msg) => !msg.isStreaming && !msg.isFinalizing)
-    .map(({ isStreaming, isFinalizing, ...msg }) => msg);
+    .filter((msg) => !isDeclaredUiOnly(msg))
+    .map(({
+      isStreaming, isFinalizing,
+      // Ownership metadata is a client-side concern; it never needs storing.
+      persistenceScope, includedInCanonicalConversation,
+      ...msg
+    }) => msg);
 
 /**
  * Update user preferences (for AI context)

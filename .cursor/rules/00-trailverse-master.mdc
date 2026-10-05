@@ -11,7 +11,7 @@ alwaysApply: true
 
 - **Brand voice**: "Your Universe of National Parks Exploration"
 - **AI persona**: **Trailie** — park trip planner (nav label "Trailie", routes under `/plan-ai`)
-- **Public value prop**: Real-time weather, maps, reviews, compare, events, discover-by-taxonomy, blog, and AI itineraries — **no account required** to browse parks
+- **Public value prop**: Real-time weather, maps, reviews, compare, events, discover-by-taxonomy, blog, AI itineraries, and **Where Next** (`/where-next`) — **no account required** to browse parks
 
 ## Repository layout
 

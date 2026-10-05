@@ -7,7 +7,7 @@ function normalizeAccommodation(value) {
   if (!value) return null;
   const v = String(value).toLowerCase();
   if (v === 'lodge' || v === 'hotel' || v === 'motel') return 'lodging';
-  if (v === 'tent' || v === 'rv' || v === 'backcountry' || v === 'car camping') return 'camping';
+  if (v === 'tent' || v === 'rv' || v === 'backcountry' || v === 'car camping' || v === 'camp') return 'camping';
   return v;
 }
 
@@ -46,7 +46,7 @@ export function extractMessageConstraintOverrides(userMessage) {
 
   const wantsCamping =
     /\b(camp(ing)? instead|i(?:'ll| will) camp|backcountry|tent camping|car camping)\b/i.test(msg) ||
-    (/\b(camping|tent|rv)\b/i.test(msg) && hasCorrectionCue);
+    (/\b(camping|camp|tent|rv)\b/i.test(msg) && hasCorrectionCue);
   const rejectsLodging =
     /\b(remove|skip|no|without|avoid|drop)\b.*\b(lodge|lodging|hotel|hotels|motel)\b/i.test(msg) ||
     /\b(no more|not)\b.*\b(lodge|lodging|hotel)\b/i.test(msg);

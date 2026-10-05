@@ -1,6 +1,7 @@
 import enhancedApi from '@/services/enhancedApi';
 import { tripHistoryService } from '@/services/tripHistoryService';
 import { ANONYMOUS_SESSION_MAX_AGE_MS } from '@/lib/anonymousChatLimits';
+import { isValidGuestSessionId } from '@/lib/guestSessionIdentity';
 
 const ANONYMOUS_SESSION_KEY = 'anonymousSession';
 
@@ -18,8 +19,8 @@ function readExistingSession() {
  * Bind a guest resume link to this browser, then open /plan-ai with full chat restored.
  */
 export async function seedGuestSessionFromLink(anonymousId) {
-  if (!anonymousId) {
-    return { ok: false, error: 'Missing session id' };
+  if (!isValidGuestSessionId(anonymousId)) {
+    return { ok: false, error: 'This guest chat was not found or has expired.' };
   }
 
   const response = await enhancedApi.get(

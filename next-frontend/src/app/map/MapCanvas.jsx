@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin } from '@components/icons';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -17,6 +17,9 @@ import {
   PARK_MARKER,
 } from '@/lib/parkMapBasemap';
 import MapCanvasControls from './MapCanvasControls';
+
+// Next emits raw URL assets without their ESM siblings; predev/prebuild copy both.
+maplibregl.setWorkerUrl(`/maplibre/${maplibregl.getVersion()}/maplibre-gl-worker.mjs`);
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
 const DEFAULT_ZOOM = 4;

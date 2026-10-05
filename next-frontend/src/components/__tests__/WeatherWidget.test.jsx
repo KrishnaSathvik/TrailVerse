@@ -7,8 +7,7 @@ import React from 'react';
 // Mock the weather service
 vi.mock('../../services/weatherService', () => ({
   default: {
-    getWeather: vi.fn(),
-    getForecast: vi.fn(),
+    getParkWeather: vi.fn(),
   },
 }));
 
@@ -55,15 +54,14 @@ describe('WeatherWidget', () => {
   });
 
   it('renders loading state initially', () => {
-    render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
-    expect(screen.getByTestId('loader-icon')).toBeInTheDocument();
+    render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument();
   });
 
   it('renders weather data when loaded successfully', async () => {
-    weatherService.getWeather.mockResolvedValue(mockWeatherData);
-    weatherService.getForecast.mockResolvedValue(mockForecastData);
+    weatherService.getParkWeather.mockResolvedValue({ current: mockWeatherData, forecast: mockForecastData });
 
-    render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
+    render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
       expect(screen.getByText((_, element) => element?.textContent === '77°F(25°C)')).toBeInTheDocument();
@@ -73,10 +71,9 @@ describe('WeatherWidget', () => {
 
   it('handles rate limit errors gracefully', async () => {
     const rateLimitError = new Error('rate limit exceeded');
-    weatherService.getWeather.mockRejectedValue(rateLimitError);
-    weatherService.getForecast.mockRejectedValue(rateLimitError);
+    weatherService.getParkWeather.mockRejectedValue(rateLimitError);
 
-    render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
+    render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
       expect(screen.getByText(/Weather data temporarily unavailable due to high usage/)).toBeInTheDocument();
@@ -85,10 +82,9 @@ describe('WeatherWidget', () => {
 
   it('handles API key errors', async () => {
     const apiKeyError = new Error('API key invalid');
-    weatherService.getWeather.mockRejectedValue(apiKeyError);
-    weatherService.getForecast.mockRejectedValue(apiKeyError);
+    weatherService.getParkWeather.mockRejectedValue(apiKeyError);
 
-    render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
+    render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
       expect(screen.getByText(/Weather service configuration issue/)).toBeInTheDocument();
@@ -97,10 +93,9 @@ describe('WeatherWidget', () => {
 
   it('handles general errors', async () => {
     const generalError = new Error('Network error');
-    weatherService.getWeather.mockRejectedValue(generalError);
-    weatherService.getForecast.mockRejectedValue(generalError);
+    weatherService.getParkWeather.mockRejectedValue(generalError);
 
-    render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
+    render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
       expect(screen.getByText(/Unable to load weather data/)).toBeInTheDocument();
@@ -111,16 +106,14 @@ describe('WeatherWidget', () => {
     render(<WeatherWidget latitude={null} longitude={null} />);
 
     await waitFor(() => {
-      expect(weatherService.getWeather).not.toHaveBeenCalled();
-      expect(weatherService.getForecast).not.toHaveBeenCalled();
+      expect(weatherService.getParkWeather).not.toHaveBeenCalled();
     });
   });
 
   it('displays forecast data correctly', async () => {
-    weatherService.getWeather.mockResolvedValue(mockWeatherData);
-    weatherService.getForecast.mockResolvedValue(mockForecastData);
+    weatherService.getParkWeather.mockResolvedValue({ current: mockWeatherData, forecast: mockForecastData });
 
-    render(<WeatherWidget latitude={40.7128} longitude={-74.0060} />);
+    render(<WeatherWidget parkCode="acad" latitude={40.7128} longitude={-74.0060} />);
 
     await waitFor(() => {
       expect(screen.getByText('Mon')).toBeInTheDocument();

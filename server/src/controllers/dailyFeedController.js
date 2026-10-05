@@ -1,4 +1,4 @@
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 const provider = require('../services/openaiService');
 const { AsyncLocalStorage } = require('node:async_hooks');
 const feedAiScope = new AsyncLocalStorage();
@@ -497,7 +497,7 @@ async function getRandomParkOfDay(dateStr) {
     
     // Get all parks with timeout
     const allParks = await Promise.race([
-      npsService.getAllParks(),
+      getNpsService().getAllParks(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('NPS API timeout')), 10000))
     ]);
 
@@ -632,7 +632,7 @@ async function getPersonalizedParkOfDay(user, feedDate = getFeedDateKey()) {
     
     // Get all parks with timeout
     const allParks = await Promise.race([
-      npsService.getAllParks(),
+      getNpsService().getAllParks(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('NPS API timeout')), 10000))
     ]);
     
@@ -1084,7 +1084,7 @@ function getWeatherRecommendation(condition, temperature) {
 async function getMustDoActivities(parkCode) {
   try {
     // Get real park activities from NPS service
-    const parkActivities = await npsService.getParkActivities(parkCode);
+    const parkActivities = await getNpsService().getParkActivities(parkCode);
     
     if (parkActivities && parkActivities.length > 0) {
       // Return top 3 activities from the park
@@ -1103,7 +1103,7 @@ async function getMustDoActivities(parkCode) {
 async function getCrowdLevel(parkCode) {
   try {
     // Get park data first
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return 'Moderate';
     }

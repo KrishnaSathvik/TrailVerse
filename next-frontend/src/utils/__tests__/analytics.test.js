@@ -34,6 +34,8 @@ import {
   sanitizeVercelEventData,
   trackVercel,
   isAnalyticsAllowed,
+  logNewsletterSignup,
+  sanitizeNewsletterAnalytics,
 } from '../analytics';
 import ReactGA from 'react-ga4';
 
@@ -148,12 +150,12 @@ describe('Analytics', () => {
 
     it('logAIChat distinguishes success and error', () => {
       logAIChat('hello', 1200, true);
-      expect(mockVercelTrack).toHaveBeenCalledWith('ai_chat_success', expect.objectContaining({
+      expect(mockVercelTrack).toHaveBeenCalledWith('trailie_message', expect.objectContaining({
         message_length: 5,
         response_time_ms: 1200,
       }));
       logAIChat('hello', 0, false);
-      expect(mockVercelTrack).toHaveBeenCalledWith('ai_chat_error', expect.any(Object));
+      expect(mockVercelTrack).toHaveBeenCalledWith('trailie_message_error', expect.any(Object));
     });
 
     it('logBlogView hits Vercel', () => {
@@ -200,6 +202,48 @@ describe('Analytics', () => {
         park_code: 'yell',
       }));
     });
+
+    it('logNewsletterSignup fires submit/success/error with source and without PII', () => {
+      logNewsletterSignup('newsletter_signup_submit', {
+        source: 'newsletter-page',
+        email: 'secret@example.com',
+        confirmToken: 'abc',
+      });
+      logNewsletterSignup('newsletter_signup_success', { source: 'newsletter-page' });
+      logNewsletterSignup('newsletter_signup_error', { source: 'blog-footer' });
+
+      expect(mockVercelTrack).toHaveBeenCalledWith(
+        'newsletter_signup_submit',
+        expect.objectContaining({ source: 'newsletter-page' })
+      );
+      expect(mockVercelTrack).toHaveBeenCalledWith(
+        'newsletter_signup_success',
+        expect.objectContaining({ source: 'newsletter-page' })
+      );
+      expect(mockVercelTrack).toHaveBeenCalledWith(
+        'newsletter_signup_error',
+        expect.objectContaining({ source: 'blog-footer' })
+      );
+
+      const submitPayload = mockVercelTrack.mock.calls.find(([name]) => name === 'newsletter_signup_submit')[1];
+      expect(submitPayload.email).toBeUndefined();
+      expect(submitPayload.confirmToken).toBeUndefined();
+    });
+
+    it('sanitizeNewsletterAnalytics strips email and tokens', () => {
+      expect(sanitizeNewsletterAnalytics({
+        source: 'blog-footer',
+        email: 'reader@example.com',
+        firstName: 'Ada',
+        confirmToken: 'tok',
+        unsubscribeToken: 'unsub',
+      })).toEqual({ source: 'blog-footer' });
+    });
+
+    it('ignores unknown newsletter analytics actions', () => {
+      logNewsletterSignup('newsletter_confirmed', { source: 'newsletter-page' });
+      expect(mockVercelTrack).not.toHaveBeenCalled();
+    });
   });
 
   describe('privacy', () => {
@@ -222,6 +266,20 @@ describe('Analytics', () => {
       logEvent('Auth', 'login_success', 'email');
       expect(ReactGA.event).not.toHaveBeenCalled();
       expect(mockVercelTrack).not.toHaveBeenCalled();
+    });
+
+    it('attaches browser and user identity on backend events', () => {
+      localStorage.setItem('user', JSON.stringify({ _id: 'u1' }));
+      localStorage.setItem('token', 'test-token');
+      for (let i = 0; i < 10; i += 1) {
+        logParkView('yose', 'Yosemite National Park');
+      }
+      expect(mockFetch).toHaveBeenCalled();
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.browserId).toBeTruthy();
+      expect(body.userId).toBe('u1');
+      expect(body.events.some((event) => event.userType === 'authenticated')).toBe(true);
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer test-token');
     });
   });
 });

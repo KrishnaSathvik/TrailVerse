@@ -97,7 +97,7 @@ function findReplacement(removedStop, constraints, issueType, usedReplacements) 
  * @returns {{ correctedItinerary, corrections: string[], tooAggressive: boolean, removedCount: number, originalCount: number, gaps: object[] }}
  */
 function correctItinerary(itinerary, constraints, issues, npsFacts, options = {}) {
-  const { isHypothetical = false, pass = 1 } = options;
+  const { isHypothetical = false, pass = 1, replaceStops = true } = options;
   const corrections = [];
   const gaps = [];
   const usedReplacements = new Set();
@@ -172,7 +172,9 @@ function correctItinerary(itinerary, constraints, issues, npsFacts, options = {}
     }
 
     // Try smart replacement first
-    const replacement = findReplacement(day.stops[idx], constraints, 'difficulty', usedReplacements);
+    const replacement = replaceStops
+      ? findReplacement(day.stops[idx], constraints, 'difficulty', usedReplacements)
+      : null;
     if (replacement) {
       // Replace in-place: keep scheduling fields from original
       const orig = day.stops[idx];
@@ -188,6 +190,10 @@ function correctItinerary(itinerary, constraints, issues, npsFacts, options = {}
         latitude: replacement.latitude,
         longitude: replacement.longitude,
         note: replacement.note || '',
+        // Park identity is metadata — replacements are same-park alternatives,
+        // so carry it through rather than dropping it on the rebuild.
+        parkCode: replacement.parkCode || orig.parkCode || null,
+        parkName: replacement.parkName || orig.parkName || null,
         why: `Replaced ${orig.name} to match your fitness level`,
         _isReplacement: true,
       };
@@ -281,7 +287,9 @@ function correctItinerary(itinerary, constraints, issues, npsFacts, options = {}
     if (day.stops.length <= 1) continue;
 
     // Try smart replacement first
-    const replacement = findReplacement(day.stops[idx], constraints, 'accommodation', usedReplacements);
+    const replacement = replaceStops
+      ? findReplacement(day.stops[idx], constraints, 'accommodation', usedReplacements)
+      : null;
     if (replacement) {
       const orig = day.stops[idx];
       day.stops[idx] = {

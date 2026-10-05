@@ -37,6 +37,7 @@ alwaysApply: false
 - `VoiceButton` in root layout — "Talk to Trailie"
 - `VoiceOverlay` — realtime session via `POST /api/ai/realtime-session`
 - `POST /api/ai/voice-tool` — tool callback (public, server-validated)
+- Limits: anonymous 3 free sessions / 24h then sign-in; **10 sessions / hour** for everyone
 
 ## Chat history
 

@@ -1,0 +1,32 @@
+{
+  "note": "RELIABILITY PASS pin (2026-09-01). The 2026-08-31 plan-ai audit Journey 5 prompt was Glacier / early October / 24-ft RV / permits+GTSR; the audit report does not record the verbatim sentence, so this is the canonical plan-phrased reconstruction. The composer-level test also pins a question-phrased variant.",
+  "userPrompt": "Plan 5 days in Glacier in early October for us — we're traveling in our 24-foot RV.",
+  "constraints": {
+    "parkCode": "glac",
+    "dates": { "numDays": 5 },
+    "planningState": { "mobility": {}, "preferences": {} }
+  },
+  "parkCode": "glac",
+  "npsItems": [
+    {
+      "id": "F1D269CE-3893-4D30-BA06-67C6A2FBBEC8",
+      "title": "Going-to-the-Sun Road",
+      "url": "https://www.nps.gov/glac/planyourvisit/goingtothesunroad.htm",
+      "longDescription": "This iconic road crosses Logan Pass. Vehicles, and vehicle combinations, longer than 21 feet (6.4 m) are prohibited between Avalanche Campground and Rising Sun."
+    },
+    {
+      "id": "TRAIL-OF-THE-CEDARS",
+      "title": "Trail of the Cedars",
+      "url": "https://www.nps.gov/glac/planyourvisit/trailofthecedars.htm",
+      "longDescription": "A fully accessible boardwalk loop through an ancient cedar forest.",
+      "activityTypes": ["hiking", "hike"]
+    },
+    {
+      "id": "APGAR-VISITOR-CENTER",
+      "title": "Apgar Visitor Center",
+      "url": "https://www.nps.gov/glac/planyourvisit/apgar.htm",
+      "longDescription": "A lovely visitor center with exhibits near Lake McDonald.",
+      "activityTypes": ["visitor_center"]
+    }
+  ]
+}

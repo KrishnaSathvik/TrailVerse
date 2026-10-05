@@ -3,7 +3,7 @@
 **Purpose:** Keep marketing, demos, and agent handbooks aligned with what the codebase actually does.  
 **Related:** [trailie-web-search-product-policy.md](./trailie-web-search-product-policy.md) (web search gates in detail)
 
-Last reviewed: 2026-06-18
+Last reviewed: 2026-08-27
 
 ---
 
@@ -48,10 +48,12 @@ Trailie is an **NPS-first outdoor trip-planning agent** with structured backend 
 
 | Capability | Guest (anonymous) | Logged in |
 |------------|-------------------|-----------|
-| Chat with Trailie | Yes (5 user messages / session) | Unlimited |
+| Chat with Trailie | Yes (**5 user messages / 48 hours**, IP + anonymous session) | Unlimited |
 | NPS + weather facts (catalog parks) | Yes | Yes |
 | Web search | **No** (by design) | Yes (when `needsWebSearch` passes) |
 | Save trips / chat history | No | Yes |
+| Travel / stay logistics in itinerary | Limited guest itinerary | Yes — lodging/food/gas context when the planner has it |
+| Voice (Talk to Trailie) | 3 free sessions / 24h per IP, then sign-in; **10 sessions / hour** | **10 sessions / hour** |
 | My Recommendations button | No | Yes (after **3+ distinct trip `parkCode`s**) |
 | Quick Fill (Plan My Trip) | Yes | Yes |
 
@@ -92,6 +94,12 @@ See [trailie-web-search-product-policy.md](./trailie-web-search-product-policy.m
 
 Implemented on `/plan-ai` streaming only (`thinking` SSE events → `TypingIndicator`).  
 Not shown on shared trip read-only pages.
+
+---
+
+## Where Next (not Trailie)
+
+`/where-next` is a separate public intent page. Guests can pick any destination. Explore and Trailie CTAs appear **only** when TrailVerse has a matched NPS `park_code`. Unmatched picks are counted, never labeled unsupported.
 
 ---
 

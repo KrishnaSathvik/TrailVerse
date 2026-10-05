@@ -1,7 +1,21 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const { installOutboundNetworkGuard } = require('../src/eval/bootstrap/outboundNetworkGuard');
 
 let mongod;
+let outboundGuard;
+
+// Ordinary regression tests are network-denied even if a test loads .env.
+// The guard's own focused suites install their own instances and are therefore
+// the only structural exclusions from this shared installation.
+beforeAll(() => {
+  const testPath = String(expect.getState().testPath || '');
+  const ownsGuard = /outboundNetworkGuard\.test\.js$|liveNetworkGuard\.test\.js$/.test(testPath);
+  if (process.env.TRAILIE_TEST_PROVIDER_MODE === 'deny_live' && !ownsGuard) {
+    outboundGuard = installOutboundNetworkGuard();
+    outboundGuard.setPhase('runtime');
+  }
+});
 
 // Setup before all tests
 beforeAll(async () => {
@@ -24,6 +38,7 @@ afterAll(async () => {
   await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
   await mongod.stop();
+  if (outboundGuard) outboundGuard.uninstall();
 });
 
 // Mock environment variables

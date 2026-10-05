@@ -240,7 +240,7 @@ class TrailVerseClient:
         anonymous_id: str | None = None,
     ) -> dict[str, Any]:
         """
-        Call the anonymous AI planner (Trailie on Claude Sonnet 5).
+        Call the shared Trailie planner; the backend owns runtime/model routing.
 
         form_data: optional structured constraints (dates, groupSize, budget, etc.).
         messages: full conversation history for multi-turn continuity.
@@ -256,7 +256,7 @@ class TrailVerseClient:
             metadata["formData"] = form_data
         body: dict[str, Any] = {
             "messages": messages if messages else [{"role": "user", "content": message}],
-            "provider": "claude",
+            "provider": "auto",
             "metadata": metadata,
         }
         if anonymous_id:

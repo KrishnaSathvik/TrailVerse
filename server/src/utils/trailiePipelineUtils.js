@@ -90,6 +90,10 @@ async function callClaudeWithFallback({
         usage: {
           inputTokens: claudeResponse.usage.input_tokens,
           outputTokens: claudeResponse.usage.output_tokens,
+          cacheCreationInputTokens: Number.isFinite(claudeResponse.usage.cache_creation_input_tokens)
+            ? claudeResponse.usage.cache_creation_input_tokens : null,
+          cacheReadInputTokens: Number.isFinite(claudeResponse.usage.cache_read_input_tokens)
+            ? claudeResponse.usage.cache_read_input_tokens : null,
         },
       };
     } catch (error) {
@@ -154,6 +158,8 @@ function buildPlanDocument({
   parkCode,
   reviewMeta,
   auditTrail,
+  identity = null,
+  feasibilityIssues = [],
 }) {
   if (!itineraryData) return null;
 
@@ -164,7 +170,21 @@ function buildPlanDocument({
     createdFrom: 'ai',
     parkName: parkName || null,
     parkCode: parkCode || null,
+    // Stage 8 — canonical response identity travels WITH the plan so the
+    // persistence guard (extractPlanIdentity) can enforce single-writer ordering.
+    ...(identity
+      ? {
+          responseId: identity.responseId,
+          responseVersion: identity.responseVersion,
+          contentHash: identity.contentHash,
+          itineraryHash: identity.itineraryHash,
+        }
+      : {}),
     ...itineraryData,
+    // Stage 10 (F-QUAL-1) — deterministic feasibility warnings persist WITH the
+    // plan (one source of truth) so they restore and export alongside it. Not
+    // hashed: itineraryHash is over itineraryData only.
+    feasibilityIssues: Array.isArray(feasibilityIssues) ? feasibilityIssues : [],
     ...(reviewMeta ? { reviewMeta } : {}),
     ...(auditTrail ? { auditTrail } : {}),
   };

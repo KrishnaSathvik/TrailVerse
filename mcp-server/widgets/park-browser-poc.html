@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrailVerse parks</title>
+<style>
+:root { color-scheme: light dark; font: 16px/1.5 system-ui, sans-serif; }
+body { margin: 0; padding: 20px; color: light-dark(#172d25, #e3eee7); background: light-dark(#fff, #17211c); }
+main { max-width: 680px; margin: auto; }
+h1 { font-size: 1.5rem; } h2 { font-size: 1.1rem; }
+article, section { border-top: 1px solid light-dark(#dbe4dd, #46574b); padding: 12px 0; }
+p { white-space: pre-wrap; overflow-wrap: anywhere; }
+button { font: inherit; border: 1px solid currentColor; border-radius: 6px; padding: 8px 14px; color: inherit; background: transparent; cursor: pointer; }
+button:focus-visible { outline: 3px solid #c18a3a; outline-offset: 3px; }
+button:disabled { opacity: .55; cursor: default; }
+[role=alert] { color: light-dark(#a12222, #ffb6b6); }
+</style>
+</head>
+<body><main id="root" aria-live="polite"></main>
+<script>
+'use strict';
+const root = document.getElementById('root');
+const pending = new Map();
+let sequence = 0, generation = 0, current = null, parkList = null;
+let ready = false, loading = false, error = '';
+function notify(method, params = {}) {
+  window.parent.postMessage({jsonrpc: '2.0', method, params}, '*');
+}
+function rpc(method, params) {
+  return new Promise((resolve, reject) => {
+    const id = ++sequence;
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error('The host did not respond. Try again.'));
+    }, 45000);
+    pending.set(id, {resolve, reject, timer});
+    window.parent.postMessage({jsonrpc: '2.0', id, method, params}, '*');
+  });
+}
+function node(tag, text, parent = root) {
+  const element = document.createElement(tag);
+  if (text != null) element.textContent = String(text);
+  parent.appendChild(element);
+  return element;
+}
+function button(label, action, parent = root, disabled = false) {
+  const element = node('button', label, parent);
+  element.type = 'button'; element.disabled = disabled;
+  element.addEventListener('click', action);
+  return element;
+}
+function list(value) { return Array.isArray(value) ? value : []; }
+function payload(result) {
+  if (result?.isError) throw new Error('Park information could not be loaded. Try again.');
+  const data = result?.structuredContent;
+  if (!data || !['park_list', 'park_details'].includes(data.kind)) {
+    throw new Error('The tool returned no usable park data. Try again.');
+  }
+  if (data.kind === 'park_list' && !Array.isArray(data.parks)) {
+    throw new Error('The tool returned an invalid park list.');
+  }
+  return data;
+}
+function accept(result) {
+  current = payload(result);
+  if (current.kind === 'park_list') parkList = current;
+  error = ''; loading = false;
+}
+async function viewPark(parkCode) {
+  if (!ready || loading || typeof parkCode !== 'string' || !parkCode) return;
+  const turn = ++generation;
+  loading = true; error = ''; render();
+  try {
+    const result = await rpc('tools/call', {name: 'get_park_details', arguments: {park_code: parkCode}});
+    if (turn !== generation) return;
+    const detail = payload(result);
+    if (detail.kind !== 'park_details') throw new Error('Expected park details. Try again.');
+    accept(result);
+  } catch (exception) {
+    if (turn !== generation) return;
+    error = exception.message;
+  } finally {
+    if (turn === generation) { loading = false; render(); }
+  }
+}
+function render() {
+  root.replaceChildren();
+  if (error) node('p', error).setAttribute('role', 'alert');
+  if (!current) { node('p', error ? 'Re-run the park tool in ChatGPT to retry.' : 'Waiting for park data…'); return; }
+  root.setAttribute('aria-busy', String(loading));
+  if (current.kind === 'park_list') {
+    node('h1', 'Parks');
+    if (!current.parks.length) node('p', 'No parks matched this search. Try a broader search in ChatGPT.');
+    for (const park of current.parks) {
+      const card = node('article');
+      node('h2', park.name || 'Park', card);
+      if (park.states) node('p', park.states, card);
+      if (park.matchReason || park.summary) node('p', park.matchReason || park.summary, card);
+      const hasCode = typeof park.parkCode === 'string' && !!park.parkCode;
+      button('View park', () => viewPark(park.parkCode), card, !ready || loading || !hasCode);
+      if (!hasCode) node('p', 'Park identifier unavailable.', card);
+    }
+  } else {
+    if (parkList) button('← Parks', () => { ++generation; current = parkList; error = ''; loading = false; render(); });
+    node('h1', current.name || 'Park details');
+    if (current.states) node('p', current.states);
+    if (list(current.activities).length) node('p', current.activities.join(' · '));
+    const alerts = node('section'); node('h2', 'Current alerts', alerts);
+    if (!list(current.alerts).length) node('p', 'No alert information returned. Check current conditions before visiting.', alerts);
+    for (const alert of list(current.alerts)) {
+      node('h3', alert.title || alert.category || 'Alert', alerts);
+      if (alert.description) node('p', alert.description, alerts);
+    }
+    const entrance = node('section'); node('h2', 'Entrance information', entrance);
+    if (!list(current.entranceFees).length) node('p', 'Entrance fee information unavailable.', entrance);
+    for (const fee of list(current.entranceFees)) {
+      node('h3', fee.title || 'Entrance fee', entrance);
+      if (fee.cost != null) node('p', '$' + fee.cost, entrance);
+      if (fee.description) node('p', fee.description, entrance);
+    }
+    const info = node('section'); node('h2', 'Basic park information', info);
+    node('p', current.description || 'No description returned.', info);
+  }
+  if (loading) node('p', 'Loading park details…').setAttribute('role', 'status');
+  if (ready) notify('ui/notifications/size-changed', {height: document.documentElement.scrollHeight});
+}
+window.addEventListener('message', event => {
+  if (event.source !== window.parent) return;
+  const message = event.data;
+  if (!message || message.jsonrpc !== '2.0') return;
+  if (pending.has(message.id)) {
+    const request = pending.get(message.id);
+    pending.delete(message.id); clearTimeout(request.timer);
+    if (message.error) request.reject(new Error(message.error.message || 'Tool call failed.'));
+    else request.resolve(message.result);
+  } else if (message.method === 'ui/notifications/tool-result') {
+    ++generation;
+    try { accept(message.params); } catch (exception) { error = exception.message; loading = false; }
+    render();
+  }
+});
+async function initialize() {
+  try {
+    await rpc('ui/initialize', {
+      appInfo: {name: 'trailverse-park-browser-poc', version: '1.0.0'},
+      appCapabilities: {}, protocolVersion: '2026-01-26'
+    });
+    ready = true; notify('ui/notifications/initialized'); render();
+  } catch (exception) { error = exception.message; render(); }
+}
+render(); initialize();
+</script>
+</body>
+</html>

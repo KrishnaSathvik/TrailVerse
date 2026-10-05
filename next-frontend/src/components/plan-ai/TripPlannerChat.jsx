@@ -1,10 +1,12 @@
+import { applyTerminalOwnership } from '@/utils/terminalOwnership';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  MapPin, Calendar, CalendarDays, Users, AlertCircle, X, Clock, Sparkles, CheckCircle, Edit2, Compare,
+  MapPin, Calendar, CalendarDays, Users, AlertCircle, X, Clock, CheckCircle, Edit2,
   Share2,
   Download,
+  RefreshCw,
 } from '@components/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -23,14 +25,29 @@ import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
-import GuestLimitMessageExtras from './GuestLimitMessageExtras';
+import GuestLimitCard from './GuestLimitCard';
+import { tripSurfacePath } from '@/lib/tripSurfacePath';
 import DiscoveryPlanCta from './DiscoveryPlanCta';
 import { buildDayByDayPlanFollowUp } from '@/lib/buildDayByDayPlanFollowUp';
 import { formatIntentGuideContextForPrompt } from '@/lib/intentPlanAi';
 import { findDiscoveryPlanCtaMessage, messageMatchesDiscoveryPlanCta } from '@/lib/discoveryPlanCta';
 import { buildGuestLimitIntro } from '@/lib/guestLimitMessage';
+import { TRAILIE_DEMO_PROMPTS, TRAILIE_PERSONALIZED_PROMPTS } from '@/lib/trailieDemoPrompts';
+import {
+  installTrailieDemoObserver,
+  recordTrailieDemoSubmission,
+  recordTrailieDemoTripId,
+} from '@/lib/trailieDemoObserver';
 import { getBestAvatar, generateRandomAvatar } from '../../utils/avatarGenerator';
 import { ANONYMOUS_MESSAGE_LIMIT } from '@/lib/anonymousChatLimits';
+import {
+  GUEST_TURN_REFUSAL_CODES,
+  clearGuestPendingTurn,
+  createGuestClientTurnId,
+  markGuestTurnFailed,
+  recordGuestPendingTurn,
+  selectCompletedGuestHistory,
+} from '@/lib/guestTurnLifecycle';
 import {
   SIGNUP_PROMPT_REASONS,
   getSignupPrompt,
@@ -44,8 +61,60 @@ import {
 import { derivePlanAiHeaderMeta, PLAN_AI_ENTRY, resolvePlanningParkName } from '@/lib/planAiHeaderMeta';
 import { applyMessageConstraintOverrides } from '@/lib/messageConstraintOverrides';
 import { stripItineraryJsonForDisplay } from '@/utils/streamDisplayContent';
+import { selectPlanToPersist, selectTerminalPlanForDisplay, buildTargetPlanMutationSave, runOrderedCrossPlanPersistence, shouldSaveConversationForTurn } from '@/utils/persistCanonicalPlan';
+import { resolveSaveState, resolveChatStatus } from '@/utils/saveStateFromPersistence';
+import { isPersistenceAccepted } from '@/utils/persistenceDecision';
+import { resolveThinkingStageCopy } from '@/utils/thinkingStageCopy';
+import {
+  classifyTrailieTurnOutcome,
+  resolveTrailieTurnDisplayContent,
+  wasGuestTurnConsumedByServer,
+  isUncertainConnectionLossError,
+  canRetryTrailieTurn,
+  excludeTransientFailuresFromHistory,
+  resolveTrailieRetryPlan,
+  UNCERTAIN_CONNECTION_LOSS_MESSAGE,
+  TRAILIE_TURN_OUTCOME,
+} from '@/utils/trailieTurnOutcome';
+import { buildResponseSavePayload } from '@/utils/responseSavePayload';
+import { resolveItineraryOnlyTerminalPersistence } from '@/utils/itineraryOnlyTerminalPersistence';
+// Stage 14.3 — early frozen-itinerary delivery. All race handling lives in the
+// coordinator + reducer, never inline here.
+import { createEarlyRevisionCoordinator } from '@/utils/earlyRevisionCoordinator';
+import {
+  upsertItineraryTurn,
+  updateProseTurn,
+  applyPendingLabel,
+} from '@/utils/earlyRevisionMessages';
+// Stage 14.5 — ONE interpretation of a stored response, shared with the share
+// payload builder and the export path.
+import {
+  VIEWER_CONTEXT,
+  deriveTrailieStoredPresentation,
+} from '@/utils/trailieStoredPresentation';
+import { getTrailieCapabilities } from '@/lib/trailieCapabilities';
+import { RECOVERY_MESSAGE } from '@/utils/proseRecoveryClient';
+import EarlyItineraryCard from './EarlyItineraryCard';
+import TrailieResponse from '@/components/trailie-response/TrailieResponse';
+import {
+  attachCanonicalPlanToConversation,
+  toLiveTrailieResponseModel,
+} from '@/lib/trailieResponseModel';
+import { createUiWelcomeMessage, MESSAGE_KIND, selectCanonicalConversation } from '@/lib/messageOwnership';
+import { resolveTripDestination } from '@/lib/tripDestination';
+import { mapServerMessagesToUi } from '@/utils/serverMessagesToUi';
+import { applySessionStatusToStoredSession } from '@/lib/guestSessionStatusWrite';
+import { hasDeviceOnlyHistory, conversationSendBlocked } from '@/lib/conversationContinuity';
+import { selectTravelerOwnedFormData } from '@/lib/formDataProvenance';
+import { shouldRestoreAnonymousPlanAiSession, shouldRestorePlanAiSession, withEntryFormData, withPersonalization } from '@/lib/planAiEntryContext';
+import {
+  ensureGuestSessionIdentity,
+  GUEST_SESSION_STORAGE_KEY,
+  isValidGuestSessionId,
+} from '@/lib/guestSessionIdentity';
 
-const ANONYMOUS_SESSION_KEY = 'anonymousSession';
+
+const ANONYMOUS_SESSION_KEY = GUEST_SESSION_STORAGE_KEY;
 const ANONYMOUS_GUEST_AVATAR_KEY = 'anonymousGuestAvatar';
 const ANONYMOUS_SESSION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 const EMPTY_PARK_LIST = [];
@@ -66,7 +135,8 @@ function readStoredAnonymousSession() {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(ANONYMOUS_SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const session = raw ? JSON.parse(raw) : null;
+    return isValidGuestSessionId(session?.anonymousId) ? session : null;
   } catch {
     return null;
   }
@@ -117,6 +187,7 @@ const TripPlannerChat = ({
   suggestText = '',
   intentContext = null,
   entryMode = 'general',
+  entryContext = null,
   fromCompare = false,
   refreshTrips = null,
   onOpenQuickFill = null,
@@ -133,6 +204,15 @@ const TripPlannerChat = ({
   const { user, isAuthenticated, updateUser } = useAuth();
   const { showToast } = useToast();
   const { subscribe, unsubscribe, subscribeToProfile, subscribeToTrips } = useWebSocket();
+  // Establish the guest bearer secret synchronously, before a submit handler
+  // can dispatch the first request. Authenticated identity is untouched.
+  const [anonymousId, setAnonymousId] = useState(
+    () => (
+      !isAuthenticated && typeof window !== 'undefined'
+        ? ensureGuestSessionIdentity().anonymousId
+        : null
+    )
+  );
   
   // Debug user object to see avatar structure (remove in production)
   // console.log('🔍 TripPlannerChat - User object:', user);
@@ -152,6 +232,11 @@ const TripPlannerChat = ({
   const rawStreamedContentRef = useRef('');
   const streamIdleTimerRef = useRef(null);
   const activeStreamSourcesRef = useRef(null);
+  // Has the server reported a REAL lifecycle stage on this turn yet? Once it
+  // has, stages own the progress copy and an evidence event may only update the
+  // source list. Before it has, the older source-derived copy still serves
+  // routes that emit sources without stages.
+  const sawServerStageRef = useRef(false);
   const activeTripContextRef = useRef(
     typeof window !== 'undefined' ? readStoredAnonymousSession()?.activeTripContext || null : null
   );
@@ -170,7 +255,10 @@ const TripPlannerChat = ({
     }
   }, []);
   const [providersLoaded, setProvidersLoaded] = useState(false);
-  const [thinkingMessage, setThinkingMessage] = useState('Thinking...');
+  // Phase 6A — neutral pre-first-stage default only. The moment a real
+  // server stage arrives, resolveThinkingStageCopy (thinkingStageCopy.js)
+  // takes over unchanged; this string is never shown once that happens.
+  const [thinkingMessage, setThinkingMessage] = useState('Working on that…');
   const [thinkingStartTime, setThinkingStartTime] = useState(null);
   const [thinkingSources, setThinkingSources] = useState(null);
   const [, setIsRestoredSession] = useState(false);
@@ -184,8 +272,6 @@ const TripPlannerChat = ({
     return readStoredGuestAvatarUrl();
   });
   const [isAnonymous, setIsAnonymous] = useState(!isAuthenticated);
-  const [anonymousId, setAnonymousId] = useState(null);
-
   const applyActiveTripContextFromResult = useCallback((result) => {
     if (!result?.activeTripContext) return;
     activeTripContextRef.current = result.activeTripContext;
@@ -204,6 +290,9 @@ const TripPlannerChat = ({
     );
   }, [isAnonymous]);
 
+  const [historyRecovery, setHistoryRecovery] = useState(null);
+  const [continuityNotice, setContinuityNotice] = useState('');
+  const [historySyncBusy, setHistorySyncBusy] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const [canSendMore, setCanSendMore] = useState(true);
   const [isSessionRestored, setIsSessionRestored] = useState(false);
@@ -235,10 +324,34 @@ const TripPlannerChat = ({
   const messagesRef = useRef(messages);
   const currentTripIdRef = useRef(currentTripId);
   const currentPlanRef = useRef(currentPlan);
+  const planningStateRef = useRef(null);
+  const entryContextRef = useRef(entryContext);
+  useEffect(() => {
+    entryContextRef.current = entryContext;
+  }, [entryContext]);
   messagesRef.current = messages;
   currentTripIdRef.current = currentTripId;
   currentPlanRef.current = currentPlan;
+  // P0-1 (audit 2026-08-31): read via refs inside showWelcomeMessage so the
+  // invariant check always sees live state, not a stale closure.
+  const isGeneratingRef = useRef(isGenerating);
+  isGeneratingRef.current = isGenerating;
+  // P0-1: anonymous session boot is one-shot per mount. Recurring dependency
+  // changes (parkName resolving, entryContext updates) must never re-enter
+  // restore once the guest thread has booted.
+  const anonymousBootRanRef = useRef(false);
+  const authBootRanRef = useRef(false);
   const savingInProgressRef = useRef(false);
+  // Local-only demo/acceptance observability. No-op in production builds.
+  useEffect(() => {
+    installTrailieDemoObserver();
+  }, []);
+  // Stage 14.3 — the active early-delivery coordinator for the in-flight turn.
+  const earlyCoordinatorRef = useRef(null);
+  // Stage 14.5 — explicit prose recovery, owner-only and never automatic.
+  const [recoveringResponseId, setRecoveringResponseId] = useState(null);
+  const [recoveryNotice, setRecoveryNotice] = useState(null);
+  const recoveryCapability = getTrailieCapabilities().trailieProseRecoveryEnabled;
   const previousExistingTripIdRef = useRef(existingTripId);
   const lastMessageCountRef = useRef(0);
   const userSentMessageRef = useRef(false);
@@ -273,21 +386,9 @@ const TripPlannerChat = ({
     setShowScrollToLatest(false);
   }, []);
 
-  const chatStatus = isAnonymous
-    ? null
-    : saveState === 'saving'
-      ? {
-          label: 'Saving...',
-          description: 'Updating your trip history.',
-          tone: 'saving'
-        }
-      : currentTripId || saveState === 'saved'
-        ? {
-            label: 'Saved',
-            description: 'This conversation is stored in your account.',
-            tone: 'saved'
-          }
-        : null;
+  // Phase 6A — extracted to resolveChatStatus (saveStateFromPersistence.js)
+  // for direct unit testing; behavior unchanged, now includes 'sync-needed'.
+  const chatStatus = resolveChatStatus({ isAnonymous, saveState, hasTripId: Boolean(currentTripId) });
   const anonymousMessagesRemaining = Math.max(0, ANONYMOUS_MESSAGE_LIMIT - messageCount);
   const anonymousQuotaLabel =
     isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < ANONYMOUS_MESSAGE_LIMIT
@@ -330,6 +431,16 @@ const TripPlannerChat = ({
       ]
     : messages;
 
+  // Quota presentation follows an existing visible artifact, never conversation keywords.
+  const guestTrip = displayMessages.reduce((latest, message, index) => {
+    const plan = message.canonicalPlan || message.itineraryPlan;
+    if (message.hiddenFromUi || message.isConversionMessage || !plan?.days?.length) return latest;
+    const stored = deriveTrailieStoredPresentation({
+      response: message, canonicalPlan: plan, viewerContext: VIEWER_CONTEXT.OWNER,
+    });
+    return stored.showItinerary ? { plan, index } : latest;
+  }, null);
+
   const isWelcomeState =
     !messages.some((message) => message.role === 'user' && !message.hiddenFromUi) &&
     !isGenerating &&
@@ -346,6 +457,11 @@ const TripPlannerChat = ({
   );
 
   const hasUserMessages = messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
+
+  // Stage 14.3 — on unmount, stop applying lifecycle updates to React state.
+  // Persistence already in flight is deliberately left to settle: the saved trip
+  // stays recoverable even though this component is gone.
+  useEffect(() => () => earlyCoordinatorRef.current?.dispose(), []);
 
   useEffect(() => {
     if (isNewChat) {
@@ -477,12 +593,30 @@ const TripPlannerChat = ({
     }
   };
 
+  /**
+   * Stage 14.8H.1 §5 — restore drops UI chrome from canonical history.
+   *
+   * Two mechanisms, in order of trustworthiness: the declared ownership marker
+   * for anything written after this stage, and a conservative STRUCTURAL rule
+   * for trips already carrying the Stage 14.8H defect — a leading assistant
+   * message with no response identity, positioned before the first user turn.
+   * Neither inspects message text.
+   *
+   * The legacy content regex this replaces (`/welcome back/i`) both missed
+   * personalised copy and could delete a real answer that happened to use the
+   * phrase. Stored records are not rewritten; this is a read-side exclusion.
+   */
   const stripWelcomeBackMessages = (messageList = []) =>
-    messageList.filter(
-      (msg) => !(msg.role === 'assistant' && /welcome back/i.test(String(msg.content || '')))
-    );
+    selectCanonicalConversation(messageList, { includeLegacyRecognition: true });
 
   const showWelcomeMessage = useCallback(async () => {
+    // P0-1 invariant (audit 2026-08-31): welcome chrome may only seed a thread
+    // that has no conversation. Once a user turn exists, or while a response
+    // is being generated, NO caller — init effects, restore, session-status
+    // refresh — may replace the transcript with the welcome message.
+    if (isGeneratingRef.current) return;
+    if (conversationHasUserMessages(messagesRef.current)) return;
+
     const content = resolvePlanAiWelcomeMessage({
       entryMode,
       user,
@@ -494,27 +628,32 @@ const TripPlannerChat = ({
       fromCompare,
     });
 
+    // Stage 14.8H.1 — declared UI chrome. Stage 14.8H persisted this copy as a
+    // second assistant turn because it entered message state indistinguishable
+    // from a real response; the marker is what keeps it out of every canonical
+    // write and out of restored history.
     setMessages([
-      {
+      createUiWelcomeMessage({
         id: Date.now(),
-        role: 'assistant',
         content,
         timestamp: new Date(),
-      },
+      }),
     ]);
   }, [entryMode, user, parkName, isPersonalized, isNewChat, suggestText, intentContext, fromCompare]);
 
   // Define loadExistingTrip before the useEffect that uses it
   const loadExistingTrip = useCallback(async (tripId) => {
+    setAuthRestoreStatus('pending');
     console.log('🔄 Loading existing trip:', tripId);
     try {
-      const tripResponse = await tripService.getTrip(tripId);
+      const tripResponse = await tripService.getTrip(tripId, { skipCache: true });
       console.log('🔄 Raw API response:', tripResponse);
       const trip = tripResponse.data || tripResponse;
       console.log('🔄 Found trip:', trip);
       console.log('🔄 Trip has conversation array:', Array.isArray(trip.conversation));
       console.log('🔄 Trip conversation:', trip.conversation);
     
+      if (!trip) throw new Error('Conversation unavailable');
       if (trip) {
         setSaveState('saved');
         // Check if trip has conversationId (localStorage trip) or direct messages (backend trip)
@@ -522,21 +661,27 @@ const TripPlannerChat = ({
           try {
             console.log('🔄 Loading conversation from backend:', trip.conversationId);
             // Fetch conversation from backend using conversationId
-            const conversation = await conversationService.getConversation(trip.conversationId);
+            const conversation = await conversationService.getConversation(trip.conversationId, { skipCache: true });
             console.log('🔄 Loaded conversation:', conversation);
-            const messagesToLoad = stripWelcomeBackMessages(conversation.conversation || []);
+            const messagesToLoad = attachCanonicalPlanToConversation(
+              stripWelcomeBackMessages(conversation.conversation || []),
+              trip.plan,
+            );
             setMessages(messagesToLoad);
           } catch (error) {
             console.error('Error loading conversation:', error);
-            // Fallback to empty messages if conversation fetch fails
-            setMessages([]);
+            // A failed fetch must never masquerade as an empty conversation.
+            throw error;
           }
         } else {
           // Backend trip with direct messages (check both conversation and messages)
           console.log('🔄 Loading messages from trip:', trip.conversation || trip.messages);
           console.log('🔄 Trip conversation length:', (trip.conversation || []).length);
           console.log('🔄 Trip messages length:', (trip.messages || []).length);
-          const messagesToLoad = stripWelcomeBackMessages(trip.conversation || trip.messages || []);
+          const messagesToLoad = attachCanonicalPlanToConversation(
+            stripWelcomeBackMessages(trip.conversation || trip.messages || []),
+            trip.plan,
+          );
           console.log('🔄 Setting messages:', messagesToLoad.length, 'messages');
           console.log('🔄 Messages with feedback:', messagesToLoad.filter(m => m.userFeedback).map(m => ({ id: m.id, feedback: m.userFeedback })));
           setMessages(messagesToLoad);
@@ -546,10 +691,15 @@ const TripPlannerChat = ({
         setCurrentTripId(tripId); // Set the current trip ID for this conversation
         console.log('🔄 Set currentTripId to:', tripId);
         console.log('✅ Trip loaded successfully');
+        setAuthRestoreStatus('restored');
+        return true;
         // Trip loading runs silently in background - no toast notification
       }
     } catch (error) {
       console.error('❌ Error loading trip:', error);
+      setAuthRestoreStatus('error');
+      setContinuityNotice('Could not load your saved conversation. Reload to retry.');
+      return false;
       // Don't call showWelcomeMessage here to avoid potential loops
       // The initialization useEffect will handle showing welcome message
     }
@@ -629,59 +779,18 @@ const TripPlannerChat = ({
     };
   }, [user, subscribe, unsubscribe, subscribeToProfile, subscribeToTrips, currentTripId, refreshTrips]);
 
-  // Update thinking message based on time elapsed and data sources
-  useEffect(() => {
-    let interval;
-    if (isGenerating && thinkingStartTime) {
-      interval = setInterval(() => {
-        const elapsed = Date.now() - thinkingStartTime;
-        const seconds = Math.floor(elapsed / 1000);
-        const hasWeb = thinkingSources?.includes('web');
-        const hasNps = thinkingSources?.includes('nps');
-        const hasWeather = thinkingSources?.includes('weather');
-        const hasAnySources = thinkingSources && thinkingSources.length > 0;
-
-        // If we have data source info from the backend, show source-aware messages
-        if (hasAnySources && seconds >= 5) {
-          if (seconds < 10) {
-            if (hasWeb) setThinkingMessage('Searching live info...');
-            else if (hasNps) setThinkingMessage('Checking park info...');
-            else if (hasWeather) setThinkingMessage('Checking weather...');
-            else setThinkingMessage('Understanding your trip details...');
-          } else if (seconds < 15) {
-            if ((hasWeb && hasNps) || (hasNps && hasWeather) || (hasWeb && hasWeather)) {
-              setThinkingMessage('Combining trip details...');
-            } else {
-              setThinkingMessage('Building a realistic plan...');
-            }
-          } else if (seconds < 20) {
-            setThinkingMessage('Building a realistic plan...');
-          } else if (seconds < 30) {
-            setThinkingMessage('Checking the plan for timing and tradeoffs...');
-          } else {
-            setThinkingMessage('Finishing your response...');
-          }
-        } else if (!hasAnySources) {
-          // Fallback: no source info yet (before thinking event arrives)
-          if (seconds < 5) {
-            setThinkingMessage('Thinking...');
-          } else if (seconds < 10) {
-            setThinkingMessage('Understanding your trip details...');
-          } else if (seconds < 15) {
-            setThinkingMessage('Building a realistic plan...');
-          } else if (seconds < 30) {
-            setThinkingMessage('Checking the plan for timing and tradeoffs...');
-          } else {
-            setThinkingMessage('Finishing your response...');
-          }
-        }
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isGenerating, thinkingStartTime, thinkingSources]);
+  // ── FABRICATED PROGRESS: DELETED (2026-08-27) ─────────────────────────────
+  //
+  // A 1 Hz `setInterval` used to live here and rewrite `thinkingMessage` from
+  // elapsed wall-clock seconds: "Combining trip details..." at 10 s, "Building a
+  // realistic plan..." at 15 s, "Checking the plan for timing and tradeoffs..."
+  // at 20 s — none of it tied to anything the server was doing. Because it ran
+  // every second it also OVERWROTE the real stage the server had sent, within a
+  // second of it arriving, so the honest signal never survived past ~5 s.
+  //
+  // Progress copy now changes only when the server reaches a new lifecycle
+  // stage. Nothing may advance it because time passed. If a stage lasts twenty
+  // seconds its copy stays on screen for twenty seconds — which is the truth.
 
   const loadProviders = useCallback(async () => {
     try {
@@ -753,12 +862,9 @@ const TripPlannerChat = ({
       const sessionData = readStoredAnonymousSession();
       if (!sessionData) return;
 
-      const sessionAge = Date.now() - (sessionData.timestamp || 0);
-      if (sessionAge >= ANONYMOUS_SESSION_MAX_AGE_MS) {
-        localStorage.removeItem(ANONYMOUS_SESSION_KEY);
-        localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
-        console.log('🔄 Cleaned up expired anonymous session');
-      }
+      // Server retention is authoritative. Keep the valid bearer so startup
+      // can reconnect, or explicitly reconcile its cache after a server 404.
+
     } catch (error) {
       console.error('Error cleaning up expired sessions:', error);
       localStorage.removeItem(ANONYMOUS_SESSION_KEY);
@@ -794,34 +900,28 @@ const TripPlannerChat = ({
   }, [isAnonymous, parkName, formData]);
 
   // Validate session with backend
-  const mapServerMessagesToUi = useCallback((serverMessages = []) => {
-    return serverMessages.map((msg, index) => ({
-      id: `restored-${index}-${msg.timestamp || Date.now()}`,
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-      provider: msg.provider || undefined,
-      model: msg.model || undefined,
-    }));
-  }, []);
-
   const validateSessionWithBackend = useCallback(async (anonymousId) => {
     if (!anonymousId) return null;
 
     try {
-      const response = await api.get(`/ai/session-status/${anonymousId}`);
-      const { canSendMore, messageCount, isConverted, messages: serverMessages } = response.data;
+      // P0-1 (audit 2026-08-31): quota and restore decisions must never run on
+      // cached data — a stale session-status (messageCount 0) unlinked live
+      // sessions. Always read fresh.
+      const response = await api.get(`/ai/session-status/${anonymousId}`, { skipCache: true });
+      const { canSendMore, messageCount, isConverted, messages: serverMessages, authoritativeMessages, historyHash, planningState } = response.data;
 
       setCanSendMore(canSendMore);
       setMessageCount(messageCount);
 
-      // Update localStorage with backend data
+      // Update localStorage with backend data — forward-only. A read that
+      // would lower messageCount (out-of-order response) is never written.
       const savedSession = localStorage.getItem(ANONYMOUS_SESSION_KEY);
       if (savedSession) {
         const sessionData = JSON.parse(savedSession);
-        sessionData.canSendMore = canSendMore;
-        sessionData.messageCount = messageCount;
-        localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(sessionData));
+        const nextSession = applySessionStatusToStoredSession(sessionData, { canSendMore, messageCount });
+        if (nextSession) {
+          localStorage.setItem(ANONYMOUS_SESSION_KEY, JSON.stringify(nextSession));
+        }
         if (sessionData.avatarUrl) {
           setAnonymousAvatar(sessionData.avatarUrl);
         }
@@ -833,8 +933,13 @@ const TripPlannerChat = ({
         isConverted,
         restoredMessages: serverMessages?.length || 0,
       });
-      return { canSendMore, messageCount, messages: serverMessages || [] };
+      return { canSendMore, messageCount, messages: authoritativeMessages || serverMessages || [], historyHash, planningState: planningState || null };
     } catch (error) {
+      // A guest id is created in the browser before the first message, so the
+      // server has no row yet. That 404 is a fresh start, not a failed request.
+      if (error?.response?.status === 404) {
+        return { missing: true, canSendMore: true, messageCount: 0, messages: [], historyHash: '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945', planningState: null };
+      }
       console.error('Error validating session with backend:', error);
       return null;
     }
@@ -842,6 +947,7 @@ const TripPlannerChat = ({
 
   // Restore anonymous session from localStorage
   const restoreAnonymousSession = useCallback(async () => {
+    setAnonymousRestoreStatus('pending');
     if (!isAnonymous || isAuthenticated) {
       setAnonymousRestoreStatus('n/a');
       return false;
@@ -854,15 +960,6 @@ const TripPlannerChat = ({
         return false;
       }
 
-      const sessionAge = Date.now() - (sessionData.timestamp || 0);
-      if (sessionAge >= ANONYMOUS_SESSION_MAX_AGE_MS) {
-        localStorage.removeItem(ANONYMOUS_SESSION_KEY);
-        localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
-        setAnonymousAvatar(null);
-        console.log('🔄 Anonymous session expired, cleared');
-        setAnonymousRestoreStatus('empty');
-        return false;
-      }
 
       if (sessionData.anonymousId) {
         setAnonymousId(sessionData.anonymousId);
@@ -883,57 +980,74 @@ const TripPlannerChat = ({
         setAnonymousAvatar(avatarUrl);
       }
 
-      if (sessionData.anonymousId) {
-        const status = await validateSessionWithBackend(sessionData.anonymousId);
-        if (status?.messages?.length > 0) {
-          setMessages(mapServerMessagesToUi(status.messages));
-          setAnonymousRestoreStatus('restored');
-          console.log('🔄 Restored anonymous chat history:', status.messages.length, 'messages');
-        } else {
-          const temp = tripHistoryService.getTempChatState();
-          if (temp?.messages && conversationHasUserMessages(temp.messages)) {
-            setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
-            setAnonymousRestoreStatus('restored');
-            console.log('🔄 Restored anonymous chat from local cache:', temp.messages.length, 'messages');
-          } else {
-            setAnonymousRestoreStatus('empty');
-          }
-        }
-      } else {
-        setAnonymousRestoreStatus('empty');
+      // Browser cache is never an independent model-history source.
+      const temp = tripHistoryService.getTempChatState();
+      const status = await validateSessionWithBackend(sessionData.anonymousId);
+      if (!status) {
+        setContinuityNotice('Could not reconnect this conversation. Retry before sending another message.');
+        setAnonymousRestoreStatus('error');
+        return false;
       }
-
+      const authoritative = status.messages || [];
+      const archived = localStorage.getItem(`trailie-history-recovery:${sessionData.anonymousId}`);
+      const cache = selectCanonicalConversation(tripHistoryService.normalizeStoredMessages(archived ? JSON.parse(archived) : temp?.messages || []), { includeLegacyRecognition: true }).filter(m => ['user','assistant'].includes(m.role) && !m.uiOnly && !m.isConversionMessage && m.content);
+      const same = !hasDeviceOnlyHistory(cache, authoritative);
+      setMessages(mapServerMessagesToUi(authoritative));
+      planningStateRef.current = status.planningState || null;
+      const lastPlan = [...authoritative].reverse().find(m=>m.canonicalPlan)?.canonicalPlan || null;
+      setCurrentPlan(lastPlan);
+      setMessageCount(status.messageCount); setCanSendMore(status.canSendMore);
+      if (cache.length && !same) {
+        const archiveKey = `trailie-history-recovery:${sessionData.anonymousId}`;
+        localStorage.setItem(archiveKey, JSON.stringify(cache));
+        setHistoryRecovery({messages:cache,expectedHistoryHash:status.historyHash,archiveKey});
+        setContinuityNotice('Some messages on this device are not in the server conversation. Restore their text before continuing, or continue with the server history shown here.');
+      }
+      setAnonymousRestoreStatus(authoritative.length ? 'restored' : 'empty');
       console.log('🔄 Restored anonymous session:', sessionData);
       return true;
     } catch (error) {
       console.error('Error restoring anonymous session:', error);
-      localStorage.removeItem(ANONYMOUS_SESSION_KEY);
-      localStorage.removeItem(ANONYMOUS_GUEST_AVATAR_KEY);
-      setAnonymousAvatar(null);
-      setAnonymousRestoreStatus('empty');
+      setContinuityNotice('Could not reconnect this conversation. Retry before sending another message.');
+      setAnonymousRestoreStatus('error');
       return false;
     }
-  }, [isAnonymous, isAuthenticated, validateSessionWithBackend, mapServerMessagesToUi]);
+  }, [isAnonymous, isAuthenticated, validateSessionWithBackend]);
 
   const persistSessionToStorage = useCallback((tripId, msgs, plan) => {
-    if (!conversationHasUserMessages(msgs)) return;
+    // Stage 14.8A.2 §9 — for a guest, `AnonymousSession` localStorage mirrors
+    // SERVER-COMPLETED history only. A pending optimistic turn, a failed turn,
+    // a streaming placeholder, and an empty assistant bubble are all dropped, so
+    // a refresh can never resurrect a failed attempt as a completed one. The
+    // mirror carries no allowance decision — remaining allowance always comes
+    // back from the server — so it can never become an independent quota source.
+    const persistable = isAnonymous ? selectCompletedGuestHistory(msgs) : msgs;
+    if (!conversationHasUserMessages(persistable)) return;
     tripHistoryService.saveTempChatState({
       currentTripId: tripId || null,
-      messages: msgs,
+      messages: persistable,
       plan: plan || null,
       provider: 'auto',
       activeTripContext: activeTripContextRef.current || null,
     });
-  }, []);
+  }, [isAnonymous]);
 
   // Restore logged-in session from local cache or DB when returning to /plan-ai
   useEffect(() => {
-    if (!isAuthenticated || existingTripId || isNewChat || isPersonalized || isStartingFresh || initialAskMessage) {
-      if (isAuthenticated && (existingTripId || isNewChat || isPersonalized || initialAskMessage)) {
+    const shouldRestore = shouldRestorePlanAiSession({
+      isAuthenticated, existingTripId, isNewChat, isPersonalized, isStartingFresh, initialAskMessage, entryContext,
+    });
+    if (!shouldRestore) {
+      if (isAuthenticated && !existingTripId && (isNewChat || isPersonalized || initialAskMessage)) {
         setAuthRestoreStatus('n/a');
       }
       return;
     }
+
+    // P0-1: one-shot boot — entryContext (a dependency) changes during a live
+    // conversation, and re-entering restore then replaced the transcript.
+    if (authBootRanRef.current) return;
+    authBootRanRef.current = true;
 
     let cancelled = false;
     setAuthRestoreStatus('pending');
@@ -941,28 +1055,23 @@ const TripPlannerChat = ({
     const restoreAuthSession = async () => {
       const temp = tripHistoryService.getTempChatState();
 
-      if (temp?.messages && conversationHasUserMessages(temp.messages)) {
-        if (cancelled) return;
-        setMessages(tripHistoryService.normalizeStoredMessages(temp.messages));
-        if (temp.currentTripId) setCurrentTripId(temp.currentTripId);
-        if (temp.plan) setCurrentPlan(temp.plan);
-        if (temp.activeTripContext) activeTripContextRef.current = temp.activeTripContext;
-        setAuthRestoreStatus('restored');
-        return;
-      }
-
       if (temp?.currentTripId) {
-        await loadExistingTrip(temp.currentTripId);
-        if (!cancelled) setAuthRestoreStatus('restored');
+        const loaded = await loadExistingTrip(temp.currentTripId);
+        if (!cancelled) setAuthRestoreStatus(loaded ? 'restored' : 'error');
+        if (!loaded) setContinuityNotice('Could not load your saved conversation. Reload to retry.');
         return;
       }
-
+      if (temp?.messages && conversationHasUserMessages(temp.messages)) {
+        localStorage.setItem('trailie-unlinked-history', JSON.stringify(temp));
+        setMessages([]); setCurrentPlan(null);
+        setContinuityNotice('This device had a chat without a saved conversation ID. It has been kept as a local backup; new messages will start a new conversation.');
+      }
       if (!cancelled) setAuthRestoreStatus('empty');
     };
 
     restoreAuthSession().catch((error) => {
       console.error('Error restoring authenticated session:', error);
-      if (!cancelled) setAuthRestoreStatus('empty');
+      if (!cancelled) setAuthRestoreStatus('error');
     });
 
     return () => {
@@ -975,6 +1084,7 @@ const TripPlannerChat = ({
     isPersonalized,
     isStartingFresh,
     initialAskMessage,
+    entryContext,
     loadExistingTrip,
   ]);
 
@@ -1028,11 +1138,13 @@ const TripPlannerChat = ({
     };
   }, [persistSessionToStorage]);
 
-  // Re-show limit card in-thread when guest returns after a 6th attempt (not stored server-side)
+  // Re-show limit card in-thread when guest returns with the allowance spent.
+  // Stage 14.8A.2 §4 — `messageCount` is the server's COMPLETED turn count, so
+  // the card belongs at exactly five completed turns, not at a sixth attempt.
   useEffect(() => {
     if (!isAnonymous || isAuthenticated || canSendMore) return;
     if (messages.some((m) => m.isConversionMessage)) return;
-    if (messageCount <= ANONYMOUS_MESSAGE_LIMIT) return;
+    if (messageCount < ANONYMOUS_MESSAGE_LIMIT) return;
 
     setMessages((prev) => {
       if (prev.some((m) => m.isConversionMessage)) return prev;
@@ -1056,13 +1168,23 @@ const TripPlannerChat = ({
     cleanupExpiredSessions();
 
     if (isAnonymous && !isAuthenticated) {
+      // P0-1: one-shot boot. This effect's dependencies (parkName,
+      // entryContext, restore callback identity) change during a live
+      // conversation; re-entering restore then replaced the transcript.
+      // Conversation initialization runs once per mount — recurring
+      // dependency changes are not boot events.
+      if (anonymousBootRanRef.current) return;
+      anonymousBootRanRef.current = true;
+
       if (initialAskMessage) {
         setAnonymousRestoreStatus('empty');
         return;
       }
       const storedSession = readStoredAnonymousSession();
-      const shouldResumeGuest =
-        storedSession?.anonymousId && (storedSession.messageCount || 0) > 0;
+      const shouldResumeGuest = shouldRestoreAnonymousPlanAiSession({
+        entryContext,
+        hasCompletedSession: Boolean(storedSession?.anonymousId && (storedSession.messageCount || 0) > 0),
+      });
       if (shouldResumeGuest) {
         restoreAnonymousSession();
         return;
@@ -1073,7 +1195,7 @@ const TripPlannerChat = ({
       }
       restoreAnonymousSession();
     }
-  }, [isAnonymous, isAuthenticated, parkName, initialAskMessage, restoreAnonymousSession, cleanupExpiredSessions]);
+  }, [isAnonymous, isAuthenticated, parkName, initialAskMessage, entryContext, restoreAnonymousSession, cleanupExpiredSessions]);
 
   // Draft guest avatar before first API response — same URL after refresh until session links it
   useEffect(() => {
@@ -1389,7 +1511,7 @@ const TripPlannerChat = ({
 
   const handleSendMessage = async (messageText, options = {}) => {
     const { hiddenFromUi = false, dayByDayPlanIntake = false, intakeParkName = null, intakeParkNames = null } = options;
-    if (!messageText.trim() || isGenerating) return;
+    if (!messageText.trim() || conversationSendBlocked({generating:isGenerating,recovering:historySyncBusy,recoveryPending:historyRecovery,restoreStatus:isAnonymous?anonymousRestoreStatus:authRestoreStatus})) return;
 
     primeCompletionSound?.();
     pendingParkImagesRef.current = [];
@@ -1406,10 +1528,26 @@ const TripPlannerChat = ({
       return;
     }
 
+    // Local-only acceptance record. Opened after the provider guard so a turn is
+    // only recorded when a request is actually about to be made.
+    recordTrailieDemoSubmission({
+      prompt: messageText.trim(),
+      authenticated: isAuthenticated,
+      tripId: currentTripIdRef.current || currentTripId || null,
+    });
+
     // Abort any existing request
     abortControllerRef.current?.abort();
+    // Stage 14.3 — the previous turn's coordinator must stop touching state.
+    earlyCoordinatorRef.current?.dispose();
+    earlyCoordinatorRef.current = null;
     const controller = new AbortController();
     abortControllerRef.current = controller;
+
+    // Stage 14.8A.2 §5/§9 — one stable id per submission. The server uses it to
+    // de-duplicate a retry or a second tab; the browser uses it to find and
+    // clear this exact optimistic turn if the request fails.
+    const clientTurnId = createGuestClientTurnId();
 
     // Add user message
     const userMessage = {
@@ -1418,7 +1556,35 @@ const TripPlannerChat = ({
       content: messageText.trim(),
       timestamp: new Date(),
       hiddenFromUi,
+      clientTurnId,
+      // Optimistic only: not history, not quota, and never mirrored until the
+      // server reports a completed logical turn.
+      ...(isAnonymous ? { isPending: true } : {}),
       ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
+    };
+
+    if (isAnonymous) {
+      recordGuestPendingTurn({ anonymousId, clientTurnId });
+    }
+
+    /**
+     * Stage 14.8A.2 §9 — resolve the optimistic guest turn exactly once.
+     *
+     *   'completed' → clear the pending flag so the turn joins mirrored history
+     *   'failed'    → visibly mark it failed, drop it from the mirror, free the
+     *                 composer; a refresh can never show it as completed
+     *
+     * Either way the pending marker is removed, so no permanent spinner and no
+     * stuck reservation can survive on the browser side.
+     */
+    const settleGuestOptimisticTurn = (status) => {
+      if (!isAnonymous) return;
+      clearGuestPendingTurn();
+      setMessages((prev) =>
+        status === 'failed'
+          ? markGuestTurnFailed(prev, { clientTurnId })
+          : prev.map((m) => (m.clientTurnId === clientTurnId ? { ...m, isPending: false } : m))
+      );
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -1427,9 +1593,10 @@ const TripPlannerChat = ({
     }
     setIsGenerating(true);
     setThinkingStartTime(Date.now());
-    setThinkingMessage('Thinking...');
+    setThinkingMessage('Working on that…');
     setThinkingSources(null);
     activeStreamSourcesRef.current = null;
+    sawServerStageRef.current = false;
 
     try {
       // Build context for AI
@@ -1437,16 +1604,35 @@ const TripPlannerChat = ({
       
       const sessionContext = buildClientSessionContext(userContext, isPersonalized, messageText.trim());
       const activeCtx = activeTripContextRef.current;
+      // P0-4: the entry context and request metadata may carry only
+      // traveler-owned form values — never UI defaults.
+      const travelerOwnedFormData = selectTravelerOwnedFormData(formData);
+      let canonicalEntryContext = withEntryFormData(
+        entryContext || { version: 1, source: existingTripId ? 'saved_trip' : 'direct', requestedDestinations: [], comparisonTargets: [] },
+        travelerOwnedFormData,
+        quickFillMessage && messageText.trim() === quickFillMessage.trim() ? 'quick_fill' : null
+      );
+      if (isPersonalized) canonicalEntryContext = withPersonalization(canonicalEntryContext, userContext);
+      canonicalEntryContext = { ...canonicalEntryContext, activeTripContext: activeCtx || undefined };
+      entryContextRef.current = canonicalEntryContext;
 
       const requestMetadata = {
+        tripId: currentTripIdRef.current && !currentTripIdRef.current.startsWith('temp-')
+          ? currentTripIdRef.current : null,
         parkCode: formData.parkCode || activeCtx?.primaryDestination?.parkCode || null,
         parkName: parkName || activeCtx?.primaryDestination?.name || null,
         lat: formData.coordinates?.lat ?? activeCtx?.primaryDestination?.lat ?? undefined,
         lon: formData.coordinates?.lon ?? activeCtx?.primaryDestination?.lon ?? undefined,
-        formData,
+        formData: travelerOwnedFormData,
         activeTripContext: activeCtx,
+        entryContext: canonicalEntryContext,
         personalizedRecommendations: isPersonalized,
         aiContext: userContext || null,
+        // Stage 8 — echo the currently-stored plan version so the server can
+        // stamp a monotonic responseVersion and the persistence guard can reject
+        // stale writes.
+        priorResponseVersion: currentPlanRef.current?.responseVersion || 0,
+        ...(planningStateRef.current ? { planningState: planningStateRef.current } : {}),
         ...(dayByDayPlanIntake ? { dayByDayPlanIntake: true } : {}),
         ...(intakeParkName ? { intakeParkName, parkName: intakeParkName } : {}),
         ...(intakeParkNames?.length ? { intakeParkNames } : {}),
@@ -1463,8 +1649,16 @@ const TripPlannerChat = ({
       };
       // Build conversation history — include image context so AI can
       // answer follow-up questions about the photos it shared
-      const conversationHistory = messages
-        .filter(msg => msg.role !== 'system')
+      //
+      // Phase 6C — a transient RETRYABLE_FAILURE bubble ("I couldn't finish
+      // that one.") is never real prior context: it is calm placeholder
+      // copy, not something the model said, and a retry deliberately
+      // removes it from `messages` for exactly this reason. Excluded here
+      // too as a second, independent guard in case it is ever still present
+      // (e.g. a different turn's failure earlier in the conversation).
+      const conversationHistory = excludeTransientFailuresFromHistory(
+        messages.filter(msg => msg.role !== 'system')
+      )
         .map(msg => {
           let content = msg.content;
           if (msg.role === 'assistant' && msg.parkImages?.length > 0) {
@@ -1473,7 +1667,11 @@ const TripPlannerChat = ({
               .join(' ');
             content += `\n\n(Photos shown to user: ${imageDesc})`;
           }
-          return { role: msg.role, content };
+          return {
+            role: msg.role,
+            content,
+            ...(msg.intent ? { intent: msg.intent } : {}),
+          };
         });
 
       const msgs = [
@@ -1488,6 +1686,174 @@ const TripPlannerChat = ({
       rawStreamedContentRef.current = '';
       cancelStreamFlush();
       clearStreamIdleTimer();
+
+      // ── Stage 14.3 — early frozen-itinerary delivery ────────────────────────
+      // Authenticated streaming only, and only when typed events actually
+      // arrive. Every other path (anonymous, non-streaming, legacy, flag off)
+      // keeps the unchanged terminal `done` workflow below.
+      const baseConversation = [...messages, userMessage];
+      let persistedConversation = baseConversation;
+      let legacyOwnsTerminal = false;
+      let earlyCoordinator = null;
+
+      /** The ONE canonical write used by every revision. Create or update. */
+      const writeCanonicalRevision = async ({ conversation, plan, expectedPreviousRevision }) => {
+        const persisted = sanitizeMessagesForPersistence(conversation);
+        const summary = createTripSummary(persisted, plan);
+        const tripId = currentTripIdRef.current;
+
+        if (tripId && !tripId.startsWith('temp-')) {
+          const res = await tripService.updateTrip(
+            tripId,
+            buildResponseSavePayload({
+              conversation: persisted,
+              summary,
+              plan,
+              expectedPreviousRevision,
+            })
+          );
+          const pp = res?.planPersistence;
+          // Stage 14.7F4B §1 — the OUTCOME decides, never the HTTP status. A
+          // bounded 200 carrying `stale`/`conflict` is a failed write.
+          if (!isPersistenceAccepted({ httpStatus: 200, planPersistence: pp })) {
+            // Stale/conflict is NOT a successful save. Reconcile to the server's
+            // stored identity; never auto-retry the same rejected write.
+            if (pp?.storedIdentity) {
+              setCurrentPlan((prev) => (prev ? { ...prev, ...pp.storedIdentity } : prev));
+            }
+            setSaveState(resolveSaveState({ planPersistence: pp }));
+            return { ok: false, outcome: pp?.outcome || 'REJECTED' };
+          }
+          persistSessionToStorage(tripId, persisted, plan);
+          setSaveState('saved');
+          refreshTrips?.();
+          return { ok: true, tripId };
+        }
+
+        // Stage 14.8H.1 §6 — the validated frozen plan owns the destination.
+        // Stage 14.8H created a trip labelled `General Planning / null` while the
+        // plan it was persisting in the same request said `Zion / zion`, because
+        // this call read component state instead of the plan.
+        const destination = resolveTripDestination({
+          plan,
+          contextParkName: parkName,
+          contextParkCode: formData.parkCode,
+        });
+
+        const res = await tripService.createTrip({
+          parkName: destination.parkName,
+          parkCode: destination.parkCode,
+          title: destination.title,
+          formData: formData || {},
+          conversation: persisted,
+          summary,
+          plan,
+          provider: 'auto',
+          status: 'active',
+        });
+        const newTripId = res.data?._id || res._id;
+        // Set the ref immediately so a revision 2 racing behind this create can
+        // never fall back to the local temp id and make a second trip.
+        currentTripIdRef.current = newTripId;
+        recordTrailieDemoTripId(newTripId);
+        persistSessionToStorage(newTripId, persisted, plan);
+        setSaveState('saved');
+        refreshTrips?.();
+        return { ok: true, tripId: newTripId };
+      };
+
+      if (!isAnonymous && isAuthenticated) {
+        earlyCoordinator = createEarlyRevisionCoordinator({
+          initialTripId: currentTripIdRef.current,
+
+          persistRevision1: async (effect) => {
+            persistedConversation = upsertItineraryTurn(baseConversation, effect);
+            return writeCanonicalRevision({
+              conversation: persistedConversation,
+              plan: effect.canonicalPlan,
+            });
+          },
+
+          persistRevision2: async (effect) => {
+            persistedConversation = updateProseTurn(persistedConversation, effect);
+            return writeCanonicalRevision({
+              conversation: persistedConversation,
+              plan: effect.canonicalPlan,
+              expectedPreviousRevision: effect.expectedPreviousRevision,
+            });
+          },
+
+          // Revision 1 never landed (or revision 2 is uncertain): `done` is a
+          // complete, self-sufficient direct-terminal response.
+          //
+          // ITINERARY_ONLY success (`itinerary_only_complete`): revision 1 is
+          // already durable. `response_finalized` may carry display-only text
+          // without revision-1 identity stamps — rebuilding a same-version PUT
+          // from that payload conflicts (`same_version_different_hash`) and
+          // blocks clearing "Preparing trip notes…". Presentation settlement
+          // must NO-OP persistence (Probe A Fix Pass #3B).
+          persistTerminal: async (effect) => {
+            const settled = resolveItineraryOnlyTerminalPersistence({
+              reason: effect.reason,
+              tripId: currentTripIdRef.current,
+            });
+            if (!settled.shouldWrite && effect.terminalDecision.ownership === 'itinerary_only') return settled.result;
+
+            const done = effect.done || {};
+            persistedConversation = applyTerminalOwnership(baseConversation, effect.terminalDecision);
+            return writeCanonicalRevision({
+              conversation: persistedConversation,
+              plan: done.canonicalPlan,
+            });
+          },
+
+          // Never entered the early lifecycle ⇒ the pre-Stage-14 path below runs
+          // exactly as it does today, with exactly one terminal write.
+          legacyTerminal: () => {
+            legacyOwnsTerminal = true;
+          },
+
+          view: {
+            setTripId: (tripId) => setCurrentTripId(tripId),
+            revealItinerary: (effect) => {
+              setCurrentPlan(effect.canonicalPlan);
+              setMessages((prev) => upsertItineraryTurn(prev, effect));
+              setIsGenerating(false);
+              setThinkingStartTime(null);
+            },
+            revealProse: (effect) => {
+              setCurrentPlan(effect.canonicalPlan);
+              setMessages((prev) => updateProseTurn(prev, effect));
+            },
+            revealTerminal: (effect) => {
+              const done = effect.done || {};
+              if (done.canonicalPlan) setCurrentPlan(done.canonicalPlan);
+              setMessages((prev) => applyTerminalOwnership(prev, effect.terminalDecision));
+              setIsGenerating(false);
+              setThinkingStartTime(null);
+            },
+            setPendingLabel: ({ responseId, label }) =>
+              setMessages((prev) => applyPendingLabel(prev, { responseId, label })),
+            onContractError: ({ code }) =>
+              console.warn('[Trailie] early-delivery contract error:', code),
+            onComplete: () => {
+              setIsGenerating(false);
+              setThinkingStartTime(null);
+            },
+          },
+        });
+        earlyCoordinatorRef.current = earlyCoordinator;
+      }
+
+      // Stage 14.3A — observation is NOT activation. `response_started` fires for
+      // every turn, including ones that never produce an itinerary, so it must
+      // change nothing here. Only a valid `itinerary_ready` (or a malformed one,
+      // which fails closed) hands ownership to the coordinator.
+      const earlyOwnsTurn = () => earlyCoordinator?.ownsTerminalPersistence() === true;
+      const renderLegacyChunk = () =>
+        earlyCoordinator ? earlyCoordinator.shouldRenderLegacyChunk() : true;
+      const finalizeLegacyStream = () =>
+        earlyCoordinator ? earlyCoordinator.shouldFinalizeLegacyStream() : true;
 
       const applyAnonymousSessionFromResult = (result) => {
         if (!isAnonymous || !result) return;
@@ -1509,11 +1875,22 @@ const TripPlannerChat = ({
         cancelStreamFlush();
         clearStreamIdleTimer();
 
+        // Stage 14.3A — suppressed only once a valid `itinerary_ready` activated
+        // early mode (or a malformed one faulted it). A structured-failure or
+        // prose-only turn still finalizes its streamed prose exactly as today.
+        if (!finalizeLegacyStream()) return;
+
         const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
         if (!displayContent.trim()) return;
 
         setIsGenerating(true);
-        setThinkingMessage('Finishing your response...');
+        // Phase 6C — "Finishing your response..." implied completion was
+        // imminent even when this fires purely because the stream went
+        // quiet for STREAM_IDLE_MS (a guess, not a real signal — see
+        // markStreamFinalizing's own doc). Truthful in both call contexts
+        // (a genuine stream end, or the idle guess): still working, not
+        // "about to hand you the answer".
+        setThinkingMessage('Still working on that…');
         setThinkingSources(null);
 
         if (!streamStarted) {
@@ -1560,19 +1937,59 @@ const TripPlannerChat = ({
       };
 
       const streamCallbacks = {
+        // Stage 14.3 — typed early events. Presence of these events (not any
+        // client-side flag) is what activates the persist-before-reveal path.
+        onEarlyEvent: (event) => {
+          earlyCoordinator?.handleEvent(event);
+        },
+        // WP10F-2/3 — first-class presentation updates. The client normalizer
+        // feeds this from BOTH dialects (legacy `thinking` display split out, and
+        // the v2 `display_context` event), so mid-stream park imagery updates the
+        // same pendingParkImagesRef without ever touching thinking sources/copy.
+        onDisplayContext: (display) => {
+          if (display?.parkImages?.length) {
+            pendingParkImagesRef.current = display.parkImages;
+          }
+        },
+        // REAL STAGES ARE AUTHORITATIVE.
+        //
+        // A stage is a state the server actually reached. Once one arrives it
+        // owns the progress copy until the server reaches the next one — no
+        // timer, and no evidence event, may overwrite it. Evidence still updates
+        // the source list, because that is what evidence is.
+        //
+        // The source-derived copy below is kept only as the pre-stage fallback,
+        // for turns and routes that report sources without ever reporting a
+        // stage. Once `sawServerStageRef` is set it can no longer fire.
         onThinking: (thinkingData) => {
           const {
             sources,
             parkImages: thinkingImages,
+            stage,
+            refinementTarget,
           } = thinkingData;
           if (thinkingImages?.length) {
             pendingParkImagesRef.current = thinkingImages;
           }
+          if (stage) {
+            // An unknown stage is still a real transition; it just has no copy.
+            // Leave the current message in place rather than falling back to a
+            // less specific one — never move backwards.
+            sawServerStageRef.current = true;
+            const stageCopy = resolveThinkingStageCopy(stage, refinementTarget);
+            if (stageCopy) setThinkingMessage(stageCopy);
+            if (sources) {
+              activeStreamSourcesRef.current = sources;
+              setThinkingSources(sources);
+            }
+            return;
+          }
           const src = sources || [];
           activeStreamSourcesRef.current = src;
           setThinkingSources(src);
+          if (sawServerStageRef.current) return;
           if (!src.length) {
-            setThinkingMessage('Understanding your trip details...');
+            setThinkingMessage('Thinking through your question…');
           } else if (src?.includes('web')) {
             setThinkingMessage('Searching live info...');
           } else if (src?.includes('nps') && src?.includes('weather')) {
@@ -1590,6 +2007,7 @@ const TripPlannerChat = ({
 
           const applyStreamContent = () => {
             streamFlushRafRef.current = null;
+            if (!renderLegacyChunk()) return; // see markStreamFinalizing
             const displayContent = stripItineraryJsonForDisplay(rawStreamedContentRef.current);
             if (!displayContent.trim()) return;
 
@@ -1622,6 +2040,18 @@ const TripPlannerChat = ({
           }
           scheduleStreamIdleCheck();
         },
+        // Phase 8D.4 — an internal generation attempt was rejected. Remove
+        // only this turn's provisional assistant prose before the next attempt
+        // streams; the user bubble, prior turns, itinerary lifecycle, active
+        // trip state, and internal repair diagnostics all remain untouched.
+        onContentReset: () => {
+          cancelStreamFlush();
+          clearStreamIdleTimer();
+          rawStreamedContentRef.current = '';
+          if (!streamStarted) return;
+          streamStarted = false;
+          setMessages((prev) => prev.filter((m) => m.id !== streamAssistantId));
+        },
         onStreamEnd: () => {
           markStreamFinalizing();
         },
@@ -1629,13 +2059,31 @@ const TripPlannerChat = ({
           clearStreamIdleTimer();
           cancelStreamFlush();
 
-          const resolvedContent = result.contentUnchanged
-            ? stripItineraryJsonForDisplay(rawStreamedContentRef.current)
-            : (result.content ?? stripItineraryJsonForDisplay(rawStreamedContentRef.current));
+          // Phase 8D.4.1 — terminal response content belongs to the accepted
+          // attempt and is authoritative even when the transport marks it as
+          // unchanged. The local buffer is only a fallback for legacy terminals
+          // that genuinely omit content.
+          const resolvedContent = typeof result.content === 'string'
+            ? result.content
+            : stripItineraryJsonForDisplay(rawStreamedContentRef.current);
 
           data = {
+            persisted: result.persisted === true,
+            tripId: result.tripId || null,
             content: resolvedContent,
             contentUnchanged: result.contentUnchanged === true,
+            // Stage 8 — canonical response identity + the plan to persist verbatim.
+            canonicalPlan: result.canonicalPlan || null,
+            travelLogistics: result.travelLogistics || null,
+            responseArtifacts: result.responseArtifacts || null,
+            intent: result.intent || null,
+            presentation: result.presentation || null,
+            planningState: result.planningState || null,
+            responseId: result.responseId || null,
+            responseVersion: result.responseVersion || null,
+            responseRevision: result.responseRevision || null,
+            contentHash: result.contentHash || null,
+            itineraryHash: result.itineraryHash || null,
             provider: result.provider,
             model: result.model,
             hasLiveData: result.hasLiveData,
@@ -1651,8 +2099,46 @@ const TripPlannerChat = ({
             isConversionMessage: result.isConversionMessage,
             showDayByDayPlanCta: result.showDayByDayPlanCta === true,
             activeTripContext: result.activeTripContext,
+            // WP-TU Phase 3 Task 8 — the authoritative active-trip destination
+            // for THIS turn (Task 7B). Threaded the same way parkName/
+            // activeTripContext already are, so the header can read it off
+            // the persisted message instead of the sticky selectedParkName.
+            activeTripPresentation: result.activeTripPresentation || null,
+            // WP-TU Phase 4 Task 10 — same additive-field pattern as
+            // activeTripPresentation (Task 7B) immediately above.
+            targetTripId: result.targetTripId || null,
+            // Historical-plan refinements use this only to mount the target's
+            // revised itinerary in the current assistant turn. Active-plan
+            // persistence continues to read canonicalPlan exclusively.
+            targetPlanMutation: result.targetPlanMutation || null,
+            // Phase 6A — was silently dropped here before: the non-stream
+            // path already carries this field straight through, but this
+            // reconstruction is what the streaming path's `data` becomes, so
+            // classifyTrailieTurnOutcome had nothing to read on that path
+            // without this. Display classification only — no behavior here.
+            trailieV2: result.trailieV2 || null,
           };
           applyAnonymousSessionFromResult(result);
+
+          // Stage 14.3 — `done` is terminal reconciliation, not a second
+          // response. When the turn entered the early lifecycle the coordinator
+          // decides whether it needs a write at all; when it did not, the
+          // coordinator hands straight back to the unchanged path below.
+          // Force `type: 'done'` AFTER spreading the transport payload — v2
+          // terminals arrive as `response_finalized` and would otherwise
+          // overwrite the lifecycle type, dropping terminal reveal.
+          if (earlyCoordinator) {
+            earlyCoordinator.handleEvent({
+              ...result,
+              type: 'done',
+              canonicalPlan:
+                result.canonicalPlan
+                || result.itineraryData
+                || result.itinerary
+                || null,
+            });
+            if (!legacyOwnsTerminal) return;
+          }
 
           if (result.isConversionMessage || !streamStarted) {
             return;
@@ -1663,7 +2149,15 @@ const TripPlannerChat = ({
               m.id === streamAssistantId
                 ? {
                     ...m,
-                    ...(result.contentUnchanged ? {} : { content: resolvedContent }),
+                    content: resolvedContent,
+                    // Stage 8.1 — stamp the canonical response identity onto the
+                    // assistant message so it is persisted/guarded as one unit
+                    // with the plan (never conversation v3 beside plan v4).
+                    responseId: result.responseId || null,
+                    responseVersion: result.responseVersion || null,
+                    responseRevision: result.responseRevision || null,
+                    contentHash: result.contentHash || null,
+                    itineraryHash: result.itineraryHash || null,
                     provider: result.provider,
                     model: result.model,
                     isStreaming: false,
@@ -1673,6 +2167,31 @@ const TripPlannerChat = ({
                     parkName: result.parkName,
                     parkNames: result.parkNames || (result.parkName ? [result.parkName] : []),
                     hasItinerary: result.hasItinerary || false,
+                    // Legacy dialect (and v2 terminal fallback): mount the card
+                    // from the terminal plan when early itinerary_ready never
+                    // revealed one.
+                    ...(
+                      (result.canonicalPlan || result.itineraryData || result.itinerary)?.days?.length
+                        ? {
+                            itineraryPlan:
+                              result.canonicalPlan
+                              || result.itineraryData
+                              || result.itinerary,
+                            canonicalPlan:
+                              result.canonicalPlan
+                              || result.itineraryData
+                              || result.itinerary,
+                          }
+                        : {}
+                    ),
+                    ...(result.travelLogistics ? { travelLogistics: result.travelLogistics } : {}),
+                    ...(result.responseArtifacts ? { responseArtifacts: result.responseArtifacts } : {}),
+                    ...(result.intent ? { intent: result.intent } : {}),
+                    ...(result.presentation ? { presentation: result.presentation } : {}),
+                    activeTripPresentation: result.activeTripPresentation || null,
+                    // WP-TU Phase 4 Task 10 — same additive-field pattern as
+                    // activeTripPresentation (Task 7B) immediately above.
+                    targetTripId: result.targetTripId || null,
                     parkImages: result.parkImages || [],
                     showDayByDayPlanCta: result.showDayByDayPlanCta === true,
                   }
@@ -1687,10 +2206,13 @@ const TripPlannerChat = ({
         },
         onClose: ({ sawStreamEnd, sawDone }) => {
           clearStreamIdleTimer();
+          // The socket closed with no terminal `done`. A durable revision 1 stays
+          // visible and recoverable; nothing partial is shown.
+          if (!sawDone) earlyCoordinator?.handleEvent({ type: 'stream_aborted' });
           if (!sawStreamEnd && rawStreamedContentRef.current.trim()) {
             markStreamFinalizing();
           }
-          if (!sawDone && !data && rawStreamedContentRef.current.trim()) {
+          if (!sawDone && !data && !earlyOwnsTurn() && rawStreamedContentRef.current.trim()) {
             data = {
               content: stripItineraryJsonForDisplay(rawStreamedContentRef.current),
               contentUnchanged: true,
@@ -1713,6 +2235,7 @@ const TripPlannerChat = ({
             signal: controller.signal,
             metadata: requestMetadata,
             anonymousId,
+            clientTurnId,
             ...streamCallbacks,
           });
         } else {
@@ -1733,11 +2256,28 @@ const TripPlannerChat = ({
           });
         }
       } catch (streamErr) {
-        if (streamErr.name === 'AbortError') throw streamErr;
+        if (streamErr.name === 'AbortError' || streamErr.noAutomaticRetry) throw streamErr;
         console.error('Streaming failed, falling back to non-streaming:', streamErr.message);
       } finally {
         clearStreamIdleTimer();
         cancelStreamFlush();
+      }
+
+      // Stage 14.3 §8 — for a turn that entered the typed-event lifecycle, ALL
+      // persistence decisions belong to the coordinator. The legacy terminal
+      // path and autoSaveConversation must not also run, or the turn would be
+      // written twice and the assistant message appended twice.
+      if (earlyCoordinator) {
+        await earlyCoordinator.drain();
+        if (earlyOwnsTurn()) {
+          logAIChat(messageText.trim(), Date.now() - thinkingStartTime, true);
+          setIsGenerating(false);
+          setThinkingStartTime(null);
+          setThinkingSources(null);
+          activeStreamSourcesRef.current = null;
+          playCompletionSound?.();
+          return;
+        }
       }
 
       if (!data) {
@@ -1774,6 +2314,7 @@ const TripPlannerChat = ({
             signal: controller.signal,
             metadata: requestMetadata,
             anonymousId,
+            clientTurnId,
           });
           applyAnonymousSessionFromResult(data);
         } else {
@@ -1820,6 +2361,9 @@ const TripPlannerChat = ({
           isConversionMessage: true,
         };
 
+        // The sixth attempt was blocked before admission — it is not a
+        // completed turn and must not be mirrored as one.
+        settleGuestOptimisticTurn('failed');
         setMessages(prev => [...prev, assistantMessage]);
         setIsGenerating(false);
         setThinkingStartTime(null);
@@ -1832,15 +2376,45 @@ const TripPlannerChat = ({
 
       applyActiveTripContextFromResult(data);
 
+      // Phase 6A — display classification only. Does not gate persistence,
+      // history mirroring, or quota accounting below (all unchanged, exactly
+      // as before) — used only to stash `outcomeClass` on the rendered
+      // message and to withhold the completion sound for a genuine failure,
+      // so a retryable failure at least stops celebrating itself.
+      const outcomeClass = classifyTrailieTurnOutcome(data);
+      // Phase 6A.1 — what actually gets RENDERED this turn. `assistantMessageForSave`
+      // below (persistence) deliberately keeps the original `data.content` —
+      // this only changes what appears in the live chat state.
+      const displayContent = resolveTrailieTurnDisplayContent({ content: data.content, outcomeClass });
+
       // Build the assistant message for saving DIRECTLY
       const usedStreaming = streamStarted && !data.isConversionMessage;
       const assistantMessageId = usedStreaming ? streamAssistantId : Date.now() + 1;
+
+      // WP-TU Phase 4 Task 10D — display-only fallback (extracted to
+      // `selectTerminalPlanForDisplay` for direct unit testing). This is READ
+      // ONLY: it feeds the in-chat bubble below, never `setCurrentPlan` (the
+      // active trip's own plan panel state), which continues to read
+      // `data.canonicalPlan` via `selectPlanToPersist`, completely unchanged.
+      const terminalPlan = selectTerminalPlanForDisplay({ data });
+
+      if (data.planningState) {
+        planningStateRef.current = data.planningState;
+      }
 
       const assistantMessageForSave = {
         id: assistantMessageId,
         role: 'assistant',
         content: data.content,
         timestamp: new Date(),
+        // Stage 8.1 — canonical response identity travels WITH the persisted
+        // assistant message so the server accepts/rejects it atomically with the
+        // plan (never conversation v3 beside plan v4).
+        responseId: data.responseId || null,
+        responseVersion: data.responseVersion || null,
+        responseRevision: data.responseRevision || null,
+        contentHash: data.contentHash || null,
+        itineraryHash: data.itineraryHash || null,
         provider: data.provider,
         model: data.model,
         responseTime,
@@ -1850,8 +2424,20 @@ const TripPlannerChat = ({
         parkName: data.parkName,
         parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
         hasItinerary: data.hasItinerary || false,
+        ...(terminalPlan?.days?.length ? { itineraryPlan: terminalPlan, canonicalPlan: terminalPlan } : {}),
+        ...(data.travelLogistics ? { travelLogistics: data.travelLogistics } : {}),
+        ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
+        ...(data.intent ? { intent: data.intent } : {}),
+        ...(data.presentation ? { presentation: data.presentation } : {}),
+        activeTripPresentation: data.activeTripPresentation || null,
+        // WP-TU Phase 4 Task 10 — same additive-field pattern as
+        // activeTripPresentation (Task 7B) immediately above.
+        targetTripId: data.targetTripId || null,
         parkImages: data.parkImages || [],
         showDayByDayPlanCta: data.showDayByDayPlanCta === true,
+        // Phase 6A — display-only classification, stashed for future use;
+        // never rendered as a raw string anywhere (see trailieTurnOutcome.js).
+        outcomeClass,
       };
 
       // `messages` from closure = pre-send messages; userMessage was defined above
@@ -1862,7 +2448,38 @@ const TripPlannerChat = ({
         if (usedStreaming) {
           return prev.map(msg =>
             msg.id === streamAssistantId
-              ? { ...msg, responseTime, isStreaming: false, isFinalizing: false, hasLiveData: data.hasLiveData, hasWebSearch: data.hasWebSearch, parkName: data.parkName, parkNames: data.parkNames || (data.parkName ? [data.parkName] : []), hasItinerary: data.hasItinerary || false, parkImages: data.parkImages || [], showDayByDayPlanCta: data.showDayByDayPlanCta === true }
+              ? {
+                  ...msg,
+                  responseTime,
+                  isStreaming: false,
+                  isFinalizing: false,
+                  // Phase 8D.4.1 — terminal content is the accepted attempt's
+                  // authority. Reconcile exactly instead of trusting any
+                  // provisional browser accumulator left by streamed deltas.
+                  content: displayContent,
+                  hasLiveData: data.hasLiveData,
+                  hasWebSearch: data.hasWebSearch,
+                  parkName: data.parkName,
+                  parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
+                  hasItinerary: data.hasItinerary || false,
+                  ...(terminalPlan?.days?.length && !msg.itineraryPlan
+                    ? { itineraryPlan: terminalPlan, canonicalPlan: terminalPlan }
+                    : {}),
+                  ...(data.travelLogistics ? { travelLogistics: data.travelLogistics } : {}),
+                  ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
+                  ...(data.intent ? { intent: data.intent } : {}),
+                  ...(data.presentation ? { presentation: data.presentation } : {}),
+                  activeTripPresentation: data.activeTripPresentation || null,
+                  // WP-TU Phase 4 Task 10 — same additive-field pattern as
+                  // activeTripPresentation (Task 7B) immediately above.
+                  targetTripId: data.targetTripId || null,
+                  parkImages: data.parkImages || [],
+                  showDayByDayPlanCta: data.showDayByDayPlanCta === true,
+                  // Phase 6A — display-only classification, stashed for
+                  // future use; never rendered as a raw string (see
+                  // trailieTurnOutcome.js).
+                  outcomeClass,
+                }
               : msg
           );
         }
@@ -1872,7 +2489,9 @@ const TripPlannerChat = ({
           {
             id: assistantMessageId,
             role: 'assistant',
-            content: data.content,
+            // Phase 6A.1 — a genuine failure renders calm generic copy here;
+            // everything else renders data.content exactly as before.
+            content: displayContent,
             timestamp: new Date(),
             provider: data.provider,
             model: data.model,
@@ -1882,49 +2501,105 @@ const TripPlannerChat = ({
             parkName: data.parkName,
             parkNames: data.parkNames || (data.parkName ? [data.parkName] : []),
             hasItinerary: data.hasItinerary || false,
+            ...(terminalPlan?.days?.length ? { itineraryPlan: terminalPlan, canonicalPlan: terminalPlan } : {}),
+            ...(data.travelLogistics ? { travelLogistics: data.travelLogistics } : {}),
+            ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
+            ...(data.intent ? { intent: data.intent } : {}),
+            ...(data.presentation ? { presentation: data.presentation } : {}),
+            activeTripPresentation: data.activeTripPresentation || null,
+            // WP-TU Phase 4 Task 10 — same additive-field pattern as
+            // activeTripPresentation (Task 7B) immediately above.
+            targetTripId: data.targetTripId || null,
             parkImages: data.parkImages || [],
             showDayByDayPlanCta: data.showDayByDayPlanCta === true,
+            // Phase 6A — display-only classification, stashed for future
+            // use; never rendered as a raw string (see trailieTurnOutcome.js).
+            outcomeClass,
           }
         ];
       });
 
-      // Check if response contains a complete trip plan and build the plan object
-      const looksLikePlan = data.hasItinerary ||
-        /(^|\n)\s*(Day\s*\d+[:\-\s]|Itinerary|Schedule|Plan)\b/i.test(data.content);
-      let planForSave = currentPlan;
-      if (looksLikePlan) {
-        // Build plan with structured itinerary data (days) if available from backend
-        if (data.itineraryData?.days) {
-          planForSave = {
-            type: 'itinerary',
-            version: 1,
-            generatedAt: new Date().toISOString(),
-            createdFrom: 'ai',
-            parkName,
-            parkCode: formData.parkCode || null,
-            content: data.content,
-            formData,
-            ...data.itineraryData
-          };
-        } else {
-          planForSave = { parkName, content: data.content, formData };
-        }
+      // Stage 8 — the server owns canonical response creation. Persist the
+      // server-built canonicalPlan VERBATIM; never rebuild it from streamed
+      // content or itineraryData on the client (that caused F-PERSIST-1 drift).
+      const planForSave = selectPlanToPersist({ data, currentPlan });
+      if (planForSave && planForSave !== currentPlan) {
         setCurrentPlan(planForSave);
       }
 
-      // Auto-save conversation to history after at least one user message + AI reply
-      if (conversationHasUserMessages(updatedMessagesForSave)) {
-        autoSaveConversation(updatedMessagesForSave, planForSave);
+      // Auto-save conversation to history after at least one user message + AI
+      // reply — and, when this turn also produced a cross-plan (historical)
+      // mutation, persist that to ITS OWN trip afterward.
+      //
+      // WP-TU Phase 4 Task 10E — ORDERING IS ENFORCED, not assumed: the
+      // target-plan (Redwood) save's ownership proof is a real, durably-
+      // persisted assistant message the active-trip save just wrote — the
+      // assistant message carries `responseId: data.responseId` and
+      // `targetTripId: data.targetTripId` (Task 10, unchanged). Firing both
+      // saves as an unordered race would let the target save's provenance
+      // check run before that message durably exists server-side, which is
+      // not a real guarantee even when it happens to pass. Extracted to
+      // `runOrderedCrossPlanPersistence` (persistCanonicalPlan.js) so this
+      // ordering is directly unit-testable, not just an inline happy path.
+      // Phase 6C.1 — the smallest persistence seam: a server-resolved
+      // RETRYABLE_FAILURE exchange must be transient, never durably written
+      // into TripPlan.conversation (the Phase 6C precheck finding this
+      // phase closes). `autoSaveConversation` bundles the conversation
+      // array AND the canonical plan into one atomic response-coupled
+      // write (see its own doc), so withholding it here for exactly this
+      // one outcome class also leaves the canonical plan byte-identical and
+      // its responseVersion unadvanced, and (since `persistTargetPlanMutation`
+      // below only fires when this save reports success) skips any
+      // cross-plan mutation too — no extra seam needed. Extracted to
+      // `shouldSaveConversationForTurn` (persistCanonicalPlan.js) so this
+      // exact decision is directly unit-testable with a forced
+      // `status: 'failed'` payload, not just an inline condition inside the
+      // untestable-in-isolation component.
+      const hasUserMessagesToSave = shouldSaveConversationForTurn({
+        outcomeClass,
+        hasUserMessages: conversationHasUserMessages(updatedMessagesForSave),
+      });
+      await runOrderedCrossPlanPersistence({
+        data,
+        hasUserMessagesToSave,
+        autoSaveConversation: () => autoSaveConversation(updatedMessagesForSave, planForSave),
+        persistTargetPlanMutation,
+        currentTripId,
+      });
+      if (data.persisted === true && data.tripId) {
+        currentTripIdRef.current = data.tripId;
+        setCurrentTripId(data.tripId);
+        persistSessionToStorage(data.tripId, updatedMessagesForSave, planForSave);
+        setSaveState('saved');
+        refreshTrips?.();
       }
 
       // Track AI chat interaction
       logAIChat(messageText.trim(), responseTime, true);
 
+      // Phase 6A.1 — the server's own guest ledger (anonymousTurnLedger.js's
+      // failGuestTurn, called from routes/ai.js for EVERY
+      // `trailieV2.status !== 'complete'`) never writes ANY non-complete
+      // turn into AnonymousSession.messages and never consumes quota for
+      // it — including plan_target_unresolved, which Part 1's
+      // classifyTrailieTurnOutcome still correctly DISPLAYS as an ordinary
+      // conversation_outcome message. Display and ledger truth are
+      // different questions on purpose (see wasGuestTurnConsumedByServer's
+      // own doc) — the guest-only localStorage mirror must follow the
+      // ledger, or a refresh could resurrect a turn the server itself never
+      // recorded. Reuses the EXISTING 'failed' path (guestTurnFailed —
+      // already excluded by the existing mirror filter) rather than adding
+      // a new mechanism.
+      settleGuestOptimisticTurn(wasGuestTurnConsumedByServer(data) ? 'completed' : 'failed');
+
       setIsGenerating(false);
       setThinkingStartTime(null);
       setThinkingSources(null);
       activeStreamSourcesRef.current = null;
-      if (data?.content) playCompletionSound?.();
+      // Phase 6A — a genuine generation failure must not play the same
+      // positive-reinforcement cue as a real success. Everything else on
+      // this turn (persistence, quota, history) is unchanged.
+      if (data?.content && outcomeClass !== TRAILIE_TURN_OUTCOME.RETRYABLE_FAILURE) playCompletionSound?.();
 
     } catch (error) {
       // Log detailed error information for debugging
@@ -1941,8 +2616,15 @@ const TripPlannerChat = ({
       
       if (error.name === 'AbortError') {
         cancelStreamFlush();
+        settleGuestOptimisticTurn('failed');
+        setIsGenerating(false);
         return;
       }
+
+      // Stage 14.8A.2 §9 — bounded failure handling. The optimistic turn is
+      // marked failed and dropped from the mirror, and the composer is freed.
+      // The server consumed no allowance for it, so a retry is admissible.
+      settleGuestOptimisticTurn('failed');
       
       // Track failed AI chat interaction
       const failedResponseTime = Date.now() - thinkingStartTime;
@@ -1953,9 +2635,14 @@ const TripPlannerChat = ({
       const errorStatus = error.response?.status;
       
       // Check if it's a token limit error
-      let errorMessage = 'Failed to get AI response';
-      let assistantMessage = 'I couldn\'t reach the AI provider. Please try again.';
-      
+      let errorMessage = 'Could not get a reply';
+      let assistantMessage = 'I couldn\'t get that just now. Please try again.';
+      // Phase 6C — only set for a genuine client-only connection loss (see
+      // isUncertainConnectionLossError). Carried onto the inserted message
+      // so the render layer knows this is uncertain_outcome, not a
+      // server-resolved failure — no Retry action is ever attached to it.
+      let messageOutcomeClass = null;
+
       if (errorStatus === 429) {
         if (errorDetails?.error === 'Daily token limit exceeded') {
           errorMessage = 'Daily usage limit reached. Please try again tomorrow.';
@@ -1965,33 +2652,47 @@ const TripPlannerChat = ({
           assistantMessage = '⏳ **Rate Limited**\n\nYou\'re making requests too quickly. Please wait a moment and try again.';
         }
       } else if (errorStatus === 400) {
-        // API configuration error
-        const details = errorDetails?.details || errorDetails?.error || error.message;
-        errorMessage = 'AI provider configuration error';
-        assistantMessage = `**Configuration Error**\n\n${details}\n\nPlease check your API configuration.`;
+        errorMessage = 'Could not complete that';
+        assistantMessage = 'I couldn\'t complete that. Please try again.';
       } else if (errorStatus === 401 || errorStatus === 403) {
-        // Authentication error - check if it's a session expiration vs AI provider issue
         const errMsg = errorDetails?.error || error.message || '';
         if (errMsg.includes('Not authorized') || errMsg.includes('token') || errMsg.includes('expired') || errMsg.includes('log in')) {
           errorMessage = 'Session expired';
           assistantMessage = `**Session Expired**\n\nYour login session has expired. Please refresh the page and log in again to continue chatting.`;
         } else {
-          errorMessage = 'AI provider authentication failed';
-          assistantMessage = `**Authentication Error**\n\nUnable to authenticate with the AI provider. Please check API key configuration.`;
+          errorMessage = 'Could not complete that';
+          assistantMessage = 'I couldn\'t complete that. Please try again.';
         }
       } else if (errorStatus === 500 || errorStatus === 503) {
-        // Server/provider error
-        const details = errorDetails?.error || errorDetails?.details || 'The AI provider is temporarily unavailable';
-        errorMessage = 'AI provider error';
-        assistantMessage = `**Provider Error**\n\n${details}\n\nPlease try again in a moment.`;
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        // Timeout error
-        errorMessage = 'Request timed out';
-        assistantMessage = '⏱️ **Request Timeout**\n\nThe AI provider took too long to respond. Please try again.';
-      } else if (!error.response) {
-        // Network error
-        errorMessage = 'Network error';
-        assistantMessage = '**Network Error**\n\nUnable to reach the AI provider. Please check your connection and try again.';
+        errorMessage = 'Something went wrong';
+        assistantMessage = 'Something went wrong on my side. Please try again in a moment.';
+      } else if (error.serverResolvedFailure) {
+        errorMessage = 'Could not get a reply';
+        assistantMessage = error.message;
+      } else if (isUncertainConnectionLossError(error)) {
+        // Phase 6C — a genuine client-only connection loss (no response at
+        // all, including a client-side timeout). Per the lost-response
+        // race (Phase 6B.1) the server may have already resolved this turn
+        // fine after the browser stopped listening, so this is honestly
+        // uncertain_outcome, never a claim that it failed — and never
+        // offered a Retry action (see canRetryTrailieTurn).
+        errorMessage = 'Connection interrupted';
+        assistantMessage = UNCERTAIN_CONNECTION_LOSS_MESSAGE;
+        messageOutcomeClass = TRAILIE_TURN_OUTCOME.UNCERTAIN_OUTCOME;
+      }
+
+      // Stage 14.8A.2 §11 — bounded guest refusal codes take precedence over the
+      // generic copy above: these consumed no allowance and are retryable.
+      const guestRefusalCode = errorDetails?.error;
+      if (guestRefusalCode === GUEST_TURN_REFUSAL_CODES.IN_PROGRESS) {
+        errorMessage = 'Still working on your last message';
+        assistantMessage = '**One at a time**\n\nYour previous message is still being answered. It will appear here in a moment.';
+      } else if (
+        guestRefusalCode === GUEST_TURN_REFUSAL_CODES.FAILED ||
+        guestRefusalCode === GUEST_TURN_REFUSAL_CODES.ABANDONED
+      ) {
+        errorMessage = 'That message did not go through';
+        assistantMessage = "**Didn't go through**\n\nThat message wasn't completed, so it didn't use one of your free messages. Please try again.";
       }
       
       showToast(errorMessage, 'error');
@@ -2001,11 +2702,53 @@ const TripPlannerChat = ({
         id: `err-${Date.now()}`,
         role: 'assistant',
         content: assistantMessage,
-        timestamp: new Date()
+        timestamp: new Date(),
+        ...(messageOutcomeClass ? { outcomeClass: messageOutcomeClass } : {}),
       }]);
       setIsGenerating(false);
       setThinkingStartTime(null);
     }
+  };
+
+  /**
+   * Phase 6C / 6C.1 — the ONE explicit retry action, now for both guest and
+   * authenticated known failures. `resolveTrailieRetryPlan`
+   * (trailieTurnOutcome.js) owns the actual decision — server-resolved
+   * `retryable_failure` only — so it is directly unit-testable with no
+   * React involved; this is just the thin effect wrapper.
+   *
+   * - No duplicate visible user bubble: the ORIGINAL user message stays
+   *   exactly where it is; the fresh attempt's own user message is added
+   *   with `hiddenFromUi: true` (the same existing mechanism the itinerary
+   *   day-by-day intake flow already uses) purely for its own bookkeeping
+   *   (a fresh clientTurnId/isPending tracking for a guest) — never
+   *   rendered twice.
+   * - The transient failure bubble is removed from `messages` before
+   *   resending, so it can never be sent as history to the new attempt
+   *   (conversationHistory / excludeTransientFailuresFromHistory also
+   *   independently filters it as a second guard).
+   * - `handleSendMessage` itself already no-ops while `isGenerating`. Every
+   *   call mints a fresh guest `clientTurnId` unconditionally, and the
+   *   server independently mints its own fresh `responseId` for every
+   *   request-response cycle regardless of auth state — retry gets a
+   *   genuinely fresh attempt identity on both paths for free, with no new
+   *   idempotency/ledger machinery.
+   * - Phase 6C.1 closed the authenticated persistence gap this action used
+   *   to be withheld for (see `hasUserMessagesToSave` above, and
+   *   `canRetryTrailieTurn`'s doc) — a technical failure never reaches
+   *   `autoSaveConversation` for either audience, so retrying never
+   *   compounds an already-durably-saved failed exchange.
+   */
+  const handleRetryFailedTurn = (failedMessageId) => {
+    if (isGenerating) return;
+    const plan = resolveTrailieRetryPlan({
+      messages: messagesRef.current || [],
+      failedMessageId,
+    });
+    if (!plan) return;
+
+    setMessages((prev) => prev.filter((m) => m.id !== plan.removeMessageId));
+    handleSendMessage(plan.resendText, { hiddenFromUi: true });
   };
 
   const formatItineraryForPrompt = (plan) => {
@@ -2050,7 +2793,13 @@ const TripPlannerChat = ({
 
   /** Session context merged server-side with Trailie persona (not a replacement system prompt). */
   const buildClientSessionContext = (userContext, isPersonalizedMode = false, latestUserMessage = '') => {
-    const effectiveForm = applyMessageConstraintOverrides(formData, latestUserMessage);
+    // P0-4: only traveler-owned form values may be presented as trip details.
+    // UI defaults (groupSize, budget tier, accommodation) are not statements;
+    // constraints parsed from the message itself are, and are layered on top.
+    const effectiveForm = applyMessageConstraintOverrides(
+      selectTravelerOwnedFormData(formData) || {},
+      latestUserMessage
+    );
     const days = (() => {
       if (effectiveForm.startDate && effectiveForm.endDate) {
         const start = new Date(effectiveForm.startDate);
@@ -2058,7 +2807,7 @@ const TripPlannerChat = ({
         const ms = end.setHours(0, 0, 0, 0) - start.setHours(0, 0, 0, 0);
         return Math.max(1, Math.floor(ms / 86400000) + 1);
       }
-      return effectiveForm.numDays || effectiveForm.days || calculateDays();
+      return effectiveForm.numDays || effectiveForm.days || null;
     })();
 
     const currentDate = new Date();
@@ -2097,14 +2846,16 @@ CURRENT CONTEXT:
 - Current year: ${currentYear}
 
 TRIP DETAILS:
-- ${suggestText ? `Destinations: ${suggestText}` : parkName ? `Park: ${parkName}` : fromIntentContext ? `Trip style: ${intentContext.title} (${intentContext.searchQuery})` : 'Destination: not specified yet'}
-- Duration: ${days} days
-- Dates: ${effectiveForm.startDate} to ${effectiveForm.endDate}
-- Group: ${effectiveForm.groupSize} people
-- Budget: ${effectiveForm.budget}
-- Fitness: ${effectiveForm.fitnessLevel}
-- Interests: ${(effectiveForm.interests || []).join(', ') || 'not specified'}
-- Accommodation: ${effectiveForm.accommodation}`;
+${[
+  `- ${suggestText ? `Destinations: ${suggestText}` : parkName ? `Park: ${parkName}` : fromIntentContext ? `Trip style: ${intentContext.title} (${intentContext.searchQuery})` : 'Destination: not specified yet'}`,
+  ...(Number.isFinite(days) && days > 0 ? [`- Duration: ${days} days`] : []),
+  ...(effectiveForm.startDate && effectiveForm.endDate ? [`- Dates: ${effectiveForm.startDate} to ${effectiveForm.endDate}`] : []),
+  ...(effectiveForm.groupSize ? [`- Group: ${effectiveForm.groupSize} people`] : []),
+  ...(effectiveForm.budget ? [`- Budget: ${effectiveForm.budget}`] : []),
+  ...(effectiveForm.fitnessLevel ? [`- Fitness: ${effectiveForm.fitnessLevel}`] : []),
+  ...((effectiveForm.interests || []).length ? [`- Interests: ${effectiveForm.interests.join(', ')}`] : []),
+  ...(effectiveForm.accommodation ? [`- Accommodation: ${effectiveForm.accommodation}`] : []),
+].join('\n')}`;
 
     if (userContext && userContext.totalTrips > 0) {
       prompt += `\n\nUSER HISTORY & PREFERENCES:
@@ -2254,12 +3005,11 @@ TRIP DETAILS:
         fromCompare,
       });
       setMessages([
-        {
+        createUiWelcomeMessage({
           id: Date.now(),
-          role: 'assistant',
           content,
           timestamp: new Date(),
-        },
+        }),
       ]);
     }
 
@@ -2327,15 +3077,25 @@ TRIP DETAILS:
     setShowSaveModal(true);
   };
 
-  const storeReturnToChat = () => {
+  const storeReturnToChat = (surface = null) => {
     localStorage.setItem('returnToChat', JSON.stringify({
-      anonymousId, parkName, formData, messages, timestamp: Date.now(),
+      anonymousId, parkName, formData, messages, surface, timestamp: Date.now(),
     }));
   };
 
-  const handleSignupRedirect = () => {
+  const handleOpenArtifact = (surface) => {
+    if (isAnonymous || !isAuthenticated) {
+      storeReturnToChat(surface);
+      router.push('/login');
+      return;
+    }
+    const tripId = currentTripIdRef.current || currentTripId;
+    if (tripId && !tripId.startsWith('temp-')) router.push(tripSurfacePath(tripId, surface));
+  };
+
+  const handleGuestSignIn = () => {
     storeReturnToChat();
-    router.push('/signup');
+    router.push('/login');
   };
 
   const handleShare = async () => {
@@ -2382,7 +3142,7 @@ TRIP DETAILS:
 
   const handleCopyForSocial = async () => {
     const parkLabel = parkName || 'national park';
-    const text = `I planned my ${parkLabel} trip with TrailVerse AI 🏔️\n${shareUrl}`;
+    const text = `I planned my ${parkLabel} trip with Trailie 🏔️\n${shareUrl}`;
     try {
       await navigator.clipboard.writeText(text);
       showToast('Social caption copied!', 'success');
@@ -2391,18 +3151,86 @@ TRIP DETAILS:
     }
   };
 
+  /** A real, persisted trip — recovery targets a stored response, never a temp id. */
+  const isTripSaved = Boolean(currentTripId && !String(currentTripId).startsWith('temp-'));
+
+  /**
+   * Stage 14.5 — explicit, owner-initiated prose recovery. This is the ONLY way
+   * prose is ever generated for a stored revision 1: nothing starts on reload,
+   * on disconnect, or in the background.
+   */
+  const handleGenerateTripNotes = async (message) => {
+    if (!isTripSaved || !message?.responseId || recoveringResponseId) return;
+
+    setRecoveringResponseId(message.responseId);
+    setRecoveryNotice(null);
+    try {
+      const { runProseRecoveryStream } = await import('@/services/proseRecoveryService');
+      const result = await runProseRecoveryStream({
+        tripId: currentTripId,
+        message,
+        plan: message.itineraryPlan,
+        onRevealProse: (effect) => setMessages((prev) => updateProseTurn(prev, effect)),
+        onPlan: (plan) => setCurrentPlan(plan),
+        persistRevision2: async (effect) =>
+          writeCanonicalRevisionForRecovery({ effect, tripId: currentTripId }),
+      });
+      if (result?.notice) {
+        setRecoveryNotice({ responseId: message.responseId, message: result.notice });
+      }
+    } catch (err) {
+      console.warn('[Trailie] prose recovery failed:', err?.message);
+      setRecoveryNotice({ responseId: message.responseId, message: RECOVERY_MESSAGE.FAILED });
+    } finally {
+      setRecoveringResponseId(null);
+    }
+  };
+
+  /** Revision-2 write for recovery — the SAME canonical writer, never a new trip. */
+  const writeCanonicalRevisionForRecovery = async ({ effect, tripId }) => {
+    const persisted = sanitizeMessagesForPersistence(
+      updateProseTurn(messagesRef.current, effect)
+    );
+    const res = await tripService.updateTrip(
+      tripId,
+      buildResponseSavePayload({
+        conversation: persisted,
+        summary: createTripSummary(persisted, effect.canonicalPlan),
+        plan: effect.canonicalPlan,
+        expectedPreviousRevision: effect.expectedPreviousRevision,
+        entryContext: entryContextRef.current,
+      })
+    );
+    const pp = res?.planPersistence;
+    if (pp && pp.success === false) {
+      setSaveState(resolveSaveState({ planPersistence: pp }));
+      return { ok: false, outcome: pp.outcome };
+    }
+    setSaveState('saved');
+    refreshTrips?.();
+    return { ok: true, tripId };
+  };
+
+  // WP-TU Phase 4 Task 10E — return value is now load-bearing, not just a
+  // side-effecting fire-and-forget: the completed-turn handler must know
+  // whether the Badlands conversation save DURABLY succeeded before it may
+  // fire the target-plan (Redwood) save, whose ownership proof depends on
+  // that assistant message actually being persisted. `true` only on a
+  // genuine accepted write (or the equivalent new-trip create); `false` on
+  // every early-return, rejected write, and network failure. Every existing
+  // caller that ignores the return value is completely unaffected.
   const autoSaveConversation = async (messagesToSave, planOverride = null) => {
-    if (!user || !isAuthenticated || !conversationHasUserMessages(messagesToSave)) return;
+    if (!user || !isAuthenticated || !conversationHasUserMessages(messagesToSave)) return false;
 
     const persistedMessages = sanitizeMessagesForPersistence(messagesToSave);
-    if (!conversationHasUserMessages(persistedMessages)) return;
+    if (!conversationHasUserMessages(persistedMessages)) return false;
 
     const planToSave = planOverride || currentPlan;
 
     // Prevent duplicate trip creation from concurrent calls
     if (savingInProgressRef.current && (!currentTripId || currentTripId.startsWith('temp-'))) {
       console.log('⏳ Auto-save already in progress for new trip, skipping duplicate');
-      return;
+      return false;
     }
 
     console.log('🔄 Auto-saving conversation:', {
@@ -2420,19 +3248,38 @@ TRIP DETAILS:
 
       if (currentTripId && !currentTripId.startsWith('temp-')) {
         console.log('🔄 Updating existing trip in database:', currentTripId);
-        // Update existing trip in database
-        const updateResponse = await tripService.updateTrip(currentTripId, {
-          conversation: persistedMessages,
-          summary: tripSummary,
-          plan: planToSave,
-          provider: 'auto',
-          status: 'active'
-        });
-        console.log('✅ Trip updated successfully:', updateResponse);
+        // Stage 8.3 — response-coupled payload ONLY. No status/title, so a routine
+        // or delayed auto-save can never reactivate an archived trip or rename it.
+        // expectedPreviousVersion lets the server reject stale/conflicting writes.
+        const updateResponse = await tripService.updateTrip(
+          currentTripId,
+          buildResponseSavePayload({
+            conversation: persistedMessages,
+            summary: tripSummary,
+            plan: planToSave,
+            entryContext: entryContextRef.current,
+          })
+        );
 
+        // Stage 8.1 — a stale/conflicting canonical write is NOT a successful
+        // save. Do not claim "Saved"; reconcile local identity to the server's
+        // stored canonical response and surface a recoverable sync state.
+        const pp = updateResponse?.planPersistence;
+        if (pp && pp.success === false) {
+          console.warn('⚠️ Canonical write rejected:', pp.outcome, pp.reason);
+          // Reconcile local identity to the server's stored canonical response;
+          // do NOT auto-retry (that would resubmit the same stale response).
+          if (pp.storedIdentity) {
+            setCurrentPlan((prev) => (prev ? { ...prev, ...pp.storedIdentity } : prev));
+          }
+          savingInProgressRef.current = false;
+          setSaveState(resolveSaveState({ planPersistence: pp }));
+          return false;
+        }
+
+        console.log('✅ Trip updated successfully');
         // Force refresh of trips list to update message count
         if (refreshTrips) {
-          console.log('🔄 Refreshing trips list to update message count');
           refreshTrips();
         }
         persistSessionToStorage(currentTripId, persistedMessages, planToSave);
@@ -2448,6 +3295,7 @@ TRIP DETAILS:
           parkCode: formData.parkCode || null,
           title: parkName ? `${parkName} Trip Plan` : 'General Planning Session',
           formData: formData || {},
+          entryContext: entryContextRef.current,
           conversation: persistedMessages,
           summary: tripSummary,
           plan: planToSave,
@@ -2468,12 +3316,46 @@ TRIP DETAILS:
         persistSessionToStorage(newTripId, persistedMessages, planToSave);
       }
       setSaveState('saved');
+      return true;
     } catch (error) {
+      // Stage 8.2 — a network failure is not a successful save.
       console.error('Error auto-saving conversation:', error);
       persistSessionToStorage(currentTripId, persistedMessages, planToSave);
-      setSaveState('idle');
+      setSaveState(resolveSaveState({ networkError: true }));
+      return false;
     } finally {
       savingInProgressRef.current = false;
+    }
+  };
+
+  // WP-TU Phase 4 Task 10D/10E — a SEPARATE, additive persistence path for a
+  // historical (cross-plan) mutation. Deliberately NOT a modification of
+  // `autoSaveConversation` above: that function owns the ACTIVE trip's
+  // conversation + plan as one atomic response-coupled unit, and must stay
+  // completely unaware of any other trip. This targets a DIFFERENT trip
+  // (`data.targetPlanMutation.tripId`, never `currentTripId`) with ONLY its
+  // plan — `conversation`/`summary` are deliberately omitted from the payload
+  // (confirmed: `tripController.js` preserves the existing stored
+  // `conversation` when the field is absent from the request body), so the
+  // target trip's own conversation history is never read or appended to.
+  //
+  // Task 10E — carries `sourceTripId`/`sourceResponseId` so the server can
+  // verify (against its OWN stored data, never this claim alone) that a real,
+  // durably-persisted assistant message in the active trip's conversation
+  // named this target trip. The CALLER is responsible for only invoking this
+  // AFTER the active-trip save has durably succeeded (see the ordering
+  // enforcement at the call site) — this function does not itself wait for
+  // or verify that; it only shapes and sends the payload.
+  const persistTargetPlanMutation = async (targetPlanMutation, sourceProvenance) => {
+    const save = buildTargetPlanMutationSave(targetPlanMutation, buildResponseSavePayload, sourceProvenance);
+    if (!save) return;
+    try {
+      await tripService.updateTrip(save.tripId, save.payload);
+    } catch (error) {
+      // Best-effort — the active (Badlands) conversation's own save above has
+      // already succeeded or failed independently; a failure here must not
+      // be reported as a failure of THIS turn's primary (active-trip) save.
+      console.error('Error persisting target plan mutation:', error);
     }
   };
 
@@ -2624,7 +3506,7 @@ TRIP DETAILS:
   return (
     <div
       className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-      style={{ backgroundColor: 'var(--bg-primary)' }}
+      style={{ backgroundColor: 'transparent' }}
       onPointerDownCapture={() => primeCompletionSound?.()}
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -2633,15 +3515,110 @@ TRIP DETAILS:
         className="relative flex-1 min-h-0 overflow-y-auto chat-messages-container"
         onScroll={handleChatScroll}
       >
-          <div className={`mx-auto w-full px-3 sm:px-4 ${isWelcomeState ? 'py-3 sm:py-5' : 'py-2 sm:py-5'}`}>
-            <div className="space-y-2 sm:space-y-3">
+          <div className={`mx-auto w-full px-4 sm:px-6 ${isWelcomeState ? 'py-8 sm:py-12' : 'py-5 sm:py-8'}`}>
+            <div className="space-y-6 sm:space-y-9">
               {displayMessages.map((message, index) => {
+                if (message.messageKind === MESSAGE_KIND.UI_WELCOME && !isWelcomeState) return null;
+
                 const sourceFlags = message.isStreaming || message.isFinalizing
                   ? { hasLiveData: false, hasWebSearch: false }
                   : liveFlagsFromSources(message.streamSources);
 
+                // Stage 14.5 — a stored (or in-flight) revision 1 has empty
+                // canonical content. The shared resolver decides what that means;
+                // restore, share and export all read it, so they cannot disagree.
+                const stored = deriveTrailieStoredPresentation({
+                  response: message,
+                  canonicalPlan: message.itineraryPlan || null,
+                  viewerContext: VIEWER_CONTEXT.OWNER,
+                  recoveryCapability: recoveryCapability && isTripSaved,
+                });
+                const presentation = {
+                  showProseBubble: stored.showProse || message.role === 'user',
+                  // An ACTIVE stream may say "Preparing trip notes…"; a restored
+                  // trip must not, because stored state is no proof that Phase B
+                  // is still running.
+                  pendingLabel: message.pendingProseLabel || stored.notesLabel,
+                };
+                const usesSharedTrailieResponse = (
+                  message.role === 'assistant'
+                  && !message.isConversionMessage
+                  && message.id !== 'welcome-placeholder'
+                  && !(isWelcomeState && index === 0)
+                );
+                const trailieResponse = usesSharedTrailieResponse
+                  ? toLiveTrailieResponseModel({
+                      message: {
+                        ...message,
+                        hasLiveData: Boolean(message.hasLiveData || sourceFlags.hasLiveData),
+                        hasWebSearch: Boolean(message.hasWebSearch || sourceFlags.hasWebSearch),
+                      },
+                      lifecycle: {
+                        showProse: presentation.showProseBubble,
+                        showPlan: stored.showItinerary,
+                        isStreaming: Boolean(message.isStreaming),
+                        isFinalizing: Boolean(message.isFinalizing),
+                        pendingLabel: presentation.pendingLabel,
+                      },
+                    })
+                  : null;
+
                 return message.hiddenFromUi ? null : (
-                <React.Fragment key={message.id || message._id || index}>
+                <div key={message.id || message._id || index} id={`trailie-message-${index}`} tabIndex={-1} className="min-w-0">
+                {message.isConversionMessage ? (
+                  <GuestLimitCard
+                    plan={guestTrip?.plan}
+                    onSignIn={handleGuestSignIn}
+                    timeUntilReset={timeUntilReset}
+                  />
+                ) : usesSharedTrailieResponse ? (
+                  <TrailieResponse
+                    response={trailieResponse}
+                    artifactAccess={isAnonymous || !isAuthenticated ? 'guest' : 'account'}
+                    onOpenArtifact={handleOpenArtifact}
+                    tone={
+                      message.outcomeClass === TRAILIE_TURN_OUTCOME.RETRYABLE_FAILURE
+                        ? 'failure'
+                        : message.outcomeClass === TRAILIE_TURN_OUTCOME.UNCERTAIN_OUTCOME
+                          ? 'uncertain'
+                          : 'default'
+                    }
+                    onFollowup={(prompt) => handleSendMessage(prompt)}
+                    hideActions={Boolean(message.isStreaming || message.isFinalizing)}
+                    afterContent={
+                      canRetryTrailieTurn({ outcomeClass: message.outcomeClass }) ? (
+                        <Button
+                          onClick={() => handleRetryFailedTurn(message.id)}
+                          variant="secondary"
+                          size="sm"
+                          icon={RefreshCw}
+                          disabled={isGenerating}
+                        >
+                          Try again
+                        </Button>
+                      ) : messageMatchesDiscoveryPlanCta(message, discoveryPlanCtaMessage) ? (
+                      <div ref={discoveryPlanCtaRef}>
+                        <DiscoveryPlanCta
+                          insideBubble
+                          disabled={isGenerating}
+                          onRequestPlan={() =>
+                            handleSendMessage(
+                              buildDayByDayPlanFollowUp({
+                                parkName: message.parkName,
+                                parkNames: message.parkNames,
+                              }),
+                              {
+                                dayByDayPlanIntake: true,
+                                intakeParkName: message.parkName,
+                                intakeParkNames: message.parkNames,
+                              }
+                            )
+                          }
+                        />
+                      </div>
+                    ) : null}
+                  />
+                ) : presentation.showProseBubble ? (
                 <MessageBubble
                   message={
                     message.isConversionMessage
@@ -2649,8 +3626,15 @@ TRIP DETAILS:
                       : message.content
                   }
                   isUser={message.role === 'user'}
-                  timestamp={message.timestamp}
+                  timestamp={isWelcomeState && index === 0 ? null : message.timestamp}
                   inlineAvatarLayout
+                  variant={
+                    message.isConversionMessage
+                      ? 'conversion'
+                      : isWelcomeState && message.role === 'assistant' && index === 0
+                        ? 'opening'
+                        : 'default'
+                  }
                   hideActions={
                     message.isConversionMessage ||
                     message.isStreaming ||
@@ -2661,9 +3645,7 @@ TRIP DETAILS:
                     index === 0)
                   }
                   afterContent={
-                    message.isConversionMessage ? (
-                      <GuestLimitMessageExtras onSignup={handleSignupRedirect} />
-                    ) : messageMatchesDiscoveryPlanCta(message, discoveryPlanCtaMessage) ? (
+                    messageMatchesDiscoveryPlanCta(message, discoveryPlanCtaMessage) ? (
                       <div ref={discoveryPlanCtaRef}>
                         <DiscoveryPlanCta
                           insideBubble
@@ -2768,39 +3750,18 @@ TRIP DETAILS:
                         
                         console.log('✅ Message state updated, now auto-saving...');
                         
-                        // Auto-save the updated conversation with feedback to database
+                        // Stage 8.1 — persist feedback via the NARROW command,
+                        // not a full-conversation auto-save. This can only touch
+                        // userFeedback and can never rewrite canonical assistant
+                        // content, the plan, or response hashes/version.
                         if (currentTripId && !currentTripId.startsWith('temp-')) {
-                          console.log('💾 Calling autoSaveConversation...');
-                          console.log('💾 CurrentTripId:', currentTripId);
-                          console.log('💾 Messages to save:', updatedMessages.length);
-                          
-                          // Clear any pending auto-save to prevent duplicates
-                          if (autoSaveTimeoutRef.current) {
-                            clearTimeout(autoSaveTimeoutRef.current);
-                          }
-                          
-                          // Debounce auto-save to prevent version conflicts
-                          autoSaveTimeoutRef.current = setTimeout(() => {
-                            console.log('💾 EXECUTING auto-save NOW...');
-                            const messageSummary = updatedMessages.map(m => ({
-                              id: m.id,
-                              role: m.role,
-                              userFeedback: m.userFeedback,
-                              hasFeedback: !!m.userFeedback
-                            }));
-                            console.log('💾 Updated messages being saved:');
-                            messageSummary.forEach(m => {
-                              console.log(`  - ${m.role} #${m.id}: feedback=${m.userFeedback || 'none'}`);
-                            });
-                            autoSaveConversation(updatedMessages).catch(err => {
-                              console.error('❌ Auto-save failed:', err);
-                            });
-                            autoSaveTimeoutRef.current = null;
-                          }, 300); // 300ms debounce
+                          tripService
+                            .updateMessageFeedback(currentTripId, message.id, type)
+                            .catch(err => console.error('❌ Feedback save failed:', err));
                         } else {
-                          console.warn('⚠️ Skipping auto-save:', { currentTripId });
+                          console.warn('⚠️ Skipping feedback save (unsaved trip):', { currentTripId });
                         }
-                        
+
                         return updatedMessages;
                       });
 
@@ -2867,12 +3828,40 @@ TRIP DETAILS:
                     }
                   } : undefined}
                 />
-                </React.Fragment>
+                ) : null}
+                {!usesSharedTrailieResponse && message.itineraryPlan && stored.showItinerary ? (
+                  <EarlyItineraryCard
+                    key={message.itineraryHash}
+                    plan={message.itineraryPlan}
+                    pendingLabel={presentation.pendingLabel}
+                  />
+                ) : null}
+                {stored.showRecoveryAction ? (
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateTripNotes(message)}
+                    disabled={isGenerating || recoveringResponseId === message.responseId}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium transition hover:opacity-90 disabled:opacity-50"
+                    style={{
+                      backgroundColor: 'var(--surface-hover)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    Generate trip notes
+                  </button>
+                ) : null}
+                {recoveryNotice && recoveryNotice.responseId === message.responseId ? (
+                  <p className="mt-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }} role="status">
+                    {recoveryNotice.message}
+                  </p>
+                ) : null}
+                </div>
                 );
               })}
 
               {isWelcomeState && (
-                <div className="pt-1 sm:pt-3">
+                <div className="max-w-[48rem] pt-1 sm:pt-2">
                   {isPersonalized && (
                     <p
                       className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
@@ -2881,71 +3870,33 @@ TRIP DETAILS:
                       {MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE} — or try asking:
                     </p>
                   )}
-                  {!isPersonalized && onOpenQuickFill && (
-                    <p
-                      className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {hasUsedQuickFill ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={onOpenQuickFill}
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-xs font-medium transition hover:opacity-90"
-                            style={{
-                              backgroundColor: 'var(--surface-hover)',
-                              color: 'var(--text-secondary)',
-                              border: '1px solid var(--border)',
-                            }}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                            Edit trip details
-                          </button>
-                          {' '}to update destination, dates, budget, and interests — or try asking:
-                        </>
-                      ) : (
-                        <>
-                          Use{' '}
-                          <button
-                            type="button"
-                            onClick={onOpenQuickFill}
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-xs font-medium transition hover:opacity-90"
-                            style={{
-                              backgroundColor: 'var(--surface-hover)',
-                              color: 'var(--text-secondary)',
-                              border: '1px solid var(--border)',
-                            }}
-                          >
-                            <CalendarDays className="h-3 w-3" />
-                            Plan My Trip
-                          </button>
-                          {' '}to add destination, dates, budget, and interests — or try asking:
-                        </>
-                      )}
-                    </p>
-                  )}
                   <SuggestedPrompts
                     hideTitle={Boolean(onOpenQuickFill || isPersonalized)}
-                    prompts={isPersonalized ? [
-                      { icon: Sparkles, text: "What should I explore this season based on my interests?", color: "text-green-400" },
-                      { icon: MapPin, text: "Suggest a park I haven't visited yet that matches my style", color: "text-blue-400" },
-                      { icon: Calendar, text: "Plan a weekend trip based on what I usually enjoy", color: "text-yellow-400" },
-                      { icon: Edit2, text: "What's trending near parks I've already visited?", color: "text-purple-400" },
-                    ] : [
-                      { icon: Sparkles, text: "Plan a 5-day trip to Yellowstone for a family", color: "text-green-400" },
-                      { icon: MapPin, text: "Best national parks for stargazing in the Southwest", color: "text-blue-400" },
-                      { icon: Calendar, text: "Weekend hiking trip from Denver under $500", color: "text-yellow-400" },
-                      { icon: Compare, text: "Compare Zion and Bryce Canyon for beginners", color: "text-purple-400" },
-                    ]}
+                    prompts={isPersonalized ? TRAILIE_PERSONALIZED_PROMPTS : TRAILIE_DEMO_PROMPTS}
                     onSelect={(text) => handleSendMessage(text)}
                     title={isPersonalized ? 'Suggestions for you' : 'Try asking...'}
                     subtitle={null}
                   />
+                  {!isPersonalized && onOpenQuickFill && (
+                    <div className="mt-4 flex items-center gap-2 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <span>Prefer a guided start?</span>
+                      <button
+                        type="button"
+                        onClick={onOpenQuickFill}
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                        style={{ color: 'var(--accent-green)', '--tw-ring-color': 'var(--accent-green)' }}
+                      >
+                        {hasUsedQuickFill ? <Edit2 className="h-3.5 w-3.5" /> : <CalendarDays className="h-3.5 w-3.5" />}
+                        {hasUsedQuickFill ? 'Edit trip details' : 'Add trip details'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
               {isAnonymous &&
                messages.filter(m => m.role === 'user').length >= 1 &&
+               !messages.some((message) => message.isConversionMessage) &&
                !isGenerating &&
                messages[messages.length - 1]?.role === 'assistant' && (() => {
                 const userMsgCount = messages.filter((m) => m.role === 'user').length;
@@ -2954,7 +3905,7 @@ TRIP DETAILS:
                 const saveReason = getSignupPromptReason(messages);
                 const savePrompt = getSignupPrompt(saveReason, { parkName });
                 return (
-                <div className="mx-auto max-w-3xl px-3 sm:px-6">
+                <div className="mx-auto max-w-[68rem] px-3 sm:px-6">
                   <div
                     className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl px-4 py-3"
                     style={{
@@ -2975,7 +3926,6 @@ TRIP DETAILS:
                       onClick={handleSignupFromChat}
                       variant="primary"
                       size="sm"
-                      icon={Sparkles}
                     >
                       {savePrompt.inlineCta}
                     </Button>
@@ -3022,41 +3972,34 @@ TRIP DETAILS:
         </div>
       </div>
 
-      {/* Composer — slim on welcome; toolbar when in active chat */}
+      {/* Composer — the primary interaction surface; utilities remain secondary. */}
       <div className="relative z-20 flex-shrink-0 border-t chat-input-area"
           style={{
-            backgroundColor: 'var(--bg-primary)',
+            backgroundColor: 'color-mix(in srgb, var(--bg-primary) 94%, transparent)',
             borderColor: 'var(--border)',
-            boxShadow: '0 -4px 14px rgba(15, 23, 42, 0.04)',
+            boxShadow: '0 -8px 28px rgba(31, 41, 35, 0.04)',
             paddingBottom: 'env(safe-area-inset-bottom, 12px)'
           }}
         >
-          <div className="mx-auto w-full px-3 pb-1.5 pt-1.5 sm:px-4 sm:pb-3 sm:pt-2">
+          <div className="mx-auto w-full px-4 pb-1.5 pt-1.5 sm:px-6 sm:pb-4 sm:pt-3">
             {!isWelcomeState && showComposerToolbar && (
-            <div className="mb-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-2.5 sm:flex-wrap sm:overflow-visible sm:gap-2">
+            <div className="trailie-composer-utilities mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:mb-3 sm:gap-x-4 sm:gap-y-2">
                 {chatStatus && (
                   <div
-                    className="hidden sm:inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs"
+                    className="inline-flex min-w-0 max-w-full items-center text-[11px] font-medium leading-snug sm:text-xs"
+                    role={chatStatus.tone === 'sync-needed' ? 'status' : undefined}
+                    data-testid={chatStatus.tone === 'sync-needed' ? 'sync-needed-status' : undefined}
                     style={{
-                      backgroundColor: chatStatus.tone === 'saved'
-                        ? 'rgba(34, 197, 94, 0.12)'
-                        : chatStatus.tone === 'saving'
-                          ? 'rgba(245, 158, 11, 0.12)'
-                          : 'var(--surface-hover)',
                       color: chatStatus.tone === 'saved'
                         ? '#15803d'
                         : chatStatus.tone === 'saving'
                           ? '#b45309'
-                          : 'var(--text-secondary)',
-                      border: '1px solid',
-                      borderColor: chatStatus.tone === 'saved'
-                        ? 'rgba(34, 197, 94, 0.22)'
-                        : chatStatus.tone === 'saving'
-                          ? 'rgba(245, 158, 11, 0.22)'
-                          : 'var(--border)'
+                          : chatStatus.tone === 'sync-needed'
+                            ? '#b91c1c'
+                            : 'var(--text-secondary)',
                     }}
                   >
-                    <span>{chatStatus.label}</span>
+                    <span className="min-w-0">{chatStatus.tone === 'sync-needed' ? chatStatus.description : chatStatus.label}</span>
                   </div>
                 )}
                 {anonymousQuotaLabel && (
@@ -3154,10 +4097,46 @@ TRIP DETAILS:
               </div>
             )}
 
+            {continuityNotice && <div role="status" className="mb-3 rounded-xl border p-3 text-sm">
+              <p>{continuityNotice}</p>
+              {historyRecovery && <details className="mt-2"><summary>Review device-only conversation</summary>{historyRecovery.messages.map((m,i)=><p key={i} className="mt-2 whitespace-pre-wrap"><strong>{m.role === 'user' ? 'You' : 'Trailie'}: </strong>{m.content}</p>)}</details>}
+              {historyRecovery && <div className="mt-2 flex gap-3">
+                <button disabled={historySyncBusy} onClick={async () => {
+                  setHistorySyncBusy(true);
+                  try {
+                    await api.post('/ai/restore-guest-history', {anonymousId, messages:historyRecovery.messages.map(m=>({role:m.role,content:m.content})), expectedHistoryHash:historyRecovery.expectedHistoryHash});
+                    const status = await validateSessionWithBackend(anonymousId);
+                    if (!status) throw new Error('restore_failed');
+                    setMessages(mapServerMessagesToUi(status.messages));
+                    localStorage.removeItem(historyRecovery.archiveKey);
+                    setHistoryRecovery(null); setAnonymousRestoreStatus('restored');
+                    setContinuityNotice('Conversation text restored. Any trip locations or live facts will be verified again when needed.');
+                  } catch { setContinuityNotice('The conversation changed or could not be restored safely. Retry reconnecting, or continue with server history. Your local backup is preserved.'); }
+                  finally {setHistorySyncBusy(false);}
+                }}>Restore conversation text</button>
+                <button disabled={historySyncBusy} onClick={async () => {
+                  setHistorySyncBusy(true);
+                  try {
+                    const status = await validateSessionWithBackend(anonymousId);
+                    if (!status) throw new Error('reconnect_failed');
+                    setMessages(mapServerMessagesToUi(status.messages));
+                    planningStateRef.current = status.planningState || null;
+                    setCurrentPlan([...status.messages].reverse().find(m=>m.canonicalPlan)?.canonicalPlan || null);
+                    localStorage.setItem(`${historyRecovery.archiveKey}:backup`,JSON.stringify(historyRecovery.messages));
+                    localStorage.removeItem(historyRecovery.archiveKey);
+                    setHistoryRecovery(null);
+                    setAnonymousRestoreStatus(status.messages.length ? 'restored' : 'empty');
+                    setContinuityNotice('Continuing with the server conversation. Device-only messages remain in the local backup.');
+                  } catch { setContinuityNotice('Could not reconnect. Your local backup is preserved; retry before continuing.'); }
+                  finally { setHistorySyncBusy(false); }
+                }}>Use server conversation</button>
+              </div>}
+              {isAnonymous && anonymousRestoreStatus === 'error' && <button onClick={()=>restoreAnonymousSession()}>Retry connection</button>}
+            </div>}
             <ChatInput
               onSend={handleSendMessage}
-              disabled={isGenerating || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
-              placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in or create an account to save this chat and continue..." : "Ask me about your trip..."}
+              disabled={conversationSendBlocked({generating:isGenerating,recovering:historySyncBusy,recoveryPending:historyRecovery,restoreStatus:isAnonymous?anonymousRestoreStatus:authRestoreStatus}) || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
+              placeholder={isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)) ? "Sign in to keep chatting with Trailie" : "Ask Trailie about a park or trip…"}
               initialValue=""
             />
           </div>

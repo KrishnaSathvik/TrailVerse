@@ -150,11 +150,14 @@ function normalizeConstraints(constraints) {
       dates: null,
       tripLengthDays: null,
       groupSize: null,
+      travelParty: null,
       fitness: null,
       budget: null,
       accommodation: null,
       interests: [],
       hasChildren: false,
+      childrenCount: null,
+      isFamilyParty: false,
       hasConstraints: false,
     };
   }
@@ -167,11 +170,14 @@ function normalizeConstraints(constraints) {
       : null,
     tripLengthDays: constraints.dates?.numDays ?? null,
     groupSize: constraints.groupSize ?? null,
+    travelParty: constraints.travelParty ?? null,
     fitness: constraints.fitnessLevel ?? null,
     budget: constraints.budget ?? null,
     accommodation: constraints.accommodation ?? null,
     interests: Array.isArray(constraints.interests) ? constraints.interests : [],
     hasChildren: !!constraints.hasChildren,
+    childrenCount: constraints.childrenCount ?? null,
+    isFamilyParty: !!(constraints.isFamilyParty || constraints.hasChildren || constraints.travelParty === 'family'),
     hasConstraints: !!constraints.hasConstraints,
   };
 }

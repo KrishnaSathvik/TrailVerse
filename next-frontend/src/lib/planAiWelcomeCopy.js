@@ -17,10 +17,10 @@ function greeting(user) {
 /** Generic / new chat — no park selected yet */
 export function getGenericWelcomeMessage(user) {
   const name = displayName(user);
-  const hey = name ? `Hey ${name},` : 'Hey,';
-  return `${hey} I'm **Trailie**. I help you choose where to go outdoors — national parks, state parks, or anywhere you're thinking — and plan a trip that fits your time, season, group, and travel style.
+  const greeting = name ? `## ${name}, where are you thinking about going?` : '## Where are you thinking about going?';
+  return `${greeting}
 
-Tell me a destination or describe the kind of trip you want.`;
+Ask about a park, compare places, figure out permits, or start planning a trip.`;
 }
 
 /** Park already chosen (Quick Fill, park page, landing cards, etc.) */
@@ -48,7 +48,7 @@ export const MY_RECOMMENDATIONS_PROMPTS_SUBTITLE =
 
 /** Logged-in "My Recommendations" entry */
 export function getPersonalizedWelcomeMessage(user) {
-  return `I'm **Trailie** — I'll use your past trips, saved parks, and favorites to suggest what's next (not live booking data).
+  return `I'm **Trailie** — I'll use your past trips, saved parks, and favorites to suggest what's next.
 
 I'll ask one quick question first, then we can narrow in on parks.`;
 }

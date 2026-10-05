@@ -4,8 +4,10 @@ import { getApiBaseUrl } from '@/lib/apiBase';
 import authService, { AUTH_SESSION_EXPIRED_EVENT, AUTH_TOKEN_COOKIE } from '../services/authService';
 import { migrateLegacyTrips } from '../services/tripHistoryService';
 import { invalidateCache } from '../utils/cacheUtils';
-import { logAnonymousChatMigrated, logEvent, logLoginPromptShown } from '../utils/analytics';
+import { logAnonymousChatMigrated, logLoginPromptShown, logUserLogin, logUserLogout, logUserSignup } from '../utils/analytics';
 import LoginModal from '../components/auth/LoginModal';
+import { isValidGuestSessionId } from '@/lib/guestSessionIdentity';
+import { tripSurfacePath } from '@/lib/tripSurfacePath';
 
 const AuthContext = createContext();
 const ANONYMOUS_CHAT_MIGRATION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
@@ -49,11 +51,11 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
   };
 
   const migrateAnonymousChat = async (token) => {
-    const redirectToTrip = (tripId) => {
-      window.location.href = `/plan-ai/${tripId}?chat=true`;
+    const redirectToTrip = (tripId, surface) => {
+      window.location.href = tripSurfacePath(tripId, surface);
     };
 
-    const tryMigration = async (anonymousId, storageKey, successMessage) => {
+    const tryMigration = async (anonymousId, storageKey, successMessage, surface = null) => {
       setAuthTransition({
         active: true,
         message: 'Saving your chat to your account...'
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       localStorage.removeItem('anonymousSession');
       logAnonymousChatMigrated();
       console.log(successMessage, migrationData.data.tripId);
-      redirectToTrip(migrationData.data.tripId);
+      redirectToTrip(migrationData.data.tripId, surface);
       return true;
     };
 
@@ -86,11 +88,12 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
     if (returnToChat) {
       try {
         const chatContext = JSON.parse(returnToChat);
-        if (chatContext?.anonymousId) {
+        if (isValidGuestSessionId(chatContext?.anonymousId)) {
           return await tryMigration(
             chatContext.anonymousId,
             'returnToChat',
-            '✅ Migrated chat context to user account:'
+            '✅ Migrated chat context to user account:',
+            chatContext.surface
           );
         }
         localStorage.removeItem('returnToChat');
@@ -112,7 +115,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       const sessionAge = Date.now() - sessionData.timestamp;
       const maxAge = ANONYMOUS_CHAT_MIGRATION_MAX_AGE_MS;
 
-      if (sessionAge < maxAge && sessionData.anonymousId) {
+      if (sessionAge < maxAge && isValidGuestSessionId(sessionData.anonymousId)) {
         return await tryMigration(
           sessionData.anonymousId,
           'anonymousSession',
@@ -225,12 +228,15 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
             }
           }
         } catch (error) {
-          console.log('❌ AuthContext: Server validation failed');
-          console.log('❌ AuthContext: Error message:', error.message);
-          console.log('❌ AuthContext: Error status:', error.response?.status);
-          console.log('❌ AuthContext: Error response:', error.response?.data);
-          console.log('❌ AuthContext: Full error object:', error);
-          
+          // Never log the axios error object: it embeds `config.headers` with the
+          // bearer token, so a failed session restore would print a live
+          // credential. The bounded fields below are what the failure path needs.
+          console.log('❌ AuthContext: Server validation failed', {
+            message: error.message,
+            status: error.response?.status ?? null,
+            errorCode: error.response?.data?.code ?? null,
+          });
+
           // Clear stale session — don't keep sending an invalid token as anonymous
           if (error.response?.status === 401) {
             authService.logout();
@@ -268,6 +274,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
     // Don't set user state during signup - email verification is required
     // User will be logged in after verification or manual login
     console.log('✅ AuthContext: Signup successful, verification email sent');
+    logUserSignup();
     return response;
   };
 
@@ -279,6 +286,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       setUser(loggedInUser);
       setUserDataLoaded(true);
       setLoading(false);
+      logUserLogin(loggedInUser._id || loggedInUser.id || null);
       if (loggedInUser?._id) {
         console.log('🔄 AuthContext: Invalidating daily feed cache for new user');
         invalidateCache.dailyFeed(loggedInUser._id);
@@ -293,7 +301,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
   };
 
   const logout = () => {
-    logEvent('Auth', 'logout', 'manual');
+    logUserLogout();
     authService.logout();
     setUser(null);
   };
@@ -312,10 +320,12 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
 
   // Method to set user after email verification
   const setUserAfterVerification = async (userData, token) => {
-    console.log('✅ AuthContext: Setting user after email verification');
-    console.log('✅ AuthContext: User data:', userData);
-    console.log('✅ AuthContext: Token:', token ? `${token.substring(0, 30)}...` : 'null');
-    
+    // Presence only — a token prefix is still credential material.
+    console.log('✅ AuthContext: Setting user after email verification', {
+      userResolved: Boolean(userData),
+      authTokenIssued: Boolean(token),
+    });
+
     // Store in localStorage and Set dual-strategy cookie
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));

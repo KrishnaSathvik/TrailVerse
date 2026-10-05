@@ -1,0 +1,404 @@
+{
+  "_comment": "Stage 14.5 \u2014 ONE interpretation of a persisted Trailie response, pinned across the server (share payload) and the browser (restore + export). Both implementations run this file; a divergence fails both suites. Mirrors the shared/itineraryArtifacts.fixtures.json pattern.",
+  "itineraryHash": "itin-hash-fixture",
+  "plan": {
+    "responseId": "resp-fixture",
+    "responseVersion": 3,
+    "itineraryHash": "itin-hash-fixture",
+    "parkName": "Zion National Park",
+    "days": [
+      {
+        "id": "d1",
+        "day": 1,
+        "title": "Canyon floor",
+        "stops": [
+          {
+            "id": "d1s1",
+            "name": "Visitor Center"
+          }
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "legacy terminal with content",
+      "response": {
+        "role": "assistant",
+        "content": "Legacy answer."
+      },
+      "withPlan": true,
+      "expect": {
+        "state": "legacy_terminal",
+        "showItinerary": true,
+        "showProse": true,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete"
+      }
+    },
+    {
+      "name": "legacy terminal with empty content is NOT revision 1",
+      "response": {
+        "role": "assistant",
+        "content": ""
+      },
+      "withPlan": true,
+      "expect": {
+        "state": "legacy_terminal",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete"
+      }
+    },
+    {
+      "name": "legacy terminal with no plan",
+      "response": {
+        "role": "assistant",
+        "content": "Just prose."
+      },
+      "withPlan": false,
+      "expect": {
+        "state": "legacy_terminal",
+        "showItinerary": false,
+        "showProse": true,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete"
+      }
+    },
+    {
+      "name": "valid explicit revision 1",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "itinerary_only",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": true,
+        "publicNotesStatus": "complete",
+        "notesLabel": null
+      }
+    },
+    {
+      "name": "valid revision 1, capability disabled",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": false,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "itinerary_only",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete",
+        "notesLabel": null
+      }
+    },
+    {
+      "name": "valid revision 1 seen by a shared viewer",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "shared",
+      "expect": {
+        "state": "itinerary_only",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete",
+        "notesLabel": null
+      }
+    },
+    {
+      "name": "valid revision 1 during export",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "export",
+      "expect": {
+        "state": "itinerary_only",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete",
+        "notesLabel": null
+      }
+    },
+    {
+      "name": "revision 1 with nonempty prose is invalid",
+      "response": {
+        "role": "assistant",
+        "content": "unexpected prose",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "revision_1_content_not_empty"
+      }
+    },
+    {
+      "name": "revision 1 with a missing canonical plan is invalid",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": false,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": false,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "missing_canonical_plan"
+      }
+    },
+    {
+      "name": "revision 1 with an itinerary-hash mismatch is invalid",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "itinerary_ready",
+        "itineraryHash": "a-different-hash"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "itinerary_hash_mismatch"
+      }
+    },
+    {
+      "name": "valid revision 2 with model prose",
+      "response": {
+        "role": "assistant",
+        "content": "Two days in Zion.",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 2,
+        "previousRevision": 1,
+        "lifecycleStatus": "prose_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "prose_complete",
+        "showItinerary": true,
+        "showProse": true,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete"
+      }
+    },
+    {
+      "name": "valid revision 2 with deterministic fallback prose",
+      "response": {
+        "role": "assistant",
+        "content": "Your trip plan, day by day.",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 2,
+        "previousRevision": 1,
+        "lifecycleStatus": "fallback_complete",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "fallback_complete",
+        "showItinerary": true,
+        "showProse": true,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete"
+      }
+    },
+    {
+      "name": "revision 2 with an itinerary-hash mismatch fails closed",
+      "response": {
+        "role": "assistant",
+        "content": "Two days in Zion.",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 2,
+        "previousRevision": 1,
+        "lifecycleStatus": "prose_ready",
+        "itineraryHash": "a-different-hash"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "itinerary_hash_mismatch"
+      }
+    },
+    {
+      "name": "revision 2 with empty content is invalid",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 2,
+        "previousRevision": 1,
+        "lifecycleStatus": "prose_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "revision_2_content_empty"
+      }
+    },
+    {
+      "name": "an unsupported explicit durable lifecycle is invalid",
+      "response": {
+        "role": "assistant",
+        "content": "",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 1,
+        "lifecycleStatus": "prose_failed",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "unsupported_lifecycle_status"
+      }
+    },
+    {
+      "name": "an unsupported explicit revision number is invalid",
+      "response": {
+        "role": "assistant",
+        "content": "x",
+        "responseId": "resp-fixture",
+        "responseVersion": 3,
+        "responseRevision": 3,
+        "lifecycleStatus": "prose_ready",
+        "itineraryHash": "itin-hash-fixture"
+      },
+      "withPlan": true,
+      "recoveryCapability": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "invalid",
+        "showItinerary": true,
+        "showProse": false,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "not_available",
+        "lifecycleDiagnosticCode": "unsupported_revision"
+      }
+    },
+    {
+      "name": "a user message is never a Trailie response surface",
+      "response": {
+        "role": "user",
+        "content": "Plan 2 days in Zion"
+      },
+      "withPlan": true,
+      "viewerContext": "owner",
+      "expect": {
+        "state": "legacy_terminal",
+        "showItinerary": true,
+        "showProse": true,
+        "showEmptyAssistantBubble": false,
+        "showRecoveryAction": false,
+        "publicNotesStatus": "complete"
+      }
+    }
+  ]
+}

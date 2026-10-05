@@ -1,0 +1,980 @@
+{
+  "slug": "everglades",
+  "source": "artifacts/trailie-gate3-constructor-2026-08-24/conversation-B/B1-everglades-four-easygoing-days",
+  "constraints": {
+    "pace": null,
+    "avoidExposure": null,
+    "fitness": null,
+    "interests": [
+      "photography",
+      "wildlife",
+      "scenic-drives"
+    ],
+    "walkingTolerance": null,
+    "wheelchair": null,
+    "stroller": null,
+    "avoidStairs": null,
+    "requiresFrequentBreaks": null,
+    "mobilityRaw": {
+      "maxWalkMilesPerSegment": null,
+      "walkingTolerance": null,
+      "requiresFrequentBreaks": null,
+      "wheelchair": null,
+      "stroller": null,
+      "avoidStairs": null
+    },
+    "durationDays": 4,
+    "season": null,
+    "visitWindow": {
+      "startDate": null,
+      "endDate": null,
+      "durationDays": 4
+    },
+    "lodging": {
+      "type": null,
+      "stayPreference": null,
+      "baseTown": null,
+      "booked": null
+    },
+    "departureCity": null,
+    "destination": {
+      "parkCode": "ever",
+      "parkName": null,
+      "region": null,
+      "state": null
+    }
+  },
+  "terminalReason": null,
+  "attemptLadder": [
+    {
+      "attempt": 1,
+      "model": "gpt-5.6-terra",
+      "validationStatus": "fail",
+      "validationStage": "itinerary_completeness",
+      "reasonCodes": [
+        "zero_duration_stops"
+      ],
+      "latencyMs": 26395,
+      "costUsd": 0.05408625
+    },
+    {
+      "attempt": 2,
+      "model": "gpt-5.6-terra",
+      "validationStatus": "fail",
+      "validationStage": "itinerary_completeness",
+      "reasonCodes": [
+        "missing_experience_anchor"
+      ],
+      "latencyMs": 22311,
+      "costUsd": 0.05007
+    },
+    {
+      "attempt": 3,
+      "model": "gpt-5.6-sol",
+      "validationStatus": "pass",
+      "validationStage": null,
+      "reasonCodes": [],
+      "latencyMs": 53951,
+      "costUsd": 0.1519425
+    }
+  ],
+  "canonicalPlan": {
+    "intro": "I’d shape this as four deliberately light days across the park’s different gateways rather than trying to connect everything in one long push. The strongest wildlife-and-photography day is Shark Valley; the southern park road and Flamingo give you the scenic-drive component; Gulf Coast offers a quieter wildlife-watching finish. Because you haven’t set dates or a base town, the sequence below is geographic rather than tied to exact drive times—Everglades is spread out, so changing lodging bases can materially change the order. I’ve also kept walking optional and avoided treating the 15-mile Shark Valley loop as a casual hike.",
+    "narrativeSections": [
+      {
+        "placement": "before_plan",
+        "heading": "Access and pacing",
+        "markdown": "Plan the south-park days together if you stay near Homestead, and pair Shark Valley with Gulf Coast only if your lodging makes that practical. US 41/Tamiami Trail currently has restoration roadwork that may add delays of up to 15 minutes, so leave slack on the Shark Valley and Gulf Coast days. Park conditions can change, and the current NPS alerts page also lists wildfire information; check it again once your dates are set. Fee stations accept only digital passes or credit/debit cards, not cash. [NPS alerts and conditions](https://www.nps.gov/ever/planyourvisit/conditions.htm)"
+      }
+    ],
+    "days": [
+      {
+        "id": "ever-day-1",
+        "dayNumber": 1,
+        "label": "South-park orientation and an unhurried scenic drive",
+        "overnightLocation": "Homestead area",
+        "stops": [
+          {
+            "id": "coe-vc",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Ernest F. Coe Visitor Center",
+            "note": "Start with the exhibits, orientation film, and a ranger conversation about wildlife activity and same-day conditions. The center is the park gateway closest to Homestead; published hours are 8 AM–5 PM in winter and 9 AM–5 PM in summer.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 60,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "It gives you context before the long south-park drive and lets current conditions guide where you linger.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "south-park-drive",
+            "order": 2,
+            "type": "scenic_drive",
+            "name": "Homestead entrance-to-Flamingo scenic drive",
+            "note": "Use the drive itself as the day’s main experience: keep the schedule loose, stop only at signed and legally accessible scenic areas, and spend time photographing broad wetland landscapes rather than collecting stops. Exact pullouts and access should be chosen from the park map and ranger advice that day.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Late morning through afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": null,
+            "duration": 240,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "This gives scenic variety without turning the first day into a demanding activity checklist.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "ever"
+        ]
+      },
+      {
+        "id": "ever-day-2",
+        "dayNumber": 2,
+        "label": "Flamingo wildlife and waterfront photography",
+        "overnightLocation": "Homestead or Flamingo area",
+        "stops": [
+          {
+            "id": "guy-bradley-vc",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Guy Bradley Visitor Center at Flamingo",
+            "note": "Use the displays and ranger information to focus the day around wildlife activity near Flamingo. The center is open year-round, but check same-day alerts before setting out.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 60,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "It is the best supported starting point for a slow day in the Flamingo district.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "flamingo-marina",
+            "order": 2,
+            "type": "photography",
+            "name": "Flamingo marina and public boat-ramp area",
+            "note": "Spend a flexible photography block around the developed waterfront area near the visitor center, staying out of launch traffic and following posted wildlife-distance rules. The marina store and public boat ramp are located nearby; availability of any concession activity should be checked separately.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Late morning to early afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": null,
+            "duration": 120,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "A patient, stationary approach suits wildlife photography better than rushing into another district.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "flamingo-scenic-finish",
+            "order": 3,
+            "type": "picnic",
+            "name": "Flamingo developed area rest and scenic finish",
+            "note": "Take a long rest or picnic in the developed Flamingo area, then use the remaining light for another short waterfront look if conditions are comfortable. Do not add an unnamed trail unless rangers can verify access and suitability that day.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": null,
+            "duration": 90,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "It keeps this day intentionally slow and leaves room for wildlife sightings that reward waiting.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "ever"
+        ]
+      },
+      {
+        "id": "ever-day-3",
+        "dayNumber": 3,
+        "label": "Shark Valley panorama and wildlife",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "shark-valley-vc",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Shark Valley Visitor Center",
+            "note": "Arrive in the morning for exhibits, the park film, and current guidance. Published visitor-center hours are 9 AM–5 PM.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Morning · near opening",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 45,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "This is the gateway to the panoramic loop and lets you verify how to experience it without committing to a long walk.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "shark-valley-loop",
+            "order": 2,
+            "type": "wildlife",
+            "name": "Shark Valley 15-mile loop and observation tower",
+            "note": "Make the panoramic loop the day’s anchor, preferably through the on-site tram concession if its schedule and space work for your dates. The loop is 15 miles, so it does not fit the spirit of this easygoing plan as a full walk. Confirm tram operation, booking requirements, and observation-tower access before relying on them.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Late morning or early afternoon · reservation-dependent",
+            "physicalDifficulty": "easy",
+            "exposureLevel": null,
+            "duration": 180,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "This is the plan’s best combination of broad views, wildlife watching, and photography without needing to stack extra activities.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "shark-valley-photo-time",
+            "order": 3,
+            "type": "photography",
+            "name": "Shark Valley gateway photography",
+            "note": "Leave an unstructured block near the visitor-center gateway for patient wildlife and landscape photography from permitted developed areas. Keep clear of wildlife and obey all posted closures and instructions.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Late afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 60,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "Extra waiting time is more useful for your priorities than adding another distant stop.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "ever"
+        ]
+      },
+      {
+        "id": "ever-day-4",
+        "dayNumber": 4,
+        "label": "Gulf Coast wildlife watching and Tamiami scenery",
+        "overnightLocation": null,
+        "stops": [
+          {
+            "id": "gulf-coast-vc",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Marjory Stoneman Douglas Visitor Center at Gulf Coast",
+            "note": "Begin with the visitor center and use its wildlife-watching setting as the day’s main slow-paced experience. The site also has a kayak launch and picnic area; published hours are 9 AM–5 PM.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Morning · around opening",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 75,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "This gives the fourth day a distinct coastal character and supports wildlife viewing without requiring a hike.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "gulf-coast-wildlife",
+            "order": 2,
+            "type": "wildlife",
+            "name": "Gulf Coast kayak-launch wildlife watching",
+            "note": "Settle in near the developed launch area for a patient wildlife and photography session without assuming a paddle trip. Keep the launch clear and follow posted access and wildlife rules.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Late morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 90,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "It turns a simple developed area into a purposeful, low-effort photography block.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "gulf-coast-picnic",
+            "order": 3,
+            "type": "picnic",
+            "name": "Gulf Coast picnic area",
+            "note": "Take a relaxed lunch and decide whether conditions justify more wildlife watching before the drive back.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Early afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 60,
+            "walkingDistanceMiles": null,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "A real pause keeps the final day from becoming another long transit-and-checklist day.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "tamiami-drive",
+            "order": 4,
+            "type": "scenic_drive",
+            "name": "US 41 / Tamiami Trail scenic return",
+            "note": "Treat the return along US 41 as the final scenic component, allowing extra time for current restoration roadwork. Stop only at signed, legal, and open areas; I could not verify specific pullouts from the information available.",
+            "parkCode": "ever",
+            "parkName": "Everglades National Park",
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": null,
+            "duration": 120,
+            "latitude": null,
+            "longitude": null,
+            "difficulty": "easy",
+            "why": "It provides a low-effort landscape finish while keeping the day geographically coherent.",
+            "drivingTimeFromPreviousMin": null,
+            "alternatives": [],
+            "coordinateSource": "unknown"
+          }
+        ],
+        "parkCodes": [
+          "ever"
+        ]
+      }
+    ],
+    "alternatives": []
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "modelTier": "gpt-5.6-terra",
+      "rawPlan": {
+        "intro": "I’d make this a deliberately unhurried four-day loop of the park’s very different gateways rather than trying to turn it into a checklist. Shark Valley gives you the broad wetland view, Gulf Coast is the strongest dedicated wildlife-watching stop in the material I could verify, and Flamingo adds the park’s coastal/marina character. Keep the Ernest F. Coe stop for your arrival-side orientation and use the final day as a flexible, photo-led return rather than forcing another long activity.\n\nThe main caveat is access: the park is directing visitors to check Alerts & Conditions before and during a",
+        "narrativeSections": [
+          {
+            "placement": "before_plan",
+            "heading": "Pacing",
+            "markdown": "Leave the stop times flexible. None of these days needs a dawn-to-dark schedule: arrive in the cooler part of the morning when you can, pause through the middle of the day, and save your most patient wildlife and photography time for later light. I have not treated the visitor centers’ listed hours as a guarantee of same-day access, so check conditions and hours before setting out."
+          }
+        ],
+        "days": [
+          {
+            "day": 1,
+            "label": "Shark Valley wetland panorama",
+            "stops": [
+              {
+                "name": "Shark Valley Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 0,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Start with exhibits and the park film, then use the visitor center as your base for a relaxed first look at this side of the Everglades.",
+                "why": "An easy orientation stop before spending time outside.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Shark Valley observation tower and 15-mile loop area",
+                "type": "landmark",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 0,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Make the tower and its panoramic wetland setting the day’s anchor. The visitor center identifies this as the gateway to the loop and observation tower; decide on any additional walking or tram details locally rather than assuming access or ",
+                "why": "The clearest broad-view landscape stop for a first photography day.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 2,
+            "label": "Gulf Coast wildlife and water",
+            "stops": [
+              {
+                "name": "Marjory Stoneman Douglas Visitor Center (Gulf Coast)",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 0,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Arrive with time to orient, then use the nearby launch and shoreline setting for a slow wildlife-focused morning. The site specifically lists wildlife watching and a picnic area.",
+                "why": "This is the park location in your plan explicitly identified for wildlife watching.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Gulf Coast kayak-launch and picnic area",
+                "type": "wildlife",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning or late afternoon",
+                "duration": 0,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Keep this as a patient photography stop rather than committing to a packed activity schedule. The visitor center site has a kayak launch and picnic area; paddling is optional and should only be considered after checking same-day conditions.",
+                "why": "A water-oriented setting that complements Shark Valley’s open wetland panorama.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 3,
+            "label": "Flamingo coastal character",
+            "stops": [
+              {
+                "name": "Guy Bradley Visitor Center (at Flamingo)",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 0,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Use the exhibits, brochures, and bookstore for a quiet start, then ask locally which nearby areas are suitable for your wildlife and photo priorities that day.",
+                "why": "It provides the best orientation point for the Flamingo end of the park.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Flamingo marina and public boat-ramp area",
+                "type": "boat",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 0,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Spend the afternoon around the marina/boat-ramp setting for coastal views and unhurried observation. Nearby facilities also include a marina store and fish-cleaning station. Do not assume any specific boat or paddle service is operating wit",
+                "why": "A distinct coastal counterpoint to the inland and Gulf Coast days.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 4,
+            "label": "Photo-led flex day and Homestead-side orientation",
+            "stops": [
+              {
+                "name": "Ernest F. Coe Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 0,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Use the park’s Homestead-side visitor center for ranger advice, displays, and a final conditions check before choosing where to concentrate the day. It has educational displays, orientation films, brochures, and snacks.",
+                "why": "A sensible decision point for a low-pressure final day.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Return photography session at Shark Valley, Gulf Coast, or Flamingo",
+                "type": "photography",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late afternoon",
+                "duration": 0,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Return to the one gateway that produced the best light, wildlife activity, or conditions earlier in the trip. Choose only after checking the day’s park alerts and ranger guidance; this is intentionally a flexible repeat rather than a forced",
+                "why": "It preserves the easygoing pace and gives you a second chance at the photographic conditions that matter most.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          }
+        ],
+        "alternatives": [],
+        "backupOptions": [],
+        "contingency": [],
+        "fallback": []
+      },
+      "reasonCodes": [
+        "zero_duration_stops"
+      ],
+      "dayDiagnostics": [
+        {
+          "dayIndex": 0,
+          "dayNumber": 1,
+          "codes": [
+            "zero_duration_stops"
+          ],
+          "coveragePolicy": "standard",
+          "zeroDurationStopNames": [
+            "Shark Valley Visitor Center",
+            "Shark Valley observation tower and 15-mile loop area"
+          ]
+        },
+        {
+          "dayIndex": 1,
+          "dayNumber": 2,
+          "codes": [
+            "zero_duration_stops"
+          ],
+          "coveragePolicy": "standard",
+          "zeroDurationStopNames": [
+            "Marjory Stoneman Douglas Visitor Center (Gulf Coast)",
+            "Gulf Coast kayak-launch and picnic area"
+          ]
+        },
+        {
+          "dayIndex": 2,
+          "dayNumber": 3,
+          "codes": [
+            "zero_duration_stops"
+          ],
+          "coveragePolicy": "standard",
+          "zeroDurationStopNames": [
+            "Guy Bradley Visitor Center (at Flamingo)",
+            "Flamingo marina and public boat-ramp area"
+          ]
+        },
+        {
+          "dayIndex": 3,
+          "dayNumber": 4,
+          "codes": [
+            "zero_duration_stops"
+          ],
+          "coveragePolicy": "standard",
+          "zeroDurationStopNames": [
+            "Ernest F. Coe Visitor Center",
+            "Return photography session at Shark Valley, Gulf Coast, or Flamingo"
+          ]
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "modelTier": "gpt-5.6-terra",
+      "rawPlan": {
+        "intro": "I’d spread this across the park’s distinct gateway areas rather than trying to crisscross Everglades in a single day. That gives you unhurried time for wildlife watching, photographs, and the landscape at Shark Valley, Flamingo, and Gulf Coast, with Ernest F. Coe as a gentle orientation stop. I’ve kept the individual visits deliberately loose so you can linger when wildlife or light is good. Check Everglades Alerts & Conditions before and during the trip: the park is reporting a Chipmunk Fire, and roadwork on US 41/Tamiami Trail may cause delays.",
+        "narrativeSections": [
+          {
+            "placement": "before_plan",
+            "heading": "Getting around",
+            "markdown": "These areas sit at different park gateways, so treat each as its own outing rather than trying to combine them. Bring a card or digital pass for entrance payment; fee collection areas do not accept cash."
+          }
+        ],
+        "days": [
+          {
+            "day": 1,
+            "label": "Orientation at the Homestead gateway",
+            "stops": [
+              {
+                "name": "Ernest F. Coe Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 75,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Start with the exhibits, orientation film, brochures, and a conversation with a ranger to shape the rest of your Everglades visits around the day’s conditions and your photography priorities.",
+                "why": "A calm introduction near Homestead that helps you focus the remaining days rather than rushing into the park.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 2,
+            "label": "Shark Valley panoramas",
+            "stops": [
+              {
+                "name": "Shark Valley Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 45,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Use the exhibits and park film as a brief introduction to the Shark Valley area before heading out to the loop and tower.",
+                "why": "It provides the gateway to Shark Valley’s loop and observation tower.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Shark Valley Observation Tower and 15-mile Loop",
+                "type": "landmark",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 180,
+                "exposureLevel": null,
+                "difficulty": null,
+                "note": "Make this the day’s main scenic and photography focus, leaving time to watch the broad wetland landscape rather than treating it as a quick stop. The visitor center is the gateway to the panoramic 15-mile loop and observation tower.",
+                "why": "This is the strongest panoramic landscape experience in the plan.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 3,
+            "label": "Flamingo waterfront",
+            "stops": [
+              {
+                "name": "Guy Bradley Visitor Center (at Flamingo)",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Late morning",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Spend a little time with the displays and brochures, then use the surrounding waterfront facilities as the setting for a slow wildlife and photography outing.",
+                "why": "It is the Flamingo base for interpreting the area and choosing how long to linger outdoors.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Flamingo Marina and Public Boat Ramp",
+                "type": "photography",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 150,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Set aside an unhurried waterfront block near the visitor center for wildlife watching and photographs. A marina store, public boat ramp, campground facilities, and nearby trails and canoeing trails are in this area.",
+                "why": "The waterfront setting gives this day a different visual character from Shark Valley.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 4,
+            "label": "Gulf Coast wildlife watching",
+            "stops": [
+              {
+                "name": "Marjory Stoneman Douglas Visitor Center (Gulf Coast)",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 45,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Begin with the visitor center’s displays and brochures, then use its setting by the kayak launch as the start of a relaxed Gulf Coast visit.",
+                "why": "It places you directly at the Gulf Coast gateway and its wildlife-watching area.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Gulf Coast Wildlife Watching and Picnic Area",
+                "type": "wildlife",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 180,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Keep the afternoon open for patient wildlife watching and photography near the visitor center, with the picnic area available for a long, unhurried break.",
+                "why": "A slower shoreline-oriented finish that directly suits your wildlife and photography priorities.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          }
+        ],
+        "alternatives": [],
+        "backupOptions": [],
+        "contingency": [],
+        "fallback": []
+      },
+      "reasonCodes": [
+        "missing_experience_anchor"
+      ],
+      "dayDiagnostics": [
+        {
+          "dayIndex": 0,
+          "dayNumber": 1,
+          "codes": [
+            "missing_experience_anchor"
+          ],
+          "coveragePolicy": "standard"
+        }
+      ]
+    },
+    {
+      "attempt": 3,
+      "modelTier": "gpt-5.6-sol",
+      "rawPlan": {
+        "intro": "I’d shape this as four deliberately light days across the park’s different gateways rather than trying to connect everything in one long push. The strongest wildlife-and-photography day is Shark Valley; the southern park road and Flamingo give you the scenic-drive component; Gulf Coast offers a quieter wildlife-watching finish. Because you haven’t set dates or a base town, the sequence below is geographic rather than tied to exact drive times—Everglades is spread out, so changing lodging bases can materially change the order. I’ve also kept walking optional and avoided treating the 15-mile Sha",
+        "narrativeSections": [
+          {
+            "placement": "before_plan",
+            "heading": "Access and pacing",
+            "markdown": "Plan the south-park days together if you stay near Homestead, and pair Shark Valley with Gulf Coast only if your lodging makes that practical. US 41/Tamiami Trail currently has restoration roadwork that may add delays of up to 15 minutes, so leave slack on the Shark Valley and Gulf Coast days. Park conditions can change, and the current NPS alerts page also lists wildfire information; check it again once your dates are set. Fee stations accept only digital passes or credit/debit cards, not cash. [NPS alerts and conditions](https://www.nps.gov/ever/planyourvisit/conditions.htm)"
+          }
+        ],
+        "days": [
+          {
+            "day": 1,
+            "label": "South-park orientation and an unhurried scenic drive",
+            "stops": [
+              {
+                "name": "Ernest F. Coe Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Start with the exhibits, orientation film, and a ranger conversation about wildlife activity and same-day conditions. The center is the park gateway closest to Homestead; published hours are 8 AM–5 PM in winter and 9 AM–5 PM in summer.",
+                "why": "It gives you context before the long south-park drive and lets current conditions guide where you linger.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Homestead entrance-to-Flamingo scenic drive",
+                "type": "scenic_drive",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning through afternoon",
+                "duration": 240,
+                "exposureLevel": null,
+                "difficulty": "easy",
+                "note": "Use the drive itself as the day’s main experience: keep the schedule loose, stop only at signed and legally accessible scenic areas, and spend time photographing broad wetland landscapes rather than collecting stops. Exact pullouts and acce",
+                "why": "This gives scenic variety without turning the first day into a demanding activity checklist.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 2,
+            "label": "Flamingo wildlife and waterfront photography",
+            "stops": [
+              {
+                "name": "Guy Bradley Visitor Center at Flamingo",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Use the displays and ranger information to focus the day around wildlife activity near Flamingo. The center is open year-round, but check same-day alerts before setting out.",
+                "why": "It is the best supported starting point for a slow day in the Flamingo district.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Flamingo marina and public boat-ramp area",
+                "type": "photography",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning to early afternoon",
+                "duration": 120,
+                "exposureLevel": null,
+                "difficulty": "easy",
+                "note": "Spend a flexible photography block around the developed waterfront area near the visitor center, staying out of launch traffic and following posted wildlife-distance rules. The marina store and public boat ramp are located nearby; availabil",
+                "why": "A patient, stationary approach suits wildlife photography better than rushing into another district.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Flamingo developed area rest and scenic finish",
+                "type": "picnic",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 90,
+                "exposureLevel": null,
+                "difficulty": "easy",
+                "note": "Take a long rest or picnic in the developed Flamingo area, then use the remaining light for another short waterfront look if conditions are comfortable. Do not add an unnamed trail unless rangers can verify access and suitability that day.",
+                "why": "It keeps this day intentionally slow and leaves room for wildlife sightings that reward waiting.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 3,
+            "label": "Shark Valley panorama and wildlife",
+            "stops": [
+              {
+                "name": "Shark Valley Visitor Center",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning · near opening",
+                "duration": 45,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Arrive in the morning for exhibits, the park film, and current guidance. Published visitor-center hours are 9 AM–5 PM.",
+                "why": "This is the gateway to the panoramic loop and lets you verify how to experience it without committing to a long walk.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Shark Valley 15-mile loop and observation tower",
+                "type": "wildlife",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning or early afternoon · reservation-dependent",
+                "duration": 180,
+                "exposureLevel": null,
+                "difficulty": "easy",
+                "note": "Make the panoramic loop the day’s anchor, preferably through the on-site tram concession if its schedule and space work for your dates. The loop is 15 miles, so it does not fit the spirit of this easygoing plan as a full walk. Confirm tram ",
+                "why": "This is the plan’s best combination of broad views, wildlife watching, and photography without needing to stack extra activities.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Shark Valley gateway photography",
+                "type": "photography",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Late afternoon",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Leave an unstructured block near the visitor-center gateway for patient wildlife and landscape photography from permitted developed areas. Keep clear of wildlife and obey all posted closures and instructions.",
+                "why": "Extra waiting time is more useful for your priorities than adding another distant stop.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          },
+          {
+            "day": 4,
+            "label": "Gulf Coast wildlife watching and Tamiami scenery",
+            "stops": [
+              {
+                "name": "Marjory Stoneman Douglas Visitor Center at Gulf Coast",
+                "type": "visitor_center",
+                "order": 1,
+                "startTime": "",
+                "timeWindow": "Morning · around opening",
+                "duration": 75,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Begin with the visitor center and use its wildlife-watching setting as the day’s main slow-paced experience. The site also has a kayak launch and picnic area; published hours are 9 AM–5 PM.",
+                "why": "This gives the fourth day a distinct coastal character and supports wildlife viewing without requiring a hike.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Gulf Coast kayak-launch wildlife watching",
+                "type": "wildlife",
+                "order": 2,
+                "startTime": "",
+                "timeWindow": "Late morning",
+                "duration": 90,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Settle in near the developed launch area for a patient wildlife and photography session without assuming a paddle trip. Keep the launch clear and follow posted access and wildlife rules.",
+                "why": "It turns a simple developed area into a purposeful, low-effort photography block.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "Gulf Coast picnic area",
+                "type": "picnic",
+                "order": 3,
+                "startTime": "",
+                "timeWindow": "Early afternoon",
+                "duration": 60,
+                "exposureLevel": "low",
+                "difficulty": "easy",
+                "note": "Take a relaxed lunch and decide whether conditions justify more wildlife watching before the drive back.",
+                "why": "A real pause keeps the final day from becoming another long transit-and-checklist day.",
+                "alternatives": [],
+                "backupOptions": []
+              },
+              {
+                "name": "US 41 / Tamiami Trail scenic return",
+                "type": "scenic_drive",
+                "order": 4,
+                "startTime": "",
+                "timeWindow": "Afternoon",
+                "duration": 120,
+                "exposureLevel": null,
+                "difficulty": "easy",
+                "note": "Treat the return along US 41 as the final scenic component, allowing extra time for current restoration roadwork. Stop only at signed, legal, and open areas; I could not verify specific pullouts from the information available.",
+                "why": "It provides a low-effort landscape finish while keeping the day geographically coherent.",
+                "alternatives": [],
+                "backupOptions": []
+              }
+            ]
+          }
+        ],
+        "alternatives": [],
+        "backupOptions": [],
+        "contingency": [],
+        "fallback": []
+      },
+      "reasonCodes": [],
+      "dayDiagnostics": []
+    }
+  ]
+}

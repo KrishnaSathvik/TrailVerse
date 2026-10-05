@@ -1,28 +1,28 @@
 const crypto = require('crypto');
 
+const GUEST_SESSION_ID_PREFIX = 'guest_v2_';
+const GUEST_SESSION_ID_MAX_LENGTH = GUEST_SESSION_ID_PREFIX.length + 36;
+const GUEST_SESSION_ID_PATTERN = /^guest_v2_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const LEGACY_GUEST_SESSION_ID_PATTERN = /^anon_[0-9a-f]{16}_[0-9a-f]{6}$/i;
+
 /**
- * Generate a consistent anonymous ID based on IP address and browser fingerprint
- * This ensures the same user gets the same ID across different tabs/devices
- * @param {string} ipAddress - User's IP address
- * @param {string} userAgent - User's browser user agent
- * @param {string} browserFingerprint - Additional browser fingerprint data
- * @returns {string} - Unique anonymous ID
+ * Guest IDs are bearer secrets for anonymous Trailie state. Their authority
+ * comes only from cryptographic randomness, never from network/browser traits.
  */
-function generateAnonymousId(ipAddress, userAgent, browserFingerprint = '') {
-  // Combine all identifying information
-  const combinedData = `${ipAddress}-${userAgent}-${browserFingerprint}`;
-  
-  // Create a hash of the combined data
-  const hash = crypto.createHash('sha256').update(combinedData).digest('hex');
-  
-  // Take first 16 characters for a shorter, more manageable ID
-  const shortHash = hash.substring(0, 16);
-  
-  // Add a deterministic session identifier based on the hash
-  // This ensures the same user gets the same ID across requests
-  const sessionId = hash.substring(16, 22);
-  
-  return `anon_${shortHash}_${sessionId}`;
+function mintGuestSessionId() {
+  return `${GUEST_SESSION_ID_PREFIX}${crypto.randomUUID()}`;
+}
+
+function isValidGuestSessionId(value) {
+  return (
+    typeof value === 'string' &&
+    value.length <= GUEST_SESSION_ID_MAX_LENGTH &&
+    GUEST_SESSION_ID_PATTERN.test(value)
+  );
+}
+
+function isLegacyGuestSessionId(value) {
+  return typeof value === 'string' && LEGACY_GUEST_SESSION_ID_PATTERN.test(value);
 }
 
 /**
@@ -69,28 +69,45 @@ function generateBrowserFingerprint(req) {
 }
 
 /**
- * Generate anonymous ID from request
+ * Collect request traits for operational metadata only. None of these fields
+ * may select a conversation, quota ledger, pending turn, or active trip.
  * @param {Object} req - Express request object
  * @returns {Object} - Anonymous ID and related data
  */
-function generateAnonymousIdFromRequest(req) {
+function getAnonymousRequestMetadata(req) {
   const ipAddress = getClientIP(req);
   const userAgent = req.headers['user-agent'] || '';
   const browserFingerprint = generateBrowserFingerprint(req);
-  
-  const anonymousId = generateAnonymousId(ipAddress, userAgent, browserFingerprint);
-  
+
   return {
-    anonymousId,
     ipAddress,
     userAgent,
     browserFingerprint
   };
 }
 
+/**
+ * Accept one valid V2 bearer ID or mint a fresh isolated identity. Missing,
+ * malformed, oversized, and legacy deterministic IDs all fail closed to a new
+ * random session; request fingerprints remain metadata only.
+ */
+function resolveAnonymousRequestIdentity(req, clientAnonymousId) {
+  const acceptedClientId = isValidGuestSessionId(clientAnonymousId);
+  return {
+    ...getAnonymousRequestMetadata(req),
+    anonymousId: acceptedClientId ? clientAnonymousId : mintGuestSessionId(),
+    acceptedClientId,
+  };
+}
+
 module.exports = {
-  generateAnonymousId,
+  GUEST_SESSION_ID_MAX_LENGTH,
+  GUEST_SESSION_ID_PREFIX,
   getClientIP,
   generateBrowserFingerprint,
-  generateAnonymousIdFromRequest
+  getAnonymousRequestMetadata,
+  isLegacyGuestSessionId,
+  isValidGuestSessionId,
+  mintGuestSessionId,
+  resolveAnonymousRequestIdentity,
 };

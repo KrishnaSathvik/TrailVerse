@@ -1,5 +1,5 @@
 const Event = require('../models/Event');
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 
 // @desc    Get all events (both NPS and custom)
 // @route   GET /api/events
@@ -34,7 +34,7 @@ exports.getAllEvents = async (req, res, next) => {
       }
 
       const customCount = await Event.countDocuments(customQuery);
-      const npsCount = await npsService.getEventsTotal({
+      const npsCount = await getNpsService().getEventsTotal({
         parkCode,
         stateCode,
         q,
@@ -74,7 +74,7 @@ exports.getAllEvents = async (req, res, next) => {
     // Get NPS events if no specific park code or if we want all events
     let npsEvents = [];
     try {
-      npsEvents = await npsService.getAllEvents({
+      npsEvents = await getNpsService().getAllEvents({
         parkCode,
         stateCode,
         q,

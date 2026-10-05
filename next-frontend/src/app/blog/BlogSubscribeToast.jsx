@@ -15,11 +15,13 @@ function BlogSubscribeToastInner() {
     const subscribeError = searchParams.get('subscribe_error');
 
     if (subscribed === 'true') {
-      setToast({ type: 'success', message: "You're subscribed! You'll receive new blog posts in your inbox." });
+      setToast({ type: 'success', message: "You're in. Where Next? will send one destination worth considering each week." });
     } else if (unsubscribed === 'true') {
-      setToast({ type: 'success', message: "You've been unsubscribed from the newsletter." });
+      setToast({ type: 'success', message: "You've been unsubscribed from Where Next?." });
     } else if (subscribeError) {
-      setToast({ type: 'error', message: 'Subscription link is invalid or expired.' });
+      setToast({ type: 'error', message: subscribeError === 'expired'
+        ? 'That confirmation link has expired. Submit your email again to get a new one.'
+        : 'Subscription link is invalid or expired.' });
     }
 
     if (subscribed || unsubscribed || subscribeError) {

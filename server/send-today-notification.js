@@ -39,17 +39,7 @@ async function main() {
     ]
   }, { projection: { email: 1, name: 1, firstName: 1 } }).toArray();
 
-  // Also include confirmed newsletter subscribers (deduplicate later)
-  const subscribers = await db.collection('subscribers').find(
-    { confirmed: true },
-    { projection: { email: 1, firstName: 1 } }
-  ).toArray();
-
-  const userEmails = new Set(users.map(u => u.email.toLowerCase()));
-  const newSubs = subscribers.filter(s => !userEmails.has(s.email.toLowerCase()));
-  for (const s of newSubs) {
-    users.push({ email: s.email, firstName: s.firstName, name: s.firstName });
-  }
+  // Where Next? subscribers are not a blog-alert audience.
 
   console.log(`Sending to ${users.length} users...\n`);
 

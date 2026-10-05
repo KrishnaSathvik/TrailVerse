@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "candidates": [
+    {
+      "subjectEntityId": "nps:park:yose:place:F818A5B1-A9F9-4C3A-BC57-FB960E40B4C7",
+      "relationship": "access_point_for",
+      "objectEntityId": "nps:park:yose:experience:mist-trail",
+      "contextEntityId": "nps:park:yose",
+      "source": {
+        "url": "https://www.nps.gov/places/000/mist-trail-and-john-muir-trail-trailhead.htm",
+        "title": "Mist and John Muir Trailhead (U.S. National Park Service)",
+        "publisher": "National Park Service",
+        "excerpt": "About 1 trail mile from the trailhead, beyond the Vernal Fall Footbridge, the Mist Trail and the John Muir Trail diverge."
+      },
+      "sourceCheck": {
+        "checkedAt": "2026-09-15T15:33:52.207Z",
+        "httpStatus": 200,
+        "finalUrl": "https://www.nps.gov/places/000/mist-trail-and-john-muir-trail-trailhead.htm",
+        "excerptFound": true
+      },
+      "proposedBy": {
+        "kind": "agent",
+        "id": "agent:curation-assistant"
+      }
+    }
+  ]
+}

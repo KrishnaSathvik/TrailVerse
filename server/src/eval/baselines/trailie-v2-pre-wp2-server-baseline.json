@@ -1,0 +1,29 @@
+{
+  "baselineId": "trailie-v2-pre-wp2-2026-08-09",
+  "capturedAt": "2026-08-09",
+  "command": "node scripts/run-provider-disabled-tests.js --runInBand",
+  "summary": {
+    "testSuitesPassed": 181,
+    "testSuitesFailed": 9,
+    "testsPassed": 2520,
+    "testsFailed": 23,
+    "providerIsolation": {
+      "liveAnthropicConstructors": 0,
+      "liveOpenAiConstructors": 0,
+      "liveProviderDispatches": 0,
+      "externalProviderHttpRequests": 0
+    }
+  },
+  "knownFailingSuites": [
+    { "path": "src/eval/stage14_7/__tests__/realSubprocessLaunch.test.js", "category": "stage14_7_fixture_or_subprocess_state" },
+    { "path": "src/services/__tests__/npsParkConditions.test.js", "category": "nps_fixture_or_service_expectation" },
+    { "path": "src/services/__tests__/astroFacts.test.js", "category": "calendar_relative_fixture_expectation" },
+    { "path": "src/eval/__tests__/compositePreflight.test.js", "category": "stage14_7_fixture_version_drift" },
+    { "path": "src/services/__tests__/parkChatImages.test.js", "category": "nps_fixture_or_service_expectation" },
+    { "path": "src/adapters/__tests__/npsParkAdapter.test.js", "category": "nps_adapter_expectation" },
+    { "path": "tests/integration/parks.test.js", "category": "react_email_jsx_jest_transform" },
+    { "path": "tests/integration/auth.test.js", "category": "react_email_jsx_jest_transform" },
+    { "path": "tests/blogController.test.js", "category": "react_email_jsx_jest_transform" }
+  ],
+  "policy": "These failures are the frozen pre-WP2 baseline. Later work packages own only newly introduced failures unless they deliberately modify one of these suites or its implementation dependency."
+}

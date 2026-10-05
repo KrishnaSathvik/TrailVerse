@@ -11,9 +11,10 @@ class ConversationService {
   }
 
   // Get single conversation
-  async getConversation(conversationId) {
+  async getConversation(conversationId, options = {}) {
     const result = await enhancedApi.get(`/conversations/${conversationId}`, {}, { 
       cacheType: 'conversations',
+      skipCache: options.skipCache === true,
       ttl: 2 * 60 * 1000 // 2 minutes
     });
     return result.data.data;

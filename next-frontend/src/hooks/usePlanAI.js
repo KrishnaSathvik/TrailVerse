@@ -32,10 +32,14 @@ import {
   ANONYMOUS_SESSION_MAX_AGE_MS,
   isAnonymousLimitReached
 } from '@/lib/anonymousChatLimits';
+import { buildPlanAiEntryContext } from '@/lib/planAiEntryContext';
+import { createUntouchedFormData, touchFormField } from '@/lib/formDataProvenance';
 
 const totalSteps = 4;
 
-const emptyChatFormData = () => ({
+// P0-4: fresh form state carries provenance — these values are UI defaults,
+// not traveler statements, and never reach the model unless touched.
+const emptyChatFormData = () => createUntouchedFormData({
   parkCode: '',
   coordinates: null,
   startDate: '',
@@ -97,7 +101,10 @@ export default function usePlanAI(tripId) {
   const [suggestText, setSuggestText] = useState('');
   const [intentContext, setIntentContext] = useState(null);
 
-  const [formData, setFormData] = useState({
+  // P0-4: wizard defaults (groupSize 2, 'moderate', 'camping') are suggestions
+  // in the UI, not traveler preferences — provenance keeps them out of the
+  // model context until the traveler actually touches each field.
+  const [formData, setFormData] = useState(() => createUntouchedFormData({
     parkCode: '',
     startDate: '',
     endDate: '',
@@ -106,7 +113,7 @@ export default function usePlanAI(tripId) {
     interests: [],
     fitnessLevel: 'moderate',
     accommodation: 'camping'
-  });
+  }));
 
   const isPersonalized = searchParams.has('personalized');
   const isNewChat = searchParams.has('newchat');
@@ -138,6 +145,21 @@ export default function usePlanAI(tripId) {
   }, [entryMode, isNewChat, guestResumingChat]);
 
   const guestChatSessionKey = guestResumingChat ? getGuestAnonymousSessionId() : '';
+
+  const entryContext = useMemo(() => {
+    const coordinates = chatFormData?.coordinates || formData?.coordinates || null;
+    const source = guestResumingChat && entryMode === PLAN_AI_ENTRY.GENERAL
+      ? 'guest_resume'
+      : null;
+    return buildPlanAiEntryContext({
+      searchParams,
+      tripId,
+      coordinates,
+      formData: chatFormData || null,
+      intentContext,
+      source,
+    });
+  }, [searchParams, tripId, chatFormData, formData?.coordinates, intentContext, guestResumingChat, entryMode]);
 
   const resumeGuestChatContext = useCallback(() => {
     setSuggestText('');
@@ -272,25 +294,11 @@ export default function usePlanAI(tripId) {
       setIntentContext(null);
       setSelectedParkName(parkName);
 
-      setFormData(prev => ({
-        ...prev,
-        parkCode,
-        coordinates
-      }));
+      setFormData(prev => touchFormField(prev, { parkCode, coordinates }));
 
-      const defaultFormData = {
-        parkCode,
-        coordinates,
-        startDate: '',
-        endDate: '',
-        groupSize: 1,
-        budget: '',
-        interests: [],
-        fitnessLevel: '',
-        accommodation: ''
-      };
-
-      setChatFormData(defaultFormData);
+      // Arriving via a park page IS a destination choice — parkCode and
+      // coordinates are traveler-owned; everything else stays a default.
+      setChatFormData(touchFormField(emptyChatFormData(), { parkCode, coordinates }));
       setShowChat(true);
       setStep(4);
       setIsRestoringState(false);
@@ -465,8 +473,7 @@ export default function usePlanAI(tripId) {
   }, []);
 
   const toggleInterest = (interestId) => {
-    setFormData(prev => ({
-      ...prev,
+    setFormData(prev => touchFormField(prev, {
       interests: prev.interests.includes(interestId)
         ? prev.interests.filter(id => id !== interestId)
         : [...prev.interests, interestId]
@@ -692,7 +699,7 @@ export default function usePlanAI(tripId) {
     isReturningUser, tripHistory, archivedTrips, uniqueParksCount,
     deletingTripId, restoringTripId, activeTab,
     formData, isPersonalized, isNewChat, isPublicAccess, suggestText, intentContext, fromChatHistory, askText, entryMode,
-    effectiveEntryMode, fromCompare, guestChatSessionKey, guestResumingChat,
+    effectiveEntryMode, fromCompare, guestChatSessionKey, guestResumingChat, entryContext,
     newChatKey: searchParams.get('newchat') || searchParams.get('personalized') || searchParams.get('ask') || '',
     allParks, parksLoading, parksError, user, isAuthenticated,
 

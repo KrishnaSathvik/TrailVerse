@@ -3,6 +3,14 @@
 const { extractAllParksFromMessage } = require('../utils/parkExtractor');
 const { isShortFollowUp, isItineraryRefinementFollowUp } = require('./trailieFetchPlanner');
 const { isItineraryCommitRequest } = require('../utils/discoveryQuery');
+// Stage 14.8B.1 — destination identity guards. A summary label must never
+// become a destination, a modifier pronoun must never read as destination
+// intent, and a name and parkCode must never drift apart.
+const {
+  classifyDestinationChangeIntent,
+  isEligibleDestinationOption,
+  resolveDestinationMutation,
+} = require('./destinationIntegrity');
 
 const PARK_SWITCH_PATTERNS =
   /\b(actually|instead|rather|switch|change to|let'?s do|go with|prefer|rather than|not\s+\w+\s+but|move to|plan for)\b/i;
@@ -96,6 +104,19 @@ function extractUserOrderedCompareOptions(userMessage = '') {
   }
 
   if (rawParts.length < 2) return [];
+
+  // Stage 14.8E.1 §5 — a comma-split of an INSTRUCTION is not a compare list.
+  // "pick the three best photo stops and tell me why. Don't add any new stops,
+  // and don't check live conditions." previously yielded two "options", one of
+  // which reached destination resolution. A compare list names destinations, so
+  // every part must be an eligible destination candidate or there is no list.
+  const eligibleParts = rawParts.filter((part) => {
+    const parks = extractAllParksFromMessage(part);
+    if (parks.length > 0) return true;
+    return isEligibleDestinationOption({ name: part.replace(/\?.*$/, '').trim() }).eligible;
+  });
+  if (eligibleParts.length < 2) return [];
+  rawParts = eligibleParts;
 
   const options = [];
   const seen = new Set();
@@ -192,23 +213,27 @@ function extractRecommendationListFromMessages(filteredMessages = []) {
 
     const numberedMatches = [
       ...msg.content.matchAll(
-        /(?:^|\n)\s*(?:\d+[.)]|[-*])\s+([A-Z][^\n:]{3,70}(?:National Park|National Monument|State Park)?)/g
+        /(?:^|\n)\s*(?:\d+[.)]|[-*])\s+([A-Z][^\n:]{3,70}(?:National Park|National Monument|State Park)?)(:)?/g
       ),
     ];
     for (const match of numberedMatches) {
       const rawName = match[1]?.trim();
       if (!rawName) continue;
-      if (/^(don't forget|estimated costs|sun |water |hat |layer)/i.test(rawName)) continue;
+      // Stage 14.8B.1 §5 — a bullet is not an offer. `Total: roughly $450-650`
+      // is a summary row; only entries carrying real destination evidence may
+      // become selectable options.
+      const candidate = enrichDestinationWithParkCode({
+        name: rawName,
+        source: 'assistant_numbered',
+        confidence: 'medium',
+      });
+      if (!isEligibleDestinationOption({ ...candidate, followedByColon: Boolean(match[2]) }).eligible) {
+        continue;
+      }
       const key = rawName.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      list.unshift(
-        enrichDestinationWithParkCode({
-          name: rawName,
-          source: 'assistant_numbered',
-          confidence: 'medium',
-        })
-      );
+      list.unshift(candidate);
     }
 
     const parks = extractAllParksFromMessage(msg.content);
@@ -262,6 +287,12 @@ function resolveOrdinalOrNamedPick(userMessage, options = {}) {
 
   if (!userMessage) return null;
 
+  // Stage 14.8B.1 §4 — a demonstrative or ordinal bound to a modifier noun
+  // ("for that day", "the second day") edits the plan; it does not choose a
+  // destination. Without destination intent nothing here may fire.
+  const changeIntent = classifyDestinationChangeIntent(userMessage);
+  if (!changeIntent.intent) return null;
+
   if (WINNER_PICK_PATTERNS.test(userMessage) && recommendedOption) {
     return enrichDestinationWithParkCode({
       ...recommendedOption,
@@ -285,11 +316,13 @@ function resolveOrdinalOrNamedPick(userMessage, options = {}) {
   }
 
   const lower = userMessage.toLowerCase();
-  if (!/\b(option|one|choice|that|those|yes)\b/i.test(lower)) return null;
 
   for (const item of ordinalList) {
     const nameLower = (item.name || '').toLowerCase();
     if (!nameLower) continue;
+    // §5 — a name match against a non-destination entry is how "total walking"
+    // selected "Total". Ineligible entries are never matchable.
+    if (!isEligibleDestinationOption(item).eligible) continue;
     const shortName = nameLower.replace(/\s+national park$/i, '').trim();
     if (lower.includes(shortName)) {
       return enrichDestinationWithParkCode({
@@ -320,6 +353,7 @@ function resolveActiveTripContext({
   filteredMessages = [],
   storedContext = null,
   openEndedDiscovery = false,
+  authoritativeDestination = null,
 }) {
   const messageParks = lastUserMessage ? extractAllParksFromMessage(lastUserMessage) : [];
   const storedPrimary = storedContext?.primaryDestination || null;
@@ -341,13 +375,14 @@ function resolveActiveTripContext({
   let primaryDestination = null;
   let resolutionSource = null;
   let lowConfidenceClarification = null;
+  let destinationMutation = null;
 
   const refinementFollowUp = isItineraryRefinementFollowUp(lastUserMessage);
   const shortFollowUp = isShortFollowUp(lastUserMessage);
   const compareListTurn = isCompareListMessage(lastUserMessage);
   const commitTurn = isItineraryCommitRequest(lastUserMessage);
 
-  if (openEndedDiscovery && !lockedPlan && !refinementFollowUp && !commitTurn) {
+  if (openEndedDiscovery && !lockedPlan && !refinementFollowUp && !commitTurn && !authoritativeDestination) {
     return {
       activeTripContext: {
         primaryDestination: null,
@@ -365,7 +400,18 @@ function resolveActiveTripContext({
     };
   }
 
-  if (messageParks.length > 0 && !compareListTurn) {
+  // A park name that only appeared INSIDE a local-feature name ("Petrified
+  // Forest Trailhead") is not a destination switch. When the traveler already
+  // has an active destination, asking about a feature inside it must not
+  // silently relocate the conversation to the park whose name the feature
+  // happens to contain. With no active destination the match is still used.
+  const featureOnlyMention = messageParks.length > 0
+    && messageParks.every((park) => park.featureEmbedded === true);
+  const inheritable = storedPrimary || lockedPlan;
+  const messageNamesDestination = messageParks.length > 0
+    && !(featureOnlyMention && inheritable);
+
+  if (messageNamesDestination && !compareListTurn) {
     const switched = isParkSwitchMessage(lastUserMessage, storedPrimary || lockedPlan);
     primaryDestination = toPrimaryDestination({
       ...messageParks[0],
@@ -380,33 +426,74 @@ function resolveActiveTripContext({
       recommendedOption,
     });
     if (picked) {
-      primaryDestination = toPrimaryDestination(picked);
-      resolutionSource = picked.source === 'ordinal_pick' ? 'ordinal_pick' : picked.source;
-    } else if (commitTurn && (recommendedOption || lockedPlan || storedPrimary)) {
-      primaryDestination = toPrimaryDestination(recommendedOption || lockedPlan || storedPrimary);
-      resolutionSource = 'itinerary_commit';
-    } else if (refinementFollowUp && lockedPlan) {
-      primaryDestination = { ...lockedPlan };
-      resolutionSource = 'locked_plan_refinement';
-    } else if ((shortFollowUp || refinementFollowUp) && storedPrimary) {
-      primaryDestination = { ...storedPrimary };
-      resolutionSource = refinementFollowUp ? 'itinerary_refinement' : 'stored_follow_up';
-    } else if (lockedPlan && (refinementFollowUp || shortFollowUp)) {
-      primaryDestination = { ...lockedPlan };
-      resolutionSource = 'locked_plan_refinement';
-    } else if (refinementFollowUp && !storedPrimary && !lockedPlan) {
-      const convParks = extractAllParksFromMessage(conversationUserText);
-      if (convParks.length > 0) {
-        primaryDestination = toPrimaryDestination({
-          ...convParks[convParks.length - 1],
-          source: 'conversation_history',
-          confidence: 'high',
-        });
-        resolutionSource = 'itinerary_refinement';
+      // Stage 14.8B.1 §6/§7 — a pick only becomes the destination if it clears
+      // the canonical-identity and locked-destination guards. On refusal the
+      // previous destination is preserved whole; nothing half-applies.
+      const previous = lockedPlan || storedPrimary || null;
+      const mutation = resolveDestinationMutation({
+        previous,
+        candidate: picked,
+        intent: classifyDestinationChangeIntent(lastUserMessage),
+      });
+      destinationMutation = mutation.diagnostics;
+
+      if (mutation.mutationAccepted) {
+        primaryDestination = toPrimaryDestination(mutation.destination);
+        resolutionSource = picked.source === 'ordinal_pick' ? 'ordinal_pick' : picked.source;
+      } else if (previous) {
+        primaryDestination = { ...previous };
+        resolutionSource = 'locked_destination_preserved';
       }
-    } else if (storedPrimary) {
-      primaryDestination = { ...storedPrimary };
-      resolutionSource = 'stored_session';
+    } else if (
+      (lockedPlan || storedPrimary)
+      && /\b(that|this|those|these|it|first|second|third|fourth|1st|2nd|3rd|4th|option|one)\b/i.test(lastUserMessage || '')
+    ) {
+      // §8 — a referring phrase was present and deliberately did NOT move the
+      // destination. Recording that decision is as important as recording an
+      // accepted mutation.
+      destinationMutation = resolveDestinationMutation({
+        previous: lockedPlan || storedPrimary,
+        candidate: null,
+        intent: classifyDestinationChangeIntent(lastUserMessage),
+      }).diagnostics;
+      destinationMutation.rejectionReason = classifyDestinationChangeIntent(lastUserMessage).intent
+        ? destinationMutation.rejectionReason
+        : 'not_destination_intent';
+    }
+
+    // Fallback chain — only consulted when nothing above resolved a
+    // destination, so an accepted pick can never be overwritten by a later
+    // inherit-the-previous rule.
+    if (!primaryDestination) {
+      if (commitTurn && (recommendedOption || lockedPlan || storedPrimary)) {
+        primaryDestination = toPrimaryDestination(recommendedOption || lockedPlan || storedPrimary);
+        resolutionSource = 'itinerary_commit';
+      } else if (refinementFollowUp && lockedPlan) {
+        primaryDestination = { ...lockedPlan };
+        resolutionSource = 'locked_plan_refinement';
+      } else if ((shortFollowUp || refinementFollowUp) && storedPrimary) {
+        primaryDestination = { ...storedPrimary };
+        resolutionSource = refinementFollowUp ? 'itinerary_refinement' : 'stored_follow_up';
+      } else if (lockedPlan && (refinementFollowUp || shortFollowUp)) {
+        primaryDestination = { ...lockedPlan };
+        resolutionSource = 'locked_plan_refinement';
+      } else if (refinementFollowUp && !storedPrimary && !lockedPlan) {
+        const convParks = extractAllParksFromMessage(conversationUserText);
+        if (convParks.length > 0) {
+          primaryDestination = toPrimaryDestination({
+            ...convParks[convParks.length - 1],
+            source: 'conversation_history',
+            confidence: 'high',
+          });
+          resolutionSource = 'itinerary_refinement';
+        }
+      } else if (storedPrimary) {
+        primaryDestination = { ...storedPrimary };
+        resolutionSource = 'stored_session';
+      } else if (authoritativeDestination) {
+        primaryDestination = toPrimaryDestination({ ...authoritativeDestination, source: 'active_plan' });
+        resolutionSource = 'active_plan_constraint_refinement';
+      }
     }
   }
 
@@ -439,6 +526,9 @@ function resolveActiveTripContext({
     recommendedOption,
     resolutionSource,
     lowConfidenceClarification,
+    // §8 — bounded destination-mutation diagnostics. Names and decisions only;
+    // no conversation text.
+    destinationMutation,
     lastUserOverrideAt:
       messageParks.length > 0 && !compareListTurn
         ? new Date().toISOString()

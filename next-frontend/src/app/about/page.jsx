@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
+import FeaturedStoryCard from '@/components/common/FeaturedStoryCard';
 import { NPS_DISCLAIMER } from '@/lib/npsDisclaimer';
 
 export const metadata = {
@@ -61,6 +62,7 @@ const skills = [
 
 const socialLinks = [
   ['Globe', 'Astro by Krishna', 'https://www.astrobykrishna.com', 'Astrophotography Portfolio'],
+  ['Instagram', 'TrailVerse Instagram', 'https://www.instagram.com/trailverseapp/', '@trailverseapp'],
   ['Instagram', 'Instagram', 'https://instagram.com/astrobykrishna', '@astrobykrishna'],
   ['Facebook', 'Facebook', 'https://www.facebook.com/travelswithkrishna/', 'Travel Community'],
   ['Camera', 'Pexels', 'https://www.pexels.com/@astrobykrishna/', 'Free Photography'],
@@ -170,6 +172,12 @@ export default function AboutPage() {
                 <p>The best outcome is when someone opens TrailVerse, finds the right park, builds a better itinerary, and heads out feeling more prepared and more inspired than they would have otherwise.</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="pt-0 pb-16 px-4 sm:px-6 lg:px-8" aria-labelledby="featured-story-heading">
+          <div className="max-w-4xl mx-auto">
+            <FeaturedStoryCard />
           </div>
         </section>
 

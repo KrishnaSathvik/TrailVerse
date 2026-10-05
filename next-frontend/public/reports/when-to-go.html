@@ -823,6 +823,39 @@ function scrollToParkTop() {
 let currentPark = null;
 let selectedMonthIdx = null;
 
+function tvTrack(action, meta){
+  try {
+    if (localStorage.getItem('analytics_opt_out') === 'true') return;
+    var sid = sessionStorage.getItem('tv_session_id');
+    if (!sid) {
+      sid = Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+      sessionStorage.setItem('tv_session_id', sid);
+    }
+    var bid = localStorage.getItem('tv_browser_id');
+    if (!bid) {
+      bid = (crypto.randomUUID && crypto.randomUUID()) || (Date.now() + '-' + Math.random().toString(36).slice(2, 10));
+      localStorage.setItem('tv_browser_id', bid);
+    }
+    var eventType = action === 'crowd_calendar_view' ? 'crowd_calendar_view' : 'user_action';
+    fetch('/api/analytics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: sid,
+        browserId: bid,
+        events: [{
+          eventType: eventType,
+          eventCategory: 'engagement',
+          pageUrl: '/reports/when-to-go.html',
+          metadata: Object.assign({ action: action, path: '/reports/when-to-go.html' }, meta || {}),
+          timestamp: new Date().toISOString()
+        }]
+      })
+    }).catch(function(){});
+  } catch (err) {}
+}
+
+
 function renderPark(code, opts = {}) {
   const park = PARKS[code];
   if(!park) return;
@@ -910,6 +943,10 @@ function renderPark(code, opts = {}) {
   document.getElementById('cta-park-name').textContent = parkDisplayName(park);
   const slug = park.slug || code.toLowerCase();
   document.getElementById('park-cta').href = `/parks/${slug}`;
+  const parkCta = document.getElementById('park-cta');
+  parkCta.onclick = function(){
+    tvTrack('crowd_calendar_park_link_clicked', { parkCode: code, ctaId: 'crowd_calendar_park_guide' });
+  };
 
   updateQuickPickActive(code);
   if (opts.scroll) scrollToParkTop();
@@ -928,6 +965,10 @@ function showMonthDetail(monthIdx, park) {
   }
 
   selectedMonthIdx = monthIdx;
+  tvTrack('crowd_calendar_month_selected', {
+    parkCode: park.code || (currentPark && currentPark.code) || null,
+    month: monthIdx
+  });
   cells.forEach(cell => {
     cell.classList.toggle('selected', Number(cell.dataset.month) === monthIdx);
   });
@@ -1061,6 +1102,7 @@ function selectPark(code){
   input.value=PARKS[code]?.name||'';
   dropdown.classList.remove('open');
   renderPark(code, { scroll: true });
+  tvTrack('crowd_calendar_park_selected', { parkCode: code });
 }
 
 document.addEventListener('click',e=>{
@@ -1090,6 +1132,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const parkParam = (params.get('park') || '').toUpperCase();
   const code = PARKS[parkParam] ? parkParam : 'ZION';
   renderPark(code, { scroll: false });
+  tvTrack('crowd_calendar_view', { parkCode: code });
 
   if (typeof initReportBackNav === 'function') {
     const park = PARKS[parkParam];

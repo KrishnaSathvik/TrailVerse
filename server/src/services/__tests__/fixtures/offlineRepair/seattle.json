@@ -1,0 +1,356 @@
+{
+  "source": {
+    "capture": "trailie-core-final-funded-1.jsonl",
+    "row": 15
+  },
+  "prompt": "Plan three days in Seattle.",
+  "response": "Spend three days seeing Seattle through its market, art, waterfront, and working waterways. I\u2019d pair two distinct places each day and leave room for meals and unhurried exploring rather than trying to cover the whole city.",
+  "attempts": [
+    {
+      "stage": null,
+      "reasonCodes": []
+    }
+  ],
+  "outputs": [
+    {
+      "intro": "Spend three days seeing Seattle through its market, art, waterfront, and working waterways. I\u2019d pair two distinct places each day and leave room for meals and unhurried exploring rather than trying to cover the whole city.",
+      "days": [
+        {
+          "id": "seattle-1",
+          "dayNumber": 1,
+          "label": "Pike Place Market and downtown art",
+          "overnightLocation": "Seattle",
+          "stops": [
+            {
+              "id": "pike",
+              "order": 1,
+              "type": "landmark",
+              "name": "Pike Place Market",
+              "note": "Browse the public market in the morning and pause for lunch here; individual business hours vary.",
+              "timeWindow": "Morning into lunch",
+              "duration": 150,
+              "why": "This is a lively introduction to Seattle, with plenty to explore at your own pace."
+            },
+            {
+              "id": "sam",
+              "order": 2,
+              "type": "museum",
+              "name": "Seattle Art Museum",
+              "note": "Spend the afternoon with the downtown collection; check opening hours and admission before choosing which day to visit.",
+              "timeWindow": "Afternoon",
+              "duration": 120,
+              "why": "It gives you a different, indoor experience after the bustle of the market."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "pike",
+              "targetStopId": "sam",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "seattle-2",
+          "dayNumber": 2,
+          "label": "Seattle Center and waterfront sculpture",
+          "overnightLocation": "Seattle",
+          "stops": [
+            {
+              "id": "center",
+              "order": 1,
+              "type": "landmark",
+              "name": "Seattle Center",
+              "note": "Explore the arts campus in the morning. Check notices and hours separately if a particular attraction catches your eye.",
+              "timeWindow": "Morning",
+              "duration": 120,
+              "why": "A flexible cultural morning lets you choose what interests you without committing the whole day to one attraction."
+            },
+            {
+              "id": "sculpture",
+              "order": 2,
+              "type": "walk",
+              "name": "Olympic Sculpture Park",
+              "note": "Explore the outdoor sculpture collection on the waterfront, taking as much time on the paths as you like.",
+              "timeWindow": "Afternoon",
+              "duration": 90,
+              "why": "The open-air art makes a pleasant contrast with the campus and gives the afternoon a waterfront focus."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "center",
+              "targetStopId": "sculpture",
+              "relationship": "transfer"
+            }
+          ]
+        },
+        {
+          "id": "seattle-3",
+          "dayNumber": 3,
+          "label": "Chittenden Locks and Gas Works Park",
+          "overnightLocation": "Seattle",
+          "stops": [
+            {
+              "id": "locks",
+              "order": 1,
+              "type": "landmark",
+              "name": "Chittenden Locks",
+              "note": "Watch vessels pass through the locks from public visitor areas; verify visitor access before heading over.",
+              "timeWindow": "Morning",
+              "duration": 90,
+              "why": "Watching the locks at work brings Seattle\u2019s maritime side into the trip."
+            },
+            {
+              "id": "gasworks",
+              "order": 2,
+              "type": "viewpoint",
+              "name": "Gas Works Park",
+              "note": "Follow the public paths for city views, and stay out of the industrial structures.",
+              "timeWindow": "Afternoon",
+              "duration": 90,
+              "why": "Finish with a relaxed view of the city after the more active scene at the locks."
+            }
+          ],
+          "travelEdges": [
+            {
+              "sourceStopId": "locks",
+              "targetStopId": "gasworks",
+              "relationship": "transfer"
+            }
+          ]
+        }
+      ],
+      "narrativeSections": [
+        {
+          "placement": "after_plan",
+          "markdown": "The first two days mix busier cultural stops with a change of setting in the afternoon; the last day is deliberately more open-air. With no dates set, keep the museum day flexible around its opening hours, and check access at the locks before going."
+        }
+      ]
+    }
+  ],
+  "priorPlan": null,
+  "acceptedPlan": {
+    "intro": "Spend three days seeing Seattle through its market, art, waterfront, and working waterways. I\u2019d pair two distinct places each day and leave room for meals and unhurried exploring rather than trying to cover the whole city.",
+    "days": [
+      {
+        "id": "seattle-1",
+        "dayNumber": 1,
+        "label": "Pike Place Market and downtown art",
+        "overnightLocation": "Seattle",
+        "stops": [
+          {
+            "id": "pike",
+            "order": 1,
+            "type": "landmark",
+            "name": "Pike Place Market",
+            "note": "Browse the public market in the morning and pause for lunch here; individual business hours vary.",
+            "timeWindow": "Morning into lunch",
+            "duration": 150,
+            "why": "This is a lively introduction to Seattle, with plenty to explore at your own pace.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "evidenceRef": "ev:3967ac302a70f63e2baa9a39afb124691852eaa4469bb93063a0eb326384d92f",
+            "canonicalPlaceName": "Pike Place Market",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          },
+          {
+            "id": "sam",
+            "order": 2,
+            "type": "museum",
+            "name": "Seattle Art Museum",
+            "note": "Spend the afternoon with the downtown collection; check opening hours and admission before choosing which day to visit.",
+            "timeWindow": "Afternoon",
+            "duration": 120,
+            "why": "It gives you a different, indoor experience after the bustle of the market.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "evidenceRef": "ev:b155c0cf8b962b94f0589cc3ee0ca3e6174755d7cee8ef046bdd787758cc7be1",
+            "canonicalPlaceName": "Seattle Art Museum",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "pike",
+            "targetStopId": "sam",
+            "relationship": "transfer"
+          }
+        ]
+      },
+      {
+        "id": "seattle-2",
+        "dayNumber": 2,
+        "label": "Seattle Center and waterfront sculpture",
+        "overnightLocation": "Seattle",
+        "stops": [
+          {
+            "id": "center",
+            "order": 1,
+            "type": "landmark",
+            "name": "Seattle Center",
+            "note": "Explore the arts campus in the morning. Check notices and hours separately if a particular attraction catches your eye.",
+            "timeWindow": "Morning",
+            "duration": 120,
+            "why": "A flexible cultural morning lets you choose what interests you without committing the whole day to one attraction.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "evidenceRef": "ev:f494f2e93d8cccd1669f19d4209ac1ab136e6436c616bef9d23eb8f7236a9e31",
+            "canonicalPlaceName": "Seattle Center",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          },
+          {
+            "id": "sculpture",
+            "order": 2,
+            "type": "walk",
+            "name": "Olympic Sculpture Park",
+            "note": "Explore the outdoor sculpture collection on the waterfront, taking as much time on the paths as you like.",
+            "timeWindow": "Afternoon",
+            "duration": 90,
+            "why": "The open-air art makes a pleasant contrast with the campus and gives the afternoon a waterfront focus.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "evidenceRef": "ev:0cc63e724acc5d9321a8fcaf843732e82072b45c801cdebf1f9749fdb118243c",
+            "canonicalPlaceName": "Olympic Sculpture Park",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": "olym",
+            "parkName": "Olympic National Park"
+          }
+        ],
+        "travelEdges": [],
+        "parkCodes": [
+          "olym"
+        ]
+      },
+      {
+        "id": "seattle-3",
+        "dayNumber": 3,
+        "label": "Chittenden Locks and Gas Works Park",
+        "overnightLocation": "Seattle",
+        "stops": [
+          {
+            "id": "locks",
+            "order": 1,
+            "type": "landmark",
+            "name": "Chittenden Locks",
+            "note": "Watch vessels pass through the locks from public visitor areas; verify visitor access before heading over.",
+            "timeWindow": "Morning",
+            "duration": 90,
+            "why": "Watching the locks at work brings Seattle\u2019s maritime side into the trip.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "evidenceRef": "ev:3d74363de81fe2c6170fe9f4fb86a906930c3ae6bd692da44c7b5469e3382ab0",
+            "canonicalPlaceName": "Chittenden Locks",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          },
+          {
+            "id": "gasworks",
+            "order": 2,
+            "type": "viewpoint",
+            "name": "Gas Works Park",
+            "note": "Follow the public paths for city views, and stay out of the industrial structures.",
+            "timeWindow": "Afternoon",
+            "duration": 90,
+            "why": "Finish with a relaxed view of the city after the more active scene at the locks.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "evidenceRef": "ev:8c643401842ac6903020595ffcd61effdd4daeec8423148094940ffcbcf9a707",
+            "canonicalPlaceName": "Gas Works Park",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown",
+            "parkCode": null,
+            "parkName": null
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "locks",
+            "targetStopId": "gasworks",
+            "relationship": "transfer"
+          }
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": null,
+        "markdown": "The first two days mix busier cultural stops with a change of setting in the afternoon; the last day is deliberately more open-air. With no dates set, keep the museum day flexible around its opening hours, and check access at the locks before going."
+      }
+    ],
+    "alternatives": [],
+    "itineraryHash": "6da5387bfc78a14867810b02d8c3115a973c57ab123ffd20904f2d9bec256531",
+    "feasibilityIssues": []
+  },
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [],
+        "fitness": null,
+        "pace": null,
+        "riskTolerance": null,
+        "avoidExposure": null,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": null,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": null,
+        "photographyTiming": null,
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  }
+}

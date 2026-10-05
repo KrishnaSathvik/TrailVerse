@@ -1,17 +1,32 @@
-process.env.NPS_API_KEY = process.env.NPS_API_KEY || 'test-nps-key-for-unit-tests';
+/**
+ * Bulk/snapshot internals of NPSService.
+ *
+ * These tests exercise the REAL bulk + snapshot implementation, so they build a
+ * private instance via the exported class rather than reaching for the shared
+ * accessor. Two consequences that matter:
+ *
+ *   - Nothing here mutates an exported singleton, so no test can leak state
+ *     into another file (the previous version assigned onto the module export
+ *     and relied on afterEach to put it back).
+ *   - The key is passed explicitly, so the suite needs no NPS_API_KEY in the
+ *     environment and makes no live NPS call. Only the two network-boundary
+ *     seams (_loadSnapshot / _fetchGroupedBulkFromNps) are stubbed.
+ */
 
 const NpsSnapshot = require('../../models/NpsSnapshot');
-const npsService = require('../npsService');
+const { NPSService } = require('../npsService');
 
 describe('npsService bulk snapshot helpers', () => {
-  afterEach(() => {
-    npsService._bulkInFlight.clear();
-    npsService._bulkRefreshChain = Promise.resolve();
-    npsService._rateLimitedUntil = 0;
+  let svc;
+
+  beforeEach(() => {
+    // A fresh instance per test: caches, in-flight map and refresh chain all
+    // start clean without any manual reset bookkeeping.
+    svc = new NPSService({ apiKey: 'test-nps-key-not-used-for-network' });
   });
 
   it('reads grouped bulk data by park code', () => {
-    const slice = npsService._getGroupedBulkSlice(
+    const slice = svc._getGroupedBulkSlice(
       { yell: [{ id: 1 }, { id: 2 }], yose: [{ id: 3 }] },
       'yell'
     );
@@ -19,7 +34,7 @@ describe('npsService bulk snapshot helpers', () => {
   });
 
   it('filters flat bulk activities by park code', () => {
-    const slice = npsService._getGroupedBulkSlice(
+    const slice = svc._getGroupedBulkSlice(
       [
         { id: 1, parkCode: 'yell' },
         { id: 2, parkCode: 'yose' },
@@ -31,78 +46,71 @@ describe('npsService bulk snapshot helpers', () => {
   });
 
   it('matches grouped bulk data regardless of input case', () => {
-    const slice = npsService._getGroupedBulkSlice({ yell: [{ id: 1 }] }, 'YELL');
+    const slice = svc._getGroupedBulkSlice({ yell: [{ id: 1 }] }, 'YELL');
     expect(slice).toHaveLength(1);
   });
 
   it('hydrates bulk memory from snapshot data', () => {
-    npsService.placesCache.data = null;
-    npsService.placesCache.timestamp = 0;
-    npsService._hydrateBulkMemoryCache('bulk-places', { yell: [{ id: 1 }] });
-    expect(npsService.placesCache.data.yell).toHaveLength(1);
+    svc.placesCache.data = null;
+    svc.placesCache.timestamp = 0;
+    svc._hydrateBulkMemoryCache('bulk-places', { yell: [{ id: 1 }] });
+    expect(svc.placesCache.data.yell).toHaveLength(1);
   });
 
   it('returns bulk slice without NPS when rate-limited', async () => {
-    const originalLoad = npsService._loadSnapshot.bind(npsService);
-    npsService._loadSnapshot = jest.fn(async () => ({
+    svc._loadSnapshot = jest.fn(async () => ({
       data: { yell: [{ id: 'place-1' }] },
     }));
-    npsService._markRateLimited();
-    npsService.endpointCache.flushAll();
-    npsService.placesCache.data = null;
+    svc._markRateLimited();
+    svc.endpointCache.flushAll();
+    svc.placesCache.data = null;
 
-    const places = await npsService.getParkPlaces('yell');
+    const places = await svc.getParkPlaces('yell');
     expect(places).toHaveLength(1);
     expect(places[0].id).toBe('place-1');
-
-    npsService._loadSnapshot = originalLoad;
-    npsService._rateLimitedUntil = 0;
   });
 
   it('dedupes concurrent bulk in-flight fetches', async () => {
     let calls = 0;
-    const original = npsService._fetchGroupedBulkFromNps.bind(npsService);
-    npsService._fetchGroupedBulkFromNps = jest.fn(async (opts) => {
+    svc._fetchGroupedBulkFromNps = jest.fn(async (opts) => {
       calls += 1;
-      npsService._hydrateBulkMemoryCacheRef(opts.memoryCache, { yell: [{ id: 1 }] });
+      svc._hydrateBulkMemoryCacheRef(opts.memoryCache, { yell: [{ id: 1 }] });
       return opts.memoryCache.data;
     });
-    npsService._loadSnapshot = jest.fn(async () => ({ data: null, stale: true }));
-    npsService.placesCache.data = null;
-    npsService.placesCache.timestamp = 0;
+    svc._loadSnapshot = jest.fn(async () => ({ data: null, stale: true }));
+    svc.placesCache.data = null;
+    svc.placesCache.timestamp = 0;
 
     const [a, b] = await Promise.all([
-      npsService.getAllPlaces(),
-      npsService.getAllPlaces(),
+      svc.getAllPlaces(),
+      svc.getAllPlaces(),
     ]);
 
     expect(a).toEqual({ yell: [{ id: 1 }] });
     expect(b).toEqual(a);
-    expect(npsService._fetchGroupedBulkFromNps).toHaveBeenCalledTimes(1);
+    expect(svc._fetchGroupedBulkFromNps).toHaveBeenCalledTimes(1);
     expect(calls).toBe(1);
-
-    npsService._fetchGroupedBulkFromNps = original;
   });
 
   it('serializes bulk NPS refreshes', async () => {
     const order = [];
-    npsService._loadSnapshot = jest.fn(async () => ({ data: null, stale: true }));
-    npsService.placesCache.data = null;
-    npsService.placesCache.timestamp = 0;
-    npsService.campgroundsCache.data = null;
-    npsService.campgroundsCache.timestamp = 0;
+    svc._loadSnapshot = jest.fn(async () => ({ data: null, stale: true }));
+    svc.placesCache.data = null;
+    svc.placesCache.timestamp = 0;
+    svc.campgroundsCache.data = null;
+    svc.campgroundsCache.timestamp = 0;
 
-    npsService._fetchGroupedBulkFromNps = jest.fn(async (opts) => {
+    svc._fetchGroupedBulkFromNps = jest.fn(async (opts) => {
       order.push(`start-${opts.key}`);
       await new Promise((resolve) => setTimeout(resolve, 20));
-      npsService._hydrateBulkMemoryCacheRef(opts.memoryCache, { yell: [{ id: opts.key }] });
+      svc._hydrateBulkMemoryCacheRef(opts.memoryCache, { yell: [{ id: opts.key }] });
       order.push(`end-${opts.key}`);
       return opts.memoryCache.data;
     });
 
     await Promise.all([
-      npsService.getAllPlaces(),
-      npsService.getAllCampgrounds(),
+      svc.getAllPlaces(),
+      svc.getAllCampgrounds(),
     ]);
 
     expect(order.indexOf('start-bulk-places')).toBeLessThan(order.indexOf('end-bulk-places'));
@@ -117,7 +125,7 @@ describe('npsService bulk snapshot helpers', () => {
       byPark[`park${i}`] = [{ id: i }];
     }
 
-    await npsService._saveSnapshot('bulk-places', byPark);
+    await svc._saveSnapshot('bulk-places', byPark);
 
     expect(updateOne).toHaveBeenCalled();
     const firstCall = updateOne.mock.calls[0][1];
@@ -129,5 +137,18 @@ describe('npsService bulk snapshot helpers', () => {
     expect(dottedCalls.length).toBeGreaterThan(1);
 
     updateOne.mockRestore();
+  });
+});
+
+describe('WP5A shadow-only NPS evidence seam', () => {
+  test('returns explicit observation/completeness without writing legacy endpoint caches', async () => {
+    const service = new NPSService({ apiKey: 'test-only-key' });
+    service.api.get = jest.fn().mockResolvedValue({
+      data: { data: [{ id: 'alert-1', title: 'Closure' }], total: '1' },
+    });
+    const result = await service.getParkAlertsEvidence('yose', { signal: new AbortController().signal });
+    expect(result).toMatchObject({ data: [{ id: 'alert-1', title: 'Closure' }], isComplete: true });
+    expect(new Date(result.observedAt).toString()).not.toBe('Invalid Date');
+    expect(service.endpointCache.get('alerts_yose')).toBeUndefined();
   });
 });

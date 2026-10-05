@@ -1,6 +1,7 @@
 const {
   isSpecificItineraryRequest,
 } = require('./discoveryQuery');
+const { isItineraryRefinementFollowUp } = require('../services/trailieFetchPlanner');
 
 function isCompareQuery(message) {
   if (!message || typeof message !== 'string') return false;
@@ -21,7 +22,8 @@ const VALID_RESPONSE_MODES = new Set([
 ]);
 
 function autoRouteProvider() {
-  return process.env.TRAILIE_DEFAULT_PROVIDER || 'claude';
+  // WP12 Phase 4 — product chat is OpenAI GPT-5.6 only. Claude is not a chat primary.
+  return process.env.TRAILIE_DEFAULT_PROVIDER || 'openai';
 }
 
 function resolveResponseMode(messages, metadata = {}) {
@@ -32,6 +34,13 @@ function resolveResponseMode(messages, metadata = {}) {
   const lastUserMsg =
     [...(messages || [])].reverse().find((m) => m.role === 'user')?.content || '';
 
+  const hasCanonicalPlan = Boolean(
+    metadata.existingCanonicalPlan?.days?.length ||
+    metadata.activeTripContext?.lockedPlanDestination ||
+    metadata.activeTripContext?.primaryDestination ||
+    Number(metadata.priorResponseVersion) > 0
+  );
+  if (hasCanonicalPlan && isItineraryRefinementFollowUp(lastUserMsg)) return 'architect';
   if (isSpecificItineraryRequest(lastUserMsg)) return 'architect';
   if (isCompareQuery(lastUserMsg)) return 'compare';
 

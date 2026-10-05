@@ -6,6 +6,7 @@ import {
   ArrowRight, ArrowLeft, CalendarDays, Tent, Utensils, Send
 } from '@components/icons';
 import Button from '@components/common/Button';
+import { touchFormField } from '@/lib/formDataProvenance';
 
 const QuickFillModal = ({
   isOpen,
@@ -154,14 +155,13 @@ const QuickFillModal = ({
                   value={formData.parkCode}
                   onChange={(e) => {
                     const selectedPark = allParks?.find(p => p.parkCode === e.target.value);
-                    setFormData({
-                      ...formData,
+                    setFormData(touchFormField(formData, {
                       parkCode: e.target.value,
                       coordinates: selectedPark ? {
                         lat: parseFloat(selectedPark.latitude),
                         lon: parseFloat(selectedPark.longitude)
                       } : null
-                    });
+                    }));
                   }}
                   disabled={parksLoading}
                   className="w-full pl-12 pr-10 py-4 rounded-xl text-base font-medium outline-none transition cursor-pointer appearance-none disabled:opacity-50"
@@ -215,7 +215,7 @@ const QuickFillModal = ({
                   <input
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    onChange={(e) => setFormData(touchFormField(formData, { startDate: e.target.value }))}
                     min={new Date().toISOString().split('T')[0]}
                     className="w-full pl-12 pr-4 py-4 rounded-xl text-base font-medium outline-none transition"
                     style={{
@@ -241,7 +241,7 @@ const QuickFillModal = ({
                   <input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    onChange={(e) => setFormData(touchFormField(formData, { endDate: e.target.value }))}
                     min={formData.startDate || new Date().toISOString().split('T')[0]}
                     className="w-full pl-12 pr-4 py-4 rounded-xl text-base font-medium outline-none transition"
                     style={{
@@ -270,7 +270,7 @@ const QuickFillModal = ({
                   value={formData.groupSize || ''}
                   onChange={(e) => {
                     const value = parseInt(e.target.value) || 1;
-                    setFormData({ ...formData, groupSize: value });
+                    setFormData(touchFormField(formData, { groupSize: value }));
                   }}
                   min="1"
                   max="20"
@@ -352,7 +352,7 @@ const QuickFillModal = ({
                     <button
                       key={level}
                       type="button"
-                      onClick={() => setFormData({ ...formData, budget: level })}
+                      onClick={() => setFormData(touchFormField(formData, { budget: level }))}
                       className="rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200"
                       style={{
                         backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',
@@ -381,7 +381,7 @@ const QuickFillModal = ({
                     <button
                       key={level}
                       type="button"
-                      onClick={() => setFormData({ ...formData, fitnessLevel: level })}
+                      onClick={() => setFormData(touchFormField(formData, { fitnessLevel: level }))}
                       className="rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200"
                       style={{
                         backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',
@@ -411,7 +411,7 @@ const QuickFillModal = ({
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setFormData({ ...formData, accommodation: type })}
+                      onClick={() => setFormData(touchFormField(formData, { accommodation: type }))}
                       className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200"
                       style={{
                         backgroundColor: isSelected ? 'rgba(67, 160, 106, 0.15)' : 'var(--surface-hover)',

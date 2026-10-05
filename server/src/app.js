@@ -134,6 +134,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Beehiiv webhooks need the raw body for Svix signature verification.
+app.use('/api/webhooks/beehiiv', express.raw({ type: 'application/json' }), require('./routes/beehiivWebhooks'));
+
 // Body parser with increased limits for blog content (MUST come before compression)
 app.use(express.json({ limit: '10mb' })); // Increased from default 100kb to 10mb
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Increased from default 100kb to 10mb
@@ -271,6 +274,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/users/preferences', require('./routes/userPreferences'));
 app.use('/api/blogs', requireFeature('enableBlog'), require('./routes/blogs'));
+app.use('/api/ai/simple-chat', require('./routes/simpleCanary'));
 app.use('/api/ai', requireFeature('enableAI'), require('./routes/ai'));
 app.use('/api/ai/feedback', require('./routes/feedback'));
 app.use('/api/feed', require('./routes/dailyFeed'));

@@ -1,0 +1,621 @@
+{
+  "source": {
+    "capture": "trailie-core-final-funded-1.jsonl",
+    "row": 14
+  },
+  "prompt": "We're exhausted. Simplify tomorrow.",
+  "response": "Day 1: Zion Canyon Visitor Center; Zion Nature Center; Human History Museum.\n\nDay 2: Zion Human History Museum Patio; Pa'rus - Diversion Dam.\n\nDay 3: Kolob Canyons Visitor Center; Kolob Canyons.",
+  "attempts": [
+    {
+      "stage": "itinerary_completeness",
+      "reasonCodes": [
+        "insufficient_day_coverage"
+      ]
+    },
+    {
+      "stage": null,
+      "reasonCodes": []
+    }
+  ],
+  "outputs": [
+    {
+      "response": "I\u2019ve made tomorrow a short, one-stop afternoon: rest through the rainy morning, then take photos at the museum patio if conditions allow. I\u2019ve taken Canyon Overlook off the day so you can head back to Springdale whenever you\u2019re ready.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 2,
+          "day": {
+            "id": "zion-2",
+            "dayNumber": 2,
+            "label": "A gentle afternoon at the Zion Human History Museum patio",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d2-museum-patio",
+                "order": 1,
+                "type": "photography",
+                "name": "Zion Human History Museum Patio",
+                "note": "After noon, enjoy a brief photo break if the patio is accessible and conditions allow; return to Springdale whenever you're ready.",
+                "parkCode": "zion",
+                "parkName": "Zion",
+                "startTime": "",
+                "timeWindow": "Early afternoon \u00b7 after noon",
+                "duration": 45,
+                "why": "One easygoing outing leaves most of the day free to recover.",
+                "exposureLevel": "low",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": null,
+                "longitude": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "response": "I\u2019ve made tomorrow a shorter, after-noon outing: photos at the museum patio, then an easy visit to Pa\u2019rus \u2013 Diversion Dam instead of Canyon Overlook. Keep the morning free to rest, and skip the walk if access is restricted or the path is slippery after the rain.",
+      "operations": [
+        {
+          "op": "update_day",
+          "dayNumber": 2,
+          "day": {
+            "id": "zion-2",
+            "dayNumber": 2,
+            "label": "A restful afternoon of museum-patio photos and Pa\u2019rus scenery",
+            "overnightLocation": "Springdale",
+            "stops": [
+              {
+                "id": "d2-museum-patio",
+                "order": 1,
+                "type": "photography",
+                "name": "Zion Human History Museum Patio",
+                "note": "After noon, take a short, unhurried photography break if the patio is accessible and conditions allow.",
+                "parkCode": "zion",
+                "parkName": "Zion",
+                "startTime": "",
+                "timeWindow": "Early afternoon \u00b7 after noon",
+                "duration": 50,
+                "why": "A gentle start leaves the rainy morning open for rest.",
+                "exposureLevel": "low",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": null,
+                "longitude": null
+              },
+              {
+                "id": "d2-parus-diversion-dam",
+                "order": 2,
+                "type": "viewpoint",
+                "name": "Pa'rus - Diversion Dam",
+                "note": "Spend time taking in the view at the diversion dam. Check access before setting out, and turn back if the path is slippery after the rain.",
+                "parkCode": "zion",
+                "parkName": "Zion",
+                "startTime": "",
+                "timeWindow": "Mid-afternoon",
+                "duration": 75,
+                "physicalDifficulty": "easy",
+                "difficulty": "easy",
+                "exposureLevel": "low",
+                "why": "A distinct outdoor experience gives you a worthwhile afternoon without committing to the exposed overlook.",
+                "drivingTimeFromPreviousMin": null,
+                "latitude": 37.21431822297103,
+                "longitude": -112.97634422779083
+              }
+            ],
+            "travelEdges": [
+              {
+                "sourceStopId": "d2-museum-patio",
+                "targetStopId": "d2-parus-diversion-dam",
+                "relationship": "transfer"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "priorPlan": {
+    "intro": "I\u2019ve moved Day 2\u2019s outings to after noon, leaving the rainy morning free in Springdale. Start with photos at the museum patio, then consider Canyon Overlook only if access is allowed and the route is safe after the rain. If it\u2019s still wet or access is closed, skip the overlook.",
+    "days": [
+      {
+        "id": "zion-1",
+        "dayNumber": 1,
+        "label": "Zion history and a relaxed south-entrance day",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d1-canyon-center",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "note": "Spend a little time with the outdoor exhibits and ask about access beyond the closed canyon road. If parking is full, use designated parking in Springdale and check the shuttle arrangements.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 35,
+            "difficulty": "easy",
+            "why": "A short orientation leaves the rest of the day open for actual visits rather than transport guesswork.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:7f3d4f3ec42d4389d592c68f7b1e5d9d23249a1a81266116c15ce2914b668d3c",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d1-nature-center",
+            "order": 2,
+            "type": "landmark",
+            "name": "Zion Nature Center",
+            "note": "Spend time at the Nature Center; check its opening hours and access before setting out.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Late morning",
+            "duration": 60,
+            "why": "This gives you a second named place to explore without relying on the closed canyon road.",
+            "exposureLevel": "low",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:0d6454266f9bca5162c5fa58c12e16315cfb4bb363911c6d81f3b99b4cee0d66",
+            "canonicalPlaceName": "Zion Nature Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d1-history",
+            "order": 3,
+            "type": "museum",
+            "name": "Human History Museum",
+            "note": "Explore the exhibits and orientation film, then take in the outdoor views of the Towers of the Virgin and Bridge Mountain. Check museum hours before you go.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 90,
+            "difficulty": "easy",
+            "why": "The exhibits and views make a substantial afternoon experience at a relaxed pace.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:1eb4f9cf62840569d8dec95a604008def6c735d42b7378c939a6b81693ab8d9d",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "day": 1,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-2",
+        "dayNumber": 2,
+        "label": "An after-rain afternoon at the museum patio and Canyon Overlook",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d2-museum-patio",
+            "order": 1,
+            "type": "photography",
+            "name": "Zion Human History Museum Patio",
+            "note": "After noon, take an unhurried photography break here if the patio is accessible and conditions allow.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Early afternoon \u00b7 after noon",
+            "duration": 75,
+            "why": "Starting later keeps the rainy morning free while leaving room for a relaxed photo outing.",
+            "exposureLevel": "low",
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "unresolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d2-canyon-overlook",
+            "order": 2,
+            "type": "viewpoint",
+            "name": "Canyon Overlook",
+            "note": "Check Zion\u2013Mt. Carmel Highway and overlook access before traveling; don't use the closed canyon road. Go only if conditions are safe after the rain, and skip the overlook if the route or footing is wet or slippery.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Mid-to-late afternoon",
+            "duration": 90,
+            "why": "This keeps the canyon viewpoint as an optional finish rather than heading to exposed terrain during the rainy morning.",
+            "alternatives": [
+              {
+                "name": "Human History Museum",
+                "note": "If rain persists or the overlook is unsafe or inaccessible, revisit the indoor exhibits if the museum is open; check its hours first."
+              }
+            ],
+            "exposureLevel": "high",
+            "drivingTimeFromPreviousMin": null,
+            "resolutionStatus": "unresolved",
+            "latitude": 37.2132,
+            "longitude": -112.9401,
+            "coordinateSource": "trailverse_catalog",
+            "locationResolutionSource": "trailverse_known_stop_catalog"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d2-museum-patio",
+            "targetStopId": "d2-canyon-overlook",
+            "relationship": "transfer"
+          }
+        ],
+        "day": 2,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-3",
+        "dayNumber": 3,
+        "label": "Kolob Canyons scenery",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d3-kolob-center",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Kolob Canyons Visitor Center",
+            "note": "Stop for the exhibits and ask a ranger about current access in Kolob Canyons. The NPS listing says the center closes daily from noon to 1 p.m.; check its hours for your dates.",
+            "timeWindow": "Morning \u00b7 before noon",
+            "duration": 35,
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "This is a useful starting point for a part of Zion you haven\u2019t explored on the canyon days.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "evidenceRef": "ev:11b9f77f1017102071b2152614027cca63145cf022731fe386b71780768827eb",
+            "canonicalPlaceName": "Kolob Canyons Visitor Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d3-kolob",
+            "order": 2,
+            "type": "landmark",
+            "name": "Kolob Canyons",
+            "note": "Spend the rest of your visit taking in the landscape at an unhurried pace, choosing where to linger once you know what is accessible that day.",
+            "timeWindow": "Late morning into afternoon",
+            "duration": 150,
+            "why": "Giving Kolob its own day avoids squeezing a separate area into an already full Zion Canyon outing.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "evidenceRef": "ev:11b9f77f1017102071b2152614027cca63145cf022731fe386b71780768827eb",
+            "canonicalPlaceName": "Kolob Canyons Visitor Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d3-kolob-center",
+            "targetStopId": "d3-kolob",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": null,
+        "markdown": "Kolob Canyons is a separate outing: the NPS places its visitor center 45 miles north of Springdale. Keeping it on day three leaves the first two days focused on Zion Canyon and preserves the relaxed pace. Check access and transportation arrangements for the canyon stops before settling on the exact order of each day."
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Zion Human History Museum Patio",
+        "note": "If the overlook route is unavailable, spend more time photographing the views from the patio instead, provided the museum grounds are accessible.",
+        "parent": "Canyon Overlook"
+      },
+      {
+        "name": "Human History Museum",
+        "note": "If rain persists or the overlook is unsafe or inaccessible, revisit the indoor exhibits if the museum is open; check its hours first.",
+        "parent": "Canyon Overlook"
+      }
+    ],
+    "itineraryHash": "5be4f457735c4a126df476595d6050338b4925a7367f962c647fb378d7b78268",
+    "feasibilityIssues": []
+  },
+  "acceptedPlan": {
+    "intro": "Day 1: Zion Canyon Visitor Center; Zion Nature Center; Human History Museum. Day 2: Zion Human History Museum Patio; Pa'rus - Diversion Dam. Day 3: Kolob Canyons Visitor Center; Kolob Canyons.",
+    "days": [
+      {
+        "id": "zion-1",
+        "dayNumber": 1,
+        "label": "Zion history and a relaxed south-entrance day",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d1-canyon-center",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Zion Canyon Visitor Center",
+            "note": "Spend a little time with the outdoor exhibits and ask about access beyond the closed canyon road. If parking is full, use designated parking in Springdale and check the shuttle arrangements.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Morning",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 35,
+            "difficulty": "easy",
+            "why": "A short orientation leaves the rest of the day open for actual visits rather than transport guesswork.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:7f3d4f3ec42d4389d592c68f7b1e5d9d23249a1a81266116c15ce2914b668d3c",
+            "canonicalPlaceName": "Zion Canyon Visitor Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.20007883740497,
+            "longitude": -112.98688895601737,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d1-nature-center",
+            "order": 2,
+            "type": "landmark",
+            "name": "Zion Nature Center",
+            "note": "Spend time at the Nature Center; check its opening hours and access before setting out.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Late morning",
+            "duration": 60,
+            "why": "This gives you a second named place to explore without relying on the closed canyon road.",
+            "exposureLevel": "low",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:0d6454266f9bca5162c5fa58c12e16315cfb4bb363911c6d81f3b99b4cee0d66",
+            "canonicalPlaceName": "Zion Nature Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.20535480630132,
+            "longitude": -112.98241138458252,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d1-history",
+            "order": 3,
+            "type": "museum",
+            "name": "Human History Museum",
+            "note": "Explore the exhibits and orientation film, then take in the outdoor views of the Towers of the Virgin and Bridge Mountain. Check museum hours before you go.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Afternoon",
+            "physicalDifficulty": "easy",
+            "exposureLevel": "low",
+            "duration": 90,
+            "difficulty": "easy",
+            "why": "The exhibits and views make a substantial afternoon experience at a relaxed pace.",
+            "drivingTimeFromPreviousMin": null,
+            "evidenceRef": "ev:1eb4f9cf62840569d8dec95a604008def6c735d42b7378c939a6b81693ab8d9d",
+            "canonicalPlaceName": "Human History Museum",
+            "resolutionStatus": "resolved",
+            "latitude": null,
+            "longitude": null,
+            "coordinateSource": "unknown"
+          }
+        ],
+        "day": 1,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-2",
+        "dayNumber": 2,
+        "label": "A restful afternoon of museum-patio photos and Pa\u2019rus scenery",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d2-museum-patio",
+            "order": 1,
+            "type": "photography",
+            "name": "Zion Human History Museum Patio",
+            "note": "After noon, take a short, unhurried photography break if the patio is accessible and conditions allow.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Early afternoon \u00b7 after noon",
+            "duration": 50,
+            "why": "A gentle start leaves the rainy morning open for rest.",
+            "exposureLevel": "low",
+            "drivingTimeFromPreviousMin": null,
+            "latitude": null,
+            "longitude": null,
+            "evidenceRef": "ev:10ee30c5e7a941c5ff87999f506bca0c64e23b332b07e23bd7aa36855a57dc2f",
+            "canonicalPlaceName": "Zion Human History Museum Patio",
+            "resolutionStatus": "resolved",
+            "coordinateSource": "unknown"
+          },
+          {
+            "id": "d2-parus-diversion-dam",
+            "order": 2,
+            "type": "viewpoint",
+            "name": "Pa'rus - Diversion Dam",
+            "note": "Spend time taking in the view at the diversion dam. Check access before setting out, and turn back if the path is slippery after the rain.",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "startTime": "",
+            "timeWindow": "Mid-afternoon",
+            "duration": 75,
+            "physicalDifficulty": "easy",
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "A distinct outdoor experience gives you a worthwhile afternoon without committing to the exposed overlook.",
+            "drivingTimeFromPreviousMin": null,
+            "latitude": 37.21431822297103,
+            "longitude": -112.97634422779083,
+            "evidenceRef": "ev:5af75c20cf41210673adbcac8bac959d2908dc9c397bdc2479b2b9414da59a79",
+            "canonicalPlaceName": "Pa'rus - Diversion Dam",
+            "resolutionStatus": "resolved",
+            "coordinateSource": "resolved_metadata"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d2-museum-patio",
+            "targetStopId": "d2-parus-diversion-dam",
+            "relationship": "transfer"
+          }
+        ],
+        "day": 2,
+        "parkCodes": [
+          "zion"
+        ]
+      },
+      {
+        "id": "zion-3",
+        "dayNumber": 3,
+        "label": "Kolob Canyons scenery",
+        "overnightLocation": "Springdale",
+        "stops": [
+          {
+            "id": "d3-kolob-center",
+            "order": 1,
+            "type": "visitor_center",
+            "name": "Kolob Canyons Visitor Center",
+            "note": "Stop for the exhibits and ask a ranger about current access in Kolob Canyons. The NPS listing says the center closes daily from noon to 1 p.m.; check its hours for your dates.",
+            "timeWindow": "Morning \u00b7 before noon",
+            "duration": 35,
+            "difficulty": "easy",
+            "exposureLevel": "low",
+            "why": "This is a useful starting point for a part of Zion you haven\u2019t explored on the canyon days.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": "easy",
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "evidenceRef": "ev:11b9f77f1017102071b2152614027cca63145cf022731fe386b71780768827eb",
+            "canonicalPlaceName": "Kolob Canyons Visitor Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419,
+            "coordinateSource": "resolved_metadata"
+          },
+          {
+            "id": "d3-kolob",
+            "order": 2,
+            "type": "landmark",
+            "name": "Kolob Canyons",
+            "note": "Spend the rest of your visit taking in the landscape at an unhurried pace, choosing where to linger once you know what is accessible that day.",
+            "timeWindow": "Late morning into afternoon",
+            "duration": 150,
+            "why": "Giving Kolob its own day avoids squeezing a separate area into an already full Zion Canyon outing.",
+            "startTime": "",
+            "drivingTimeFromPreviousMin": null,
+            "physicalDifficulty": null,
+            "parkCode": "zion",
+            "parkName": "Zion",
+            "evidenceRef": "ev:11b9f77f1017102071b2152614027cca63145cf022731fe386b71780768827eb",
+            "canonicalPlaceName": "Kolob Canyons Visitor Center",
+            "resolutionStatus": "resolved",
+            "latitude": 37.4534968211,
+            "longitude": -113.225414419,
+            "coordinateSource": "resolved_metadata",
+            "exposureLevel": "low"
+          }
+        ],
+        "travelEdges": [
+          {
+            "sourceStopId": "d3-kolob-center",
+            "targetStopId": "d3-kolob",
+            "relationship": "transfer"
+          }
+        ],
+        "parkCodes": [
+          "zion"
+        ]
+      }
+    ],
+    "narrativeSections": [
+      {
+        "placement": "after_plan",
+        "heading": "Why this trip works",
+        "markdown": "The 3 days in Zion stay intentionally light so there is breathing room for slow traffic and unplanned stops instead of stacking every major attraction. Closer to the trip, confirm shuttle operation because Day 1 depends on it."
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Zion Human History Museum Patio",
+        "note": "If the overlook route is unavailable, spend more time photographing the views from the patio instead, provided the museum grounds are accessible.",
+        "parent": "Canyon Overlook"
+      },
+      {
+        "name": "Human History Museum",
+        "note": "If rain persists or the overlook is unsafe or inaccessible, revisit the indoor exhibits if the museum is open; check its hours first.",
+        "parent": "Canyon Overlook"
+      }
+    ],
+    "itineraryHash": "1b3e403a6f0b39396fe36727d59d482d0454e20ffe8088029b75436bd3bf9f53",
+    "feasibilityIssues": []
+  },
+  "constraints": {
+    "planningState": {
+      "preferences": {
+        "interests": [
+          "photography"
+        ],
+        "fitness": null,
+        "pace": "relaxed",
+        "riskTolerance": null,
+        "avoidExposure": true,
+        "maxDailyDriveMinutes": null,
+        "minimizeDriving": null
+      },
+      "mobility": {
+        "maxWalkMilesPerSegment": null,
+        "maxWalkMinutesPerSegment": null,
+        "walkingTolerance": null,
+        "requiresFrequentBreaks": null,
+        "wheelchair": null,
+        "stroller": null,
+        "avoidStairs": null
+      },
+      "activityPreferences": {
+        "hiking": null,
+        "photography": true,
+        "photographyTiming": "sunrise",
+        "wildlife": null
+      },
+      "travelers": {
+        "count": null,
+        "travelParty": null,
+        "hasChildren": false,
+        "childrenCount": 0,
+        "pets": null,
+        "accessibilityNeeds": [],
+        "hasOlderTravelers": null
+      },
+      "time": {
+        "availableHours": null
+      }
+    }
+  }
+}

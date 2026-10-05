@@ -54,9 +54,9 @@ export default function BlogPostEngagement({ post, onPostUpdate }) {
       <section
         className={SECTION_DIVIDER}
         style={{ borderColor: 'var(--border)' }}
-        aria-label="Newsletter signup"
+        aria-label="Where Next? newsletter signup"
       >
-        <NewsletterWidget source="blog-post" category={post.category} embedded />
+        <NewsletterWidget source="blog-footer" sourceDetail={post.category} category={post.category} embedded />
       </section>
     </footer>
   );

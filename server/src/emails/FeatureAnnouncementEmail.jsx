@@ -160,8 +160,8 @@ const FeatureAnnouncementEmail = ({
 
               <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', color: '#111827', textAlign: 'center' }}>
                 Follow along on Instagram:{' '}
-                <Link href="https://instagram.com/travelswithkrishna" style={linkStyle}>
-                  @travelswithkrishna
+                <Link href="https://www.instagram.com/trailverseapp/" style={linkStyle}>
+                  @trailverseapp
                 </Link>
               </Text>
 

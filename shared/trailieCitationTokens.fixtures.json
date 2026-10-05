@@ -1,0 +1,31 @@
+{
+  "comment": "Isomorphic fixtures for OpenAI private-use citation wrappers. Tokens must never appear in traveler-facing Trailie prose.",
+  "q1Captured": "Choose **Yosemite**.\n\nFor a three-day trip centered on easy walks and photography, it has the clearer set of low-effort, high-reward stops: **Bridalveil Fall Trailhead** is a 0.5-mile easy walk, and the nearby viewing area is listed at 0.75 mile. Both put you close to a 620-foot waterfall, with Yosemite Valley scenery making it easy to build photography stops around short walks. \uE200cite\uE202turn0\uE201\n\nSequoia & Kings Canyon offers extraordinary giant-tree landscapes, mountains, canyons, and caverns, so it would be my pick if ancient sequoias were the main goal. \uE200cite\uE202turn1\uE201 But I couldn’t verify a comparable set of specific easy-walk options from the information I have.",
+  "cases": [
+    {
+      "id": "malformed_unresolvable_hidden",
+      "input": "Bridalveil Fall is a short walk. \uE200cite\uE202turn0\uE201 Then photograph the valley.",
+      "expected": "Bridalveil Fall is a short walk. Then photograph the valley."
+    },
+    {
+      "id": "search_style_unresolvable_hidden",
+      "input": "Logan Pass is open. \uE200cite\uE202turn0search0\uE201 Confirm on the park page.",
+      "expected": "Logan Pass is open. Confirm on the park page."
+    },
+    {
+      "id": "ordinary_punctuation_untouched",
+      "input": "Do not cite turn0 as a source. The ranger said \"check nps.gov\".",
+      "expected": "Do not cite turn0 as a source. The ranger said \"check nps.gov\"."
+    },
+    {
+      "id": "markdown_attribution_preserved",
+      "input": "Prioritize Going-to-the-Sun Road. [NPS](https://www.nps.gov/glac/index.htm)",
+      "expected": "Prioritize Going-to-the-Sun Road. [NPS](https://www.nps.gov/glac/index.htm)"
+    },
+    {
+      "id": "unterminated_private_use_hidden",
+      "input": "Choose Yosemite. \uE200cite\uE202turn0",
+      "expected": "Choose Yosemite."
+    }
+  ]
+}

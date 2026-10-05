@@ -5,6 +5,7 @@ import Footer from '@/components/common/Footer';
 import LandingSearchClient from './LandingSearchClient';
 import LandingDailyFeedClient from './LandingDailyFeedClient';
 import LandingPopularBlogsSection from '@/components/landing/LandingPopularBlogsSection';
+import LandingPressMentions from '@/components/landing/LandingPressMentions';
 import LandingTestimonialsClient from '@/components/testimonials/LandingTestimonialsClient';
 import IconGlyph from '@/components/common/IconGlyph';
 import { getApiBaseUrl } from '@/lib/apiBase';
@@ -159,6 +160,8 @@ export default async function LandingPage() {
         <LandingDailyFeedClient initialDailyFeed={landingDailyFeed} />
 
         <LandingPopularBlogsSection posts={popularBlogs} />
+
+        <LandingPressMentions />
 
         <LandingTestimonialsClient limit={3} initialTestimonials={landingTestimonials} />
 

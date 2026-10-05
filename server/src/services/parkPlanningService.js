@@ -1,4 +1,4 @@
-const npsService = require('./npsService');
+const { getNpsService } = require('./npsService');
 const enhancedParkService = require('./enhancedParkService');
 const ridbService = require('./ridbService');
 const { buildPermitFaqAnswer } = require('../lib/permitFaqCopy');
@@ -465,9 +465,9 @@ async function buildParkPlanningContent(park) {
 
   const [bestTimeResult, activitiesResult, permitsResult, alertsResult] = await Promise.allSettled([
     enhancedParkService.getBestTimeToVisit(park),
-    npsService.getParkActivities(code),
+    getNpsService().getParkActivities(code),
     ridbService.getPermitsForPark(code),
-    npsService.getParkAlerts(code),
+    getNpsService().getParkAlerts(code),
   ]);
 
   const bestTime = bestTimeResult.status === 'fulfilled' ? bestTimeResult.value : null;
@@ -499,5 +499,6 @@ async function buildParkPlanningContent(park) {
 
 module.exports = {
   buildParkPlanningContent,
+  getBaseTown,
   shortParkName,
 };

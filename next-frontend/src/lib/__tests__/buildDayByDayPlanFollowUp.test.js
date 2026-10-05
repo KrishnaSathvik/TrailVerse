@@ -11,6 +11,6 @@ describe('buildDayByDayPlanFollowUp', () => {
   });
 
   test('falls back to generic top pick when no park metadata', () => {
-    expect(buildDayByDayPlanFollowUp()).toContain('top recommendation');
+    expect(buildDayByDayPlanFollowUp()).toContain('top pick');
   });
 });

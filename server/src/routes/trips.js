@@ -6,25 +6,34 @@ const {
   createTrip,
   updateTrip,
   deleteTrip,
-  addMessage
+  addMessage,
+  updateMessageFeedback,
+  updateTripMetadata
 } = require('../controllers/tripController');
 const { protect } = require('../middleware/auth');
+const { createProseRecoveryRouter } = require('./proseRecovery');
 const TripPlan = require('../models/TripPlan');
 const User = require('../models/User');
+const { buildSharedTripPayload, normalizeShareScope } = require('../utils/sharedTripPayload');
 
-function stripInternalTrailiePlanMeta(plan) {
-  if (!plan || typeof plan !== 'object') return plan;
-
-  const sanitized = Array.isArray(plan) ? [...plan] : { ...plan };
-
-  delete sanitized.reviewMeta;
-  delete sanitized.auditTrail;
-  delete sanitized.promptHash;
-  delete sanitized.rawReviewerOutput;
-  delete sanitized.rawRepairOutput;
-
-  return sanitized;
-}
+/**
+ * Stage 14.7F7 §1 — NO-STORE for the public share route.
+ *
+ * A share link is fetched at revision 1 (itinerary only, `notesStatus:
+ * not_available`) and again after revision 2 lands. The application previously
+ * set no `Cache-Control` at all, so an intermediary that caches a 200
+ * heuristically could keep serving the note-less revision-1 body indefinitely.
+ * The ETag does change per revision, which protects a REVALIDATING cache — but
+ * not a heuristic one.
+ *
+ * Applied as middleware BEFORE the handler so the header is present on the
+ * success path and on bounded errors (404 / thrown) alike. Deliberately narrow:
+ * ETags are not disabled globally, and no other route's caching changes.
+ */
+router.use('/shared/:shareId', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // View shared trip (public, no auth) — must be before router.use(protect)
 router.get('/shared/:shareId', async (req, res) => {
@@ -45,17 +54,12 @@ router.get('/shared/:shareId', async (req, res) => {
     }
   }
 
+  // Stage 8 — the public payload honors the owner-selected scope (default:
+  // plan_only). User chat messages and private formData are never exposed unless
+  // the owner explicitly opted into full-conversation sharing.
   res.json({
     success: true,
-    data: {
-      title: trip.title,
-      parkName: trip.parkName,
-      formData: trip.formData,
-      conversation: trip.conversation,
-      plan: stripInternalTrailiePlanMeta(trip.plan),
-      createdAt: trip.createdAt,
-      sharedBy,
-    }
+    data: buildSharedTripPayload(trip, { scope: trip.shareScope, sharedBy }),
   });
 });
 
@@ -68,8 +72,17 @@ router.post('/', createTrip);
 router.put('/:tripId', updateTrip);
 router.delete('/:tripId', deleteTrip);
 router.post('/:tripId/messages', addMessage);
+router.patch('/:tripId/messages/:messageId/feedback', updateMessageFeedback);
+router.patch('/:tripId/metadata', updateTripMetadata);
 
 // Generate share link
+// Stage 14.4 — explicit prose recovery. Mounted HERE so it inherits the same
+// `protect` guard and lives beside the ownership checks it depends on. The
+// handler still writes no trip content: it reads the owned trip, fences spend
+// with its own lease, and streams the successor for the CLIENT to persist.
+// Flag-gated (TRAILIE_PROSE_RECOVERY), default off ⇒ 404.
+router.use('/', createProseRecoveryRouter());
+
 router.post('/:tripId/share', async (req, res) => {
   const trip = await TripPlan.findById(req.params.tripId);
   if (!trip || trip.userId.toString() !== req.user.id) {
@@ -79,10 +92,15 @@ router.post('/:tripId/share', async (req, res) => {
   // Generate a unique share ID if not already set
   if (!trip.shareId) {
     trip.shareId = require('crypto').randomUUID().slice(0, 12);
-    await trip.save();
   }
 
-  res.json({ success: true, shareId: trip.shareId });
+  // Stage 8 — the owner chooses how much to expose. Defaults to plan_only.
+  if (req.body?.scope !== undefined) {
+    trip.shareScope = normalizeShareScope(req.body.scope);
+  }
+  await trip.save();
+
+  res.json({ success: true, shareId: trip.shareId, shareScope: trip.shareScope });
 });
 
 module.exports = router;

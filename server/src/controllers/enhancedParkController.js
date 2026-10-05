@@ -1,4 +1,4 @@
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 const enhancedParkService = require('../services/enhancedParkService');
 const ParkReview = require('../models/ParkReview');
 
@@ -10,7 +10,7 @@ exports.getEnhancedParkData = async (req, res, next) => {
     const { parkCode } = req.params;
     
     // Get basic park data first
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return res.status(404).json({
         success: false,
@@ -69,7 +69,7 @@ exports.getParkComparison = async (req, res, next) => {
     console.log(`Looking for parks: ${parkCodes.join(', ')}`);
     
     const parkPromises = parkCodes.map(parkCode => 
-      npsService.getParkByCode(parkCode).catch((error) => {
+      getNpsService().getParkByCode(parkCode).catch((error) => {
         console.error(`Failed to get park ${parkCode}:`, error.message);
         return null;
       })
@@ -134,7 +134,11 @@ exports.getParkWeather = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
     
-    const park = await npsService.getParkByCode(parkCode);
+    if (!/^[a-z]{4}$/.test(parkCode || '')) {
+      return res.status(400).json({ success: false, error: 'Invalid park code' });
+    }
+
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return res.status(404).json({
         success: false,
@@ -142,7 +146,7 @@ exports.getParkWeather = async (req, res, next) => {
       });
     }
 
-    const weatherData = await enhancedParkService.getWeatherData(park);
+    const weatherData = await enhancedParkService.getWeatherData(park, { includeForecast: true });
 
     res.status(200).json({
       success: true,
@@ -150,7 +154,7 @@ exports.getParkWeather = async (req, res, next) => {
     });
 
   } catch (error) {
-    next(error);
+    res.status(503).json({ success: false, error: 'Weather data temporarily unavailable' });
   }
 };
 
@@ -162,7 +166,7 @@ exports.getParkCrowdLevel = async (req, res, next) => {
     const { parkCode } = req.params;
     const { date } = req.query;
     
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return res.status(404).json({
         success: false,
@@ -190,7 +194,7 @@ exports.getBestTimeToVisit = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
     
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return res.status(404).json({
         success: false,
@@ -217,7 +221,7 @@ exports.getParkFacilities = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
     
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return res.status(404).json({
         success: false,
@@ -261,7 +265,7 @@ exports.getParkComparisonSummary = async (req, res, next) => {
     // Get parks and their enhanced data
     const parks = await Promise.all(
       parkCodes.map(parkCode => 
-        npsService.getParkByCode(parkCode).catch(() => null)
+        getNpsService().getParkByCode(parkCode).catch(() => null)
       )
     );
 

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppState.self) private var appState
+    @Environment(AuthSession.self) private var authSession
     @Environment(\.colorScheme) private var colorScheme
     @State private var searchText = ""
     @State private var navigationPath = NavigationPath()
@@ -22,13 +23,30 @@ struct HomeView: View {
             }
             .background(palette.backgroundPrimary)
             .navigationTitle(appState.hasActiveTripToday ? "Today" : "Home")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        if authSession.isAuthenticated {
+                            Task { await authSession.logout() }
+                        } else {
+                            authSession.promptSignIn()
+                        }
+                    } label: {
+                        Image(systemName: TVIcons.person)
+                    }
+                    .accessibilityLabel(authSession.isAuthenticated ? "Sign out" : "Sign in")
+                }
+            }
             .navigationDestination(for: String.self) { value in
                 if value == "explore-list" {
                     ExploreView()
+                } else if value == "compare" {
+                    CompareView()
                 } else {
                     ParkDetailView(parkSlug: value)
                 }
             }
+            .handleDeepLinks(navigationPath: $navigationPath)
         }
     }
 
@@ -44,11 +62,15 @@ struct HomeView: View {
                 exploreEntryCard
             }
 
+            NavigationLink(value: "compare") {
+                compareEntryCard
+            }
+
             planWithTrailieCard
 
             Text("Popular this season")
                 .font(TVTypography.headline)
-            Text("Journey 1: wire park grid from GET /api/parks")
+            Text("Browse all 64 national parks from Explore.")
                 .font(TVTypography.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -85,6 +107,24 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: TVRadius.card, style: .continuous))
     }
 
+    private var compareEntryCard: some View {
+        let palette = TVColorPalette.palette(for: colorScheme)
+        return HStack {
+            VStack(alignment: .leading, spacing: TVSpacing.xxs) {
+                Text("Compare parks")
+                    .font(TVTypography.headline)
+                Text("Weather, crowds, and best months side by side")
+                    .font(TVTypography.subheadline)
+                    .foregroundStyle(palette.textSecondary)
+            }
+            Spacer()
+            Image(systemName: TVIcons.compare)
+        }
+        .padding(TVSpacing.md)
+        .background(palette.surface)
+        .clipShape(RoundedRectangle(cornerRadius: TVRadius.card, style: .continuous))
+    }
+
     private var planWithTrailieCard: some View {
         VStack(alignment: .leading, spacing: TVSpacing.sm) {
             Text("Plan with Trailie")
@@ -93,7 +133,7 @@ struct HomeView: View {
                 .font(TVTypography.subheadline)
                 .foregroundStyle(.secondary)
             TVPrimaryButton(title: "Start planning") {
-                appState.selectedTab = .trailie
+                appState.openTrailie(parkCode: nil, parkName: nil)
             }
         }
         .padding(TVSpacing.md)

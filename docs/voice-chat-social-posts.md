@@ -113,7 +113,7 @@ I've been building TrailVerse, a platform covering all 470+ National Park Servic
 - Answer "what parks are near me" using geolocation
 - Seasonal recommendations (knows today's date and season)
 
-Currently in beta — rate limited to 30 sessions/hour. Try it at https://www.nationalparksexplorerusa.com (mic button, bottom right).
+Currently in beta — rate limited to 10 sessions/hour. Try it at https://www.nationalparksexplorerusa.com (mic button, bottom right).
 
 Happy to answer questions about the WebRTC setup or the function calling flow.
 

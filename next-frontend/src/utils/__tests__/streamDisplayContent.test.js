@@ -20,4 +20,14 @@ describe('stripItineraryJsonForDisplay', () => {
     const input = 'Plan\n[Itinerary_Json]{"days":[';
     expect(stripItineraryJsonForDisplay(input)).toBe('Plan');
   });
+
+  test('hides unresolvable citation tokens from streamed assistant content', () => {
+    const input = 'Choose **Yosemite**. \uE200cite\uE202turn0\uE201';
+    expect(stripItineraryJsonForDisplay(input)).toBe('Choose **Yosemite**.');
+  });
+
+  test('leaves ordinary cite punctuation and markdown attribution alone', () => {
+    const input = 'Do not cite turn0 as a source. [NPS](https://www.nps.gov/glac/index.htm)';
+    expect(stripItineraryJsonForDisplay(input)).toBe(input);
+  });
 });

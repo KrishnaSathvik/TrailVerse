@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import TrailieDemoCta from '@/components/trailie-demo/TrailieDemoCta';
 import TrailieDemoPlaybackStage from '@/components/trailie-demo/TrailieDemoPlaybackStage';
+import { sanitizeTrailieDemoAnswer } from '@/lib/trailieDemoSanitize';
+import playbackData from '@/data/trailieDemoPlayback.json';
 import {
-  sanitizeTrailieDemoAnswer,
-  withDemoGuestUpsellInBubble,
-} from '@/lib/trailieDemoSanitize';
-import demoData from '@/data/trailieDemoResponses.json';
+  PLAYBACK_TIMING,
+  normalizePlaybackScenario,
+  playbackBeatsForTurn,
+  thinkingLabelForTurn,
+  typingDelayMs,
+} from '@/lib/trailieDemoPlaybackSchema';
 import {
   loadTrailieDemoScenarioMap,
   persistTrailieDemoActiveIndex,
@@ -15,46 +19,83 @@ import {
   readTrailieDemoLastActiveIndex,
 } from '@/lib/trailieDemoScenarioCache';
 
-function normalizeScenario(item) {
-  const rawTurns = item.turns?.length
-    ? item.turns
-    : [{ question: item.question, answer: item.answer, metadata: item.metadata || {} }];
-
-  const turns = rawTurns.map((turn) => ({
-    question: turn.question,
-    answer: withDemoGuestUpsellInBubble(
-      sanitizeTrailieDemoAnswer(turn.answer),
-      turn.metadata || item.metadata
-    ),
-    metadata: { ...(item.metadata || {}), ...(turn.metadata || {}) },
-  }));
-
-  return { ...item, turns };
-}
-
-const SCENARIOS = demoData.scenarios.map(normalizeScenario);
-
-/** Bump when demo playback behavior changes so stale localStorage transcripts are ignored. */
-const DEMO_PLAYBACK_CACHE_VERSION = `${demoData.version}-playback-v8`;
-
-const PHASE = {
-  IDLE: 'idle',
-  TYPING_QUESTION: 'typing-question',
-  THINKING: 'thinking',
-  COMPLETE: 'complete',
+const DEMO_DESTINATIONS = {
+  'valley-of-fire-weekend': 'Valley of Fire State Park',
+  'compare-acadia-shenandoah': 'Acadia',
+  'yellowstone-relaxed': 'Yellowstone National Park',
+  'rocky-mountain-one-day': 'Rocky Mountain National Park',
+  'zion-couple-itinerary': 'Zion National Park',
 };
 
-const CHAR_MS_BASE = 32;
-const CHAR_MS_SPACE = 46;
-const CHAR_MS_PUNCT = 72;
-const THINKING_MS = 1000;
-const TURN_GAP_MS = 700;
-
-function typingDelayMs(char) {
-  if (char === ' ' || char === '\n') return CHAR_MS_SPACE;
-  if (/[.,!?;:]/.test(char)) return CHAR_MS_PUNCT;
-  return CHAR_MS_BASE;
+function demoPresentation(scenario, _turnIndex, turn) {
+  if (turn?.presentation) return turn.presentation;
+  const comparison = scenario.id === 'compare-acadia-shenandoah';
+  const kind = comparison ? 'comparison' : turn.plan ? 'itinerary' : 'plain_answer';
+  return {
+    schemaVersion: 1,
+    presentationKind: kind,
+    refinement: { isRefinement: false, changes: [] },
+    primaryArtifact: { kind, source: turn.plan ? 'canonicalPlan' : 'content' },
+    supportingModules: [],
+    prosePolicy: 'full',
+    ending: { caveat: null, beforeYouGo: null, followups: [] },
+  };
 }
+
+/**
+ * These are /trailie-demo's OWN scenarios, loaded from its own fixture. This
+ * file deliberately does not import `@/lib/trailieDemoPrompts` — those are the
+ * /plan-ai starter chips and serve a different purpose.
+ */
+export const SCENARIOS = playbackData.scenarios.map((item) => {
+  const scenario = normalizePlaybackScenario(item);
+  return {
+    ...scenario,
+    turns: scenario.turns.map((turn, turnIndex) => {
+      const plan = turn.plan
+        ? { ...turn.plan, parkName: turn.plan.parkName || DEMO_DESTINATIONS[scenario.id] }
+        : null;
+      const canonicalTurn = { ...turn, plan, canonicalPlan: plan };
+      const liveEnvelope = turn.source === 'live-envelope' || Boolean(turn.presentation);
+      return {
+        ...canonicalTurn,
+        parkName: turn.parkName || DEMO_DESTINATIONS[scenario.id] || null,
+        prose: liveEnvelope ? turn.prose : sanitizeTrailieDemoAnswer(turn.prose),
+        content: liveEnvelope ? (turn.content || turn.prose) : sanitizeTrailieDemoAnswer(turn.prose),
+        intent: turn.intent || {
+          primaryIntent: scenario.kind,
+          verticals: [],
+          reasonCodes: [],
+        },
+        presentation: demoPresentation(scenario, turnIndex, canonicalTurn),
+      };
+    }),
+  };
+});
+
+/**
+ * Cache key for persisted transcripts.
+ *
+ * It must change whenever the ANSWERS change, not just when playback code
+ * changes — otherwise a visitor who saw the previous capture keeps replaying it
+ * from localStorage and never sees the new one. The signature below is derived
+ * from the fixture's own content, so re-importing captures invalidates old
+ * transcripts automatically. Bump the trailing number for behavior changes.
+ */
+const fixtureSignature = SCENARIOS.reduce(
+  (acc, scenario) =>
+    acc +
+    scenario.id.length +
+    scenario.turns.reduce(
+      (turnAcc, turn) =>
+        turnAcc + turn.question.length + turn.prose.length + (turn.plan?.days?.length || 0) * 31,
+      0
+    ),
+  0
+);
+const DEMO_PLAYBACK_CACHE_VERSION = `v${playbackData.schemaVersion}-playback-v12-${fixtureSignature}`;
+
+const PHASE = { IDLE: 'idle', TYPING: 'typing', PLAYING: 'playing', COMPLETE: 'complete' };
 
 export default function TrailieInteractiveDemo({
   className = '',
@@ -68,8 +109,9 @@ export default function TrailieInteractiveDemo({
   const [phase, setPhase] = useState(PHASE.IDLE);
   const [completedTurns, setCompletedTurns] = useState([]);
   const [typedQuestion, setTypedQuestion] = useState('');
-  const [sentQuestion, setSentQuestion] = useState('');
-  const [turnMetadata, setTurnMetadata] = useState(null);
+  /** The turn currently being revealed, plus which beat it is on. */
+  const [activeTurn, setActiveTurn] = useState(null);
+
   const timersRef = useRef([]);
   const playbackTokenRef = useRef(0);
   const scenarioCacheRef = useRef(loadTrailieDemoScenarioMap(DEMO_PLAYBACK_CACHE_VERSION));
@@ -87,22 +129,13 @@ export default function TrailieInteractiveDemo({
     return id;
   }, []);
 
-  const turnsToCache = useCallback((item) => {
-    if (!item?.turns?.length) return [];
-    return item.turns.map((turn) => ({
-      question: turn.question,
-      answer: turn.answer,
-      metadata: turn.metadata,
-    }));
-  }, []);
-
+  /** Cancels any in-flight playback. Bumping the token orphans pending timers. */
   const resetPlaybackState = useCallback(() => {
     playbackTokenRef.current += 1;
     clearTimers();
     setPhase(PHASE.IDLE);
     setTypedQuestion('');
-    setSentQuestion('');
-    setTurnMetadata(null);
+    setActiveTurn(null);
   }, [clearTimers]);
 
   const hydrateFromCache = useCallback((item) => {
@@ -112,63 +145,78 @@ export default function TrailieInteractiveDemo({
     setCompletedTurns(cached);
     setPhase(PHASE.COMPLETE);
     setTypedQuestion('');
-    setSentQuestion('');
-    setTurnMetadata(cached[cached.length - 1]?.metadata ?? null);
+    setActiveTurn(null);
     return true;
   }, []);
 
+  /**
+   * Plays one turn as an explicit beat sequence.
+   *
+   *   conversation → thinking → prose
+   *   itinerary    → thinking → intro → prose
+   *
+   * The intro beat is the spoken opening only. The day card arrives with the
+   * finished turn, so the itinerary never appears above an intro that has not
+   * been written yet. A turn with no plan cannot reach that card.
+   */
   const playTurn = useCallback(
-    (scenarioIndex, nextTurnIndex, token) => {
+    (scenarioIndex, turnIndex, token) => {
       const item = SCENARIOS[scenarioIndex];
-      const turn = item?.turns?.[nextTurnIndex];
+      const turn = item?.turns?.[turnIndex];
       if (!item || !turn || token !== playbackTokenRef.current) return;
 
-      setPhase(PHASE.TYPING_QUESTION);
-      setTypedQuestion('');
-      setSentQuestion('');
-      setTurnMetadata(turn.metadata);
+      const beats = playbackBeatsForTurn(turn);
+      const thinkingLabel = thinkingLabelForTurn(turn);
 
-      let charIndex = 0;
-
-      const finishTyping = () => {
+      const commitTurn = () => {
         if (token !== playbackTokenRef.current) return;
 
-        setTypedQuestion('');
-        setSentQuestion(turn.question);
-        setPhase(PHASE.THINKING);
+        setActiveTurn(null);
+        setCompletedTurns((prev) => {
+          const nextTurns = [...prev, turn];
+          // Persist progress so switching tabs mid-scenario doesn't lose the
+          // transcript on refresh.
+          scenarioCacheRef.current.set(item.id, nextTurns);
+          persistTrailieDemoScenario(DEMO_PLAYBACK_CACHE_VERSION, item.id, nextTurns, scenarioIndex);
+          return nextTurns;
+        });
 
-        schedule(() => {
-          if (token !== playbackTokenRef.current) return;
-
-          setSentQuestion('');
-          setCompletedTurns((prev) => {
-            const nextTurns = [
-              ...prev,
-              {
-                question: turn.question,
-                answer: turn.answer,
-                metadata: turn.metadata,
-              },
-            ];
-            // Persist progress even for multi-turn scenarios so the tab feels "cached"
-            // after the first response (otherwise users who switch tabs mid-playback
-            // lose the transcript on refresh).
-            scenarioCacheRef.current.set(item.id, nextTurns);
-            persistTrailieDemoScenario(DEMO_PLAYBACK_CACHE_VERSION, item.id, nextTurns, scenarioIndex);
-            return nextTurns;
-          });
-
-          if (nextTurnIndex + 1 < item.turns.length) {
-            schedule(() => {
-              if (token !== playbackTokenRef.current) return;
-              playTurn(scenarioIndex, nextTurnIndex + 1, token);
-            }, TURN_GAP_MS);
-          } else {
-            setPhase(PHASE.COMPLETE);
-          }
-        }, THINKING_MS);
+        if (turnIndex + 1 < item.turns.length) {
+          schedule(() => {
+            if (token !== playbackTokenRef.current) return;
+            playTurn(scenarioIndex, turnIndex + 1, token);
+          }, PLAYBACK_TIMING.turnGapMs);
+        } else {
+          setPhase(PHASE.COMPLETE);
+        }
       };
 
+      const runBeat = (beatIndex) => {
+        if (token !== playbackTokenRef.current) return;
+
+        const beat = beats[beatIndex];
+        if (!beat || beat === 'prose') {
+          commitTurn();
+          return;
+        }
+
+        setActiveTurn({ ...turn, beat, thinkingLabel });
+        const holdMs = beat === 'intro' ? PLAYBACK_TIMING.writingMs : PLAYBACK_TIMING.thinkingMs;
+        schedule(() => runBeat(beatIndex + 1), holdMs);
+      };
+
+      const startReveal = () => {
+        if (token !== playbackTokenRef.current) return;
+        setTypedQuestion('');
+        setPhase(PHASE.PLAYING);
+        runBeat(0);
+      };
+
+      setPhase(PHASE.TYPING);
+      setTypedQuestion('');
+      setActiveTurn(null);
+
+      let charIndex = 0;
       const typeNext = () => {
         if (token !== playbackTokenRef.current) return;
 
@@ -179,13 +227,16 @@ export default function TrailieInteractiveDemo({
         if (charIndex < turn.question.length) {
           schedule(typeNext, typingDelayMs(char));
         } else {
-          finishTyping();
+          startReveal();
         }
       };
 
-      schedule(typeNext, nextTurnIndex === 0 ? 400 : 550);
+      schedule(
+        typeNext,
+        turnIndex === 0 ? PLAYBACK_TIMING.leadInMs : PLAYBACK_TIMING.followUpLeadInMs
+      );
     },
-    [schedule, turnsToCache]
+    [schedule]
   );
 
   const runScenario = useCallback(
@@ -212,23 +263,13 @@ export default function TrailieInteractiveDemo({
   };
 
   useEffect(() => {
-    if (autoPlay) {
-      runScenario(activeIndex);
-    }
+    if (autoPlay) runScenario(activeIndex);
     return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + strict-mode remount
   }, []);
 
-  const isTyping = phase === PHASE.TYPING_QUESTION;
-  const isThinking = phase === PHASE.THINKING;
-  const showMessagePane = completedTurns.length > 0 || isThinking;
-
-  const thinkingLabel = useMemo(() => {
-    const meta = turnMetadata;
-    if (meta?.hasWebSearch) return 'Searching live web results...';
-    if (meta?.hasLiveData) return 'Pulling NPS live data...';
-    return 'Trailie is thinking...';
-  }, [turnMetadata]);
+  const isTyping = phase === PHASE.TYPING;
+  const showMessagePane = completedTurns.length > 0 || Boolean(activeTurn);
 
   return (
     <div className={`w-full min-w-0 ${className}`}>
@@ -240,8 +281,12 @@ export default function TrailieInteractiveDemo({
           >
             Live Trailie demo
           </h2>
-          <p className="mt-2 text-sm sm:text-base leading-relaxed text-pretty" style={{ color: 'var(--text-secondary)' }}>
-            Pick a sample below — Yosemite vs Sequoia, a Zion weekend with follow-up, Glacier one-day logistics, or a relaxed Valley of Fire weekend from Vegas.
+          <p
+            className="mt-2 text-sm sm:text-base leading-relaxed text-pretty"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Pick a sample below — a Valley of Fire weekend, Acadia vs Shenandoah, two relaxed
+            Yellowstone days, one day in Rocky Mountain, or an easy Zion trip.
           </p>
         </div>
       )}
@@ -273,28 +318,23 @@ export default function TrailieInteractiveDemo({
         </div>
       </div>
 
-      <div
-        className="min-w-0 rounded-2xl border p-4 sm:rounded-3xl sm:p-6 lg:p-8"
-        style={{
-          backgroundColor: 'var(--surface)',
-          borderColor: 'var(--border)',
-          boxShadow: '0 18px 38px rgba(15, 23, 42, 0.06)',
-        }}
-      >
+      <div className="min-w-0">
         <TrailieDemoPlaybackStage
           scenario={scenario}
           completedTurns={completedTurns}
           isTyping={isTyping}
           typedQuestion={typedQuestion}
-          isThinking={isThinking}
-          sentQuestion={sentQuestion}
-          thinkingLabel={thinkingLabel}
-          turnMetadata={turnMetadata}
+          activeTurn={activeTurn}
           showMessagePane={showMessagePane}
         />
       </div>
 
-      {showCta && <TrailieDemoCta className="mt-8 sm:mt-10 lg:mt-12 shrink-0" />}
+      {showCta && (
+        <TrailieDemoCta
+          className="mt-8 sm:mt-10 lg:mt-12 shrink-0"
+          askPrompt={scenario?.turns?.[0]?.question || null}
+        />
+      )}
     </div>
   );
 }

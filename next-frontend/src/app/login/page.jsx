@@ -77,7 +77,6 @@ const LoginContent = () => {
     try {
       console.log('Login attempt with rememberMe:', rememberMe);
       const result = await login(formData.email, formData.password, rememberMe);
-      logEvent('Auth', 'login_success', 'email');
       if (result?.redirectedToChat) {
         return;
       }

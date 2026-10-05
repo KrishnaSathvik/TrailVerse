@@ -172,6 +172,12 @@ Thin `app/{path}/page.jsx` via `createIntentLandingPageExports`. Config in `inte
 
 ## Trailie / Plan AI
 
+### `/where-next` — Where Next (intent capture)
+- **Files**: `app/where-next/page.jsx`, `WhereNextClient.jsx`
+- **Purpose**: Public, indexable “where do you want to go next?” pick. Any destination accepted; NPS matches get Explore + Trailie CTAs.
+- **API**: `POST|PATCH /api/where-next/pick`, `GET /api/where-next/me`, `GET /api/where-next/stats`
+- **Analytics**: `user_action` metadata (`where_next_*`); never send raw free-text destinations
+
 ### `/plan-ai` — Main chat (anonymous or authed)
 - **Files**: `app/plan-ai/page.jsx`, `PlanAIContent.jsx`, `plan-ai/layout.jsx`
 - **Behavior**: Anonymous chat via `POST /api/ai/chat-anonymous`; logged-in via `POST /api/ai/chat` + `TripPlan` model

@@ -1,6 +1,7 @@
-const fetch = require('node-fetch');
+const { fetchGoogleMaps: fetch } = require('./googleMapsTransport');
 const { extractUserCity } = require('./factsService');
 const { getNearestAirports, getAirportByCode } = require('../utils/airportCoordinates');
+const { stopsShareActivityGroup } = require('../utils/activityGroupValidation');
 
 const drivingTimesCache = new Map();
 const DRIVING_TIMES_CACHE_MAX = 150;
@@ -65,15 +66,63 @@ async function getDrivingMinutesBetween(from, to, logPrefix = '[AI]') {
 const MAX_ITINERARY_DRIVE_LEGS = 24;
 
 /**
+ * Phase 9C.1B — adjacency alone must never authorize a driving transition.
+ * This function used to walk every stop and call Distance Matrix for ANY
+ * two consecutive coordinate-bearing stops, with zero awareness of whether
+ * they were separate destinations or waypoints on one continuous activity
+ * (Phase 9C.1A recon: a live correctness gap, not hypothetical). Until
+ * Phase 9C.1C defines real travel-edge authority (mode + provenance), the
+ * only thing this can determine is a NEGATIVE: two stops in the same
+ * continuous-activity group definitely do not warrant an independent drive
+ * lookup. There is currently no POSITIVE signal anywhere in the codebase
+ * that ordinary stop-to-stop adjacency represents ground travel at all
+ * (verified inter-destination transfers are a separate, already-correct
+ * system — see routeEvidenceDriveBridge.js / roadTripContract.js, untouched
+ * by this function). So this always returns false for now; the explicit
+ * same-activity check stays as the seam Phase 9C.1C will extend.
+ */
+function hasAuthoritativeDrivingTransition(day, fromStop, toStop) {
+  if (!fromStop || !toStop) return false;
+  if (stopsShareActivityGroup(day, fromStop.id, toStop.id)) return false;
+  return false; // no positive travel-edge authority signal exists yet (9C.1C)
+}
+
+/**
+ * Phase 9C.1D.1 — the only same-day candidate origin for a stop.
+ *
+ * Walks backward within THIS day's own `stops` array for the nearest earlier
+ * coordinate-bearing stop. Deliberately never looks past `stops[0]`: the
+ * first stop of a day has no same-day predecessor, full stop. A previous
+ * day's last stop is a different day's endpoint, not an intra-day one, and
+ * must never be produced as a candidate here — cross-destination/cross-day
+ * transitions are `routeEvidenceDriveBridge`'s verified territory, untouched
+ * by this function.
+ *
+ * @returns {object|null} the origin stop, or null if none exists.
+ */
+function resolveIntraDayOriginStop(stops, index) {
+  if (!Array.isArray(stops) || index <= 0) return null;
+  for (let j = index - 1; j >= 0; j--) {
+    if (stopCoords(stops[j])) return stops[j];
+  }
+  return null;
+}
+
+/**
  * Backfill drivingTimeFromPreviousMin on itinerary stops using Google Distance Matrix.
  * Mutates and returns itineraryData.
+ *
+ * Phase 9C.1B: a stop's OWN, model-authored `drivingTimeFromPreviousMin` is
+ * candidate data, not verified route truth (the same principle Phase 9B.1
+ * established for coordinates) — it is stripped to null unless THIS pass
+ * assigns a verified value below.
  */
 async function enrichItineraryDrivingTimes(itineraryData, logPrefix = '[AI]') {
-  if (!itineraryData?.days?.length || !process.env.GMAPS_SERVER_KEY) {
+  if (!itineraryData?.days?.length) {
     return itineraryData;
   }
 
-  let prevCoords = null;
+  const hasKey = Boolean(process.env.GMAPS_SERVER_KEY);
   let legsUsed = 0;
   let enriched = 0;
 
@@ -83,19 +132,20 @@ async function enrichItineraryDrivingTimes(itineraryData, logPrefix = '[AI]') {
     for (let i = 0; i < day.stops.length; i++) {
       const stop = day.stops[i];
       const coords = stopCoords(stop);
+      // Strip unverified candidate data first — only a verified assignment
+      // below may re-populate this field.
+      stop.drivingTimeFromPreviousMin = null;
       if (!coords) continue;
 
-      let origin = null;
-      if (i === 0) {
-        origin = prevCoords;
-      } else {
-        for (let j = i - 1; j >= 0; j--) {
-          origin = stopCoords(day.stops[j]);
-          if (origin) break;
-        }
-      }
+      // Phase 9C.1D.1: same-day-only by construction — this never crosses
+      // into the previous day's stops, so no day-identity check is needed.
+      const originStop = resolveIntraDayOriginStop(day.stops, i);
+      const origin = originStop ? stopCoords(originStop) : null;
 
-      if (origin && legsUsed < MAX_ITINERARY_DRIVE_LEGS) {
+      if (
+        origin && hasKey && legsUsed < MAX_ITINERARY_DRIVE_LEGS
+        && hasAuthoritativeDrivingTransition(day, originStop, stop)
+      ) {
         const minutes = await getDrivingMinutesBetween(origin, coords, logPrefix);
         if (minutes != null) {
           stop.drivingTimeFromPreviousMin = minutes;
@@ -103,8 +153,6 @@ async function enrichItineraryDrivingTimes(itineraryData, logPrefix = '[AI]') {
           legsUsed += 1;
         }
       }
-
-      prevCoords = coords;
     }
   }
 
@@ -280,14 +328,14 @@ async function buildDrivingTimeLegs({ parks, userCity, userMessage }) {
 }
 
 async function buildInParkLegs(parkCode, userMessage = '') {
-  const npsService = require('./npsService');
+  const { getNpsService } = require('./npsService');
   const code = String(parkCode || '').toLowerCase();
   if (!code) return [];
 
   try {
     const [visitorCenters, places] = await Promise.all([
-      npsService.getParkVisitorCenters(code),
-      npsService.getParkPlaces(code),
+      getNpsService().getParkVisitorCenters(code),
+      getNpsService().getParkPlaces(code),
     ]);
 
     const msg = String(userMessage || '').toLowerCase();
@@ -416,6 +464,8 @@ module.exports = {
   fetchDrivingTimeLegs,
   getDrivingMinutesBetween,
   enrichItineraryDrivingTimes,
+  resolveIntraDayOriginStop,
+  hasAuthoritativeDrivingTransition,
   shouldInjectDrivingTimes,
   shouldIncludeInParkRoutes,
   isOperationalParkQuery,

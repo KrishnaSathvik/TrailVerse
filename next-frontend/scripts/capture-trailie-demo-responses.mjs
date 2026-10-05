@@ -62,47 +62,43 @@ const PASSWORD = process.env.PLAN_AI_TEST_PASSWORD;
  */
 const SCENARIOS = [
   {
-    id: 'compare-yosemite-sequoia',
-    label: 'Compare',
-    chatTitle: 'Yosemite vs Sequoia',
+    id: 'valley-of-fire-weekend',
+    label: 'Valley of Fire',
+    chatTitle: 'Valley of Fire',
     question:
-      'I have 3 days in late September. Should I choose Yosemite or Sequoia for easy hikes, photography, and fewer crowds? Pick one and explain why.',
+      'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.',
+    metadata: { skipUserContext: true },
+  },
+  {
+    id: 'compare-acadia-shenandoah',
+    label: 'Compare',
+    chatTitle: 'Acadia vs Shenandoah',
+    question:
+      'I have 3 days in October. Should I choose Acadia or Shenandoah for fall colors, easy hikes, and photography? Pick one and explain why.',
+    metadata: { skipUserContext: true },
+  },
+  {
+    id: 'yellowstone-relaxed',
+    label: 'Yellowstone',
+    chatTitle: 'Two days in Yellowstone',
+    question:
+      'Plan a relaxed 2-day Yellowstone trip for first-time visitors who want geysers, wildlife, and scenic drives without rushing.',
+    metadata: { skipUserContext: true },
+  },
+  {
+    id: 'rocky-mountain-one-day',
+    label: 'Rocky Mountain',
+    chatTitle: 'One day in Rocky Mountain',
+    question:
+      "I only have one full day in Rocky Mountain National Park. What should I prioritize, and what's a good backup if Bear Lake parking or access doesn't work out?",
     metadata: { skipUserContext: true },
   },
   {
     id: 'zion-couple-itinerary',
-    label: 'Itinerary',
-    chatTitle: 'Zion weekend',
-    multiTurn: true,
-    suppressWebOnRefinement: true,
-    turns: [
-      {
-        question:
-          'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.',
-        metadata: { skipUserContext: true },
-      },
-      {
-        question:
-          'Actually make it more relaxed, avoid shuttle-heavy parts if possible, and add one good sunset spot.',
-        metadata: { skipUserContext: true },
-      },
-    ],
-  },
-  {
-    id: 'glacier-one-day-july',
-    label: 'Logistics',
-    chatTitle: 'Glacier in one day',
+    label: 'Zion',
+    chatTitle: 'Easy Zion for two',
     question:
-      "I'm visiting Glacier in July with only one full day. What should I prioritize, and what's the backup plan if Logan Pass parking is full?",
-    metadata: { skipUserContext: true },
-  },
-  {
-    id: 'valley-of-fire-weekend',
-    label: 'State park',
-    chatTitle: 'Valley of Fire',
-    expectsWebSearch: true,
-    question:
-      'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.',
+      'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.',
     metadata: { skipUserContext: true },
   },
 ];

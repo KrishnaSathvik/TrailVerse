@@ -62,6 +62,11 @@ describe('hrefWithFrom', () => {
 });
 
 describe('buildReturnPath', () => {
+  it('drops the prior return chain while preserving filters and tab state', () => {
+    expect(buildReturnPath('/explore', 'state=HI&from=%2Fguides%3Ffrom%3D%252F&tab=parks'))
+      .toBe('/explore?state=HI&tab=parks');
+    expect(buildReturnPath('/guides', 'from=%2F')).toBe('/guides');
+  });
   it('joins pathname and search', () => {
     expect(buildReturnPath('/explore', 'state=UT')).toBe('/explore?state=UT');
   });

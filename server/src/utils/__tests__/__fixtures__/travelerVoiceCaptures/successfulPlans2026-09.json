@@ -1,0 +1,359 @@
+{
+  "ordinary_canyonlands": {
+    "intro": "I’d keep this deliberately unhurried, but I need your visit dates before I can turn it into a sound three-day Canyonlands plan. The one named sunset stop I can verify here—Grand View Point—has a weekday closure Monday through Thursday from July 27 through October 1; it is only usable Friday through Sunday, with limited parking. The park also warns that entrance, overlook, and trailhead parking can fill, so a relaxed photography day is best built around one district rather than crisscrossing the park. For now, I’ve sketched the natural three-district rhythm and kept the actual hike and sunset s",
+    "days": [
+      {
+        "dayNumber": 1,
+        "label": "Island in the Sky orientation and a possible Grand View sunset",
+        "stops": [
+          {
+            "name": "Island in the Sky Visitor Center",
+            "note": "Start with orientation, water, and a ranger conversation focused on which easy walks and overlooks are practical that day. The center has exhibits, an orientation film, information, and drinking water during the stated seasonal access perio",
+            "why": "A low-key start that helps you choose one worthwhile area rather than chase a long list of stops."
+          },
+          {
+            "name": "Grand View Point sunset photography",
+            "note": "Use this as the day’s sunset anchor only if your visit is Friday–Sunday during the July 27–October 1 construction period, or after confirming access outside that window. It is closed Monday–Thursday during that construction period, and Frid",
+            "why": "The only named sunset-view location in the trip information; keeping the rest of the day light leaves room to enjoy it properly."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "label": "Needles district: choose one easy walk and one photography area with a ranger",
+        "stops": [
+          {
+            "name": "The Needles Visitor Center",
+            "note": "Use the exhibits, map information, water, picnic area, and ranger advice to select one specific easy hike and a separate photo stop for the day. The orientation movie is available on demand.",
+            "why": "The available trip details do not name or give distances for Needles trails, so this is the right point to confirm an easy outing rather than overpromise one."
+          },
+          {
+            "name": "The Needles Visitor Center picnic area",
+            "note": "Build in an unhurried lunch and a reset before your ranger-recommended easy walk and photography stop. Keep the afternoon flexible for conditions and access.",
+            "why": "A real pause supports the relaxed pace, rather than forcing a second long outing."
+          },
+          {
+            "name": "Chesler Park Viewpoint Trail",
+            "note": "Walk the Chesler Park Viewpoint Trail for expansive views of the Needles formations.",
+            "why": "A true on-trail Needles experience that complements the visitor center stop."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "label": "Flexible Canyonlands photography day",
+        "stops": [
+          {
+            "name": "Island in the Sky Visitor Center",
+            "note": "Return only if you need current guidance for a different easy walk, viewpoint, or photo stop than Day 1. Ask specifically about same-day parking and access before committing to the day’s anchor.",
+            "why": "This keeps the third day adaptable without treating an unverified trail as an assured easy hike."
+          },
+          {
+            "name": "Mesa Arch Trail",
+            "note": "Hike the short Mesa Arch Trail to its iconic sandstone arch and canyon panorama.",
+            "why": "An accessible, signature Island in the Sky outdoor experience."
+          },
+          {
+            "name": "Grand View Point Overlook and Trail",
+            "note": "Walk the Grand View Point trail along the mesa rim to broad canyon panoramas.",
+            "why": "Adds a substantial, classic Island in the Sky hike that complements the short Mesa Arch walk."
+          },
+          {
+            "name": "Green River Overlook: Green River Overlook",
+            "note": "Pause at Green River Overlook for expansive views over the Green River canyon.",
+            "why": "A quick scenic viewpoint adds another distinct Island in the Sky landscape without repeating an existing stop."
+          }
+        ]
+      }
+    ]
+  },
+  "rv_glacier_before": {
+    "intro": "I’d make this a two-base, low-driving trip: two relaxed days around Apgar and the West Glacier entrance, then move the RV to the St. Mary side by an RV-legal route outside the park for two more days. The key correction is that your 24-foot RV is over the 21-foot limit for the restricted portion of Going-to-the-Sun Road, so none of these days asks you to drive that corridor or cross the park over Logan Pass. Logan Pass should only be considered separately if the alpine road is open and you have a legal smaller vehicle or an operating shuttle; it is not part of this RV itinerary. For an early-October trip, do not count on Going-to-the-Sun Road’s alpine section being open. Temporary alpine closures can occur, and there is no date-specific opening guarantee here, so check the NPS road-status page immediately before attempting any alpine access. Also verify early-October visitor-center hours, since current operating status is not established. For 2026, NPS says vehicle reservations are not required. You will still need valid park admission; if anyone in the party is a non-U.S. resident age 16 or older, NPS lists an additional $100 nonresident fee unless admission is covered by an Annual or America the Beautiful Pass.",
+    "days": [
+      {
+        "dayNumber": 1,
+        "label": "Apgar orientation and exhibits",
+        "stops": [
+          {
+            "name": "Apgar Visitor Center ranger orientation",
+            "note": "Start at the west-side shuttle hub and ask rangers about current road conditions, early-October services, and any legal non-RV transportation operating during your visit. Confirm hours before setting out.",
+            "why": "This gives you reliable same-day guidance without putting the 24-foot RV onto the restricted Going-to-the-Sun Road corridor."
+          },
+          {
+            "name": "Apgar Visitor Center exhibits",
+            "note": "Spend an unhurried session with the visitor-center exhibits. Treat this as the day’s interpretive experience rather than trying to force an uncertain alpine drive.",
+            "why": "It provides a real park experience on the west side while keeping the first day gentle."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "label": "West Glacier gateway and photography",
+        "stops": [
+          {
+            "name": "West Glacier entrance gateway",
+            "note": "Use the entrance area as a relaxed gateway visit and photography session. Remain on roads and pullouts where the RV is legally allowed, and do not continue onto the restricted Going-to-the-Sun Road corridor.",
+            "why": "This is a distinct west-side sightseeing experience that works with the RV rather than depending on alpine access."
+          },
+          {
+            "name": "Apgar Visitor Center shuttle-hub visit",
+            "note": "Return specifically to understand any same-day transportation options that may be operating. This is informational only: early-October shuttle service has not been verified, so do not build the day around it.",
+            "why": "It lets you assess optional non-RV access without presenting a shuttle or Logan Pass trip as guaranteed."
+          },
+          {
+            "name": "Trail of the Cedars",
+            "note": "Walk the accessible forest loop through an old-growth cedar and hemlock grove, with time to enjoy the creek gorge and interpretive features.",
+            "why": "Adds a substantial, easy nature walk on the west side of Glacier without repeating either existing visit."
+          },
+          {
+            "name": "McDonald Creek Overlook",
+            "note": "Stop for views of McDonald Creek and its rushing turquoise water from the designated overlook.",
+            "why": "Adds a distinct scenic viewpoint that fits naturally with the day's West Glacier and Apgar locations."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "label": "St. Mary film and community visit",
+        "stops": [
+          {
+            "name": "St. Mary, Montana community visit",
+            "note": "After relocating by an RV-legal route outside the park, spend time in the St. Mary community and make this the day’s relaxed east-side photography and landscape-observation session. Keep the sequence flexible because no exact travel time is established here.",
+            "why": "It shifts the trip east without attempting an RV crossing over Going-to-the-Sun Road."
+          },
+          {
+            "name": "St. Mary Visitor Center park film",
+            "note": "See the park film if the visitor center is operating on your date; confirm early-October hours before the day begins.",
+            "why": "The film gives the day a substantive interpretive anchor after the base change."
+          }
+        ]
+      },
+      {
+        "dayNumber": 4,
+        "label": "St. Mary cultural history",
+        "stops": [
+          {
+            "name": "St. Mary Visitor Center Native American history exhibits",
+            "note": "Give the exhibits a focused visit; they highlight the rich Native American history associated with Glacier National Park. Verify that the visitor center is open in early October.",
+            "why": "This is a different, culturally focused experience from the previous day’s film."
+          },
+          {
+            "name": "St. Mary Visitor Center ranger conversation",
+            "note": "Close with ranger guidance on the east side, including any conditions affecting the entrance area and your departure route. Do not use Going-to-the-Sun Road as the RV route back west.",
+            "why": "It finishes the trip with local interpretation and a conservative road check before departure."
+          }
+        ]
+      }
+    ]
+  },
+  "rv_glacier_after": {
+    "intro": "I’ve softened Day 2 into an unhurried west-side day: one short nature-focused anchor, then time in Apgar rather than a long or alpine outing. Check same-day access before setting out, since early-October operations can vary.",
+    "days": [
+      {
+        "dayNumber": 1,
+        "label": "Apgar orientation and exhibits",
+        "stops": [
+          {
+            "name": "Apgar Visitor Center ranger orientation",
+            "note": "Start at the west-side shuttle hub and ask rangers about current road conditions, early-October services, and any legal non-RV transportation operating during your visit. Confirm hours before setting out.",
+            "why": "This gives you reliable same-day guidance without putting the 24-foot RV onto the restricted Going-to-the-Sun Road corridor."
+          },
+          {
+            "name": "Apgar Visitor Center exhibits",
+            "note": "Spend an unhurried session with the visitor-center exhibits. Treat this as the day’s interpretive experience rather than trying to force an uncertain alpine drive.",
+            "why": "It provides a real park experience on the west side while keeping the first day gentle."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "label": "Day 2 · Relaxed west-side nature and Apgar",
+        "stops": [
+          {
+            "name": "Forest and Fire Nature Trail",
+            "note": "Make this the day’s single nature anchor and keep the pace easy rather than adding a longer hike.",
+            "why": "A focused outdoor experience without building the day around a demanding itinerary."
+          },
+          {
+            "name": "Apgar Village",
+            "note": "Leave ample time for a slow lunch, lakeside wandering, and an unstructured afternoon.",
+            "why": "Keeps the afternoon flexible and close to the west-side base."
+          },
+          {
+            "name": "Apgar Village lakeside golden hour",
+            "note": "Optional relaxed lakeside finish; skip it if you would rather return to camp early.",
+            "why": "A simple scenic finish without committing to another hike."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "label": "St. Mary film and community visit",
+        "stops": [
+          {
+            "name": "St. Mary, Montana community visit",
+            "note": "After relocating by an RV-legal route outside the park, spend time in the St. Mary community and make this the day’s relaxed east-side photography and landscape-observation session. Keep the sequence flexible because no exact travel time is established here.",
+            "why": "It shifts the trip east without attempting an RV crossing over Going-to-the-Sun Road."
+          },
+          {
+            "name": "St. Mary Visitor Center park film",
+            "note": "See the park film if the visitor center is operating on your date; confirm early-October hours before the day begins.",
+            "why": "The film gives the day a substantive interpretive anchor after the base change."
+          }
+        ]
+      },
+      {
+        "dayNumber": 4,
+        "label": "St. Mary cultural history",
+        "stops": [
+          {
+            "name": "St. Mary Visitor Center Native American history exhibits",
+            "note": "Give the exhibits a focused visit; they highlight the rich Native American history associated with Glacier National Park. Verify that the visitor center is open in early October.",
+            "why": "This is a different, culturally focused experience from the previous day’s film."
+          },
+          {
+            "name": "St. Mary Visitor Center ranger conversation",
+            "note": "Close with ranger guidance on the east side, including any conditions affecting the entrance area and your departure route. Do not use Going-to-the-Sun Road as the RV route back west.",
+            "why": "It finishes the trip with local interpretation and a conservative road check before departure."
+          }
+        ]
+      }
+    ]
+  },
+  "constrained_olympic_before": {
+    "intro": "I’d make this a three-landscape Olympic trip: an alpine sunrise at Hurricane Ridge, a rain-forest day at Hoh, and a coastal-feeling sunset stop around Kalaloch. That gives you distinctly different park settings without treating a visitor center as the day’s main event. Because no lodging base or dates are set, I’ve kept the order flexible rather than pretending the cross-park drives are short; choose the day order around where you sleep. For your easy-walk preference, these are intentionally light, with time for exhibits, photography, and unhurried outdoor viewing rather than a long hike. I couldn’t verify distances or current access for specific trails, so treat any added trail walk as a same-day choice after checking conditions. Hoh deserves an especially early start: the park warns that entrance waits from 7:30 AM to 5 PM can run 1–3+ hours when parking fills. Hurricane Ridge facilities and road access should also be checked the day you go, since the contact station’s hours are not confirmed here.",
+    "days": [
+      {
+        "dayNumber": 1,
+        "label": "Alpine light at Hurricane Ridge",
+        "stops": [
+          {
+            "name": "Sunrise at Hurricane Ridge",
+            "note": "Make the high-country setting your morning anchor: settle in for changing early light and broad scenic viewing at your own pace. Confirm same-day road access and conditions before committing to the sunrise drive.",
+            "why": "This is the trip’s clearest alpine contrast to the rainforest and coast."
+          },
+          {
+            "name": "Hurricane Ridge Visitor Contact Station",
+            "note": "Use the ranger contact point for orientation and a conditions check. Rangers are present during open summer hours, but there is no indoor visitor space or running water at the station.",
+            "why": "A useful, low-key reset after sunrise before deciding whether an additional short walk feels worthwhile."
+          },
+          {
+            "name": "Hurricane Ridge scenic afternoon",
+            "note": "Keep the afternoon open for relaxed viewing and photography in the Hurricane Ridge area rather than forcing a long trail. Choose only a short outing whose conditions and distance you can confirm that day.",
+            "why": "It preserves an easy pace and leaves room for weather-driven decisions."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "label": "Rain forest and a slow Hoh day",
+        "stops": [
+          {
+            "name": "Early arrival at Hoh Rain Forest",
+            "note": "Arrive before the main daytime entrance period if practical, then let the forest atmosphere—not a packed trail list—set the pace. The park warns of lengthy entrance delays between 7:30 AM and 5 PM when parking fills.",
+            "why": "Starting early is the most practical way to protect the relaxed part of the day."
+          },
+          {
+            "name": "Hoh Rain Forest Visitor Center",
+            "note": "Browse exhibits and pick up orientation materials, then ask about a short, easy walk that suits the day’s conditions. The visitor center is open daily in summer and intermittently in winter.",
+            "why": "It is the best place to tailor a low-effort rainforest outing without guessing at trail conditions."
+          },
+          {
+            "name": "Hoh Rain Forest unhurried exploration",
+            "note": "Spend the main part of the day in the rain forest, pausing for mossy forest details and photography. Add only a short walk if it is comfortable and its distance is posted or confirmed locally.",
+            "why": "This creates a real rainforest experience while keeping the walking commitment modest."
+          },
+          {
+            "name": "Late-afternoon light in Hoh Rain Forest",
+            "note": "Finish with a calm photography pass through the forest area, then leave before you are tired from a long day of waiting and walking.",
+            "why": "Forest light and slower observation make a natural counterpoint to the alpine sunrise."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "label": "Kalaloch sunset finish",
+        "stops": [
+          {
+            "name": "Kalaloch Ranger Station",
+            "note": "Begin with exhibits, brochures, and restrooms if the station is open; it operates daily during summer and is closed the rest of the year.",
+            "why": "It gives you a practical local orientation before a low-key afternoon."
+          },
+          {
+            "name": "Kalaloch area scenic pause",
+            "note": "Leave generous time for relaxed coastal-area scenery and photography, choosing any short walking only after checking local access and conditions. Do not route this day through Mora Road: the park reports it closed, and Rialto Beach is not accessible by that road.",
+            "why": "A spacious afternoon avoids turning the final day into a drive-and-rush itinerary."
+          },
+          {
+            "name": "Sunset at Kalaloch",
+            "note": "Reserve the evening for sunset photography in the Kalaloch area, using only locations that are accessible and appropriate on the day. Check conditions locally before setting out.",
+            "why": "It gives the trip the coastal sunset you want without demanding a strenuous finale."
+          }
+        ]
+      }
+    ]
+  },
+  "constrained_olympic_after": {
+    "intro": "I’ve pared Day 2 back to a short, unhurried rainforest-focused outing, leaving plenty of open time rather than filling the day with additional stops.",
+    "days": [
+      {
+        "dayNumber": 1,
+        "label": "Alpine light at Hurricane Ridge",
+        "stops": [
+          {
+            "name": "Sunrise at Hurricane Ridge",
+            "note": "Make the high-country setting your morning anchor: settle in for changing early light and broad scenic viewing at your own pace. Confirm same-day road access and conditions before committing to the sunrise drive.",
+            "why": "This is the trip’s clearest alpine contrast to the rainforest and coast."
+          },
+          {
+            "name": "Hurricane Ridge Visitor Contact Station",
+            "note": "Use the ranger contact point for orientation and a conditions check. Rangers are present during open summer hours, but there is no indoor visitor space or running water at the station.",
+            "why": "A useful, low-key reset after sunrise before deciding whether an additional short walk feels worthwhile."
+          },
+          {
+            "name": "Hurricane Ridge scenic afternoon",
+            "note": "Keep the afternoon open for relaxed viewing and photography in the Hurricane Ridge area rather than forcing a long trail. Choose only a short outing whose conditions and distance you can confirm that day.",
+            "why": "It preserves an easy pace and leaves room for weather-driven decisions."
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "label": "Day 2 · Relaxed rainforest pause",
+        "stops": [
+          {
+            "name": "Age of the Forest Wayside #258f",
+            "note": "Make this the day’s single, slow-paced interpretive stop; allow time to linger rather than adding a longer outing.",
+            "why": "A compact rainforest stop suits a deliberately lighter day."
+          },
+          {
+            "name": "Decor of the Rainforest Wayside #255e",
+            "note": "Optional brief second stop only if you still feel like exploring; otherwise keep the remainder of the day free.",
+            "why": "It keeps the day flexible and close to the first stop."
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "label": "Kalaloch sunset finish",
+        "stops": [
+          {
+            "name": "Kalaloch Ranger Station",
+            "note": "Begin with exhibits, brochures, and restrooms if the station is open; it operates daily during summer and is closed the rest of the year.",
+            "why": "It gives you a practical local orientation before a low-key afternoon."
+          },
+          {
+            "name": "Kalaloch area scenic pause",
+            "note": "Leave generous time for relaxed coastal-area scenery and photography, choosing any short walking only after checking local access and conditions. Do not route this day through Mora Road: the park reports it closed, and Rialto Beach is not accessible by that road.",
+            "why": "A spacious afternoon avoids turning the final day into a drive-and-rush itinerary."
+          },
+          {
+            "name": "Sunset at Kalaloch",
+            "note": "Reserve the evening for sunset photography in the Kalaloch area, using only locations that are accessible and appropriate on the day. Check conditions locally before setting out.",
+            "why": "It gives the trip the coastal sunset you want without demanding a strenuous finale."
+          }
+        ]
+      }
+    ]
+  }
+}

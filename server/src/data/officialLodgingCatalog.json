@@ -1,0 +1,30 @@
+[
+  {
+    "propertyId": "yell:old-faithful-inn",
+    "parkCode": "yell",
+    "name": "Old Faithful Inn",
+    "propertyType": "lodge",
+    "locationClass": "inside_park",
+    "officialUrl": "https://www.yellowstonenationalparklodges.com/lodgings/hotel/old-faithful-inn/",
+    "reservationUrl": "https://www.yellowstonenationalparklodges.com/lodgings/hotel/old-faithful-inn/",
+    "operator": "Yellowstone National Park Lodges",
+    "source": "National Park Service",
+    "sourceUrl": "https://www.nps.gov/yell/planyourvisit/lodging.htm",
+    "sourceVerifiedAt": "2026-08-11",
+    "seasonNotes": "Seasonal operating dates; confirm current dates with the official operator."
+  },
+  {
+    "propertyId": "yell:canyon-lodge-cabins",
+    "parkCode": "yell",
+    "name": "Canyon Lodge & Cabins",
+    "propertyType": "lodge",
+    "locationClass": "inside_park",
+    "officialUrl": "https://www.yellowstonenationalparklodges.com/lodgings/cabin/canyon-lodge-cabins/",
+    "reservationUrl": "https://www.yellowstonenationalparklodges.com/lodgings/cabin/canyon-lodge-cabins/",
+    "operator": "Yellowstone National Park Lodges",
+    "source": "National Park Service",
+    "sourceUrl": "https://www.nps.gov/yell/planyourvisit/lodging.htm",
+    "sourceVerifiedAt": "2026-08-11",
+    "seasonNotes": "Seasonal operating dates; confirm current dates with the official operator."
+  }
+]

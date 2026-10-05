@@ -7,7 +7,7 @@
 
 const mongoose = require('mongoose');
 const Favorite = require('../src/models/Favorite');
-const npsService = require('../src/services/npsService');
+const { getNpsService } = require('../src/services/npsService');
 require('dotenv').config();
 
 const updateFavoriteImages = async () => {
@@ -41,7 +41,7 @@ const updateFavoriteImages = async () => {
         console.log(`Updating favorite for park: ${favorite.parkCode} - ${favorite.parkName}`);
         
         // Fetch park data from NPS API
-        const parkData = await npsService.getParkByCode(favorite.parkCode);
+        const parkData = await getNpsService().getParkByCode(favorite.parkCode);
         
         if (parkData && parkData.images && parkData.images.length > 0) {
           // Update the favorite with the first image URL

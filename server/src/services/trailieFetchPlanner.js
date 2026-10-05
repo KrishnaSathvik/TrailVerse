@@ -119,12 +119,13 @@ function isItineraryPlanningQuery(userMessage) {
 }
 
 const ITINERARY_REFINEMENT_PATTERNS =
-  /\b(make it|refine it|update it|change it|adjust it|more relaxed|easier|less rushed|avoid|add (?:a|one)|actually|can you also|one good)\b/i;
+  /\b(make (?:it|day\s*\d+)|refine it|update it|change it|adjust it|more relaxed|easier|less rushed|avoid|remove|delete|swap|replace|keep (?:walking|hiking)|add (?:a|one)|actually|can you also|one good)\b/i;
 
 function isItineraryRefinementFollowUp(userMessage) {
   if (!userMessage) return false;
   const trimmed = userMessage.trim();
   if (trimmed.length > 200) return false;
+  if (/\b(?:switch|change|move)\b[^.]{0,80}\b(?:to|instead of)\s+[A-Z]/.test(trimmed)) return false;
   return ITINERARY_REFINEMENT_PATTERNS.test(trimmed) || /\b(it|this plan|the plan)\b/i.test(trimmed);
 }
 

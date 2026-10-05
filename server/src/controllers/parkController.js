@@ -1,5 +1,5 @@
 const NodeCache = require('node-cache');
-const npsService = require('../services/npsService');
+const { getNpsService } = require('../services/npsService');
 const { normalizePlaceForMap } = require('../utils/mapPlaceUtils');
 const gtfsCatalogService = require('../services/gtfsCatalogService');
 const gtfsFeedService = require('../services/gtfsFeedService');
@@ -64,7 +64,7 @@ const normalizeActivityName = (activityName = '') => {
 };
 
 const buildParkActivityIndex = async () => {
-  const allActivities = await npsService.getAllActivities(5000);
+  const allActivities = await getNpsService().getAllActivities(5000);
   const activityIndex = new Map();
 
   allActivities.forEach((thingToDo) => {
@@ -101,18 +101,19 @@ exports.getAllParks = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skipPagination = req.query.all === 'true'; // Allow fetching all parks with ?all=true
+    const { filterParksByState } = require('../utils/parkListFilters');
     
     // Fetch all parks from NPS service (cached internally)
-    const allParks = await npsService.getAllParks();
+    const allParks = await getNpsService().getAllParks();
     
     // Apply national parks only filter if requested (strictly "National Park" designation)
     const nationalParksOnly = req.query.nationalParksOnly === 'true';
-    let filteredParks = allParks;
+    let filteredParks = filterParksByState(allParks, req.query.state);
     
     if (nationalParksOnly) {
       // Include parks with "National Park" in their designation or fullName
       // (some parks like National Park of American Samoa have an empty designation)
-      filteredParks = allParks.filter(park =>
+      filteredParks = filteredParks.filter(park =>
         (park.designation && park.designation.toLowerCase().includes('national park')) ||
         (park.fullName && park.fullName.toLowerCase().includes('national park'))
       );
@@ -181,7 +182,7 @@ exports.getAllParks = async (req, res, next) => {
 exports.getParkByCode = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     
     if (!park) {
       return res.status(404).json({
@@ -208,8 +209,8 @@ exports.getParkDetails = async (req, res, next) => {
 
     const ridbService = require('../services/ridbService');
     const [parkResult, alertsResult, permitsResult] = await Promise.allSettled([
-      npsService.getParkByCode(parkCode),
-      npsService.getParkAlerts(parkCode),
+      getNpsService().getParkByCode(parkCode),
+      getNpsService().getParkAlerts(parkCode),
       ridbService.getPermitsForPark(parkCode),
     ]);
 
@@ -246,8 +247,8 @@ const makeTabHandler = (serviceFn, label) => async (req, res, next) => {
 exports.getMapPlaces = async (req, res, next) => {
   try {
     const [byPark, allParks] = await Promise.all([
-      npsService.getAllPlaces(),
-      npsService.getAllParks(),
+      getNpsService().getAllPlaces(),
+      getNpsService().getAllParks(),
     ]);
 
     const parkNames = new Map(
@@ -280,8 +281,8 @@ exports.getMapPlaces = async (req, res, next) => {
 exports.getMapCampgrounds = async (req, res, next) => {
   try {
     const [byPark, allParks] = await Promise.all([
-      npsService.getAllCampgrounds(),
-      npsService.getAllParks(),
+      getNpsService().getAllCampgrounds(),
+      getNpsService().getAllParks(),
     ]);
 
     const parkNames = new Map(
@@ -318,17 +319,17 @@ exports.getMapCampgrounds = async (req, res, next) => {
   }
 };
 
-exports.getParkAlerts = makeTabHandler(npsService.getParkAlerts.bind(npsService), 'alerts');
-exports.getParkActivities = makeTabHandler(npsService.getParkActivities.bind(npsService), 'activities');
-exports.getParkCampgrounds = makeTabHandler(npsService.getParkCampgrounds.bind(npsService), 'campgrounds');
-exports.getParkVisitorCenters = makeTabHandler(npsService.getParkVisitorCenters.bind(npsService), 'visitorCenters');
-exports.getParkPlaces = makeTabHandler(npsService.getParkPlaces.bind(npsService), 'places');
-exports.getParkTours = makeTabHandler(npsService.getParkTours.bind(npsService), 'tours');
-exports.getParkWebcams = makeTabHandler(npsService.getParkWebcams.bind(npsService), 'webcams');
-exports.getParkVideos = makeTabHandler(npsService.getParkVideos.bind(npsService), 'videos');
-exports.getParkGalleryPhotos = makeTabHandler(npsService.getParkGalleryPhotos.bind(npsService), 'galleryPhotos');
-exports.getParkParkingLots = makeTabHandler(npsService.getParkParkingLots.bind(npsService), 'parkingLots');
-exports.getParkFacilities = makeTabHandler(npsService.getParkAmenities.bind(npsService), 'facilities');
+exports.getParkAlerts = makeTabHandler((...args) => getNpsService().getParkAlerts(...args), 'alerts');
+exports.getParkActivities = makeTabHandler((...args) => getNpsService().getParkActivities(...args), 'activities');
+exports.getParkCampgrounds = makeTabHandler((...args) => getNpsService().getParkCampgrounds(...args), 'campgrounds');
+exports.getParkVisitorCenters = makeTabHandler((...args) => getNpsService().getParkVisitorCenters(...args), 'visitorCenters');
+exports.getParkPlaces = makeTabHandler((...args) => getNpsService().getParkPlaces(...args), 'places');
+exports.getParkTours = makeTabHandler((...args) => getNpsService().getParkTours(...args), 'tours');
+exports.getParkWebcams = makeTabHandler((...args) => getNpsService().getParkWebcams(...args), 'webcams');
+exports.getParkVideos = makeTabHandler((...args) => getNpsService().getParkVideos(...args), 'videos');
+exports.getParkGalleryPhotos = makeTabHandler((...args) => getNpsService().getParkGalleryPhotos(...args), 'galleryPhotos');
+exports.getParkParkingLots = makeTabHandler((...args) => getNpsService().getParkParkingLots(...args), 'parkingLots');
+exports.getParkFacilities = makeTabHandler((...args) => getNpsService().getParkAmenities(...args), 'facilities');
 
 // Short-lived cache for expensive GTFS parse + NPS transit merge
 const transitResponseCache = new NodeCache({
@@ -623,7 +624,7 @@ exports.getParkExploreIndex = async (req, res, next) => {
 exports.getParkPlanning = async (req, res, next) => {
   try {
     const { parkCode } = req.params;
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
 
     if (!park) {
       return res.status(404).json({ success: false, error: 'Park not found' });
@@ -663,7 +664,7 @@ exports.getRelatedParks = async (req, res, next) => {
       ? Math.min(Math.max(parsedLimit, 1), 12)
       : 4;
 
-    const park = await npsService.getParkByCode(parkCode);
+    const park = await getNpsService().getParkByCode(parkCode);
     if (!park) {
       return res.status(404).json({
         success: false,
@@ -679,7 +680,7 @@ exports.getRelatedParks = async (req, res, next) => {
       });
     }
 
-    const allParks = await npsService.getAllParks();
+    const allParks = await getNpsService().getAllParks();
     const related = getRelatedParks(park, allParks, limit);
 
     res.set('Cache-Control', 'public, max-age=3600, s-maxage=86400');

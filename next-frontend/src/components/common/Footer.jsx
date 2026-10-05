@@ -10,6 +10,46 @@ import { usePWAInstall } from '../../hooks/usePWAInstall';
 import PWAInstallInstructionsModal from './PWAInstallInstructionsModal';
 import SyncStatus from './SyncStatus';
 
+const linkClass = 'transition hover:opacity-80';
+const linkStyle = { color: 'var(--text-secondary)' };
+
+function FooterSection({ title, children }) {
+  return (
+    <div className="min-w-0">
+      <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+        {title}
+      </h3>
+      <ul className="space-y-2 text-base sm:text-sm">{children}</ul>
+    </div>
+  );
+}
+
+function FooterLink({ href, children, external = false }) {
+  if (external) {
+    return (
+      <li>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass}
+          style={linkStyle}
+        >
+          {children}
+        </a>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <Link href={href} className={linkClass} style={linkStyle}>
+        {children}
+      </Link>
+    </li>
+  );
+}
+
 const Footer = () => {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
@@ -44,7 +84,10 @@ const Footer = () => {
           <div className="col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <img
-                src="/logo.png"
+                src="/brand/trailverse-logo-40.a8f681720be9.webp"
+                srcSet="/brand/trailverse-logo-40.a8f681720be9.webp 1x, /brand/trailverse-logo-80.5ba3166e4f83.webp 2x, /brand/trailverse-logo-120.c31aee090dd3.webp 3x"
+                width={32}
+                height={32}
                 alt="TrailVerse Logo"
                 className="w-8 h-8 rounded-lg object-contain"
               />
@@ -57,12 +100,12 @@ const Footer = () => {
             </p>
             <div className="flex items-center gap-3">
               <a
-                href="https://instagram.com/travelswithkrishna"
+                href="https://www.instagram.com/trailverseapp/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition hover:opacity-80"
-                style={{ color: 'var(--text-secondary)' }}
-                aria-label="Instagram"
+                className={linkClass}
+                style={linkStyle}
+                aria-label="TrailVerse on Instagram"
               >
                 <Instagram className="h-5 w-5" />
               </a>
@@ -70,8 +113,8 @@ const Footer = () => {
                 href="https://www.facebook.com/travelswithkrishna/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition hover:opacity-80"
-                style={{ color: 'var(--text-secondary)' }}
+                className={linkClass}
+                style={linkStyle}
                 aria-label="Facebook"
               >
                 <Facebook className="h-5 w-5" />
@@ -80,8 +123,8 @@ const Footer = () => {
                 href="https://www.tiktok.com/@travelswithkrishna"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition hover:opacity-80"
-                style={{ color: 'var(--text-secondary)' }}
+                className={linkClass}
+                style={linkStyle}
                 aria-label="TikTok"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -92,8 +135,8 @@ const Footer = () => {
                 href="https://www.google.com/maps/contrib/118219629305553937668"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition hover:opacity-80"
-                style={{ color: 'var(--text-secondary)' }}
+                className={linkClass}
+                style={linkStyle}
                 aria-label="Google Maps"
               >
                 <Map className="h-5 w-5" />
@@ -101,74 +144,86 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="min-w-0">
-            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Quick Links</h3>
-            <ul className="space-y-2 text-base sm:text-sm">
-              <li><Link href="/plan-ai" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Plan with Trailie</Link></li>
-              <li><Link href="/itineraries" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Sample Itineraries</Link></li>
-              <li><Link href="/explore" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Explore Parks</Link></li>
-              <li><Link href="/where-next" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Where Next</Link></li>
-              <li><Link href="/features" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Features</Link></li>
-              <li><Link href="/faq" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>FAQ</Link></li>
-              <li><Link href="/testimonials" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Testimonials</Link></li>
-              <li><Link href="/newsletter" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Newsletter</Link></li>
-              {!isAuthenticated && (
-                <li><Link href="/signup" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Sign up</Link></li>
-              )}
-              <li><a href="https://www.nps.gov" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>NPS Official Site</a></li>
-              {showInstallLink && (
-                <li><a href="#" onClick={handleInstall} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Install App</a></li>
-              )}
-            </ul>
-          </div>
+          <FooterSection title="Explore">
+            <FooterLink href="/plan-ai">Plan with Trailie</FooterLink>
+            <FooterLink href="/itineraries">Sample Itineraries</FooterLink>
+            <FooterLink href="/explore">Explore Parks</FooterLink>
+            <FooterLink href="/where-next">Where Next</FooterLink>
+            <FooterLink href="/features">Features</FooterLink>
+          </FooterSection>
 
-          {/* Resources */}
-          <div className="min-w-0">
-            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Resources</h3>
-            <ul className="space-y-2 text-base sm:text-sm">
-              <li><Link href="/blog" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Blog</Link></li>
-              <li><Link href="/guides" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Planning Guides</Link></li>
-              <li><Link href="/about" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>About</Link></li>
-              <li><Link href="/trailie-demo" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Trailie Demo</Link></li>
-              <li><Link href="/chatgpt" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>ChatGPT App</Link></li>
-              <li><Link href="/mcp" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>MCP for Claude</Link></li>
-              <li><Link href="/privacy" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Privacy Policy</Link></li>
-              <li><Link href="/terms" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Terms of Service</Link></li>
-            </ul>
-          </div>
+          <FooterSection title="Resources">
+            <FooterLink href="/blog">Blog</FooterLink>
+            <FooterLink href="/guides">Planning Guides</FooterLink>
+            <FooterLink href="/magazine">Magazine</FooterLink>
+            <li>
+              <a
+                href={reportHref('/reports/national-parks-2025.html', { from: reportFrom })}
+                className={linkClass}
+                style={linkStyle}
+              >
+                2025 Park Report
+              </a>
+            </li>
+            <li>
+              <a
+                href={reportHref('/reports/when-to-go', { from: reportFrom })}
+                className={linkClass}
+                style={linkStyle}
+              >
+                Crowd Calendar
+              </a>
+            </li>
+            <FooterLink href="/newsletter">Newsletter</FooterLink>
+          </FooterSection>
 
-          {/* Publications */}
-          <div className="min-w-0">
-            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Publications</h3>
-            <ul className="space-y-2 text-base sm:text-sm">
-              <li><a href={reportHref('/reports/national-parks-2025.html', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>2025 Park Report</a></li>
-              <li><a href={reportHref('/reports/when-to-go', { from: reportFrom })} className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Crowd Calendar</a></li>
-              <li><Link href="/magazine" className="transition hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>Magazine</Link></li>
-            </ul>
-          </div>
+          <FooterSection title="Company">
+            <FooterLink href="/about">About</FooterLink>
+            <FooterLink href="/faq">FAQ</FooterLink>
+            <FooterLink href="/testimonials">Testimonials</FooterLink>
+            <FooterLink href="/privacy">Privacy</FooterLink>
+            <FooterLink href="/terms">Terms</FooterLink>
+            {!isAuthenticated && (
+              <FooterLink href="/signup">Sign up</FooterLink>
+            )}
+            <li>
+              <a
+                href="mailto:trailverseteam@gmail.com"
+                className={`inline-flex items-center gap-2 ${linkClass}`}
+                style={linkStyle}
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                Email us
+              </a>
+            </li>
+            {isAuthenticated && (
+              <li>
+                <SyncStatus />
+              </li>
+            )}
+          </FooterSection>
 
-          {/* Contact */}
-          <div className="min-w-0">
-            <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Contact</h3>
-            <a
-              href="mailto:trailverseteam@gmail.com"
-              className="inline-flex items-center gap-2 text-sm transition hover:opacity-80"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <Mail className="h-4 w-4 shrink-0" />
-              <span className="lg:hidden">Email us</span>
-              <span className="hidden lg:inline">trailverseteam@gmail.com</span>
-            </a>
-
-            {/* Sync Status - Only show for authenticated users */}
-            {isAuthenticated && <SyncStatus />}
-          </div>
+          <FooterSection title="Apps">
+            <FooterLink href="/trailie-demo">Trailie Demo</FooterLink>
+            <FooterLink href="/chatgpt">ChatGPT App</FooterLink>
+            <FooterLink href="/mcp">MCP for Claude</FooterLink>
+            {showInstallLink && (
+              <li>
+                <a
+                  href="#"
+                  onClick={handleInstall}
+                  className={linkClass}
+                  style={linkStyle}
+                >
+                  Install App
+                </a>
+              </li>
+            )}
+          </FooterSection>
         </div>
 
-        {/* Bottom */}
         <div
-          className="mt-8 pt-8 border-t"
+          className="mt-8 pt-8 border-t flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
           style={{ borderColor: 'var(--border)' }}
         >
           <p className="text-xs sm:text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -176,6 +231,15 @@ const Footer = () => {
             <span className="hidden sm:inline"> · </span>
             <span className="block sm:inline mt-1 sm:mt-0">Not affiliated with the National Park Service.</span>
           </p>
+          <a
+            href="https://www.nps.gov"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${linkClass} text-xs sm:text-sm whitespace-nowrap`}
+            style={linkStyle}
+          >
+            NPS Official Site
+          </a>
         </div>
       </div>
 

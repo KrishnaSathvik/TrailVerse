@@ -8,6 +8,7 @@ const SiteSettings = require('../models/SiteSettings');
 const Analytics = require('../models/Analytics');
 const { ANONYMOUS_USER_MESSAGE_LIMIT } = require('../config/anonymousChatLimits');
 const { invalidateSiteSettingsCache } = require('../middleware/siteSettings');
+const { eraseAccountData } = require('../services/accountErasureService');
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
@@ -508,7 +509,10 @@ exports.deleteUser = async (req, res, next) => {
       });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await eraseAccountData({
+      userId: req.params.id,
+      actor: { type: 'admin', id: req.user._id },
+    });
 
     res.status(200).json({
       success: true,
@@ -569,7 +573,13 @@ exports.bulkActionUsers = async (req, res, next) => {
           });
         }
         
-        result = await User.deleteMany({ _id: { $in: filteredIds } });
+        for (const userId of filteredIds) {
+          await eraseAccountData({
+            userId,
+            actor: { type: 'admin', id: req.user._id },
+          });
+        }
+        result = { deletedCount: filteredIds.length };
         break;
       
       default:
@@ -760,7 +770,10 @@ exports.userAction = async (req, res, next) => {
           });
         }
         
-        await User.findByIdAndDelete(id);
+        await eraseAccountData({
+          userId: id,
+          actor: { type: 'admin', id: req.user._id },
+        });
         res.status(200).json({
           success: true,
           message: 'User deleted successfully'
