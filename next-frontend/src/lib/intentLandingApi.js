@@ -16,10 +16,6 @@ function searchFetchOptions(attempt) {
   if (process.env.NODE_ENV === 'development') {
     return { cache: 'no-store' };
   }
-  // Do not long-cache failed or empty responses from a flaky build-time fetch
-  if (attempt > 0) {
-    return { cache: 'no-store' };
-  }
   return { next: { revalidate: REVALIDATE_SECONDS } };
 }
 
@@ -120,7 +116,7 @@ export async function fetchIntentLandingParks(landing, { limit = DEFAULT_LIMIT }
     console.warn('[fetchIntentLandingParks]', landing.searchQuery, lastError.message);
   }
 
-  return { parks: [], totalCount: 0 };
+  throw lastError || new Error('Intent park rankings unavailable');
 }
 
 /**

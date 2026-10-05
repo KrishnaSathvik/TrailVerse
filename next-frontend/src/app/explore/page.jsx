@@ -6,10 +6,8 @@ import ExplorePageClient from './ExplorePageClient';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { canonicalPageMetadata } from '@/lib/seo';
 
-export async function generateMetadata({ searchParams }) {
-  const params = await searchParams;
-  return canonicalPageMetadata('/explore', params);
-}
+export const revalidate = 86400;
+export const metadata = canonicalPageMetadata('/explore');
 
 async function getInitialParks() {
   try {
@@ -18,12 +16,14 @@ async function getInitialParks() {
     });
 
     if (!response.ok) {
-      return undefined;
+      throw new Error(`Park directory upstream failed: ${response.status}`);
     }
 
-    return response.json();
-  } catch {
-    return undefined;
+    const json = await response.json();
+    if (json?.success === false || !Array.isArray(json?.data)) throw new Error('Invalid park directory');
+    return json;
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -35,13 +35,14 @@ async function getTotalSitesCount() {
     );
 
     if (!response.ok) {
-      return undefined;
+      throw new Error(`Park directory upstream failed: ${response.status}`);
     }
 
     const json = await response.json();
+    if (json?.success === false || !Number.isFinite(json?.total)) throw new Error('Invalid park count');
     return json.total;
-  } catch {
-    return undefined;
+  } catch (error) {
+    throw error;
   }
 }
 

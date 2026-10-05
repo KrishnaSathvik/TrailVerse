@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     const options = {
+      // This application release never creates collections or changes live indexes.
+      autoIndex: false,
+      autoCreate: false,
       maxPoolSize: 10, // Maximum number of connections
       minPoolSize: 2,  // Minimum number of connections
       socketTimeoutMS: 45000,

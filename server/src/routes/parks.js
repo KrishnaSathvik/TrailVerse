@@ -32,7 +32,7 @@ router.get('/', cacheMiddleware(86400), getAllParks);
 router.get('/search', searchParks);
 router.get('/map/places', getMapPlaces);
 router.get('/map/campgrounds', getMapCampgrounds);
-router.get('/:parkCode/details', getParkDetails);
+router.get('/:parkCode/details', cacheMiddleware(300, { cacheControl: 'public, max-age=60, s-maxage=300' }), getParkDetails);
 router.get('/:parkCode/alerts', getParkAlerts);
 router.get('/:parkCode/activities', getParkActivities);
 router.get('/:parkCode/campgrounds', getParkCampgrounds);

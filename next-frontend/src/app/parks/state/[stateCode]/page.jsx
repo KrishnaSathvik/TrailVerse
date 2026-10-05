@@ -7,105 +7,32 @@ import StateParkPageClient from './StateParkPageClient';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { fetchNpsGuide } from '@/lib/discoverApi';
 import { canonicalPageMetadata } from '@/lib/seo';
+import { fetchParksForState, getStateHub } from '@/lib/stateHubs';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://trailverse.onrender.com/api' : 'http://localhost:5001/api');
-
-// Full US state/territory name/code mapping
-const STATE_MAP = {
-  'alabama': { name: 'Alabama', code: 'AL' },
-  'alaska': { name: 'Alaska', code: 'AK' },
-  'arizona': { name: 'Arizona', code: 'AZ' },
-  'arkansas': { name: 'Arkansas', code: 'AR' },
-  'california': { name: 'California', code: 'CA' },
-  'colorado': { name: 'Colorado', code: 'CO' },
-  'connecticut': { name: 'Connecticut', code: 'CT' },
-  'delaware': { name: 'Delaware', code: 'DE' },
-  'district-of-columbia': { name: 'District of Columbia', code: 'DC' },
-  'florida': { name: 'Florida', code: 'FL' },
-  'georgia': { name: 'Georgia', code: 'GA' },
-  'hawaii': { name: 'Hawaii', code: 'HI' },
-  'idaho': { name: 'Idaho', code: 'ID' },
-  'illinois': { name: 'Illinois', code: 'IL' },
-  'indiana': { name: 'Indiana', code: 'IN' },
-  'iowa': { name: 'Iowa', code: 'IA' },
-  'kansas': { name: 'Kansas', code: 'KS' },
-  'kentucky': { name: 'Kentucky', code: 'KY' },
-  'louisiana': { name: 'Louisiana', code: 'LA' },
-  'maine': { name: 'Maine', code: 'ME' },
-  'maryland': { name: 'Maryland', code: 'MD' },
-  'massachusetts': { name: 'Massachusetts', code: 'MA' },
-  'michigan': { name: 'Michigan', code: 'MI' },
-  'minnesota': { name: 'Minnesota', code: 'MN' },
-  'mississippi': { name: 'Mississippi', code: 'MS' },
-  'missouri': { name: 'Missouri', code: 'MO' },
-  'montana': { name: 'Montana', code: 'MT' },
-  'nebraska': { name: 'Nebraska', code: 'NE' },
-  'nevada': { name: 'Nevada', code: 'NV' },
-  'new-hampshire': { name: 'New Hampshire', code: 'NH' },
-  'new-jersey': { name: 'New Jersey', code: 'NJ' },
-  'new-mexico': { name: 'New Mexico', code: 'NM' },
-  'new-york': { name: 'New York', code: 'NY' },
-  'north-carolina': { name: 'North Carolina', code: 'NC' },
-  'north-dakota': { name: 'North Dakota', code: 'ND' },
-  'ohio': { name: 'Ohio', code: 'OH' },
-  'oklahoma': { name: 'Oklahoma', code: 'OK' },
-  'oregon': { name: 'Oregon', code: 'OR' },
-  'pennsylvania': { name: 'Pennsylvania', code: 'PA' },
-  'rhode-island': { name: 'Rhode Island', code: 'RI' },
-  'south-carolina': { name: 'South Carolina', code: 'SC' },
-  'south-dakota': { name: 'South Dakota', code: 'SD' },
-  'tennessee': { name: 'Tennessee', code: 'TN' },
-  'texas': { name: 'Texas', code: 'TX' },
-  'utah': { name: 'Utah', code: 'UT' },
-  'vermont': { name: 'Vermont', code: 'VT' },
-  'virginia': { name: 'Virginia', code: 'VA' },
-  'washington': { name: 'Washington', code: 'WA' },
-  'west-virginia': { name: 'West Virginia', code: 'WV' },
-  'wisconsin': { name: 'Wisconsin', code: 'WI' },
-  'wyoming': { name: 'Wyoming', code: 'WY' },
-  'american-samoa': { name: 'American Samoa', code: 'AS' },
-  'guam': { name: 'Guam', code: 'GU' },
-  'puerto-rico': { name: 'Puerto Rico', code: 'PR' },
-  'virgin-islands': { name: 'Virgin Islands', code: 'VI' },
-};
-
-async function getParksForState(stateCode) {
-  try {
-    const res = await fetch(`${BASE_URL}/parks?all=true`, {
-      next: { revalidate: 86400 }
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return json.data.filter(park =>
-      park.states && park.states.toUpperCase().includes(stateCode.toUpperCase())
-    );
-  } catch {
-    return [];
-  }
-}
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
-  return Object.keys(STATE_MAP).map(stateCode => ({ stateCode }));
+  // Warm on demand instead of competing for the public API quota during builds.
+  return [];
 }
 
-export async function generateMetadata({ params, searchParams }) {
+export async function generateMetadata({ params }) {
   const { stateCode } = await params;
-  const sp = searchParams ? await searchParams : undefined;
-  const state = STATE_MAP[stateCode];
+  const state = getStateHub(stateCode);
   if (!state) return { title: '404 - Page Not Found | TrailVerse' };
 
-  const parks = await getParksForState(state.code);
-  const parkCount = parks.length;
+  const { ok, parks } = await fetchParksForState(state.code);
+  const parkCount = ok ? parks.length : null;
   const canonicalPath = `/parks/state/${stateCode}`;
+  const countLabel = parkCount == null ? 'NPS Sites' : `All ${parkCount} NPS Sites`;
 
   return {
-    title: `${state.name} National Parks & Sites — All ${parkCount} NPS Sites | TrailVerse`,
-    description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Compare parks, plan with Trailie, check real-time weather, and find campgrounds.`,
-    ...canonicalPageMetadata(canonicalPath, sp),
+    title: `${state.name} National Parks & Sites — ${countLabel} | TrailVerse`,
+    description: `Explore National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Compare parks, plan with Trailie, check real-time weather, and find campgrounds.`,
+    ...canonicalPageMetadata(canonicalPath),
     openGraph: {
-      title: `${state.name} National Parks & Sites — ${parkCount} NPS Sites`,
-      description: `Explore all ${parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Trailie trip planning, real-time weather, and campground info.`,
+      title: `${state.name} National Parks & Sites — ${countLabel}`,
+      description: `Explore ${parkCount == null ? 'all' : parkCount} National Park Service sites in ${state.name} — national parks, monuments, historic sites & more. Trailie trip planning, real-time weather, and campground info.`,
       url: `https://www.nationalparksexplorerusa.com${canonicalPath}`,
       siteName: 'TrailVerse',
       type: 'website',
@@ -114,6 +41,10 @@ export async function generateMetadata({ params, searchParams }) {
 }
 
 function buildStateIntro(stateName, parks) {
+  if (!parks.length) {
+    return `National Park Service sites in ${stateName}. Browse the directory below when it is available, compare parks, and plan your trip with TrailVerse.`;
+  }
+
   const sampleNames = parks
     .slice(0, 4)
     .map((park) => park.fullName)
@@ -135,11 +66,13 @@ function buildStateIntro(stateName, parks) {
 
 export default async function StateParkPage({ params }) {
   const { stateCode } = await params;
-  const state = STATE_MAP[stateCode];
+  const state = getStateHub(stateCode);
   if (!state) notFound();
 
-  const parks = await getParksForState(state.code);
-  if (parks.length === 0) notFound();
+  const { ok, parks } = await fetchParksForState(state.code);
+  // Failed regeneration must keep the last successful page, not cache an empty directory.
+  if (!ok) throw new Error(`Unable to load parks for ${state.code}`);
+  const loadError = false;
 
   const [intro, npsGuide] = await Promise.all([
     Promise.resolve(buildStateIntro(state.name, parks)),
@@ -182,6 +115,7 @@ export default async function StateParkPage({ params }) {
               parks={parks}
               intro={intro}
               npsGuide={npsGuide}
+              loadError={loadError}
             />
           </Suspense>
         </main>

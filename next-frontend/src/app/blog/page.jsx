@@ -6,43 +6,23 @@ import { getBlogCategoriesServer, getBlogPostsServer } from '@/lib/blogApi';
 import { mapBlogNavCategories } from '@/lib/blogCategories';
 import { canonicalPageMetadata } from '@/lib/seo';
 
-const ARCHIVE_PAGE_SIZE = 9;
+export const revalidate = 3600;
+export const metadata = canonicalPageMetadata('/blog');
 
-export async function generateMetadata({ searchParams }) {
-  const params = await searchParams;
-  return canonicalPageMetadata('/blog', params);
-}
-
-export default async function BlogPage({ searchParams }) {
-  const params = await searchParams;
-  const initialTag = typeof params?.tag === 'string' ? params.tag.trim() : '';
-
+export default async function BlogPage() {
   const [categoriesData, featuredData, popularData] = await Promise.all([
     getBlogCategoriesServer(),
     getBlogPostsServer({ limit: 2, page: 1, featured: true }),
     getBlogPostsServer({ limit: 2, page: 1, sortBy: 'views' }),
   ]);
 
-  let posts = [];
-  let totalPages = 1;
-
-  if (initialTag) {
-    const postsData = await getBlogPostsServer({
-      page: 1,
-      limit: ARCHIVE_PAGE_SIZE,
-      tag: initialTag,
-    });
-    posts = postsData.data || [];
-    totalPages = Math.max(1, Math.ceil((postsData.total || 0) / ARCHIVE_PAGE_SIZE));
-  }
-
   const initialData = {
-    initialTag,
+    initialTag: '',
     categories: mapBlogNavCategories(categoriesData.data),
     featuredPosts: featuredData.data || [],
     popularPosts: (popularData.data || []).slice(0, 2),
-    posts,
-    totalPages,
+    posts: [],
+    totalPages: 1,
   };
 
   return (

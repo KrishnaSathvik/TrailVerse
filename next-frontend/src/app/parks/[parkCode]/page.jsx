@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { getAllParkSlugs, getParkDetails, getParkDetailsBySlug, PARK_PAGE_REVALIDATE_SECONDS } from '@/lib/parkApi';
+import { getParkDetails, getParkDetailsBySlug, PARK_PAGE_REVALIDATE_SECONDS } from '@/lib/parkApi';
 import {
   buildParkMetaDescription,
   buildParkPageTitle,
@@ -25,19 +25,13 @@ import { canonicalPageMetadata } from '@/lib/seo';
 export const revalidate = 604800;
 
 export async function generateStaticParams() {
-  try {
-    const parkSlugs = await getAllParkSlugs();
-    // Only generate slug URLs — code-based URLs (e.g. /parks/yell) are
-    // handled dynamically and redirect to the canonical slug URL
-    return parkSlugs.map(({ slug }) => ({ parkCode: slug }));
-  } catch {
-    return [];
-  }
+  // Generate each park once on demand, then serve its ISR cache. Building every
+  // park at once exhausts the public API rate limit and can create false 404s.
+  return [];
 }
 
-export async function generateMetadata({ params, searchParams }) {
+export async function generateMetadata({ params }) {
   const { parkCode } = await params;
-  const sp = searchParams ? await searchParams : undefined;
   // If parkCode is longer than 4 chars, it's a slug — look up by slug
   let data = parkCode.length > 4
     ? await getParkDetailsBySlug(parkCode)
@@ -69,7 +63,7 @@ export async function generateMetadata({ params, searchParams }) {
     title,
     description,
     keywords: `${park.fullName}, ${park.states} national park, visit ${park.fullName}, ${park.fullName} guide, ${park.fullName} hiking, ${park.fullName} camping`,
-    ...canonicalPageMetadata(`/parks/${slug}`, sp),
+    ...canonicalPageMetadata(`/parks/${slug}`),
     openGraph: {
       title,
       description,
@@ -87,10 +81,8 @@ export async function generateMetadata({ params, searchParams }) {
   };
 }
 
-export default async function ParkPage({ params, searchParams }) {
+export default async function ParkPage({ params }) {
   const { parkCode } = await params;
-  const sp = await searchParams;
-  const initialTab = typeof sp?.tab === 'string' && sp.tab ? sp.tab : 'overview';
   // If parkCode is longer than 4 chars, it's a slug — look up by slug
   let data = parkCode.length > 4
     ? await getParkDetailsBySlug(parkCode)
@@ -232,7 +224,6 @@ export default async function ParkPage({ params, searchParams }) {
         <ParkDetailClient
           initialData={data}
           parkCode={parkCode}
-          initialTab={initialTab}
           relatedParks={relatedParks}
           seoLeadLine={seoLeadLine}
           stateHubSlug={stateHubSlug}

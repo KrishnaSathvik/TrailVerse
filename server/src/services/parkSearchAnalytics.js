@@ -1,6 +1,8 @@
 const crypto = require('crypto');
 const { randomUUID } = crypto;
 const Analytics = require('../models/Analytics');
+const { classifyBot } = require('../utils/botClassifier');
+const { persistAnalytics } = require('./analyticsWriter');
 
 function sessionIdForRequest(req) {
   if (req.session?.sessionId) return req.session.sessionId;
@@ -28,7 +30,7 @@ function sessionIdForRequest(req) {
  */
 function logParkSearch(req, { query, state, activity, parks, source }) {
   const searchTerm = query || activity || state || null;
-  if (!searchTerm) return null;
+  if (!searchTerm || classifyBot(req.get('User-Agent')).isBot) return null;
 
   const searchId = randomUUID();
   const topParkIds = parks.slice(0, 10).map((p) => p.id || p.parkCode);
@@ -46,7 +48,7 @@ function logParkSearch(req, { query, state, activity, parks, source }) {
     source: resolvedSource,
   };
 
-  Analytics.create({
+  void persistAnalytics(() => Analytics.create({
     eventType: 'search',
     eventCategory: 'engagement',
     sessionId: sessionIdForRequest(req),
@@ -55,17 +57,15 @@ function logParkSearch(req, { query, state, activity, parks, source }) {
     ipAddress: req.ip,
     metadata,
     parkCode: topParkIds[0] || null,
-  }).catch((err) => {
-    console.warn('[parkSearchAnalytics] log failed:', err.message);
-  });
+  }));
 
   return searchId;
 }
 
 function logParkSearchClick(req, { searchId, searchTerm, parkCode, parkName, surface }) {
-  if (!parkCode) return;
+  if (!parkCode || classifyBot(req.get('User-Agent')).isBot) return;
 
-  Analytics.create({
+  void persistAnalytics(() => Analytics.create({
     eventType: 'user_action',
     eventCategory: 'engagement',
     sessionId: sessionIdForRequest(req),
@@ -82,9 +82,7 @@ function logParkSearchClick(req, { searchId, searchTerm, parkCode, parkName, sur
       surface: surface || 'unknown',
       source: req.isTrustedMcp ? 'mcp' : 'api',
     },
-  }).catch((err) => {
-    console.warn('[parkSearchAnalytics] click log failed:', err.message);
-  });
+  }));
 }
 
 module.exports = { logParkSearch, logParkSearchClick };

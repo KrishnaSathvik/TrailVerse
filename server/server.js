@@ -28,19 +28,7 @@ const { loadDynamicMap } = require('./src/utils/parkExtractor');
 
 // Connect to database
 connectDB().then(async () => {
-  // Migrate legacy emailNotifications: boolean → { blogNotifications: Boolean }
-  try {
-    const { db } = require('mongoose').connection;
-    const result = await db.collection('users').updateMany(
-      { emailNotifications: { $type: 'bool' } },
-      [{ $set: { emailNotifications: { blogNotifications: '$emailNotifications' } } }]
-    );
-    if (result.modifiedCount > 0) {
-      console.log(`✅ Migrated emailNotifications for ${result.modifiedCount} user(s)`);
-    }
-  } catch (err) {
-    console.warn('⚠️ emailNotifications migration skipped:', err.message);
-  }
+  // Data migrations are separate, explicitly approved operations.
 
   // Start schedulers after database connection is established
   startScheduler();

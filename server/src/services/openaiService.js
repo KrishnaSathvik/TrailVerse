@@ -14,7 +14,7 @@ class OpenAIService {
     this.systemPrompt = buildOpenAIArchitectPrompt();
   }
 
-  async chat(messages, customSystemPrompt = null) {
+  async chat(messages, customSystemPrompt = null, requestOptions = {}) {
     try {
       const systemPrompt = customSystemPrompt || this.systemPrompt;
       const messagesWithSystem = [{ role: 'system', content: systemPrompt }, ...messages];
@@ -28,7 +28,7 @@ class OpenAIService {
             messages: messagesWithSystem,
             temperature: 0.4,
             max_completion_tokens: 4096,
-          });
+          }, requestOptions);
           return response.choices[0].message.content;
         } catch (err) {
           lastError = err;

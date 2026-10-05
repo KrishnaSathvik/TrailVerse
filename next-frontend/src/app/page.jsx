@@ -49,7 +49,7 @@ export const metadata = {
 
 async function getAllParks() {
   try {
-    const response = await fetch(`${getApiBaseUrl()}/parks?all=true&nationalParksOnly=true`, {
+    const response = await fetch(`${getApiBaseUrl()}/parks?all=true&nationalParksOnly=true&fields=parkCode,fullName,states,images`, {
       next: { revalidate: 86400 }
     });
 

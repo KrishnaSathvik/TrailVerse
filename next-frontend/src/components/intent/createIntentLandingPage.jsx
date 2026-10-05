@@ -15,12 +15,11 @@ import { canonicalPageMetadata } from '@/lib/seo';
  * @param {string} path — e.g. /parks-for-couples
  */
 export function createIntentLandingPageExports(path) {
-  async function generateMetadata({ searchParams }) {
+  async function generateMetadata() {
     const landing = getIntentLandingByPath(path);
     if (!landing) return { title: 'Not Found | TrailVerse' };
 
     const canonical = getIntentLandingCanonicalUrl(landing);
-    const params = searchParams ? await searchParams : undefined;
 
     return {
       title: landing.metadataTitle,
@@ -39,7 +38,7 @@ export function createIntentLandingPageExports(path) {
         description: landing.metaDescription,
         images: ['/og/guides.jpg'],
       },
-      ...canonicalPageMetadata(path, params),
+      ...canonicalPageMetadata(path),
     };
   }
 
