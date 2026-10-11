@@ -10,7 +10,7 @@ import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
  * send path instead of leaving the captured playback as its own dead end.
  */
 export default function TrailieDemoCta({ className = '', askPrompt = null }) {
-  const planHref = askPrompt ? `/plan-ai?ask=${encodeURIComponent(askPrompt)}` : '/plan-ai';
+  const planHref = askPrompt ? `/plan-ai?entry=new-trip&ask=${encodeURIComponent(askPrompt)}` : '/plan-ai';
 
   return (
     <div

@@ -1,5 +1,6 @@
 'use client';
 
+import { groundedPlaceType } from '@/lib/tripPresentation';
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Mountain, Tent, Info, Home, Utensils, Clock, MoreVertical, Plus, ArrowLeft, ExternalLink, Trash2 } from '@components/icons';
 
@@ -80,7 +81,7 @@ function groupStopsByPeriod(stops) {
 function CompactStopCard({ stop, dayId, allDays, selectedStopId, onStopClick, onRemoveStop, onMoveStop }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const meta = TYPE_META[stop.type] || TYPE_META.custom;
+  const meta = { ...(TYPE_META[stop.type] || TYPE_META.custom), label: groundedPlaceType(stop) || '', color: 'var(--text-secondary)' };
   const Icon = meta.icon;
   const isSelected = stop.id === selectedStopId;
 

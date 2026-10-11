@@ -131,3 +131,8 @@ describe('mapServerMessagesToUi', () => {
     expect(assistant.canonicalPlan).toBeUndefined();
   });
 });
+
+it('preserves the guest conversation scope across a reload', () => {
+  const [message] = mapServerMessagesToUi([{role:'user',content:'A named chat',conversationId:'named-chat'}]);
+  expect(message.conversationId).toBe('named-chat');
+});

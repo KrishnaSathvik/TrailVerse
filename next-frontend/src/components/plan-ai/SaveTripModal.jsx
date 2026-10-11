@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   X, Mountain, Check, Mail, Lock, User, Eye, EyeOff, LogIn, Sparkles
@@ -15,9 +16,12 @@ export default function SaveTripModal({
   onClose,
   parkName,
   anonymousId,
+  conversationId = null,
   formData,
   messages,
   reason = 'save-itinerary',
+  initialMode = 'signup',
+  surface = null,
 }) {
   const { signup, login } = useAuth();
   const { showToast } = useToast();
@@ -36,14 +40,51 @@ export default function SaveTripModal({
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
 
-  if (!isOpen) return null;
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    setMode(initialMode === 'login' ? 'login' : 'signup');
+    setSignupSuccess(false);
+    setErrors({});
+  }, [isOpen, initialMode]);
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialogRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key !== 'Tab') return;
+      const controls = [...dialogRef.current.querySelectorAll('button, input, a[href], [tabindex="0"]')]
+        .filter(element => !element.disabled && element.getClientRects().length);
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
+
 
   const storeChatContext = () => {
     const chatContext = {
       anonymousId,
+      conversationId,
       parkName,
       formData,
       messages,
+      // The workspace the guest asked to open; migration lands there directly.
+      surface,
       timestamp: Date.now(),
     };
     localStorage.setItem('returnToChat', JSON.stringify(chatContext));
@@ -130,15 +171,20 @@ export default function SaveTripModal({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-lg overflow-hidden rounded-3xl shadow-2xl"
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-trip-form-title"
+        className="relative flex max-h-[calc(100dvh-2rem)] w-full min-w-0 max-w-lg flex-col overflow-y-auto rounded-2xl"
         style={{
-          backgroundColor: 'var(--bg-primary)',
+          backgroundColor: 'var(--surface)',
           borderWidth: '1px',
           borderColor: 'var(--border)',
           boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)'
@@ -147,10 +193,10 @@ export default function SaveTripModal({
       >
         {/* Header */}
         <div
-          className="border-b px-5 py-4 sm:px-6"
+          className="shrink-0 border-b px-5 py-4 sm:px-6"
           style={{
             borderColor: 'var(--border)',
-            background: 'linear-gradient(180deg, rgba(67, 160, 106, 0.05) 0%, rgba(255,255,255,0) 100%)'
+            backgroundColor: 'var(--surface)'
           }}
         >
           <div className="flex items-start justify-between gap-4">
@@ -165,7 +211,7 @@ export default function SaveTripModal({
                 <Mountain className="h-3.5 w-3.5" />
                 {prompt.badge || 'Save Trip'}
               </div>
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              <h2 id="save-trip-form-title" className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 {prompt.title}
               </h2>
               <p className="mt-1 text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
@@ -188,19 +234,12 @@ export default function SaveTripModal({
             </button>
           </div>
 
-          <ul className="mt-4 space-y-1.5">
-            {prompt.benefits.map((prop) => (
-              <li key={prop} className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <Check className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--accent-green)' }} />
-                {prop}
-              </li>
-            ))}
-          </ul>
+
         </div>
 
         {/* Scrollable body */}
         <div
-          className="max-h-[calc(90vh-280px)] overflow-y-auto px-5 py-5 sm:px-6"
+          className="min-w-0 px-5 py-5 sm:px-6"
           style={{ backgroundColor: 'var(--bg-primary)' }}
         >
           {/* Tab toggle */}
@@ -259,7 +298,7 @@ export default function SaveTripModal({
 
           {mode === 'signup' && !signupSuccess ? (
             <form onSubmit={handleSignup} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
@@ -268,7 +307,7 @@ export default function SaveTripModal({
                       value={signupData.firstName}
                       onChange={e => handleSignupChange('firstName', e.target.value)}
                       placeholder="First name"
-                      className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                      className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         border: `1px solid ${errors.firstName ? '#ef4444' : 'var(--border)'}`,
@@ -286,7 +325,7 @@ export default function SaveTripModal({
                       value={signupData.lastName}
                       onChange={e => handleSignupChange('lastName', e.target.value)}
                       placeholder="Last name"
-                      className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                      className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                       style={{
                         backgroundColor: 'var(--surface-hover)',
                         border: `1px solid ${errors.lastName ? '#ef4444' : 'var(--border)'}`,
@@ -306,7 +345,7 @@ export default function SaveTripModal({
                     value={signupData.email}
                     onChange={e => handleSignupChange('email', e.target.value)}
                     placeholder="Email address"
-                    className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.email ? '#ef4444' : 'var(--border)'}`,
@@ -325,7 +364,7 @@ export default function SaveTripModal({
                     value={signupData.password}
                     onChange={e => handleSignupChange('password', e.target.value)}
                     placeholder="Password (8+ characters)"
-                    className="w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.password ? '#ef4444' : 'var(--border)'}`,
@@ -352,7 +391,7 @@ export default function SaveTripModal({
                     value={signupData.confirmPassword}
                     onChange={e => handleSignupChange('confirmPassword', e.target.value)}
                     placeholder="Confirm password"
-                    className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.confirmPassword ? '#ef4444' : 'var(--border)'}`,
@@ -396,7 +435,8 @@ export default function SaveTripModal({
                 type="submit"
                 disabled={isLoading}
                 loading={isLoading}
-                variant="primary"
+                variant="success"
+                style={{ color: '#fff', boxShadow: 'none' }}
                 size="md"
                 icon={Sparkles}
                 className="w-full"
@@ -422,7 +462,7 @@ export default function SaveTripModal({
                     onChange={e => handleLoginChange('email', e.target.value)}
                     placeholder="Email address"
                     autoFocus={!signupSuccess}
-                    className="w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-3 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.email ? '#ef4444' : 'var(--border)'}`,
@@ -441,7 +481,7 @@ export default function SaveTripModal({
                     value={loginData.password}
                     onChange={e => handleLoginChange('password', e.target.value)}
                     placeholder="Password"
-                    className="w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
+                    className="min-w-0 w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition"
                     style={{
                       backgroundColor: 'var(--surface-hover)',
                       border: `1px solid ${errors.password ? '#ef4444' : 'var(--border)'}`,
@@ -464,12 +504,13 @@ export default function SaveTripModal({
                 type="submit"
                 disabled={isLoading}
                 loading={isLoading}
-                variant="primary"
+                variant="success"
+                style={{ color: '#fff', boxShadow: 'none' }}
                 size="md"
                 icon={LogIn}
                 className="w-full"
               >
-                {isLoading ? 'Signing in...' : `${prompt.secondaryCta} & Save`}
+                {isLoading ? 'Signing in...' : prompt.loginCta || `${prompt.secondaryCta} & Save`}
               </Button>
 
               <div className="flex items-center justify-between text-xs">
@@ -484,6 +525,7 @@ export default function SaveTripModal({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,558 +1,125 @@
 import React from 'react';
-import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
-import PdfHeader from './components/PdfHeader';
-import PdfPageNumbers from './components/PdfPageNumbers';
-import PdfBlogEndCard from './components/PdfBlogEndCard';
-import PdfBrandBar from './components/PdfBrandBar';
-import PdfAccentText from './components/PdfAccentText';
-import PdfAlertStyleCard from './components/PdfAlertStyleCard';
-import { PDF_COLORS, PDF_FONT, PDF_SPACING, PDF_SITE } from './pdfDesignTokens';
-import { formatPdfDate, formatPdfDuration, resolveTripShareUrl, toAbsoluteAssetUrl, isPlaceholderHeroUrl } from './pdfUtils';
-import { getSharedDayHeading as getDayHeading } from '@/utils/sharedTripFormat';
+import { Document, Page, View, Text, Link, StyleSheet } from '@react-pdf/renderer';
+import { buildTripPdfModel } from './tripPdfModel';
 
+const green = '#047857';
 const styles = StyleSheet.create({
-  coverPage: {
-    backgroundColor: PDF_COLORS.bg,
-    paddingHorizontal: PDF_SPACING.pageX,
-    paddingTop: 36,
-    paddingBottom: 48,
-  },
-  categoryPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: PDF_COLORS.green,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginBottom: 16,
-  },
-  categoryText: {
-    fontSize: 9,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.white,
-  },
-  title: {
-    fontSize: 26,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.text,
-    lineHeight: 1.15,
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 12,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textMuted,
-    lineHeight: 1.5,
-    marginBottom: 16,
-  },
-  byline: {
-    fontSize: 9.5,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textMuted,
-    lineHeight: 1.45,
-    marginBottom: 4,
-  },
-  bylineGenerated: {
-    fontSize: 8.5,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textLight,
-    marginBottom: 18,
-  },
-  coverMeta: {
-    marginBottom: 18,
-  },
-  hero: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    objectFit: 'cover',
-    marginBottom: 8,
-  },
-  page: {
-    backgroundColor: PDF_COLORS.bgPage,
-    paddingTop: PDF_SPACING.pageTop,
-    paddingBottom: PDF_SPACING.pageBottom,
-    paddingHorizontal: PDF_SPACING.pageX,
-    fontFamily: PDF_FONT.family,
-    fontSize: 10,
-    color: PDF_COLORS.text,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontFamily: PDF_FONT.familyBold,
-    marginTop: 14,
-    marginBottom: 8,
-    color: PDF_COLORS.text,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: PDF_COLORS.border,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 12,
-  },
-  chip: {
-    backgroundColor: PDF_COLORS.greenLight,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  chipText: {
-    fontSize: 7.5,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.greenDark,
-  },
-  dayCard: {
-    backgroundColor: PDF_COLORS.surfaceHover,
-    borderWidth: 1,
-    borderColor: PDF_COLORS.border,
-    borderLeftWidth: 4,
-    borderLeftColor: PDF_COLORS.green,
-    borderRadius: 10,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  dayHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: PDF_COLORS.border,
-  },
-  dayHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    paddingRight: 8,
-  },
-  dayBadge: {
-    backgroundColor: PDF_COLORS.greenLight,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginRight: 8,
-  },
-  dayBadgeText: {
-    fontSize: 7,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.greenDark,
-  },
-  dayTitle: {
-    fontSize: 11,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.text,
-    flex: 1,
-    lineHeight: 1.35,
-  },
-  dayDate: {
-    fontSize: 8,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textMuted,
-  },
-  dayBody: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  stopRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  timeCol: {
-    width: 40,
-    paddingRight: 6,
-    flexShrink: 0,
-  },
-  timeText: {
-    fontSize: 8.5,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.green,
-  },
-  stopContent: {
-    flex: 1,
-    paddingLeft: 8,
-    borderLeftWidth: 2,
-    borderLeftColor: PDF_COLORS.border,
-  },
-  stopName: {
-    fontSize: 10,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.text,
-    lineHeight: 1.35,
-  },
-  stopNote: {
-    fontSize: 8.5,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textMuted,
-    marginTop: 2,
-    lineHeight: 1.4,
-  },
-  stopMeta: {
-    fontSize: 7.5,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textLight,
-    marginTop: 2,
-  },
-  listItem: {
-    flexDirection: 'row',
-    marginBottom: 4,
-    paddingLeft: 2,
-  },
-  bullet: {
-    width: 14,
-    fontSize: 10,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.green,
-  },
-  listText: {
-    flex: 1,
-    fontSize: 10,
-    lineHeight: 1.5,
-    color: PDF_COLORS.text,
-    fontFamily: PDF_FONT.family,
-  },
-  costCard: {
-    backgroundColor: PDF_COLORS.surfaceHover,
-    borderWidth: 1,
-    borderColor: PDF_COLORS.border,
-    borderLeftWidth: 4,
-    borderLeftColor: PDF_COLORS.greenDark,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  costRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: PDF_COLORS.border,
-  },
-  costRowLast: {
-    flexDirection: 'row',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: PDF_COLORS.greenLight,
-  },
-  costLabel: {
-    flex: 1,
-    fontSize: 9.5,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textMuted,
-  },
-  costValue: {
-    fontSize: 9.5,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.text,
-  },
-  emptyText: {
-    fontSize: 10,
-    fontFamily: PDF_FONT.family,
-    color: PDF_COLORS.textMuted,
-    lineHeight: 1.5,
-    marginBottom: 12,
-  },
-  shareSection: {
-    marginTop: 20,
-    marginBottom: 4,
-  },
-  shareSectionTitle: {
-    fontSize: 13,
-    fontFamily: PDF_FONT.familyBold,
-    color: PDF_COLORS.text,
-    marginBottom: 10,
-  },
+  page: { backgroundColor: '#ffffff', paddingTop: 64, paddingBottom: 60, paddingHorizontal: 48, fontFamily: 'Helvetica', fontSize: 10.5, color: '#292d2a' },
+  running: { position: 'absolute', top: 25, left: 48, right: 48, fontSize: 8, color: '#647069', borderBottomWidth: 0.5, borderBottomColor: '#dce2dd', paddingBottom: 7 },
+  footer: { position: 'absolute', bottom: 24, left: 48, right: 48, flexDirection: 'row', justifyContent: 'space-between', fontSize: 8, color: '#647069' },
+  brand: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: green, letterSpacing: 2, marginBottom: 16 },
+  title: { fontSize: 28, fontFamily: 'Helvetica-Bold', lineHeight: 1.15, marginBottom: 10 },
+  subtitle: { fontSize: 14, color: green, marginBottom: 14 },
+  bases: { fontSize: 11, color: '#505c54', marginBottom: 7 },
+  section: { fontSize: 14, fontFamily: 'Helvetica-Bold', marginTop: 24, marginBottom: 10 },
+  overviewRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#e1e6e2', paddingVertical: 10 },
+  dayLabel: { color: green, fontSize: 9, fontFamily: 'Helvetica-Bold', letterSpacing: 1, marginBottom: 6 },
+  overviewLabel: { width: 58, color: green, fontSize: 9, fontFamily: 'Helvetica-Bold' },
+  overviewTitle: { flex: 1, fontSize: 11 },
+  dayTitle: { fontSize: 20, fontFamily: 'Helvetica-Bold', lineHeight: 1.2, marginBottom: 7 },
+  dayHeader: { marginTop: 12, marginBottom: 15 },
+  base: { fontSize: 10, color: '#57665e' },
+  stop: { borderTopWidth: 0.5, borderTopColor: '#dce2dd', paddingTop: 12, marginBottom: 18 },
+  time: { color: green, fontSize: 10, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
+  stopTitle: { fontSize: 13, fontFamily: 'Helvetica-Bold', lineHeight: 1.3, marginBottom: 4 },
+  meta: { fontSize: 9, color: '#647069', marginBottom: 7 },
+  note: { fontSize: 10.5, lineHeight: 1.55 },
+  transfer: { fontSize: 9, color: green, marginBottom: 9 },
+  caveat: { fontSize: 9, color: '#57665e', marginTop: 6 },
+  source: { fontSize: 8, color: green, marginTop: 7, textDecoration: 'none' },
+  bullet: { fontSize: 10, lineHeight: 1.55, marginBottom: 6 },
 });
 
-function formatGroupSizeChip(size) {
-  const value = Number(size);
-  if (!value || Number.isNaN(value)) return String(size);
-  return value === 1 ? '1 traveler' : `${value} travelers`;
+function Frame({ title }) {
+  return <Text fixed style={styles.running}>Trailie · {title}</Text>;
 }
-
-function formatMetaLabel(value) {
-  const text = String(value || '').trim();
-  if (!text) return '';
-  return text.charAt(0).toUpperCase() + text.slice(1);
+function Footer() {
+  return <View fixed style={styles.footer}>
+    <Text>Generated with Trailie · TrailVerse</Text>
+    <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
+  </View>;
 }
-
-function joinMetaParts(parts) {
-  return parts.filter(Boolean).join('\u00A0·\u00A0');
+function splitNote(note) {
+  const sentence = note.split(/(?<=\.)\s+/)[0];
+  const limit = sentence.length > 400 ? sentence.lastIndexOf(' ', 400) : sentence.length;
+  const opening = note.slice(0, limit > 0 ? limit : 400);
+  return [opening, note.slice(opening.length).trim()];
 }
-
-function buildCoverMetaLines(formData, plan, generatedOn) {
-  const schedule = [];
-
-  if (formData.startDate || formData.endDate) {
-    const start = formatPdfDate(formData.startDate);
-    const end = formData.endDate ? formatPdfDate(formData.endDate) : null;
-    schedule.push(end ? `${start} — ${end}` : start);
-  }
-  if (plan.totalDays) schedule.push(`${plan.totalDays} days`);
-
-  const details = [];
-  if (formData.groupSize) details.push(formatGroupSizeChip(formData.groupSize));
-  if (formData.budget) details.push(`${formatMetaLabel(formData.budget)} budget`);
-  if (formData.fitnessLevel) details.push(`${formatMetaLabel(formData.fitnessLevel)} fitness`);
-  if (formData.accommodation) details.push(formatMetaLabel(formData.accommodation));
-
-  return {
-    schedule: schedule.length ? joinMetaParts(schedule) : null,
-    details: details.length ? joinMetaParts(details) : null,
-    generatedOn: generatedOn ? `Generated ${generatedOn}` : null,
-  };
+function StopStart({ stop }) {
+  return <View style={{ ...styles.stop, marginBottom: 0 }} wrap={false}>
+      {stop.transfer && <Text style={styles.transfer}>{stop.transfer}</Text>}
+      {stop.time && <Text style={styles.time}>{stop.time}</Text>}
+      <Text style={styles.stopTitle}>{stop.number}. {stop.name}</Text>
+      {stop.timingReason && <Text style={styles.meta}>{stop.timingReason}</Text>}
+      {stop.meta && <Text style={styles.meta}>{stop.meta}</Text>}
+      {/* Keep the title and opening description together; long notes can flow. */}
+      {stop.note && <Text style={styles.note} orphans={3} widows={3}>{splitNote(stop.note)[0]}</Text>}
+  </View>;
 }
-
-function TripCoverMeta({ formData, plan, generatedOn }) {
-  const lines = buildCoverMetaLines(formData, plan, generatedOn);
-
-  if (!lines.schedule && !lines.details && !lines.generatedOn) return null;
-
-  return (
-    <View style={styles.coverMeta}>
-      {lines.schedule ? <Text style={styles.byline}>{lines.schedule}</Text> : null}
-      {lines.details ? <Text style={styles.byline}>{lines.details}</Text> : null}
-      {lines.generatedOn ? <Text style={styles.bylineGenerated}>{lines.generatedOn}</Text> : null}
-    </View>
-  );
+function StopRest({ stop }) {
+  return <View style={{ marginBottom: 18 }}>
+    {splitNote(stop.note)[1] && <Text style={styles.note} orphans={3} widows={3}>{splitNote(stop.note)[1]}</Text>}
+    {stop.caveats.map((note, i) => <Text key={i} style={styles.caveat}>{note}</Text>)}
+    {stop.sourceUrl && <Link src={stop.sourceUrl} style={styles.source}>Place details and current information</Link>}
+  </View>;
 }
-
-function ListSection({ title, items }) {
-  if (!items?.length) return null;
-
-  const [firstItem, ...restItems] = items;
-
-  const renderItem = (item, index) => {
-    const text = typeof item === 'string' ? item : (item.name || item.label || item.notes || String(item));
-    return (
-      <View key={`${title}-${index}`} style={styles.listItem}>
-        <Text style={styles.bullet}>-</Text>
-        <Text style={styles.listText}>{text}</Text>
-      </View>
-    );
-  };
-
-  return (
-    <View>
-      <View wrap={false} minPresenceAhead={48}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {renderItem(firstItem, 0)}
-      </View>
-      {restItems.map((item, index) => renderItem(item, index + 1))}
-    </View>
-  );
+function Stop({ stop }) {
+  return <View wrap={stop.note.length > 1400}><StopStart stop={stop} /><StopRest stop={stop} /></View>;
 }
-
-function StopRow({ stop }) {
-  return (
-    <View style={styles.stopRow} wrap={false}>
-      <View style={styles.timeCol}>
-        <Text style={styles.timeText}>{stop.startTime || '-'}</Text>
-      </View>
-      <View style={styles.stopContent}>
-        <Text style={styles.stopName}>{stop.name}</Text>
-        {stop.note ? <Text style={styles.stopNote}>{stop.note}</Text> : null}
-        {stop.duration ? (
-          <Text style={styles.stopMeta}>Duration: {formatPdfDuration(stop.duration)}</Text>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function DayCard({ day, dayIndex }) {
-  const stops = day.stops || [];
-  const [firstStop, ...restStops] = stops;
-  const { badge, title } = getDayHeading(day, dayIndex);
-
-  return (
-    <View style={styles.dayCard}>
-      <View wrap={false} minPresenceAhead={72}>
-        <View style={styles.dayHeader}>
-          <View style={styles.dayHeaderLeft}>
-            <View style={styles.dayBadge}>
-              <Text style={styles.dayBadgeText}>{badge}</Text>
-            </View>
-            {title ? <Text style={styles.dayTitle}>{title}</Text> : null}
-          </View>
-          {day.date ? <Text style={styles.dayDate}>{formatPdfDate(day.date)}</Text> : null}
-        </View>
-
-        <View style={styles.dayBody}>
-          {firstStop ? (
-            <StopRow stop={firstStop} />
-          ) : (
-            <Text style={{ fontSize: 9, color: PDF_COLORS.textLight }}>No stops added yet</Text>
-          )}
-        </View>
-      </View>
-
-      {restStops.length > 0 ? (
-        <View style={[styles.dayBody, { paddingTop: 0 }]}>
-          {restStops.map((stop, stopIndex) => (
-            <StopRow key={stop.id || `${day.id}-stop-${stopIndex + 1}`} stop={stop} />
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function CostSection({ estimatedCost }) {
-  if (!estimatedCost) return null;
-
-  return (
-    <View wrap={false} minPresenceAhead={120}>
-      <Text style={styles.sectionTitle}>Estimated Cost</Text>
-      <View style={styles.costCard}>
-        {estimatedCost.entranceFee ? (
-          <View style={styles.costRow}>
-            <Text style={styles.costLabel}>Entrance Fee</Text>
-            <Text style={styles.costValue}>{estimatedCost.entranceFee}</Text>
-          </View>
-        ) : null}
-        {estimatedCost.camping ? (
-          <View style={styles.costRow}>
-            <Text style={styles.costLabel}>Camping</Text>
-            <Text style={styles.costValue}>{estimatedCost.camping}</Text>
-          </View>
-        ) : null}
-        {estimatedCost.total ? (
-          <View style={styles.costRowLast}>
-            <Text style={{ ...styles.costLabel, fontFamily: PDF_FONT.familyBold, color: PDF_COLORS.text }}>
-              Total Estimate
-            </Text>
-            <Text style={{ ...styles.costValue, color: PDF_COLORS.greenDark }}>
-              {estimatedCost.total}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
 export function TripPDFDocument({ trip }) {
-  const plan = trip.plan || {};
-  const formData = trip.formData || {};
-  const days = plan.days || [];
-  const highlights = plan.highlights || [];
-  const packingList = plan.packingList || [];
-  const permits = plan.permits || [];
-  const estimatedCost = plan.estimatedCost || null;
-  const tripTitle = trip.title || `${trip.parkName || 'National Park'} Trip Plan`;
-  const shareUrl = resolveTripShareUrl(trip);
-  const resolvedHero = toAbsoluteAssetUrl(trip.heroImage);
-  const heroImage = resolvedHero && !isPlaceholderHeroUrl(resolvedHero) ? resolvedHero : null;
-
-  const today = new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-
-  const chips = [
-    plan.totalDays ? `${plan.totalDays} days` : null,
-    formData.groupSize ? formatGroupSizeChip(formData.groupSize) : null,
-    formData.budget ? `${formatMetaLabel(formData.budget)} budget` : null,
-    formData.fitnessLevel ? `${formatMetaLabel(formData.fitnessLevel)} fitness` : null,
-    formData.accommodation ? formatMetaLabel(formData.accommodation) : null,
-  ].filter(Boolean);
-
-  const hasContent = days.length > 0
-    || highlights.length > 0
-    || packingList.length > 0
-    || permits.length > 0
-    || estimatedCost;
-
-  return (
-    <Document
-      title={tripTitle}
-      author={PDF_SITE.name}
-      subject={`${trip.parkName || 'National Park'} Trip Plan`}
-      creator="Trailie by TrailVerse"
-    >
-      <Page size="A4" style={styles.coverPage}>
-        <PdfBrandBar />
-
-        <View style={styles.categoryPill}>
-          <Text style={styles.categoryText}>Trip Plan</Text>
+  const model = buildTripPdfModel(trip);
+  return <Document title={`${model.destination} · ${model.duration}`} author="TrailVerse" creator="Trailie by TrailVerse" subject="Travel itinerary">
+    <Page size="LETTER" style={styles.page}>
+      <Frame title={model.destination} />
+      <Text style={styles.brand}>TRAILIE / TRAILVERSE</Text>
+      <Text style={styles.title}>{model.destination}</Text>
+      <Text style={styles.subtitle}>{model.duration}</Text>
+      {model.bases && <Text style={styles.bases}>{model.bases.replaceAll('→', ' / ')}</Text>}
+      {model.schedule && <Text style={styles.bases}>{model.schedule}</Text>}
+      <Text style={styles.section}>Your trip at a glance</Text>
+      {model.days.map(day => <View key={day.number} style={styles.overviewRow} wrap={false}>
+        <Text style={styles.overviewLabel}>DAY {day.number}</Text><Text style={styles.overviewTitle}>{day.title}</Text>
+      </View>)}
+      <View minPresenceAhead={100}>
+        <Text style={styles.section}>Before you go</Text>
+        {model.beforeYouGo.map(line => <Text key={line} style={styles.bullet}>• {line}</Text>)}
+      </View>
+      <Footer />
+    </Page>
+    {model.days.map(day => <Page key={day.number} size="LETTER" style={styles.page} wrap>
+      <Frame title={`${model.destination} · Day ${day.number}`} />
+      <View wrap={false}>
+        <View style={styles.dayHeader}>
+          <Text style={styles.dayLabel}>DAY {day.number}{day.dayType ? ` · ${day.dayType}` : ''}{day.date ? ` · ${day.date}` : ''}</Text>
+          <Text style={styles.dayTitle}>{day.title}</Text>
+          {day.summary && <Text style={styles.note}>{day.summary}</Text>}
+          {day.base && <Text style={styles.base}>Overnight base · {day.base}</Text>}
         </View>
+        {!day.blocks.length && day.stops[0] && <StopStart stop={day.stops[0]} />}
+      </View>
+      {!day.blocks.length && day.stops[0] && <StopRest stop={day.stops[0]} />}
+      {day.blocks.length ? day.blocks.map((block, i) => <React.Fragment key={i}>
+        <View style={{ marginBottom: 12 }} wrap={false}>
+          <Text style={styles.dayLabel}>{block.periods.join(' - ').toUpperCase()}</Text>
+          {block.time && <Text style={styles.time}>{block.time}</Text>}
+          <Text style={styles.stopTitle}>{block.label}</Text>
+          <Text style={styles.note}>{block.note}</Text>
+          {block.timingReason && <Text style={styles.meta}>{block.timingReason}</Text>}
+        </View>
+        {block.stopNumbers.map(n => <Stop key={n} stop={day.stops[n - 1]} />)}
+      </React.Fragment>) : day.stops.slice(1).map(stop => <Stop key={stop.number} stop={stop} />)}
+      {day.blocks.length ? day.stops.filter(stop => !day.blocks.some(block => block.stopNumbers.includes(stop.number))).map(stop => <Stop key={stop.number} stop={stop} />) : null}
+      <Footer />
+    </Page>)}
+    {(model.packing.length > 0 || model.permits.length > 0) && <Page size="LETTER" style={styles.page} wrap>
+      <Frame title={model.destination} />
+      {[['Packing list', model.packing], ['Permits and reservations', model.permits]].filter(([, items]) => items.length).map(([title, items]) => <View key={title}>
+        <Text style={styles.section} minPresenceAhead={50}>{title}</Text>
+        {items.map((item, i) => <Text key={i} style={styles.bullet}>• {item}</Text>)}
+      </View>)}
+      <Footer />
+    </Page>}
 
-        <Text style={styles.title}>{tripTitle}</Text>
-
-        {trip.parkName ? (
-          <PdfAccentText style={{ marginBottom: 16 }}>
-            <Text style={styles.subtitle}>
-              {trip.parkName} · Planned with Trailie
-            </Text>
-          </PdfAccentText>
-        ) : null}
-
-        <TripCoverMeta formData={formData} plan={plan} generatedOn={today} />
-        {heroImage ? <Image src={heroImage} style={styles.hero} /> : null}
-      </Page>
-
-      <Page size="A4" style={styles.page} wrap>
-        <PdfHeader subtitle="Trip Plan" />
-
-        {!hasContent ? (
-          <Text style={styles.emptyText}>
-            Your itinerary details will appear here once Trailie finishes building your plan.
-          </Text>
-        ) : null}
-
-        {days.length > 0 ? (
-          <View>
-            <View wrap={false} minPresenceAhead={56}>
-              <Text style={styles.sectionTitle}>Day-by-Day Itinerary</Text>
-
-              {chips.length > 0 ? (
-                <View style={styles.chipRow}>
-                  {chips.map((chip) => (
-                    <View key={chip} style={styles.chip}>
-                      <Text style={styles.chipText}>{chip}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-
-            {days.map((day, index) => (
-              <DayCard key={day.id || `day-${index}`} day={day} dayIndex={index} />
-            ))}
-          </View>
-        ) : null}
-
-        <ListSection title="Highlights" items={highlights} />
-        <ListSection title="Packing List" items={packingList} />
-        <ListSection title="Permits & Reservations" items={permits} />
-        <CostSection estimatedCost={estimatedCost} />
-
-        {shareUrl ? (
-          <View style={styles.shareSection} wrap={false} minPresenceAhead={110}>
-            <Text style={styles.shareSectionTitle}>Your trip online</Text>
-            <PdfAlertStyleCard
-              accentColor={PDF_COLORS.greenDark}
-              badgeBg={PDF_COLORS.greenLight}
-              badgeColor={PDF_COLORS.greenDark}
-              badgeLabel="Shared plan"
-              title="View this trip online"
-              body="Anyone with this link can open your live itinerary on TrailVerse — no login required."
-              buttonLabel="Open trip"
-              url={shareUrl}
-            />
-          </View>
-        ) : null}
-
-        <PdfBlogEndCard />
-        <PdfPageNumbers />
-      </Page>
-    </Document>
-  );
+  </Document>;
 }
-
 export default TripPDFDocument;

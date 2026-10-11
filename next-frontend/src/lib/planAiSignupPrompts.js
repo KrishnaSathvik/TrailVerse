@@ -4,6 +4,9 @@ export const SIGNUP_PROMPT_REASONS = {
   MESSAGE_LIMIT: 'message-limit',
   SAVE_ITINERARY: 'save-itinerary',
   SAVE_CHAT: 'save-chat',
+  OPEN_TRIP: 'open-trip',
+  LIMIT_WITH_TRIP: 'limit-with-trip',
+  LIMIT_WITHOUT_TRIP: 'limit-without-trip',
 };
 
 const DEFAULT_BENEFITS = [
@@ -16,6 +19,31 @@ const DEFAULT_BENEFITS = [
 ];
 
 const PROMPTS = {
+  // Trip-aware gates. Chosen from canonical trip state, never from reply prose.
+  [SIGNUP_PROMPT_REASONS.OPEN_TRIP]: {
+    badge: 'Your trip',
+    title: 'Your trip is ready',
+    subtitle: 'Create a free account or sign in to open the full itinerary, map and keep planning.',
+    primaryCta: 'Create free account',
+    secondaryCta: 'Sign in',
+    loginCta: 'Sign in and open trip',
+  },
+  [SIGNUP_PROMPT_REASONS.LIMIT_WITH_TRIP]: {
+    badge: 'Your trip',
+    title: 'Your trip is ready',
+    subtitle: 'Create a free account or sign in to keep this conversation, open your itinerary and map, and continue planning.',
+    primaryCta: 'Create free account',
+    secondaryCta: 'Sign in',
+    loginCta: 'Sign in and keep planning',
+  },
+  [SIGNUP_PROMPT_REASONS.LIMIT_WITHOUT_TRIP]: {
+    badge: 'Keep planning',
+    title: 'Keep planning with Trailie',
+    subtitle: 'Create a free account to continue this conversation.',
+    primaryCta: 'Create free account',
+    secondaryCta: 'Sign in',
+    loginCta: 'Sign in and continue',
+  },
   [SIGNUP_PROMPT_REASONS.MESSAGE_LIMIT]: {
     badge: 'Continue planning',
     title: "You've Used Your 5 Free Messages",

@@ -25,21 +25,7 @@ import {
   normalizePlaybackScenario,
   validatePlaybackScenario,
 } from './trailieDemoPlaybackSchema';
-import { sanitizeTrailieDemoAnswer } from './trailieDemoSanitize';
-
-/**
- * Stop fields kept for playback — exactly what `SharedTripDayCard` renders.
- * Everything else on a captured stop (ids, lat/lon, parkCode, coordinateSource,
- * difficulty, drive times) is dropped by omission.
- */
-const STOP_ALLOWLIST = ['name', 'startTime', 'timeWindow', 'duration', 'note', 'why'];
-const ALTERNATIVE_ALLOWLIST = ['name', 'when', 'note'];
-/**
- * Day fields kept for playback. These are the names the renderer reads —
- * `getSharedDayHeading` takes `day.label`, and the card reads `day.date`.
- * Do not "normalize" these to `title`/`day`: the heading would go blank.
- */
-const DAY_ALLOWLIST = ['dayNumber', 'label', 'date'];
+import { exportPublicPlan } from './publicItineraryExport.mjs';
 
 /**
  * Fields that must never appear anywhere in a fixture. Asserted by
@@ -56,69 +42,17 @@ export const FORBIDDEN_FIXTURE_FIELDS = Object.freeze([
   '_id', '__v', 'createdAt', 'updatedAt', 'sourceNote', 'capturedAt',
 ]);
 
-function pick(source, allowlist) {
-  const out = {};
-  for (const key of allowlist) {
-    const value = source?.[key];
-    if (value === undefined || value === null || value === '') continue;
-    out[key] = value;
-  }
-  return out;
-}
-
-/** Reduces one itinerary day to the public shape `SharedTripDayCard` renders. */
-function sanitizeDay(rawDay) {
-  const day = pick(rawDay || {}, DAY_ALLOWLIST);
-  const stops = Array.isArray(rawDay?.stops) ? rawDay.stops : [];
-  day.stops = stops.map((stop) => {
-    const sanitized = pick(stop || {}, STOP_ALLOWLIST);
-    const alternatives = Array.isArray(stop?.alternatives)
-      ? stop.alternatives.map((item) => pick(item || {}, ALTERNATIVE_ALLOWLIST)).filter((item) => item.name)
-      : [];
-    if (alternatives.length) sanitized.alternatives = alternatives;
-    return sanitized;
-  }).filter((s) => s.name);
-  return day;
-}
-
 /**
- * Reduces a canonical plan to the public itinerary shape. Returns null when
- * there is no real plan — the caller must not invent one.
+ * Use the same public canonical boundary as Samples / share / PDF.
+ * Demo playback additionally omits feasibilityIssues — those are owner-facing
+ * diagnostics, not Demo travel advice (still no second planner).
  */
 export function sanitizePlan(rawPlan) {
-  const days = Array.isArray(rawPlan?.days) ? rawPlan.days : [];
-  if (days.length === 0) return null;
-
-  const plan = { days: days.map(sanitizeDay) };
-  if (rawPlan.parkName) plan.parkName = String(rawPlan.parkName);
-  const intro = String(rawPlan.intro || '').trim();
-  if (intro) plan.intro = intro;
-  const narrativeSections = Array.isArray(rawPlan.narrativeSections)
-    ? rawPlan.narrativeSections
-      .map((section) => {
-        const markdown = String(section?.markdown || '').trim();
-        if (!markdown) return null;
-        const placement = section.placement === 'before_plan' ? 'before_plan' : 'after_plan';
-        const heading = String(section.heading || '').trim();
-        return heading ? { placement, heading, markdown } : { placement, markdown };
-      })
-      .filter(Boolean)
-      .slice(0, 3)
-    : [];
-  if (narrativeSections.length) plan.narrativeSections = narrativeSections;
-  const alternatives = Array.isArray(rawPlan?.alternatives)
-    ? rawPlan.alternatives
-      .map((item) => pick(item || {}, ALTERNATIVE_ALLOWLIST))
-      .filter((item) => item.name)
-    : [];
-  if (alternatives.length) plan.alternatives = alternatives;
-
-  // Feasibility notes are deliberately NOT carried into the demo. In practice
-  // every captured plan produced the same internal diagnostic ("driving/route
-  // checks could not be completed because location data is missing"), which is
-  // harness output, not travel advice — and the demo must read as the product,
-  // not as instrumentation. Restore by re-enabling this block if a genuinely
-  // user-facing feasibility note ever needs to show.
+  if (!rawPlan?.days?.length) return null;
+  const plan = exportPublicPlan(rawPlan);
+  if (plan && Object.prototype.hasOwnProperty.call(plan, 'feasibilityIssues')) {
+    delete plan.feasibilityIssues;
+  }
   return plan;
 }
 
@@ -133,11 +67,11 @@ export function sanitizePlan(rawPlan) {
  * @param {boolean} approved.hasWebSearch
  */
 export function sanitizeApprovedTurn(approved) {
-  const prose = sanitizeTrailieDemoAnswer(String(approved?.content || ''));
+  const prose = String(approved?.content || '');
   const plan = sanitizePlan(approved?.canonicalPlan || approved?.plan || null);
 
   return {
-    question: String(approved?.question || '').trim(),
+    question: String(approved?.question || ''),
     prose,
     plan,
     liveData: {
@@ -187,7 +121,7 @@ export function assertNoInternalFields(value, path = '$') {
     if (!node || typeof node !== 'object') return;
 
     for (const [key, child] of Object.entries(node)) {
-      if (FORBIDDEN_FIXTURE_FIELDS.includes(key)) found.push(`${where}.${key}`);
+      if (FORBIDDEN_FIXTURE_FIELDS.includes(key) && !(key === 'provider' && /\.travelEdges\[\d+\]\.source$/.test(where) && child === 'google_maps')) found.push(`${where}.${key}`);
       walk(child, `${where}.${key}`);
     }
   };

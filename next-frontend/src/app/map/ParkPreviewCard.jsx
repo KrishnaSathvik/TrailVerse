@@ -112,16 +112,16 @@ export default function ParkPreviewCard({
 
   return (
     <div
-      className={`overflow-hidden rounded-[32px] border shadow-[0_30px_90px_-30px_rgba(15,23,42,0.7)] backdrop-blur-xl ${className}`}
+      className={`overflow-hidden rounded-2xl border shadow-[0_30px_90px_-30px_rgba(15,23,42,0.7)] ${className}`}
       style={{
         borderColor: 'var(--border)',
-        backgroundColor: 'var(--surface)',
+        backgroundColor: 'var(--bg-secondary)',
         color: 'var(--text-primary)',
       }}
     >
       <div
         className="sticky top-0 z-10 flex items-start justify-between px-5 pt-5 pb-2"
-        style={{ backgroundColor: 'var(--surface)' }}
+        style={{ backgroundColor: 'var(--bg-secondary)' }}
       >
         <div
           className="inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]"
@@ -159,7 +159,7 @@ export default function ParkPreviewCard({
           <OptimizedImage
             src={primaryImage.url}
             alt={primaryImage.altText || park.fullName}
-            className="h-52 w-full rounded-[24px] object-cover"
+            className="h-52 w-full rounded-xl object-cover"
             loading="eager"
           />
         </div>
@@ -194,7 +194,7 @@ export default function ParkPreviewCard({
         <button
           type="button"
           onClick={() => onViewDetails(park.parkCode)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
         >
           View Park Details
           <ArrowRight className="h-4 w-4" />
@@ -204,7 +204,7 @@ export default function ParkPreviewCard({
           <button
             type="button"
             onClick={() => onCompare(park.parkCode)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] px-4 py-3 text-sm font-semibold transition border"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition border"
             style={{
               color: 'var(--accent-green)',
               borderColor: 'color-mix(in srgb, var(--accent-green) 40%, var(--border) 60%)',

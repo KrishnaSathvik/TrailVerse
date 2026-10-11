@@ -27,7 +27,7 @@ export default function MapLegend({
         compact ? 'px-3 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
       }`}
       style={{
-        backgroundColor: compact ? 'var(--bg-secondary)' : 'color-mix(in srgb, var(--bg-secondary) 92%, transparent)',
+        backgroundColor: 'var(--bg-secondary)',
         borderColor: 'var(--border)',
         color: 'var(--text-secondary)',
       }}
@@ -49,7 +49,7 @@ export default function MapLegend({
       <button
         type="button"
         onClick={onTogglePlaces}
-        className="flex items-center gap-1.5 transition active:opacity-80"
+        className="public-action min-h-11 border border-[var(--border)] px-2 flex items-center gap-1.5 transition active:opacity-80"
         style={{
           color: showPlaces ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}
@@ -71,7 +71,7 @@ export default function MapLegend({
       <button
         type="button"
         onClick={onToggleCampgrounds}
-        className="flex items-center gap-1.5 transition active:opacity-80"
+        className="public-action min-h-11 border border-[var(--border)] px-2 flex items-center gap-1.5 transition active:opacity-80"
         style={{
           color: showCampgrounds ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}

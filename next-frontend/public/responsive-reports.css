@@ -1,0 +1,21 @@
+/* Standalone reports share app widths and gutters, while retaining their artwork. */
+body[data-public-report] nav {
+  padding-inline: max(var(--public-gutter), calc((100vw - var(--public-shell-width)) / 2 + var(--public-gutter)));
+}
+body[data-public-report] :is(.section-content, .hero, .search-section, .page-shell, .main-card, .reservation-panel) {
+  box-sizing: border-box;
+  max-width: var(--public-shell-width);
+  padding-inline: var(--public-gutter);
+}
+body[data-public-report] :is(.body-text, .hero-subtitle, .hero-sub, .vs-lead, .rp-lead) { max-width: var(--public-reading-width); }
+body[data-public-report] :is(button, .nav-back, a.hero-pill) { min-height: var(--public-control-height); }
+body[data-public-report] .nav-back { display: inline-flex; align-items: center; font-size: 14px; }
+body[data-public-report="crowd"] .qp-btn { font-size: 14px; }
+body[data-public-report="crowd"] .qp-chips { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+body[data-public-report="crowd"] .qp-btn { flex-shrink: 0; }
+body[data-public-report="crowd"] .monthly-table { overflow-x: auto; overscroll-behavior-x: contain; }
+body[data-public-report="crowd"] :is(.mt-header, .mt-row) { min-width: 1000px; grid-template-columns: 120px repeat(12, minmax(0, 1fr)); }
+body[data-public-report="crowd"] :is(.mt-header div, .mt-label, .mt-bar-val, .bar-month) { font-size: 14px; }
+body[data-public-report="crowd"] .mt-bar-wrap { height: 36px; }
+body[data-public-report="crowd"] .mt-bar { min-width: fit-content; }
+body[data-public-report="crowd"] .cal-cell { min-height: var(--public-control-height); }

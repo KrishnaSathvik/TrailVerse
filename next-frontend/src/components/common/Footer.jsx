@@ -75,10 +75,10 @@ const Footer = () => {
 
   return (
     <footer
-      className="text-gray-300"
-      style={{ backgroundColor: 'var(--bg-primary)' }}
+      className="public-footer border-t"
+      style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border)' }}
     >
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 py-12">
+      <div className="public-shell py-12">
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-5 lg:gap-8">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
@@ -180,7 +180,7 @@ const Footer = () => {
           <FooterSection title="Company">
             <FooterLink href="/about">About</FooterLink>
             <FooterLink href="/faq">FAQ</FooterLink>
-            <FooterLink href="/testimonials">Testimonials</FooterLink>
+            <FooterLink href="/testimonials">Traveler Stories</FooterLink>
             <FooterLink href="/privacy">Privacy</FooterLink>
             <FooterLink href="/terms">Terms</FooterLink>
             {!isAuthenticated && (

@@ -54,3 +54,9 @@ describe('hasActivePlanAiConversation', () => {
     expect(hasActivePlanAiConversation()).toBe(false);
   });
 });
+
+it('replaces an old cache with an explicitly selected empty saved chat', () => {
+  saveTempChatState({ messages: [{role:'user',content:'Old local message'}] });
+  expect(saveTempChatState({ currentTripId:null, guestSessionId:'guest', guestConversationId:null, messages:[] })).toBe(true);
+  expect(JSON.parse(localStorage.getItem('planai-chat-state'))).toEqual({currentTripId:null,guestSessionId:'guest',guestConversationId:null,messages:[]});
+});

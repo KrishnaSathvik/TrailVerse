@@ -94,9 +94,9 @@ export default async function LandingPage() {
           />
           <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
           <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,transparent_0%,rgba(0,0,0,0.35)_100%)]" />
-          <div className="relative z-10 flex min-h-[inherit] w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16 lg:px-10 lg:py-20">
-            <div className="w-full max-w-3xl mx-auto text-center">
-              <p className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm">
+          <div className="public-shell relative z-10 flex min-h-[inherit] flex-col justify-center py-8 sm:py-14 lg:py-16">
+            <div className="w-full max-w-[700px] mx-auto text-center">
+              <p className="animate-fade-in mb-4 inline-flex items-center gap-2 text-sm font-medium text-white/90">
                 <IconGlyph name="Mountain" className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
                 {LANDING_HERO_BADGE}
               </p>
@@ -106,7 +106,7 @@ export default async function LandingPage() {
                 style={{ fontFamily: 'var(--font-display)' }}
               >
                 {LANDING_HERO_HEADLINE}
-                <span className="block text-[var(--accent-green)]">{LANDING_HERO_HEADLINE_ACCENT}</span>
+                <span className="block text-emerald-300">{LANDING_HERO_HEADLINE_ACCENT}</span>
               </h1>
 
               <p className="animate-fade-in mx-auto mb-6 max-w-2xl text-sm leading-relaxed text-white/80 text-balance sm:mb-8 sm:text-base">
@@ -118,8 +118,8 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="relative z-20 px-4 sm:px-6 lg:px-10 xl:px-12 pt-6 sm:pt-8 pb-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="max-w-[92rem] mx-auto">
+        <section className="relative z-20 public-shell pt-6 sm:pt-8 pb-2" style={{ backgroundColor: 'var(--bg-primary)' }}>
+          <div className="public-full">
             <div className="relative mx-auto w-full max-w-3xl">
               <LandingSearchClient />
             </div>
@@ -127,14 +127,14 @@ export default async function LandingPage() {
         </section>
 
         <section className={`relative z-0 pt-6 sm:pt-8 pb-0 ${LANDING_SECTION_X}`} style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="max-w-[92rem] mx-auto">
+          <div className="public-full">
             <div className={`flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${LANDING_SECTION_HEADER_MB}`}>
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 ring-1" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <div className="public-eyebrow" >
                   <IconGlyph name="Mountain" className="h-4 w-4" style={{ color: 'var(--text-primary)' }} />
                   <span className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Popular Destinations</span>
                 </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Start exploring</h2>
+                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Start exploring</h2>
                 <p className="text-base sm:text-lg mt-2 max-w-lg" style={{ color: 'var(--text-secondary)' }}>Iconic destinations loved by millions — click any park to dive in</p>
               </div>
               <Link href="/explore" className="hidden sm:flex items-center gap-1.5 font-semibold text-sm hover:underline flex-shrink-0 whitespace-nowrap" style={{ color: 'var(--accent-green)' }}>
@@ -148,7 +148,7 @@ export default async function LandingPage() {
             <div className="mt-6 sm:hidden">
               <Link
                 href="/explore"
-                className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold"
+                className="public-action w-full px-5 text-sm font-semibold"
                 style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
                 View All 470+ Parks & Sites

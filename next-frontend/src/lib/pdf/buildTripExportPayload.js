@@ -2,6 +2,7 @@ import {
   VIEWER_CONTEXT,
   deriveTrailieStoredPresentation,
 } from '@/utils/trailieStoredPresentation';
+import { exportPublicPlan, PUBLIC_PLAN_FIELDS } from '@/lib/publicItineraryExport.mjs';
 
 /**
  * Stage 14.5 §7 — what an export is allowed to contain.
@@ -10,42 +11,13 @@ import {
  * share, so a revision-1 trip exports as a complete itinerary with a bounded
  * label rather than a document with a blank "Trip notes" section.
  *
- * The export path has always been plan-only, and stays that way: this builder
- * carries the canonical plan and a label, never conversation prose, never
- * revision/lease/provider internals, and it never triggers prose recovery.
+ * The plan body uses the shared public export boundary (`exportPublicPlan`) —
+ * Architecture Lock Step 7 — so PDF, share, Demo, and Samples do not diverge.
  */
-
-/**
- * Stage 14.7F5 §11 — ALLOWLIST, mirrored from the server's
- * `utils/planProjection.js` (parity is asserted by the export tests).
- *
- * This was a denylist of known-internal keys, which meant any field added to the
- * canonical plan later would be exported automatically. Now a key survives only
- * by being named here.
- */
-const PUBLIC_PLAN_FIELDS = [
-  'type',
-  'version',
-  'generatedAt',
-  'createdFrom',
-  'parkName',
-  'parkCode',
-  'days',
-  'totalDays',
-  'highlights',
-  'packingList',
-  'permits',
-  'estimatedCost',
-  'feasibilityIssues',
-];
 
 function sanitizePlanForExport(plan) {
   if (!plan || typeof plan !== 'object') return null;
-  const out = {};
-  for (const field of PUBLIC_PLAN_FIELDS) {
-    if (Object.prototype.hasOwnProperty.call(plan, field)) out[field] = plan[field];
-  }
-  return out;
+  return exportPublicPlan(plan, { requireDays: false });
 }
 
 /** The latest assistant turn is what determines the notes state. */

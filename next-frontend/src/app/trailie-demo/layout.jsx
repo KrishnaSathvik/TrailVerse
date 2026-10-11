@@ -4,7 +4,7 @@ const CANONICAL = 'https://www.nationalparksexplorerusa.com/trailie-demo';
 
 const TITLE = 'Trailie Demo — Outdoor & National Park Trip Planning | TrailVerse';
 const DESCRIPTION =
-  'Preview Trailie with sample outdoor trip chats — national parks, state parks, comparisons, permits, and multi-day itineraries. No sign-in for the demo; sign in on live chat for saved trips and state-park web search.';
+  'Explore five recorded Trailie conversations: park recommendations, Zion and Bryce planning, realistic road trips, and Yellowstone and Glacier itinerary refinements. No sign-in needed to watch.';
 
 export const metadata = {
   title: TITLE,

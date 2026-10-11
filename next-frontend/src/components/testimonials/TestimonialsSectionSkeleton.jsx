@@ -27,7 +27,7 @@ export default function TestimonialsSectionSkeleton({ showTitle = true }) {
 
   return (
     <div className={LANDING_SECTION} aria-hidden="true">
-      <div className="max-w-[92rem] mx-auto">
+      <div className="public-shell">
         {showTitle ? (
           <div className={`text-center ${LANDING_SECTION_HEADER_MB}`}>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>

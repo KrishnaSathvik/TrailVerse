@@ -30,8 +30,8 @@ const HubSkeleton = () => (
       <div key={section}>
         <div className="h-8 w-48 rounded-2xl animate-pulse mb-6" style={{ backgroundColor: 'var(--surface)' }} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-[2rem] h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
-          <div className="rounded-[2rem] h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          <div className="rounded-xl h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
+          <div className="rounded-xl h-[26rem] animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />
         </div>
       </div>
     ))}
@@ -49,9 +49,9 @@ const ArchiveSkeleton = () => (
 const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
   <Link
     href={`/blog/${post.slug}`}
-    className="group relative min-h-[22rem] sm:min-h-[26rem] rounded-[2rem] overflow-hidden block"
+    className="group relative min-h-[22rem] sm:min-h-[26rem] rounded-xl overflow-hidden block"
     style={{
-      backgroundColor: 'var(--surface)',
+      backgroundColor: 'var(--bg-secondary)',
       borderWidth: '1px',
       borderColor: 'var(--border)'
     }}
@@ -59,7 +59,7 @@ const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
     <OptimizedImage src={post.featuredImage} alt={post.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
     <div className="relative h-full flex flex-col justify-end p-6 sm:p-8">
-      <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur mb-4">
+      <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white mb-4">
         {badge}
       </span>
       <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3 sm:mb-4 max-w-2xl">{post.title}</h2>
@@ -174,15 +174,10 @@ const BlogContent = ({ initialData }) => {
     <>
       <Suspense fallback={null}><BlogQueryState onTagChange={onTagChange} /></Suspense>
       <section className="relative overflow-hidden border-b py-5 sm:py-8" style={{ borderColor: 'var(--border)' }}>
-        <div className="relative z-10 max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
           <div>
             <div
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
+              className="public-eyebrow"
             >
               <BookOpen className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
@@ -190,10 +185,10 @@ const BlogContent = ({ initialData }) => {
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none mb-4" style={{ color: 'var(--text-primary)' }}>
+            <h1 className="public-page-title mb-4" style={{ color: 'var(--text-primary)' }}>
               Travel Journal
             </h1>
-            <p className="text-lg sm:text-xl max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="public-page-intro" style={{ color: 'var(--text-secondary)' }}>
               Expert guides, travel tips, and inspiring stories from America&apos;s national parks.
             </p>
           </div>
@@ -207,7 +202,7 @@ const BlogContent = ({ initialData }) => {
       </section>
 
       <section className="pb-24">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           {loading ? (
             showArchive ? <ArchiveSkeleton /> : <HubSkeleton />
           ) : (
@@ -347,10 +342,8 @@ const BlogContent = ({ initialData }) => {
 
           <a
             href={reportHref('/reports/national-parks-2025.html', { from: BLOG_PATH })}
-            className="block mt-12 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
+            className="block mt-12 border-t py-6 transition group"
             style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
               borderColor: 'var(--border)',
             }}
           >
@@ -380,10 +373,8 @@ const BlogContent = ({ initialData }) => {
 
           <a
             href={reportHref('/reports/when-to-go', { from: BLOG_PATH })}
-            className="block mt-4 rounded-[2rem] p-6 sm:p-8 transition hover:shadow-lg group"
+            className="block mt-4 border-t py-6 transition group"
             style={{
-              backgroundColor: 'var(--surface)',
-              borderWidth: '1px',
               borderColor: 'var(--border)',
             }}
           >

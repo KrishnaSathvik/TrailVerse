@@ -5,7 +5,8 @@
 // `terminalPlan`/`persistTargetPlanMutation` changes, the new call site).
 test('TripPlannerChat.jsx module parses and imports without error', async () => {
   await expect(import('../TripPlannerChat')).resolves.toBeTruthy();
-}, 60000);
+// Cold transformation of the complete chat dependency graph can exceed 60s locally.
+}, 180000);
 
 test('authenticated streaming keeps the historical target plan in the terminal display payload', async () => {
   const source = await import('../TripPlannerChat?raw');

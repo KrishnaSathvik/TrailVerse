@@ -11,7 +11,7 @@ export default function IntentTopMatchesSkeleton({ showSpinner = true }) {
           <LoadingSpinner size="lg" text="Loading park matches…" />
         </div>
       ) : null}
-      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6">
+      <div className="public-card-grid public-card-grid--four">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}

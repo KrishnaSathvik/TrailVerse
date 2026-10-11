@@ -178,3 +178,30 @@ describe('attempt-scoped content reset callback wiring', () => {
     expect(onContentReset).toHaveBeenCalledOnce();
   });
 });
+
+describe('reply success and artifact save failure are separate outcomes', () => {
+  async function stream(events, callbacks) {
+    const { consumeAiSseStream } = await import('../aiService');
+    const bytes = new TextEncoder().encode(events.map(event => `data: ${JSON.stringify(event)}\n\n`).join(''));
+    let sent = false;
+    return consumeAiSseStream({ headers: { get: () => 'model_first' }, body: { getReader: () => ({ read: async () => sent ? { done: true } : (sent = true, { done: false, value: bytes }) }) } }, callbacks);
+  }
+  it('delivers useful prose and save notice once without invoking the error callback', async () => {
+    const terminal = { type: 'done', responseId: 'reply-1', content: 'Five days in Glacier.', artifactStatus: { status: 'save_failed', code: 'mutation_rejected', phase: 'trip_save' } };
+    const onDone = vi.fn(), onError = vi.fn();
+    await stream([terminal, terminal], { onDone, onError });
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(onDone.mock.calls[0][0]).toMatchObject({ content: terminal.content, artifactStatus: terminal.artifactStatus });
+    expect(onError).not.toHaveBeenCalled();
+  });
+  it('throws one identified terminal failure for the UI error handler without logging a duplicate', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onDone = vi.fn(), onError = vi.fn();
+    await expect(stream([{ type: 'error', responseId: 'failed-1', code: 'model_failed', message: 'No reply', retryable: false }], { onDone, onError }))
+      .rejects.toMatchObject({ responseId: 'failed-1', code: 'model_failed', phase: 'reply', noAutomaticRetry: true });
+    expect(onDone).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+});

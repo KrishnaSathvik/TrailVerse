@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import TrailieAvatar from '@/components/plan-ai/TrailieAvatar';
 import TrailieMarkdown from './TrailieMarkdown';
 import TrailieItinerary from './TrailieItinerary';
-import TrailieTripCard from './TrailieTripCard';
+import TrailieRichTrip from './TrailieRichTrip';
+import TrailieComparison from './TrailieComparison';
 import TrailieRankedList from './TrailieRankedList';
 import { normalizeTrailiePresentation } from '@/lib/normalizeTrailiePresentation';
 import { travelLogisticsBelongsToTurn } from '@/lib/trailieEnhancementOwnership';
@@ -34,7 +35,7 @@ function NarrativeSections({ sections, placement, parkImages }) {
   const items = (sections || []).filter((section) => section?.placement === placement && section?.markdown);
   if (!items.length) return null;
   return items.map((section, index) => (
-    <section key={`${placement}-${index}`} className="max-w-[48rem]">
+    <section key={`${placement}-${index}`} className="trailie-narrative max-w-[48rem]">
       {section.heading ? (
         <h3
           className="mb-2 text-[15px] font-semibold leading-snug sm:text-base"
@@ -136,6 +137,7 @@ function routeRows(legs) {
 export default function TrailieResponse({
   response,
   example = false,
+  showDemoActions = true,
   onFollowup,
   hideActions = false,
   utilityActions = null,
@@ -143,6 +145,12 @@ export default function TrailieResponse({
   tone = 'default',
   artifactAccess = null,
   onOpenArtifact = null,
+  personalizationCurrent = false,
+  personalizationDisabled = false,
+  planningState = null,
+  guestExhausted = false,
+  onRequireAccount = null,
+  footer = null,
 }) {
   const presentation = useMemo(() => normalizeTrailiePresentation(response), [response]);
   const artifact = presentation.primaryArtifact;
@@ -156,11 +164,11 @@ export default function TrailieResponse({
   const showCampgrounds = artifact?.kind === 'campground_options'
     && campgroundRows(publishedLogistics?.stays?.campgrounds).length;
   const showRoute = artifact?.kind === 'route_plan' && publishedLogistics?.transport?.routeLegs?.length;
-  void onFollowup;
+
 
   return (
     <article
-      className={`trailie-response trailie-response--${tone} w-full min-w-0 max-w-[68rem]`}
+      className={`trailie-response responsive-content trailie-response--${tone} w-full min-w-0 max-w-[var(--public-rich-width)]`}
       aria-label="Assistant message"
     >
       <Header example={example} />
@@ -185,15 +193,23 @@ export default function TrailieResponse({
 
         {artifact?.kind === 'itinerary' ? (
           artifactAccess && onOpenArtifact
-            ? <TrailieTripCard plan={artifact.plan} locked={artifactAccess === 'guest'} onOpen={onOpenArtifact} />
+            ? <TrailieRichTrip response={response} refinement={presentation.refinement} onOpen={onOpenArtifact} onFollowup={onFollowup}
+                supplement={<NarrativeSections sections={presentation.narrativeSections} placement="after_plan" parkImages={response.parkImages} />}
+                planningState={planningState} current={personalizationCurrent} disabled={personalizationDisabled || hideActions}
+                example={example} showDemoActions={showDemoActions} guestExhausted={guestExhausted} onRequireAccount={onRequireAccount} />
             : <TrailieItinerary plan={artifact.plan} pendingLabel={response.lifecycle?.pendingLabel} />
         ) : null}
 
-        <NarrativeSections
-          sections={presentation.narrativeSections}
-          placement="after_plan"
-          parkImages={response.parkImages}
-        />
+        {/* Rich trips place plan notes before their actions; legacy itineraries keep them here. */}
+        {!(artifact?.kind === 'itinerary' && artifactAccess && onOpenArtifact) ? (
+          <NarrativeSections
+            sections={presentation.narrativeSections}
+            placement="after_plan"
+            parkImages={response.parkImages}
+          />
+        ) : null}
+
+        {presentation.kind === 'comparison' && response.responseArtifacts?.comparison ? <TrailieComparison comparison={response.responseArtifacts.comparison} /> : null}
 
         {showAirports ? (
           <TrailieRankedList
@@ -226,6 +242,7 @@ export default function TrailieResponse({
 
         <PlanB planB={presentation.planB} />
 
+        {footer}
         {afterContent}
         {!hideActions && utilityActions ? (
           <div className="border-t pt-3" style={{ borderColor: 'var(--border)' }}>{utilityActions}</div>

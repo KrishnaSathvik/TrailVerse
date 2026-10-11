@@ -26,9 +26,9 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
   }, [isSaved, event, onSaveEvent, onUnsaveEvent]);
 
   return (
-    <div className="event-card h-full flex flex-col rounded-2xl overflow-hidden backdrop-blur group hover:-translate-y-1 transition-all duration-300"
+    <div className="event-card h-full flex flex-col rounded-2xl overflow-hidden group transition-colors duration-200"
       style={{
-        backgroundColor: 'var(--surface)',
+        backgroundColor: 'var(--bg-secondary)',
         borderWidth: '1px',
         borderColor: 'var(--border)'
       }}
@@ -59,8 +59,8 @@ const EventCard = memo(({ event, categories, onSaveEvent, onUnsaveEvent, isSaved
             )}
 
             {/* Date Badge */}
-            <div className="flex min-h-11 items-center justify-center rounded-xl bg-white px-3 py-2 text-center shadow-lg">
-              <div className="text-sm font-bold uppercase leading-none tracking-[0.14em] text-gray-900">
+            <div className="flex min-h-11 items-center justify-center rounded-lg bg-[var(--bg-primary)] px-3 py-2 text-center">
+              <div className="text-sm font-bold uppercase leading-none tracking-[0.14em] text-[var(--text-primary)]">
                 {eventDate.toLocaleDateString('en-US', { month: 'short' })} {eventDate.getDate()}
               </div>
             </div>

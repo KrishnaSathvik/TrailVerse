@@ -53,13 +53,13 @@ const ActivityDetailClient = ({ activity, parkCode, activityId }) => {
 
         {/* Navigation Overlay */}
         <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="public-shell">
             <Button
               onClick={handleBack}
               variant="secondary"
               size="md"
               icon={ArrowLeft}
-              className="backdrop-blur hover:-translate-x-1"
+              className="hover:-translate-x-1"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
                 borderWidth: '1px',
@@ -75,11 +75,11 @@ const ActivityDetailClient = ({ activity, parkCode, activityId }) => {
 
         {/* Activity Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pb-4 sm:pb-6 lg:pb-8">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="public-shell">
             <div className="mt-6 flex items-end justify-between gap-6">
               <div className="flex-1 min-w-0">
                 {activity.parkCode && (
-                  <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full backdrop-blur mb-3"
+                  <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full mb-3"
                     style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
                       borderWidth: '1px',
@@ -126,7 +126,7 @@ const ActivityDetailClient = ({ activity, parkCode, activityId }) => {
 
       {/* Main Content */}
       <section className="py-8 sm:py-10 lg:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="public-full px-4 sm:px-6 lg:px-8">
           {/* Activity Details */}
           <div className="rounded-2xl p-6 mb-8"
             style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}

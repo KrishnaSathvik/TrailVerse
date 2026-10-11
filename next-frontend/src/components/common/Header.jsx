@@ -11,7 +11,6 @@ import { resolveHeaderMobileNav } from '@/lib/planAiHeaderNav';
 
 const AUTH_HOME_NAV_ITEM = { path: '/home', label: 'Home' };
 const BLOG_NAV_ITEM = { path: '/blog', label: 'Blog' };
-const EVENTS_NAV_ITEM = { path: '/events', label: 'Events' };
 
 const CORE_PRIMARY_NAV_ITEMS = [
   { path: '/explore', label: 'Explore' },
@@ -32,29 +31,9 @@ const AUTH_MORE_NAV_ITEMS = [
   { path: '/profile', label: 'Profile' },
 ];
 
-const LANDING_MOBILE_MORE_ITEMS = [
-  { path: '/map', label: 'Map' },
-  { path: '/plan-ai', label: 'Trailie' },
-];
-
-const LANDING_MOBILE_INLINE_ITEMS_GUEST = [
-  { path: '/explore', label: 'Explore' },
-  BLOG_NAV_ITEM,
-  EVENTS_NAV_ITEM,
-];
-
-const LANDING_MOBILE_INLINE_ITEMS_AUTH = [
-  AUTH_HOME_NAV_ITEM,
-  { path: '/explore', label: 'Explore' },
-  BLOG_NAV_ITEM,
-  EVENTS_NAV_ITEM,
-];
-
-const LANDING_MOBILE_MORE_EXCLUDED_PATHS = new Set(['/blog', '/events']);
-
 /** Stable class string — active visuals via .header-mobile-nav-item CSS + aria-current. */
 const MOBILE_NAV_ITEM_CLASS =
-  'header-mobile-nav-item inline-flex h-11 min-h-11 shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-solid px-2.5 py-0 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10';
+  'header-mobile-nav-item inline-flex h-11 min-h-11 shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-solid px-2 py-0 text-sm leading-none transition sm:px-3 sm:text-[0.9375rem] hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10';
 
 const Header = () => {
   const { isAuthenticated, authReady, initialAuthHint, user, logout } = useAuth();
@@ -89,28 +68,13 @@ const Header = () => {
     return pathname === path;
   };
 
-  const isLandingPage = pathname === '/';
-
-  const landingInlineItems = showAuthenticatedNav
-    ? LANDING_MOBILE_INLINE_ITEMS_AUTH
-    : LANDING_MOBILE_INLINE_ITEMS_GUEST;
-  const landingMoreItems = isLandingPage
-    ? [
-        ...LANDING_MOBILE_MORE_ITEMS,
-        ...moreNavItems.filter((item) => !LANDING_MOBILE_MORE_EXCLUDED_PATHS.has(item.path)),
-      ]
-    : moreNavItems;
 
   const {
     inlineNavItems,
     mobileMoreNavItems: currentMoreNavItems,
   } = resolveHeaderMobileNav({
-    pathname,
-    isLandingPage,
     primaryNavItems,
     moreNavItems,
-    landingInlineItems,
-    landingMoreItems,
   });
 
   const isMoreActive = (items = moreNavItems) => items.some((item) => isActive(item.path));
@@ -291,14 +255,14 @@ const Header = () => {
 
   return (
     <header
-      className="sticky top-0 z-50 overflow-visible border-b backdrop-blur-xl"
+      className="sticky top-0 z-50 overflow-visible border-b"
       style={{
         backgroundColor: 'var(--bg-primary)',
         borderColor: 'var(--border)',
         color: 'var(--text-primary)',
       }}
     >
-      <nav className="relative max-w-[92rem] mx-auto px-2 sm:px-6 lg:px-10 xl:px-12">
+      <nav className="public-shell relative">
         {moreMenuOpen && (
           <button
             type="button"

@@ -9,7 +9,7 @@ export default function StateParkPageClient({ stateName, parks, intro, npsGuide,
   const returnPath = useReturnPath();
   return (
     <div className="pb-24">
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 pt-6">
+      <div className="public-shell pt-6">
         <DiscoverHubHeader
           title={stateName}
           intro={intro}
@@ -31,7 +31,7 @@ export default function StateParkPageClient({ stateName, parks, intro, npsGuide,
               No National Park Service sites are listed for {stateName} right now.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="public-card-grid public-card-grid--four">
               {parks.map((park) => (
                 <ParkCard key={park.parkCode} park={park} showReviews={false} fromPath={returnPath} />
               ))}

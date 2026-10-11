@@ -72,6 +72,7 @@ export function installGoogleMapsMock() {
       InfoWindow: vi.fn(function InfoWindow() {
         this.setContent = vi.fn();
         this.open = vi.fn();
+        this.close = vi.fn();
       }),
       Polyline,
       DirectionsService,

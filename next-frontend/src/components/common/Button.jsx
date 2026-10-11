@@ -26,6 +26,7 @@ const Button = ({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 'var(--public-control-height, 44px)',
     gap: '0.5rem',
     fontFamily: 'inherit',
     fontWeight: '600',
@@ -34,7 +35,7 @@ const Button = ({
     borderRadius: '9999px', // rounded-full
     cursor: disabled || loading ? 'not-allowed' : 'pointer',
     transition: 'all 0.2s ease-in-out',
-    boxShadow: 'var(--shadow)',
+    boxShadow: 'none',
     opacity: disabled || loading ? 0.6 : 1,
     // Prevent text selection and focus outline issues
     userSelect: 'none',

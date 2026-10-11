@@ -96,6 +96,7 @@ function StopPreviewCard({ stop, dayNumber, onViewInItinerary, onClose, cardRef 
             <h4 className="break-words text-sm font-semibold leading-snug sm:truncate" style={{ color: 'var(--text-primary)' }}>
               {stop.name}
             </h4>
+            {stop.mapAnchor?.name ? <p className="mt-0.5 text-xs" style={{ color: 'var(--text-secondary)' }}>Map pin: {stop.mapAnchor.name}</p> : null}
             {meta ? (
               <p className="mt-0.5 truncate text-[11px] font-medium" style={{ color: 'var(--accent-green-dark)' }}>
                 {meta}

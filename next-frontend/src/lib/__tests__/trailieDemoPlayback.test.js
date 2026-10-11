@@ -24,38 +24,24 @@ import { TRAILIE_DEMO_PROMPTS, TRAILIE_PERSONALIZED_PROMPTS } from '../trailieDe
 
 const scenarios = playback.scenarios.map(normalizePlaybackScenario);
 
-const EXPECTED_IDS = [
-  'valley-of-fire-weekend',
-  'compare-acadia-shenandoah',
-  'yellowstone-relaxed',
-  'rocky-mountain-one-day',
-  'zion-couple-itinerary',
-];
-
-const EXPECTED_QUESTIONS = [
-  'Plan a relaxed weekend at Valley of Fire from Las Vegas with easy hikes, sunset spots, and minimal rushing.',
-  'I have 3 days in October. Should I choose Acadia or Shenandoah for fall colors, easy hikes, and photography? Pick one and explain why.',
-  'Plan a relaxed 2-day Yellowstone trip for first-time visitors who want geysers, wildlife, and scenic drives without rushing.',
-  "I only have one full day in Rocky Mountain National Park. What should I prioritize, and what's a good backup if Bear Lake parking or access doesn't work out?",
-  'Plan a realistic 2-day Zion trip for a couple who wants scenic views, easy-to-moderate hikes, and no exposed scary trails.',
-];
+const EXPECTED_IDS = ['discovery', 'zion-bryce', 'realistic', 'yellowstone', 'glacier'];
 
 describe('trailie-demo playback fixture', () => {
   it('ships the current schema version', () => {
     expect(playback.schemaVersion).toBe(PLAYBACK_SCHEMA_VERSION);
   });
 
-  it('preserves the existing scenario identity and order', () => {
+  it('ships five real three-turn conversations in the requested order', () => {
     expect(scenarios.map((s) => s.id)).toEqual(EXPECTED_IDS);
     expect(scenarios.map((s) => s.label)).toEqual([
-      'Valley of Fire',
-      'Compare',
-      'Yellowstone',
-      'Rocky Mountain',
-      'Zion',
+      'Where should I go?', 'Zion + Bryce', 'Is this trip realistic?',
+      'Yellowstone wildlife trip', 'Glacier relaxed trip',
     ]);
-    expect(scenarios.map((s) => s.turns[0].question)).toEqual(EXPECTED_QUESTIONS);
-    expect(scenarios.every((s) => s.turns.length === 1)).toBe(true);
+    expect(scenarios.every((s) => s.turns.length === 3)).toBe(true);
+    for (const scenario of scenarios) {
+      expect(scenario.turns.every((turn) => turn.source === 'live-envelope')).toBe(true);
+      expect(scenario.turns.every((turn) => turn.prose.length > 100)).toBe(true);
+    }
   });
 
   it('keeps every scenario structurally valid', () => {
@@ -70,21 +56,6 @@ describe('trailie-demo playback fixture', () => {
   it('keeps the legacy capture as an archive, not as the live demo questions', () => {
     expect(legacy.scenarios.map((s) => s.id)).not.toEqual(EXPECTED_IDS);
     expect(scenarios.map((s) => s.id)).toEqual(EXPECTED_IDS);
-  });
-
-  it('plays Acadia as a comparison, Rocky as Bear Lake advice, and Zion without exposed trails', () => {
-    const acadia = scenarios.find((s) => s.id === 'compare-acadia-shenandoah');
-    expect(acadia.turns[0].prose).toMatch(/Acadia/i);
-    expect(acadia.turns[0].prose).toMatch(/Shenandoah/i);
-    expect(acadia.turns[0].liveData.web).toBe(true);
-
-    const rocky = scenarios.find((s) => s.id === 'rocky-mountain-one-day');
-    expect(rocky.turns[0].question).toMatch(/Bear Lake/);
-    expect(rocky.turns[0].prose).toMatch(/Bear Lake/);
-
-    const zion = scenarios.find((s) => s.id === 'zion-couple-itinerary');
-    const zionNames = zion.turns[0].plan.days.flatMap((day) => day.stops.map((stop) => stop.name)).join(' | ');
-    expect(zionNames).not.toMatch(/Angels Landing|The Narrows/i);
   });
 
   it('no longer flags any turn as stale — every answer is a real re-capture', () => {
@@ -102,11 +73,12 @@ describe('trailie-demo playback fixture', () => {
   });
 
   it('hash-locks the current accepted public playback fixture', () => {
-    // The 2026-09-21 Yellowstone-only v7 refresh is the accepted /trailie-demo fixture.
+    // Real authenticated three-turn captures, reviewed and atomically refreshed 2026-10-11
+    // (architecture-lock Demo recapture with tripSchemaVersion:1).
     const root = resolve(__dirname, '../../../..');
     const fixtureText = readFileSync(join(root, 'next-frontend/src/data/trailieDemoPlayback.json'), 'utf8');
     expect(createHash('sha256').update(fixtureText).digest('hex')).toBe(
-      'a0261c9b2ec09df5b0db4b552af5d96d7ca3d556577311202d1574d9289a674b',
+      '3930a9ef1580154ecfd379e334424f5a555bc81f587a7324f46fb76dfc92a803',
     );
   });
 });
@@ -145,33 +117,16 @@ describe('trailie-demo scenarios stay their own set', () => {
 });
 
 describe('itinerary vs conversation playback', () => {
-  it('declares the itinerary scenarios the capture actually produced', () => {
-    // Zion + Valley of Fire captured itineraries. Glacier is the accepted
-    // 11A access-contingency plain_answer, not a day-by-day plan.
-    expect(scenarios.filter(isItineraryScenario).map((s) => s.id)).toEqual([
-      'valley-of-fire-weekend',
-      'yellowstone-relaxed',
-      'zion-couple-itinerary',
-    ]);
-    expect(scenarios.filter((s) => !isItineraryScenario(s)).map((s) => s.id)).toEqual([
-      'compare-acadia-shenandoah',
-      'rocky-mountain-one-day',
-    ]);
+  it('finishes each conversation with a real saved itinerary', () => {
+    expect(scenarios.filter(isItineraryScenario).map((s) => s.id)).toEqual(EXPECTED_IDS);
+    expect(scenarios.map((s) => s.turns.at(-1).plan.days.length)).toEqual([4, 5, 3, 4, 5]);
   });
 
-  it('plays the approved Zion capture as a single low-exposure plan', () => {
-    const zion = scenarios.find((s) => s.id === 'zion-couple-itinerary');
-    expect(zion.turns).toHaveLength(1);
-    expect(turnHasItinerary(zion.turns[0])).toBe(true);
-
-    const names = zion.turns[0].plan.days.flatMap((day) => day.stops.map((stop) => stop.name));
-    expect(names).toEqual([
-      'Lower Emerald Pool Trail',
-      'Temple of Sinawava',
-      "Pa'rus - Diversion Dam",
-      'Lava Point Overlook',
-    ]);
-    expect(names.join(' | ')).not.toMatch(/Watchman Trail|Canyon Overlook|Angels Landing|Narrows/i);
+  it('retains conversation-only reasoning between Glacier itinerary revisions', () => {
+    const glacier = scenarios.find((s) => s.id === 'glacier');
+    expect(glacier.turns.map(turnHasItinerary)).toEqual([true, false, true]);
+    expect(glacier.turns[1].prose).toMatch(/Day 3/);
+    expect(glacier.turns[2].plan.days[2].stops.map((s) => s.name).join(' ')).not.toMatch(/Hidden Lake/);
   });
 
   it('plays conversation turns as thinking → prose', () => {

@@ -43,7 +43,7 @@ describe('planAiHeaderNav', () => {
     expect(result.mobileMoreNavItems).toEqual(authMore);
   });
 
-  it('keeps the landing page on its own shorter set', () => {
+  it('keeps landing navigation consistent even when legacy overrides are supplied', () => {
     const landing = resolveHeaderMobileNav({
       isLandingPage: true,
       primaryNavItems: guestPrimary,
@@ -52,7 +52,7 @@ describe('planAiHeaderNav', () => {
       landingMoreItems: [MAP, TRAILIE],
     });
 
-    expect(landing.inlineNavItems).toEqual([EXPLORE, BLOG]);
-    expect(landing.mobileMoreNavItems).toEqual([MAP, TRAILIE]);
+    expect(landing.inlineNavItems).toEqual(guestPrimary);
+    expect(landing.mobileMoreNavItems).toEqual(guestMore);
   });
 });

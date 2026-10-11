@@ -9,14 +9,7 @@ import {
   toLiveTrailieResponseModel,
 } from '@/lib/trailieResponseModel';
 
-const scenarios = Object.fromEntries(SCENARIOS.map((scenario) => [scenario.id, scenario]));
-const CASES = [
-  ['q1', 'Q1 · Valley of Fire', scenarios['valley-of-fire-weekend']?.turns[0]],
-  ['q2', 'Q2 · Acadia vs Shenandoah', scenarios['compare-acadia-shenandoah']?.turns[0]],
-  ['q3', 'Q3 · Yellowstone', scenarios['yellowstone-relaxed']?.turns[0]],
-  ['q4', 'Q4 · Rocky Mountain', scenarios['rocky-mountain-one-day']?.turns[0]],
-  ['q5', 'Q5 · Zion', scenarios['zion-couple-itinerary']?.turns[0]],
-];
+const CASES = SCENARIOS.map((scenario, index) => [`q${index + 1}`, scenario.label, scenario.turns.findLast(turn => turn.plan) || scenario.turns[0]]);
 
 function liveModel(turn) {
   return toLiveTrailieResponseModel({
@@ -48,7 +41,7 @@ export default function TrailiePresentationReviewClient() {
 
   return (
     <main className="min-h-screen px-3 py-6 sm:px-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="public-shell">
         <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: 'var(--accent-green-dark)' }}>
@@ -60,13 +53,13 @@ export default function TrailiePresentationReviewClient() {
           </div>
           <nav className="flex flex-wrap gap-2" aria-label="Review cases">
             {CASES.map(([id]) => (
-              <Link key={id} href={`/trailie-presentation-review?surface=${surface}&case=${id}`} className="rounded-full border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+              <Link key={id} href={`/trailie-presentation-review?surface=${surface}&case=${id}`} className="inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-sm font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
                 {id.toUpperCase()}
               </Link>
             ))}
           </nav>
         </header>
-        <p className="mb-4 rounded-2xl px-4 py-3 text-sm leading-6" style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-primary)' }}>
+        <p className="public-reading mb-4 rounded-2xl px-4 py-3 text-sm leading-6" style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-primary)' }}>
           {turn.question}
         </p>
         <TrailieResponse response={response} example={surface === 'demo'} hideActions />

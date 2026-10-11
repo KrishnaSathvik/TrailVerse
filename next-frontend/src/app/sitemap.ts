@@ -4,6 +4,8 @@ import { GUIDES } from '@/data/guides';
 import { INTENT_LANDINGS } from '@/data/intentLandings';
 import { COMPARE_LANDINGS } from '@/data/compareLandings';
 
+import { PUBLIC_ITINERARIES } from '@/data/publicItineraries';
+
 const BASE_URL = 'https://www.nationalparksexplorerusa.com';
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -143,5 +145,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...staticRoutes, ...compareRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
+  const sampleRoutes: MetadataRoute.Sitemap = PUBLIC_ITINERARIES.map(sample => ({
+    url: `${BASE_URL}/itineraries/${sample.slug}`, changeFrequency: 'yearly' as const, priority: 0.75,
+  }));
+
+  return [...sampleRoutes, ...staticRoutes, ...compareRoutes, ...parkRoutes, ...stateRoutes, ...blogRoutes, ...categoryRoutes, ...guideRoutes, ...intentRoutes];
 }

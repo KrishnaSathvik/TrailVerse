@@ -24,7 +24,7 @@ export default function OfflinePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--bg-primary)" }}>
+    <div className="public-state min-h-screen" style={{ backgroundColor: "var(--bg-primary)" }}>
       {/* Hero Section */}
       <section className="relative w-full min-h-[80vh] flex items-center justify-center">
         {/* Background Image */}

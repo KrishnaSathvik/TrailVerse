@@ -315,7 +315,7 @@ describe('TrailieResponse', () => {
     render(<TrailieResponse response={response} hideActions />);
     const region = screen.getByRole('region', { name: 'Comparison table' });
     expect(region).toHaveAttribute('data-column-count', '4');
-    expect(region.parentElement).toHaveClass('max-w-[68rem]');
+    expect(region.parentElement).toHaveClass('max-w-[var(--public-rich-width)]');
     expect(screen.queryByText('At a glance')).not.toBeInTheDocument();
   });
 

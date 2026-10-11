@@ -726,13 +726,13 @@ const ParkDetailInner = ({
 
         {/* Navigation Overlay */}
         <div className="absolute top-0 left-0 right-0 z-10 pt-4 sm:pt-6">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="public-shell">
             <Button
               onClick={() => router.push(backHref)}
               variant="secondary"
               size="md"
               icon={ArrowLeft}
-              className="backdrop-blur hover:-translate-x-1"
+              className="hover:-translate-x-1"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
                 borderWidth: '1px',
@@ -748,10 +748,10 @@ const ParkDetailInner = ({
 
         {/* Park Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pb-4 sm:pb-6 lg:pb-8">
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="public-shell">
             <div className="mt-6 flex items-end justify-between gap-6">
               <div className="flex-1 min-w-0">
-                <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full backdrop-blur mb-3"
+                <div className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full mb-3"
                   style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     borderWidth: '1px',
@@ -781,7 +781,7 @@ const ParkDetailInner = ({
                       variant={isVisited ? 'success' : 'secondary'}
                       size="sm"
                       icon={isVisited ? MapPinCheck : MapPin}
-                      className="backdrop-blur w-full sm:w-auto shrink-0"
+                      className="w-full sm:w-auto shrink-0"
                       style={{
                         backgroundColor: isVisited ? 'rgba(34, 197, 94, 0.35)' : 'rgba(255, 255, 255, 0.12)',
                         borderWidth: '1px',
@@ -801,7 +801,7 @@ const ParkDetailInner = ({
                       size="sm"
                       icon={Heart}
                       iconWeight={isSaved ? 'fill' : 'regular'}
-                      className="backdrop-blur w-full sm:w-auto shrink-0"
+                      className="w-full sm:w-auto shrink-0"
                       style={{
                         backgroundColor: isSaved ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255, 255, 255, 0.12)',
                         borderWidth: '1px',
@@ -832,7 +832,7 @@ const ParkDetailInner = ({
 
       {/* Main Content */}
       <section className="py-8 sm:py-10 lg:py-12">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="public-shell">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Main Column */}
             <div className="flex-1 min-w-0">
@@ -840,7 +840,7 @@ const ParkDetailInner = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8 sm:items-stretch">
                 {/* Hours */}
                 <div
-                  className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform flex flex-col h-full"
+                  className="rounded-2xl p-4 sm:p-5 hover:-translate-y-0.5 transition-transform flex flex-col h-full"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -883,7 +883,7 @@ const ParkDetailInner = ({
 
                 {/* Entrance Fee */}
                 <div
-                  className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform flex flex-col h-full"
+                  className="rounded-2xl p-4 sm:p-5 hover:-translate-y-0.5 transition-transform flex flex-col h-full"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -918,7 +918,7 @@ const ParkDetailInner = ({
 
                 {/* Contact */}
                 <div
-                  className="rounded-2xl p-4 sm:p-5 backdrop-blur hover:-translate-y-0.5 transition-transform flex flex-col h-full"
+                  className="rounded-2xl p-4 sm:p-5 hover:-translate-y-0.5 transition-transform flex flex-col h-full"
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -991,7 +991,7 @@ const ParkDetailInner = ({
               )}
 
                 {/* Tab Content */}
-                <div className="rounded-2xl p-4 sm:p-6 lg:p-8 backdrop-blur"
+                <div className="rounded-2xl p-4 sm:p-6 lg:p-8 "
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderWidth: '1px',
@@ -3159,7 +3159,7 @@ const ParkDetailInner = ({
               )}
 
               {/* Location Card */}
-              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
+              <div className="rounded-2xl p-4 sm:p-6 "
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -3234,7 +3234,7 @@ const ParkDetailInner = ({
               </div>
 
               {/* Around This Park */}
-              <div className="rounded-2xl p-4 sm:p-6 backdrop-blur"
+              <div className="rounded-2xl p-4 sm:p-6 "
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -3447,7 +3447,7 @@ const ParkDetailInner = ({
       {/* Related Parks */}
       {relatedParks.length > 0 && (
         <section className="py-16 px-4 sm:px-6 lg:px-10" style={{ backgroundColor: 'var(--bg-primary)' }}>
-          <div className="max-w-7xl mx-auto">
+          <div className="public-full">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-3 ring-1" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>

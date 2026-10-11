@@ -1,3 +1,4 @@
+import { formatTravelMinutes, groundedPlaceType } from '@/lib/tripPresentation';
 import { formatDurationMinutes, formatSharedTripDate, formatTime12, getSharedDayHeading } from '@/utils/sharedTripFormat';
 import { AlertTriangle, AlertCircle, Info } from '@/components/icons';
 
@@ -58,7 +59,7 @@ export function ItineraryDayHeading({ day, index, action = null }) {
     <header className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
         <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'var(--accent-green-dark)' }}>
-          {badge}
+          {badge}{day.dayStructure?.type ? ` · ${{ sightseeing: 'Sightseeing day', arrival: 'Arrival day', departure: 'Departure day', transfer: 'Transfer day', rest: 'Relaxed day' }[day.dayStructure.type] || day.dayStructure.type}` : ''}
           {action}
         </p>
         {title ? (
@@ -66,6 +67,7 @@ export function ItineraryDayHeading({ day, index, action = null }) {
             {title}
           </h3>
         ) : null}
+        {day.dayStructure?.summary && <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{day.dayStructure.summary}</p>}
       </div>
       {day.date ? (
         <p className="pb-0.5 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
@@ -108,20 +110,20 @@ export function ItineraryRequirements({ requirements, compact = false }) {
 export function ItineraryDriveTransition({ minutes }) {
   const value = Number(minutes);
   if (!Number.isFinite(value) || value <= 0) return null;
-  const rounded = Math.round(value);
+  const duration = formatTravelMinutes(value);
   return (
-    <li className="relative -mt-2 mb-3 ml-2 flex min-h-7 items-center pl-8" aria-label={`${rounded} minute drive`}>
+    <li className="relative -mt-2 mb-3 ml-2 flex min-h-7 items-center pl-8" aria-label={`${duration} drive`}>
       <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-px" style={{ backgroundColor: 'var(--border)' }} />
       <span aria-hidden="true" className="absolute left-[-0.18rem] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full" style={{ backgroundColor: 'var(--text-tertiary)' }} />
       <p data-drive-transition="true" className="text-[11px] font-medium tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-        {rounded} min drive
+        {duration} drive
       </p>
     </li>
   );
 }
 
 function StopMeta({ stop, supporting }) {
-  const time = stop.timeWindow || formatTime12(stop.startTime);
+  const time = stop.timingReason && stop.startTime ? [stop.timeWindow, formatTime12(stop.startTime)].filter(Boolean).join(' · ') : stop.timeWindow || formatTime12(stop.startTime);
   const duration = formatDurationMinutes(stop.duration);
   const difficulty = stop.physicalDifficulty || stop.difficulty;
   const exposure = stop.exposureLevel || stop.exposure;
@@ -131,6 +133,7 @@ function StopMeta({ stop, supporting }) {
   return (
     <div className={supporting ? 'flex flex-wrap items-center gap-x-2 gap-y-0.5' : 'space-y-0.5'}>
       {time ? <p className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--accent-green-dark)' }}>{time}</p> : null}
+      {stop.timingReason && <p className="text-[11px] leading-5 text-[var(--text-secondary)]">{stop.timingReason}</p>}
       {secondary.length ? (
         <p className="text-[11px] font-medium leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>{secondary.join(' · ')}</p>
       ) : null}
@@ -181,6 +184,7 @@ export function ItineraryStopRow({
           {stop.name}
           {titleAction}
         </h4>
+        {groundedPlaceType(stop) && <p className="mt-1 text-xs text-[var(--text-secondary)]">{groundedPlaceType(stop)}</p>}
         {copy.note ? <p className={`${supporting ? 'mt-0.5 text-xs leading-5' : 'mt-1 text-sm leading-6'}`} style={{ color: 'var(--text-secondary)' }}>{copy.note}</p> : null}
         {copy.why ? <p className="mt-1 text-xs leading-5" style={{ color: 'var(--text-tertiary)' }}>{copy.why}</p> : null}
         <ItineraryRequirements requirements={stop.requirements} compact />

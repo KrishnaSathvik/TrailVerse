@@ -109,8 +109,10 @@ export const migrateLegacyTrips = async (userId) => {
 export const saveTempChatState = (chatState) => {
   try {
     localStorage.setItem(TEMP_CHAT_STATE_KEY, JSON.stringify(chatState));
+    return true;
   } catch (error) {
     console.error('[TripHistory] Error saving temp chat state:', error);
+    return false;
   }
 };
 

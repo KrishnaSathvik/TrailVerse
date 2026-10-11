@@ -41,7 +41,7 @@ function GuideTable({ table }) {
 
   return (
     <div
-      className="overflow-x-auto my-6 rounded-2xl border"
+      className="responsive-rich overflow-x-auto my-6 rounded-lg border"
       style={{ borderColor: 'var(--border)' }}
     >
       <table className="w-full text-sm text-left">

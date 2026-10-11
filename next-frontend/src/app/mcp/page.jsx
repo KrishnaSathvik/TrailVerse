@@ -1,3 +1,6 @@
+import IntegrationDetails from '@/components/info/IntegrationDetails';
+import { INTEGRATION_CAPABILITIES } from '@/data/integrationCapabilities';
+import InfoPageHeader, { InfoSectionLabel } from '@/components/info/InfoPageHeader';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
@@ -11,11 +14,11 @@ const DIST_CHANNEL = 'mcp';
 export const metadata = {
   title: 'TrailVerse for Claude — MCP Integration',
   description:
-    'Connect Claude to TrailVerse — live NPS data for 470+ sites plus AI trip planning for any US destination. Alerts, weather, compare, search, and events via MCP.',
+    'Connect Claude to TrailVerse — live NPS data for 470+ sites plus AI trip planning for US destinations beyond the NPS catalog. Alerts, weather, compare, search, and events via MCP.',
   openGraph: {
     title: 'TrailVerse for Claude — MCP Integration',
     description:
-      'Trailie in Claude — 470+ NPS sites with live data, plus day-by-day trip planning for any US destination.',
+      'Trailie in Claude — 470+ NPS sites with live data, plus day-by-day trip planning for US destinations beyond the NPS catalog.',
     url: 'https://www.nationalparksexplorerusa.com/mcp',
     type: 'website',
     images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse MCP for Claude' }],
@@ -32,47 +35,7 @@ export const metadata = {
   },
 };
 
-const tools = [
-  {
-    icon: 'Map',
-    title: 'Plan a Trip',
-    description:
-      'Day-by-day itineraries for any US destination — NPS parks, state parks, cities, and road trips — with constraint-aware planning and live context when available',
-    accent: 'var(--accent-green)',
-  },
-  {
-    icon: 'Mountain',
-    title: 'Park Details',
-    description:
-      'For NPS sites: live weather, 5-day forecast when available, alerts, entrance fees, hours, campgrounds, permits, and activities',
-    accent: 'var(--accent-blue)',
-  },
-  {
-    icon: 'ArrowsLeftRight',
-    title: 'Compare Parks',
-    description:
-      'Side-by-side comparison of 2\u20134 NPS parks with auto-computed highlights on weather, crowds, fees, and activities',
-    accent: 'var(--accent-orange)',
-  },
-  {
-    icon: 'Search',
-    title: 'Search Parks',
-    description: 'Find NPS sites by state, activity, or free-text query across the full catalog',
-    accent: 'var(--accent-green)',
-  },
-  {
-    icon: 'Calendar',
-    title: 'Find Events',
-    description: 'Ranger programs, guided tours, and park-hosted events at NPS sites with dates and locations',
-    accent: 'var(--accent-blue)',
-  },
-  {
-    icon: 'MessageSquare',
-    title: 'Multi-Turn Planning',
-    description: 'Refine and extend plans across messages \u2014 "now add day 4" just works',
-    accent: 'var(--accent-orange)',
-  },
-];
+const tools = INTEGRATION_CAPABILITIES;
 
 const examplePrompts = [
   'Plan a 5-day trip to Yellowstone in September with my fianc\u00e9e',
@@ -85,116 +48,60 @@ const examplePrompts = [
 
 const MCP_URL = 'https://trailverse-mcp.onrender.com/mcp';
 
-function SectionBadge({ children }) {
-  return (
-    <div
-      className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6"
-      style={{
-        backgroundColor: 'var(--surface-hover)',
-        borderWidth: '1px',
-        borderColor: 'var(--border)',
-      }}
-    >
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
-      <span
-        className="text-xs font-semibold uppercase tracking-wider"
-        style={{ color: 'var(--text-secondary)' }}
-      >
-        {children}
-      </span>
-    </div>
-  );
-}
 
 export default function MCPPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      <main>
+      <main className="info-page">
         {/* Hero */}
-        <section className="relative w-full min-h-[70vh] flex items-center justify-center">
-          <div
-            className="absolute inset-0 w-full bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: 'url(/background23.png)',
-              filter: 'brightness(0.4)',
-              width: '100vw',
-              left: '50%',
-              marginLeft: '-50vw',
-            }}
-          />
-          <div
-            className="absolute inset-0 w-full bg-gradient-to-b from-black/20 via-black/40 to-black/60"
-            style={{ width: '100vw', left: '50%', marginLeft: '-50vw' }}
-          />
-
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 ring-1 backdrop-blur mb-8 bg-white/10 border-white/20">
-              <IconGlyph name="Sparkles" className="h-4 w-4 text-white" />
-              <span className="text-xs font-medium uppercase tracking-wider text-white">
-                MCP Integration
-              </span>
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-white">
-              TrailVerse for Claude
-            </h1>
-
-            <p className="text-lg sm:text-xl leading-relaxed mb-10 text-white/90 max-w-3xl mx-auto">
+        <InfoPageHeader title="TrailVerse for Claude" description={<>
               Connect Claude to live National Park Service data for all 470+ NPS sites &mdash; plus
-              day-by-day trip planning for any US destination.
-            </p>
-
+              day-by-day trip planning for US destinations beyond the NPS catalog.
+            </>}>
             <TrackedCtaLink
               channel={DIST_CHANNEL}
               ctaId="hero_install"
               label="Install in Claude"
               href="#install"
-              className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+              className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               style={{ backgroundColor: 'var(--accent-green)' }}
             >
               <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
               Install in Claude
             </TrackedCtaLink>
-          </div>
-        </section>
+        </InfoPageHeader>
 
-        {/* What You Get — 5 Tool Cards */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Live NPS Data &amp; US Planning</SectionBadge>
+        {/* Five tools for your trip — 5 Tool Cards */}
+        <section className="info-section">
+          <div className="w-full">
+            <div className="mb-8">
+              <InfoSectionLabel>Live NPS Data &amp; US Planning</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
-                What You Get
+                Five tools for your trip
               </h2>
-              <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
                 Five MCP tools on the same server as the ChatGPT app. Park details, search, compare,
                 and events cover the <strong>NPS catalog</strong>; Plan a trip also works for{' '}
-                <strong>state parks, cities, and road trips</strong> — grounded in live data, not
-                stale training answers.
+                <strong>state parks, cities, and road trips</strong> using relevant sources when available. Coverage varies, and generated details need checking.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="info-card-grid">
               {tools.map((tool) => (
                 <div
                   key={tool.title}
-                  className="rounded-2xl p-6 backdrop-blur"
+                  className="public-editorial-section py-6 space-y-4"
                   style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
                     borderColor: 'var(--border)',
                   }}
                 >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                    style={{ backgroundColor: tool.accent }}
-                  >
-                    <IconGlyph name={tool.icon} className="h-6 w-6 text-white" />
+                  <div className="info-icon">
+                    <IconGlyph name={tool.icon} className="h-6 w-6 text-current" />
                   </div>
                   <h3
                     className="text-xl font-semibold mb-3"
@@ -212,19 +119,18 @@ export default function MCPPage() {
         </section>
 
         {/* See It in Action */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>See It in Action</SectionBadge>
+        <section className="info-section">
+          <div className="w-full">
+            <div className="mb-8">
+              <InfoSectionLabel>See It in Action</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Real Conversations, Real Data
+                Example conversations
               </h2>
-              <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                TrailVerse gives Claude live NPS data — road closures, weather, crowds, fees — plus
-                constraint-aware itineraries for any US destination when you use Plan a trip.
+              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+                These screenshots illustrate earlier conversations, not current park conditions. Dates, closures, weather, and event listings shown here may have changed.
               </p>
             </div>
 
@@ -368,7 +274,7 @@ export default function MCPPage() {
                       Browse parks by state
                     </p>
                     <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Ask &ldquo;what parks are in Washington state?&rdquo; and get all 17 NPS sites &mdash;
+                      Ask &ldquo;what parks are in Washington state?&rdquo; and browse matching NPS sites &mdash;
                       ranked with insider takes on what makes each one worth visiting.
                     </p>
                   </div>
@@ -460,21 +366,22 @@ export default function MCPPage() {
 
         {/* Install */}
         <section id="install" className="py-16 px-4 sm:px-6 lg:px-8 scroll-mt-20">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Setup</SectionBadge>
+          <div className="w-full">
+            <div className="mb-8">
+              <InfoSectionLabel>Setup</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Install in Under a Minute
+                Connect TrailVerse
               </h2>
             </div>
 
+            <p className="mb-6 text-sm text-[var(--text-secondary)]">Setup labels and access can change. <a className="underline" href="https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp" target="_blank" rel="noopener noreferrer">Claude’s official connector guide</a> has the current instructions. No TrailVerse account or personal API key is required.</p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Claude.ai */}
               <div
-                className="rounded-2xl p-6 sm:p-8 backdrop-blur"
+                className="info-panel"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -488,15 +395,15 @@ export default function MCPPage() {
                   Claude.ai
                 </h3>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
-                  Pro / Max / Team / Enterprise
+                  Claude web and desktop
                 </p>
 
                 <ol className="space-y-4">
                   {[
-                    <>Open <strong>Settings</strong> &rarr; <strong>Connectors</strong></>,
-                    <>Click &ldquo;Add custom connector&rdquo;</>,
+                    <>Open <strong>Customize</strong> &rarr; <strong>Connectors</strong></>,
+                    <>Choose <strong>Add</strong>, then <strong>Add custom connector</strong></>,
                     <>Name: <strong>TrailVerse</strong>, URL: paste from below</>,
-                    <>Click Add &mdash; TrailVerse tools appear in your conversation</>,
+                    <>Complete setup, then enable TrailVerse for the conversation. Managed workspaces may require an owner to add it first.</>,
                   ].map((step, i) => (
                     <li key={i} className="flex gap-3">
                       <span
@@ -512,7 +419,7 @@ export default function MCPPage() {
                   ))}
                 </ol>
                 <p className="text-xs mt-4" style={{ color: 'var(--text-tertiary)' }}>
-                  Requires Pro, Max, Team, or Enterprise plan. Free plan users cannot add custom connectors.
+                  Claude currently supports remote custom connectors on Free and paid plans; Free is limited to one custom connector. Workspace permissions can restrict access. See the official setup guide above.
                 </p>
 
                 <div
@@ -540,7 +447,7 @@ export default function MCPPage() {
 
               {/* Claude Code */}
               <div
-                className="rounded-2xl p-6 sm:p-8 backdrop-blur"
+                className="info-panel"
                 style={{
                   backgroundColor: 'var(--surface)',
                   borderWidth: '1px',
@@ -574,7 +481,7 @@ export default function MCPPage() {
                 </div>
 
                 <p className="text-sm mt-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  After adding, TrailVerse tools will be available in every Claude Code session.
+                  Tool availability depends on the scope you choose when adding the server and your Claude Code permissions.
                   You can verify with:
                 </p>
 
@@ -592,8 +499,8 @@ export default function MCPPage() {
               </div>
             </div>
 
-            <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
-              Free to use with generous tool limits. Save trips and use the Plan Workspace on{' '}
+            <p className="text-left text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
+              TrailVerse tool usage is rate-limited; your host app’s access rules also apply. Save trips and use the Plan Workspace on{' '}
               <TrackedCtaLink
                 channel={DIST_CHANNEL}
                 ctaId="install_plan_ai"
@@ -620,29 +527,27 @@ export default function MCPPage() {
         </section>
 
         {/* Example Prompts */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Try It</SectionBadge>
+        <section className="info-section">
+          <div className="w-full">
+            <div className="mb-8">
+              <InfoSectionLabel>Try It</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Example Prompts
               </h2>
-              <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
                 Once installed, try asking Claude any of these.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="info-card-grid">
               {examplePrompts.map((prompt) => (
                 <div
                   key={prompt}
-                  className="rounded-2xl p-5 backdrop-blur"
+                  className="public-editorial-section py-6 space-y-4"
                   style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
                     borderColor: 'var(--border)',
                   }}
                 >
@@ -659,93 +564,14 @@ export default function MCPPage() {
         </section>
 
         {/* Privacy */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Privacy</SectionBadge>
-              <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Your Data, Transparently
-              </h2>
-            </div>
-
-            <div
-              className="rounded-3xl p-8 sm:p-10 backdrop-blur space-y-8"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-              }}
-            >
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  What leaves Claude
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  When you use a TrailVerse tool, Claude sends the tool parameters (park name,
-                  state, dates, your trip request) to our server. For multi-turn trip planning,
-                  the messages within that planning session are sent to enable follow-ups like
-                  &ldquo;now add day 4.&rdquo; Sessions expire after 2 hours. No Claude account
-                  data, billing info, or unrelated conversation history is transmitted.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  What we log
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  We log tool calls (park code, timestamp) for rate limiting and reliability
-                  monitoring. No personally identifiable information is stored. Logs are retained
-                  for 30 days.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Data source
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  NPS catalog data from the National Park Service API (nps.gov) and weather from
-                  OpenWeatherMap. Non-NPS trip planning may also use live web context. We do not sell
-                  or share any data.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Limits
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Free to use with generous tool limits. Park details, search, compare, and events
-                  cover the NPS catalog; Plan a trip also works for state parks, cities, and road
-                  trips. For saved trips, PDF export, and the visual Plan Workspace, use{' '}
-                  <TrackedCtaLink
-                    channel={DIST_CHANNEL}
-                    ctaId="faq_plan_ai"
-                    label="Trailie"
-                    href="/plan-ai"
-                    className="underline underline-offset-2"
-                  >
-                    Trailie
-                  </TrackedCtaLink>{' '}
-                  on the website.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <IntegrationDetails host="Claude" />
 
         {/* Footer CTA */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
+        <section className="info-section">
+          <div className="w-full">
             <div
-              className="rounded-3xl p-8 text-center sm:p-10"
+              className="public-editorial-section py-6 space-y-4"
               style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
                 borderColor: 'var(--border)',
               }}
             >
@@ -760,7 +586,7 @@ export default function MCPPage() {
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Install TrailVerse in Claude — live NPS data from 470+ sites and trip planning for
-                any US destination.
+                US destinations beyond the NPS catalog.
               </p>
               <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
                 Using ChatGPT instead?{' '}
@@ -775,13 +601,13 @@ export default function MCPPage() {
                   Open the TrailVerse ChatGPT app
                 </TrackedCtaLink>
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <TrackedCtaLink
                   channel={DIST_CHANNEL}
                   ctaId="footer_install"
                   label="Install Now"
                   href="#install"
-                  className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                  className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                   style={{ backgroundColor: 'var(--accent-green)' }}
                 >
                   <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
@@ -798,7 +624,7 @@ export default function MCPPage() {
                     borderWidth: '1px',
                     borderColor: 'var(--border)',
                     color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow)',
+                    boxShadow: 'none',
                   }}
                 >
                   <span className="inline-flex items-center gap-2">

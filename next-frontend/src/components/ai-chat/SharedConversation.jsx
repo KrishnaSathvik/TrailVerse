@@ -33,7 +33,7 @@ export default function SharedConversation({ conversation, sharedBy, canonicalPl
 
   if (restoredConversation.length === 0) return null;
   const openFollowupInTrailie = (prompt) => {
-    window.location.assign(`/plan-ai?ask=${encodeURIComponent(prompt)}`);
+    window.location.assign(`/plan-ai?entry=new-trip&ask=${encodeURIComponent(prompt)}`);
   };
 
   return (

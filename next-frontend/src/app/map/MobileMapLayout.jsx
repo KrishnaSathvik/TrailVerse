@@ -55,9 +55,9 @@ export default function MobileMapLayout() {
 
   if (isLoading && allParks.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <div className="public-map min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Header />
-        <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
+        <div className="flex h-[calc(100dvh-64px)] lg:h-[calc(100dvh-68px)] items-center justify-center">
           <div className="text-center">
             <LoadingSpinner size="lg" text="Loading parks…" />
           </div>
@@ -67,10 +67,10 @@ export default function MobileMapLayout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+    <div className="public-map min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Header />
 
-      <div className="relative h-[calc(100dvh-72px)] overflow-hidden">
+      <div className="relative h-[calc(100dvh-64px)] lg:h-[calc(100dvh-68px)] overflow-hidden">
         <MapCanvas
           parks={allParks}
           places={allPlaces}

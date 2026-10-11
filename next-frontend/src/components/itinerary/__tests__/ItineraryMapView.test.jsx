@@ -18,7 +18,7 @@ function zionPlan(minutes) {
     days: [{
       id: 'zion-day-1',
       dayNumber: 1,
-      travelEdges: [transfer('canyon-overlook', 'parus-trail', { modeIntent: 'drive' })],
+      travelEdges: [transfer('canyon-overlook', 'parus-trail', { modeIntent: 'drive', status: Number.isFinite(minutes) ? 'verified' : 'unverified', travelMode: 'driving', durationSeconds: Number.isFinite(minutes) ? minutes * 60 : null, source: { evidenceId: 'route', provider: 'google_maps' } })],
       stops: [
         pin('canyon-overlook', 'Canyon Overlook', 'viewpoint', 37.2132, -112.9401),
         pin('parus-trail', "Pa'rus Trail", 'trail', 37.2002, -112.9869, {
@@ -78,6 +78,16 @@ describe('ItineraryMapView path modes', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
+  it('chat preview preserves canonical pins without map navigation controls or directions calls', async () => {
+    const model = buildTripMapModel(zionPlan(15));
+    render(<ItineraryMapView days={model.days} pathMode={ITINERARY_MAP_PATH_MODE.NONE} preview />);
+    await waitFor(() => expect(maps.pinMarkers()).toHaveLength(2));
+    expect(maps.mapInstances[0].opts).toMatchObject({ gestureHandling: 'none', keyboardShortcuts: false, zoomControl: false, fullscreenControl: false });
+    expect(maps.directionsInstances).toHaveLength(0);
+    expect(maps.polylineCalls).toHaveLength(0);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it('Zion unverified drive: one abstract dash, no minutes, no Directions', async () => {
     const model = buildTripMapModel(zionPlan(null));
     render(
@@ -96,21 +106,78 @@ describe('ItineraryMapView path modes', () => {
     expect(maps.directionsInstances).toHaveLength(0);
   });
 
-  it('synthetic verified Zion: same dash plus N min drive label', async () => {
-    const model = buildTripMapModel(zionPlan(18));
+  it.each([[18, '18 min by road'], [149, '2 hr 29 min by road'], [180, '3 hr by road']])('renders a verified %i-minute map transfer as %s', async (minutes, label) => {
+    const model = buildTripMapModel(zionPlan(minutes));
+    expect(model.days[0].transferEdges[0].minutes).toBe(minutes);
     render(
       <ItineraryMapView
         days={model.days}
         pathMode="abstract-edges"
+        activeDayId={model.days[0].id}
       />,
     );
 
     await waitFor(() => {
       expect(maps.edgeLabels()).toHaveLength(1);
     });
-    expect(maps.edgeLabels()[0].content.textContent).toBe('18 min drive');
+    expect(maps.edgeLabels()[0].content.textContent).toBe(label);
     expect(maps.polylineCalls).toHaveLength(1);
     expect(maps.directionsInstances).toHaveLength(0);
+  });
+
+  it('uses stop order only in All and every selected day', async () => {
+    const plan = zionPlan(18);
+    plan.days = [1, 2, 3, 4, 5].map(n => ({ ...plan.days[0], id: `day-${n}`, dayNumber: n }));
+    const model = buildTripMapModel(plan);
+    const { rerender } = render(<ItineraryMapView days={model.days} pathMode="abstract-edges" />);
+    await waitFor(() => expect(maps.pinMarkers()).toHaveLength(10));
+    expect(maps.pinMarkers().map(m => m.content.textContent)).toEqual(['1','2','1','2','1','2','1','2','1','2']);
+    expect(maps.pinMarkers()[8].title).toBe('Day 5 · Stop 1 · Canyon Overlook');
+    expect(maps.edgeLabels()).toHaveLength(0);
+    expect(maps.polylineCalls[0].icons[0].icon.strokeOpacity).toBeLessThan(0.5);
+    for (const day of model.days) {
+      maps.markerCalls.length = 0;
+      rerender(<ItineraryMapView days={model.days} activeDayId={day.id} pathMode="abstract-edges" />);
+      expect(maps.pinMarkers().map(m => m.content.textContent)).toEqual(['1', '2']);
+      expect(maps.edgeLabels()).toHaveLength(1);
+    }
+  });
+
+  it('clusters overlapping UI anchors and makes each original stop selectable', async () => {
+    const instances = [];
+    const OriginalMarker = window.google.maps.marker.AdvancedMarkerElement;
+    window.google.maps.marker.AdvancedMarkerElement = function(opts) {
+      const marker = new OriginalMarker(opts);
+      marker.handlers = {};
+      marker.addListener = (name, fn) => { marker.handlers[name] = fn; };
+      instances.push(marker);
+      return marker;
+    };
+    const OriginalMap = window.google.maps.Map;
+    window.google.maps.Map = function(...args) {
+      const map = new OriginalMap(...args);
+      map.getProjection = () => ({ fromLatLngToPoint: p => ({ x: p.lng, y: p.lat }) });
+      map.getZoom = () => 0;
+      return map;
+    };
+    window.google.maps.LatLng = function(lat, lng) { this.lat = lat; this.lng = lng; };
+    const onMarkerClick = vi.fn();
+    const model = buildTripMapModel(zionPlan(18));
+    render(<ItineraryMapView days={model.days} pathMode="abstract-edges" onMarkerClick={onMarkerClick} />);
+    await waitFor(() => expect(instances).toHaveLength(3));
+    const [first, second, cluster] = instances;
+    expect(cluster.content.textContent).toBe('2 stops');
+    expect(first.position).toEqual({ lat: 37.2132, lng: -112.9401 });
+    expect(second.position).toEqual({ lat: 37.2002, lng: -112.9869 });
+    expect(first.map).toBeNull();
+    cluster.handlers.click();
+    const info = window.google.maps.InfoWindow.mock.instances[0];
+    const list = info.setContent.mock.calls.at(-1)[0];
+    expect(list.querySelectorAll('button')).toHaveLength(2);
+    list.querySelectorAll('button')[1].click();
+    expect(onMarkerClick).toHaveBeenCalledWith('parus-trail', 'zion-day-1');
+    expect(second.zIndex).toBe(1000);
+    expect(second.map).not.toBeNull();
   });
 
   it('Yosemite group: four pins, only the outgoing abstract connector', async () => {

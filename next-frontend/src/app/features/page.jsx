@@ -4,7 +4,7 @@ import FeaturesPageClient from './FeaturesPageClient';
 
 export const metadata = {
   title: 'Features — Trailie, Maps, Weather & More | TrailVerse',
-  description: 'Explore TrailVerse features: Trailie outdoor trip planning (5 guest messages; sign in for unlimited chat, live web search, and state parks), itinerary builder, PDF export, maps, weather, and 470+ NPS sites.',
+  description: 'Explore TrailVerse features: Trailie outdoor trip planning (5 guest messages per 48 hours; sign in for saved history, live web search, and state parks), itinerary builder, PDF export, maps, weather, and 470+ NPS sites.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/features',
   },

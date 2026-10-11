@@ -9,8 +9,8 @@ const AuthShell = ({
   children,
 }) => {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="relative isolate flex min-h-screen overflow-hidden">
+    <div className="auth-shell min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="public-shell relative isolate flex min-h-screen overflow-hidden">
         <div
           className="pointer-events-none absolute inset-0 opacity-90"
           style={{
@@ -60,7 +60,7 @@ const AuthShell = ({
       </div>
 
       <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-8 sm:px-6 lg:p-8">
-        <div className="w-full max-w-lg">
+        <div className="public-form">
           <div className="mb-6 flex flex-col items-center text-center lg:hidden">
             <Link href="/" className="flex items-center gap-3 group">
               <img
@@ -113,7 +113,7 @@ const AuthShell = ({
             style={{
               backgroundColor: 'var(--surface)',
               borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow-lg)',
+              boxShadow: 'none',
             }}
           >
             {children}

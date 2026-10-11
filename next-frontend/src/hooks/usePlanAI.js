@@ -1,4 +1,5 @@
 'use client';
+import { resolveTripEntryIntent, TRIP_ENTRY } from '@/lib/tripEntryIntent';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { resolvePlanAiEntryMode, PLAN_AI_ENTRY, isFromComparePage } from '@/lib/planAiHeaderMeta';
@@ -132,7 +133,8 @@ export default function usePlanAI(tripId) {
     [searchParams, tripId, fromChatHistory]
   );
 
-  const guestResumingChat = !isAuthenticated && guestHasResumableAnonymousChat();
+  const startsNewTrip = resolveTripEntryIntent(searchParams, tripId) === TRIP_ENTRY.NEW;
+  const guestResumingChat = !isAuthenticated && !startsNewTrip && !searchParams.has('conversation') && guestHasResumableAnonymousChat();
   const effectiveEntryMode = useMemo(() => {
     if (isNewChat) return PLAN_AI_ENTRY.GENERAL;
     if (entryMode !== PLAN_AI_ENTRY.GENERAL) return entryMode;
@@ -309,7 +311,7 @@ export default function usePlanAI(tripId) {
       // Generic /plan-ai — do not resurrect park-only browse from earlier "Plan with Trailie" clicks
       setSuggestText('');
       setIntentContext(null);
-      if (hasActivePlanAiConversation()) {
+      if (!searchParams.has('conversation') && hasActivePlanAiConversation()) {
         const savedFormState = getFormState();
         if (savedFormState?.chatFormData) {
           setChatFormData(savedFormState.chatFormData);
@@ -317,7 +319,7 @@ export default function usePlanAI(tripId) {
           if (savedFormState.suggestText) setSuggestText(savedFormState.suggestText);
           if (savedFormState.intentContext) setIntentContext(savedFormState.intentContext);
         }
-      } else if (!isAuthenticated && guestHasResumableAnonymousChat()) {
+      } else if (!isAuthenticated && !searchParams.has('conversation') && guestHasResumableAnonymousChat()) {
         resumeGuestChatContext();
         return;
       } else {
@@ -334,7 +336,7 @@ export default function usePlanAI(tripId) {
 
   // Guest resume: restore park context only when the anonymous session has real messages
   useEffect(() => {
-    if (isAuthenticated || searchParams.get('park')) return;
+    if (isAuthenticated || searchParams.get('park') || searchParams.get('conversation') || startsNewTrip) return;
     if (!hasActivePlanAiConversation()) return;
 
     try {
@@ -351,7 +353,7 @@ export default function usePlanAI(tripId) {
     } catch {
       // ignore invalid session JSON
     }
-  }, [isAuthenticated, searchParams]);
+  }, [isAuthenticated, searchParams, startsNewTrip]);
 
   // Load trip history and check if user is returning
   useEffect(() => {
@@ -364,7 +366,7 @@ export default function usePlanAI(tripId) {
     }
 
     // Park deep link: park-context effect owns isRestoringState — don't clear early here
-    if (tripId || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest') || searchParams.get('ask')) {
+    if (tripId || searchParams.get('conversation') || searchParams.get('chat') || searchParams.get('personalized') || searchParams.get('newchat') || searchParams.get('suggest') || searchParams.get('ask')) {
       setIsRestoringState(false);
       return;
     }

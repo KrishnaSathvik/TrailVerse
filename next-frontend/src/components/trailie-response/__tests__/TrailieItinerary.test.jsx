@@ -68,21 +68,22 @@ describe('TrailieItinerary', () => {
     expect(screen.getAllByText(/Use the paved river path for sunset/)).toHaveLength(1);
   });
 
-  it('renders only existing drive minutes as a quiet transition before the affected stop', () => {
+  it.each([[25, '25 min by road'], [149, '2 hr 29 min by road']])('renders a verified %i-minute itinerary transfer as %s', (minutes, label) => {
     const plan = {
       parkName: 'Big Bend National Park',
       days: [{
         dayNumber: 1,
         stops: [
-          { name: 'Panther Junction', duration: 30 },
-          { name: 'Lost Mine Trail', duration: 180, drivingTimeFromPreviousMin: 25 },
+          { id: 'a', name: 'Panther Junction', duration: 30 },
+          { id: 'b', name: 'Lost Mine Trail', duration: 180, drivingTimeFromPreviousMin: 25 },
           { name: 'Window View', duration: 45, drivingTimeFromPreviousMin: null },
         ],
+        travelEdges: [{ sourceStopId: 'a', targetStopId: 'b', relationship: 'transfer', status: 'verified', travelMode: 'driving', durationSeconds: minutes * 60, source: { evidenceId: 'route', provider: 'google_maps' } }],
       }],
     };
 
     render(<TrailieItinerary plan={plan} />);
-    expect(screen.getByText('25 min drive')).toHaveAttribute('data-drive-transition', 'true');
+    expect(screen.getByText(label)).toHaveAttribute('data-drive-transition', 'true');
     expect(screen.queryByText('0 min drive')).not.toBeInTheDocument();
   });
 

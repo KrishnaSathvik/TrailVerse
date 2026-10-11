@@ -131,7 +131,7 @@ const TestimonialForm = ({
 
   return (
     <div
-      className="rounded-2xl p-6 sm:p-8 backdrop-blur"
+      className="rounded-2xl p-6 sm:p-8 "
       style={{
         backgroundColor: 'var(--surface)',
         borderWidth: '1px',

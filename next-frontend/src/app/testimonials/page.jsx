@@ -1,23 +1,23 @@
+import InfoPageHeader from '@/components/info/InfoPageHeader';
+import Link from 'next/link';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import TestimonialsServerList from '@/components/testimonials/TestimonialsServerList';
 import {
-  TESTIMONIALS_PAGE_INTRO,
   TESTIMONIALS_SECTION_SUBTITLE,
-  TESTIMONIALS_SECTION_TITLE,
 } from '@/components/testimonials/testimonialsCopy';
 import { getApprovedTestimonialsServer } from '@/lib/testimonialsApi';
 import TestimonialSubmitSection from './TestimonialSubmitSection';
 
 export const metadata = {
-  title: 'Traveler Reviews — TrailVerse',
+  title: 'Traveler Stories — TrailVerse',
   description:
     'Read how travelers use TrailVerse to research national parks, check weather and alerts, and plan trips. Share your own review — no account required.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/testimonials',
   },
   openGraph: {
-    title: 'Traveler Reviews — TrailVerse',
+    title: 'Traveler Stories — TrailVerse',
     description:
       'Real stories from people planning trips across 470+ national parks and sites with TrailVerse.',
     url: 'https://www.nationalparksexplorerusa.com/testimonials',
@@ -26,30 +26,34 @@ export const metadata = {
   },
   twitter: {
     card: 'summary',
-    title: 'Traveler Reviews — TrailVerse',
+    title: 'Traveler Stories — TrailVerse',
     description: 'Traveler reviews and stories from the TrailVerse community.',
   },
 };
 
-export default async function TestimonialsPage() {
-  const { data: testimonials } = await getApprovedTestimonialsServer({ limit: 20 });
+export default async function TestimonialsPage({ searchParams }) {
+  const query = await searchParams;
+  const requested = Number(query?.batch);
+  const batch = Number.isInteger(requested) && requested > 0 ? Math.min(requested, 50) : 1;
+  const limit = batch * 20;
+  const { data: testimonials, error } = await getApprovedTestimonialsServer({ limit: limit + 1 });
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <main>
-        <section className="pt-8 sm:pt-20 pb-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-              {TESTIMONIALS_SECTION_TITLE}
-            </h1>
-            <p className="text-xl max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-              {TESTIMONIALS_SECTION_SUBTITLE} {TESTIMONIALS_PAGE_INTRO}
-            </p>
-          </div>
-        </section>
+      <main className="info-page">
+        <InfoPageHeader title="Traveler Stories" description={<>
+              {TESTIMONIALS_SECTION_SUBTITLE}
+            </>} />
 
-        <TestimonialsServerList testimonials={testimonials} />
+        <div className="info-stories"><TestimonialsServerList testimonials={testimonials.slice(0, limit)} error={error} /></div>
+        {testimonials.length > limit && batch < 50 && (
+          <div className="info-width pb-8">
+            <Link href={`/testimonials?batch=${batch + 1}`} className="public-action public-action-secondary px-5">
+              Load more stories
+            </Link>
+          </div>
+        )}
         <TestimonialSubmitSection />
       </main>
       <Footer />

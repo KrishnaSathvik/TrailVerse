@@ -57,6 +57,7 @@ export default function NewsletterWidget({
   pagePath = null,
   parkCode = null,
   embedded = false,
+  containerClassName = 'rounded-[2rem] p-6 sm:p-8',
 }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle');
@@ -164,7 +165,7 @@ export default function NewsletterWidget({
     if (embedded) return <div ref={rootRef}>{successBody}</div>;
 
     return (
-      <div ref={rootRef} className="rounded-[2rem] p-6 sm:p-8" style={{ backgroundColor: 'var(--surface)' }}>
+      <div ref={rootRef} className={containerClassName} style={{ backgroundColor: 'var(--surface)' }}>
         {successBody}
       </div>
     );
@@ -240,7 +241,7 @@ export default function NewsletterWidget({
   }
 
   return (
-    <div ref={rootRef} className="rounded-[2rem] p-6 sm:p-8" style={{ backgroundColor: 'var(--surface)' }}>
+    <div ref={rootRef} className={containerClassName} style={{ backgroundColor: 'var(--surface)' }}>
       {formContent}
     </div>
   );

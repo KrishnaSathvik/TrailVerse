@@ -55,7 +55,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       window.location.href = tripSurfacePath(tripId, surface);
     };
 
-    const tryMigration = async (anonymousId, storageKey, successMessage, surface = null) => {
+    const tryMigration = async (anonymousId, storageKey, successMessage, surface = null, conversationId = null) => {
       setAuthTransition({
         active: true,
         message: 'Saving your chat to your account...'
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ anonymousId })
+        body: JSON.stringify({ anonymousId, conversationId })
       });
 
       if (!migrationResponse.ok) {
@@ -76,8 +76,10 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
       }
 
       const migrationData = await migrationResponse.json();
-      localStorage.removeItem(storageKey);
-      localStorage.removeItem('anonymousSession');
+      if (storageKey !== 'anonymousSession' || !conversationId) localStorage.removeItem(storageKey);
+      // Other guest conversations and their shared quota remain recoverable.
+      if (!conversationId) localStorage.removeItem('anonymousSession');
+      if (conversationId === sessionStorage.getItem('trailieActiveConversation')) sessionStorage.removeItem('trailieActiveConversation');
       logAnonymousChatMigrated();
       console.log(successMessage, migrationData.data.tripId);
       redirectToTrip(migrationData.data.tripId, surface);
@@ -93,7 +95,8 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
             chatContext.anonymousId,
             'returnToChat',
             '✅ Migrated chat context to user account:',
-            chatContext.surface
+            chatContext.surface,
+            chatContext.conversationId
           );
         }
         localStorage.removeItem('returnToChat');
@@ -119,7 +122,9 @@ export const AuthProvider = ({ children, initialAuthHint = false }) => {
         return await tryMigration(
           sessionData.anonymousId,
           'anonymousSession',
-          '✅ Migrated anonymous session to user account:'
+          '✅ Migrated anonymous session to user account:',
+          null,
+          sessionStorage.getItem('trailieActiveConversation')
         );
       }
 

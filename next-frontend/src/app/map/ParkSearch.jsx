@@ -44,7 +44,7 @@ export default function ParkSearch({
 
       {shouldShowSuggestions && (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+0.75rem)] z-30 max-h-80 overflow-y-auto rounded-2xl border p-2 backdrop-blur-md"
+          className="absolute left-0 right-0 top-[calc(100%+0.75rem)] z-30 max-h-80 overflow-y-auto rounded-2xl border p-2"
           style={{
             borderColor: 'var(--border)',
             backgroundColor: 'var(--bg-primary)',

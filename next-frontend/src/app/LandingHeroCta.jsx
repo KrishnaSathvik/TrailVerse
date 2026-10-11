@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import IconGlyph from '@/components/common/IconGlyph';
 import { logCtaClick } from '@/utils/analytics';
-import { BROWSE_HUB_NAV_LABEL, BROWSE_HUB_PATH } from '@/lib/browseHub';
+import { BROWSE_HUB_PATH } from '@/lib/browseHub';
 import { LANDING_HERO_DEMO_CTA, LANDING_HERO_PRIMARY_CTA } from '@/lib/landingHeroCopy';
 
 function TrackedLink({ href, ctaId, label, className, style, children }) {
@@ -25,24 +25,18 @@ function TrackedLink({ href, ctaId, label, className, style, children }) {
 }
 
 const heroPrimaryClass =
-  'inline-flex w-full sm:w-auto min-w-[15.5rem] items-center justify-center gap-2.5 rounded-full px-8 py-4 text-base font-semibold text-white shadow-xl shadow-black/35 transition hover:brightness-110 hover:shadow-2xl';
+  'public-action inline-flex w-full sm:w-auto items-center justify-center gap-2.5 px-7 py-3.5 text-base font-semibold text-white shadow-md transition hover:brightness-110 active:translate-y-px';
 
 const heroDemoClass =
-  'group inline-flex w-full sm:w-auto min-w-[15.5rem] items-center justify-center gap-2.5 rounded-full border-2 border-white/85 bg-black/25 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition hover:border-white hover:bg-black/40';
+  'public-action group inline-flex w-full sm:w-auto items-center justify-center gap-2.5 border border-white bg-white px-7 py-3.5 text-base font-semibold text-[#172d24] shadow-md transition hover:bg-emerald-50 active:translate-y-px';
 
 const heroSecondaryClass =
-  'inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-black/40 px-4 py-2.5 text-sm font-semibold text-white/90 shadow-md shadow-black/25 backdrop-blur-md transition hover:border-white/30 hover:bg-black/55';
+  'public-action inline-flex min-w-0 items-center justify-center gap-2 border border-white/80 bg-white px-4 py-2.5 text-sm font-semibold text-[#172d24] shadow-sm transition hover:bg-emerald-50 active:translate-y-px';
 
-const DESKTOP_SECONDARY_LINKS = [
+const SECONDARY_LINKS = [
   { href: '/compare', ctaId: 'hero_compare_parks', label: 'Compare parks', icon: 'ArrowsLeftRight' },
   { href: '/guides', ctaId: 'hero_planning_guides', label: 'Planning guides', icon: 'Bookmark' },
-  { href: BROWSE_HUB_PATH, ctaId: 'hero_discover_desktop', label: BROWSE_HUB_NAV_LABEL, icon: 'Compass' },
-];
-
-const MOBILE_QUICK_LINKS = [
-  { href: '/guides', ctaId: 'hero_planning_guides', label: 'Guides', icon: 'Bookmark' },
-  { href: '/map', ctaId: 'hero_open_map', label: 'Map', icon: 'Map' },
-  { href: BROWSE_HUB_PATH, ctaId: 'hero_discover', label: 'Activities', icon: 'Mountain' },
+  { href: BROWSE_HUB_PATH, ctaId: 'hero_discover', label: 'Activities', icon: 'Compass' },
 ];
 
 function HeroPrimaryActions() {
@@ -68,7 +62,7 @@ function HeroPrimaryActions() {
         {LANDING_HERO_DEMO_CTA}
         <IconGlyph
           name="ArrowRight"
-          className="h-4 w-4 shrink-0 text-white/70 transition group-hover:translate-x-0.5 group-hover:text-white"
+          className="h-4 w-4 shrink-0 transition group-hover:translate-x-0.5"
         />
       </TrackedLink>
     </div>
@@ -78,38 +72,17 @@ function HeroPrimaryActions() {
 export default function LandingHeroCta() {
   return (
     <div className="animate-fade-in w-full max-w-2xl mx-auto">
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-6">
         <HeroPrimaryActions />
 
-        <div className="grid w-full grid-cols-3 gap-2 md:hidden">
-          {MOBILE_QUICK_LINKS.map((item) => (
-            <TrackedLink
-              key={item.ctaId}
-              href={item.href}
-              ctaId={item.ctaId}
-              label={item.label}
-              className={`${heroSecondaryClass} flex-col gap-1.5 px-2 py-3 text-center rounded-xl`}
-            >
-              <IconGlyph name={item.icon} className="h-5 w-5 shrink-0" style={{ color: 'var(--accent-green)' }} />
-              <span className="text-[11px] font-semibold leading-tight text-white/90">{item.label}</span>
+        <nav aria-label="Explore national parks" className="flex w-full flex-wrap justify-center gap-2.5">
+          {SECONDARY_LINKS.map((item) => (
+            <TrackedLink key={item.ctaId} href={item.href} ctaId={item.ctaId} label={item.label} className={heroSecondaryClass}>
+              <IconGlyph name={item.icon} className="h-4 w-4 shrink-0 text-emerald-700" />
+              <span>{item.label}</span>
             </TrackedLink>
           ))}
-        </div>
-
-        <div className="hidden md:flex flex-wrap items-center justify-center gap-2">
-          {DESKTOP_SECONDARY_LINKS.map((item) => (
-            <TrackedLink
-              key={item.ctaId}
-              href={item.href}
-              ctaId={item.ctaId}
-              label={item.label}
-              className={heroSecondaryClass}
-            >
-              <IconGlyph name={item.icon} className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
-              {item.label}
-            </TrackedLink>
-          ))}
-        </div>
+        </nav>
       </div>
     </div>
   );

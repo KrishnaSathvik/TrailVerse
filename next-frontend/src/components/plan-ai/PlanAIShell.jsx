@@ -27,13 +27,13 @@ export default function PlanAIShell({
       <main className="relative flex flex-1 min-h-0 flex-col overflow-hidden">
         {showChromeBar && (
           <section
-            className="relative z-30 shrink-0 border-b px-3 py-2 sm:px-5 sm:py-4"
+            className="relative z-30 shrink-0 border-b py-2 sm:py-4"
             style={{
               borderColor: 'var(--border)',
               backgroundColor: 'color-mix(in srgb, var(--bg-primary) 92%, transparent)',
             }}
           >
-            <div className="mx-auto flex w-full max-w-[68rem] items-center justify-between gap-3 sm:gap-5">
+            <div className="public-shell flex items-center justify-between gap-3 sm:gap-5">
               {showSubHeader ? (
                 <div className="min-w-0 flex-1">
                   {title && title !== 'Trailie' ? (
@@ -71,7 +71,7 @@ export default function PlanAIShell({
           </section>
         )}
 
-        <div className="relative z-10 mx-auto flex w-full max-w-[68rem] flex-1 min-h-0 flex-col overflow-hidden">
+        <div className="public-full relative z-10 flex flex-1 min-h-0 flex-col overflow-hidden">
           {children ?? (
             loadingMessage ? (
               <div className="flex flex-1 flex-col items-center justify-center px-4">

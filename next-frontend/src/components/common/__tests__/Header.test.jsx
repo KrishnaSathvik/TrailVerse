@@ -64,9 +64,9 @@ describe('Header mobile navigation', () => {
 
     expect(mobileNav.getByRole('link', { name: 'Explore' })).toBeInTheDocument();
     expect(mobileNav.getByRole('link', { name: 'Blog' })).toBeInTheDocument();
-    expect(mobileNav.getByRole('link', { name: 'Events' })).toBeInTheDocument();
-    expect(mobileNav.queryByRole('link', { name: 'Map' })).not.toBeInTheDocument();
-    expect(mobileNav.queryByRole('link', { name: 'Trailie' })).not.toBeInTheDocument();
+    expect(mobileNav.queryByRole('link', { name: 'Events' })).not.toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Map' })).toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Trailie' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'TrailVerse home' })).toBeInTheDocument();
   });
 
@@ -108,11 +108,11 @@ describe('Header mobile navigation', () => {
     const moreMenu = document.getElementById('more-navigation-menu-mobile');
 
     expect(moreMenu).toBeInTheDocument();
-    expect(within(moreMenu).getByRole('menuitem', { name: 'Map' })).toBeInTheDocument();
-    expect(within(moreMenu).getByRole('menuitem', { name: 'Trailie' })).toBeInTheDocument();
+    expect(within(moreMenu).queryByRole('menuitem', { name: 'Map' })).not.toBeInTheDocument();
+    expect(within(moreMenu).queryByRole('menuitem', { name: 'Trailie' })).not.toBeInTheDocument();
     expect(within(moreMenu).getByRole('menuitem', { name: 'Compare' })).toBeInTheDocument();
     expect(within(moreMenu).queryByRole('menuitem', { name: 'Blog' })).not.toBeInTheDocument();
-    expect(within(moreMenu).queryByRole('menuitem', { name: 'Events' })).not.toBeInTheDocument();
+    expect(within(moreMenu).getByRole('menuitem', { name: 'Events' })).toBeInTheDocument();
     expect(within(moreMenu).queryByRole('menuitem', { name: 'Log out' })).not.toBeInTheDocument();
   });
 
@@ -133,16 +133,16 @@ describe('Header mobile navigation', () => {
     await waitFor(() => {
       expect(mobileNav.getByRole('link', { name: 'Home' })).toBeInTheDocument();
     });
-    expect(mobileNav.getByRole('link', { name: 'Blog' })).toBeInTheDocument();
-    expect(mobileNav.getByRole('link', { name: 'Events' })).toBeInTheDocument();
-    expect(mobileNav.queryByRole('link', { name: 'Map' })).not.toBeInTheDocument();
+    expect(mobileNav.queryByRole('link', { name: 'Blog' })).not.toBeInTheDocument();
+    expect(mobileNav.queryByRole('link', { name: 'Events' })).not.toBeInTheDocument();
+    expect(mobileNav.getByRole('link', { name: 'Map' })).toBeInTheDocument();
 
     await userEvent.click(mobileNav.getByRole('button', { name: /more/i }));
 
     const moreMenu = document.getElementById('more-navigation-menu-mobile');
-    expect(within(moreMenu).getByRole('menuitem', { name: 'Map' })).toBeInTheDocument();
-    expect(within(moreMenu).queryByRole('menuitem', { name: 'Blog' })).not.toBeInTheDocument();
-    expect(within(moreMenu).queryByRole('menuitem', { name: 'Events' })).not.toBeInTheDocument();
+    expect(within(moreMenu).queryByRole('menuitem', { name: 'Map' })).not.toBeInTheDocument();
+    expect(within(moreMenu).getByRole('menuitem', { name: 'Blog' })).toBeInTheDocument();
+    expect(within(moreMenu).getByRole('menuitem', { name: 'Events' })).toBeInTheDocument();
     expect(within(moreMenu).getByRole('menuitem', { name: 'Log out' })).toBeInTheDocument();
   });
 

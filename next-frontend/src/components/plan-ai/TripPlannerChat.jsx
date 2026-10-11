@@ -25,7 +25,7 @@ import TypingIndicator from '../ai-chat/TypingIndicator';
 import SuggestedPrompts from '../ai-chat/SuggestedPrompts';
 import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
-import GuestLimitCard from './GuestLimitCard';
+import GuestAccountCard from './GuestAccountCard';
 import { tripSurfacePath } from '@/lib/tripSurfacePath';
 import DiscoveryPlanCta from './DiscoveryPlanCta';
 import { buildDayByDayPlanFollowUp } from '@/lib/buildDayByDayPlanFollowUp';
@@ -50,9 +50,6 @@ import {
 } from '@/lib/guestTurnLifecycle';
 import {
   SIGNUP_PROMPT_REASONS,
-  getSignupPrompt,
-  getSignupPromptReason,
-  getSavePromptReasonFromMessages,
 } from '@/lib/planAiSignupPrompts';
 import {
   MY_RECOMMENDATIONS_PERSONALIZED_SUBTITLE,
@@ -96,6 +93,7 @@ import { getTrailieCapabilities } from '@/lib/trailieCapabilities';
 import { RECOVERY_MESSAGE } from '@/utils/proseRecoveryClient';
 import EarlyItineraryCard from './EarlyItineraryCard';
 import TrailieResponse from '@/components/trailie-response/TrailieResponse';
+import { tripRevision } from '@/lib/trailieRichPresentation';
 import {
   attachCanonicalPlanToConversation,
   toLiveTrailieResponseModel,
@@ -104,7 +102,8 @@ import { createUiWelcomeMessage, MESSAGE_KIND, selectCanonicalConversation } fro
 import { resolveTripDestination } from '@/lib/tripDestination';
 import { mapServerMessagesToUi } from '@/utils/serverMessagesToUi';
 import { applySessionStatusToStoredSession } from '@/lib/guestSessionStatusWrite';
-import { hasDeviceOnlyHistory, conversationSendBlocked } from '@/lib/conversationContinuity';
+import { deviceOnlyMessages, guestCacheScope, localRecoveryHistory, canRestoreHistoryPrefix, historyFingerprint, preserveRecoverySet, acknowledgeRecoverySet, shouldOfferRecovery, conversationSendBlocked } from '@/lib/conversationContinuity';
+import ConversationRecoveryNotice from './ConversationRecoveryNotice';
 import { selectTravelerOwnedFormData } from '@/lib/formDataProvenance';
 import { shouldRestoreAnonymousPlanAiSession, shouldRestorePlanAiSession, withEntryFormData, withPersonalization } from '@/lib/planAiEntryContext';
 import {
@@ -201,6 +200,7 @@ const TripPlannerChat = ({
   onShellMetaChange = null,
 }) => {
   const router = useRouter();
+  const guestConversationId = entryContext?.guestConversationId || null;
   const { user, isAuthenticated, updateUser } = useAuth();
   const { showToast } = useToast();
   const { subscribe, unsubscribe, subscribeToProfile, subscribeToTrips } = useWebSocket();
@@ -316,6 +316,8 @@ const TripPlannerChat = ({
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveModalReason, setSaveModalReason] = useState(SIGNUP_PROMPT_REASONS.SAVE_ITINERARY);
+  const [saveModalMode, setSaveModalMode] = useState('signup');
+  const [saveModalSurface, setSaveModalSurface] = useState(null);
 
   const messagesEndRef = useRef(null);
   const discoveryPlanCtaRef = useRef(null);
@@ -325,6 +327,8 @@ const TripPlannerChat = ({
   const currentTripIdRef = useRef(currentTripId);
   const currentPlanRef = useRef(currentPlan);
   const planningStateRef = useRef(null);
+  const guestCacheOwnerRef = useRef(null);
+  guestCacheOwnerRef.current = { guestSessionId: anonymousId, guestConversationId };
   const entryContextRef = useRef(entryContext);
   useEffect(() => {
     entryContextRef.current = entryContext;
@@ -390,11 +394,6 @@ const TripPlannerChat = ({
   // for direct unit testing; behavior unchanged, now includes 'sync-needed'.
   const chatStatus = resolveChatStatus({ isAnonymous, saveState, hasTripId: Boolean(currentTripId) });
   const anonymousMessagesRemaining = Math.max(0, ANONYMOUS_MESSAGE_LIMIT - messageCount);
-  const anonymousQuotaLabel =
-    isAnonymous && canSendMore && anonymousMessagesRemaining > 0 && anonymousMessagesRemaining < ANONYMOUS_MESSAGE_LIMIT
-      ? `${anonymousMessagesRemaining} free ${anonymousMessagesRemaining === 1 ? 'message' : 'messages'} left`
-      : null;
-
   const getWelcomePlaceholderContent = useCallback(
     () =>
       resolvePlanAiWelcomeMessage({
@@ -907,8 +906,8 @@ const TripPlannerChat = ({
       // P0-1 (audit 2026-08-31): quota and restore decisions must never run on
       // cached data — a stale session-status (messageCount 0) unlinked live
       // sessions. Always read fresh.
-      const response = await api.get(`/ai/session-status/${anonymousId}`, { skipCache: true });
-      const { canSendMore, messageCount, isConverted, messages: serverMessages, authoritativeMessages, historyHash, planningState } = response.data;
+      const response = await api.get(`/ai/session-status/${anonymousId}${guestConversationId ? `?conversationId=${encodeURIComponent(guestConversationId)}` : ''}`, { skipCache: true });
+      const { canSendMore, messageCount, isConverted, messages: serverMessages, authoritativeMessages, historyHash, planningState, hasPendingTurn } = response.data;
 
       setCanSendMore(canSendMore);
       setMessageCount(messageCount);
@@ -933,7 +932,7 @@ const TripPlannerChat = ({
         isConverted,
         restoredMessages: serverMessages?.length || 0,
       });
-      return { canSendMore, messageCount, messages: authoritativeMessages || serverMessages || [], historyHash, planningState: planningState || null };
+      return { canSendMore, messageCount, messages: authoritativeMessages || serverMessages || [], historyHash, planningState: planningState || null, hasPendingTurn: Boolean(hasPendingTurn) };
     } catch (error) {
       // A guest id is created in the browser before the first message, so the
       // server has no row yet. That 404 is a fresh start, not a failed request.
@@ -943,7 +942,7 @@ const TripPlannerChat = ({
       console.error('Error validating session with backend:', error);
       return null;
     }
-  }, []);
+  }, [guestConversationId]);
 
   // Restore anonymous session from localStorage
   const restoreAnonymousSession = useCallback(async () => {
@@ -967,7 +966,7 @@ const TripPlannerChat = ({
       setMessageCount(sessionData.messageCount ?? 0);
       setCanSendMore(sessionData.canSendMore ?? true);
       setIsSessionRestored(true);
-      if (sessionData.activeTripContext) {
+      if (!guestConversationId && sessionData.activeTripContext) {
         activeTripContextRef.current = sessionData.activeTripContext;
       }
 
@@ -981,7 +980,7 @@ const TripPlannerChat = ({
       }
 
       // Browser cache is never an independent model-history source.
-      const temp = tripHistoryService.getTempChatState();
+      const temp = guestConversationId ? null : tripHistoryService.getTempChatState();
       const status = await validateSessionWithBackend(sessionData.anonymousId);
       if (!status) {
         setContinuityNotice('Could not reconnect this conversation. Retry before sending another message.');
@@ -989,21 +988,55 @@ const TripPlannerChat = ({
         return false;
       }
       const authoritative = status.messages || [];
-      const archived = localStorage.getItem(`trailie-history-recovery:${sessionData.anonymousId}`);
-      const cache = selectCanonicalConversation(tripHistoryService.normalizeStoredMessages(archived ? JSON.parse(archived) : temp?.messages || []), { includeLegacyRecognition: true }).filter(m => ['user','assistant'].includes(m.role) && !m.uiOnly && !m.isConversionMessage && m.content);
-      const same = !hasDeviceOnlyHistory(cache, authoritative);
+      const archiveKey = `trailie-history-recovery:${sessionData.anonymousId}`;
+      const archived = guestConversationId ? null : localStorage.getItem(archiveKey);
+      const parsedArchive = archived ? JSON.parse(archived) : null;
+      const archive = parsedArchive ? (Array.isArray(parsedArchive) ? { messages: parsedArchive } : parsedArchive) : null;
+      const owner = { anonymousId: sessionData.anonymousId, conversationId: guestConversationId };
+      const archiveMatches = guestCacheScope(archive, owner) === 'matching_or_legacy';
+      const source = archiveMatches ? archive : temp;
+      const scope = guestCacheScope(source, owner);
+      const cache = scope === 'matching_or_legacy' ? localRecoveryHistory(source?.messages) : [];
+      const missing = deviceOnlyMessages(cache, authoritative);
+      for (const candidate of [archive, temp]) {
+        if (candidate && !['empty', 'matching_or_legacy'].includes(guestCacheScope(candidate, owner))) {
+          // Preserve a proven different chat before the current cache is refreshed.
+          const suffix = encodeURIComponent(`${candidate.guestSessionId || 'legacy'}:${candidate.guestConversationId || candidate.currentTripId || 'default'}`);
+          localStorage.setItem(`${archiveKey}:other-chat:${suffix}`, JSON.stringify(candidate));
+        }
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        // Diagnostics contain counts/hashes/identities, never conversation text.
+        void historyFingerprint(cache).then(cachedHistoryHash => console.info('[Trailie conversation reconciliation]', {
+          anonymousId: sessionData.anonymousId, conversationId: guestConversationId,
+          cacheScope: scope, source: archiveMatches ? 'recovery_backup' : 'chat_cache',
+          rawCachedCount: source?.messages?.length || 0, cachedCount: cache.length,
+          serverCount: authoritative.length, cachedHistoryHash, serverHistoryHash: status.historyHash,
+          deviceOnlyCount: missing.length, deviceOnlyIndexes: missing.map(m => cache.indexOf(m)),
+        })).catch(() => {});
+      }
       setMessages(mapServerMessagesToUi(authoritative));
       planningStateRef.current = status.planningState || null;
       const lastPlan = [...authoritative].reverse().find(m=>m.canonicalPlan)?.canonicalPlan || null;
       setCurrentPlan(lastPlan);
       setMessageCount(status.messageCount); setCanSendMore(status.canSendMore);
-      if (cache.length && !same) {
-        const archiveKey = `trailie-history-recovery:${sessionData.anonymousId}`;
-        localStorage.setItem(archiveKey, JSON.stringify(cache));
-        setHistoryRecovery({messages:cache,expectedHistoryHash:status.historyHash,archiveKey});
-        setContinuityNotice('Some messages on this device are not in the server conversation. Restore their text before continuing, or continue with the server history shown here.');
+      if (missing.length) {
+        localStorage.setItem(archiveKey, JSON.stringify({ guestSessionId: sessionData.anonymousId, guestConversationId, messages: cache }));
+        const archiveId = await historyFingerprint(missing) || JSON.stringify(missing.map(m => ({ role: m.role, content: m.content })));
+        const acknowledged = preserveRecoverySet(localStorage, archiveKey, archiveId, cache);
+        setHistoryRecovery(shouldOfferRecovery(missing, acknowledged)
+          ? { messages: cache, deviceOnlyMessages: missing, canRestore: canRestoreHistoryPrefix(cache, authoritative), expectedHistoryHash: status.historyHash, archiveKey, archiveId, blocking: false }
+          : null);
+        setContinuityNotice(null);
+      } else {
+        setHistoryRecovery(null);
+        setContinuityNotice(null);
       }
-      setAnonymousRestoreStatus(authoritative.length ? 'restored' : 'empty');
+      // Archive first, then make the active device mirror match the server,
+      // including an empty saved chat. Local extras never enter model history.
+      tripHistoryService.saveTempChatState({ currentTripId: null, guestSessionId: sessionData.anonymousId, guestConversationId, messages: mapServerMessagesToUi(authoritative), plan: lastPlan, provider: 'auto' });
+      setAnonymousRestoreStatus(status.hasPendingTurn ? 'error' : authoritative.length ? 'restored' : 'empty');
+      if (status.hasPendingTurn) setContinuityNotice('Your last message is still being checked. Reconnect before sending another.');
       console.log('🔄 Restored anonymous session:', sessionData);
       return true;
     } catch (error) {
@@ -1012,7 +1045,7 @@ const TripPlannerChat = ({
       setAnonymousRestoreStatus('error');
       return false;
     }
-  }, [isAnonymous, isAuthenticated, validateSessionWithBackend]);
+  }, [isAnonymous, isAuthenticated, validateSessionWithBackend, guestConversationId]);
 
   const persistSessionToStorage = useCallback((tripId, msgs, plan) => {
     // Stage 14.8A.2 §9 — for a guest, `AnonymousSession` localStorage mirrors
@@ -1025,6 +1058,7 @@ const TripPlannerChat = ({
     if (!conversationHasUserMessages(persistable)) return;
     tripHistoryService.saveTempChatState({
       currentTripId: tripId || null,
+      ...(isAnonymous ? guestCacheOwnerRef.current : {}),
       messages: persistable,
       plan: plan || null,
       provider: 'auto',
@@ -1053,7 +1087,7 @@ const TripPlannerChat = ({
     setAuthRestoreStatus('pending');
 
     const restoreAuthSession = async () => {
-      const temp = tripHistoryService.getTempChatState();
+      const temp = guestConversationId ? null : tripHistoryService.getTempChatState();
 
       if (temp?.currentTripId) {
         const loaded = await loadExistingTrip(temp.currentTripId);
@@ -1064,7 +1098,7 @@ const TripPlannerChat = ({
       if (temp?.messages && conversationHasUserMessages(temp.messages)) {
         localStorage.setItem('trailie-unlinked-history', JSON.stringify(temp));
         setMessages([]); setCurrentPlan(null);
-        setContinuityNotice('This device had a chat without a saved conversation ID. It has been kept as a local backup; new messages will start a new conversation.');
+        setContinuityNotice('We couldn’t reconnect an earlier chat. Its messages are backed up on this device. Your next message will start a new conversation.');
       }
       if (!cancelled) setAuthRestoreStatus('empty');
     };
@@ -1086,6 +1120,7 @@ const TripPlannerChat = ({
     initialAskMessage,
     entryContext,
     loadExistingTrip,
+    guestConversationId,
   ]);
 
   // Keep conversation cache in sync for SPA navigation (not only after auto-save)
@@ -1176,6 +1211,10 @@ const TripPlannerChat = ({
       if (anonymousBootRanRef.current) return;
       anonymousBootRanRef.current = true;
 
+      if (guestConversationId) {
+        restoreAnonymousSession();
+        return;
+      }
       if (initialAskMessage) {
         setAnonymousRestoreStatus('empty');
         return;
@@ -1195,7 +1234,7 @@ const TripPlannerChat = ({
       }
       restoreAnonymousSession();
     }
-  }, [isAnonymous, isAuthenticated, parkName, initialAskMessage, entryContext, restoreAnonymousSession, cleanupExpiredSessions]);
+  }, [isAnonymous, isAuthenticated, parkName, initialAskMessage, entryContext, restoreAnonymousSession, cleanupExpiredSessions, guestConversationId]);
 
   // Draft guest avatar before first API response — same URL after refresh until session links it
   useEffect(() => {
@@ -1371,7 +1410,7 @@ const TripPlannerChat = ({
         }
 
         // Check if we're restoring a session before showing welcome message
-        const tempState = tripHistoryService.getTempChatState();
+        const tempState = guestConversationId ? null : tripHistoryService.getTempChatState();
         if (tempState?.messages && conversationHasUserMessages(tempState.messages)) {
           return;
         }
@@ -1399,6 +1438,7 @@ const TripPlannerChat = ({
     formData?.parkCode,
     showWelcomeMessage,
     loadExistingTrip,
+    guestConversationId,
   ]);
 
   // Safety net: never leave the thread blank when welcome should show
@@ -1444,6 +1484,7 @@ const TripPlannerChat = ({
   useEffect(() => {
     if (
       !initialAskMessage ||
+      (isAnonymous && guestConversationId && !['restored', 'empty'].includes(anonymousRestoreStatus)) ||
       initialAskSentRef.current ||
       isPersonalized ||
       isNewChat ||
@@ -1462,8 +1503,8 @@ const TripPlannerChat = ({
 
     if (!welcomeReady) return;
 
-    initialAskSentRef.current = true;
     const timer = setTimeout(() => {
+      initialAskSentRef.current = true;
       handleSendMessage(initialAskMessage);
       onInitialAskSent?.();
     }, 600);
@@ -1479,6 +1520,9 @@ const TripPlannerChat = ({
     isGenerating,
     messages,
     onInitialAskSent,
+    anonymousRestoreStatus,
+    guestConversationId,
+    isAnonymous,
   ]);
 
   // Auto-send first message in personalized mode only (never on regular New Chat)
@@ -1617,6 +1661,7 @@ const TripPlannerChat = ({
       entryContextRef.current = canonicalEntryContext;
 
       const requestMetadata = {
+        guestConversationId,
         tripId: currentTripIdRef.current && !currentTripIdRef.current.startsWith('temp-')
           ? currentTripIdRef.current : null,
         parkCode: formData.parkCode || activeCtx?.primaryDestination?.parkCode || null,
@@ -2063,6 +2108,9 @@ const TripPlannerChat = ({
           // attempt and is authoritative even when the transport marks it as
           // unchanged. The local buffer is only a fallback for legacy terminals
           // that genuinely omit content.
+          if (result.artifactStatus?.status === 'save_failed') {
+            console.warn('Trailie trip save failed', { responseId: result.responseId, code: result.artifactStatus.code, phase: 'trip_save' });
+          }
           const resolvedContent = typeof result.content === 'string'
             ? result.content
             : stripItineraryJsonForDisplay(rawStreamedContentRef.current);
@@ -2075,6 +2123,7 @@ const TripPlannerChat = ({
             // Stage 8 — canonical response identity + the plan to persist verbatim.
             canonicalPlan: result.canonicalPlan || null,
             travelLogistics: result.travelLogistics || null,
+            artifactStatus: result.artifactStatus || null,
             responseArtifacts: result.responseArtifacts || null,
             intent: result.intent || null,
             presentation: result.presentation || null,
@@ -2185,6 +2234,7 @@ const TripPlannerChat = ({
                         : {}
                     ),
                     ...(result.travelLogistics ? { travelLogistics: result.travelLogistics } : {}),
+                    ...(result.artifactStatus ? { artifactStatus: result.artifactStatus } : {}),
                     ...(result.responseArtifacts ? { responseArtifacts: result.responseArtifacts } : {}),
                     ...(result.intent ? { intent: result.intent } : {}),
                     ...(result.presentation ? { presentation: result.presentation } : {}),
@@ -2200,7 +2250,7 @@ const TripPlannerChat = ({
           );
         },
         onError: (err) => {
-          console.error('Stream error:', err);
+          // The terminal catch owns reporting; do not log this SSE event twice.
           clearStreamIdleTimer();
           markStreamFinalizing();
         },
@@ -2276,7 +2326,7 @@ const TripPlannerChat = ({
           setThinkingSources(null);
           activeStreamSourcesRef.current = null;
           playCompletionSound?.();
-          return;
+          return data;
         }
       }
 
@@ -2426,6 +2476,7 @@ const TripPlannerChat = ({
         hasItinerary: data.hasItinerary || false,
         ...(terminalPlan?.days?.length ? { itineraryPlan: terminalPlan, canonicalPlan: terminalPlan } : {}),
         ...(data.travelLogistics ? { travelLogistics: data.travelLogistics } : {}),
+        ...(data.artifactStatus ? { artifactStatus: data.artifactStatus } : {}),
         ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
         ...(data.intent ? { intent: data.intent } : {}),
         ...(data.presentation ? { presentation: data.presentation } : {}),
@@ -2466,7 +2517,8 @@ const TripPlannerChat = ({
                     ? { itineraryPlan: terminalPlan, canonicalPlan: terminalPlan }
                     : {}),
                   ...(data.travelLogistics ? { travelLogistics: data.travelLogistics } : {}),
-                  ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
+                  ...(data.artifactStatus ? { artifactStatus: data.artifactStatus } : {}),
+        ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
                   ...(data.intent ? { intent: data.intent } : {}),
                   ...(data.presentation ? { presentation: data.presentation } : {}),
                   activeTripPresentation: data.activeTripPresentation || null,
@@ -2503,7 +2555,8 @@ const TripPlannerChat = ({
             hasItinerary: data.hasItinerary || false,
             ...(terminalPlan?.days?.length ? { itineraryPlan: terminalPlan, canonicalPlan: terminalPlan } : {}),
             ...(data.travelLogistics ? { travelLogistics: data.travelLogistics } : {}),
-            ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
+            ...(data.artifactStatus ? { artifactStatus: data.artifactStatus } : {}),
+        ...(data.responseArtifacts ? { responseArtifacts: data.responseArtifacts } : {}),
             ...(data.intent ? { intent: data.intent } : {}),
             ...(data.presentation ? { presentation: data.presentation } : {}),
             activeTripPresentation: data.activeTripPresentation || null,
@@ -2600,11 +2653,14 @@ const TripPlannerChat = ({
       // positive-reinforcement cue as a real success. Everything else on
       // this turn (persistence, quota, history) is unchanged.
       if (data?.content && outcomeClass !== TRAILIE_TURN_OUTCOME.RETRYABLE_FAILURE) playCompletionSound?.();
+      return data;
 
     } catch (error) {
       // Log detailed error information for debugging
-      console.error('AI Chat Error:', {
-        message: error.message,
+      console.error('Trailie request failed', {
+        responseId: error.responseId || null,
+        phase: error.phase || 'reply',
+        message: error.serverResolvedFailure ? undefined : error.message,
         response: error.response?.data,
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -3059,43 +3115,25 @@ ${[
     }
   };
 
-  const handleSignupFromChat = () => {
-    if (isAuthenticated) {
-      window.location.href = '/profile';
-      return;
-    }
-    setSaveModalReason(getSignupPromptReason(messages));
+  // One native gate for guests. The trip already exists; sign-in migrates the
+  // same conversation and lands on the requested workspace — no regeneration.
+  const openGuestAuthGate = ({ reason, mode = 'signup', surface = null }) => {
+    setSaveModalReason(reason);
+    setSaveModalMode(mode);
+    setSaveModalSurface(surface);
     setShowSaveModal(true);
   };
-
-  const handleLoginFromChat = () => {
-    if (isAuthenticated) {
-      window.location.href = '/profile';
-      return;
-    }
-    setSaveModalReason(getSignupPromptReason(messages));
-    setShowSaveModal(true);
-  };
-
-  const storeReturnToChat = (surface = null) => {
-    localStorage.setItem('returnToChat', JSON.stringify({
-      anonymousId, parkName, formData, messages, surface, timestamp: Date.now(),
-    }));
-  };
+  const guestLimitReason = () => (guestTrip
+    ? SIGNUP_PROMPT_REASONS.LIMIT_WITH_TRIP
+    : SIGNUP_PROMPT_REASONS.LIMIT_WITHOUT_TRIP);
 
   const handleOpenArtifact = (surface) => {
     if (isAnonymous || !isAuthenticated) {
-      storeReturnToChat(surface);
-      router.push('/login');
+      openGuestAuthGate({ reason: SIGNUP_PROMPT_REASONS.OPEN_TRIP, surface: surface || 'itinerary' });
       return;
     }
     const tripId = currentTripIdRef.current || currentTripId;
     if (tripId && !tripId.startsWith('temp-')) router.push(tripSurfacePath(tripId, surface));
-  };
-
-  const handleGuestSignIn = () => {
-    storeReturnToChat();
-    router.push('/login');
   };
 
   const handleShare = async () => {
@@ -3515,7 +3553,7 @@ ${[
         className="relative flex-1 min-h-0 overflow-y-auto chat-messages-container"
         onScroll={handleChatScroll}
       >
-          <div className={`mx-auto w-full px-4 sm:px-6 ${isWelcomeState ? 'py-8 sm:py-12' : 'py-5 sm:py-8'}`}>
+          <div className={`public-shell ${isWelcomeState ? 'py-8 sm:py-12' : 'py-5 sm:py-8'}`}>
             <div className="space-y-6 sm:space-y-9">
               {displayMessages.map((message, index) => {
                 if (message.messageKind === MESSAGE_KIND.UI_WELCOME && !isWelcomeState) return null;
@@ -3563,14 +3601,10 @@ ${[
                     })
                   : null;
 
-                return message.hiddenFromUi ? null : (
-                <div key={message.id || message._id || index} id={`trailie-message-${index}`} tabIndex={-1} className="min-w-0">
+                return message.hiddenFromUi || message.isConversionMessage ? null : (
+                <div key={message.id || message._id || index} id={`trailie-message-${index}`} tabIndex={-1} className="trailie-message min-w-0">
                 {message.isConversionMessage ? (
-                  <GuestLimitCard
-                    plan={guestTrip?.plan}
-                    onSignIn={handleGuestSignIn}
-                    timeUntilReset={timeUntilReset}
-                  />
+                  null
                 ) : usesSharedTrailieResponse ? (
                   <TrailieResponse
                     response={trailieResponse}
@@ -3583,7 +3617,22 @@ ${[
                           ? 'uncertain'
                           : 'default'
                     }
-                    onFollowup={(prompt) => handleSendMessage(prompt)}
+                    personalizationCurrent={guestTrip?.index === index}
+                    planningState={message.planningState || (guestTrip?.index === index ? planningStateRef.current : null)}
+                    guestExhausted={isAnonymous && !canSendMore}
+                    onRequireAccount={() => openGuestAuthGate({ reason: SIGNUP_PROMPT_REASONS.LIMIT_WITH_TRIP })}
+                    footer={message.artifactStatus?.status === 'save_failed' ? (
+                      <p role="status" className="max-w-[48rem] border-l-2 pl-3 text-sm leading-6 text-[var(--text-secondary)]"
+                        style={{ borderColor: 'color-mix(in srgb, #b7791f 55%, var(--border))' }}>
+                        {message.artifactStatus.notice || 'I answered your request, but couldn’t save the trip update.'}
+                      </p>
+                    ) : null}
+                    personalizationDisabled={conversationSendBlocked({ generating: isGenerating, recovering: historySyncBusy, recoveryPending: historyRecovery, restoreStatus: isAnonymous ? anonymousRestoreStatus : authRestoreStatus }) || (isAnonymous && !canSendMore)}
+                    onFollowup={async (prompt) => {
+                      // Recheck revision at submission; no direct plan/memory writes.
+                      if (guestTrip?.index !== index || (currentPlanRef.current && tripRevision(currentPlanRef.current) !== tripRevision(message.canonicalPlan || message.itineraryPlan))) return null;
+                      return handleSendMessage(prompt);
+                    }}
                     hideActions={Boolean(message.isStreaming || message.isFinalizing)}
                     afterContent={
                       canRetryTrailieTurn({ outcomeClass: message.outcomeClass }) ? (
@@ -3894,45 +3943,15 @@ ${[
                 </div>
               )}
 
-              {isAnonymous &&
-               messages.filter(m => m.role === 'user').length >= 1 &&
-               !messages.some((message) => message.isConversionMessage) &&
-               !isGenerating &&
-               messages[messages.length - 1]?.role === 'assistant' && (() => {
-                const userMsgCount = messages.filter((m) => m.role === 'user').length;
-                if (userMsgCount !== 1) return null;
-
-                const saveReason = getSignupPromptReason(messages);
-                const savePrompt = getSignupPrompt(saveReason, { parkName });
-                return (
-                <div className="mx-auto max-w-[68rem] px-3 sm:px-6">
-                  <div
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl px-4 py-3"
-                    style={{
-                      backgroundColor: 'rgba(67, 160, 106, 0.08)',
-                      borderWidth: '1px',
-                      borderColor: 'rgba(67, 160, 106, 0.25)',
-                    }}
-                  >
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        {savePrompt.inlineTitle}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                        {savePrompt.inlineSubtitle}
-                      </p>
-                    </div>
-                    <Button
-                      onClick={handleSignupFromChat}
-                      variant="primary"
-                      size="sm"
-                    >
-                      {savePrompt.inlineCta}
-                    </Button>
-                  </div>
-                </div>
-                );
-               })()}
+              {isAnonymous && !isGenerating &&
+                (!canSendMore || messages.some(message => message.isConversionMessage)) && (
+                <GuestAccountCard
+                  plan={guestTrip?.plan}
+                  onCreateAccount={() => openGuestAuthGate({ reason: guestLimitReason() })}
+                  onSignIn={() => openGuestAuthGate({ reason: guestLimitReason(), mode: 'login' })}
+                  timeUntilReset={timeUntilReset}
+                />
+              )}
 
               {isGenerating &&
                 !displayMessages.some(
@@ -3981,7 +4000,7 @@ ${[
             paddingBottom: 'env(safe-area-inset-bottom, 12px)'
           }}
         >
-          <div className="mx-auto w-full px-4 pb-1.5 pt-1.5 sm:px-6 sm:pb-4 sm:pt-3">
+          <div className="trailie-composer-column mx-auto w-full px-4 pb-1.5 pt-1.5 sm:px-6 sm:pb-4 sm:pt-3">
             {!isWelcomeState && showComposerToolbar && (
             <div className="trailie-composer-utilities mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:mb-3 sm:gap-x-4 sm:gap-y-2">
                 {chatStatus && (
@@ -4000,23 +4019,6 @@ ${[
                     }}
                   >
                     <span className="min-w-0">{chatStatus.tone === 'sync-needed' ? chatStatus.description : chatStatus.label}</span>
-                  </div>
-                )}
-                {anonymousQuotaLabel && (
-                  <div
-                    className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap sm:px-3 sm:text-xs"
-                    style={{
-                      backgroundColor: anonymousMessagesRemaining === 1
-                        ? 'rgba(239, 68, 68, 0.12)'
-                        : 'rgba(245, 158, 11, 0.12)',
-                      color: anonymousMessagesRemaining === 1 ? '#b91c1c' : '#b45309',
-                      border: '1px solid',
-                      borderColor: anonymousMessagesRemaining === 1
-                        ? 'rgba(239, 68, 68, 0.2)'
-                        : 'rgba(245, 158, 11, 0.2)'
-                    }}
-                  >
-                    {anonymousQuotaLabel}
                   </div>
                 )}
                 {onOpenQuickFill && (
@@ -4087,52 +4089,52 @@ ${[
             </div>
             )}
 
-            {isWelcomeState && onOpenQuickFill && (
-              <div className="mb-1.5 flex justify-end sm:mb-2">
-                {anonymousQuotaLabel && (
-                  <span className="text-[11px] sm:text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                    {anonymousQuotaLabel}
-                  </span>
-                )}
-              </div>
+            <ConversationRecoveryNotice
+              key={historyRecovery?.archiveId || 'conversation-status'}
+              recovery={historyRecovery}
+              notice={continuityNotice}
+              busy={historySyncBusy || isGenerating || ['pending', 'error'].includes(anonymousRestoreStatus)}
+              onRestore={async () => {
+                if (historySyncBusy || isGeneratingRef.current || !historyRecovery?.canRestore) return;
+                setHistorySyncBusy(true);
+                try {
+                  acknowledgeRecoverySet(localStorage, historyRecovery.archiveKey, historyRecovery.archiveId);
+                  await api.post('/ai/restore-guest-history', { anonymousId, messages: historyRecovery.messages.map(m => ({ role: m.role, content: m.content })), expectedHistoryHash: historyRecovery.expectedHistoryHash });
+                  const status = await validateSessionWithBackend(anonymousId);
+                  if (!status) throw new Error('restore_failed');
+                  const restored = mapServerMessagesToUi(status.messages);
+                  const plan = [...status.messages].reverse().find(m => m.canonicalPlan)?.canonicalPlan || null;
+                  if (!tripHistoryService.saveTempChatState({ currentTripId: null, ...guestCacheOwnerRef.current, messages: restored, plan, provider: 'auto' })) throw new Error('cache_write_failed');
+                  setMessages(restored);
+                  planningStateRef.current = status.planningState || null;
+                  setCurrentPlan(plan);
+                  localStorage.removeItem(historyRecovery.archiveKey);
+                  setHistoryRecovery(null);
+                  setAnonymousRestoreStatus(status.messages.length ? 'restored' : 'empty');
+                  setContinuityNotice('Your messages are restored. You can keep planning.');
+                } catch {
+                  setHistoryRecovery(null);
+                  setAnonymousRestoreStatus('error');
+                  setContinuityNotice('We couldn’t confirm the restore. Your backup is safe. Reconnect to check your saved chat before sending.');
+                } finally { setHistorySyncBusy(false); }
+              }}
+              onContinue={() => {
+                if (historySyncBusy || !historyRecovery) return;
+                try {
+                  acknowledgeRecoverySet(localStorage, historyRecovery.archiveKey, historyRecovery.archiveId);
+                  setHistoryRecovery(null);
+                  setContinuityNotice(null);
+                } catch {
+                  setContinuityNotice('Your backup is still on this device. We couldn’t save your preference to hide this notice.');
+                }
+              }}
+              onRetry={isAnonymous && (anonymousRestoreStatus === 'error' || (historyRecovery && continuityNotice)) ? () => restoreAnonymousSession() : null}
+            />
+            {isAnonymous && canSendMore && !isWelcomeState && messageCount > 0 && (
+              <p className="mb-1.5 text-right text-[11px] leading-none sm:text-xs" style={{ color: 'var(--text-tertiary)' }} aria-live="polite">
+                {anonymousMessagesRemaining} free {anonymousMessagesRemaining === 1 ? 'message' : 'messages'} remaining
+              </p>
             )}
-
-            {continuityNotice && <div role="status" className="mb-3 rounded-xl border p-3 text-sm">
-              <p>{continuityNotice}</p>
-              {historyRecovery && <details className="mt-2"><summary>Review device-only conversation</summary>{historyRecovery.messages.map((m,i)=><p key={i} className="mt-2 whitespace-pre-wrap"><strong>{m.role === 'user' ? 'You' : 'Trailie'}: </strong>{m.content}</p>)}</details>}
-              {historyRecovery && <div className="mt-2 flex gap-3">
-                <button disabled={historySyncBusy} onClick={async () => {
-                  setHistorySyncBusy(true);
-                  try {
-                    await api.post('/ai/restore-guest-history', {anonymousId, messages:historyRecovery.messages.map(m=>({role:m.role,content:m.content})), expectedHistoryHash:historyRecovery.expectedHistoryHash});
-                    const status = await validateSessionWithBackend(anonymousId);
-                    if (!status) throw new Error('restore_failed');
-                    setMessages(mapServerMessagesToUi(status.messages));
-                    localStorage.removeItem(historyRecovery.archiveKey);
-                    setHistoryRecovery(null); setAnonymousRestoreStatus('restored');
-                    setContinuityNotice('Conversation text restored. Any trip locations or live facts will be verified again when needed.');
-                  } catch { setContinuityNotice('The conversation changed or could not be restored safely. Retry reconnecting, or continue with server history. Your local backup is preserved.'); }
-                  finally {setHistorySyncBusy(false);}
-                }}>Restore conversation text</button>
-                <button disabled={historySyncBusy} onClick={async () => {
-                  setHistorySyncBusy(true);
-                  try {
-                    const status = await validateSessionWithBackend(anonymousId);
-                    if (!status) throw new Error('reconnect_failed');
-                    setMessages(mapServerMessagesToUi(status.messages));
-                    planningStateRef.current = status.planningState || null;
-                    setCurrentPlan([...status.messages].reverse().find(m=>m.canonicalPlan)?.canonicalPlan || null);
-                    localStorage.setItem(`${historyRecovery.archiveKey}:backup`,JSON.stringify(historyRecovery.messages));
-                    localStorage.removeItem(historyRecovery.archiveKey);
-                    setHistoryRecovery(null);
-                    setAnonymousRestoreStatus(status.messages.length ? 'restored' : 'empty');
-                    setContinuityNotice('Continuing with the server conversation. Device-only messages remain in the local backup.');
-                  } catch { setContinuityNotice('Could not reconnect. Your local backup is preserved; retry before continuing.'); }
-                  finally { setHistorySyncBusy(false); }
-                }}>Use server conversation</button>
-              </div>}
-              {isAnonymous && anonymousRestoreStatus === 'error' && <button onClick={()=>restoreAnonymousSession()}>Retry connection</button>}
-            </div>}
             <ChatInput
               onSend={handleSendMessage}
               disabled={conversationSendBlocked({generating:isGenerating,recovering:historySyncBusy,recoveryPending:historyRecovery,restoreStatus:isAnonymous?anonymousRestoreStatus:authRestoreStatus}) || (isAnonymous && (!canSendMore || messages.some(msg => msg.isConversionMessage)))}
@@ -4343,12 +4345,15 @@ ${[
       {/* Save Trip Modal — replaces redirect to /signup */}
       <SaveTripModal
         isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
+        onClose={() => { setShowSaveModal(false); setSaveModalSurface(null); }}
         parkName={parkName}
         anonymousId={anonymousId}
+        conversationId={guestConversationId}
         formData={formData}
         messages={messages}
         reason={saveModalReason}
+        initialMode={saveModalMode}
+        surface={saveModalSurface}
       />
     </div>
   );

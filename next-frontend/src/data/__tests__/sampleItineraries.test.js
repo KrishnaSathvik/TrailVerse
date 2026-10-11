@@ -25,7 +25,7 @@ describe('sample itineraries', () => {
 
   it('falls back to the live planner carrying the prompt, not an empty planner', () => {
     const href = getSampleItineraryHref({ prompt: 'Plan a 3-day Zion trip' });
-    expect(href).toBe('/plan-ai?ask=Plan%20a%203-day%20Zion%20trip');
+    expect(href).toBe('/plan-ai?entry=new-trip&ask=Plan%20a%203-day%20Zion%20trip');
   });
 
   it('still degrades to a bare planner link with nothing to ask', () => {

@@ -127,9 +127,13 @@ describe('sanitizePlan', () => {
     expect(JSON.stringify(plan)).not.toMatch(/sha256:secret|ev-private/);
   });
 
-  it('drops stops with no name rather than rendering an empty row', () => {
-    const plan = sanitizePlan({ days: [{ day: 1, stops: [{ name: 'A' }, { duration: 30 }] }] });
-    expect(plan.days[0].stops).toEqual([{ name: 'A' }]);
+  it('uses the shared public projection without inventing or dropping stop content', () => {
+    const raw = { days: [{ dayNumber: 1, stops: [{ id: 'a', name: 'A' }, { id: 'b', duration: 30 }] }] };
+    const plan = sanitizePlan(raw);
+    expect(plan.days[0].stops).toHaveLength(2);
+    expect(plan.days[0].stops[0]).toMatchObject({ id: 'a', name: 'A' });
+    expect(plan.days[0].stops[1]).toMatchObject({ id: 'b', duration: 30 });
+    expect(plan.days[0].stops[1].name).toBeUndefined();
   });
 
   it('keeps only public backup-plan fields from approved structured alternatives', () => {
@@ -212,5 +216,23 @@ describe('assertNoInternalFields', () => {
 
   it('passes a clean fixture', () => {
     expect(assertNoInternalFields({ question: 'q', prose: 'p', plan: null })).toEqual([]);
+  });
+});
+
+// Real reviewed fixtures cover day shapes, exact identities, bases and route provenance.
+import samples from '../../data/public-itineraries/index.json';
+import { exportPublicPlan } from '../publicItineraryExport.mjs';
+describe('Demo and Samples share the public canonical contract', () => {
+  it.each(samples.map(sample => [sample.slug, sample.plan]))('%s preserves all public semantics', (_slug, plan) => {
+    const exported = sanitizePlan(plan);
+    expect(exported).toEqual(exportPublicPlan(plan));
+    expect(exported.days.map(day => day.dayStructure)).toEqual(plan.days.map(day => day.dayStructure));
+    expect(exported.destinations).toEqual(plan.destinations);
+    expect(assertNoInternalFields(exported)).toEqual([]);
+  });
+  it('never rewrites frozen conversation text', () => {
+    const content = 'Hi traveler!\n\nVerify at https://www.nps.gov/ before departure.\n';
+    const question = '  My exact question  ';
+    expect(sanitizeApprovedTurn({ question, content })).toMatchObject({ question, prose: content });
   });
 });

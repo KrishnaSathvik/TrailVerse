@@ -91,7 +91,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
 
   return (
     <div className="pb-24">
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 pt-6">
+      <div className="public-shell pt-6">
         <DiscoverHubHeader
           title={detail.title}
           intro={detail.intro}
@@ -341,7 +341,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
           ) : (
             <>
               <div
-                className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 transition-opacity ${isFetching ? 'opacity-60' : ''}`}
+                className={`public-card-grid public-card-grid--four transition-opacity ${isFetching ? 'opacity-60' : ''}`}
               >
                 {parks.map((park) => (
                   <ParkCard key={park.parkCode} park={park} showReviews={false} fromPath={returnPath} />

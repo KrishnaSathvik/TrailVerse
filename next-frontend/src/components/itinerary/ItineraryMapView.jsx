@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatTravelMinutes, groundedPlaceType } from '@/lib/tripPresentation';
 import { isDrawableTransferEdge } from '@/lib/itineraryMapStops';
 import {
   getGmapsMapId,
@@ -72,11 +73,13 @@ export default function ItineraryMapView({
   activeDayId = 'all',
   parkCenter,
   selectedStopId: externalSelectedStopId,
+  selectedDayId: externalSelectedDayId,
   onMarkerClick,
   isMobile = false,
   pathMode = ITINERARY_MAP_PATH_MODE.DIRECTIONS,
   fitPadding = null,
   controlsPlacement = null,
+  preview = false,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -166,11 +169,12 @@ export default function ItineraryMapView({
         mapTypeId: 'terrain',
         center,
         zoom: 10,
-        gestureHandling: 'greedy',
-        zoomControl: true,
+        gestureHandling: preview ? 'none' : 'greedy',
+        keyboardShortcuts: !preview,
+        zoomControl: !preview,
         streetViewControl: false,
         mapTypeControl: false,
-        fullscreenControl: true,
+        fullscreenControl: !preview,
         clickableIcons: false,
         ...trailieControlOptions(controlsPlacement),
       });
@@ -188,7 +192,7 @@ export default function ItineraryMapView({
     }
 
     infoWindowRef.current = new window.google.maps.InfoWindow({ maxWidth: 280 });
-  }, [ready, runtimeBlocked, allStops, parkCenter]);
+  }, [ready, runtimeBlocked, allStops, parkCenter, preview]);
 
   // Render markers + routes whenever days or active filter changes
   useEffect(() => {
@@ -212,28 +216,35 @@ export default function ItineraryMapView({
       day.stops.forEach((stop, stopIdx) => {
         if (typeof stop.latitude !== 'number' || typeof stop.longitude !== 'number') return;
 
-        const pinLabel = stop.pinNumber != null ? String(stop.pinNumber) : String(stopIdx + 1);
-        const pin = buildPin(color, pinLabel, stop.source === 'user', Boolean(stop.hasBadge));
+        const number = stop.pinNumber != null ? String(stop.pinNumber) : String(stopIdx + 1);
+        const pinLabel = number;
+        const pin = buildPin(color, pinLabel, stop.source === 'user', Boolean(stop.hasBadge), activeDayId === 'all');
         const marker = new window.google.maps.marker.AdvancedMarkerElement({
           map: mapRef.current,
           position: { lat: stop.latitude, lng: stop.longitude },
           content: pin,
-          title: stop.name,
+          title: `Day ${day.dayNumber || colorIdx + 1} · Stop ${number} · ${stop.name}`,
+          gmpClickable: true,
         });
 
-        marker.addListener('click', () => {
-          onMarkerClick?.(stop.id);
+        marker._stopId = stop.id;
+        marker._dayId = day.id;
+        marker._color = color;
+        marker._select = () => {
+          markersRef.current.forEach(m => { m.zIndex = m === marker ? 1000 : 1; m.content.style.outline = m === marker ? '3px solid #172f25' : ''; });
+          onMarkerClick?.(stop.id, day.id);
           if (isMobile) {
-            infoWindowRef.current.setContent(buildMobilePopup(stop, color));
+            infoWindowRef.current.setContent(buildMobilePopup({ ...stop, dayNumber: day.dayNumber || colorIdx + 1, pinNumber: number }, color));
             infoWindowRef.current.open(mapRef.current, marker);
           }
-        });
+        };
+        marker.addListener('click', marker._select);
 
         markersRef.current.push(marker);
       });
 
       if (pathMode === ITINERARY_MAP_PATH_MODE.ABSTRACT_EDGES) {
-        drawAbstractTransferEdges(day, color, mapRef.current, polylinesRef.current, edgeLabelsRef.current);
+        drawAbstractTransferEdges(day, color, mapRef.current, polylinesRef.current, edgeLabelsRef.current, activeDayId !== 'all');
       } else if (pathMode === ITINERARY_MAP_PATH_MODE.NONE) {
         // Pins only — no semantic connectors and no road geometry.
       } else if (day.stops.length >= 2) {
@@ -252,6 +263,54 @@ export default function ItineraryMapView({
       );
       mapRef.current.fitBounds(bounds, mergeMapPadding(fitPadding, DEFAULT_MAP_FIT_PADDING));
     }
+    // Cluster marker UI in screen space; every stop retains its original coordinates.
+    const clusters = [];
+    const regroup = () => {
+      clusters.splice(0).forEach(marker => { marker.map = null; });
+      markersRef.current.forEach(marker => { marker.map = mapRef.current; });
+      if (activeDayId !== 'all') return;
+      const projection = mapRef.current.getProjection?.();
+      const zoom = mapRef.current.getZoom?.();
+      if (!projection || !Number.isFinite(zoom)) return;
+      const remaining = [...markersRef.current];
+      const point = marker => projection.fromLatLngToPoint(new window.google.maps.LatLng(marker.position.lat, marker.position.lng));
+      while (remaining.length) {
+        const anchor = remaining.shift();
+        const origin = point(anchor);
+        const group = [anchor];
+        for (let i = remaining.length - 1; i >= 0; i--) {
+          const p = point(remaining[i]);
+          if (Math.hypot(p.x - origin.x, p.y - origin.y) * 2 ** zoom < 40) group.push(...remaining.splice(i, 1));
+        }
+        if (group.length < 2) continue;
+        group.forEach(marker => { if (marker.zIndex !== 1000) marker.map = null; });
+        const badge = document.createElement('div');
+        badge.textContent = `${group.length} stops`;
+        badge.style.cssText = 'border:2px solid white;border-radius:24px;background:#243b32;color:white;padding:10px 12px;font:600 12px system-ui;box-shadow:0 2px 6px #0003;cursor:pointer;white-space:nowrap';
+        const cluster = new window.google.maps.marker.AdvancedMarkerElement({ map: mapRef.current, position: anchor.position, content: badge, title: `${group.length} overlapping stops. Choose a stop`, gmpClickable: true, zIndex: 500 });
+        cluster.addListener('click', () => {
+          const list = document.createElement('div');
+          list.style.cssText = 'max-height:260px;overflow-y:auto;max-width:260px';
+          group.forEach(marker => {
+            const button = document.createElement('button');
+            button.textContent = marker.title;
+            button.style.cssText = `display:block;width:100%;min-height:44px;text-align:left;background:white;color:#172f25;border:0;border-left:4px solid ${marker._color};padding:8px 12px;margin:4px 0;font:500 13px system-ui;cursor:pointer`;
+            button.onclick = () => {
+              infoWindowRef.current.close();
+              marker.map = mapRef.current;
+              marker._select();
+            };
+            list.appendChild(button);
+          });
+          infoWindowRef.current.setContent(list);
+          infoWindowRef.current.open(mapRef.current, cluster);
+        });
+        clusters.push(cluster);
+      }
+    };
+    const listener = mapRef.current.addListener?.('idle', regroup);
+    regroup();
+    return () => { listener?.remove(); clusters.forEach(marker => { marker.map = null; }); infoWindowRef.current?.close(); };
   }, [ready, days, activeDayId, pathMode]);
 
   useEffect(() => {
@@ -267,7 +326,7 @@ export default function ItineraryMapView({
     let targetStop = null;
     let targetDay = null;
     for (const d of days) {
-      const s = d.stops.find(s => s.id === externalSelectedStopId);
+      const s = (!externalSelectedDayId || d.id === externalSelectedDayId) && d.stops.find(s => s.id === externalSelectedStopId);
       if (s) { targetStop = s; targetDay = d; break; }
     }
     if (!targetStop || typeof targetStop.latitude !== 'number') return;
@@ -282,8 +341,10 @@ export default function ItineraryMapView({
     }
 
     const markerIdx = markersRef.current.findIndex(m =>
-      m.position?.lat === targetStop.latitude && m.position?.lng === targetStop.longitude
+      m._stopId === targetStop.id && m._dayId === targetDay.id
     );
+    markersRef.current.forEach((m, i) => { m.zIndex = i === markerIdx ? 1000 : 1; m.content.style.outline = i === markerIdx ? '3px solid #172f25' : ''; });
+    if (markerIdx !== -1) markersRef.current[markerIdx].map = mapRef.current;
     if (isMobile && markerIdx !== -1) {
       const marker = markersRef.current[markerIdx];
       const colorIdx = days.findIndex(d => d.id === targetDay.id);
@@ -291,7 +352,7 @@ export default function ItineraryMapView({
       infoWindowRef.current.setContent(buildMobilePopup(targetStop, color));
       infoWindowRef.current.open(mapRef.current, marker);
     }
-  }, [externalSelectedStopId, ready, days, isMobile, fitPadding]);
+  }, [externalSelectedStopId, externalSelectedDayId, ready, days, isMobile, fitPadding]);
 
   if (runtimeBlocked) {
     return (
@@ -320,11 +381,11 @@ export default function ItineraryMapView({
 // Helpers
 // ============================================================
 
-function buildPin(color, label, isUserAdded, hasBadge = false) {
+function buildPin(color, label, isUserAdded, hasBadge = false, compact = false) {
   const div = document.createElement('div');
   div.style.cssText = `
     position: relative;
-    width: 32px; height: 32px; border-radius: 50%;
+    width: ${compact ? 26 : 32}px; height: ${compact ? 26 : 32}px; border-radius: 50%;
     background: ${isUserAdded ? '#fff' : color};
     color: ${isUserAdded ? color : '#fff'};
     display: flex; align-items: center; justify-content: center;
@@ -353,12 +414,7 @@ function buildPin(color, label, isUserAdded, hasBadge = false) {
 }
 
 function buildMobilePopup(stop, color) {
-  const typeLabelMap = {
-    trail: 'Hike', park: 'Park', landmark: 'Landmark', campground: 'Camp',
-    visitor_center: 'Visitor Ctr', lodging: 'Lodging', restaurant: 'Dining',
-    food: 'Dining', custom: 'Custom',
-  };
-  const typeLabel = typeLabelMap[stop.type] || '';
+  const typeLabel = groundedPlaceType(stop) || '';
   const stats = [
     stop.distanceMiles > 0 ? `${stop.distanceMiles}mi` : null,
     stop.elevationGainFeet > 0 ? `↑${stop.elevationGainFeet.toLocaleString()}ft` : null,
@@ -368,9 +424,11 @@ function buildMobilePopup(stop, color) {
 
   return `
     <div style="font-family:system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;max-width:240px;padding:4px;">
+      <div style="font-size:11px;color:#555;margin-bottom:4px">Day ${escapeHtml(String(stop.dayNumber || ''))} · Stop ${escapeHtml(String(stop.pinNumber || ''))}</div>
       <div style="font-weight:600;font-size:14px;line-height:1.3;color:#111;">
         ${escapeHtml(stop.name)}
       </div>
+      ${stop.mapAnchor?.name ? `<div style="font-size:12px;color:#555;margin-top:2px;">Map pin: ${escapeHtml(stop.mapAnchor.name)}</div>` : ''}
       ${meta ? `<div style="font-size:11px;color:${color};font-weight:600;margin-top:3px;">${escapeHtml(meta)}</div>` : ''}
       ${stats ? `<div style="font-size:12px;color:#555;margin-top:2px;">${escapeHtml(stats)}</div>` : ''}
       ${stop.why ? `<div style="font-size:12px;line-height:1.4;color:#555;margin-top:4px;">${escapeHtml(stop.why)}</div>` : ''}
@@ -378,7 +436,7 @@ function buildMobilePopup(stop, color) {
   `;
 }
 
-function drawAbstractTransferEdges(day, color, map, polylinesArr, labelsArr) {
+function drawAbstractTransferEdges(day, color, map, polylinesArr, labelsArr, showDurations) {
   const byId = new Map((day.stops || []).map((stop) => [stop.id, stop]));
   const activityGroups = day.activityGroups || [];
 
@@ -407,9 +465,9 @@ function drawAbstractTransferEdges(day, color, map, polylinesArr, labelsArr) {
         {
           icon: {
             path: 'M 0,-1 0,1',
-            strokeOpacity: 0.8,
+            strokeOpacity: showDurations ? 0.8 : 0.35,
             strokeColor: color,
-            scale: 3,
+            scale: showDurations ? 3 : 2,
           },
           offset: '0',
           repeat: '10px',
@@ -417,18 +475,19 @@ function drawAbstractTransferEdges(day, color, map, polylinesArr, labelsArr) {
         {
           icon: {
             path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 3,
+            scale: showDurations ? 3 : 2,
+            strokeOpacity: showDurations ? 0.8 : 0.35,
             strokeColor: color,
             fillColor: color,
-            fillOpacity: 0.9,
+            fillOpacity: showDurations ? 0.9 : 0.35,
           },
           offset: '100%',
         },
       ],
     }));
 
-    if (edge.status === 'unverified' || Number.isFinite(edge.minutes) && edge.minutes > 0) {
-      const edgeText = edge.status === 'unverified' ? 'Travel time unverified' : `${Math.round(edge.minutes)} min ${edge.travelMode || 'drive'}`;
+    if (showDurations && (edge.displayLabel || (Number.isFinite(edge.minutes) && edge.minutes >= 0))) {
+      const edgeText = edge.displayLabel || `${formatTravelMinutes(edge.minutes)} ${{ driving: 'drive', walking: 'walk', bicycling: 'bike ride' }[edge.travelMode] || edge.travelMode || 'by road'}`;
       const label = document.createElement('div');
       label.setAttribute('data-itinerary-edge-label', 'true');
       label.textContent = edgeText;

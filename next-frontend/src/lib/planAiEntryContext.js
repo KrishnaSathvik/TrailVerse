@@ -1,3 +1,4 @@
+import { resolveTripEntryIntent } from './tripEntryIntent';
 const SOURCES = new Set(['direct', 'park_cta', 'quick_fill', 'compare', 'intent_guide', 'personalized', 'saved_trip', 'guest_resume']);
 
 const clean = (value, max = 240) => typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) : '';
@@ -41,6 +42,8 @@ export function buildPlanAiEntryContext({ searchParams, tripId = null, coordinat
   }] : [];
   return {
     version: 1,
+    tripEntryIntent: resolveTripEntryIntent(searchParams, tripId),
+    guestConversationId: searchParams?.get?.('conversation') || null,
     source: resolvedSource,
     requestedDestinations,
     comparisonTargets: suggest ? splitCompareTargets(suggest) : [],

@@ -1,5 +1,6 @@
 /* Import Tailwind CSS v4 */
 @import "tailwindcss";
+@import "../../public/responsive-layout.css";
 
 /* Import theme styles - must come before @plugin */
 @import '../styles/themes.css';
@@ -196,7 +197,7 @@ button div::selection, .btn div::selection,
 [data-button-component="true"] *::selection,
 a[data-button-component="true"]::selection,
 a[data-button-component="true"] *::selection {
-  background: transparent !important;
+  background: transparent;
   color: inherit !important;
   text-shadow: none !important;
 }
@@ -211,7 +212,7 @@ button div::-moz-selection, .btn div::-moz-selection,
 [data-button-component="true"] *::-moz-selection,
 a[data-button-component="true"]::-moz-selection,
 a[data-button-component="true"] *::-moz-selection {
-  background: transparent !important;
+  background: transparent;
   color: inherit !important;
   text-shadow: none !important;
 }
@@ -330,9 +331,7 @@ body.mobile-nav-open {
   
   /* Force full width on mobile */
   .chat-messages-container,
-  .chat-messages-container > div,
-  .max-w-4xl,
-  .max-w-7xl {
+  .chat-messages-container > div {
     max-width: 100% !important;
     width: 100% !important;
   }
@@ -464,7 +463,7 @@ body.mobile-nav-open {
 .trailie-composer-utilities > div,
 .trailie-composer-utilities > button,
 .trailie-composer-utilities > * > button {
-  background: transparent !important;
+  background: transparent;
   border-color: transparent !important;
   box-shadow: none !important;
 }
@@ -953,3 +952,207 @@ section {
 /* ============================================
    END OF TRAILIE VOICE BUTTON & OVERLAY
    ============================================ */
+
+/* Public page primitives, derived from Trailie's typography and ruled content.
+   Opt-in only: chat, composer, and dense application controls retain their layout. */
+.public-container {
+  width: 100%;
+  max-width: var(--public-shell-width);
+  margin-inline: auto;
+  padding-inline: var(--public-gutter);
+}
+.public-page-title {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  font-size: 1.875rem;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.public-page-intro {
+  max-width: 48rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.public-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.public-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  border-radius: .75rem;
+  line-height: 1.4;
+}
+.public-action-secondary {
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.public-action-secondary:hover { border-color: var(--text-secondary); }
+.public-search {
+  min-height: 3rem;
+  border-radius: .75rem;
+  background: var(--bg-secondary);
+}
+.public-action:focus-visible,
+.public-search:focus-visible,
+.public-discovery-link:focus-visible,
+.public-footer a:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 4px;
+}
+.public-discovery-link:hover { background: var(--surface-hover); }
+.public-footer a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+@media (min-width: 640px) {
+  .public-container { padding-inline: var(--public-gutter); }
+  .public-page-title { font-size: 2.5rem; }
+  .public-page-intro { font-size: 1.125rem; }
+  .public-footer a { min-height: 2rem; }
+}
+@media (min-width: 1024px) { .public-container { padding-inline: var(--public-gutter); } }
+@media (min-width: 1280px) { .public-container { padding-inline: var(--public-gutter); } }
+
+/* Informational pages use the same quiet surfaces as the planning workspace. */
+.public-editorial-section {
+  background: transparent;
+  border-width: 1px 0 0;
+  border-color: var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+.public-editorial-hero {
+  background: transparent;
+  border: 0;
+}
+
+/* Shared layout for company, product, integration, and legal pages. */
+.info-page { color: var(--text-primary); padding-bottom: 3rem; }
+.info-width, .info-section, .info-page > .info-legal-content {
+  width: 100%; max-width: var(--public-shell-width); margin-inline: auto; padding-inline: var(--public-gutter);
+}
+.info-introduction { padding-block: 2rem; max-width: 48rem; }
+.info-introduction h1 { margin-bottom: 1rem; }
+.info-label { margin-bottom: 1rem; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.info-description { font-size: 18px; line-height: 1.7; color: var(--text-secondary); }
+.info-header-detail { margin-top: 1.75rem; }
+.info-header-detail > p { font-size: 16px; line-height: 1.7; }
+.info-note { border-left: 3px solid var(--accent-green); padding-left: 1rem; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+.info-updated { color: var(--text-secondary); }
+.info-section { padding-block: var(--public-section-space); }
+.info-section > div { padding-inline: 0; }
+.info-page h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 600; line-height: 1.25; letter-spacing: -.025em; text-align: left; }
+.info-page h3 { font-size: 20px; line-height: 1.4; font-weight: 600; letter-spacing: -.015em; }
+.info-page .info-panel { padding: 1.5rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.info-page a:focus-visible, .info-page summary:focus-visible { outline: 2px solid var(--accent-green); outline-offset: 4px; }
+.info-page .public-action { box-shadow: none; border-radius: .75rem; }
+.info-legal .info-section { padding-block: 2rem; }
+@media (max-width: 639px) {
+  .info-width, .info-section, .info-page > .info-legal-content { width: 100%; }
+  .info-introduction { padding-block: 2rem; }
+  .info-description { font-size: 16px; }
+  .info-section { padding-block: 2rem; }
+}
+.info-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: var(--bg-secondary); color: var(--accent-green); margin-bottom: 1rem; flex-shrink: 0; }
+.info-icon svg { width: 22px; height: 22px; }
+/* Keep reusable story content aligned only inside the footer page layout. */
+.info-stories { width: 100%; max-width: var(--public-shell-width); margin-inline: auto; padding-inline: var(--public-gutter); }
+.info-stories > section > div { max-width: none; padding-inline: 0; }
+.info-stories p { text-align: left; }
+.info-page input:focus-visible { outline: 2px solid var(--accent-green); outline-offset: 2px; }
+@media (max-width: 639px) { .info-stories { width: 100%; } }
+.info-page .public-discovery-link h2 { font-size: 20px; line-height: 1.4; }
+.info-page #submit-testimonial details > div > div { border-radius: 12px; backdrop-filter: none; }
+
+/* Match the existing public pages; card columns follow usable content width. */
+@media (min-width: 640px) {
+  .info-width, .info-section, .info-page > .info-legal-content, .info-stories { padding-inline: var(--public-gutter); }
+  .info-introduction { padding-block: 3rem; }
+}
+@media (min-width: 1024px) {
+  .info-width, .info-section, .info-page > .info-legal-content, .info-stories { padding-inline: var(--public-gutter); }
+}
+@media (min-width: 1280px) {
+  .info-width, .info-section, .info-page > .info-legal-content, .info-stories { padding-inline: var(--public-gutter); }
+}
+.info-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem; }
+.info-card-grid > *, .info-page .grid > * { min-width: 0; }
+.info-card-grid :is(h2, h3, h4, p, li), .info-page .info-panel { overflow-wrap: anywhere; }
+.info-page .public-discovery-link :is(h2, h3, p) { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.info-card-grid .public-editorial-section :is(h2, h3, h4) { font-size: 1.25rem; line-height: 1.4; }
+.info-page .public-editorial-section p { line-height: 1.65; }
+.info-page .public-action { white-space: normal; text-align: center; }
+
+
+.info-legal-content > div { max-width: var(--public-reading-width); margin-inline: auto; }
+.info-legal .info-introduction { max-width: var(--public-reading-width); margin-inline: auto; }
+
+
+/* Width hierarchy shared by live, restored and public recorded responses. */
+.responsive-content { max-width: var(--public-rich-width); margin-inline: auto; }
+.responsive-content > div:first-child,
+.responsive-content > div > section:not([data-presentation-kind="rich_trip"]):not([aria-label="Destination comparison"]):not(.trailie-narrative):not([aria-label="Trip itinerary"]),
+.responsive-content .prose > :not(.trailie-table-breakout),
+.responsive-content .trailie-narrative > h3 {
+  max-width: var(--public-reading-width);
+  margin-inline: auto;
+}
+.responsive-content .trailie-narrative { max-width: var(--public-rich-width); margin-inline: auto; }
+.responsive-content .trailie-table-breakout,
+.responsive-content [data-presentation-kind="rich_trip"],
+.responsive-content [aria-label="Destination comparison"] { max-width: var(--public-rich-width); margin-inline: auto; }
+.trailie-composer-column { max-width: calc(var(--public-reading-width) + 2 * var(--public-gutter)); }
+.trailie-message > :not(.trailie-response), .plan-ai-shell .trailie-opening { max-width: var(--public-reading-width); margin-inline: auto; }
+
+/* Article prose is readable; tables, figures and related grids have their own canvas. */
+.article-reading > .article-hero { max-width: var(--public-reading-width); margin-inline: auto; }
+.article-reading > .article-content, .article-reading .article-body { max-width: var(--public-rich-width); margin-inline: auto; }
+.article-reading > .article-callout { max-width: var(--public-reading-width); margin-inline: auto; }
+.article-reading .article-section > :is(h2, h3, p, ul, ol, blockquote) { max-width: var(--public-reading-width); margin-inline: auto; }
+.article-reading .article-section > div:not(.responsive-rich) { max-width: var(--public-reading-width); margin-inline: auto; }
+.article-reading > div:has(> img), .article-reading > div:has(> picture) { max-width: var(--public-rich-width); margin-inline: auto; }
+.article-reading .blog-prose > :is(p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, hr) { max-width: var(--public-reading-width); margin-inline: auto; }
+.article-reading .blog-prose > :is(figure, pre, .blog-table-wrap),
+.article-reading .blog-prose > p:has(> img) { max-width: var(--public-rich-width); margin-inline: auto; }
+.article-reading .blog-prose pre, .article-reading .blog-prose .blog-table-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
+.article-reading .blog-prose :is(td, th) { font-size: 14px; }
+.article-wide > .article-hero { margin-inline: 0; }
+
+/* Public controls keep usable targets at every viewport; prose links are exempt. */
+:where(.public-shell, .public-container, .info-page, .plan-ai-shell, .auth-shell, .public-state) :is(button, [role="button"]) {
+  min-height: var(--public-control-height);
+}
+:where(.public-shell, .public-container, .info-page, .auth-shell) :is(input[type="text"], input[type="email"], input[type="password"], input[type="search"], select) {
+  min-height: var(--public-control-height);
+  min-width: 0;
+}
+.public-footer a { min-height: var(--public-control-height); }
+.public-footer a[aria-label] { min-width: var(--public-control-height); justify-content: center; }
+.public-footer .flex.items-center.gap-3 { gap: 4px; }
+.info-panel, .public-card-grid > *, .article-body > *, .where-next-result > * { min-width: 0; }
+.article-reading .article-callout { width: 100%; }
+@media (min-width: 1024px) {
+  .public-page-title { font-size: clamp(2rem, 3vw, 2.5rem); }
+}
+
+.info-stories > section { padding-inline: 0; }
+.article-reading .responsive-rich table { min-width: 640px; }
+.article-reading .responsive-rich :is(th, td) { font-size: 14px; line-height: 1.5; }
+:where(.public-shell, .public-container, .info-page, .plan-ai-shell, .auth-shell, .public-state) button[aria-label] { min-width: var(--public-control-height); }
+.public-map :is(.maplibregl-ctrl-group button, button[aria-label]) { min-height: var(--public-control-height); min-width: var(--public-control-height); }
+
+/* Account overlays and inline account actions keep the same touch contract. */
+:where(.public-account-page, [role="dialog"]) button { min-height: var(--public-control-height); }
+
+.responsive-content [aria-label="Trip itinerary"] { max-width: var(--public-rich-width); margin-inline: auto; }

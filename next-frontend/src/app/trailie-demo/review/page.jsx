@@ -24,8 +24,8 @@ export default function TrailieDemoReviewPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <main className="px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-4xl">
+      <main className="public-shell py-8">
+        <div className="public-rich">
           <TrailieDemoReviewClient />
         </div>
       </main>

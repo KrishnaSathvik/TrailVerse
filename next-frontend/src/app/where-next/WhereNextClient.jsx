@@ -1,4 +1,5 @@
 'use client';
+import InfoPageHeader from '@/components/info/InfoPageHeader';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -167,20 +168,12 @@ export default function WhereNextClient() {
   const displayName = selectedName;
 
   return (
-    <main>
-      <section className="mx-auto flex max-w-2xl flex-col items-center px-4 pb-8 pt-16 text-center sm:pt-24">
-        <h1
-          className="text-4xl sm:text-6xl leading-tight"
-          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-        >
-          Where do you want to go next?
-        </h1>
-        <p className="mt-6 max-w-md text-lg" style={{ color: 'var(--text-secondary)' }}>
-          Tell us the one place you&apos;d love to visit next.
-        </p>
-
-        <div className="relative mt-10 w-full max-w-lg text-left">
-          <label className="flex items-center gap-3 rounded-full border px-5 py-4">
+    <main className="info-page">
+      <InfoPageHeader title="Where do you want to go next?" description="Tell us the one place you’d love to visit next." />
+      <section className="info-section">
+        <div className="w-full min-w-0">
+        <div className="public-reading relative text-left lg:!mx-0">
+          <label className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
             <Search size={22} className="shrink-0" style={{ color: 'var(--text-secondary)' }} />
             <input
               ref={inputRef}
@@ -259,7 +252,7 @@ export default function WhereNextClient() {
         </div>
 
         {step === 'when' && displayName ? (
-          <div className="mt-10 w-full max-w-lg">
+          <div className="public-form mt-10 lg:!mx-0">
             <p className="text-xl" style={{ color: 'var(--text-primary)' }}>
               Great pick.
             </p>
@@ -279,7 +272,7 @@ export default function WhereNextClient() {
                   type="button"
                   disabled={saving}
                   onClick={() => saveWindow(window.id)}
-                  className="rounded-full border px-5 py-4 text-lg"
+                  className="rounded-xl border px-5 py-4 text-lg"
                   style={{ borderColor: 'var(--text-secondary)', color: 'var(--text-primary)' }}
                 >
                   {window.label}
@@ -318,15 +311,16 @@ export default function WhereNextClient() {
         {step === 'search' ? (
           <a
             href="#others"
-            className="mt-16 text-sm"
+            className="mt-6 inline-flex min-h-11 items-center text-sm"
             style={{ color: 'var(--text-secondary)' }}
           >
             See what travelers are choosing right now ↓
           </a>
         ) : null}
+        </div>
       </section>
 
-      <section id="others" className="mx-auto max-w-xl px-4 pb-20 pt-4 text-center">
+      <section id="others" className="info-section">
         {step === 'search' ? (
           <p style={{ color: 'var(--text-secondary)' }}>
             {landingCopy(stats?.volumeTier)}

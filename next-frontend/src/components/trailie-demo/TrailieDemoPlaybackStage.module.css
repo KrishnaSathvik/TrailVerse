@@ -1,0 +1,12 @@
+/* The response canvas stays wide; only narrative elements use reading width. */
+.playback :global(.trailie-response) { max-width: var(--public-rich-width); margin-inline: auto; }
+.playback :global(.trailie-response) > div:first-child,
+.playback :global(.trailie-response) > div > section:not([data-presentation-kind="rich_trip"]):not([aria-label="Destination comparison"]):not(:global(.trailie-narrative)) {
+  max-width: var(--public-reading-width); margin-inline: auto;
+}
+.playback :global(.prose) > * { max-width: var(--public-reading-width); margin-inline: auto; }
+.playback :global(.prose) > :global(.trailie-table-breakout),
+.playback :global(.trailie-narrative),
+.playback :global([data-presentation-kind="rich_trip"]),
+.playback :global([aria-label="Destination comparison"]) { max-width: var(--public-rich-width); margin-inline: auto; }
+.playback :global(.trailie-narrative) > h3 { max-width: var(--public-reading-width); margin-inline: auto; }

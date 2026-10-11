@@ -23,12 +23,11 @@ describe('TripPlannerChat — Phase 7B shell presentation', () => {
     expect(SOURCE).not.toMatch(/trailie-composer-utilities[^"]*overflow-x-auto/);
   });
 
-  it('does not stack the generic signup promotion with a conversion message', () => {
-    const signupBlock = SOURCE.slice(
-      SOURCE.indexOf("messages.filter(m => m.role === 'user').length >= 1"),
-      SOURCE.indexOf("messages.filter(m => m.role === 'user').length >= 1") + 900
-    );
-    expect(signupBlock).toMatch(/!messages\.some\(\(message\) => message\.isConversionMessage\)/);
+  it('shows one guest continuation card, only once the allowance is spent', () => {
+    expect(SOURCE.match(/<GuestAccountCard\b/g)).toHaveLength(1);
+    expect(SOURCE).toMatch(/isAnonymous && !isGenerating &&\s*\(!canSendMore \|\| messages\.some\(message => message\.isConversionMessage\)\) && \(\s*<GuestAccountCard/);
+    // Before the limit the allowance is a quiet line by the composer, not a card.
+    expect(SOURCE).toMatch(/free \{anonymousMessagesRemaining === 1 \? 'message' : 'messages'\} remaining/);
   });
 
   it('marks welcome and conversion messages with visual-only variants', () => {

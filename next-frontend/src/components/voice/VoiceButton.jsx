@@ -202,7 +202,7 @@ export default function VoiceButton() {
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); dismissHint(); }}
-            className="flex-shrink-0 p-0.5 rounded-md transition hover:opacity-70"
+            className="inline-flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded-md transition hover:opacity-70"
             style={{ color: 'var(--text-tertiary)' }}
             aria-label="Dismiss"
           >

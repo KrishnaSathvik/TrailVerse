@@ -87,7 +87,7 @@ describe('AuthContext', () => {
     await act(async () => { screen.getByText('Login').click(); });
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls[0][0]).toMatch(/\/auth\/migrate-chat$/);
-    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ anonymousId });
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ anonymousId, conversationId: null });
     expect(destination).toHaveBeenCalledWith('migrated-trip', surface);
     expect(localStorage.getItem('returnToChat')).toBeNull();
   });

@@ -1,3 +1,4 @@
+import { withTripRefinements } from './tripPresentation';
 import { travelLogisticsBelongsToTurn } from '@/lib/trailieEnhancementOwnership';
 import { selectCurrentDerived, publishDerivedSurfaces } from '@/lib/planDerivedPublication';
 
@@ -186,6 +187,7 @@ export function inferLegacyPresentation(response) {
 
 function buildResponseModel({
   content = '',
+  artifactStatus = null,
   canonicalPlan = null,
   travelLogistics = null,
   responseArtifacts = null,
@@ -227,6 +229,7 @@ function buildResponseModel({
 
   const model = {
     content: String(content || ''),
+    artifactStatus,
     canonicalPlan: planAvailable ? canonicalPlan : null,
     travelLogistics: published.travelLogistics,
     derivedPublication: {
@@ -274,6 +277,7 @@ function buildResponseModel({
 export function toLiveTrailieResponseModel({ message = {}, lifecycle = {}, presentationKind = null, refinement = null } = {}) {
   return buildResponseModel({
     content: message.content,
+    artifactStatus: message.artifactStatus,
     canonicalPlan: message.itineraryPlan || message.canonicalPlan || null,
     travelLogistics: message.travelLogistics,
     responseArtifacts: message.responseArtifacts,
@@ -318,7 +322,7 @@ export function toRestoredTrailieResponseModel(args = {}) {
 }
 
 export function attachCanonicalPlanToConversation(conversation = [], plan = null) {
-  const hydrated = conversation.map((message) => {
+  const hydrated = withTripRefinements(conversation).map((message) => {
     if (message?.role !== 'assistant') return message;
     const ownPlan = message.canonicalPlan || message.itineraryPlan || null;
     if (hasPlan(ownPlan)) {

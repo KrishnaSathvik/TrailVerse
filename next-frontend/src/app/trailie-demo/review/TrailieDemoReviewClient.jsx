@@ -14,7 +14,7 @@ import { scenarioAwaitsRecapture, isItineraryScenario } from '@/lib/trailieDemoP
  * generation. There is no "run all".
  */
 function buildAskHref(question) {
-  return `/plan-ai?ask=${encodeURIComponent(question)}`;
+  return `/plan-ai?entry=new-trip&ask=${encodeURIComponent(question)}`;
 }
 
 function Pill({ children, tone = 'neutral' }) {

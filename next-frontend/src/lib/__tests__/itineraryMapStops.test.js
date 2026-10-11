@@ -294,9 +294,9 @@ describe('itineraryMapStops', () => {
       expect(model.days[0].stops.every((s) => s.drivingTimeFromPreviousMin === undefined)).toBe(true);
     });
 
-    it('synthetic verified Zion: same edge plus predecessor-bound minutes', () => {
+    it('legacy predecessor minutes without provider provenance remain hidden', () => {
       const model = buildTripMapModel(zionPlan(18));
-      expect(model.days[0].transferEdges[0].minutes).toBe(18);
+      expect(model.days[0].transferEdges[0].minutes).toBeNull();
     });
 
     it('does not annotate minutes when the edge source is not the target\'s previous stop', () => {
@@ -395,7 +395,7 @@ describe('final canonical itinerary contract', () => {
   });
   it('keeps verified route metrics and explicit unknown transfer status', () => {
     const plan={days:[{id:'d',stops:[stop('a'),stop('b'),stop('c')],travelEdges:[
-      {sourceStopId:'a',targetStopId:'b',relationship:'transfer',status:'verified',travelMode:'walking',durationSeconds:600,distanceMeters:700,source:{evidenceId:'route'}},
+      {sourceStopId:'a',targetStopId:'b',relationship:'transfer',status:'verified',travelMode:'walking',durationSeconds:600,distanceMeters:700,source:{evidenceId:'route',provider:'google_maps'}},
       {sourceStopId:'b',targetStopId:'c',relationship:'transfer',status:'unverified',durationSeconds:null}
     ]}]};
     const edges=buildTripMapModel(plan).days[0].transferEdges;

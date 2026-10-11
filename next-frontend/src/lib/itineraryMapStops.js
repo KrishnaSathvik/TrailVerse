@@ -1,3 +1,4 @@
+import { verifiedTransferLabel } from './tripPresentation';
 /**
  * Presentation-only mapping model for the accepted Trailie itinerary.
  *
@@ -44,7 +45,7 @@ const MAPPABLE_TEXT =
 /** Traveler-facing stop fields the map/preview may show. No entity/route internals. */
 const MAP_STOP_PRESENTATION_KEYS = [
   'name', 'type', 'placeKind', 'note', 'why', 'duration', 'difficulty', 'physicalDifficulty',
-  'timeWindow', 'startTime', 'requirements', 'alternatives', 'source',
+  'timeWindow', 'startTime', 'requirements', 'alternatives', 'source', 'canonicalPlaceId', 'canonicalPlaceName', 'experience', 'mapAnchor', 'placeTypes', 'groundedType', 'location',
 ];
 
 function stopText(stop) {
@@ -103,6 +104,7 @@ const AUTHORITATIVE_COORDINATE_SOURCES = new Set([
 
 export function hasAuthoritativeCoordinates(stop) {
   if (stop?.location) return hasCanonicalCoordinates(stop) && stop.location.status === 'resolved'
+    && (!stop.canonicalPlaceId || stop.location.sourceEntity === stop.canonicalPlaceId)
     && AUTHORITATIVE_COORDINATE_SOURCES.has(stop.location.source) && Boolean(stop.location.sourceRef)
     && ['official_owner', 'official_partner', 'trusted_specialist', 'commercial_structured', 'external_geocoder'].includes(stop.location.authority);
   return hasCanonicalCoordinates(stop) && AUTHORITATIVE_COORDINATE_SOURCES.has(stop?.coordinateSource);
@@ -159,13 +161,10 @@ function precedingStopId(stops, targetStopId) {
   return stops[index - 1].id;
 }
 
-function presentationMinutes(edge, sourceStopId, canonicalTarget, precedingId) {
-  if (edge?.status) return edge.status === 'verified' && Number.isFinite(edge.durationSeconds) ? edge.durationSeconds / 60 : null;
-  if (edge?.modeIntent !== 'drive') return null;
-  if (precedingId !== sourceStopId) return null;
-  const minutes = canonicalTarget?.drivingTimeFromPreviousMin;
-  if (!Number.isFinite(minutes) || minutes <= 0) return null;
-  return minutes;
+function presentationMinutes(edge) {
+  if (edge?.status !== 'verified' || !edge.source?.evidenceId || !edge.source?.provider) return null;
+  const label = verifiedTransferLabel(edge);
+  return label && /^\d+ (?:min|hr) /.test(label) ? edge.durationSeconds / 60 : null;
 }
 
 function buildTransferEdges(rawEdges, mapStops, canonicalStops) {
@@ -188,6 +187,8 @@ function buildTransferEdges(rawEdges, mapStops, canonicalStops) {
       relationship: 'transfer',
       modeIntent,
       status: edge.status || null,
+      displayLabel: edge.status ? verifiedTransferLabel(edge) : null,
+      operationalAccess: edge.operationalAccess || null,
       travelMode: edge.travelMode || null,
       durationSeconds: edge.status === 'verified' ? edge.durationSeconds : null,
       distanceMeters: edge.status === 'verified' ? edge.distanceMeters : null,

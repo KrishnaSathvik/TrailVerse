@@ -4,16 +4,11 @@ import { VOYAGEMICHIGAN_ABOUT_BODY, VOYAGEMICHIGAN_URL } from '@/data/pressMenti
 export default function FeaturedStoryCard({ headingId = 'featured-story-heading' }) {
   return (
     <div
-      className="rounded-3xl p-8 sm:p-10 backdrop-blur"
-      style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}
+      className="border-t py-8 sm:py-10"
+      style={{ borderColor: 'var(--border)' }}
     >
       <div
-        className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6"
-        style={{
-          backgroundColor: 'var(--surface-hover)',
-          borderWidth: '1px',
-          borderColor: 'var(--border)',
-        }}
+        className="public-eyebrow"
       >
         <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>

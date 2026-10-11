@@ -18,15 +18,19 @@ export async function getApprovedTestimonialsServer({ limit = 20, featured } = {
     });
 
     if (!response.ok) {
-      return { data: [], count: 0 };
+      return { data: [], count: 0, error: true };
     }
 
     const json = await response.json();
+    if (!Array.isArray(json.data) || json.success === false) {
+      return { data: [], count: 0, error: true };
+    }
     return {
-      data: json.data ?? [],
+      error: false,
+      data: json.data.filter((story) => story.approved === true),
       count: json.count ?? json.data?.length ?? 0,
     };
   } catch {
-    return { data: [], count: 0 };
+    return { data: [], count: 0, error: true };
   }
 }

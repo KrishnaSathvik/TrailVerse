@@ -15,6 +15,9 @@ import { toDemoTrailieResponseModel } from '@/lib/trailieResponseModel';
 import { normalizeTrailiePresentation } from '@/lib/normalizeTrailiePresentation';
 import TrailieResponse from '@/components/trailie-response/TrailieResponse';
 
+// Optional park imagery stays offline in playback tests.
+vi.mock('@/hooks/useTripImagery', () => ({ default: () => [] }));
+
 const ITINERARY_PLAN = {
   parkName: 'Zion National Park',
   days: [
@@ -32,6 +35,14 @@ function runPlaybackToCompletion() {
 
 describe('TrailieDemoPlaybackStage', () => {
   afterEach(cleanup);
+
+  it('offers one action panel for the latest trip in a multi-trip conversation', () => {
+    const scenario = SCENARIOS.find(item => item.id === 'yellowstone');
+    render(<TrailieDemoPlaybackStage scenario={scenario} completedTurns={scenario.turns} showMessagePane />);
+    expect(screen.getAllByRole('link', { name: /plan a trip like this/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Open sample trip' })).toHaveLength(1);
+    expect(screen.getAllByRole('group', { name: 'When are you going?' })).toHaveLength(1);
+  });
 
   it('renders an itinerary card for a turn with a captured plan', () => {
     render(
@@ -51,9 +62,28 @@ describe('TrailieDemoPlaybackStage', () => {
       />
     );
 
-    const card = screen.getByLabelText('Trip itinerary');
-    expect(within(card).getByText('Riverside Walk')).toBeInTheDocument();
+    const card = screen.getByLabelText('Trip created');
+    expect(within(card).getByText('Scenic drive')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Open sample trip' })).toBeInTheDocument();
+    expect(screen.getByText('Riverside Walk')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Fall' })).toBeEnabled();
     expect(screen.getByText('Here you go.')).toBeInTheDocument();
+  });
+
+  it('opens the captured trip in the public workspace and closes without navigation', () => {
+    const show = vi.fn(function () { this.setAttribute('open', ''); });
+    HTMLDialogElement.prototype.showModal = show;
+    const close = vi.fn(function () { this.removeAttribute('open'); });
+    HTMLDialogElement.prototype.close = close;
+    render(<TrailieDemoPlaybackStage scenario={{ label: 'Zion' }} completedTurns={[{ question: 'Plan Zion', prose: 'Ready.', plan: ITINERARY_PLAN, presentationKind: 'itinerary' }]} showMessagePane />);
+    act(() => screen.getByRole('button', { name: 'Open sample trip' }).click());
+    const dialog = screen.getByRole('dialog', { name: 'Recorded trip' });
+    expect(within(dialog).getByText('Riverside Walk')).toBeInTheDocument();
+    expect(within(dialog).getByRole('tab', { name: 'Map' })).toBeInTheDocument();
+    expect(dialog.querySelector('a[href*="/plan-ai/"]')).toBeNull();
+    act(() => within(dialog).getByRole('button', { name: 'Close trip' }).click());
+    expect(close).toHaveBeenCalled();
+    delete HTMLDialogElement.prototype.showModal; delete HTMLDialogElement.prototype.close;
   });
 
   it('routes completed demo turns through the shared Trailie response renderer', () => {
@@ -75,8 +105,9 @@ describe('TrailieDemoPlaybackStage', () => {
     );
 
     expect(screen.getByLabelText('Assistant message')).toBeInTheDocument();
-    expect(screen.getByLabelText('Trip itinerary')).toBeInTheDocument();
-    expect(screen.getAllByText('Riverside Walk')).toHaveLength(1);
+    expect(screen.getByLabelText('Trip created')).toBeInTheDocument();
+    expect(screen.getByText('Riverside Walk')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Fall' })).toBeEnabled();
     expect(screen.queryByText('At a glance')).not.toBeInTheDocument();
   });
 
@@ -160,51 +191,30 @@ describe('TrailieDemoPlaybackStage', () => {
   });
 });
 
-describe('frozen Q1–Q5 presentation manifests', () => {
-  it('uses one valid primary artifact and removes confident itinerary restatements', () => {
-    const byId = Object.fromEntries(SCENARIOS.map((scenario) => [scenario.id, scenario]));
-    const turns = [
-      byId['valley-of-fire-weekend'].turns[0],
-      byId['compare-acadia-shenandoah'].turns[0],
-      byId['yellowstone-relaxed'].turns[0],
-      byId['rocky-mountain-one-day'].turns[0],
-      byId['zion-couple-itinerary'].turns[0],
-    ];
-    const views = turns.map((turn) => normalizeTrailiePresentation(toDemoTrailieResponseModel({ turn })));
-
-    expect(views.map((view) => view.kind)).toEqual([
-      'itinerary', 'comparison', 'itinerary', 'plain_answer', 'itinerary',
-    ]);
-    for (const view of views.filter((item) => item.kind === 'itinerary')) {
-      expect(`${view.intro}\n${view.context}`).not.toMatch(/at a glance/i);
-      expect(view.primaryArtifact?.plan?.days?.length).toBeGreaterThan(0);
-    }
-    for (const view of views) {
-      expect(view.beforeYouGo).toBeNull();
-      expect(view.followups).toEqual([]);
+describe('recorded multi-turn presentation', () => {
+  it('keeps actual prose and saved plans through the demo adapter', () => {
+    for (const scenario of SCENARIOS) {
+      for (const turn of scenario.turns) {
+        expect(turn.content).toBe(turn.prose);
+        const view = normalizeTrailiePresentation(toDemoTrailieResponseModel({ turn }));
+        if (turn.plan) {
+          expect(view.kind).toBe('itinerary');
+          expect(view.primaryArtifact.plan.days).toHaveLength(turn.plan.days.length);
+        } else {
+          expect(view.kind).toBe('plain_answer');
+        }
+      }
     }
   });
 
-  it('renders captured Q1–Q5 without automatic footers, chips, or cross-park logistics', () => {
-    const byId = Object.fromEntries(SCENARIOS.map((scenario) => [scenario.id, scenario]));
-    const turns = [
-      byId['valley-of-fire-weekend'].turns[0],
-      byId['compare-acadia-shenandoah'].turns[0],
-      byId['yellowstone-relaxed'].turns[0],
-      byId['rocky-mountain-one-day'].turns[0],
-      byId['zion-couple-itinerary'].turns[0],
-    ];
-
-    const { rerender } = render(
-      <TrailieResponse response={toDemoTrailieResponseModel({ turn: turns[0] })} hideActions />
-    );
-    for (const turn of turns) {
-      rerender(<TrailieResponse response={toDemoTrailieResponseModel({ turn })} hideActions />);
-      expect(screen.queryByText('Before you go')).not.toBeInTheDocument();
-      expect(screen.queryByText('Refine this')).not.toBeInTheDocument();
-      expect(screen.queryByText('Updated your plan')).not.toBeInTheDocument();
-      expect(screen.queryByText('FAT')).not.toBeInTheDocument();
-      expect(screen.queryByText('Fresno Yosemite International')).not.toBeInTheDocument();
+  it('renders all fifteen recorded turns through the shared response component', () => {
+    const { rerender } = render(<div />);
+    for (const scenario of SCENARIOS) {
+      for (const turn of scenario.turns) {
+        rerender(<TrailieResponse response={toDemoTrailieResponseModel({ turn })} hideActions />);
+        expect(document.body.textContent.length).toBeGreaterThan(100);
+        expect(screen.queryByText('Refine this')).not.toBeInTheDocument();
+      }
     }
   });
 });
@@ -233,7 +243,7 @@ describe('TrailieDemoCta', () => {
     render(<TrailieDemoCta askPrompt="Plan a realistic 2-day Zion trip" />);
     expect(screen.getByRole('link', { name: /plan your trip/i })).toHaveAttribute(
       'href',
-      '/plan-ai?ask=Plan%20a%20realistic%202-day%20Zion%20trip'
+      '/plan-ai?entry=new-trip&ask=Plan%20a%20realistic%202-day%20Zion%20trip'
     );
   });
 
@@ -264,11 +274,11 @@ describe('TrailieInteractiveDemo', () => {
     render(<TrailieInteractiveDemo autoPlay={false} />);
     const tabs = screen.getAllByRole('tab');
     expect(tabs.map((t) => t.textContent)).toEqual([
-      'Valley of Fire',
-      'Compare',
-      'Yellowstone',
-      'Rocky Mountain',
-      'Zion',
+      'Where should I go?',
+      'Zion + Bryce',
+      'Is this trip realistic?',
+      'Yellowstone wildlife trip',
+      'Glacier relaxed trip',
     ]);
   });
 
@@ -302,20 +312,48 @@ describe('TrailieInteractiveDemo', () => {
     expect(screen.getByText(SCENARIOS[2].turns[0].question)).toBeInTheDocument();
   });
 
-  it('shows the captured itinerary card on the Valley of Fire sample', () => {
+  it('shows the captured Smokies itinerary and non-spatial experiences after discovery and comparison', () => {
     render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
-    expect(screen.getByLabelText('Trip itinerary')).toBeInTheDocument();
-    expect(screen.getByText('Rainbow Vista')).toBeInTheDocument();
+    expect(screen.getByLabelText('Trip created')).toBeInTheDocument();
+    expect(screen.getAllByText('Deep Creek Trail').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Flexible experience · not mapped')).toHaveLength(2);
+    expect(screen.getByText('2 flexible activities aren’t shown on the map')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Show Oconaluftee.*on the trip map/ })).not.toBeInTheDocument();
   });
 
-  it('points the CTA at the active scenario question', () => {
+  it('replays all follow-ups after restoring an incomplete cached conversation', () => {
+    const first = render(<TrailieInteractiveDemo />);
+    runPlaybackToCompletion();
+    const key = 'trailie_demo_scenario_cache';
+    const cache = JSON.parse(localStorage.getItem(key));
+    cache.scenarios[SCENARIOS[0].id] = cache.scenarios[SCENARIOS[0].id].slice(0, 1);
+    localStorage.setItem(key, JSON.stringify(cache));
+    first.unmount();
     render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
-    expect(screen.getByRole('link', { name: /plan your trip/i })).toHaveAttribute(
-      'href',
-      `/plan-ai?ask=${encodeURIComponent(SCENARIOS[0].turns[0].question)}`
-    );
+    for (const turn of SCENARIOS[0].turns) {
+      expect(screen.getByText(turn.question)).toBeInTheDocument();
+    }
+  });
+
+  it('hands local preferences and the sample itinerary to a new trip without changing the fixture', () => {
+    const before = JSON.stringify(SCENARIOS);
+    render(<TrailieInteractiveDemo />);
+    runPlaybackToCompletion();
+    for (const name of ['Fall', 'Couple', 'Scenic + relaxed']) {
+      act(() => screen.getByRole('radio', { name }).click());
+    }
+    const url = new URL(screen.getByRole('link', { name: /plan a trip like this/i }).getAttribute('href'), 'https://example.com');
+    expect(url.pathname).toBe('/plan-ai');
+    expect(url.searchParams.get('entry')).toBe('new-trip');
+    expect(url.searchParams.get('ask')).toContain('Great Smoky Mountains National Park for fall');
+    expect(url.searchParams.get('ask')).toContain('traveling as a couple');
+    expect(url.searchParams.get('ask')).toContain('scenic and relaxed');
+    expect(url.searchParams.get('ask')).toContain('Day 1:');
+    expect(screen.queryByRole('link', { name: /plan your trip/i })).not.toBeInTheDocument();
+    expect(JSON.stringify(SCENARIOS)).toBe(before);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -327,6 +365,6 @@ describe('TrailieInteractiveDemo', () => {
     const { container } = render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
     expect(container.querySelector('[role="tablist"]')).toBeInTheDocument();
-    expect(screen.getByText(SCENARIOS[0].chatTitle)).toBeInTheDocument();
+    expect(screen.getAllByText(SCENARIOS[0].chatTitle).length).toBeGreaterThan(0);
   });
 });

@@ -614,7 +614,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
 
       {/* Main Content */}
       <section className="pb-24">
-        <div className="max-w-[92rem] mx-auto w-full min-w-0 px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell w-full min-w-0">
           {/* Park Selector */}
           <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -630,7 +630,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                     onClick={copyComparisonLink}
                     className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition"
                     style={{
-                      backgroundColor: 'var(--surface)',
+                      backgroundColor: 'var(--bg-secondary)',
                       borderWidth: '1px',
                       borderColor: 'var(--border)',
                       color: 'var(--text-secondary)'
@@ -646,7 +646,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                     onClick={clearAll}
                     className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition"
                     style={{
-                      backgroundColor: 'var(--surface)',
+                      backgroundColor: 'var(--bg-secondary)',
                       borderWidth: '1px',
                       borderColor: 'var(--border)',
                       color: 'var(--text-secondary)'
@@ -659,14 +659,14 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="public-selector mb-4">
               {COMPARE_LANDINGS.map((preset) => (
                 <Link
                   key={preset.slug}
                   href={`/compare/${preset.slug}`}
                   className="px-3 py-1.5 rounded-full text-xs font-medium transition hover:opacity-80"
                   style={{
-                    backgroundColor: 'var(--surface)',
+                    backgroundColor: 'var(--bg-secondary)',
                     borderWidth: '1px',
                     borderColor: 'var(--border)',
                     color: 'var(--text-secondary)'
@@ -678,7 +678,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
             </div>
 
             {/* Selected Parks */}
-            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 w-full max-w-full">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 w-full max-w-full">
               {Array.from({ length: maxParks }).map((_, index) => {
                 const park = selectedParks[index];
 
@@ -686,9 +686,9 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                   return (
                     <div
                       key={park.parkCode}
-                      className="relative rounded-2xl overflow-hidden backdrop-blur group"
+                      className="relative rounded-2xl overflow-hidden group"
                       style={{
-                        backgroundColor: 'var(--surface)',
+                        backgroundColor: 'var(--bg-secondary)',
                         borderWidth: '1px',
                         borderColor: 'var(--border)'
                       }}
@@ -726,9 +726,9 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                   <button
                     key={index}
                     onClick={() => setShowSelector(true)}
-                    className="h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition"
+                    className="h-24 sm:h-40 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition"
                     style={{
-                      backgroundColor: 'var(--surface)',
+                      backgroundColor: 'var(--bg-secondary)',
                       borderColor: 'var(--border)',
                       color: 'var(--text-tertiary)'
                     }}
@@ -750,7 +750,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
             {showSelector && selectedParks.length < maxParks && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div
-                  className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                  className="absolute inset-0 bg-black/80"
                   onClick={() => setShowSelector(false)}
                 />
 
@@ -761,9 +761,9 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                     borderColor: 'var(--border)'
                   }}
                 >
-                  <div className="sticky top-0 z-10 p-4 sm:p-6 border-b backdrop-blur"
+                  <div className="sticky top-0 z-10 p-4 sm:p-6 border-b"
                     style={{
-                      backgroundColor: 'var(--surface)',
+                      backgroundColor: 'var(--bg-secondary)',
                       borderColor: 'var(--border)'
                     }}
                   >
@@ -833,7 +833,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                             onClick={() => handleAddPark(park)}
                             className="text-left p-2 sm:p-3 rounded-lg sm:rounded-xl transition"
                             style={{
-                              backgroundColor: 'var(--surface)',
+                              backgroundColor: 'var(--bg-secondary)',
                               borderWidth: '1px',
                               borderColor: 'var(--border)'
                             }}
@@ -889,7 +889,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                           key={item.title}
                           className="rounded-2xl p-5"
                           style={{
-                            backgroundColor: 'var(--surface)',
+                            backgroundColor: 'var(--bg-secondary)',
                             border: '1px solid var(--border)'
                           }}
                         >
@@ -1296,7 +1296,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
               </div>
             )
           ) : (
-            <div className="text-center py-24">
+            <div className="text-center py-10 sm:py-16">
               <Mountain className="h-16 w-16 mx-auto mb-4"
                 style={{ color: 'var(--text-tertiary)' }}
               />
@@ -1322,7 +1322,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
             <div
               className={`rounded-2xl p-6 sm:p-8 text-left lg:text-center ${selectedParks.length >= 2 ? 'mt-4' : 'mt-8'}`}
               style={{
-                backgroundColor: 'var(--surface)',
+                backgroundColor: 'var(--bg-secondary)',
                 border: '1px solid var(--border)',
               }}
             >
@@ -1379,9 +1379,9 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
 
 const ComparisonSection = ({ title, icon: Icon, isExpanded, onToggle, children }) => {
   return (
-    <div className="rounded-2xl backdrop-blur"
+    <div className="rounded-2xl"
       style={{
-        backgroundColor: 'var(--surface)',
+        backgroundColor: 'var(--bg-secondary)',
         borderWidth: '1px',
         borderColor: 'var(--border)'
       }}

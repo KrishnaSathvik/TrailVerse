@@ -139,10 +139,10 @@ export default function SharedTripPageClient({ trip, shareId }) {
       parkName: trip.parkName || featuredPark?.name || null,
       parkCode: trip.parkCode || featuredPark?.parkCode || null,
       shareId,
-      formData,
-      plan,
+      formData: trip.formData || {},
+      plan: trip.plan || {},
     }),
-    [tripTitle, trip.parkName, trip.parkCode, featuredPark, shareId, formData, plan]
+    [tripTitle, trip.parkName, trip.parkCode, featuredPark, shareId, trip.formData, trip.plan]
   );
   const canExportPdf = days.some((day) => (day.stops || []).length > 0);
 
@@ -164,7 +164,7 @@ export default function SharedTripPageClient({ trip, shareId }) {
         title: `Plan your own ${park} trip`,
         body: 'Trailie will build this same plan live for your dates, group, and pace — ask it yourself and adjust from there.',
         button: `Plan my ${park} trip`,
-        href: `/plan-ai?ask=${encodeURIComponent(sampleItinerary.prompt)}`,
+        href: `/plan-ai?entry=new-trip&ask=${encodeURIComponent(sampleItinerary.prompt)}`,
       };
     }
 
@@ -191,8 +191,8 @@ export default function SharedTripPageClient({ trip, shareId }) {
       <Header />
 
       <main className="min-w-0">
-        <section className="border-b px-4 py-5 sm:px-6 sm:py-8 lg:px-8" style={{ borderColor: 'var(--border)' }}>
-          <div className="mx-auto max-w-4xl min-w-0">
+        <section className="border-b py-5 sm:py-8" style={{ borderColor: 'var(--border)' }}>
+          <div className="public-shell min-w-0">
             {sampleItinerary ? (
               <ReturnNavLink
                 defaultHref="/itineraries"
@@ -253,7 +253,7 @@ export default function SharedTripPageClient({ trip, shareId }) {
           </div>
         </section>
 
-        <div className="mx-auto max-w-4xl min-w-0 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="public-shell min-w-0 py-8 sm:py-10">
           {days.length > 0 && !conversation?.length ? (
             <section className="mb-10">
               <SectionHeading>Day-by-day itinerary</SectionHeading>

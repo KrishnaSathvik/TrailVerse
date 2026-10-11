@@ -73,7 +73,7 @@ export default function DiscoverFullGridPage({
 
   return (
     <div className="pb-24">
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 pt-6">
+      <div className="public-shell pt-6">
         <Link
           href={BROWSE_HUB_PATH}
           className="inline-flex items-center gap-2 text-sm font-medium mb-6"

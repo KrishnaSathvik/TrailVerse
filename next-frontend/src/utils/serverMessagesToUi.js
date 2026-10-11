@@ -4,6 +4,7 @@ export const mapServerMessagesToUi = (serverMessages = []) =>
     return {
       id: `restored-${index}-${msg.timestamp || Date.now()}`,
       role: msg.role,
+      ...(msg.conversationId != null ? { conversationId: msg.conversationId } : {}),
       content: msg.content,
       timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
       provider: msg.provider || undefined,
@@ -16,9 +17,11 @@ export const mapServerMessagesToUi = (serverMessages = []) =>
       responseId: msg.responseId || undefined,
       responseVersion: msg.responseVersion ?? undefined,
       responseRevision: msg.responseRevision ?? undefined,
+      artifactStatus: msg.artifactStatus || undefined,
       responseArtifacts: msg.responseArtifacts || undefined,
       intent: msg.intent || undefined,
       presentation: msg.presentation || undefined,
+      refinement: msg.refinement || undefined,
       // WP-TU Phase 3 Task 8B — restore the same additive field intent/
       // presentation already restore here. Absent on any conversation saved
       // before this change; `resolvePlanningParkName`'s existing legacy

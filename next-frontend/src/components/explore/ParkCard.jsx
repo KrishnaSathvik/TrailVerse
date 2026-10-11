@@ -23,9 +23,9 @@ const ExploreListCard = ({ park, rating, detailHref, onNavigate }) => (
   <Link
     href={detailHref}
     onClick={onNavigate}
-    className="group flex gap-6 p-6 rounded-2xl backdrop-blur hover:-translate-y-1 transition-all duration-300"
+    className="group flex gap-6 p-6 rounded-2xl transition-colors duration-200"
     style={{
-      backgroundColor: 'var(--surface)',
+      backgroundColor: 'var(--bg-secondary)',
       borderWidth: '1px',
       borderColor: 'var(--border)',
       boxShadow: 'var(--shadow)',
@@ -84,9 +84,9 @@ const ExploreGridCard = ({ park, rating, detailHref, priority = false, onNavigat
   <Link
     href={detailHref}
     onClick={onNavigate}
-    className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300"
+    className="group rounded-2xl overflow-hidden transition-colors duration-200"
     style={{
-      backgroundColor: 'var(--surface)',
+      backgroundColor: 'var(--bg-secondary)',
       borderWidth: '1px',
       borderColor: 'var(--border)',
       boxShadow: 'var(--shadow)',
@@ -218,9 +218,9 @@ const ParkCard = memo(({
   return (
     <Link
       href={detailHref}
-      className="group rounded-2xl overflow-hidden backdrop-blur hover:-translate-y-1 transition-all duration-300 block"
+      className="group rounded-2xl overflow-hidden transition-colors duration-200 block"
       style={{
-        backgroundColor: 'var(--surface)',
+        backgroundColor: 'var(--bg-secondary)',
         borderWidth: '1px',
         borderColor: 'var(--border)',
       }}
@@ -237,7 +237,7 @@ const ParkCard = memo(({
           <button
             type="button"
             onClick={handleSaveClick}
-            className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur transition ${
+            className={`absolute top-4 right-4 p-2 rounded-full transition ${
               isSaved ? 'bg-red-500' : 'bg-white/20 hover:bg-white/30'
             }`}
           >
@@ -246,7 +246,7 @@ const ParkCard = memo(({
         ) : null}
 
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 rounded-full bg-forest-500/90 backdrop-blur text-white text-xs font-semibold">
+          <span className="px-3 py-1 rounded-full bg-forest-500/90 text-white text-xs font-semibold">
             {park.designation}
           </span>
         </div>

@@ -1,3 +1,6 @@
+import IntegrationDetails from '@/components/info/IntegrationDetails';
+import { INTEGRATION_CAPABILITIES } from '@/data/integrationCapabilities';
+import InfoPageHeader, { InfoSectionLabel } from '@/components/info/InfoPageHeader';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import IconGlyph from '@/components/common/IconGlyph';
@@ -8,11 +11,11 @@ const DIST_CHANNEL = 'chatgpt';
 export const metadata = {
   title: 'TrailVerse for ChatGPT — Trailie NPS Trip Planner',
   description:
-    'Install the TrailVerse ChatGPT app — live NPS data for 470+ sites plus AI trip planning for any US destination. Alerts, weather, compare, search, and events. No TrailVerse account required.',
+    'Install the TrailVerse ChatGPT app — live NPS data for 470+ sites plus AI trip planning for US destinations beyond the NPS catalog. Alerts, weather, compare, search, and events. No TrailVerse account required.',
   openGraph: {
     title: 'TrailVerse for ChatGPT — Trailie NPS Trip Planner',
     description:
-      'Trailie in ChatGPT — 470+ NPS sites with live data, plus day-by-day trip planning for any US destination.',
+      'Trailie in ChatGPT — 470+ NPS sites with live data, plus day-by-day trip planning for US destinations beyond the NPS catalog.',
     url: 'https://www.nationalparksexplorerusa.com/chatgpt',
     type: 'website',
     images: [{ url: '/og-image-trailverse.jpg', width: 1200, height: 630, alt: 'TrailVerse for ChatGPT' }],
@@ -35,45 +38,7 @@ const CHATGPT_APP_URL =
   process.env.NEXT_PUBLIC_CHATGPT_APP_URL ||
   'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe';
 
-const tools = [
-  {
-    icon: 'Map',
-    title: 'Plan a Trip',
-    description:
-      'Day-by-day itineraries for any US destination — NPS parks, state parks, cities, and road trips — with constraint-aware planning and live context when available',
-    accent: 'var(--accent-green)',
-  },
-  {
-    icon: 'Mountain',
-    title: 'Park Details',
-    description: 'Live weather, alerts, entrance fees, hours, campgrounds, permits, activities, and Google Maps',
-    accent: 'var(--accent-blue)',
-  },
-  {
-    icon: 'ArrowsLeftRight',
-    title: 'Compare Parks',
-    description: 'Side-by-side comparison of 2\u20134 parks on weather, crowds, fees, activities',
-    accent: 'var(--accent-orange)',
-  },
-  {
-    icon: 'Search',
-    title: 'Search Parks',
-    description: 'Find parks by state, activity, or name across all NPS sites',
-    accent: 'var(--accent-green)',
-  },
-  {
-    icon: 'Calendar',
-    title: 'Find Events',
-    description: 'Ranger programs, guided tours, and special events with dates and locations',
-    accent: 'var(--accent-blue)',
-  },
-  {
-    icon: 'MessageSquare',
-    title: 'Multi-Turn Planning',
-    description: 'Refine and extend plans across messages \u2014 "now add day 4" just works',
-    accent: 'var(--accent-orange)',
-  },
-];
+const tools = INTEGRATION_CAPABILITIES;
 
 const examplePrompts = [
   'Plan a 5-day trip to Yellowstone in September with my fianc\u00e9e',
@@ -84,114 +49,58 @@ const examplePrompts = [
   'Plan a 3-day photography road trip through Utah\u2019s parks',
 ];
 
-function SectionBadge({ children }) {
-  return (
-    <div
-      className="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-6"
-      style={{
-        backgroundColor: 'var(--surface-hover)',
-        borderWidth: '1px',
-        borderColor: 'var(--border)',
-      }}
-    >
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }} />
-      <span
-        className="text-xs font-semibold uppercase tracking-wider"
-        style={{ color: 'var(--text-secondary)' }}
-      >
-        {children}
-      </span>
-    </div>
-  );
-}
 
 export default function ChatGPTPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
 
-      <main>
-        <section className="relative w-full min-h-[70vh] flex items-center justify-center">
-          <div
-            className="absolute inset-0 w-full bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: 'url(/background23.png)',
-              filter: 'brightness(0.4)',
-              width: '100vw',
-              left: '50%',
-              marginLeft: '-50vw',
-            }}
-          />
-          <div
-            className="absolute inset-0 w-full bg-gradient-to-b from-black/20 via-black/40 to-black/60"
-            style={{ width: '100vw', left: '50%', marginLeft: '-50vw' }}
-          />
-
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 ring-1 backdrop-blur mb-8 bg-white/10 border-white/20">
-              <IconGlyph name="Sparkles" className="h-4 w-4 text-white" />
-              <span className="text-xs font-medium uppercase tracking-wider text-white">
-                ChatGPT App
-              </span>
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-white">
-              TrailVerse for ChatGPT
-            </h1>
-
-            <p className="text-lg sm:text-xl leading-relaxed mb-10 text-white/90 max-w-3xl mx-auto">
-              Live data for <strong className="font-semibold text-white">470+ NPS parks and sites</strong> inside ChatGPT
-              with <strong className="font-semibold text-white">Trailie</strong> — plus day-by-day trip planning for{' '}
-              <strong className="font-semibold text-white">any US destination</strong>, including state parks, cities,
+      <main className="info-page">
+        <InfoPageHeader title="TrailVerse for ChatGPT" description={<>
+              Live data for <strong className="font-semibold text-[var(--text-primary)]">470+ NPS parks and sites</strong> inside ChatGPT
+              with <strong className="font-semibold text-[var(--text-primary)]">Trailie</strong> — plus day-by-day trip planning for{' '}
+              <strong className="font-semibold text-[var(--text-primary)]">US destinations beyond the NPS catalog</strong>, including state parks, cities,
               and road trips.
-            </p>
-
+            </>}>
             <TrackedOutboundLink
               channel={DIST_CHANNEL}
               ctaId="hero_start_chat"
               label="Start chat"
               href={CHATGPT_APP_URL}
-              className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+              className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               style={{ backgroundColor: 'var(--accent-green)' }}
             >
               <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
               Start chat
             </TrackedOutboundLink>
-          </div>
-        </section>
+        </InfoPageHeader>
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Real-time NPS Data</SectionBadge>
+        <section className="info-section">
+          <div className="w-full">
+            <div className="mb-8">
+              <InfoSectionLabel>Real-time NPS Data</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
-                What You Get
+                Five tools for your trip
               </h2>
-              <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-                Your chat pulls from live National Park Service data — closures, weather, fees, and
-                events — so answers reflect what&apos;s happening now, not old training data.
+              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+                Ask for park information or a trip plan, then refine your dates, pace, or interests. Tool results can use current sources when available; generated answers still need checking before you travel.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="info-card-grid">
               {tools.map((tool) => (
                 <div
                   key={tool.title}
-                  className="rounded-2xl p-6 backdrop-blur"
+                  className="public-editorial-section py-6 space-y-4"
                   style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
                     borderColor: 'var(--border)',
                   }}
                 >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                    style={{ backgroundColor: tool.accent }}
-                  >
-                    <IconGlyph name={tool.icon} className="h-6 w-6 text-white" />
+                  <div className="info-icon">
+                    <IconGlyph name={tool.icon} className="h-6 w-6 text-current" />
                   </div>
                   <h3
                     className="text-xl font-semibold mb-3"
@@ -209,11 +118,11 @@ export default function ChatGPTPage() {
         </section>
 
         <section id="install" className="py-16 px-4 sm:px-6 lg:px-8 scroll-mt-20">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Setup</SectionBadge>
+          <div className="max-w-3xl">
+            <div className="mb-8">
+              <InfoSectionLabel>Setup</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Get Started in ChatGPT
@@ -224,7 +133,7 @@ export default function ChatGPTPage() {
             </div>
 
             <div
-              className="rounded-2xl p-6 sm:p-8 backdrop-blur"
+              className="info-panel"
               style={{
                 backgroundColor: 'var(--surface)',
                 borderWidth: '1px',
@@ -279,8 +188,7 @@ export default function ChatGPTPage() {
               </ol>
 
               <p className="text-xs mt-6" style={{ color: 'var(--text-tertiary)' }}>
-                Requires a ChatGPT account with access to third-party apps. Free to use — save
-                trips and use the Plan Workspace on TrailVerse.com.
+                Requires a ChatGPT account with app access. Availability can depend on your plan, region, or workspace settings. Website trip history and the plan workspace are separate.
               </p>
 
               <TrackedOutboundLink
@@ -288,13 +196,14 @@ export default function ChatGPTPage() {
                 ctaId="install_start_chat"
                 label="Start chat"
                 href={CHATGPT_APP_URL}
-                className="mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                className="mt-6 inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent-green)' }}
               >
                 <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
                 Start chat
               </TrackedOutboundLink>
 
+              <p className="mt-4 text-sm"><a href="https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt" className="underline" target="_blank" rel="noopener noreferrer">ChatGPT app access and data settings</a></p>
               <p className="text-xs mt-4 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
                 Can&rsquo;t open the listing? Browse{' '}
                 <TrackedOutboundLink
@@ -310,7 +219,7 @@ export default function ChatGPTPage() {
               </p>
             </div>
 
-            <p className="text-center text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-left text-sm mt-8" style={{ color: 'var(--text-tertiary)' }}>
               Prefer Claude?{' '}
               <TrackedCtaLink
                 channel={DIST_CHANNEL}
@@ -326,29 +235,27 @@ export default function ChatGPTPage() {
           </div>
         </section>
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Try It</SectionBadge>
+        <section className="info-section">
+          <div className="w-full">
+            <div className="mb-8">
+              <InfoSectionLabel>Try It</InfoSectionLabel>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
+                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Example Prompts
               </h2>
-              <p className="text-lg max-w-3xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
                 Once the app is open, try asking ChatGPT any of these.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="info-card-grid">
               {examplePrompts.map((prompt) => (
                 <div
                   key={prompt}
-                  className="rounded-2xl p-5 backdrop-blur"
+                  className="public-editorial-section py-6 space-y-4"
                   style={{
-                    backgroundColor: 'var(--surface)',
-                    borderWidth: '1px',
                     borderColor: 'var(--border)',
                   }}
                 >
@@ -364,85 +271,13 @@ export default function ChatGPTPage() {
           </div>
         </section>
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <SectionBadge>Privacy</SectionBadge>
-              <h2
-                className="text-3xl sm:text-4xl font-bold mb-4"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Your Data, Transparently
-              </h2>
-            </div>
+        <IntegrationDetails host="ChatGPT" />
 
+        <section className="info-section">
+          <div className="w-full">
             <div
-              className="rounded-3xl p-8 sm:p-10 backdrop-blur space-y-8"
+              className="public-editorial-section py-6 space-y-4"
               style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-              }}
-            >
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  What leaves ChatGPT
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  When you use a TrailVerse tool, ChatGPT sends the tool parameters (park name,
-                  state, dates, your trip request) to our server. For multi-turn trip planning,
-                  messages within that planning session are sent so follow-ups like &ldquo;now add
-                  day 4&rdquo; work. Sessions expire after 2 hours. No ChatGPT billing data or
-                  unrelated chat history is transmitted.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  What we log
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  We log tool calls (park code, timestamp) for rate limiting and reliability
-                  monitoring. No personally identifiable information is stored. Logs are retained
-                  for 30 days.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Data source
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  All park data comes from the National Park Service API (nps.gov). Weather data
-                  from OpenWeatherMap. We do not sell or share any data.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Limits
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  Free to use in ChatGPT with generous tool limits. Park details, search, compare,
-                  and events cover the NPS catalog; Plan a trip also works for state parks, cities,
-                  and road trips. For saved trips, PDF export, and the visual Plan Workspace, use{' '}
-                  <TrackedCtaLink channel={DIST_CHANNEL} ctaId="faq_plan_ai" label="Trailie" href="/plan-ai" className="underline underline-offset-2">
-                    Trailie
-                  </TrackedCtaLink>{' '}
-                  on the website.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div
-              className="rounded-3xl p-8 text-center sm:p-10"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
                 borderColor: 'var(--border)',
               }}
             >
@@ -457,15 +292,15 @@ export default function ChatGPTPage() {
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Open TrailVerse in ChatGPT — live NPS data from 470+ sites and trip planning for
-                any US destination.
+                US destinations beyond the NPS catalog.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <TrackedOutboundLink
                   channel={DIST_CHANNEL}
                   ctaId="footer_start_chat"
                   label="Start chat"
                   href={CHATGPT_APP_URL}
-                  className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                  className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                   style={{ backgroundColor: 'var(--accent-green)' }}
                 >
                   <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
@@ -482,7 +317,7 @@ export default function ChatGPTPage() {
                     borderWidth: '1px',
                     borderColor: 'var(--border)',
                     color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow)',
+                    boxShadow: 'none',
                   }}
                 >
                   <span className="inline-flex items-center gap-2">

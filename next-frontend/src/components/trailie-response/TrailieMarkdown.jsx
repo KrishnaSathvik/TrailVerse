@@ -41,7 +41,7 @@ function ResponsiveComparisonTable({ children }) {
   const columns = countTableColumns(children);
   const percents = columnPercents(columns);
   return (
-    <div className="trailie-table-breakout my-4 w-full min-w-0 max-w-[68rem]">
+    <div className="trailie-table-breakout my-4 w-full min-w-0 max-w-[var(--public-rich-width)]">
       <span
         aria-hidden="true"
         className="mb-1.5 block text-[11px] font-medium tracking-wide md:hidden"
@@ -57,7 +57,7 @@ function ResponsiveComparisonTable({ children }) {
         className="w-full max-w-full overflow-hidden border-y max-md:overflow-x-auto max-md:overscroll-x-contain md:overflow-visible [-webkit-overflow-scrolling:touch] [&_table]:!my-0"
         style={{ borderColor: 'var(--border)' }}
       >
-        <table className="table-fixed w-full min-w-[34rem] border-collapse text-xs md:min-w-0 md:text-sm !my-0 [&_tr:last-child_td]:border-b-0">
+        <table className="table-fixed w-full min-w-[34rem] border-collapse text-sm md:min-w-0 !my-0 [&_tr:last-child_td]:border-b-0">
           {percents ? (
             <colgroup>
               {percents.map((width, index) => (
@@ -88,7 +88,7 @@ export default function TrailieMarkdown({
     table: ResponsiveComparisonTable,
     th: ({ children }) => (
       <th
-        className="border-x-0 border-b px-3 py-3 text-left align-top text-xs font-semibold whitespace-normal md:px-4 md:text-sm"
+        className="border-x-0 border-b px-3 py-3 text-left align-top text-sm font-semibold whitespace-normal md:px-4 md:text-sm"
         style={{
           borderColor: 'var(--border)',
           backgroundColor: 'color-mix(in srgb, var(--accent-green) 6%, var(--surface))',
@@ -100,7 +100,7 @@ export default function TrailieMarkdown({
     ),
     td: ({ children }) => (
       <td
-        className="border-x-0 border-b px-3 py-3 align-top text-xs leading-relaxed whitespace-normal md:px-4 md:text-sm"
+        className="border-x-0 border-b px-3 py-3 align-top text-sm leading-relaxed whitespace-normal md:px-4 md:text-sm"
         style={{ borderColor: 'var(--border)' }}
       >
         {children}

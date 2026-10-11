@@ -40,7 +40,7 @@ export default function SimpleCanaryClient() {
   }
   return <PlanAIShell title="Trailie · Private canary" subtitle="Local model-first demo"
     headerActions={<button disabled={busy || Boolean(error)} onClick={() => { setMessages([]); setTripId(null); }} className="rounded-xl border px-4 py-2">New conversation</button>}>
-    <div className="flex-1 overflow-y-auto px-4 py-6"><div className="mx-auto max-w-3xl space-y-8">
+    <div className="flex-1 overflow-y-auto px-4 py-6"><div className="public-rich space-y-8">
       {!messages.length && <p>Where would you like to go?</p>}
       {messages.map((message, index) => <article key={index} className={message.role === 'user' ? 'ml-auto max-w-xl rounded-2xl bg-[var(--surface-hover)] p-4' : ''}>
         <p className="mb-2 text-xs opacity-60">{message.role === 'user' ? 'You' : 'Trailie'}</p>
@@ -51,7 +51,7 @@ export default function SimpleCanaryClient() {
       {error && <p role="alert" className="rounded-xl border border-red-400 p-4">{error}</p>}
       <div ref={bottom} />
     </div></div>
-    <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+    <div className="public-reading px-4 pb-4">
       <p className="mb-2 text-xs opacity-60">{budget?.turns || 0}/6 turns · ${((budget?.chargedMicros || 0) / 1000000).toFixed(5)} / $0.15 model budget{budget?.stopped ? ' · Stopped' : ''}</p>
       <ChatInput onSend={send} disabled={busy || Boolean(error) || !budget || budget.stopped || budget.turns >= 6} placeholder="Ask Trailie…" />
     </div>

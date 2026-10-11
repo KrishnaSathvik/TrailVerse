@@ -1,6 +1,10 @@
 import { runOrderedCrossPlanPersistence } from '../persistCanonicalPlan';
 
-test('server-persisted response never creates a second client write, including target mutations', async () => {
+// Architecture invariant (docs/trailie-architecture.md Step 3):
+// When model-first returns persisted:true, the browser must treat the server
+// canonical state as authoritative and must never perform a second trip write
+// to “finish” the save. Legacy/recovery may still write when persisted is absent.
+test('model-first persisted:true never creates a second client trip write', async () => {
   const autoSaveConversation = vi.fn();
   const persistTargetPlanMutation = vi.fn();
   const result = await runOrderedCrossPlanPersistence({
@@ -8,6 +12,19 @@ test('server-persisted response never creates a second client write, including t
     hasUserMessagesToSave: true, autoSaveConversation, persistTargetPlanMutation,
   });
   expect(result).toBe(true);
+  expect(autoSaveConversation).not.toHaveBeenCalled();
+  expect(persistTargetPlanMutation).not.toHaveBeenCalled();
+});
+
+test('model-first persisted:true ignores hasUserMessagesToSave (server already committed)', async () => {
+  const autoSaveConversation = vi.fn().mockResolvedValue(true);
+  const persistTargetPlanMutation = vi.fn();
+  await runOrderedCrossPlanPersistence({
+    data: { persisted: true },
+    hasUserMessagesToSave: true,
+    autoSaveConversation,
+    persistTargetPlanMutation,
+  });
   expect(autoSaveConversation).not.toHaveBeenCalled();
   expect(persistTargetPlanMutation).not.toHaveBeenCalled();
 });

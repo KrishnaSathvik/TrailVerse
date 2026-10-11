@@ -24,11 +24,11 @@ const SearchBar = ({
 
   return (
     <div className={`relative transition-all duration-300 ${isFocused && !useExternalResults ? 'scale-[1.02]' : ''}`}>
-      <div className={`relative rounded-2xl transition-all ${
+      <div className={`relative rounded-xl transition-all ${
         isFocused ? (isHero ? HERO_SEARCH_FOCUS_RING : 'ring-2 ring-forest-500/50') : ''
       }`}
         style={isHero ? HERO_SEARCH_FIELD_STYLE : {
-          backgroundColor: 'var(--surface)',
+          backgroundColor: 'var(--bg-secondary)',
           borderWidth: '1px',
           borderColor: 'var(--border)',
         }}
@@ -47,7 +47,8 @@ const SearchBar = ({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          className={`w-full min-w-0 font-medium outline-none transition rounded-2xl ${
+          aria-label={placeholder}
+          className={`w-full min-w-0 min-h-12 font-medium outline-none transition rounded-xl ${
             compact ? 'pl-11 pr-12 py-2.5 text-sm' : 'pl-14 pr-12 py-4 text-base'
           } ${isHero ? 'placeholder:text-slate-500 bg-transparent' : 'placeholder:text-[color:var(--text-tertiary)] bg-transparent'}`}
           style={{ color: isHero ? HERO_SEARCH_TEXT_COLOR : 'var(--text-primary)' }}
@@ -59,7 +60,7 @@ const SearchBar = ({
             {value ? (
               <button
                 onClick={onClear}
-                className={`p-1.5 rounded-lg transition ${isHero ? 'hover:bg-black/5' : 'hover:bg-white/5'}`}
+                className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg transition ${isHero ? 'hover:bg-black/5' : 'hover:bg-white/5'}`}
                 style={{ color: isHero ? HERO_SEARCH_MUTED_COLOR : 'var(--text-tertiary)' }}
                 aria-label="Clear search"
               >
@@ -68,8 +69,9 @@ const SearchBar = ({
             ) : null}
             {showFilters ? (
               <button
+                aria-label="Filters"
                 onClick={onToggleFilters}
-                className={`lg:hidden p-1.5 rounded-lg transition ${isHero ? 'hover:bg-black/5' : 'hover:bg-white/5'}`}
+                className={`lg:hidden min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg transition ${isHero ? 'hover:bg-black/5' : 'hover:bg-white/5'}`}
                 style={{ color: isHero ? HERO_SEARCH_MUTED_COLOR : 'var(--text-tertiary)' }}
               >
                 <Filter className="h-4 w-4" />
@@ -81,9 +83,9 @@ const SearchBar = ({
 
       {/* Search Suggestions — landing/map hero uses an external results panel */}
       {isFocused && value && !isHero && !useExternalResults && (
-        <div className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden backdrop-blur shadow-lg z-10"
+        <div className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden shadow-lg z-10"
           style={{
-            backgroundColor: 'var(--surface)',
+            backgroundColor: 'var(--bg-secondary)',
             borderWidth: '1px',
             borderColor: 'var(--border)'
           }}

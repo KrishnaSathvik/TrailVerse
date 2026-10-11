@@ -104,7 +104,7 @@ export async function consumeAiSseStream(response, callbacks = {}) {
     }
     if (parsed.type === 'error' && (modelFirst || parsed.retryable === false)) {
       throw Object.assign(new Error(parsed.message || 'Trailie could not finish this response.'), {
-        noAutomaticRetry: true, serverResolvedFailure: true, code: parsed.code, responseId: parsed.responseId,
+        noAutomaticRetry: true, serverResolvedFailure: true, code: parsed.code, responseId: parsed.responseId, phase: parsed.phase || 'reply',
       });
     }
   };

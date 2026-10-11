@@ -207,8 +207,8 @@ const UnsubscribeContent = () => {
   if (!email) {
     return (
       <section style={{ padding: '3rem 0 4rem' }}>
-        <div className="container mx-auto px-4">
-          <div style={{ maxWidth: '42rem', margin: '0 auto' }}>
+        <div className="public-shell">
+          <div className="public-form">
             <div className="text-center" style={{ marginBottom: '2.5rem' }}>
               <div
                 className="inline-flex items-center justify-center rounded-full"
@@ -292,8 +292,8 @@ const UnsubscribeContent = () => {
 
   return (
     <section style={{ padding: '3rem 0 4rem' }}>
-      <div className="container mx-auto px-4">
-        <div style={{ maxWidth: '42rem', margin: '0 auto' }}>
+      <div className="public-shell">
+        <div className="public-form">
           {/* Header */}
           <div className="text-center" style={{ marginBottom: '2.5rem' }}>
             <div

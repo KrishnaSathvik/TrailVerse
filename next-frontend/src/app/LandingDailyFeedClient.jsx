@@ -43,7 +43,7 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
 
   return (
     <section className={LANDING_SECTION} style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="max-w-[92rem] mx-auto">
+      <div className="public-shell">
         <div className={`flex items-end justify-between ${LANDING_SECTION_HEADER_MB}`}>
           <div>
             <div
@@ -55,7 +55,7 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
                 Daily Inspiration
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               Park of the day
             </h2>
             <p className="text-base sm:text-lg mt-2 max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
@@ -127,23 +127,17 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
             </Link>
 
             <div
-              className="rounded-2xl p-6 sm:p-8 backdrop-blur transition-all duration-300 hover:-translate-y-1"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow)',
-              }}
+              className="border-t py-6 sm:py-8" style={{ borderColor: 'var(--border)' }}
             >
-              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 mb-5 ring-1"
-                style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}
+              <div className="public-eyebrow"
+
               >
                 <Mountain className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
                 <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                   Nature Fact
                 </span>
               </div>
-              <p className="text-lg sm:text-xl leading-relaxed mb-8" style={{ color: 'var(--text-primary)' }}>
+              <p className="text-base leading-relaxed mb-6" style={{ color: 'var(--text-primary)' }}>
                 &ldquo;{feed.natureFact.replace(/\*\*(.*?)\*\*/g, '$1')}&rdquo;
               </p>
               <div className="flex flex-col sm:flex-row gap-3">

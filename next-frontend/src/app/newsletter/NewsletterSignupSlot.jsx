@@ -13,7 +13,7 @@ export default function NewsletterSignupSlot() {
   if (subscribed) {
     return (
       <div
-        className="rounded-[2rem] p-6 sm:p-8"
+        className="info-panel"
         style={{ backgroundColor: 'var(--surface)' }}
         role="status"
         aria-live="polite"
@@ -51,7 +51,7 @@ export default function NewsletterSignupSlot() {
             : 'That confirmation link is invalid. Submit your email again to get a new one.'}
         </p>
       ) : null}
-      <NewsletterWidget source="newsletter-page" />
+      <NewsletterWidget source="newsletter-page" containerClassName="info-panel" />
     </div>
   );
 }

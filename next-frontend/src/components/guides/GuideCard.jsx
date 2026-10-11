@@ -10,12 +10,9 @@ const GuideCard = memo(({ guide, href, ctaLabel = 'Read guide →' }) => {
   return (
     <Link
       href={linkHref}
-      className="group flex h-full flex-col rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:-translate-y-1"
+      className="public-editorial-section public-discovery-link group flex h-full min-w-0 flex-col py-6"
       style={{
-        backgroundColor: 'var(--surface)',
-        borderWidth: '1px',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow)',
       }}
     >
       {guide.category ? (

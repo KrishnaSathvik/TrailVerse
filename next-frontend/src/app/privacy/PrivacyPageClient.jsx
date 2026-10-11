@@ -1,384 +1,135 @@
-const LAST_UPDATED = 'August 27, 2026';
+import InfoPageHeader from '@/components/info/InfoPageHeader';
+import LegalSections from '@/components/common/LegalSections';
+
+const policySections = [
+  {
+    "id": "introduction",
+    "title": "About this policy",
+    "paragraphs": [
+      "This policy explains how TrailVerse handles information when you browse parks, create an account, use Trailie, submit content, subscribe to emails, or use the TrailVerse ChatGPT app or Claude connector. TrailVerse is independent of the National Park Service.",
+      "Questions or requests about your information can be sent to trailverseteam@gmail.com."
+    ]
+  },
+  {
+    "id": "collection",
+    "title": "Information you provide",
+    "paragraphs": [
+      "Account registration requires your first name, last name, email address, and password. Passwords are stored as bcrypt hashes, not readable passwords. Your bio, avatar, phone number, location, and website are optional profile details.",
+      "We store account-linked park favorites, saved blog posts, visited-park dates and notes, reviews and uploaded photos, comments, reactions, and saved trip conversations. Newsletter signups include an email address and subscription or confirmation information.",
+      "Where Next stores a destination choice, optional travel window, and a browser session identifier. A destination can be free text rather than a park in our catalog. Event bookmarks are stored in your browser rather than synced to your account.",
+      "Guest story submissions can include a name, rating, and review text. Approved stories are displayed publicly. Guest submissions are not necessarily linked to an account."
+    ]
+  },
+  {
+    "id": "ai",
+    "title": "Trailie, voice, and connected apps",
+    "paragraphs": [
+      "To answer a request, TrailVerse sends relevant messages, trip preferences, conversation history, and supporting context to AI services. The website planner uses Anthropic, and voice uses OpenAI Realtime. Other configured AI and research services may process requests or supporting queries. Do not enter information that you do not want those services to process; text and audio are not guaranteed to be anonymized.",
+      "Voice requires microphone access. Your audio is sent to OpenAI for realtime processing. Park context and, when you grant location permission, location context may also be used to answer nearby-place questions.",
+      "ChatGPT and Claude send the parameters of the TrailVerse tools they call, including destination names, dates, preferences, and planning requests. Planning requests and relevant follow-up context reach our planner and AI providers. No TrailVerse account is needed, but this does not make the request anonymous in every sense.",
+      "Connected-app planning maintains temporary follow-up context and backend planning-session records. Temporary connector context expires separately from backend records and operational logs. The host app also handles your conversation under its own policies."
+    ]
+  },
+  {
+    "id": "technical",
+    "title": "Technical information and analytics",
+    "paragraphs": [
+      "Our application can record IP addresses, user agents, page URLs, referral information, browser and session identifiers, actions, request timing, and error or diagnostic details. Some events are associated with your account when signed in.",
+      "We use application analytics, Google Analytics when configured, and Vercel analytics and performance services. Some analytics use browser identifiers or account context and can run when you browse. Browser privacy controls and blocking tools may affect collection.",
+      "AI diagnostics can include request or response content and related metadata. Information you include in a message can therefore appear in operational records as well as your conversation."
+    ]
+  },
+  {
+    "id": "usage",
+    "title": "How information is used",
+    "paragraphs": [
+      "We use information to operate accounts, provide trip planning and relevant results, save your activity, display community content, maintain sessions and usage limits, detect failures or abuse, and improve reliability.",
+      "Email information supports verification, password resets, account notices, and subscriptions. Marketing messages include unsubscribe options. Application and image caches support performance; they do not guarantee offline access to account data."
+    ]
+  },
+  {
+    "id": "sharing",
+    "title": "Who receives information",
+    "paragraphs": [
+      "Our service providers process information needed for hosting, databases, email delivery, analytics, AI, search, maps, and weather. Depending on the feature, these include Anthropic, OpenAI, Google, MapTiler, OpenWeather, Resend, and Vercel, along with configured hosting, database, and web-search providers.",
+      "Park information is obtained from the National Park Service and other relevant sources. A park name, coordinates, or research query may be sent to a provider when that feature is used. Provider availability varies by configuration.",
+      "Reviews, comments, and approved testimonials are public. If you create a public trip link, anyone with that link can view the shared trip and conversation. Removing a link or account cannot recall copies that other people have already saved.",
+      "TrailVerse does not sell personal information. Information may also be disclosed when required by law or to protect rights and safety. Service providers and connected apps have their own privacy policies."
+    ]
+  },
+  {
+    "id": "security",
+    "title": "Security",
+    "paragraphs": [
+      "Implemented controls include password hashing, signed authentication tokens, authenticated access checks, and validation for account deletion. Authentication information is held in browser storage and a cookie.",
+      "Production services use HTTPS connections. Security controls differ across stored records, logs, and browser data; we do not guarantee complete security. Avoid sharing sensitive information in public content or planning requests."
+    ]
+  },
+  {
+    "id": "cookies",
+    "title": "Cookies, browser storage, and offline data",
+    "paragraphs": [
+      "TrailVerse uses cookies, local storage, session storage, IndexedDB, and browser caches. These support sign-in, preferences, guest chat state, event bookmarks, destination picks, analytics identifiers, and cached assets or park data.",
+      "Logging out clears sign-in information and some chat state; it does not clear every cookie, cache, bookmark, or third-party record. Use your browser’s site-data controls to remove local data. Clearing data can remove unsynced bookmarks and guest state.",
+      "Installing TrailVerse does not download a complete offline guide. Live information, chat, account history, and many page loads require a connection. A downloaded itinerary PDF can be kept separately for offline use."
+    ]
+  },
+  {
+    "id": "retention",
+    "title": "Retention and deletion",
+    "paragraphs": [
+      "Account-linked information is retained to provide the service until you remove it or delete your account, subject to operational and legal needs. Guest chat records are configured to expire after 48 hours of inactivity. Database expiry cleanup is asynchronous.",
+      "Raw application analytics are configured for a seven-day expiry window. This is not a single retention period for every record: AI request logs, aggregate analytics, deletion-audit records, infrastructure logs, backups, and provider records can have different lifecycles. Contact us for information about a particular record or service.",
+      "Account deletion removes linked trips, favorites, visits, reviews, comments, subscriptions, and controlled uploaded files. References such as likes are removed or anonymized. A limited deletion-audit record with hashed identifiers and operation outcomes is configured for a one-year expiry.",
+      "Guest submissions and data not linked to your account may need a separate request. Local browser data, third-party records, and copies saved by other people are not all removed by deleting a TrailVerse account."
+    ]
+  },
+  {
+    "id": "rights",
+    "title": "Your choices and requests",
+    "paragraphs": [
+      "You can update your profile and manage saved content in your account. To delete the account, open Profile settings → Privacy & Security → Delete Account, enter your password, and type DELETE.",
+      "Unsubscribe from marketing emails through the links in those messages. Contact trailverseteam@gmail.com to request access, correction, deletion, or a portable copy of information, or to ask about a guest submission. We may need to verify your identity. Rights and any applicable exceptions depend on your location.",
+      "The current site does not provide a universal cookie-consent switch or a self-service export of all personal information. Browser controls can be used to manage local storage and cookies."
+    ]
+  },
+  {
+    "id": "children",
+    "title": "Children’s privacy",
+    "paragraphs": [
+      "TrailVerse is not intended for children under 13. We do not knowingly collect information from children under 13. Users between 13 and 18 should have parental consent. Contact us if you believe a child has provided information."
+    ]
+  },
+  {
+    "id": "changes",
+    "title": "Updates and contact",
+    "paragraphs": [
+      "Changes to this policy will be posted here. For questions, privacy requests, or concerns, email trailverseteam@gmail.com."
+    ]
+  }
+];
 
 export default function PrivacyPageContent() {
-  const sections = [
-    {
-      id: "introduction",
-      title: "Introduction",
-      content: (
-        <>
-          <p className="mb-4">
-            TrailVerse (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. 
-            This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our National Parks exploration platform.
-          </p>
-          <p className="mb-4">
-            By using TrailVerse, you agree to the collection and use of information in accordance with this policy. 
-            If you do not agree, please do not use our platform.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "collection",
-      title: "Information We Collect",
-      content: (
-        <>
-          <h3 className="text-lg font-semibold mb-3 mt-4">Account & Profile Information</h3>
-          <p className="mb-4">
-            When you create an account, we collect: name, email, password (encrypted), profile bio, avatar (custom upload or from 1000+ generated options), 
-            phone number, location, and website (all optional except email and password).
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 mt-4">Usage & Activity Data</h3>
-          <p className="mb-4">
-            We collect: favorite parks/blogs/events, visited parks with dates, Trailie trip conversations, reviews with up to 5 photos per review, 
-            blog comments and likes, saved events, trip history (active & archived), search queries, map interactions, and filter preferences.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 mt-4">Where Next destination picks</h3>
-          <p className="mb-4">
-            If you use Where Next, we store an anonymous session identifier, the destination you chose
-            (including free-text names when they are not in our park catalog), and an optional travel window
-            (for example Summer 2027). We use this to show your pick, operate rankings for destinations we
-            already understand, and understand demand. We do not sell this information.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 mt-4">Technical & Analytics Data</h3>
-          <p className="mb-4">
-            Automatically collected: browser type, device info, IP address, cookies, browser local storage, offline cached data, 
-            secure live connection data, performance metrics, and Google Analytics data (anonymized).
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 mt-4">Third-Party Data</h3>
-          <p className="mb-4">
-            We integrate with: National Park Service API (park info, events, alerts), OpenWeather API (weather forecasts), 
-            Anthropic Claude Sonnet 5 (Trailie chat — anonymized), OpenAI (Trailie Voice — anonymized), Google Maps Platform (maps, places, directions), and Resend (email delivery).
-          </p>
-        </>
-      )
-    },
-    {
-      id: "usage",
-      title: "How We Use Your Information",
-      content: (
-        <>
-          <p className="mb-4">We use collected information to:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li>Provide smart trip planning with personalized recommendations</li>
-            <li>Save and sync favorites, reviews, and trip history across all your devices</li>
-            <li>Display real-time weather, park alerts, and NPS events</li>
-            <li>Enable interactive maps and park exploration</li>
-            <li>Process and optimize review images (resize, compress, convert to WebP)</li>
-            <li>Send important emails (verification, password resets, blog notifications)</li>
-            <li>Enable PWA functionality with offline cached content</li>
-            <li>Monitor performance and improve platform quality</li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: "sharing",
-      title: "Information Sharing",
-      content: (
-        <>
-          <p className="mb-4 font-semibold">
-            We do NOT sell, trade, or rent your personal information to third parties.
-          </p>
-          <p className="mb-4">We only share information with:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li><strong>Service Providers:</strong> Secure database cloud providers, application hosting providers, 
-            Anthropic Claude Sonnet 5 (Trailie chat), OpenAI (Trailie Voice — anonymized), Google Maps Platform, OpenWeather API, Resend (emails), Google Analytics</li>
-            <li><strong>Public Content:</strong> Your reviews, ratings, comments, and testimonials are visible to all users</li>
-            <li><strong>Legal Requirements:</strong> When required by law or to protect rights and safety</li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: "security",
-      title: "Data Security",
-      content: (
-        <>
-          <p className="mb-4">We implement industry-standard security measures:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li>Password encryption using bcrypt hashing</li>
-            <li>HTTPS/SSL encryption for all data transmission</li>
-            <li>Secure cloud database hosting architecture</li>
-            <li>Encrypted authentication tokens for secure sessions</li>
-            <li>Regular security updates and monitoring</li>
-          </ul>
-          <p className="mb-4 text-sm italic">
-            While we strive to protect your information, no method of transmission over the Internet is 100% secure.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "cookies",
-      title: "Cookies & Local Storage",
-      content: (
-        <>
-          <p className="mb-4">
-            TrailVerse uses secure browser local storage technologies (not traditional tracking cookies) to enhance your experience:
-          </p>
-          <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li><strong>Essential:</strong> Authentication tokens, session management</li>
-            <li><strong>Functional:</strong> Theme preferences, favorites, cached park data, Trailie chat state</li>
-            <li><strong>Analytics:</strong> Google Analytics session data (optional, via cookie consent)</li>
-            <li><strong>Offline:</strong> Cached content for fast, offline app access</li>
-          </ul>
-          <p className="mb-4">
-            Our storage systems automatically manage your local data to prevent your browser from running out of space. 
-            You can clear all data through your browser settings or by logging out.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "rights",
-      title: "Your Privacy Rights",
-      content: (
-        <>
-          <p className="mb-4">You have the right to:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li><strong>Access:</strong> Request a copy of your personal information</li>
-            <li><strong>Correction:</strong> Update inaccurate or incomplete information</li>
-            <li><strong>Deletion:</strong> Delete your account and personal data from Profile Settings</li>
-            <li><strong>Opt-Out:</strong> Unsubscribe from marketing emails via unsubscribe links</li>
-            <li><strong>Data Portability:</strong> Request your data in a portable format</li>
-          </ul>
-          <p className="mb-4">
-            To exercise these rights, contact us at{' '}
-            <a href="mailto:trailverseteam@gmail.com" 
-               style={{ color: 'var(--accent-green)' }}
-               className="hover:opacity-80 transition">
-              trailverseteam@gmail.com
-            </a>
-            {' '}or manage preferences in your account settings.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "third-party",
-      title: "Third-Party Services",
-      content: (
-        <>
-          <p className="mb-4">TrailVerse integrates with these third-party services:</p>
-          <div className="grid gap-3 mb-4">
-            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <p className="font-semibold mb-1">Google Services</p>
-              <p className="text-sm">Maps JavaScript API • Analytics 4</p>
-            </div>
-            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <p className="font-semibold mb-1">AI Providers</p>
-              <p className="text-sm">Anthropic Claude Sonnet 5 (Trailie chat) • OpenAI (Trailie Voice — anonymized)</p>
-            </div>
-            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <p className="font-semibold mb-1">Infrastructure</p>
-              <p className="text-sm">Secure Cloud Databases • Application Hosting • Resend Email</p>
-            </div>
-            <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <p className="font-semibold mb-1">Data APIs</p>
-              <p className="text-sm">National Park Service • OpenWeather</p>
-            </div>
-          </div>
-          <p className="text-sm mb-4">
-            These services have their own privacy policies. Review them at: Google Privacy Policy, OpenAI Privacy Policy, 
-            Anthropic Privacy Policy, and Resend Privacy Policy.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "retention",
-      title: "Data Retention",
-      content: (
-        <>
-          <p className="mb-4">We retain information as long as necessary to provide services:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2">
-            <li><strong>Account Data:</strong> While active and reasonable period after deletion</li>
-            <li><strong>Usage Data:</strong> Typically 12-24 months for analytics</li>
-            <li><strong>Public Content:</strong> May remain if others engaged with it (reviews, comments)</li>
-            <li><strong>Legal:</strong> As required by law or to resolve disputes</li>
-          </ul>
-        </>
-      )
-    },
-    {
-      id: "children",
-      title: "Children's Privacy",
-      content: (
-        <>
-          <p className="mb-4">
-            TrailVerse is not intended for children under 13. We do not knowingly collect information from children under 13. 
-            Users between 13-18 should have parental consent. Contact us immediately if you believe a child has provided information.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "changes",
-      title: "Policy Updates",
-      content: (
-        <>
-          <p className="mb-4">
-            We may update this Privacy Policy periodically. Changes will be posted on this page with an updated &quot;Last Updated&quot; date. 
-            Significant changes will be notified via email. Continued use after changes constitutes acceptance.
-          </p>
-        </>
-      )
-    },
-    {
-      id: "contact",
-      title: "Contact Us",
-      content: (
-        <>
-          <p className="mb-4">
-            Questions about this Privacy Policy? Contact us at:
-          </p>
-          <p className="mb-2">
-            <strong>Email:</strong>{' '}
-            <a href="mailto:trailverseteam@gmail.com" 
-               style={{ color: 'var(--accent-green)' }}
-               className="hover:opacity-80 transition">
-              trailverseteam@gmail.com
-            </a>
-          </p>
-          <p className="mb-2">
-            <strong>Website:</strong>{' '}
-            <a href="https://www.nationalparksexplorerusa.com" 
-               style={{ color: 'var(--accent-green)' }}
-               className="hover:opacity-80 transition"
-               target="_blank"
-               rel="noopener noreferrer">
-              www.nationalparksexplorerusa.com
-            </a>
-          </p>
-        </>
-      )
-    }
-  ];
-
+  const sections = policySections.map(({ id, title, paragraphs }) => ({
+    id, title, content: paragraphs.map(paragraph => <p key={paragraph} className="mb-4">{paragraph}</p>),
+  }));
   return (
-    <>
-      <main className="pt-3 sm:pt-16">
-        {/* Hero Section */}
-        <section className="py-8 sm:py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              Privacy Policy
-            </h1>
-            <p className="text-lg sm:text-xl mb-8 max-w-3xl mx-auto"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Your privacy is important to us. Learn how we protect your information.
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ring-1 backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <span>Last updated: {LAST_UPDATED}</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Quick Summary Box */}
-        <section className="pb-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl p-6 sm:p-8 backdrop-blur border-2"
-              style={{
-                backgroundColor: 'var(--surface-active)',
-                borderColor: 'var(--border-hover)'
-              }}
-            >
-              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                Privacy at a Glance
-              </h2>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>We Collect</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Account info, favorites, reviews, Trailie conversations, usage data</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>We Never</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Sell your data, share without consent, store passwords unencrypted</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Your Rights</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Access, correct, delete, opt-out anytime from Profile Settings</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Privacy Sections */}
-        <section className="py-8 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {sections.map((section, index) => (
-              <div 
-                key={section.id}
-                className="rounded-xl overflow-hidden backdrop-blur"
-                style={{
-                  backgroundColor: 'var(--surface)',
-                  borderWidth: '1px',
-                  borderColor: 'var(--border)'
-                }}
-              >
-                <div className="p-6">
-                  <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                    {index + 1}. {section.title}
-                  </h2>
-                  <div style={{ color: 'var(--text-secondary)' }}>
-                    {section.content}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Contact CTA */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-3xl p-8 sm:p-12 text-center backdrop-blur"
-              style={{
-                backgroundColor: 'var(--surface)',
-                borderWidth: '1px',
-                borderColor: 'var(--border)'
-              }}
-            >
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Questions About Privacy?
-              </h2>
-              <p className="text-base mb-6 max-w-2xl mx-auto"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                We&apos;re here to help. Contact us about any privacy concerns or questions.
-              </p>
-              <a
-                href="mailto:trailverseteam@gmail.com"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)'
-                }}
-              >
-                Contact Us
-              </a>
-            </div>
-          </div>
-        </section>
-      </main>
-    </>
+    <main className="info-page info-legal">
+      <InfoPageHeader title="Privacy Policy" description="What we collect, how planning requests are processed, and the controls available to you." />
+      <section className="info-section" aria-label="Privacy summary">
+        <div className="info-card-grid">
+          {[
+            ['Your account', 'Saved trips and favorites are account-linked. Event bookmarks and some guest state stay in your browser.'],
+            ['AI and public content', 'AI services process planning context. Reviews, approved stories, and trips you share can be public.'],
+            ['Your controls', 'Manage your profile, delete your account, unsubscribe from emails, or contact us about your information.'],
+          ].map(([title, text]) => <div key={title} className="info-panel"><h2 className="mb-3">{title}</h2><p className="text-sm leading-7 text-[var(--text-secondary)]">{text}</p></div>)}
+        </div>
+      </section>
+      <LegalSections sections={sections} />
+      <section className="info-section">
+        <h2 className="mb-4">Questions about your information?</h2>
+        <a className="public-action public-action-secondary px-5" href="mailto:trailverseteam@gmail.com">Contact us</a>
+      </section>
+    </main>
   );
 }

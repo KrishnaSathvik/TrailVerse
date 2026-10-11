@@ -94,7 +94,7 @@ const ResetPasswordPage = ({ params }) => {
   const passwordStrength = getPasswordStrength(formData.password);
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="auth-shell public-shell min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Left Side - Logo & Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <Link href="/" className="flex items-center gap-3 mb-12 group">
@@ -119,8 +119,8 @@ const ResetPasswordPage = ({ params }) => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="w-full max-w-md">
+      <div className="flex-1 min-w-0 flex items-center justify-center py-8 lg:p-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="public-form">
           {/* Mobile Logo */}
           <Link href="/" className="lg:hidden flex items-center gap-2 mb-8">
             <img

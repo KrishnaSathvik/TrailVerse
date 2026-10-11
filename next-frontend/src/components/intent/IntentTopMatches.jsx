@@ -82,7 +82,7 @@ export default function IntentTopMatches({ landing, initialParks = [], fromPath 
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-5 sm:gap-6">
+    <div className="public-card-grid public-card-grid--four">
       {parks.map((park, index) => (
         <ParkCard
           key={park.parkCode}

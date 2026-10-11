@@ -32,7 +32,7 @@ export default function NewsletterPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <Header />
-      <main>
+      <main className="info-page">
         <NewsletterLanding />
       </main>
       <Footer />

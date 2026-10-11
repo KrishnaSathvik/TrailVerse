@@ -28,7 +28,7 @@ import useParkMapState from './useParkMapState';
 const DESKTOP_PREVIEW_PANEL =
   'pointer-events-none absolute top-36 bottom-8 right-10 z-30 flex w-full max-w-[28rem] flex-col justify-end';
 const DESKTOP_PREVIEW_SCROLL =
-  'pointer-events-auto max-h-full overflow-y-auto overscroll-contain rounded-[32px]';
+  'pointer-events-auto max-h-full overflow-y-auto overscroll-contain rounded-2xl';
 
 export default function DesktopMapLayout() {
   const router = useRouter();
@@ -75,9 +75,9 @@ export default function DesktopMapLayout() {
 
   if (isLoading && allParks.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <div className="public-map min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Header />
-        <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
+        <div className="flex h-[calc(100dvh-64px)] lg:h-[calc(100dvh-68px)] items-center justify-center">
           <div className="text-center">
             <LoadingSpinner size="lg" text="Loading parks…" />
           </div>
@@ -87,10 +87,10 @@ export default function DesktopMapLayout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+    <div className="public-map min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <Header />
 
-      <div className="relative h-[calc(100dvh-72px)] overflow-hidden px-6 pb-6 pt-4">
+      <div className="relative h-[calc(100dvh-64px)] lg:h-[calc(100dvh-68px)] overflow-hidden px-6 pb-6 pt-4">
         <MapCanvas
           parks={allParks}
           places={allPlaces}

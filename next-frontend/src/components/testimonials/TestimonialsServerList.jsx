@@ -14,10 +14,8 @@ function StarRating({ rating }) {
 function TestimonialStaticCard({ testimonial }) {
   return (
     <article
-      className="flex h-full flex-col rounded-2xl p-6 backdrop-blur"
+      className="flex h-full flex-col border-t py-6"
       style={{
-        backgroundColor: 'var(--surface)',
-        borderWidth: '1px',
         borderColor: 'var(--border)',
       }}
     >
@@ -52,17 +50,17 @@ function TestimonialStaticCard({ testimonial }) {
 /**
  * Crawler-visible testimonial grid (server-rendered).
  */
-export default function TestimonialsServerList({ testimonials = [] }) {
+export default function TestimonialsServerList({ testimonials = [], error = false }) {
   if (!testimonials.length) {
     return (
       <section className="py-8" aria-labelledby="testimonials-empty">
-        <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           <p
             id="testimonials-empty"
             className="text-center text-base"
             style={{ color: 'var(--text-secondary)' }}
           >
-            No published testimonials yet. Be the first to share your experience below.
+            {error ? 'Traveler stories are temporarily unavailable. Please try again later.' : 'No approved traveler stories have been published yet. Check back for stories from the community.'}
           </p>
         </div>
       </section>
@@ -70,8 +68,8 @@ export default function TestimonialsServerList({ testimonials = [] }) {
   }
 
   return (
-    <section className="py-16" aria-labelledby="testimonials-list-heading">
-      <div className="max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+    <section className="py-8 sm:py-12" aria-labelledby="testimonials-list-heading">
+      <div className="public-shell">
         <h2 id="testimonials-list-heading" className="sr-only">
           Published traveler reviews
         </h2>

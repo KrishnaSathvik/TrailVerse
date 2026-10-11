@@ -3,9 +3,9 @@ import { SAMPLE_TRAILIE_HREF } from '@/lib/newsletterLanding';
 
 export default function NewsletterSampleIssue() {
   return (
-    <section className="pb-16 px-4 sm:px-6 lg:px-8" aria-labelledby="sample-issue-heading">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
+    <section className="info-section" aria-labelledby="sample-issue-heading">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
           <h2
             id="sample-issue-heading"
             className="text-3xl sm:text-4xl font-bold mb-4"
@@ -16,7 +16,7 @@ export default function NewsletterSampleIssue() {
         </div>
 
         <article
-          className="rounded-3xl p-6 sm:p-10"
+          className="info-panel"
           style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}
         >
           <p

@@ -161,7 +161,7 @@ export function normalizeTrailiePresentation(response = {}) {
   const manifest = response.presentation;
   const kind = manifest?.presentationKind || response.presentationKind || 'plain_answer';
   const primarySource = resolveTrailiePresentationSource(response, manifest?.primaryArtifact?.source);
-  const plan = response.lifecycle?.showPlan && kind === 'itinerary'
+  const plan = response.lifecycle?.showPlan && kind === 'itinerary' && response.artifactStatus?.status !== 'save_failed'
     ? primarySource || response.canonicalPlan
     : null;
   const projected = projectPlanAndAlternatives(plan, manifest?.refinement);
@@ -186,7 +186,7 @@ export function normalizeTrailiePresentation(response = {}) {
     };
   } else if (kind === 'comparison') {
     primaryArtifact = null;
-  } else if (kind !== 'plain_answer' && primarySource != null) {
+  } else if (kind !== 'plain_answer' && kind !== 'itinerary' && primarySource != null) {
     primaryArtifact = { kind, source: manifest?.primaryArtifact?.source, data: primarySource };
   }
 

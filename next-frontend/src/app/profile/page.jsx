@@ -1156,7 +1156,7 @@ const ProfilePage = () => {
 
   return (
     <div
-      className="min-h-screen"
+      className="public-account-page min-h-screen"
       style={{
         backgroundColor: 'var(--bg-primary)',
         backgroundImage: 'radial-gradient(circle at top left, color-mix(in srgb, var(--accent-green-light) 18%, transparent 82%) 0%, transparent 30%), radial-gradient(circle at top right, color-mix(in srgb, var(--accent-blue) 10%, transparent 90%) 0%, transparent 24%)'
@@ -1166,7 +1166,7 @@ const ProfilePage = () => {
 
       {/* Main Content */}
       <section className="py-8">
-        <div className="w-full max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="w-full public-shell">
 
           {/* Profile Hero Section - Extracted Component */}
           <ProfileHero
@@ -1190,7 +1190,7 @@ const ProfilePage = () => {
             sectionLabel="Your profile"
             ariaLabel="Profile sections"
             className="mb-6 sm:mb-8"
-            gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"
+            gridClassName="public-selector public-selector--desktop-grid lg:grid-cols-6 gap-2"
             showParkBadges={false}
             onKeyDown={handleTabKeyDown}
             getTabId={(tab) => `profile-tab-${tab.id}`}
@@ -1200,7 +1200,7 @@ const ProfilePage = () => {
           <div className="min-w-0">
               {/* Enhanced Profile Tab */}
               {activeTab === 'account' && (
-                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10"
                   id="profile-panel-account"
                   role="tabpanel"
                   aria-labelledby="profile-tab-account"
@@ -1458,7 +1458,7 @@ const ProfilePage = () => {
 
               {/* Unified Favorites Tab */}
               {activeTab === 'favorites' && (
-                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10"
                   id="profile-panel-favorites"
                   role="tabpanel"
                   aria-labelledby="profile-tab-favorites"
@@ -1547,7 +1547,7 @@ const ProfilePage = () => {
 
               {/* Adventures Tab - Visited Parks */}
               {activeTab === 'adventures' && (
-                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10"
                   id="profile-panel-adventures"
                   role="tabpanel"
                   aria-labelledby="profile-tab-adventures"
@@ -1596,7 +1596,7 @@ const ProfilePage = () => {
 
               {/* Reviews Tab */}
               {activeTab === 'reviews' && (
-                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10"
                   id="profile-panel-reviews"
                   role="tabpanel"
                   aria-labelledby="profile-tab-reviews"
@@ -1634,7 +1634,7 @@ const ProfilePage = () => {
 
               {/* Testimonials Tab */}
               {activeTab === 'testimonials' && (
-                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10"
                   id="profile-panel-testimonials"
                   role="tabpanel"
                   aria-labelledby="profile-tab-testimonials"
@@ -1677,7 +1677,7 @@ const ProfilePage = () => {
 
               {/* Settings Tab */}
               {activeTab === 'settings' && (
-                <div className="rounded-3xl p-4 sm:p-6 lg:p-10 backdrop-blur shadow-xl"
+                <div className="rounded-3xl p-4 sm:p-6 lg:p-10"
                   id="profile-panel-settings"
                   role="tabpanel"
                   aria-labelledby="profile-tab-settings"
@@ -1973,7 +1973,7 @@ const ProfilePage = () => {
 
       {/* Enhanced Change Password Modal */}
       {showChangePasswordModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={closeChangePasswordModal}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 animate-fade-in" onClick={closeChangePasswordModal}>
           <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl animate-scale-up" style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
             <div
               className="border-b px-5 py-4 sm:px-6"
@@ -2211,7 +2211,7 @@ const ProfilePage = () => {
 
       {/* Delete Account Modal */}
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={closeDeleteAccountModal}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 animate-fade-in" onClick={closeDeleteAccountModal}>
           <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl animate-scale-up" style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
             <div
               className="border-b px-5 py-4 sm:px-6"

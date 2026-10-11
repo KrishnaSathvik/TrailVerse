@@ -20,17 +20,16 @@ import {
 } from '@/lib/trailieDemoScenarioCache';
 
 const DEMO_DESTINATIONS = {
-  'valley-of-fire-weekend': 'Valley of Fire State Park',
-  'compare-acadia-shenandoah': 'Acadia',
-  'yellowstone-relaxed': 'Yellowstone National Park',
-  'rocky-mountain-one-day': 'Rocky Mountain National Park',
-  'zion-couple-itinerary': 'Zion National Park',
+  discovery: 'Shenandoah National Park',
+  'zion-bryce': 'Zion and Bryce Canyon National Parks',
+  realistic: 'Yosemite, Sequoia and Kings Canyon',
+  yellowstone: 'Yellowstone National Park',
+  glacier: 'Glacier National Park',
 };
 
 function demoPresentation(scenario, _turnIndex, turn) {
   if (turn?.presentation) return turn.presentation;
-  const comparison = scenario.id === 'compare-acadia-shenandoah';
-  const kind = comparison ? 'comparison' : turn.plan ? 'itinerary' : 'plain_answer';
+  const kind = turn.plan ? 'itinerary' : 'plain_answer';
   return {
     schemaVersion: 1,
     presentationKind: kind,
@@ -82,18 +81,13 @@ export const SCENARIOS = playbackData.scenarios.map((item) => {
  * from the fixture's own content, so re-importing captures invalidates old
  * transcripts automatically. Bump the trailing number for behavior changes.
  */
-const fixtureSignature = SCENARIOS.reduce(
-  (acc, scenario) =>
-    acc +
-    scenario.id.length +
-    scenario.turns.reduce(
-      (turnAcc, turn) =>
-        turnAcc + turn.question.length + turn.prose.length + (turn.plan?.days?.length || 0) * 31,
-      0
-    ),
-  0
-);
-const DEMO_PLAYBACK_CACHE_VERSION = `v${playbackData.schemaVersion}-playback-v12-${fixtureSignature}`;
+// Include canonical identity/provenance as well as answer text in cache invalidation.
+let fixtureHash = 2166136261;
+for (const character of JSON.stringify(playbackData)) {
+  fixtureHash = Math.imul(fixtureHash ^ character.charCodeAt(0), 16777619);
+}
+const fixtureSignature = (fixtureHash >>> 0).toString(16);
+const DEMO_PLAYBACK_CACHE_VERSION = `v${playbackData.schemaVersion}-playback-v13-${fixtureSignature}`;
 
 const PHASE = { IDLE: 'idle', TYPING: 'typing', PLAYING: 'playing', COMPLETE: 'complete' };
 
@@ -140,7 +134,9 @@ export default function TrailieInteractiveDemo({
 
   const hydrateFromCache = useCallback((item) => {
     const cached = scenarioCacheRef.current.get(item.id);
-    if (!cached?.length) return false;
+    // A visitor may have switched away before the follow-ups played.
+    // Replay incomplete captures rather than treating the first answer as done.
+    if (cached?.length !== item.turns.length) return false;
 
     setCompletedTurns(cached);
     setPhase(PHASE.COMPLETE);
@@ -279,20 +275,20 @@ export default function TrailieInteractiveDemo({
             className="text-2xl sm:text-3xl font-semibold tracking-tight text-balance"
             style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
           >
-            Live Trailie demo
+            Trailie conversations
           </h2>
           <p
             className="mt-2 text-sm sm:text-base leading-relaxed text-pretty"
             style={{ color: 'var(--text-secondary)' }}
           >
-            Pick a sample below — a Valley of Fire weekend, Acadia vs Shenandoah, two relaxed
-            Yellowstone days, one day in Rocky Mountain, or an easy Zion trip.
+            Explore five recorded conversations, from choosing a park to refining a trip.
+            Each includes real follow-up questions and Trailie’s answers.
           </p>
         </div>
       )}
 
-      <div className="mb-5 shrink-0 sm:mb-6" role="tablist" aria-label="Demo scenarios">
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5">
+      <div className="mb-5 shrink-0 border-b border-[var(--border)] pb-4 sm:mb-6" role="tablist" aria-label="Demo scenarios">
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:gap-2.5 lg:justify-between">
           {SCENARIOS.map((item, index) => {
             const isActive = index === activeIndex;
             return (
@@ -302,7 +298,7 @@ export default function TrailieInteractiveDemo({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => handleSelectScenario(index)}
-                className="rounded-full px-3 py-2 text-[11px] font-medium transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-sm sm:hover:-translate-y-0.5"
+                className="min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium lg:px-5 lg:font-semibold transition-colors"
                 style={{
                   backgroundColor: isActive ? 'var(--accent-green)' : 'var(--surface)',
                   color: isActive ? '#fff' : 'var(--text-primary)',
@@ -329,9 +325,9 @@ export default function TrailieInteractiveDemo({
         />
       </div>
 
-      {showCta && (
+      {showCta && phase === PHASE.COMPLETE && !completedTurns.some(turn => (turn.canonicalPlan || turn.plan)?.days?.length) && (
         <TrailieDemoCta
-          className="mt-8 sm:mt-10 lg:mt-12 shrink-0"
+          className="public-reading mt-8 sm:mt-10 shrink-0"
           askPrompt={scenario?.turns?.[0]?.question || null}
         />
       )}

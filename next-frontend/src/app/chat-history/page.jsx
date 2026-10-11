@@ -412,9 +412,9 @@ export default function ChatHistoryPage() {
       <Header />
 
       <section className="relative overflow-hidden py-8 sm:py-12">
-        <div className="relative z-10 mx-auto max-w-[92rem] px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="relative z-10 public-shell">
           <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 backdrop-blur"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 "
             style={{
               backgroundColor: 'var(--surface)',
               borderWidth: '1px',
@@ -453,7 +453,7 @@ export default function ChatHistoryPage() {
       </section>
 
       <section className="pb-24">
-        <div className="mx-auto max-w-[92rem] px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="public-shell">
           {error && !loading && (
             <div
               className="mb-8 flex flex-col gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between"

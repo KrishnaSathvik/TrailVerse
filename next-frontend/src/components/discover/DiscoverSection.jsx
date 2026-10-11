@@ -19,7 +19,7 @@ export default function DiscoverSection({ title, seeAllHref, children }) {
           </Link>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3">{children}</div>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">{children}</div>
     </section>
   );
 }

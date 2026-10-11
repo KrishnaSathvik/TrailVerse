@@ -32,7 +32,8 @@ export default function WhereNextResult({
   const othersCopy = landingCopy(stats?.volumeTier);
 
   return (
-    <div className="mx-auto max-w-xl px-4 pt-8 pb-4 text-center">
+    <div className="public-rich where-next-result grid gap-8 pt-8 pb-4 text-center lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:text-left">
+      <div className="min-w-0">
       <p
         className="text-sm uppercase tracking-[0.2em]"
         style={{ color: 'var(--text-secondary)' }}
@@ -40,7 +41,7 @@ export default function WhereNextResult({
         Your pick
       </p>
       <h2
-        className="mt-4 font-display text-4xl sm:text-5xl leading-tight"
+        className="mt-4 font-display text-3xl sm:text-4xl leading-tight break-words"
         style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
       >
         {name}
@@ -55,7 +56,7 @@ export default function WhereNextResult({
       </p>
 
       {matched && explore && trailie ? (
-        <div className="mt-10 flex flex-col gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             href={explore}
             onClick={onParkClick}
@@ -80,8 +81,9 @@ export default function WhereNextResult({
           </Link>
         </div>
       ) : null}
+      </div>
 
-      <div className="mt-14">
+      <section className="min-w-0 border-t border-[var(--border)] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0" aria-label="Community destination picks">
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           See what others picked
         </p>
@@ -90,7 +92,7 @@ export default function WhereNextResult({
             {leaders.map((row) => (
               <li
                 key={row.parkCode}
-                className="flex justify-between text-base"
+                className="flex min-w-0 justify-between gap-4 text-base"
                 style={{ color: 'var(--text-primary)' }}
               >
                 <span>
@@ -105,12 +107,12 @@ export default function WhereNextResult({
             {othersCopy}
           </p>
         )}
-      </div>
+      </section>
 
       <button
         type="button"
         onClick={onChangePick}
-        className="mt-10 text-sm underline"
+        className="min-h-11 w-fit justify-self-center text-sm underline lg:justify-self-start lg:col-span-2"
         style={{ color: 'var(--text-secondary)' }}
       >
         Pick a different destination

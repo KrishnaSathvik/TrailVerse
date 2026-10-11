@@ -56,9 +56,10 @@ const LoginModal = ({ isOpen, onClose, message }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="auth-shell fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 animate-fade-in">
       <div 
-        className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up"
+        role="dialog" aria-modal="true" aria-label="Sign in"
+        className="public-form max-h-[calc(100dvh-32px)] overflow-y-auto rounded-xl relative animate-scale-up"
         style={{
           backgroundColor: 'var(--bg-primary)',
           borderWidth: '1px',
@@ -68,6 +69,7 @@ const LoginModal = ({ isOpen, onClose, message }) => {
         {/* Close button */}
         <button 
           onClick={onClose}
+          aria-label="Close sign in"
           className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 transition-colors z-10"
           style={{ color: 'var(--text-secondary)' }}
         >
@@ -146,6 +148,7 @@ const LoginModal = ({ isOpen, onClose, message }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-black/5 transition"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
