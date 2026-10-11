@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { trailieTurnTelemetryScope } = require('../services/trailieTurnLedger');
 router.use(trailieTurnTelemetryScope);
-// Local product cutover: matched requests terminate here. Only an explicit
-// legacy selection (or production) can reach the historical handlers below.
+// Primary Trailie (TRAILIE_RUNTIME unset or model_first) terminates matched
+// chat/stream/plan-itinerary requests in modelFirstTrailie. Only an explicit
+// TRAILIE_RUNTIME=legacy selection falls through to the rollback handlers
+// below. Production defaults to model_first — it does not fall through.
+// Voice, providers, session status, and other non-chat routes in this file
+// remain live for the current product.
 router.use(require('./modelFirstTrailie').createModelFirstRouter());
 const { protect, optionalAuth } = require('../middleware/auth');
 const { checkTokenLimit, trackTokenUsage, getTokenUsage } = require('../middleware/tokenLimits');

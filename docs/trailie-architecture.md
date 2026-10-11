@@ -226,7 +226,7 @@ Same accepted canonical TripPlan through MCP full/slim, public export, share exp
 
 Jobs: `runtime-isolation` → `canonical-commit` → `truth-boundary` → `mcp-parity` → `public-export-parity` → `schema-version` → `sample-verification` → `demo-contract` → required check **Trailie One-Brain — PASS**.
 
-Demo currency: `shared/demoCurrentContract.cjs` (`DEMO_CURRENT_CONTRACT=false` until recapture). Exporter/renderer contracts stay mandatory; frozen Demo content must not silently claim current TripPlan v1.
+Demo currency: `shared/demoCurrentContract.cjs` — currently `DEMO_CURRENT_CONTRACT=true` after the 2026-10-11 recapture. Exporter/renderer contracts stay mandatory. Set the flag back to `false` only if Demo content is intentionally frozen against an older contract again.
 
 When `tripSchemaVersion` advances, old Demo/Sample fixtures fail CI until deliberately migrated or regenerated.
 
@@ -250,6 +250,19 @@ When `tripSchemaVersion` advances, old Demo/Sample fixtures fail CI until delibe
 14. Samples: verify continuously in CI; regenerate only if needed.  
 15. Production cutover qualification (separate).  
 16. MCP account continuity later.
+
+---
+
+## Local provenance (artifacts/)
+
+`artifacts/` is gitignored locally. Prefer these folders when looking for current evidence; everything else under `artifacts/` is historical:
+
+| Folder | What it is |
+|---|---|
+| `artifacts/trailie-architecture-lock-2026-10-11/` | Architecture lock steps and proof |
+| `artifacts/trailie-final-local-qualification-2026-10-11/` | One-Brain local qualification |
+| `artifacts/trailie-demo-recapture-2026-10-11/` | Demo recapture that set `DEMO_CURRENT_CONTRACT=true` |
+| `artifacts/repo-hygiene-audit-2026-10-11/` | Naming / ownership / dead-code audit (no renames applied) |
 
 ---
 

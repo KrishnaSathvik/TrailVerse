@@ -3,9 +3,10 @@
 const { isAcceptedCanonicalPlan, hasPriorPlanStructure } = require('../utils/canonicalPlanAcceptance');
 
 /**
- * Canonical bridge from an admitted/prepared chat turn to Trailie.
- * All four product-chat routes share this implementation. Local development
- * runs it by default; deployment availability is handled at the route boundary.
+ * ROLLBACK ONLY — bridge from an admitted/prepared chat turn to the legacy
+ * Trailie executor (`executeTrailieTurn`). Reached only when
+ * TRAILIE_RUNTIME=legacy. The primary product path is modelFirstTrailie →
+ * trailieSimpleRuntime (see docs/trailie-architecture.md).
  *
  * This bridge does NOT own admission/auth/quota/persistence/transport — the route
  * keeps those. It maps the prepared context into WP11A inputs, injects the real

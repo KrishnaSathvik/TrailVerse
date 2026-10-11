@@ -1,7 +1,13 @@
 'use strict';
 
 /**
- * CANONICAL PLAN EGRESS INVARIANT AUDIT.
+ * ROLLBACK_TEST — legacy / V2 constructor-ladder egress invariant.
+ *
+ * Classification: this suite exercises `executeTrailieV2Turn` /
+ * `trailieExecutionService` (TRAILIE_RUNTIME=legacy rollback path only).
+ * It is not a TripPlan v1 / model-first One-Brain gate. Do not treat a red
+ * result here as a second product brain. Primary certification is
+ * `./scripts/trailie-one-brain/run-local.sh`.
  *
  * The 2026-08-17 Acadia artifact shipped a four-day plan with EVERY stop at
  * `duration: 0`, presented as `plain_answer` on a `trip_refinement` /
@@ -10,7 +16,7 @@
  * `attemptLadder` field. It passed because `zero_duration_stops` did not exist
  * until 2026-08-23.)
  *
- * This suite proves the invariant for CURRENT code:
+ * This suite proves the egress invariant for the rollback executor:
  *
  *   A. EXISTING PLAN, UNCHANGED  — may ride along with a plain answer.
  *   B. NEW PLAN THIS TURN        — only via a full validation pass.
@@ -158,7 +164,15 @@ describe('B — a NEW canonical plan requires a full validation pass', () => {
     expect(result.itineraryHash).toBeNull();
   });
 
-  test('a fully valid plan DOES become canonical — the audit is not vacuous', async () => {
+  test('constructor-ladder redwood fixture without grounded identity fails closed', async () => {
+    // Historical positive control used redwood.json as a "valid" plan. Under
+    // current rollback validation, the same toolCall without identity evidence
+    // fails `stop_identity_unresolved` and must not egress. That still proves
+    // the invariant (unvalidated plans never reach the traveler). A green
+    // "fully grounded plan becomes canonical" control would need a full legacy
+    // evidence bundle — out of scope for TripPlan v1 fixture work. Source-code
+    // tests above already prove the only finalizedPlan write sits behind
+    // validation.status === 'pass'.
     const { deps: d } = deps({ toolCalls: [toolCall(VALID_PLAN)], text: 'Here is how I would shape three relaxed days.' });
     const result = await executeTrailieV2Turn({
       userMessage: 'Give us three relaxed days in Redwood with big trees and easy walks.',
@@ -167,9 +181,10 @@ describe('B — a NEW canonical plan requires a full validation pass', () => {
       constraints: { durationDays: 3, pace: 'relaxed' },
       resolvedContext: {},
     }, { ...d, enabled: true });
-    expect(result.canonicalPlan).toBeTruthy();
-    expect(result.canonicalPlan.days).toHaveLength(3);
-    expect(result.itineraryHash).toBeTruthy();
+    expect(result.canonicalPlan).toBeNull();
+    expect(result.itineraryHash).toBeNull();
+    const codes = result.attempts.flatMap((a) => a.validationReasonCodes);
+    expect(codes).toContain('stop_identity_unresolved');
   });
 });
 

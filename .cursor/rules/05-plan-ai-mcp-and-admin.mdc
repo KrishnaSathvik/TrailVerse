@@ -6,6 +6,21 @@ alwaysApply: false
 
 # Plan AI (Trailie), Voice, MCP, Admin
 
+## Start here (architecture)
+
+Before changing Trailie runtime, TripPlan, Demo, Samples, or MCP trip planning, read **[`docs/trailie-architecture.md`](../../docs/trailie-architecture.md)** (locked constitution) and **[`docs/trailie-day-shape-contract.md`](../../docs/trailie-day-shape-contract.md)**.
+
+| Question | Answer |
+|---|---|
+| Primary runtime | `TRAILIE_RUNTIME` unset or `model_first` → `server/src/routes/modelFirstTrailie.js` → `trailieSimpleRuntime.js` |
+| Trust boundary | `server/src/services/trailieSimpleGuard.js` |
+| Persistence | Guest `trailieSimpleGuestStore.js` / auth `trailieSimpleStore.js` via `trailieCanonicalCommit.js` |
+| Rollback only | `TRAILIE_RUNTIME=legacy` → chat handlers in `ai.js` → `trailieRouteBridge.js` → `trailieExecutionService.js` |
+| Public projections | `shared/publicPlanExport.cjs` (`exportPublicPlan`) |
+| Certification | `./scripts/trailie-one-brain/run-local.sh` and `.github/workflows/trailie-one-brain.yml` |
+
+Filenames still say `simple` / `modelFirst` for historical reasons — those modules are the **primary** Trailie today, not a temporary experiment. Do not call legacy judgment modules from the model-first path.
+
 ## Trailie / Plan AI UX
 
 - **Brand name in UI**: "Trailie" (not "Plan AI")
@@ -14,21 +29,22 @@ alwaysApply: false
 
 ### Anonymous flow
 
-1. User chats without account → `POST /api/ai/chat-anonymous`
+1. User chats without account → `POST /api/ai/chat-anonymous` (model-first by default)
 2. Session id stored client-side (`AnonymousSession` on server)
 3. On signup/login within 48h → `POST /api/auth/migrate-chat` → trip persisted as `TripPlan`
 4. Redirect: `/plan-ai/{tripId}?chat=true`
 
 ### Authenticated flow
 
-- `POST /api/ai/chat` or `chat-stream` (SSE)
+- `POST /api/ai/chat` or `chat-stream` (SSE) — model-first by default; legacy only if `TRAILIE_RUNTIME=legacy`
 - Trips: `GET|POST|PUT|DELETE /api/trips`
 - Share: `POST /api/trips/:tripId/share` → public `/plan-ai/shared/[shareId]` (noindex)
+- Owner itinerary/map: `TripWorkspaceView` via `PlanWorkspace` (manual edit is a separate write path — see hygiene audit)
 
 ### AI capabilities (server)
 
-- Tools: park lookup, weather, maps (via gmaps proxy), NPS data
-- Providers: OpenAI + Anthropic; `GET /api/ai/providers`
+- Primary: model-demanded research tools (`trailieSimpleTools`) + narrow trust boundary
+- Providers: OpenAI (+ Anthropic on other surfaces); `GET /api/ai/providers`
 - Token usage + analytics endpoints (protect)
 - Feedback loop: `/api/ai/feedback` for learning service
 
