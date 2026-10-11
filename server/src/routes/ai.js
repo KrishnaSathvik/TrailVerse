@@ -2951,9 +2951,18 @@ router.post('/chat-anonymous-stream', async (req, res) => {
         : undefined,
     };
 
-    const session = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    const { selectGuestConversation, validateConversationId } = require('../utils/guestConversationScope');
+    const conversationId = validateConversationId(metadata.guestConversationId);
+    const guestSession = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    if (conversationId && guestSession.conversationConversions?.[conversationId]) {
+      return res.status(409).json({ error: 'This conversation has already been saved. Open your saved trip to continue.' });
+    }
+    const session = conversationId ? {
+      ...guestSession.toObject(), ...selectGuestConversation(guestSession, conversationId),
+      entryContext: null, formData: metadata.formData || {}, parkName: metadata.parkName,
+    } : guestSession;
     const incomingEntryContext = normalizeTrailieEntryContext(metadata.entryContext).context;
-    const freshGuestEntry = shouldStartFreshGuestEntry({ incoming: incomingEntryContext, persisted: session.entryContext });
+    const freshGuestEntry = !conversationId && shouldStartFreshGuestEntry({ incoming: incomingEntryContext, persisted: session.entryContext });
     if (freshGuestEntry) {
       // Keep the authoritative turn ledger (quota) but start a clean semantic
       // conversation so an unrelated destination/plan cannot cross a CTA.
@@ -2964,7 +2973,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
     if (hasSemanticTrailieEntryContext(incomingEntryContext)) {
       session.entryContext = incomingEntryContext;
       metadata.entryContext = incomingEntryContext;
-      await session.save();
+      if (!conversationId) await session.save();
     } else if (session.entryContext) {
       metadata.entryContext = session.entryContext;
     }
@@ -2987,6 +2996,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       userMessage: {
         role: 'user',
         content: lastUserMessage?.role === 'user' ? lastUserMessage.content : '',
+        ...(conversationId ? { conversationId } : {}),
       },
       trusted: !!req.isTrustedMcp,
     });
@@ -3130,7 +3140,7 @@ router.post('/chat-anonymous-stream', async (req, res) => {
       await persistCommittedTripMutation({
         message: latestUserText(messages),
         preparedContext: ctx,
-        session,
+        session: conversationId ? null : session,
       });
       const { result: v2Result, content: v2Content } = await runTrailieFromPreparedContext({
         preparedContext: ctx,
@@ -3347,9 +3357,18 @@ router.post('/chat-anonymous', async (req, res) => {
         : undefined,
     };
 
-    const session = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    const { selectGuestConversation, validateConversationId } = require('../utils/guestConversationScope');
+    const conversationId = validateConversationId(metadata.guestConversationId);
+    const guestSession = await AnonymousSession.findOrCreateSession(anonymousId, sessionData);
+    if (conversationId && guestSession.conversationConversions?.[conversationId]) {
+      return res.status(409).json({ error: 'This conversation has already been saved. Open your saved trip to continue.' });
+    }
+    const session = conversationId ? {
+      ...guestSession.toObject(), ...selectGuestConversation(guestSession, conversationId),
+      entryContext: null, formData: metadata.formData || {}, parkName: metadata.parkName,
+    } : guestSession;
     const incomingEntryContext = normalizeTrailieEntryContext(metadata.entryContext).context;
-    const freshGuestEntry = shouldStartFreshGuestEntry({ incoming: incomingEntryContext, persisted: session.entryContext });
+    const freshGuestEntry = !conversationId && shouldStartFreshGuestEntry({ incoming: incomingEntryContext, persisted: session.entryContext });
     if (freshGuestEntry) {
       session.messages = [];
       session.messageCount = 0;
@@ -3358,7 +3377,7 @@ router.post('/chat-anonymous', async (req, res) => {
     if (hasSemanticTrailieEntryContext(incomingEntryContext)) {
       session.entryContext = incomingEntryContext;
       metadata.entryContext = incomingEntryContext;
-      await session.save();
+      if (!conversationId) await session.save();
     } else if (session.entryContext) {
       metadata.entryContext = session.entryContext;
     }
@@ -3378,6 +3397,7 @@ router.post('/chat-anonymous', async (req, res) => {
       userMessage: {
         role: 'user',
         content: lastUserMessage?.role === 'user' ? lastUserMessage.content : '',
+        ...(conversationId ? { conversationId } : {}),
       },
       trusted: !!req.isTrustedMcp,
     });
@@ -3486,7 +3506,7 @@ router.post('/chat-anonymous', async (req, res) => {
     await persistCommittedTripMutation({
       message: latestUserText(messages),
       preparedContext: ctx,
-      session,
+      session: conversationId ? null : session,
     });
     const { result: v2Result, content: v2Content } = await runTrailieFromPreparedContext({
       preparedContext: ctx,
@@ -3659,9 +3679,12 @@ router.get('/session-status/:anonymousId', async (req, res) => {
 
     // Completed history stays in `messages`. Retryable failed turns are
     // projected as truthful transcript only — never as accepted canonical state.
+    const { selectGuestConversation, validateConversationId } = require('../utils/guestConversationScope');
+    const conversationId = validateConversationId(req.query.conversationId);
+    const scoped = selectGuestConversation(session, conversationId);
     const chatMessages = projectGuestConversationForStatus({
-      messages: session.messages,
-      turns: session.turns,
+      messages: scoped.messages,
+      turns: scoped.turns,
     });
 
     res.json({
@@ -3670,21 +3693,21 @@ router.get('/session-status/:anonymousId', async (req, res) => {
       completedGuestTurns: quota.completedGuestTurns,
       remainingAllowance: quota.remainingAllowance,
       hasPendingTurn: quota.hasPendingTurn,
-      isConverted: session.isConverted,
+      isConverted: conversationId ? !!session.conversationConversions?.[conversationId] : session.isConverted,
       lastActivity: session.lastActivity,
-      parkName: session.parkName,
-      parkCode: session.parkCode || null,
-      formData: session.formData || {},
-      planningState: session.planningState || null,
-      entryContext: session.entryContext || null,
+      parkName: conversationId ? null : session.parkName,
+      parkCode: conversationId ? null : session.parkCode || null,
+      formData: conversationId ? {} : session.formData || {},
+      planningState: scoped.planningState || null,
+      entryContext: conversationId ? null : session.entryContext || null,
       messages: chatMessages,
-      authoritativeMessages: session.messages,
-      historyHash: require('../utils/guestHistoryRecovery').historyHash(session.messages),
-      guestChatUrl: buildGuestChatPublicUrl(session.anonymousId),
+      authoritativeMessages: scoped.messages,
+      historyHash: require('../utils/guestHistoryRecovery').historyHash(scoped.messages),
+      guestChatUrl: buildGuestChatPublicUrl(session.anonymousId, conversationId),
     });
   } catch (error) {
     console.error('Error checking session status:', error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       error: 'Failed to check session status',
       canSendMore: false,
       messageCount: 0

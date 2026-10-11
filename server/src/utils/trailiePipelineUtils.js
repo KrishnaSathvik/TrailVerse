@@ -2,6 +2,7 @@
 
 const { CLAUDE_FALLBACK_MODELS, CLAUDE_PRIMARY_MODEL } = require('../config/aiModels');
 const { parseClaudeMessageResponse } = require('./claudeResponseParser');
+const { stampTripSchemaVersion } = require('../../../shared/tripSchemaVersion.cjs');
 
 function isClaudeModelUnavailable(error) {
   const errorBody = error.error || error.response?.data || error.body || {};
@@ -163,7 +164,11 @@ function buildPlanDocument({
 }) {
   if (!itineraryData) return null;
 
-  return {
+  // `version: 1` is the document envelope (not tripSchemaVersion).
+  // tripSchemaVersion is stamped from the shared contract after the itinerary
+  // payload is merged so missing legacy plans get CURRENT without rewriting DB rows
+  // that are not being written.
+  return stampTripSchemaVersion({
     type: 'itinerary',
     version: 1,
     generatedAt: new Date().toISOString(),
@@ -187,7 +192,7 @@ function buildPlanDocument({
     feasibilityIssues: Array.isArray(feasibilityIssues) ? feasibilityIssues : [],
     ...(reviewMeta ? { reviewMeta } : {}),
     ...(auditTrail ? { auditTrail } : {}),
-  };
+  });
 }
 
 function buildAuditTrail({

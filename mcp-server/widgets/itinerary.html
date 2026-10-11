@@ -529,6 +529,7 @@ function render() {
     html += `</div>`;
   }
 
+  if (d.artifactStatus?.notice) html += `<p role="status">${esc(d.artifactStatus.notice)}</p>`;
   if (d.narrative) html += `<div class="it-narrative">${md(d.narrative)}</div>`;
 
   if (it?.days?.length) {
@@ -540,31 +541,37 @@ function render() {
           <span class="it-day-title">${esc(day.label || `Day ${day.dayNumber}`)}</span>
         </div>
         <div class="it-stops">`;
-      for (const stop of (day.stops || [])) {
-        const diff = (stop.difficulty || "").toLowerCase();
-        const diffClass = diff === "easy" ? "tv-badge--green" :
-                          diff === "moderate" ? "tv-badge--blue" :
-                          diff === "strenuous" ? "tv-badge--orange" : "";
-        html += `<div class="it-stop">
-          <div class="it-stop-time">${esc(stop.startTime || "—")}</div>
-          <div class="it-stop-body">
-            <div class="it-stop-name">
-              <span class="it-stop-name-text">${esc(stop.name || "Stop")}</span>
-              ${diff ? `<span class="tv-badge ${diffClass}">${esc(diff)}</span>` : ""}
-              ${stop.permitRequired ? `<span class="tv-badge tv-badge--orange">permit</span>` : ""}
-            </div>
-            ${stop.why ? `<p class="it-stop-why">${esc(stop.why)}</p>` : ""}
-            <div class="it-stop-meta">
-              ${stop.duration ? `<span>⏱ ${esc(fmtDuration(stop.duration))}</span>` : ""}
-              ${stop.drivingTimeFromPreviousMin ? `<span>→ ${esc(stop.drivingTimeFromPreviousMin)} min drive</span>` : ""}
-              ${stop.type ? `<span>${esc(stop.type.replace(/_/g, " "))}</span>` : ""}
-            </div>
-          </div>
-        </div>`;
+      const renderStop = stop => `<div class="it-stop"><div class="it-stop-body">
+        <div class="it-stop-name">${esc(stop.name || "Stop")}</div>
+        ${stop.startTime || stop.timeWindow ? `<p>${esc(stop.startTime || stop.timeWindow)}${stop.timingReason ? ` · ${esc(stop.timingReason)}` : ""}</p>` : ""}
+        ${stop.note || stop.why ? `<p>${esc(stop.note || stop.why)}</p>` : ""}
+      </div></div>`;
+      if (day.dayStructure?.blocks?.length) {
+        html += `<p>${esc(day.dayStructure.summary || "")}</p>`;
+        for (const block of day.dayStructure.blocks) {
+          html += `<section><h3>${esc((block.periods || []).join(" – "))} · ${esc(block.label || "")}</h3><p>${esc(block.note || "")}</p>`;
+          if (block.startTime) html += `<p>${esc(block.startTime)} · ${esc(block.timingReason || "")}</p>`;
+          for (const id of block.stopIds || []) {
+            const stop = (day.stops || []).find(stop => stop.id === id);
+            if (stop) html += renderStop(stop);
+          }
+          html += `</section>`;
+        }
+      } else {
+        for (const stop of day.stops || []) html += renderStop(stop);
       }
+      if (day.overnightLocation) html += `<p>Overnight · ${esc(day.overnightLocation)}</p>`;
       html += `</div></div>`;
     }
     html += `</div>`;
+  }
+
+  if (it?.tripGuidance?.length) {
+    html += `<section class="it-narrative"><h2>Things to know</h2>`;
+    for (const rule of it.tripGuidance) {
+      if (rule.applicability !== "not_applicable" && rule.text) html += `<p>${esc(rule.text)}</p>`;
+    }
+    html += `</section>`;
   }
 
   // Day maps

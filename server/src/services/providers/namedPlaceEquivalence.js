@@ -13,9 +13,15 @@ function matchName(requested, candidate, anchors, { requireGeography = true } = 
   for (const anchor of anchors) {
     const full = lexical(anchor.name), short = lexical(anchor.shortName);
     // Only whole verified qualifiers at an edge, never arbitrary token deletion.
-    const remainder = b.startsWith(full + ' ') ? b.slice(full.length + 1)
-      : b.endsWith(' ' + full) ? b.slice(0, -full.length - 1) : null;
-    if (!remainder || ![remainder, short && `${short} ${remainder}`, short && `${remainder} ${short}`].includes(a)) continue;
+    const unqualified = value => {
+      for (const qualifier of [full, short].filter(Boolean)) {
+        if (value.startsWith(qualifier + ' ')) return value.slice(qualifier.length + 1);
+        if (value.endsWith(' ' + qualifier)) return value.slice(0, -qualifier.length - 1);
+      }
+      return value;
+    };
+    const requestedBase = unqualified(a), candidateBase = unqualified(b);
+    if (!requestedBase || requestedBase !== candidateBase || (requestedBase === a && candidateBase === b)) continue;
     const country = component(candidate, 'country')?.short_name;
     const state = component(candidate, 'administrative_area_level_1')?.short_name;
     const geography = candidate.officialParkCode === anchor.parkCode

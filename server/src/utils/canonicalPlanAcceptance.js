@@ -52,7 +52,8 @@ function hasPriorPlanStructure(plan) {
 function isAcceptedCanonicalPlan(plan) {
   if (!hasPriorPlanStructure(plan)) return false;
   const days = Array.isArray(plan.days) ? plan.days : [];
-  return days.some((day) => day && typeof day === 'object' && dayHasStops(day) && day.status !== 'draft');
+  return days.some((day) => day && typeof day === 'object' && day.status !== 'draft'
+    && (dayHasStops(day) || day.dayStructure && require('./dayCompleteness').validateDayCompleteness(day).length === 0));
 }
 
 module.exports = {

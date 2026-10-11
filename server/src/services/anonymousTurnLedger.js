@@ -112,6 +112,9 @@ function normalizeMessage(message, role) {
     role,
     content,
     timestamp: message.timestamp instanceof Date ? message.timestamp : new Date(),
+    ...(message.conversationId ? { conversationId: message.conversationId } : {}),
+    ...(message.planningState ? { planningState: message.planningState } : {}),
+    ...(message.artifactStatus ? { artifactStatus: message.artifactStatus } : {}),
     ...(message.provider ? { provider: message.provider } : {}),
     ...(message.model ? { model: message.model } : {}),
     ...(Number.isFinite(message.responseTime) ? { responseTime: message.responseTime } : {}),
@@ -361,6 +364,14 @@ async function completeGuestTurn({
     ? normalizeMessage(pendingTurn.userMessage, 'user')
     : null;
 
+  // Scope comes from the admitted user turn, never from model output.
+  if (userMessage?.conversationId) {
+    normalizedAssistant.conversationId = userMessage.conversationId;
+    if (planningState && typeof planningState === 'object') normalizedAssistant.planningState = planningState;
+  } else {
+    delete normalizedAssistant.conversationId;
+  }
+
   const updated = await AnonymousSession.findOneAndUpdate(
     { anonymousId, turns: { $elemMatch: { turnId, status: 'pending' } } },
     {
@@ -369,7 +380,7 @@ async function completeGuestTurn({
         'turns.$.completedAt': now,
         'turns.$.assistantMessage': normalizedAssistant,
         lastActivity: now,
-        ...(planningState && typeof planningState === 'object' ? { planningState } : {}),
+        ...(!normalizedAssistant.conversationId && planningState && typeof planningState === 'object' ? { planningState } : {}),
       },
       ...(userMessage
         ? { $push: { messages: { $each: [userMessage, normalizedAssistant] } } }

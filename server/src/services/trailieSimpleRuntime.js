@@ -1,12 +1,19 @@
 'use strict';
+const { tripRefinement } = require('../utils/tripRefinement');
 
 const { randomUUID } = require('crypto');
 const { buildCanonicalTrailieResponse } = require('../utils/canonicalResponse');
 const { PROPOSE_TOOL, validateSimpleMutation } = require('./trailieSimpleGuard');
+const { memoryAdmission } = require('./trailieMemoryAuthority');
+const { explainMutationIssues } = require('../utils/mutationIssueMeanings');
+const { withTripIdentity } = require('../utils/tripIdentity');
+const { tripGuidanceFromRules } = require('../utils/parkWideAccess');
+const { transferDates } = require('../utils/transferOperationalAccess');
+const { buildPlaceRecovery, requiredPlaceRecoveryIssues } = require('./trailiePlaceRecovery');
 
 const { TRAILIE_TRAVEL_POLICY: INSTRUCTIONS } = require('../prompts/trailieModelFirstPolicy');
 
-function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = null, observe = () => {}, now = () => new Date(),
+function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = null, observe = () => {}, now = () => new Date(), parkCatalog = null,
   maxModelCalls = 3, maxToolCalls = 1, maxCorrections = 1 } = {}) {
   if (typeof model !== 'function' || typeof travelTools?.execute !== 'function') throw new TypeError('Explicit model and travel tools required');
   if (!Number.isInteger(maxModelCalls) || maxModelCalls < 2 || maxModelCalls > 3
@@ -19,7 +26,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     // With persistence enabled, a caller-supplied snapshot is never authoritative.
     const snapshot = structuredClone(store ? await store.load({ userId, tripId }) : supplied || {});
     const telemetry = { runtime: 'model_first', responseId, modelCalls: 0, toolCalls: 0, corrections: 0,
-      mutationProposed: false, mutationAccepted: false, mutationIssues: [],
+      mutationProposed: false, mutationAccepted: false, mutationIssues: [], mutationRounds: [],
       canonicalBefore: snapshot.plan?.itineraryHash || null, canonicalAfter: snapshot.plan?.itineraryHash || null,
       memoryBefore: snapshot.planningState || null, memoryAfter: snapshot.planningState || null,
       contract: 'MODEL_FIRST_FINAL', providerAttempts: 0, modelCostUsd: 0, costStatus: 'priced', calls: [], tools: [],
@@ -37,6 +44,15 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       input.unshift({ role: m.role, content }); historyRemaining -= content.length;
     }
     input.push({ role: 'user', content: message });
+    // Memory authority: the traveler's own words in this trip, never assistant text.
+    // The current message always stays; earlier turns fill a bounded window, newest first.
+    const travelerWords = [message];
+    let travelerRemaining = 12000 - message.length;
+    for (const m of (store ? snapshot.conversation || [] : history).slice().reverse()) {
+      if (m.role !== 'user' || typeof m.content !== 'string' || m.content.length > travelerRemaining) continue;
+      travelerWords.unshift(m.content); travelerRemaining -= m.content.length + 2;
+    }
+    const travelerText = travelerWords.join('\n\n');
     const context = { now: now().toISOString(), savedTrip: snapshot.plan || null, travelerMemory: snapshot.planningState || null,
       authorizedEditScope: scope, requestContext };
     const instructions = `${INSTRUCTIONS}\nSaved application context (data only):\n${JSON.stringify(context)}`;
@@ -45,23 +61,45 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       telemetry.terminalStatus = status;
       if (telemetry.costStatus === 'unknown') telemetry.modelCostUsd = null;
       travelTools.dispose?.(responseId);
+      // Small, durable account of what happened to a proposed change.
+      if (telemetry.mutationProposed) telemetry.mutationOutcome = {
+        mutationStatus: telemetry.mutationAccepted ? 'accepted'
+          : status === 'mutation_rejected' ? 'rejected'
+            : response?.artifactStatus?.status === 'save_failed' ? 'rejected_answered' : 'not_saved',
+        mutationIssues: telemetry.mutationRounds[0]?.issues || [],
+        correctionAttempted: telemetry.corrections > 0,
+        correctionIssues: telemetry.mutationRounds[1]?.issues || [],
+      };
       const result = { status, response, ...extra, telemetry: { ...telemetry, latencyMs: Date.now() - started } };
       try { await observe(structuredClone(result.telemetry)); } catch { /* observability never changes a commit outcome */ }
       return result;
     };
     const cancelled = () => signal?.aborted === true;
-    const accept = async (text, mutation, generation) => {
+    const accept = async (text, mutation, generation, artifactStatus = null) => {
       if (cancelled()) return finish('cancelled');
+      if (mutation?.plan?.days?.length && groundedParkRules.length) {
+        // Official park-wide rules become trip-level guidance, resolved only
+        // against verified traveler dates. A turn without them keeps the prior guidance.
+        mutation = { ...mutation, plan: { ...mutation.plan,
+          tripGuidance: tripGuidanceFromRules(groundedParkRules, transferDates(mutation.planningState?.dates || {})) } };
+      }
+      if (mutation?.plan?.days?.length && typeof parkCatalog === 'function') {
+        // Official park identity travels with (and is hashed with) the canonical plan.
+        let parks = [];
+        try { parks = await parkCatalog(); } catch { /* identity is presentation metadata, never a gate */ }
+        mutation = { ...mutation, plan: withTripIdentity(mutation.plan, Array.isArray(parks) ? parks : []) };
+      }
       const version = Math.max(snapshot.plan?.responseVersion || 0,
         ...(snapshot.conversation || []).map(m => m.responseVersion || 0)) + 1;
       const response = buildCanonicalTrailieResponse({ responseId, responseVersion: version,
         processedContent: text, itineraryData: mutation?.plan || null,
         provider: generation.provider || 'openai', model: generation.model || null });
+      if (artifactStatus) response.artifactStatus = artifactStatus;
       if (mutation?.plan?.days?.length) {
         response.presentation = {
           schemaVersion: 1, presentationKind: 'itinerary',
           primaryArtifact: { kind: 'itinerary', source: 'canonicalPlan' },
-          refinement: { isRefinement: false, changes: [] }, supportingModules: [],
+          refinement: tripRefinement(snapshot.plan, mutation.plan), supportingModules: [],
           prosePolicy: 'full', ending: { caveat: null, beforeYouGo: null, followups: [] },
         };
       }
@@ -87,7 +125,8 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
         canonicalPlan: saved.canonicalPlan || response.itineraryData,
         ...(saved.quota ? { quota: saved.quota } : {}) });
     };
-    let researched = false, correcting = false, memoryOnlyRejection = false;
+    let researched = false, correcting = false, memoryOnlyRejection = false, placeRecovery = null;
+    let groundedParkRules = [];
     let memoryAuthority = null, memoryVerificationAttempted = false;
     const mutationFailure = explanation => finish('mutation_rejected', null, { persisted: false,
       failureContent: explanation?.trim() || (snapshot.plan
@@ -127,7 +166,14 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       const calls = generation.toolCalls || [];
       if (!calls.length) {
         if (!generation.outputText?.trim()) return finish('model_incomplete');
-        if (correcting && !memoryOnlyRejection) return mutationFailure(generation.outputText);
+        if (correcting && !memoryOnlyRejection) {
+          return accept(generation.outputText, null, generation, {
+            status: 'save_failed', code: 'mutation_rejected', phase: 'trip_save', responseId,
+            notice: snapshot.plan
+              ? 'I answered your request, but couldn’t save the trip update. Your saved trip is unchanged.'
+              : 'I answered your request, but couldn’t save the trip. I didn’t save an incomplete trip.',
+          });
+        }
         return accept(generation.outputText, null, generation);
       }
       // Never execute a mutation alongside another action or accept partial prose
@@ -140,10 +186,12 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
       const mutationCall = calls.find(call => call.name === PROPOSE_TOOL.name);
       if (mutationCall) {
         telemetry.mutationProposed = true;
-        if (travelTools.finalizeProposal && !correcting) {
+        if (travelTools.finalizeProposal) {
           const dataStarted = Date.now();
-          try { const grounded = await travelTools.finalizeProposal(mutationCall.input, { requestId: responseId, signal, userMessage: message, snapshot, requestContext, onProgress: progress, evidence: [...evidence.values()] });
+          // Correction may repair specific new/changed place identities only.
+          try { const grounded = await travelTools.finalizeProposal(mutationCall.input, { requestId: responseId, signal, userMessage: message, snapshot, requestContext, onProgress: progress, evidence: [...evidence.values()], narrow: correcting });
             for (const row of grounded.evidence || []) if (row.evidenceId) evidence.set(row.evidenceId, row);
+            if (Array.isArray(grounded.parkRules)) groundedParkRules = grounded.parkRules;
             telemetry.finalization = { namedPlaceDiagnostics: grounded.namedPlaceDiagnostics || [], providerOutcomes: grounded.providerOutcomes || [], unresolved: grounded.unresolved || [] };
             if (Number.isFinite(grounded.providerAttemptCount)) telemetry.providerAttempts = grounded.providerAttemptCount;
           } catch { /* hard validation must still reject missing identity */ }
@@ -152,7 +200,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
         progress('validating_trip');
         const validationStarted = Date.now();
         let verdict;
-        try { verdict = validateSimpleMutation({ proposal: mutationCall.input, snapshot, message,
+        try { verdict = validateSimpleMutation({ proposal: mutationCall.input, snapshot, message: travelerText,
           evidence: [...evidence.values()], scope, now: now(), memoryAuthority }); }
         catch { verdict = { ok: false, issues: ['mutation_schema_invalid'] }; }
         if (!memoryVerificationAttempted && typeof verifyMemory === 'function'
@@ -160,7 +208,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
           && !verdict.issues.some(code => ['mutation_schema_invalid', 'memory_schema_invalid', 'memory_source_missing'].includes(code))) {
           memoryVerificationAttempted = true;
           let verification;
-          try { verification = await verifyMemory({ message, updates: structuredClone(mutationCall.input.memory_updates), signal }); }
+          try { verification = await verifyMemory({ message: travelerText, updates: structuredClone(mutationCall.input.memory_updates), signal }); }
           catch { verification = { status: 'unavailable', receipt: null }; }
           memoryAuthority = verification.receipt || null;
           telemetry.memoryVerification = { status: verification.status, attempts: 1,
@@ -174,12 +222,36 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
             else telemetry.costStatus = 'unknown';
           }
           if (cancelled()) return finish('cancelled');
-          try { verdict = validateSimpleMutation({ proposal: mutationCall.input, snapshot, message,
+          try { verdict = validateSimpleMutation({ proposal: mutationCall.input, snapshot, message: travelerText,
             evidence: [...evidence.values()], scope, now: now(), memoryAuthority }); }
           catch { verdict = { ok: false, issues: ['mutation_schema_invalid'] }; }
         }
+        if (!verdict.ok && !correcting && (mutationCall.input.plan || mutationCall.input.plan_patch) && verdict.issues?.length
+          && verdict.issues.every(code => code.startsWith('memory_authority_'))) {
+          // A rejected memory fact is simply not saved. Keep the verified facts, re-validate
+          // the trip without the rest (so nothing rejected can shape it), and never spend a
+          // correction round on memory alone.
+          const updates = mutationCall.input.memory_updates || [];
+          const kept = updates.filter(u => memoryAdmission(memoryAuthority, travelerText, u) === 'explicit');
+          let retained;
+          try { retained = validateSimpleMutation({ proposal: { ...mutationCall.input, memory_updates: kept }, snapshot,
+            message: travelerText, evidence: [...evidence.values()], scope, now: now(), memoryAuthority }); }
+          catch { retained = { ok: false }; }
+          if (retained.ok) {
+            telemetry.timings.validationMs += Date.now() - validationStarted;
+            telemetry.mutationIssues = verdict.issues;
+            telemetry.mutationRounds.push({ issues: [...verdict.issues] });
+            telemetry.memoryFactsDropped = updates.length - kept.length;
+            return accept(mutationCall.input.response, retained, generation);
+          }
+        }
+        if (correcting && verdict.ok) {
+          const recoveryIssues = requiredPlaceRecoveryIssues(placeRecovery, verdict.plan);
+          if (recoveryIssues.length) verdict = { ...verdict, ok: false, issues: recoveryIssues };
+        }
         telemetry.timings.validationMs += Date.now() - validationStarted;
         telemetry.mutationIssues = verdict.issues || [];
+        telemetry.mutationRounds.push({ issues: [...telemetry.mutationIssues] });
         if (verdict.ok) return accept(mutationCall.input.response, verdict, generation);
         memoryOnlyRejection = !mutationCall.input.plan && !mutationCall.input.plan_patch
           && verdict.issues.length > 0 && verdict.issues.every(code => code.startsWith('memory_authority_'));
@@ -188,12 +260,19 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
           return mutationFailure();
         }
         telemetry.corrections += 1; correcting = true;
+        placeRecovery = buildPlaceRecovery({
+          unresolved: [...telemetry.tools.flatMap(tool => tool.unresolved || []), ...(telemetry.finalization?.unresolved || [])],
+          diagnostics: telemetry.finalization?.namedPlaceDiagnostics || [],
+          evidence: [...evidence.values()], travelerText, now: now(),
+        });
+        telemetry.placeRecovery = placeRecovery;
         input.push({ type: 'function_call_output', call_id: mutationCall.id,
-          output: JSON.stringify({ accepted: false, issues: verdict.issues,
+          output: JSON.stringify({ accepted: false, issues: verdict.issues, issueMeanings: explainMutationIssues(verdict.issues),
+            placeRecovery,
             originalProposal: mutationCall.input, existingCanonicalPlan: snapshot.plan || null,
             groundedPlaces: [...evidence.values()].filter(e => e.claim?.normalizedValue?.name).map(e => ({ evidenceRef:e.evidenceId, name:e.claim.normalizedValue.name, value:e.claim.normalizedValue })),
             unresolvedPlaces: telemetry.finalization?.unresolved || [],
-            correctionPurpose: 'Correct the proposed trip using available grounded information. Rejected memory was NOT saved: omit unsupported facts and never claim they were remembered. No further semantic verification call is available after the first; only already verified identical facts can be reused. For a memory-only rejection you may answer normally without a mutation, asking clarification only if needed. If no valid trip can be produced, explain why without claiming success. No more research.',
+            correctionPurpose: 'Correct the proposed trip using available grounded information. Rejected memory was NOT saved: omit unsupported facts and never claim they were remembered. No further semantic verification call is available after the first; only already verified identical facts can be reused. For a memory-only rejection you may answer normally without a mutation, asking clarification only if needed. If no valid trip can be produced, explain why without claiming success, using only the issueMeanings above in plain traveler language. Never invent a reason such as locked, protected, frozen or not allowed unless that exact condition appears in issueMeanings. Unchanged existing stops keep their accepted identity; only new or renamed places need grounding. The traveler never saw the rejected proposal: write the response as your first answer, never as a revision, and never mention drafts, corrections or validation. No more research.',
             correctionOpportunitiesRemaining: 1 }) });
         continue;
       }

@@ -1,4 +1,5 @@
 'use strict';
+const { withDayStructure } = require('../../../tests/helpers/dayStructure');
 const { createSimpleRuntime } = require('../trailieSimpleRuntime');
 const { createSimpleTravelTools } = require('../trailieTravelData');
 const { normalizeEvidenceLocation } = require('../../utils/trailieCanonicalLocation');
@@ -9,7 +10,7 @@ const request = { destination: 'Example Park', question: 'Plan a visit', topics:
 const read = () => action('read_travel', request);
 const candidate = (topic, name, value = {}) => ({ topic, entityId: name, observedAt: NOW.toISOString(),
   claim: { identity: name, normalizedValue: { name, ...value } }, source: {provider: 'nps', sourceClass: 'official_owner', url: 'https://www.nps.gov/example'} });
-const plan = () => ({ parkName: 'Example Park', intro: 'A measured day.', days: [{id: 'd1', dayNumber: 1, label: 'Day 1', stops:
+const plan = () => withDayStructure({ parkName: 'Example Park', intro: 'A measured day.', days: [{id: 'd1', dayNumber: 1, label: 'Day 1', stops:
   ['First Overlook', 'Second Overlook'].map((name, i) => ({id: `s${i}`, order: i + 1, name, type: 'viewpoint', duration: 30, note: '', why: 'A distinct perspective', startTime: ''})) }] });
 function backend(overrides = {}) {
   const broker = { dispatchEphemeral: jest.fn(async ({requirement: r}) => {
@@ -55,7 +56,7 @@ test('rejected researched mutation gets one correction, absolute maximum three',
 });
 test('failed correction preserves prior state and gives useful failure with no false saved artifact', async () => {
   const b = backend(), bad = action('propose_trip_update', {response: 'Saved', memory_updates: [{field:'dates', sourceQuote:'tomorrow', value:{startDate:'invalid'}}]});
-  const store = {load: async () => ({planningState:{dates:{startDate:'2026-10-01'}}}), commit: jest.fn()};
+  const store = {load: async () => ({plan:plan(),planningState:{dates:{startDate:'2026-10-01'}}}), commit: jest.fn()};
   const h = harness([read(), bad, bad], b.tools, {store});
   const r = await h.run({message:'tomorrow'});
   expect(r).toMatchObject({status:'mutation_rejected', response:null, persisted:false});
@@ -80,8 +81,10 @@ test('independent source reads overlap, route work waits for coordinates', async
   const releases = [], b = backend();
   b.broker.dispatchEphemeral.mockImplementation(({requirement}) => new Promise(resolve => releases.push({requirement, resolve})));
   const running = b.tools.execute('read_travel', {...request, topics:['activities','alerts_closures']}, {requestId:'parallel', userMessage:'Help'});
-  for(let i=0;i<30 && releases.length<2;i++) await Promise.resolve();
-  expect(releases).toHaveLength(2);
+  for(let i=0;i<30 && releases.length<3;i++) await Promise.resolve();
+  // The two requested topics plus the park's official access discovery, all concurrent.
+  expect(releases.map(r => `${r.requirement.topic}/${r.requirement.preferredProviders[0]}`).sort())
+    .toEqual(['activities/nps', 'alerts_closures/nps', 'transit/brave']);
   releases.forEach(r => r.resolve({status:'unsupported',normalizedCandidates:[]}));
   expect((await running).unresolved).toHaveLength(2);
 });
@@ -109,11 +112,14 @@ test('backend geocodes source identities before requesting their route', async (
     return {status:'unsupported',normalizedCandidates:[]};
   });
   const result=await b.tools.execute('read_travel',{...request,topics:['activities'],places:['First Overlook','Second Overlook']},{requestId:'deps',userMessage:'Plan the trip'});
+  expect(order).not.toContain('driving_time'); // Research is not stop-order authority.
+  await b.tools.finalizeProposal({ plan: plan() }, { requestId: 'deps', userMessage: 'Plan the trip', snapshot: {} });
   expect(order.indexOf('driving_time')).toBeGreaterThan(order.lastIndexOf('stop_coordinates'));
   expect(result.evidence.filter(e=>e.topic==='activities').every(e=>e.claim.normalizedValue.location.source==='geocoder')).toBe(true);
   const geo=b.broker.dispatchEphemeral.mock.calls.find(([v])=>v.requirement.topic==='stop_coordinates')[0].requirement;
   expect(geo.queryProvenance.explicitTravelerRegion).toBeNull();
-  expect(geo.queryProvenance.contextualRegions).toEqual([{name:'Example Park'}]);
+  // A fictional park label is not authoritative geographic context.
+  expect(geo.queryProvenance.contextualRegions).toEqual([]);
 });
 test('an unknown geocoder source cannot acquire authority from finite coordinates', () => {
   const row={...candidate('stop_coordinates','x',{latitude:40,longitude:-110,providerSource:'unknown'}),evidenceId:'x',source:{provider:'geocode_coordinate',sourceClass:'external_geocoder'}};

@@ -1,0 +1,66 @@
+'use strict';
+
+// Plain meanings for guard codes, sent to the correction round so the model
+// explains the real condition instead of inventing one ("locked", "protected").
+const MEANINGS = Object.freeze({
+  traveler_required_place_unresolved: 'A traveler-requested outing was omitted. Do not silently substitute: retain it honestly as a non-spatial experience, ground it as a real stop, or explain the limitation.',
+  stop_identity_unresolved: 'One or more new or changed stops could not be matched to grounded place evidence.',
+  stop_name_identity_mismatch: 'A stop name does not match the place its evidence reference identifies.',
+  unsupported_experience_map_anchor: 'A mapped stop claims an experience represented by a different place, but no trusted evidence establishes that relationship. Keep the experience pinless, choose another grounded outing, or use a supported experience↔map-anchor link. Do not invent proximity or similar-name links.',
+  unsupported_trip_schema_version: 'This saved trip uses a TripPlan schema version this runtime does not support. Do not reinterpret or downgrade it. Keep the trip unchanged and explain the compatibility limitation.',
+  stop_identity_invalid: 'Stops on a changed day need unique stop IDs.',
+  duplicate_stop: 'The same place appears twice on one day.',
+  repeated_place_without_reason: 'A sightseeing place repeats on another day without a reason. Choose a different experience, or, only if repeating it serves the traveler\u2019s stated priority, give that reason in revisitReason.',
+  day_structure_missing: 'Supply dayStructure with type, summary and ordered blocks covering the useful startPeriod–endPeriod span; do not add filler attractions.',
+  experience_duration_missing: 'Give a positive planning duration for the non-place experience, keeping unconfirmed service schedules explicit.',
+  base_change_unaccounted: 'The overnight base changed without a transfer block. Describe the move and honest timing uncertainty, or correct the base.',
+  day_scope_invalid: 'Block dayparts fall outside the day’s declared startPeriod/endPeriod. Reconcile the useful span without inventing filler.',
+  commitment_duration_missing: 'Give the duration of a real timed non-place commitment so it can be checked against the next activity.',
+  day_structure_invalid: 'Day blocks need kind, ordered periods, meaningful label/note and stopIds; only outing blocks reference stops.',
+  day_time_unaccounted: 'Explain the unaccounted parts of the declared day span using meaningful activity, downtime, logistics or outside-trip time.',
+  day_stop_coverage_invalid: 'Reference every stop exactly once in ordered outing blocks. Preserve stop order and remove stale references.',
+  day_outing_unbound: 'Outing blocks reference resolved stops. A flexible travel experience may instead use kind=experience with empty stopIds, no coordinates or route, and an optional duration estimate. Never attach it to a nearby pin.',
+  day_type_inconsistent: 'Arrival/departure/transfer/rest days need the corresponding block. Do not label partial days as full sightseeing.',
+  day_accidentally_empty: 'A sightseeing day needs a place outing or a substantial non-place experience. An intentional transfer or rest day needs its honest type and useful blocks.',
+  daypart_order_invalid: 'Day blocks must proceed from morning through afternoon to evening.',
+  clock_format_invalid: 'Use HH:mm for exact startTime, or empty startTime and a relative timeWindow.',
+  clock_reason_missing: 'Give a meaningful timingReason for exact clock precision or use a daypart instead.',
+  daypart_missing: 'Without a justified clock time, supply a useful timeWindow.',
+  activity_past_midnight: 'The timed activity extends past this calendar day; correct the time or split the day honestly.',
+  activity_time_overlap: 'Scheduled activities overlap or run backwards, including intervening flexible activities.',
+  transfer_time_overlap: 'Known travel time does not fit between timed activities; allow the transfer before the next stop.',
+  duration_invalid: 'A stop is missing a positive duration in minutes.',
+  duration_exceeds_source: 'A stop duration exceeds what the source supports.',
+  official_closure_conflict: 'Official information reports a closure for one of the proposed places.',
+  walking_minutes_not_grounded: 'A stop’s walking time could not be verified against the traveler’s walking limit.',
+  unbound_drive_claim: 'The proposal stated drive times; drive times come only from verified routing.',
+  daily_drive_limit_exceeded: 'Verified driving on a day exceeds the traveler’s daily driving limit.',
+  driving_limit_unverifiable: 'Driving time on a changed day could not be verified against the traveler’s daily driving limit.',
+  frozen_day_changed: 'The patch changed a day outside the days it was meant to change.',
+  patch_outside_authorized_scope: 'The patch touched days outside the edit scope the traveler selected.',
+  plan_day_count_mismatch: 'The number of days does not match the traveler’s trip length.',
+  day_identity_invalid: 'Day numbers must be unique positive integers.',
+  existing_plan_requires_patch: 'An accepted trip exists; change it with a targeted plan_patch, not a new plan.',
+  accepted_plan_required: 'There is no accepted trip to patch yet; create the trip with a plan.',
+  patch_schema_invalid: 'The patch is not in the supported operation format.',
+  plan_schema_invalid: 'The proposed plan is not in the supported itinerary format.',
+  multiple_plan_mutations: 'Send either a plan or a plan_patch, not both.',
+  empty_mutation: 'The proposal contained no change.',
+  plan_patch_target_not_found: 'A patch operation names a day or stop that does not exist in the accepted trip.',
+  plan_patch_target_missing: 'A stop operation must name the stop by stopId or stopName.',
+  plan_patch_target_ambiguous: 'A stop operation matches more than one stop.',
+  plan_patch_evidence_field_mutation: 'A patch changed evidence-backed facts of an existing stop without changing the place.',
+  plan_patch_day_invalid: 'A patch operation has an invalid day.',
+  plan_patch_day_mismatch: 'A replacement day carries a different day number than its target.',
+  plan_patch_reorder_invalid: 'A reorder must list exactly the day’s existing stops.',
+  plan_patch_stop_invalid: 'An added or replaced stop is incomplete.',
+  plan_patch_operation_unsupported: 'A patch operation type is not supported.',
+  plan_patch_operations_missing: 'The patch has no operations.',
+});
+
+function explainMutationIssues(codes = []) {
+  return [...new Set(codes)].map(code => ({ code,
+    meaning: MEANINGS[code] || (code.startsWith('memory_') ? 'A traveler-memory update was not supported by the traveler’s words.' : 'The change did not pass validation.') }));
+}
+
+module.exports = { explainMutationIssues };

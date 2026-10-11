@@ -1,12 +1,13 @@
 'use strict';
 
-const { buildPlanDocument } = require('../utils/trailiePipelineUtils');
-const { validateTripWriteCandidate } = require('../validation/tripWriteContract');
-const { resolveCanonicalResponsePersistence } = require('../utils/canonicalPersistence');
+const { DEFAULT_TITLE, tripTitle } = require('../utils/tripIdentity');
+const { prepareCanonicalStoreCommit } = require('./trailieCanonicalCommit');
 
 // Deliberately separate from the legacy controller's resolvePlanningStateForWrite:
 // that routine parses conversation text again. Reuse canonical contracts and the
 // existing TripPlan collection, with the version read BEFORE model execution.
+// Write-candidate + response-identity checks are shared with the guest store
+// via prepareCanonicalStoreCommit (docs/trailie-architecture.md Step 3).
 function createSimpleTripStore({ TripPlan, notify = () => {} } = {}) {
   if (!TripPlan) throw new TypeError('Explicit TripPlan model required');
   return {
@@ -21,31 +22,28 @@ function createSimpleTripStore({ TripPlan, notify = () => {} } = {}) {
       if (signal?.aborted) return { ok: false, status: 499 };
       if (!userId || String(snapshot.userId) !== String(userId)
         || (tripId && String(snapshot._id) !== String(tripId))) return { ok: false, status: 403 };
-      const old = snapshot.conversation || [];
-      const nextId = Math.max(0, ...old.map(m => Number(m.id) || 0)) + 1;
-      const assistant = { id: nextId + 1, role: 'assistant', content: response.content,
-        responseId: response.responseId, responseVersion: response.responseVersion,
-        contentHash: response.contentHash, itineraryHash: response.itineraryHash,
-        provider: response.provider, model: response.model, hasItinerary: Boolean(mutation?.plan),
-        ...(response.presentation ? { presentation: response.presentation } : {}),
-        ...(mutation?.plan ? { canonicalPlan: response.itineraryData } : {}) };
-      const conversation = [...old, { id: nextId, role: 'user', content: message }, assistant];
-      let plan;
-      if (mutation?.plan) {
-        plan = buildPlanDocument({ itineraryData: mutation.plan, identity: response,
-          parkName: snapshot.parkName, parkCode: snapshot.parkCode });
-        // A patch carries old plan metadata. It cannot override this turn's identity.
-        Object.assign(plan, { responseId: response.responseId, responseVersion: response.responseVersion,
-          contentHash: response.contentHash, itineraryHash: response.itineraryHash });
-      }
-      const verdict = validateTripWriteCandidate({ operation: tripId ? 'update' : 'create', existingTrip: snapshot,
-        incomingConversation: conversation, incomingPlan: plan, targetTripId: tripId });
-      if (!verdict.ok) return { ok: false, status: 400, code: verdict.code };
-      const decision = resolveCanonicalResponsePersistence({ incomingPlan: plan, incomingConversation: conversation,
-        expectedPreviousVersion: response.responseVersion - 1, existingPlan: snapshot.plan, existingConversation: old });
-      if (!decision.success) return { ok: false, status: 409, code: decision.reason };
+      const prepared = prepareCanonicalStoreCommit({
+        snapshot,
+        response,
+        message,
+        mutation,
+        operation: tripId ? 'update' : 'create',
+        targetTripId: tripId || null,
+      });
+      if (!prepared.ok) return prepared;
+      const { conversation, plan } = prepared;
       const values = { conversation, ...(plan ? { plan } : {}),
         ...(mutation ? { planningState: mutation.planningState } : {}) };
+      if (plan) {
+        // Name the trip after its destinations, never over a title the traveler chose.
+        const derivedBefore = snapshot.plan ? tripTitle(snapshot.plan, snapshot.plan.destinations || []) : null;
+        if (!snapshot.title || snapshot.title === DEFAULT_TITLE || snapshot.title === derivedBefore) {
+          values.title = tripTitle(plan, plan.destinations || []);
+        }
+        const primary = plan.destinations?.[0];
+        values.parkName = primary ? primary.name : plan.parkName || snapshot.parkName || null;
+        values.parkCode = primary ? primary.parkCode : snapshot.parkCode || null;
+      }
       let saved;
       if (!tripId) saved = await TripPlan.create({ userId, ...values });
       else saved = await TripPlan.findOneAndUpdate({ _id: tripId, userId,

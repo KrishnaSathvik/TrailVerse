@@ -19,7 +19,7 @@ router.get('/verify-email/:token', verifyEmail);
 // Migrate anonymous conversation to user account
 router.post('/migrate-chat', protect, async (req, res) => {
   try {
-    const { anonymousId } = req.body;
+    const { anonymousId, conversationId } = req.body;
     const userId = req.user._id || req.user.id;
 
     if (!isValidGuestSessionId(anonymousId)) {
@@ -30,7 +30,7 @@ router.post('/migrate-chat', protect, async (req, res) => {
     }
 
     const tripId = await migrateGuestConversation({
-      AnonymousSession, TripPlan, anonymousId, userId, keyTopics: extractKeyTopics,
+      AnonymousSession, TripPlan, anonymousId, conversationId, userId, keyTopics: extractKeyTopics,
     });
 
     res.status(200).json({

@@ -1229,6 +1229,22 @@ class NPSService {
    * Fix Pass #3E — named activities evidence source selection.
    * Prefer bulk only when ingestion completeness is proven; otherwise direct NPS.
    */
+  // Identity resolution needs owned places, not activity articles. Fetch the
+  // relevant corpus directly so unrelated activity pagination cannot consume
+  // the place provider's deadline. Preserve completeness and cancellation.
+  async getParkPlacesEvidence(parkCode, { signal } = {}) {
+    const code = this._normalizeParkCode(parkCode);
+    if (!code) return { data: { places: [] }, isComplete: false, source: 'invalid_park', observedAt: new Date().toISOString() };
+    const snapshot = await this._loadBulkSnapshotWithCompleteness('bulk-places');
+    if (isSnapshotIngestionComplete(snapshot)) {
+      return { data: { places: this._getGroupedBulkSlice(snapshot.data, code) || [] }, isComplete: true,
+        source: 'snapshot_hit_complete', observedAt: snapshot.fetchedAt || new Date().toISOString() };
+    }
+    const direct = await this._getParkEvidenceListPaginated('/places', code, { signal, pageSize: 500 });
+    return { data: { places: direct.data }, isComplete: direct.isComplete,
+      source: direct.isComplete ? 'direct_fallback' : 'direct_refresh_failed', observedAt: direct.observedAt };
+  }
+
   async getParkNamedActivitiesEvidence(parkCode, { signal } = {}) {
     const code = this._normalizeParkCode(parkCode);
     if (!code) {

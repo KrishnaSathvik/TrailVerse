@@ -4,6 +4,7 @@ const { recordExternalProviderHttpRequest } = require('../../config/providerTest
 const { classifyWebError, defaultStageRaw, hash, officialFollowUrl, officialHostKind } = require('./webEvidenceProviderShared');
 const { verifyWebDestinationRelevance } = require('../webDestinationRelevance');
 const { officialPageOperationalFacts } = require('../../utils/operationalFactExtraction');
+const { officialPageParkRules } = require('../../utils/parkWideAccess');
 
 const OFFICIAL_DOMAINS = Object.freeze(new Set([
   'nps.gov', 'www.nps.gov', 'weather.gov', 'www.weather.gov',
@@ -89,9 +90,19 @@ function createDirectOfficialPageEvidenceProvider({ officialPageClient = null, s
           observedAt: metadata.fetchedAt,
         })
         : [];
+      // Park-wide rules (shuttle seasons, shuttle-only access, timed entry) belong
+      // to the trip, not a stop. Owner pages only, read from the page's own text.
+      const parkRules = isOwner
+        ? officialPageParkRules({
+          title: raw.title, text: raw.text, url: raw.url,
+          parkCode: (request.parameters.entityId.match(/^nps:park:([a-z0-9_-]+)/i) || [])[1] || '',
+          parkName: request.parameters.requestedDestination?.displayName || null,
+          observedAt: metadata.fetchedAt,
+        })
+        : [];
       return [{
         entityId: request.parameters.entityId, topic: request.parameters.topic, evidenceType: request.parameters.evidenceType,
-        claim: { identity: `official-page:${hash(raw.url)}`, text: String(raw.text).slice(0, 4000), normalizedValue: { sourceUrl: raw.url, title: raw.title || null, ...(operationalFacts.length ? { operationalFacts } : {}) }, unit: null, status: 'official_page_content', subjectId: request.parameters.entityId, objectId: raw.url, qualifiers, polarity: 'positive' },
+        claim: { identity: `official-page:${hash(raw.url)}`, text: String(raw.text).slice(0, 4000), normalizedValue: { sourceUrl: raw.url, title: raw.title || null, ...(operationalFacts.length ? { operationalFacts } : {}), ...(parkRules.length ? { parkRules } : {}) }, unit: null, status: 'official_page_content', subjectId: request.parameters.entityId, objectId: raw.url, qualifiers, polarity: 'positive' },
         scope: { geographicEntityIds: [request.parameters.entityId], validFrom: null, validThrough: null, audience: 'public', locale: 'en-US' },
         source: { provider: 'direct_official_page', sourceClass, sourceId: raw.url, url: raw.url, title: raw.title || null, publishedAt: null, sourceUpdatedAt: null },
         observedAt: metadata.fetchedAt,

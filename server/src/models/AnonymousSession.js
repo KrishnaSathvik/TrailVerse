@@ -11,6 +11,9 @@ const { countCompletedTurns, remainingAllowance } = require('../utils/guestTurnQ
  * history only; a pending or failed turn lives solely in `turns`.
  */
 const GuestTurnMessageSchema = new mongoose.Schema({
+  conversationId: String,
+  planningState: mongoose.Schema.Types.Mixed,
+  artifactStatus: mongoose.Schema.Types.Mixed,
   role: { type: String, enum: ['user', 'assistant'], required: true },
   content: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
@@ -78,6 +81,9 @@ const AnonymousSessionSchema = new mongoose.Schema({
     required: true
   },
   messages: [{
+    conversationId: String,
+    planningState: mongoose.Schema.Types.Mixed,
+    artifactStatus: mongoose.Schema.Types.Mixed,
     role: {
       type: String,
       enum: ['user', 'assistant', 'system'],
@@ -161,6 +167,7 @@ const AnonymousSessionSchema = new mongoose.Schema({
     default: Date.now
   },
   historyRecoveryHash: String,
+  conversationConversions: { type: mongoose.Schema.Types.Mixed, default: {} },
   convertedTripId: { type: mongoose.Schema.Types.ObjectId, ref: 'TripPlan' },
   isConverted: {
     type: Boolean,

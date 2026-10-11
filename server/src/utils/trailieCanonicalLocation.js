@@ -6,7 +6,9 @@ function validLocation(location) {
   return location?.status === 'resolved' && APPROVED.has(location.source)
     && AUTHORITIES.has(location.authority) && Boolean(location.sourceRef)
     && Number.isFinite(location.lat) && Number.isFinite(location.lon)
-    && Math.abs(location.lat) <= 90 && Math.abs(location.lon) <= 180;
+    && Math.abs(location.lat) <= 90 && Math.abs(location.lon) <= 180
+    // 0,0 ("null island") is how providers serialize a missing coordinate.
+    && !(location.lat === 0 && location.lon === 0);
 }
 // Only called at the trusted provider ingestion boundary, never on model output.
 function normalizeEvidenceLocation(row) {
@@ -22,7 +24,10 @@ function normalizeEvidenceLocation(row) {
       : result.source?.provider === 'known_place' ? 'trailverse_catalog' : 'resolved_metadata';
   const location = { lat, lon, source, authority, status: 'resolved',
     sourceRef: result.evidenceId || result.source?.sourceId || result.claim?.identity,
-    sourceEntity: result.claim?.subjectId || result.entityId || null };
+    // A coordinate read from a place record belongs to that record's identity (the
+    // stop's canonicalPlaceId), not to the park it sits in. A geocode locates another entity.
+    sourceEntity: (result.source?.provider !== 'geocode_coordinate' && result.claim?.identity)
+      || result.claim?.subjectId || result.entityId || null };
   const trustedGeocoder = !['geocode_coordinate', 'named_place'].includes(result.source?.provider) || (['google', 'open-meteo', 'trailverse-known-place'].includes(value.providerSource) || (value.providerSource === 'nps' && authority === 'official_owner'));
   if (trustedGeocoder && validLocation(location)) value.location = location;
   else if (!validLocation(value.location)) delete value.location;

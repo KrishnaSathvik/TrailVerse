@@ -132,6 +132,7 @@ const tripPlanSchema = new mongoose.Schema({
     travelLogistics: mongoose.Schema.Types.Mixed,
     canonicalPlan: mongoose.Schema.Types.Mixed,
     itineraryPlan: mongoose.Schema.Types.Mixed,
+    artifactStatus: mongoose.Schema.Types.Mixed,
     responseArtifacts: mongoose.Schema.Types.Mixed,
     intent: mongoose.Schema.Types.Mixed,
     presentation: mongoose.Schema.Types.Mixed,

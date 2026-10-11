@@ -30,14 +30,10 @@ function normalizeShareScope(scope) {
 }
 
 /**
- * Stage 14.7F5 §11 — ALLOWLIST, not denylist.
- *
- * This used to delete a list of known-internal keys. The plan is
- * `Schema.Types.Mixed`, so any internal field added later became public
- * automatically and silently. Now a key survives only by being named in
- * `PUBLIC_PLAN_FIELDS`; canonical identity, lifecycle and reviewer/audit
- * metadata are all absent by construction, and the recipient gets the coarse
- * `notesStatus` instead.
+ * Stage 14.7F5 §11 + Architecture Lock Step 7 — shared deep allowlist.
+ * `projectPublicPlan` is `exportPublicPlan` (null-safe). Nested stop/edge/
+ * dayStructure fields are allowlisted; unknown internals are omitted.
+ * Recipients get coarse `notesStatus` instead of lifecycle bookkeeping.
  */
 function sanitizePlan(plan) {
   if (!plan || typeof plan !== 'object') return plan || null;

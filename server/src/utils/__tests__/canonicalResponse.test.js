@@ -23,6 +23,17 @@ describe('stableStringify', () => {
 });
 
 describe('buildCanonicalTrailieResponse', () => {
+  test('provider Date timestamps retain a verifiable hash across JSON transport', () => {
+    const itineraryData = { days: [{ stops: [{ sourceReferences: [
+      { observedAt: new Date('2026-10-10T22:39:43.209Z'), evidenceId: 'official-place' },
+    ] }] }] };
+    const response = buildCanonicalTrailieResponse({ processedContent: 'Saved trip.', itineraryData });
+    const wire = JSON.parse(JSON.stringify(response));
+    expect(hashPayload(wire.itineraryData)).toBe(response.itineraryHash);
+    const changed = structuredClone(itineraryData);
+    changed.days[0].stops[0].sourceReferences[0].observedAt = new Date('2026-10-11T22:39:43.209Z');
+    expect(hashPayload(changed)).not.toBe(response.itineraryHash);
+  });
   const base = {
     responseId: 'resp-123',
     rawStreamContent: 'Zion plan.\n\n[ITINERARY_JSON]{"days":[]}[/ITINERARY_JSON]',

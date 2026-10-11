@@ -1,5 +1,6 @@
 'use strict';
 
+const { validateConversationId } = require('../utils/guestConversationScope');
 const express = require('express');
 const { randomUUID } = require('crypto');
 const { selectTrailieRuntime } = require('../config/trailieRuntimeSelection');
@@ -31,7 +32,11 @@ function createDependencies() {
     acquireLease: async () => { throw new Error('ephemeral_only'); },
     releaseLease: async () => {}, recordRefreshEvent: async () => {} });
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 0, timeout: 180000 });
-  return { model: createSimpleModel({ client }), travelTools: createSimpleTravelTools({ broker }),
+  const parkCatalog = async () => {
+    const nps = require('./../services/npsService').getNpsService();
+    return nps.getCachedParks() || await nps.getAllParks();
+  };
+  return { model: createSimpleModel({ client }), travelTools: createSimpleTravelTools({ broker }), parkCatalog,
     verifyMemory: createMemoryAuthorityVerifier({ model: createMemoryVerificationModel({ client }) }) };
 }
 
@@ -39,6 +44,7 @@ function createModelFirstRouter({ dependencies = createDependencies,
   TripPlan = require('../models/TripPlan'), AnonymousSession = require('../models/AnonymousSession'),
   authenticate = protect, authenticateOptional = optionalAuth, tokenAdmission = checkTokenLimit,
   observe = event => console.info('[Trailie model_first]', JSON.stringify(event)),
+  recordMutationOutcome = require('../services/trailieMutationOutcome').recordMutationOutcome,
 } = {}) {
   const router = express.Router();
   router.use((req, res, next) => {
@@ -82,6 +88,7 @@ function createModelFirstRouter({ dependencies = createDependencies,
         || !metadata.editScope.dayNumbers.length || metadata.editScope.dayNumbers.some(n => !Number.isInteger(n) || n < 1 || n > 60))) {
         return fail(400, 'invalid_edit_scope');
       }
+      const conversationId = validateConversationId(metadata.guestConversationId);
       const requestedTrip = body.tripId || metadata.tripId
         || (typeof body.conversationId === 'string' && !body.conversationId.startsWith('temp-') ? body.conversationId : null);
       const target = body.targetTripId || metadata.targetTripId;
@@ -98,14 +105,14 @@ function createModelFirstRouter({ dependencies = createDependencies,
         anonymousId = identity.anonymousId;
         await AnonymousSession.findOrCreateSession(anonymousId, { ...identity, userAgent: identity.userAgent || 'unknown' });
         turn = await openGuestTurn({ anonymousId, clientTurnId: body.clientTurnId,
-          userMessage: { role: 'user', content: message }, trusted: req.isTrustedMcp === true });
+          userMessage: { role: 'user', content: message, conversationId }, trusted: req.isTrustedMcp === true });
         if (!turn.admitted) {
           const r = turn.refusal;
           return res.status(r.code === GUEST_ROUTE_CODES.EXHAUSTED ? 429 : 409).json({
             error: r.code, code: r.code, anonymousId, messageCount: r.completedGuestTurns,
             canSendMore: r.canSendMore, remainingAllowance: r.remainingAllowance });
         }
-        store = createSimpleGuestStore({ AnonymousSession, anonymousId, turn });
+        store = createSimpleGuestStore({ AnonymousSession, anonymousId, turn, conversationId });
       }
       const userId = req.user?._id ? String(req.user._id) : anonymousId;
       // Hydrate once before constructing any paid-provider dependency. The
@@ -126,13 +133,22 @@ function createModelFirstRouter({ dependencies = createDependencies,
       const result = await run({ userId, tripId: requestedTrip, message, signal, responseId,
         scope: metadata.editScope || null, onProgress: event => transport?.progress(event) || false,
         requestContext: { formData: metadata.formData || null, entryContext: metadata.entryContext || null } });
+      if (result.telemetry?.mutationOutcome) {
+        // Diagnostics only: never delays or changes the traveler's response.
+        Promise.resolve().then(() => recordMutationOutcome({ responseId, userId: req.user?._id ? String(req.user._id) : null,
+          outcome: result.telemetry.mutationOutcome })).catch(() => {});
+      }
       if (result.status !== 'complete') {
         await turn?.fail(signal.aborted ? GUEST_TURN_FAILURE_CODES.CLIENT_DISCONNECTED : GUEST_TURN_FAILURE_CODES.PROVIDER_FAILURE);
         return fail(result.httpStatus || (result.status === 'conflict' ? 409 : 422),
           result.telemetry?.failure?.code || result.status, result.failureContent);
       }
+      if (result.persisted !== true) {
+        await turn?.fail(GUEST_TURN_FAILURE_CODES.BACKEND_EXCEPTION);
+        return fail(503, 'persistence_failed');
+      }
       const quota = result.quota;
-      const payload = { ...result.response, canonicalPlan: result.canonicalPlan,
+      const payload = { ...result.response, ...(result.telemetry?.mutationOutcome || {}), canonicalPlan: result.canonicalPlan,
         itinerary: result.response.itineraryData, hasItinerary: !!result.response.itineraryData,
         planningState: result.planningState, persisted: true, tripId: result.tripId || null,
         ...(anonymousId ? { anonymousId, sessionId: anonymousId,

@@ -40,3 +40,16 @@ test('stale revision and invalid roles cannot overwrite server conversation',asy
  expect((await request(app).post('/restore-guest-history').send({anonymousId,messages:[{role:'system',content:'bad'}],expectedHistoryHash:historyHash(tail)})).status).toBe(400);
  expect((await AnonymousSession.findOne({anonymousId})).messages.map(m=>m.content)).toEqual(tail.map(m=>m.content));
 });
+test('default-chat recovery uses the scoped hash and preserves other guest conversations',async()=>{
+ const other=old.map(m=>({...m,conversationId:'another-chat',content:`Other chat: ${m.content}`}));
+ const anonymousId=await seed([...other,...tail]);
+ const before=await AnonymousSession.findOne({anonymousId}).lean();
+ const result=await request(app).post('/restore-guest-history').send({anonymousId,messages:[...old,...tail],expectedHistoryHash:historyHash(tail)});
+ expect(result.status).toBe(200);
+ expect(result.body.messages.map(m=>m.content)).toEqual([...old,...tail].map(m=>m.content));
+ expect(result.body.historyHash).toBe(historyHash([...old,...tail]));
+ const after=await AnonymousSession.findOne({anonymousId}).lean();
+ expect(after.messages.filter(m=>m.conversationId==='another-chat')).toEqual(before.messages.filter(m=>m.conversationId==='another-chat'));
+ expect(after.turns).toEqual(before.turns);
+ expect(after.planningState).toEqual(before.planningState);
+});

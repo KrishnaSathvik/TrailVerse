@@ -55,6 +55,7 @@ const BASE_ITINERARY_SCHEMA = {
           },
           // Optional overnight base for the day (town/lodge). Enables the
           // Stage 13.1 overnight-consistency check; omit when not applicable.
+          dayStructure: require('./dayCompleteness').DAY_STRUCTURE_SCHEMA,
           overnightLocation: {
             type: ['string', 'null'],
             description: 'A concrete area, town, or lodge the day is based from, only when the itinerary '
@@ -124,6 +125,7 @@ const BASE_ITINERARY_SCHEMA = {
                   type: 'string',
                   description: 'Use HH:mm only when an exact time is operationally required; otherwise use an empty string and populate timeWindow.',
                 },
+                timingReason: { type: 'string', maxLength: 400 },
                 timeWindow: {
                   type: ['string', 'null'],
                   description: 'A bounded daypart/window such as "Early morning · around 7–8 AM" or "Late afternoon" when exact clock precision is not justified.',

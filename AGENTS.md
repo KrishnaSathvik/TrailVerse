@@ -27,6 +27,8 @@ When user says **publish blog / astro / same flow / bump views gradually** → r
 
 ## Trailie capability claims
 
+When changing Trailie runtime, TripPlan, MCP, Demo, or Samples → read **[docs/trailie-architecture.md](docs/trailie-architecture.md)** (locked constitution) and **[docs/trailie-day-shape-contract.md](docs/trailie-day-shape-contract.md)**.
+
 When writing marketing copy, demos, or capability docs for Trailie → read **[docs/TRAILIE-CAPABILITIES-ACCURACY.md](docs/TRAILIE-CAPABILITIES-ACCURACY.md)** and **[docs/trailie-web-search-product-policy.md](docs/trailie-web-search-product-policy.md)**.
 
 ## External AI distribution

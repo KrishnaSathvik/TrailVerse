@@ -1,6 +1,7 @@
 'use strict';
 const { normalizeEvidenceLocation } = require('../../utils/trailieCanonicalLocation');
 
+const { withDayStructure } = require('../../../tests/helpers/dayStructure');
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
@@ -20,13 +21,36 @@ const mockExecute = jest.fn();
 const mockObserve = jest.fn();
 const mockDependencies = jest.fn(() => ({ model: mockModel, verifyMemory: mockVerifyMemory,
   travelTools: { definitions: [], execute: mockExecute } }));
-const legacyModules = ['../../services/trailieIntentClassifier', '../../services/trailieTravelerJobResolver',
-  '../../utils/turnSufficiencyDecision', '../../services/tripMutationCommit', '../../services/artifactFulfillment',
-  '../../utils/repairLedger', '../../utils/proseConstraintSafety', '../../utils/semanticDayValue',
-  '../../utils/itineraryCompleteness', '../../utils/tripExperienceQuality'];
+// Legacy judgment owners — rollback-only. Under model_first any invocation is a
+// hard failure (docs/trailie-architecture.md Step 4). Neutral shared utilities
+// are not listed; travel-judgment modules are.
+const legacyModules = [
+  '../../services/trailieIntentClassifier',
+  '../../services/trailieTravelerJobResolver',
+  '../../utils/turnSufficiencyDecision',
+  '../../services/turnUnderstanding',
+  '../../utils/dominantIntentArbitration',
+  '../../services/evidencePlannerService',
+  '../../services/trailieExecutionService',
+  '../../services/trailieRouteBridge',
+  '../../services/tripMutationCommit',
+  '../../services/artifactFulfillment',
+  '../../utils/repairLedger',
+  '../../utils/proseConstraintSafety',
+  '../../utils/semanticDayValue',
+  '../../utils/itineraryCompleteness',
+  '../../utils/tripExperienceQuality',
+  '../../utils/constraintEngine',
+  '../../utils/itineraryCorrector',
+  '../../utils/planViabilityRepair',
+];
 for (const modulePath of legacyModules) {
   jest.doMock(modulePath, () => Object.fromEntries(Object.entries(jest.requireActual(modulePath))
-    .map(([key, value]) => [key, typeof value === 'function' ? jest.fn(value) : value])));
+    .map(([key, value]) => [key, typeof value === 'function'
+      ? jest.fn((...args) => {
+        throw new Error(`Legacy judgment invoked under model-first: ${modulePath}.${key}`);
+      })
+      : value])));
 }
 
 // Exercise the actual ai.js mount and all existing middleware, with only the
@@ -60,10 +84,12 @@ afterEach(() => {
   delete process.env.TRAILIE_RUNTIME; delete process.env.TRAILIE_TRANSPORT_V2;
 });
 
-test('local default and explicit rollback; production routing cannot be changed by local switch', () => {
+test('model_first is the default in every environment; legacy is explicit rollback only', () => {
   expect(selectTrailieRuntime({ NODE_ENV: 'development' })).toBe('model_first');
+  expect(selectTrailieRuntime({ NODE_ENV: 'production' })).toBe('model_first');
+  expect(selectTrailieRuntime({ NODE_ENV: 'production', TRAILIE_RUNTIME: 'model_first' })).toBe('model_first');
   expect(selectTrailieRuntime({ NODE_ENV: 'development', TRAILIE_RUNTIME: 'legacy' })).toBe('legacy');
-  expect(selectTrailieRuntime({ NODE_ENV: 'production', TRAILIE_RUNTIME: 'model_first' })).toBe('legacy');
+  expect(selectTrailieRuntime({ NODE_ENV: 'production', TRAILIE_RUNTIME: 'legacy' })).toBe('legacy');
   expect(selectTrailieRuntime({ TRAILIE_RUNTIME: 'typo' })).toBe('unavailable');
 });
 
@@ -194,7 +220,7 @@ test.each(['/CHAT/', '/CHAT-STREAM/', '/CHAT-ANONYMOUS/', '/CHAT-ANONYMOUS-STREA
     expect(mockModel).toHaveBeenCalledTimes(1);
   });
 
-test.each(['/chat-stream', '/chat-anonymous-stream', '/plan-itinerary'])(
+test.each(['/chat', '/chat-anonymous', '/chat-stream', '/chat-anonymous-stream', '/plan-itinerary'])(
   '%s creates and patches the canonical plan while preserving other days', async endpoint => {
     const now = new Date();
     const evidence = normalizeEvidenceLocation({ evidenceId: 'place', entityId: 'place', topic: 'activities',
@@ -203,14 +229,14 @@ test.each(['/chat-stream', '/chat-anonymous-stream', '/plan-itinerary'])(
       observation: { observedAt: now.toISOString(), expiresAt: new Date(+now + 86400000).toISOString() } });
     const plan = { intro: 'Two days', days: [1, 2].map(n => ({ id: `d${n}`, dayNumber: n, label: 'A morning',
       stops: [{ id: `s${n}`, order: 1, type: 'viewpoint', name: 'Recorded viewpoint', evidenceRef: 'place', duration: 30,
-        note: '', startTime: '' }] })) };
+        note: '', startTime: '', ...(n > 1 ? { revisitReason: 'Return for the traveler’s second photography session.' } : {}) }] })) };
     mockExecute.mockResolvedValue({ status: 'fulfilled', evidence: [evidence], provider: 'nps' });
-    mockModel.mockResolvedValueOnce(tool('read_travel', {})).mockResolvedValueOnce(tool('propose_trip_update', { response: 'Your trip.', plan }))
+    mockModel.mockResolvedValueOnce(tool('read_travel', {})).mockResolvedValueOnce(tool('propose_trip_update', { response: 'Your trip.', plan: withDayStructure(plan) }))
       .mockResolvedValueOnce(tool('read_travel', {})).mockResolvedValueOnce(tool('propose_trip_update', {
         response: 'The second day is shorter.', plan_patch: { response: 'Shortened.', operations: [
           { op: 'update_stop', dayNumber: 2, stopId: 's2', stop: { duration: 15 } },
         ] } }));
-    const auth = endpoint === '/chat-stream';
+    const auth = endpoint === '/chat-stream' || endpoint === '/chat';
     const send = async body => {
       let req = request(app).post('/api/ai' + endpoint);
       if (auth) req = req.set('Authorization', 'Bearer ' + token);
@@ -283,4 +309,76 @@ test.each(['/chat-anonymous', '/chat'])('%s persists conversation but never unsu
     : await AnonymousSession.findOne({ anonymousId }).lean();
   expect(saved.planningState?.transportation).toBeUndefined();
   expect(mockVerifyMemory).toHaveBeenCalledTimes(1);
+});
+
+test('Yellowstone → Glacier isolates canonical state and history while sharing guest quota', async () => {
+  const anonymousId = mintGuestSessionId();
+  const now = new Date();
+  const evidence = normalizeEvidenceLocation({ evidenceId: 'place', entityId: 'place', topic: 'activities',
+    claim: { identity: 'official-place', normalizedValue: { name: 'Recorded viewpoint', latitude: 40, longitude: -110 } },
+    source: { provider: 'nps', sourceClass: 'official_owner' },
+    observation: { observedAt: now.toISOString(), expiresAt: new Date(+now + 86400000).toISOString() } });
+  mockExecute.mockResolvedValue({ status: 'fulfilled', evidence: [evidence], provider: 'nps' });
+  const plan = (park, count) => ({ intro: `${park} trip`, days: Array.from({ length: count }, (_, i) => ({
+    id: `d${i + 1}`, dayNumber: i + 1, label: `${park} day ${i + 1}`,
+    stops: [{ id: `s${i + 1}`, order: 1, type: 'viewpoint', name: 'Recorded viewpoint', evidenceRef: 'place', duration: 30, note: '', startTime: '',
+      ...(i > 0 ? { revisitReason: 'Fixture: the same viewpoint each day.' } : {}) }],
+  })) });
+  const send = async (conversation, message) => {
+    const res = await request(app).post('/api/ai/chat-anonymous-stream').send({ anonymousId, message,
+      metadata: { guestConversationId: conversation } });
+    expect(res.status).toBe(200);
+    const wire = events(res);
+    expect(wire.filter(e => e.type === 'error')).toEqual([]);
+    return wire.find(e => e.type === 'done');
+  };
+  const propose = (park, count) => mockModel.mockResolvedValueOnce(tool('read_travel', {}))
+    .mockResolvedValueOnce(tool('propose_trip_update', { response: `${park} is ready.`, plan: withDayStructure(plan(park, count)), memory_updates: [{ field: 'dates', value: { durationDays: count }, sourceQuote: `${count} days` }] }));
+  propose('Yellowstone', 3);
+  const yellowstone = await send('yellowstone', 'Plan Yellowstone for 3 days');
+  expect(yellowstone.canonicalPlan.days).toHaveLength(3);
+  propose('Glacier', 5);
+  const glacier = await send('glacier', 'exactly how would you spend 5 days in Glacier in mid-July?');
+  expect(glacier.canonicalPlan.days).toHaveLength(5);
+  expect(mockObserve.mock.calls.some(([event]) => event.mutationAccepted && event.canonicalBefore === null && event.canonicalAfter === glacier.itineraryHash)).toBe(true);
+  const { selectGuestConversation } = require('../../utils/guestConversationScope');
+  const session = await AnonymousSession.findOne({ anonymousId }).lean();
+  expect(selectGuestConversation(session, 'yellowstone').messages.at(-1).canonicalPlan).toEqual(yellowstone.itineraryData);
+  expect(selectGuestConversation(session, 'glacier').messages).toHaveLength(2);
+  expect(selectGuestConversation(session, 'yellowstone').planningState.dates.durationDays).toBe(3);
+  expect(selectGuestConversation(session, 'glacier').planningState.dates.durationDays).toBe(5);
+  expect(JSON.stringify(mockModel.mock.calls[2][0])).not.toContain('Yellowstone');
+  expect(session.completedTurnCount).toBe(2);
+  mockModel.mockResolvedValueOnce(tool('read_travel', {})).mockResolvedValueOnce(tool('propose_trip_update', { response: 'Shortened day two.', plan_patch: { response: 'Shortened.',
+    operations: [{ op: 'update_stop', dayNumber: 2, stopId: 's2', stop: { duration: 15 } }] } }));
+  const edited = await send('yellowstone', 'Shorten day two');
+  expect(edited.canonicalPlan.days).toHaveLength(3);
+  expect(edited.canonicalPlan.days[1].stops[0].duration).toBe(15);
+  const status = await request(app).get(`/api/ai/session-status/${anonymousId}?conversationId=glacier`);
+  expect(status.body.completedGuestTurns).toBe(3);
+  expect(status.body.messages).toHaveLength(2);
+  expect(status.body.messages.at(-1).canonicalPlan).toEqual(glacier.itineraryData);
+  expect(status.body.formData).toEqual({});
+  expect(status.body.guestChatUrl).toContain('?conversation=glacier');
+  await send('third', 'Hello'); await send('fourth', 'Hello');
+  const capped = await request(app).post('/api/ai/chat-anonymous').send({ anonymousId, message: 'More', metadata: { guestConversationId: 'fifth' } });
+  expect(capped.status).toBe(429);
+});
+
+test('rejected mutation with usable prose is one successful SSE terminal and a persisted save notice', async () => {
+  const anonymousId = mintGuestSessionId();
+  const prose = 'Here are five relaxed days in Glacier. I could not save this itinerary.';
+  mockModel.mockResolvedValueOnce(tool('propose_trip_update', { response: 'Ready', plan: { intro: 'Invalid', days: [] } }))
+    .mockResolvedValueOnce(answer(prose));
+  const res = await request(app).post('/api/ai/chat-anonymous-stream').send({ anonymousId,
+    message: 'Plan Glacier', metadata: { guestConversationId: 'glacier' } });
+  const wire = events(res);
+  expect(wire.filter(e => e.type === 'error')).toEqual([]);
+  const terminal = wire.filter(e => e.type === 'done');
+  expect(terminal).toHaveLength(1);
+  expect(terminal[0]).toMatchObject({ mutationStatus: 'rejected_answered', mutationIssues: expect.any(Array), correctionAttempted: true, correctionIssues: [], content: prose, artifactStatus: { status: 'save_failed', code: 'mutation_rejected', phase: 'trip_save' } });
+  const reload = await request(app).get(`/api/ai/session-status/${anonymousId}?conversationId=glacier`);
+  expect(reload.body.messages.at(-1)).toMatchObject({ content: prose, artifactStatus: { status: 'save_failed' } });
+  expect(reload.body.completedGuestTurns).toBe(1);
+  expect(await TripPlan.countDocuments()).toBe(0);
 });

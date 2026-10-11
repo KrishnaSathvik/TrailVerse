@@ -22,9 +22,9 @@ jest.mock('../../utils/conversationPlanContinuity', () => ({
   rememberConversationPlan: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../services/trailieV2RouteBridge', () => {
-  const actual = jest.requireActual('../../services/trailieV2RouteBridge');
-  return { ...actual, runTrailieV2FromPreparedContext: jest.fn() };
+jest.mock('../../services/trailieRouteBridge', () => {
+  const actual = jest.requireActual('../../services/trailieRouteBridge');
+  return { ...actual, runTrailieFromPreparedContext: jest.fn() };
 });
 
 const fs = require('fs');
@@ -35,7 +35,7 @@ const request = require('supertest');
 
 const AnonymousSession = require('../../models/AnonymousSession');
 const { rememberConversationPlan } = require('../../utils/conversationPlanContinuity');
-const { runTrailieV2FromPreparedContext, renderV2Content } = require('../../services/trailieV2RouteBridge');
+const { runTrailieFromPreparedContext: runTrailieV2FromPreparedContext, renderV2Content } = require('../../services/trailieRouteBridge');
 const { executeTrailieV2Turn } = require('../../services/trailieV2ExecutionService');
 const { buildEvidenceBundle } = require('../../utils/evidenceBundle');
 const {
@@ -127,9 +127,12 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  process.env.TRAILIE_RUNTIME = 'legacy';
   runTrailieV2FromPreparedContext.mockReset();
   rememberConversationPlan.mockClear();
 });
+
+afterEach(() => { delete process.env.TRAILIE_RUNTIME; });
 
 describe('fixture sanity — the Mist Trail terminal is the real 5B one', () => {
   test('real execution: constraint_infeasible / requested_experience_unavailable with zero dispatch', () => {
@@ -142,6 +145,25 @@ describe('fixture sanity — the Mist Trail terminal is the real 5B one', () => 
 });
 
 describe.each(ROUTES)('%s', (_label, route) => {
+  test('scoped guest completion preserves previous conversations and their memory', async () => {
+    runTrailieV2FromPreparedContext.mockResolvedValue(MIST_TRAIL_TERMINAL);
+    const anonymousId = await newGuest();
+    await AnonymousSession.updateOne({ anonymousId }, { $set: {
+      messages: [{ role: 'user', content: 'Yellowstone', conversationId: 'yellowstone' }],
+      planningState: { dates: { durationDays: 3 } },
+    } });
+    const res = await request(app).post(route).send({ anonymousId,
+      messages: [{ role: 'user', content: MIST_TRAIL_REQUEST }],
+      metadata: { guestConversationId: 'new-trip', parkCode: 'yose', parkName: 'Yosemite National Park' },
+    });
+    expect(res.status).toBe(200);
+    const saved = await AnonymousSession.findOne({ anonymousId }).lean();
+    expect(saved.messages[0]).toMatchObject({ content: 'Yellowstone', conversationId: 'yellowstone' });
+    expect(saved.messages.slice(1).map(m => m.conversationId)).toEqual(['new-trip', 'new-trip']);
+    expect(saved.planningState.dates.durationDays).toBe(3);
+    expect(saved.completedTurnCount).toBe(1);
+  });
+
   test('(1)(4)(5) named-experience unavailable persists as a completed turn and restores via session-status with no plan', async () => {
     runTrailieV2FromPreparedContext.mockResolvedValue(MIST_TRAIL_TERMINAL);
     const anonymousId = await newGuest();

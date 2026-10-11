@@ -191,6 +191,7 @@ function extractOperationalFacts({ item = null, parkCode = '', observedAt = null
         subject,
         type: rule.type,
         requirement: rule.requirement(match),
+        requiresTravelDates: rule.type === CONSTRAINT_TYPE.SHUTTLE_TICKET_REQUIRED && /season|during|when|until|except|between|if\b/i.test(text),
         plannerRule: rule.plannerRule(name, match),
         confidence: OPERATIONAL_FACT_CONFIDENCE.OFFICIAL_TEXT,
         provenance: {
@@ -208,6 +209,26 @@ function extractOperationalFacts({ item = null, parkCode = '', observedAt = null
     }
   }
 
+  // Narrow official statements only. Conditional/seasonal wording cannot
+  // establish permission for unspecified dates.
+  const accessRules = [
+    ['private_vehicle_access_allowed', /\bprivate (?:vehicles|cars) are (?:permitted|allowed)\b/i],
+    ['private_vehicle_restricted', /\bprivate (?:vehicles|cars) are (?:not permitted|not allowed|prohibited)\b/i],
+    ['transfer_mode_required', /\b(shuttle|ferry|transit) (?:service )?is required\b/i],
+    ['transfer_mode_required', /\bpedestrian[- ]only\b/i],
+  ];
+  for (const [type, pattern] of accessRules) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    if (/\b(?:no|not|never)\s+(?:a\s+)?$/i.test(text.slice(Math.max(0, match.index - 20), match.index))) continue;
+    const sentence = text.split(/[.!?\n]/).find(line => pattern.test(line)) || text;
+    const requiredMode = type === 'transfer_mode_required' ? (match[1]?.toLowerCase() || 'walking') : undefined;
+    push({ subject, type, requirement: match[0], requiredMode,
+      requiresTravelDates: /season|during|when|from|until|except|between|if\b/i.test(sentence),
+      confidence: OPERATIONAL_FACT_CONFIDENCE.OFFICIAL_TEXT,
+      provenance: { authority: 'official_owner', sourceUrl: url, field: 'officialText', excerpt: sentence },
+      observedAt, subjects: [name] });
+  }
   return facts;
 }
 

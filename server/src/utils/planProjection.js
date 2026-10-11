@@ -1,55 +1,20 @@
 'use strict';
 
 /**
- * Stage 14.7F5 §7–§11 — the projection boundary for every surface that leaves
- * the server.
+ * Stage 14.7F5 §7–§11 + Architecture Lock Step 7.
  *
- * Share and export previously sanitized with DENYLISTS. A denylist is the wrong
- * default here: the plan is `Schema.Types.Mixed`, so the day a new internal
- * field is added to the canonical plan envelope it becomes public automatically
- * and silently. Nobody gets a test failure; the field just ships.
+ * Public/share/export surfaces share one deep allowlist:
+ * `shared/publicPlanExport.cjs` → `exportPublicPlan` / `projectPublicPlan`.
  *
- * So the public surfaces are now ALLOWLISTED. A key survives only by being named
- * here, which means an unknown field — internal or not — is omitted by default
- * and adding one is a deliberate act.
- *
- * The owner surface is different in kind. An owner legitimately needs canonical
- * identity and lifecycle state to restore their own trip, so it stays
- * subtractive — but subtractive against a documented list of things that are
- * never client data at all (leases, evaluation metadata, reviewer drafts,
- * provider payloads, reducer/persistence internals).
+ * The owner surface remains subtractive against INTERNAL_ONLY_FIELDS.
  */
 
-/**
- * Everything a public/share/export consumer actually reads from a plan.
- *
- * Derived from real consumption: the shared-trip view and the PDF export read
- * `days`, `feasibilityIssues`, `totalDays`, `highlights`, `packingList`,
- * `permits` and `estimatedCost`; the rest is presentation envelope.
- *
- * Canonical identity (`responseId`, `responseVersion`, `responseRevision`,
- * `contentHash`, `itineraryHash`), lifecycle (`lifecycleStatus`,
- * `itineraryReadyAt`, `proseReadyAt`) and server-owned metadata (`reviewMeta`,
- * `auditTrail`) are deliberately ABSENT — a recipient gets the coarse
- * `notesStatus` instead of raw revision bookkeeping.
- */
-const PUBLIC_PLAN_FIELDS = Object.freeze([
-  // presentation envelope
-  'type',
-  'version',
-  'generatedAt',
-  'createdFrom',
-  'parkName',
-  'parkCode',
-  // itinerary content
-  'days',
-  'totalDays',
-  'highlights',
-  'packingList',
-  'permits',
-  'estimatedCost',
-  'feasibilityIssues',
-]);
+const path = require('path');
+const {
+  PUBLIC_PLAN_FIELDS,
+  exportPublicPlan,
+  projectPublicPlan,
+} = require(path.join(__dirname, '../../../shared/publicPlanExport.cjs'));
 
 /**
  * Fields that are never client data on ANY surface, including the owner's own
@@ -90,21 +55,6 @@ const isPlainObject = (v) => {
 };
 
 /**
- * ALLOWLIST projection for share/export. Unknown keys are dropped.
- *
- * @param {Object|null} plan
- * @returns {Object|null}
- */
-function projectPublicPlan(plan) {
-  if (!isObject(plan)) return plan == null ? null : plan;
-  const out = {};
-  for (const field of PUBLIC_PLAN_FIELDS) {
-    if (Object.prototype.hasOwnProperty.call(plan, field)) out[field] = plan[field];
-  }
-  return out;
-}
-
-/**
  * SUBTRACTIVE projection for the trip owner, who needs identity and lifecycle to
  * restore. Applied to the plan and to the trip envelope, recursively, so an
  * internal field nested inside `reviewMeta`/`auditTrail` is removed too.
@@ -137,6 +87,7 @@ function projectOwnerTrip(trip) {
 module.exports = {
   PUBLIC_PLAN_FIELDS,
   INTERNAL_ONLY_FIELDS,
+  exportPublicPlan,
   projectPublicPlan,
   projectOwnerTrip,
   stripInternalFields,

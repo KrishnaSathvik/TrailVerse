@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from server.client import TrailVerseClient
 from server.formatters import format_plan_trip
+from server.plan_trip_service import slim_plan_trip_structured
 
 
 def test_local_planner_preserves_request_and_canonical_response():
@@ -35,7 +36,9 @@ def test_local_planner_preserves_request_and_canonical_response():
     assert response["data"]["itineraryHash"] == fixture["itineraryHash"]
     structured, text = format_plan_trip(response, user_message="Keep my words unchanged")
     assert text
-    assert structured
+    assert structured["canonicalPlan"] == fixture["canonicalPlan"]
+    assert slim_plan_trip_structured(structured)["canonicalPlan"] == fixture["canonicalPlan"]
+    assert structured["days"] == fixture["canonicalPlan"]["days"]
 
 
 def test_mcp_followup_keeps_backend_session_authority():
@@ -54,6 +57,7 @@ def test_mcp_followup_keeps_backend_session_authority():
              patch("server.main._park_display_name", AsyncMock(return_value="Recorded park")), \
              patch("server.main._send_analytics"), patch("server.main.ENABLE_WIDGETS", False):
             first = await plan_trip(park_code="test", start_date="2026-10-01", number_of_days=2)
+            assert first.structuredContent["canonicalPlan"] == fixture["canonicalPlan"]
             assert not first.isError
             session_id = first.structuredContent["sessionId"]
             second = await plan_trip(session_id=session_id, revision_request="Shorten day two")

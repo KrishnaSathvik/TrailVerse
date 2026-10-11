@@ -747,3 +747,15 @@ describe('Stage 14.8A.2 §10 — guest-limit boundary behavior', () => {
     expect(sixth.code).toBe('guest_allowance_exhausted');
   });
 });
+
+test('completion inherits scope from admission and does not overwrite another conversation memory', async () => {
+  const anonymousId = nextId('scope');
+  await createSession(anonymousId);
+  await AnonymousSession.updateOne({ anonymousId }, { $set: { planningState: { dates: { durationDays: 3 } } } });
+  const admitted = await admitGuestTurn({ anonymousId, clientTurnId: 'glacier', userMessage: { role: 'user', content: 'Five days in Glacier', conversationId: 'glacier' } });
+  await completeGuestTurn({ anonymousId, turnId: admitted.turnId, assistantMessage: { role: 'assistant', content: 'Five days', conversationId: 'wrong-model-scope' }, planningState: { dates: { durationDays: 5 } } });
+  const saved = await AnonymousSession.findOne({ anonymousId }).lean();
+  expect(saved.messages.every(m => m.conversationId === 'glacier')).toBe(true);
+  expect(saved.messages.at(-1).planningState.dates.durationDays).toBe(5);
+  expect(saved.planningState.dates.durationDays).toBe(3);
+});

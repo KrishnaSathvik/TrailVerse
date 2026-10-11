@@ -9,6 +9,7 @@ Each formatter returns a tuple: (structured_content_dict, text_for_llm).
 from __future__ import annotations
 
 import os
+import json
 import re
 from datetime import datetime
 from typing import Any
@@ -252,7 +253,8 @@ def format_plan_trip(
     content = data.get("content") or ""
     # The backend now returns the parsed itinerary directly (stripped from content).
     # Fall back to extracting from content only if the backend didn't provide it.
-    itinerary = data.get("itinerary") or extract_itinerary(content)
+    itinerary = (data["canonicalPlan"] if "canonicalPlan" in data else
+                 data.get("itineraryData") or data.get("itinerary") or extract_itinerary(content))
     clean_text = strip_itinerary_block(content)
 
     confidence = data.get("confidence") or {}
@@ -273,14 +275,21 @@ def format_plan_trip(
         if isinstance(img, dict) and img.get("url")
     ]
 
+    outcome = {key: data[key] for key in (
+        "artifactStatus", "mutationStatus", "mutationIssues", "correctionAttempted", "correctionIssues"
+    ) if key in data}
+    save_failed = (data.get("artifactStatus") or {}).get("status") == "save_failed" or data.get("mutationStatus") in ("rejected", "rejected_answered", "not_saved")
     structured = build_plan_trip_structured(
-        status="success",
+        status="save_failed" if save_failed else "success",
         park_code=park_code,
         park_name=park_name,
         itinerary=itinerary,
         critical_notices=[],
         unverified=list(DEFAULT_UNVERIFIED),
         extra={
+            **outcome,
+            "replyStatus": "success",
+            "canonicalPlan": itinerary,
             "parkImages": park_images,
             "persona": "trailie",
             "provider": data.get("provider") or "claude",
@@ -314,7 +323,7 @@ def format_plan_trip(
     # rich response.  ChatGPT will render the widget and may summarize.
     text = ""
     if clean_text:
-        text = _strip_trailing_offers(clean_text)
+        text = clean_text
     else:
         summary_parts = []
         if park_name:
@@ -323,21 +332,13 @@ def format_plan_trip(
             summary_parts.append(f"{len(itinerary['days'])}-day itinerary")
         text = ", ".join(summary_parts) if summary_parts else "Trip planning response"
 
-    # Build Google Maps direction links per day from itinerary stops
-    day_maps: list[dict[str, str | None]] = []
-    if itinerary and itinerary.get("days"):
-        map_lines = []
-        for day in itinerary["days"]:
-            stops = day.get("stops") or []
-            day_label = day.get("label") or f"Day {day.get('dayNumber', '?')}"
-            url = _build_day_maps_url(stops)
-            day_maps.append({"day": day_label, "url": url})
-            if url:
-                map_lines.append(f"- [{day_label}]({url})")
-        if map_lines:
-            text += "\n\n**Google Maps directions:**\n" + "\n".join(map_lines)
-
-    structured["dayMaps"] = day_maps
+    # Text-only clients receive the same contract, not a second itinerary or
+    # default driving directions. JSON inside Markdown preserves unknown fields too.
+    if itinerary:
+        text += "\n\n### Canonical trip\n\n```json\n" + json.dumps(itinerary, ensure_ascii=False, indent=2) + "\n```"
+    if outcome:
+        text += "\n\n### Trip save state\n\n```json\n" + json.dumps(outcome, ensure_ascii=False, indent=2) + "\n```"
+    structured["dayMaps"] = []
 
     text += f"\n\nContinue planning at {WEB_BASE}/plan-ai"
     if park_code:

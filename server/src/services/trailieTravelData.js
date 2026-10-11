@@ -3,10 +3,14 @@
 const { createEvidenceReader, usableEvidence } = require('./trailieSimpleTools');
 const { normalizeEvidenceLocation, validLocation } = require('../utils/trailieCanonicalLocation');
 const { applyPlanPatch } = require('../utils/itineraryPlanPatch');
-const { canAuthorizeDrivingIntent } = require('../utils/transportConstraintContract');
+const { identityChangedStops, acceptedEdgesByPair } = require('../utils/stopIdentity');
+const { resolveOperationalAccess, transferDates } = require('../utils/transferOperationalAccess');
+const { transferRouteMode } = require('../utils/transferRouteMode');
 const { OFFICIAL_PLACE_ACTIVITY_CANDIDATES } = require('../data/officialPlaceActivityCandidates');
 const { officialFollowUrl } = require('./providers/webEvidenceProviderShared');
+const { operationalFactsFromBundle, indexFactsByPlace, factsForStop } = require('../utils/operationalFactExtraction');
 const { getEvidencePolicy } = require('../config/evidencePolicies');
+const { tripGuidanceFromRules } = require('../utils/parkWideAccess');
 
 const { lexical } = require('./providers/namedPlaceEquivalence');
 const text = { type: 'string', maxLength: 2000 };
@@ -42,7 +46,10 @@ async function resolveDestination(name, { signal } = {}) {
   let parks = [];
   try {
     const nps = require('./npsService').getNpsService();
-    parks = nps.getCachedParks() || (await nps.api.get('/parks', {params: {q: name, limit: 10}, signal, timeout: 8000})).data?.data || [];
+    // NPS full-text `q` matches any word, so "Zion National Park" returns the first
+    // ten parks alphabetically. Match against the full (7-day cached) catalog instead.
+    parks = nps.getCachedParks() || await nps.getAllParks();
+    if (signal?.aborted) throw new Error('cancelled');
   } catch { /* catalog miss retains known-place resolution */ }
   const label = ` ${lexical(name)} `;
   const destinationAnchors = parks.filter(p => [p.fullName, p.fullName?.replace(p.designation || '', '').trim()].some(n => n && lexical(n).length >= 4 && label.includes(` ${lexical(n)} `))).map(p => ({
@@ -106,7 +113,7 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       providerAttemptCount: result.providerAttemptCount ?? null, cost: result.cost || { costStatus: 'unknown', costUsd: null }, durationMs: Date.now() - started });
     if (provider === 'named_place') s.namedDiagnostics.push({ inputName: entity.displayName,
       querySent: result.placeDiagnostics?.querySent || null, providerStatus: result.status,
-      resolutionStatus: result.evidence?.length ? 'resolved' : 'unresolved',
+      resolutionStatus: result.evidence?.some(e=>!e.claim?.normalizedValue?.alternativeFor) ? 'resolved' : 'unresolved',
       rejectionReason: result.placeDiagnostics?.unresolvedReason || result.reasonCode || null,
       candidates: result.placeDiagnostics?.candidateDiagnostics || [] });
     for (const row of result.evidence || []) if (!s.evidence.some(e => e.evidenceId === row.evidenceId)) s.evidence.push(row);
@@ -141,10 +148,14 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
     if (!rows.length) s.unresolved.push({ topic, status: 'unresolved', reason: 'No usable source-backed fact was returned.' });
   }
   function placeRow(s, name) {
-    return s.evidence.find(e => !['destination_identity', 'stop_coordinates'].includes(e.topic)
+    const rows = s.evidence.filter(e => !['destination_identity', 'stop_coordinates'].includes(e.topic)
       && usableEvidence(e, now(), {authoritative:true})
+      && !(e.claim?.normalizedValue?.alternativeFor && nameKey(e.claim.normalizedValue.alternativeFor)===nameKey(name))
       && [e.claim?.normalizedValue?.name, e.source?.provider === 'named_place' ? e.claim?.normalizedValue?.requestedName : null]
         .some(n => n && nameKey(n) === nameKey(name)));
+    // A record without a usable location (some NPS records carry none) never hides
+    // a same-name identity that has one.
+    return rows.find(e => validLocation(e.claim?.normalizedValue?.location)) || rows[0];
   }
   function queryProvenance(s, name, context) {
     const explicit = field => s.request?.context?.[field] && context.userMessage?.includes(s.request.context[field]) ? s.request.context[field] : null;
@@ -157,7 +168,7 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
     const requested=uniqueNames(names);
     for (let offset = 0; offset < requested.length; offset += placeBatchSize) {
     await Promise.all(requested.slice(offset, offset + placeBatchSize).map(async name => {
-      if (placeRow(s,name) || s.namedResolutions.has(nameKey(name))) return;
+      if (validLocation(placeRow(s,name)?.claim?.normalizedValue?.location) || s.namedResolutions.has(nameKey(name))) return;
       const reasonCode = context.signal?.aborted || s.researchMs >= phaseTimeoutMs ? 'research_time_budget_exceeded'
         : s.namedResolutions.size >= maxNamedPlaces ? 'named_place_limit_exceeded'
           : s.requests >= maxProviderRequests ? 'provider_request_budget_exceeded' : null;
@@ -177,7 +188,7 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       }
       const rows=await read(s,'named_place','activities',{entityId:`place:request:${nameKey(name)}`,displayName:name},context,
         {queryProvenance:queryProvenance(s,name,context)});
-      const row=rows.find(r=>r.claim?.status === 'resolved_place_identity' && validLocation(r.claim?.normalizedValue?.location));
+      const row=rows.find(r=>r.claim?.status === 'resolved_place_identity' && !r.claim?.normalizedValue?.alternativeFor && validLocation(r.claim?.normalizedValue?.location));
       if (row) s.namedResolutions.set(nameKey(name),row.evidenceId);
       else s.unresolved.push({place:name,status:'unresolved',reason:'No unambiguous source-backed place identity was established.'});
     }));
@@ -211,6 +222,24 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       if (!rows.length) s.unresolved.push({ topic: 'driving_time', origin: a.evidenceId, destination: b.evidenceId, status: 'unresolved' });
     }));
   }
+  // Park-wide access rules for every official park on the trip: one official-only
+  // discovery per park, then its official pages. Same machinery for any park.
+  async function parkAccess(s, context) {
+    const parks = new Map();
+    if (s.entity?.entityId?.startsWith('nps:park:')) parks.set(s.entity.entityId, { entityId: s.entity.entityId, displayName: s.entity.displayName });
+    for (const a of s.entity?.destinationAnchors || []) if (a.sourceId?.startsWith('nps:park:') && !parks.has(a.sourceId)) parks.set(a.sourceId, { entityId: a.sourceId, displayName: a.name });
+    await Promise.all([...parks.values()].slice(0, 3).map(async park => {
+      const rows = await read(s, 'brave', 'transit', park, context);
+      await Promise.all(rows.slice(0, 2).map(row => {
+        const url = row.source?.url || row.claim?.normalizedValue?.url;
+        return officialFollowUrl(url) ? read(s, 'direct_official_page', 'transit', park, context, { webScope: { sourceUrl: url } }) : null;
+      }));
+    }));
+  }
+  function parkRules(s) {
+    return s.evidence.filter(e => e.source?.provider === 'direct_official_page' && usableEvidence(e, now(), { authoritative: true }))
+      .flatMap(e => e.claim?.normalizedValue?.parkRules || []);
+  }
   async function research(args, context, s) {
     s.request = args;
     const started = Date.now(), phase = scopedSignal(context.signal, Math.max(1, phaseTimeoutMs - s.researchMs));
@@ -230,14 +259,14 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       const topics = [...new Set([...requestedTopics, ...(args.constraints?.mobility ? ['accessibility'] : []), ...(args.constraints?.pets ? ['pet_policy'] : [])])].slice(0, 8);
       const dependent = topics.filter(t => ['weather_current', 'weather_forecast', 'climate_normals', 'astronomy'].includes(t));
       const locationReady = s.evidence.some(e => validLocation(e.claim?.normalizedValue?.location));
-      await Promise.all(topics.filter(t => locationReady || !dependent.includes(t)).map(t => fact(s, t, ctx)));
+      await Promise.all([...topics.filter(t => locationReady || !dependent.includes(t)).map(t => fact(s, t, ctx)), parkAccess(s, ctx)]);
       const requestedPlaces = uniqueNames([...(args.places || []), args.context?.start, args.context?.end, args.context?.lodging]);
       await resolveNamedPlaces(s, requestedPlaces, ctx);
       const places = s.evidence.filter(e => e.topic !== 'destination_identity' && e.topic !== 'stop_coordinates' && e.claim?.normalizedValue?.name);
       await groundCoordinates(s, places, ctx);
       if (!locationReady) await Promise.all(dependent.map(t => fact(s, t, ctx)));
-      const named = requestedPlaces.map(n => placeRow(s,n));
-      await routes(s, named.slice(1).map((p, i) => [named[i], p]), ctx, args.travelMode);
+      // Transfer routing is finalized against the proposed stop order and activity groups.
+      // Research order is not itinerary order.
     } catch { s.unresolved.push({ topic: 'destination_identity', status: 'unavailable', reason: 'The destination lookup did not finish.' }); }
     finally { s.researchMs += Date.now() - started; phase.dispose(); }
     const facts = []; let bytes = 0;
@@ -251,13 +280,20 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
       facts.push(fact); bytes += size;
     }
     const namedPlaceResolutions = uniqueNames([...(args.places || []), args.context?.start, args.context?.end, args.context?.lodging]).map(name => {
-      const row=placeRow(s,name); return {requestedName:name,status:row?'resolved':'unresolved',evidenceRef:row?.evidenceId || null,canonicalPlaceId:row?.claim?.identity || null,mapEligible:validLocation(row?.claim?.normalizedValue?.location)};
+      const row=placeRow(s,name); return {requestedName:name,status:row?'resolved':'unresolved',evidenceRef:row?.evidenceId || null,canonicalPlaceId:row?.claim?.identity || null,mapEligible:validLocation(row?.claim?.normalizedValue?.location), alternatives:s.evidence.filter(e=>e.claim?.normalizedValue?.alternativeFor===name && validLocation(e.claim?.normalizedValue?.location)).map(e=>({name:e.claim.normalizedValue.name,canonicalPlaceId:e.claim.identity,evidenceRef:e.evidenceId,resolutionKind:'grounded_alternative'}))};
     });
+    const accessBundle = { evidence: s.evidence.filter(row => usableEvidence(row, now(), { authoritative: true })) };
+    const accessIndex = indexFactsByPlace({ facts: operationalFactsFromBundle(accessBundle), bundle: accessBundle });
+    const operationalAccess = namedPlaceResolutions.filter(p => p.status === 'resolved').map(p => ({
+      evidenceRef: p.evidenceRef, name: p.requestedName,
+      ...resolveOperationalAccess([factsForStop({ name: p.requestedName, evidenceRef: p.evidenceRef }, accessIndex)], transferDates(context.snapshot?.planningState?.dates)),
+    }));
     return { namedPlaceResolutions, status: s.evidence.length ? 'fulfilled' : 'unresolved', evidence: structuredClone(s.evidence),
       namedPlaceDiagnostics: structuredClone(s.namedDiagnostics), unresolved: structuredClone(s.unresolved), providerOutcomes: structuredClone(s.attempts),
       providerAttemptCount: s.attempts.reduce((n, a) => n + (a.providerAttemptCount || 0), 0), durationMs: Date.now() - started,
       // Full evidence stays behind the runtime boundary; this is what the model sees.
-      modelContext: { facts, namedPlaceResolutions, omittedFactCount: s.evidence.length - facts.length,
+      modelContext: { facts, namedPlaceResolutions, operationalAccess,
+        parkWideAccess: tripGuidanceFromRules(parkRules(s), transferDates(context.snapshot?.planningState?.dates)), omittedFactCount: s.evidence.length - facts.length,
         unresolved: s.unresolved, note: 'Unknown facts are not negative findings. Answer with what is available. No further research is needed.' } };
   }
   return { definitions: [READ_TOOL], async execute(name, args, context) {
@@ -273,30 +309,48 @@ function createSimpleTravelTools({ broker, now = () => new Date(), destinationRe
     const s = sessionFor(context.requestId);
     const patch = proposal.plan_patch && applyPlanPatch({priorPlan: context.snapshot.plan, planPatch: proposal.plan_patch});
     const candidate = proposal.plan || patch?.plan;
-    if (!candidate?.days) return { evidence: s.evidence };
-    if (!s.request) {
-      const destination = candidate.parkName || context.snapshot.plan?.parkName || context.requestContext?.formData?.parkName;
-      if (destination) await research({ destination, question: 'Ground the proposed trip places and current access.', topics: ['activities', 'alerts_closures'], places: candidate.days.flatMap(d => (d.stops || []).map(st=>st.name)) }, context, s);
-    }
     for (const row of context.evidence || []) if (!s.evidence.some(e => e.evidenceId === row.evidenceId)) s.evidence.push(row);
-    const all = s.evidence;
+    if (!candidate?.days) return { evidence: s.evidence };
     const changedDays = patch?.touchedDayNumbers ? candidate.days.filter(d => patch.touchedDayNumbers.includes(d.dayNumber)) : candidate.days;
+    // Accepted stops whose identity a patch left untouched keep it; only new or
+    // re-identified stops are grounded. A transfer needs a fresh route only when
+    // its stop pair has no accepted edge or one endpoint is newly identified.
+    const prior = patch ? context.snapshot.plan : null;
+    const changed = new Set(identityChangedStops(prior, changedDays));
+    const acceptedEdges = acceptedEdgesByPair(prior);
+    const routePairs = changedDays.flatMap(d => (d.stops || []).slice(1).map((stop, i) => {
+      if ((d.activityGroups || []).some(g => g.stopIds?.includes(d.stops[i].id) && g.stopIds.includes(stop.id))) return null;
+      if (!changed.has(d.stops[i]) && !changed.has(stop) && acceptedEdges.has(`${d.stops[i].id}->${stop.id}`)) return null;
+      return [d.stops[i], stop];
+    })).filter(Boolean);
+    const toGround = [...new Set([...changed, ...routePairs.flat()])];
+    if (!toGround.length) return { evidence: s.evidence, parkRules: parkRules(s), namedPlaceDiagnostics: s.namedDiagnostics, providerOutcomes: s.attempts, unresolved: s.unresolved, providerAttemptCount: 0 };
+    // A correction round may repair specific identities, never reopen research.
+    if (!s.request && !context.narrow) {
+      const destination = candidate.parkName || context.snapshot.plan?.parkName || context.requestContext?.formData?.parkName;
+      if (destination) await research({ destination, question: 'Ground the proposed trip places and current access.', topics: ['activities', 'alerts_closures'], places: [...changed].map(st => st.name) }, context, s);
+    }
+    const all = s.evidence;
     const started = Date.now(), phase = scopedSignal(context.signal, Math.max(1, phaseTimeoutMs - s.researchMs));
     try {
-      await resolveNamedPlaces(s, changedDays.flatMap(d => (d.stops || []).filter(st => !all.some(e=>e.evidenceId===st.evidenceRef)).map(st=>st.name)), {...context,signal:phase.signal});
-      const rows = changedDays.flatMap(d => d.stops || []).map(stop => all.find(e=>e.evidenceId===stop.evidenceRef) || placeRow(s,stop.name)).filter(Boolean);
+      await resolveNamedPlaces(s, toGround.filter(st => !all.some(e=>e.evidenceId===st.evidenceRef)).map(st=>st.name), {...context,signal:phase.signal});
+      const rows = toGround.map(stop => all.find(e=>e.evidenceId===stop.evidenceRef) || placeRow(s,stop.name)).filter(Boolean);
       await groundCoordinates(s, rows, { ...context, signal: phase.signal });
       const transport = { ...context.snapshot.planningState?.transportation };
       // Validated below by the memory guard; never used to persist by this phase.
       for (const u of proposal.memory_updates || []) if (u.field === 'transportation' && context.userMessage.includes(u.sourceQuote || '\u0000')) Object.assign(transport, u.value);
-      const mode = canAuthorizeDrivingIntent(transport) ? 'driving' : s.request?.travelMode !== 'driving' ? s.request?.travelMode : null;
-      const pairs = changedDays.flatMap(d => (d.stops || []).slice(1).map((stop, i) => {
-        const find = st => rows.find(r => r.evidenceId === st.evidenceRef) || placeRow(s,st.name);
-        return [find(d.stops[i]), find(stop)];
+      const { mode } = transferRouteMode(transport, { requestedMode: s.request?.travelMode });
+      const find = st => rows.find(r => r.evidenceId === st.evidenceRef) || placeRow(s,st.name);
+      const pairs = routePairs.map(([a, b]) => [find(a), find(b)]);
+      const bundle = { evidence: s.evidence.filter(row => usableEvidence(row, now(), { authoritative: true })) };
+      const ops = indexFactsByPlace({ facts: operationalFactsFromBundle(bundle), bundle });
+      await Promise.all(pairs.map(pair => {
+        const access = resolveOperationalAccess(pair.map(row => row ? factsForStop({ name: row.claim?.normalizedValue?.name, evidenceRef: row.evidenceId }, ops) : []), transferDates(context.snapshot.planningState?.dates || s.request?.dates));
+        const requiredMode = access.requiredMode;
+        return routes(s, [pair], { ...context, signal: phase.signal }, requiredMode || mode);
       }));
-      await routes(s, pairs, { ...context, signal: phase.signal }, mode);
     } finally { s.researchMs += Date.now() - started; phase.dispose(); }
-    return { evidence: s.evidence, namedPlaceDiagnostics: s.namedDiagnostics, providerOutcomes: s.attempts, unresolved: s.unresolved, providerAttemptCount: s.attempts.reduce((n,a) => n + (a.providerAttemptCount || 0), 0) };
+    return { evidence: s.evidence, parkRules: parkRules(s), namedPlaceDiagnostics: s.namedDiagnostics, providerOutcomes: s.attempts, unresolved: s.unresolved, providerAttemptCount: s.attempts.reduce((n,a) => n + (a.providerAttemptCount || 0), 0) };
   }, dispose: requestId => sessions.delete(requestId) };
 }
 module.exports = { createSimpleTravelTools, READ_TOOL };

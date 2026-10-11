@@ -25,6 +25,9 @@ const { stripItineraryArtifacts } = require('./itineraryArtifacts');
  * hashing so insertion order can never change a hash.
  */
 function stableStringify(value) {
+  // Provider observations may arrive from Mongo as Dates. Hash the same ISO
+  // value JSON transports and persistence expose, rather than Date's empty keys.
+  if (value instanceof Date) return stableStringify(value.toJSON());
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value) ?? 'null';
   }
