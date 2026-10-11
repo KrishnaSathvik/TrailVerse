@@ -1,7 +1,7 @@
 # Manual TripPlan write path audit (`usePlanWorkspace`)
 
-**Date:** 2026-10-11  
-**Status:** findings only — no code change in this pass  
+**Date:** 2026-10-11
+**Status:** findings only — no code change in this pass
 **Related:** `docs/trailie-architecture.md`, `artifacts/repo-hygiene-audit-2026-10-11/REPORT.md`
 
 ## Question
