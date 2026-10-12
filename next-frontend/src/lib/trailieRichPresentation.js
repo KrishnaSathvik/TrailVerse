@@ -1,44 +1,7 @@
 import { buildTripMapModel } from './itineraryMapStops';
 
 // A frontend-owned vocabulary. No model-supplied component names or HTML.
-export const RICH_BLOCKS = Object.freeze(['prose', 'image_strip', 'trip_overview', 'compact_days', 'map_preview', 'things_to_know', 'personalize_trip', 'comparison', 'trip_artifact']);
-export const PERSONALIZATION = Object.freeze([
-  { key: 'season', label: 'When are you going?', options: [['Summer', 'summer'], ['Fall', 'fall'], ['Spring', 'spring'], ['Winter', 'winter']] },
-  { key: 'party', label: 'Who’s coming?', options: [['Solo', 'solo'], ['Couple', 'as a couple'], ['Friends', 'with friends'], ['Family with kids', 'with family and kids']] },
-  { key: 'style', label: 'Travel style', options: [['Adventure + downtime', 'a mix of adventure and downtime'], ['Big hiking days', 'built around big hiking days'], ['Scenic + relaxed', 'scenic and relaxed']] },
-  { key: 'hiking', label: 'Hiking preference', options: [['Easy', 'easy'], ['Moderate', 'moderate'], ['Longer hikes', 'longer']] },
-]);
-const MAX_DIMENSIONS = 3;
-
-export function personalizationMessage(selection) {
-  const allowed = Object.fromEntries(PERSONALIZATION.map(d => [d.key, d.options.find(([, value]) => value === selection[d.key])?.[1]]));
-  const parts = [
-    allowed.season && `Update this trip for ${allowed.season}.`,
-    allowed.party && `I’m traveling ${allowed.party}.`,
-    allowed.style && `I want it ${allowed.style}.`,
-    allowed.hiking && `I prefer ${allowed.hiking} hikes.`,
-  ].filter(Boolean);
-  return parts.length ? `${allowed.season ? '' : 'Update this trip. '}${parts.join(' ')}` : '';
-}
-
-// Traveler memory is the verified authority for what Trailie already knows.
-// A dimension already answered there (or by dated canonical days) is never re-asked.
-export function knownPersonalization(plan, planningState) {
-  const s = planningState || {};
-  const known = new Set();
-  if (s.dates?.startDate || s.dates?.travelMonth || (plan?.days || []).some(day => day.date)) known.add('season');
-  if (Number.isFinite(s.travelers?.adults) || Number.isFinite(s.travelers?.children)) known.add('party');
-  if (s.preferences?.pace) known.add('style');
-  if (s.preferences?.fitness || Number.isFinite(s.mobility?.maxWalkMilesPerSegment) || Number.isFinite(s.mobility?.maxWalkMinutesPerSegment)) known.add('hiking');
-  return known;
-}
-export function personalizationDimensions(plan, planningState) {
-  const known = knownPersonalization(plan, planningState);
-  const open = PERSONALIZATION.filter(d => !known.has(d.key)).slice(0, MAX_DIMENSIONS);
-  // A single remaining choice rarely changes a trip enough to interrupt with a form.
-  return open.length >= 2 ? open : [];
-}
-
+export const RICH_BLOCKS = Object.freeze(['prose', 'image_strip', 'trip_overview', 'compact_days', 'map_preview', 'things_to_know', 'adjust_trip', 'comparison', 'trip_artifact']);
 export function tripRevision(plan) {
   if (!plan?.days?.length) return null;
   // Legacy plans have no identity stamps. A structural key keeps those safe too.
@@ -87,7 +50,7 @@ function dedupeImages(list) {
  * Deterministic presentation for an accepted canonical trip turn.
  * Created vs updated comes only from the server's accepted-mutation refinement.
  */
-export function composeRichTrip(response, refinement, { imagery = [], planningState = null } = {}) {
+export function composeRichTrip(response, refinement, { imagery = [] } = {}) {
   const plan = response.canonicalPlan;
   if (!plan?.days?.length || response.artifactStatus?.status === 'save_failed') return null;
   const updated = refinement?.isRefinement === true;
@@ -97,7 +60,6 @@ export function composeRichTrip(response, refinement, { imagery = [], planningSt
   const fullMap = updated ? null : buildTripMapModel(plan);
   const map = fullMap?.hasAnyMappedStop ? fullMap : null;
   const unmappedCount = map ? Math.max(0, map.mappableCount - map.mappedCount) : 0;
-  const dimensions = updated ? [] : personalizationDimensions(plan, planningState || response.planningState);
-  return { plan, updated, days, images, guidance, map, unmappedCount, dimensions, revision: tripRevision(plan),
+  return { plan, updated, days, images, guidance, map, unmappedCount, revision: tripRevision(plan),
     blocks: ['trip_overview', ...(images.length ? ['image_strip'] : []), 'compact_days', ...(map ? ['map_preview'] : []), ...(guidance.length ? ['things_to_know'] : []), 'trip_artifact'] };
 }

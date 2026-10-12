@@ -39,9 +39,9 @@ describe('TrailieDemoPlaybackStage', () => {
   it('offers one action panel for the latest trip in a multi-trip conversation', () => {
     const scenario = SCENARIOS.find(item => item.id === 'yellowstone');
     render(<TrailieDemoPlaybackStage scenario={scenario} completedTurns={scenario.turns} showMessagePane />);
-    expect(screen.getAllByRole('link', { name: /plan a trip like this/i })).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'Open sample trip' })).toHaveLength(1);
-    expect(screen.getAllByRole('group', { name: 'When are you going?' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /plan my version/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Explore this sample' })).toHaveLength(1);
+    expect(screen.getAllByRole('group', { name: 'When' })).toHaveLength(1);
   });
 
   it('renders an itinerary card for a turn with a captured plan', () => {
@@ -64,9 +64,9 @@ describe('TrailieDemoPlaybackStage', () => {
 
     const card = screen.getByLabelText('Trip created');
     expect(within(card).getByText('Scenic drive')).toBeInTheDocument();
-    expect(within(card).getByRole('button', { name: 'Open sample trip' })).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Explore this sample' })).toBeInTheDocument();
     expect(screen.getByText('Riverside Walk')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Fall' })).toBeEnabled();
+    expect(screen.getByRole('checkbox', { name: 'Fall' })).toBeEnabled();
     expect(screen.getByText('Here you go.')).toBeInTheDocument();
   });
 
@@ -76,12 +76,15 @@ describe('TrailieDemoPlaybackStage', () => {
     const close = vi.fn(function () { this.removeAttribute('open'); });
     HTMLDialogElement.prototype.close = close;
     render(<TrailieDemoPlaybackStage scenario={{ label: 'Zion' }} completedTurns={[{ question: 'Plan Zion', prose: 'Ready.', plan: ITINERARY_PLAN, presentationKind: 'itinerary' }]} showMessagePane />);
-    act(() => screen.getByRole('button', { name: 'Open sample trip' }).click());
-    const dialog = screen.getByRole('dialog', { name: 'Recorded trip' });
+    act(() => screen.getByRole('button', { name: 'Explore this sample' }).click());
+    const dialog = screen.getByRole('dialog', { name: 'Sample trip' });
+    expect(within(dialog).getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+    act(() => within(dialog).getByRole('tab', { name: 'Day 1' }).click());
     expect(within(dialog).getByText('Riverside Walk')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Pa’rus Trail')).not.toBeInTheDocument();
     expect(within(dialog).getByRole('tab', { name: 'Map' })).toBeInTheDocument();
     expect(dialog.querySelector('a[href*="/plan-ai/"]')).toBeNull();
-    act(() => within(dialog).getByRole('button', { name: 'Close trip' }).click());
+    act(() => within(dialog).getByRole('button', { name: 'Close' }).click());
     expect(close).toHaveBeenCalled();
     delete HTMLDialogElement.prototype.showModal; delete HTMLDialogElement.prototype.close;
   });
@@ -107,7 +110,7 @@ describe('TrailieDemoPlaybackStage', () => {
     expect(screen.getByLabelText('Assistant message')).toBeInTheDocument();
     expect(screen.getByLabelText('Trip created')).toBeInTheDocument();
     expect(screen.getByText('Riverside Walk')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Fall' })).toBeEnabled();
+    expect(screen.getByRole('checkbox', { name: 'Fall' })).toBeEnabled();
     expect(screen.queryByText('At a glance')).not.toBeInTheDocument();
   });
 
@@ -312,14 +315,13 @@ describe('TrailieInteractiveDemo', () => {
     expect(screen.getByText(SCENARIOS[2].turns[0].question)).toBeInTheDocument();
   });
 
-  it('shows the captured Smokies itinerary and non-spatial experiences after discovery and comparison', () => {
+  it('shows the captured Shenandoah itinerary and non-spatial experiences after discovery and comparison', () => {
     render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
     expect(screen.getByLabelText('Trip created')).toBeInTheDocument();
-    expect(screen.getAllByText('Deep Creek Trail').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Flexible experience · not mapped')).toHaveLength(2);
-    expect(screen.getByText('2 flexible activities aren’t shown on the map')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Show Oconaluftee.*on the trip map/ })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Stony Man Trail/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/not mapped/)).not.toBeInTheDocument();
+    expect(screen.getByText('3 flexible activities aren’t shown on the map')).toBeInTheDocument();
   });
 
   it('replays all follow-ups after restoring an incomplete cached conversation', () => {
@@ -341,16 +343,17 @@ describe('TrailieInteractiveDemo', () => {
     const before = JSON.stringify(SCENARIOS);
     render(<TrailieInteractiveDemo />);
     runPlaybackToCompletion();
+    // No change yet → no version to plan.
+    expect(screen.getByRole('button', { name: /plan my version/i })).toBeDisabled();
     for (const name of ['Fall', 'Couple', 'Scenic + relaxed']) {
-      act(() => screen.getByRole('radio', { name }).click());
+      act(() => screen.getByRole('checkbox', { name }).click());
     }
-    const url = new URL(screen.getByRole('link', { name: /plan a trip like this/i }).getAttribute('href'), 'https://example.com');
+    const url = new URL(screen.getByRole('link', { name: /plan my version/i }).getAttribute('href'), 'https://example.com');
     expect(url.pathname).toBe('/plan-ai');
     expect(url.searchParams.get('entry')).toBe('new-trip');
-    expect(url.searchParams.get('ask')).toContain('Great Smoky Mountains National Park for fall');
-    expect(url.searchParams.get('ask')).toContain('traveling as a couple');
-    expect(url.searchParams.get('ask')).toContain('scenic and relaxed');
+    expect(url.searchParams.get('ask')).toContain('Plan a fall 4-day Shenandoah National Park trip for two people, similar to this sample, with a scenic and relaxed pace.');
     expect(url.searchParams.get('ask')).toContain('Day 1:');
+    expect(screen.getByText(/“Plan a fall 4-day Shenandoah National Park trip for two people/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /plan your trip/i })).not.toBeInTheDocument();
     expect(JSON.stringify(SCENARIOS)).toBe(before);
     expect(fetchSpy).not.toHaveBeenCalled();

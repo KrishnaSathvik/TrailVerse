@@ -12,6 +12,9 @@ it('renders complete day structure in sequence and exports it without private fi
  expect(screen.getByText(/Relaxed day/)).toBeInTheDocument();
  expect(screen.getByText('Lunch and a relaxed afternoon')).toBeInTheDocument();
  expect(screen.getAllByText('Lake walk')).toHaveLength(1);
+ // The outing block and its stop are one traveler-facing activity.
+ expect(screen.queryByText('A lake outing')).not.toBeInTheDocument();
+ expect(screen.getByText('Pack a snack.')).toBeInTheDocument();
  expect(screen.getByText('West-side base')).toBeInTheDocument();
  expect(screen.getByText('Lake walk').compareDocumentPosition(screen.getByText('Lunch and a relaxed afternoon')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
@@ -23,15 +26,16 @@ it('shows transfer days without fabricating stops or an empty-day warning', () =
 });
 it('shows meaningful clock precision and its reason together', () => {
  render(<TrailieItinerary showMapActions={false} plan={{days:[{...day,stops:[{...day.stops[0],startTime:'08:00',timingReason:'Meet your booked guide.'}]}]}}/>);
- expect(screen.getByText(/Morning · 8:00 AM/)).toBeInTheDocument();
- expect(screen.getByText('Meet your booked guide.')).toBeInTheDocument();
+ expect(screen.getByText('Morning')).toBeInTheDocument();
+ expect(screen.getByText('8:00 AM')).toBeInTheDocument();
+ expect(screen.getByText(/Meet your booked guide\./)).toBeInTheDocument();
 });
-it('labels flexible experiences without manufacturing map stops or map errors', async () => {
+it('shows flexible experiences as itinerary items without implementation labels or map stops', async () => {
  const { buildTripMapModel }=await import('@/lib/itineraryMapStops');
  const p=exportPublicPlan({days:[{...day,stops:[],dayStructure:{...day.dayStructure,blocks:[{kind:'experience',periods:['afternoon'],label:'Easy riverside time',note:'Explore the area at your own pace.',stopIds:[]}]}}]});
  render(<TrailieItinerary plan={p}/>);
- expect(screen.getByText('Flexible experience · not mapped')).toBeInTheDocument();
- expect(screen.getByText('Easy riverside time')).toBeInTheDocument();
+ expect(screen.queryByText(/not mapped|Flexible experience/)).not.toBeInTheDocument();
+ expect(screen.getByText('Easy riverside time').closest('li')).toHaveAttribute('data-day-item', 'flexible');
  expect(screen.queryByRole('button',{name:/trip map/i})).not.toBeInTheDocument();
  expect(screen.queryByText('No stops yet')).not.toBeInTheDocument();
  expect(buildTripMapModel(p).hasAnyMappedStop).toBe(false);

@@ -94,11 +94,12 @@ export default function TrailieDemoPlaybackStage({
 
       {isFirstTurnTyping && <div className="mb-5 sm:mb-6">{typingBlock}</div>}
 
-      {openPlan && <dialog ref={dialogRef} onClose={() => setOpenPlan(null)} aria-label="Recorded trip" className="m-auto max-h-[94svh] w-[calc(100%-1rem)] max-w-[1200px] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-primary)] p-0 text-[var(--text-primary)] backdrop:bg-black/50">
-        <div className="sticky top-0 z-10 flex justify-end border-b border-[var(--border)] bg-[var(--bg-primary)] px-4 py-2">
-          <button autoFocus className="min-h-11 rounded-full border border-[var(--border)] px-4 text-sm font-semibold" onClick={() => dialogRef.current?.close()}>Close trip</button>
+      {openPlan && <dialog ref={dialogRef} onClose={() => setOpenPlan(null)} aria-label="Sample trip"
+        className="m-0 h-[100dvh] max-h-none w-full max-w-none overflow-y-auto overscroll-contain bg-[var(--bg-primary)] p-0 text-[var(--text-primary)] backdrop:bg-black/60">
+        <div className="mx-auto w-full max-w-[1280px]">
+          <TripWorkspaceView plan={openPlan} view={view} onViewChange={setView} embedded eyebrow="Sample trip"
+            tabsAccessory={<button autoFocus className="min-h-10 shrink-0 rounded-full border border-[var(--border)] px-4 text-sm font-semibold hover:border-[var(--accent-green)]" onClick={() => dialogRef.current?.close()}>Close</button>} />
         </div>
-        <TripWorkspaceView plan={openPlan} view={view} onViewChange={setView} />
       </dialog>}
       {(showMessagePane || isFollowUpTyping) && (
         <div className="space-y-6 sm:space-y-8">

@@ -131,7 +131,7 @@ function createSimpleRuntime({ model, travelTools, verifyMemory = null, store = 
     const mutationFailure = explanation => finish('mutation_rejected', null, { persisted: false,
       failureContent: explanation?.trim() || (snapshot.plan
         ? 'I couldn’t safely apply that change, so your saved trip is unchanged.'
-        : 'I couldn’t finish building the trip because I couldn’t reliably verify some of the places yet. I haven’t saved an incomplete itinerary.') });
+        : 'I couldn’t put together a complete, consistent trip this time, so I haven’t saved an incomplete itinerary.') });
     while (telemetry.modelCalls < maxModelCalls) {
       if (cancelled()) return finish('cancelled');
       let generation;

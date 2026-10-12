@@ -1,8 +1,8 @@
 'use client';
 
-import { Fragment, useCallback, useId, useMemo, useState } from 'react';
-import { verifiedTransferLabel, hasUnknownRoadAccess, ROAD_ACCESS_NOTE } from '@/lib/tripPresentation';
-import { formatTime12, formatDurationMinutes } from '@/utils/sharedTripFormat';
+import { useCallback, useId, useMemo, useState } from 'react';
+import { formatTravelMinutes, groundedPlaceType, hasUnknownRoadAccess, ROAD_ACCESS_NOTE } from '@/lib/tripPresentation';
+import { presentDay } from '@/lib/dayPresentation';
 import { canonicalDestinationDisplay } from '@/lib/tripDestination';
 import { buildTripMapModel } from '@/lib/itineraryMapStops';
 import { Map as MapIcon, MapPin } from '@/components/icons';
@@ -36,6 +36,72 @@ function MapFocusButton({ mapStop, onFocusOnMap }) {
   );
 }
 
+const MARKER = {
+  activity: 'left-[0.3rem] top-1 h-4 w-4 border-2 border-[var(--accent-green)] bg-[var(--surface)] text-[9px] font-bold text-[var(--accent-green-dark)]',
+  flexible: 'left-[0.45rem] top-1.5 h-3 w-3 border border-dashed border-[var(--accent-green)] bg-[var(--surface)]',
+  supporting: 'left-[0.55rem] top-2 h-2 w-2 bg-[var(--text-tertiary)]',
+  supportingStop: 'left-[0.3rem] top-0.5 h-4 w-4 bg-[var(--text-tertiary)] text-[9px] font-semibold text-[var(--surface)]',
+};
+
+function ItemText({ text, compact }) {
+  const [lead, extra] = text;
+  return <>
+    {lead && <p className={`mt-1 ${compact ? 'text-[13px] leading-5' : 'text-sm leading-6'} text-[var(--text-secondary)]`}>{lead}</p>}
+    {extra && <p className="mt-1 text-[13px] leading-5 text-[var(--text-tertiary)]">{extra}</p>}
+  </>;
+}
+
+function DayItem({ item, day, dayMapModel, instanceId, flashStopId, onFocusOnMap }) {
+  if (item.type === 'travel') {
+    return (
+      <li data-day-item="travel" className="relative mb-4 pl-8 sm:pl-9">
+        <p className="text-[13px] font-medium text-[var(--text-secondary)]">
+          <span aria-hidden="true" className="mr-1.5 text-[var(--text-tertiary)]">↓</span>
+          {item.title}{item.title && item.travelTime ? ' · ' : ''}{item.travelTime && <span data-drive-transition="true">{item.travelTime}</span>}
+        </p>
+        {item.text[0] && <p className="mt-0.5 text-xs leading-5 text-[var(--text-tertiary)]">{item.text[0]}</p>}
+      </li>
+    );
+  }
+  const stop = item.stops[0];
+  const stopIndex = item.stopIndexes?.[0] ?? -1;
+  const mapStop = stopIndex >= 0 ? dayMapModel?.stops?.[stopIndex] : null;
+  const stopKey = stop ? stop.id || mapStop?.id || `${day.dayNumber}-${stopIndex}` : null;
+  const placeType = item.stops.length === 1 ? groundedPlaceType(stop) : null;
+  const meta = [placeType, item.duration > 0 ? formatTravelMinutes(item.duration) : null, item.difficulty, item.exposure ? `${item.exposure} exposure` : null].filter(Boolean);
+  const compact = item.type === 'supporting';
+  return (
+    <li
+      id={stopKey && instanceId ? `trailie-stop-${instanceId}-${stopKey}` : undefined}
+      data-day-item={item.type}
+      data-stop-treatment={stop ? (item.type === 'supporting' ? 'supporting' : 'experience') : undefined}
+      className={`relative pl-8 transition-colors duration-700 sm:pl-9 ${compact ? 'pb-4' : 'pb-6'}`}
+      style={{ backgroundColor: stopKey && flashStopId === stopKey ? 'var(--surface-hover)' : 'transparent' }}
+    >
+      {/* Stop-backed items carry the same number as their map pin. */}
+      <span aria-hidden="true" className={`absolute z-10 flex items-center justify-center rounded-full ${MARKER[stop && compact ? 'supportingStop' : item.type]}`}>
+        {stopIndex >= 0 ? stopIndex + 1 : ''}
+      </span>
+      {item.showDaypart && <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-green-dark)]">{item.daypart}</p>}
+      {item.clock && <p className="text-xs font-semibold text-[var(--text-primary)]">{item.clock}{item.timingReason ? <span className="font-normal text-[var(--text-secondary)]"> · {item.timingReason}</span> : null}</p>}
+      <h4 className={`${compact ? 'text-sm' : 'text-base'} font-semibold leading-snug text-[var(--text-primary)]`}>
+        {item.title}
+        {onFocusOnMap && mapStop?.mapped ? <MapFocusButton mapStop={mapStop} onFocusOnMap={onFocusOnMap} /> : null}
+      </h4>
+      {meta.length > 0 && <p className="mt-0.5 text-xs font-medium text-[var(--text-tertiary)]">{meta.join(' · ')}</p>}
+      {item.stops.length > 1 && <ul className="mt-1.5 space-y-0.5 text-[13px] text-[var(--text-secondary)]">
+        {item.stops.map(s => <li key={s.id}>{s.name}{s.duration ? ` · ${formatTravelMinutes(s.duration)}` : ''}</li>)}
+      </ul>}
+      <ItemText text={item.text} compact={compact} />
+      <ItineraryRequirements requirements={item.requirements} compact />
+      {item.alternatives?.length > 0 && <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
+        <span className="font-semibold text-[var(--text-primary)]">If this doesn’t work: </span>
+        {item.alternatives.map(a => (typeof a === 'string' ? a : [a?.name, a?.note].filter(Boolean).join(' — '))).filter(Boolean).join('; ')}
+      </p>}
+    </li>
+  );
+}
+
 function DaySection({ day, index, mapModel, instanceId, flashStopId, onFocusOnMap, onOpenDayMap }) {
   const dayMapModel = mapModel?.days?.[index];
   const dayHasMappedStops = (dayMapModel?.mappedCount || 0) > 0;
@@ -50,62 +116,24 @@ function DaySection({ day, index, mapModel, instanceId, flashStopId, onFocusOnMa
       <MapPin className="h-3 w-3" style={{ color: 'var(--text-tertiary)' }} />
     </button>
   ) : null;
-
-  const renderStop = (stop, stopIndex) => {
-    const mapStop = dayMapModel?.stops?.[stopIndex];
-    const stopKey = stop.id || mapStop?.id || `${day.dayNumber || index}-${stopIndex}`;
-    const renderKey = `${day.dayNumber || index + 1}:${stopKey}:${stopIndex}`;
-    const edge = (day.travelEdges || []).find(e => e.targetStopId === stop.id && e.sourceStopId === day.stops[stopIndex - 1]?.id);
-    const transfer = verifiedTransferLabel(edge);
-    return (
-      <Fragment key={renderKey}>
-        {transfer && <li className="mb-5 pl-8 text-sm text-[var(--text-secondary)]"><span aria-hidden="true">↓ </span><span data-drive-transition="true">{transfer}</span></li>}
-        <ItineraryStopRow
-          stop={stop}
-          index={stopIndex}
-          numbered
-          titleAction={onFocusOnMap ? <MapFocusButton mapStop={mapStop} onFocusOnMap={onFocusOnMap} /> : null}
-          domId={instanceId ? `trailie-stop-${instanceId}-${stopKey}` : null}
-          flashed={flashStopId === stopKey}
-        />
-      </Fragment>
-    );
-  };
-
+  const items = presentDay(day);
   return (
     <section className="py-8 first:pt-4 last:pb-2" style={{ borderTop: index ? '1px solid var(--border)' : undefined }}>
       <ItineraryDayHeading day={day} index={index} action={mapAction} />
-      {hasUnknownRoadAccess(day) && <p className="mb-5 mt-3 text-sm leading-6 text-[var(--text-secondary)]">{ROAD_ACCESS_NOTE}</p>}
-      {/* Day-scoped requirement: a shared obligation naming every stop on this
-          day (e.g. one permit covering the whole district) — shown once here
-          instead of repeated under each stop. */}
+      {/* Day-scoped requirement: one obligation shared by this day's places. */}
       <ItineraryRequirements requirements={day.requirements} />
-      <ol className="m-0 list-none p-0">
-        {day.dayStructure?.blocks?.length ? day.dayStructure.blocks.map((block, blockIndex) => (
-          <Fragment key={`block-${blockIndex}`}>
-            <li className="mb-4 pl-8 sm:pl-9" data-day-block={block.kind}>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent-green-dark)]">{block.periods.length > 1 ? `${block.periods[0]} → ${block.periods.at(-1)}` : block.periods[0]}</p>
-              {(block.startTime || block.duration) && <p className="mt-1 text-xs font-semibold">{[formatTime12(block.startTime), block.duration ? `~${formatDurationMinutes(block.duration)}` : null].filter(Boolean).join(' · ')}</p>}
-              <h4 className="mt-1 text-sm font-semibold">{block.label}</h4>
-              {block.kind === 'experience' && <p className="mt-1 text-xs text-[var(--text-secondary)]">Flexible experience · not mapped</p>}
-              <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{block.note}</p>
-              {block.timingReason && <p className="mt-1 text-xs text-[var(--text-secondary)]">{block.timingReason}</p>}
-            </li>
-            {(block.stopIds || []).map(id => {
-              const stopIndex = (day.stops || []).findIndex(stop => stop.id === id);
-              return stopIndex >= 0 ? renderStop(day.stops[stopIndex], stopIndex) : null;
-            })}
-          </Fragment>
-        )) : (day.stops || []).map(renderStop)}
-        {day.dayStructure?.blocks?.length ? (day.stops || []).map((stop, i) =>
-          day.dayStructure.blocks.some(block => block.stopIds?.includes(stop.id)) ? null : renderStop(stop, i)) : null}
+      <ol className="relative m-0 list-none p-0">
+        <span aria-hidden="true" className="absolute bottom-6 left-[0.8rem] top-2 w-px bg-[var(--border)]" />
+        {items.map(item => (
+          <DayItem key={item.key} item={item} day={day} dayMapModel={dayMapModel} instanceId={instanceId} flashStopId={flashStopId} onFocusOnMap={onFocusOnMap} />
+        ))}
       </ol>
       <ItineraryOvernightBase location={day.overnightLocation} />
     </section>
   );
 }
 
-export default function TrailieItinerary({ plan, variant = 'itinerary', pendingLabel = null, showMapActions = true }) {
+export default function TrailieItinerary({ plan, variant = 'itinerary', pendingLabel = null, showMapActions = true, showTripNotes = true }) {
   const instanceId = useId();
   const [mapOpen, setMapOpen] = useState(false);
   const [mapInitialDayId, setMapInitialDayId] = useState('all');
@@ -174,6 +202,8 @@ export default function TrailieItinerary({ plan, variant = 'itinerary', pendingL
           trip rather than one day/stop (attachTravelerRequirements falls back
           here only when a requirement has no day to resolve to). */}
       <ItineraryRequirements requirements={plan.requirements} />
+      {/* Said once per trip, never repeated under each day. */}
+      {showTripNotes && days.some(hasUnknownRoadAccess) && <p className="mb-4 text-sm leading-6 text-[var(--text-secondary)]">{ROAD_ACCESS_NOTE}</p>}
 
       {/* One primary trip map surface, revealed on demand — not an always-on
           split pane. Hidden entirely when nothing on the plan has a

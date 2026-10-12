@@ -2,8 +2,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import TrailieResponse from '../TrailieResponse';
 import { toLiveTrailieResponseModel } from '@/lib/trailieResponseModel';
-import { composeRichTrip, PERSONALIZATION, groundedTripGuidance, personalizationDimensions, personalizationMessage } from '@/lib/trailieRichPresentation';
-import PersonalizeTrip from '../PersonalizeTrip';
+import { composeRichTrip, groundedTripGuidance } from '@/lib/trailieRichPresentation';
+import AdjustTrip, { ADJUST_SUGGESTIONS } from '../AdjustTrip';
 vi.mock('@/components/itinerary/ItineraryMapView', () => ({ default: () => <div>Canonical map</div>, ITINERARY_MAP_PATH_MODE: { NONE: 'none' } }));
 // Imagery is an optional enhancement; tests stay offline and deterministic.
 vi.mock('@/hooks/useTripImagery', () => ({ default: () => [] }));
@@ -28,35 +28,32 @@ it('gives guests the same rich trip; Open trip goes through the chat’s account
   const open = vi.fn();
   show({}, { artifactAccess: 'guest', onOpenArtifact: open, onFollowup: vi.fn(), personalizationCurrent: true });
   expect(screen.getByText('Lake 5')).toBeInTheDocument();
-  expect(screen.getByRole('form', { name: 'Make this trip yours' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Adjust your trip' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Open trip' }));
   expect(open).toHaveBeenCalledWith('itinerary');
 });
-it('orders things to know, personalization, then the single Open trip action', () => {
+it('never offers the sample-style "Make this trip yours" form on a live trip', () => {
   show({}, { onFollowup: vi.fn(), personalizationCurrent: true });
-  const form = screen.getByRole('form', { name: 'Make this trip yours' });
+  expect(screen.queryByRole('region', { name: 'Make this trip yours' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('form', { name: 'Make this trip yours' })).not.toBeInTheDocument();
+  expect(screen.queryByText('When')).not.toBeInTheDocument();
+  expect(screen.getByText('Want to adjust anything?')).toBeInTheDocument();
+});
+it('orders things to know, refinement, then the single Open trip action', () => {
+  show({}, { onFollowup: vi.fn(), personalizationCurrent: true });
+  const adjust = screen.getByRole('region', { name: 'Adjust your trip' });
   const open = screen.getByRole('button', { name: 'Open trip' });
-  expect(form.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(adjust.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(screen.queryByRole('button', { name: /view itinerary|view map/i })).not.toBeInTheDocument();
 });
-it('offers personalization only on the latest trip and never on an update', () => {
+it('offers refinement only on the latest trip', () => {
   show({}, { onFollowup: vi.fn(), personalizationCurrent: false });
-  expect(screen.queryByRole('form', { name: 'Make this trip yours' })).not.toBeInTheDocument();
-  cleanup();
-  show({ presentation: { ...manifest, refinement: { isRefinement: true, changes: ['trip_updated'], changedDayNumbers: [2] } } }, { onFollowup: vi.fn(), personalizationCurrent: true });
-  expect(screen.queryByRole('form', { name: 'Make this trip yours' })).not.toBeInTheDocument();
-});
-it('does not re-ask what traveler memory already knows', () => {
-  show({}, { onFollowup: vi.fn(), personalizationCurrent: true, planningState: { travelers: { adults: 2, children: 2 }, dates: { startDate: '2026-10-01' } } });
-  expect(screen.queryByRole('group', { name: 'Who’s coming?' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('group', { name: 'When are you going?' })).not.toBeInTheDocument();
-  expect(screen.getByRole('group', { name: 'Travel style' })).toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Adjust your trip' })).not.toBeInTheDocument();
 });
 it('routes an exhausted guest to sign-in instead of silently submitting', () => {
   const submit = vi.fn(); const gate = vi.fn();
-  render(<PersonalizeTrip dimensions={PERSONALIZATION} onSubmit={submit} current disabled guestExhausted onRequireAccount={gate} />);
-  fireEvent.click(screen.getByRole('radio', { name: 'Fall' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Sign in to customize →' }));
+  render(<AdjustTrip onSubmit={submit} current disabled guestExhausted onRequireAccount={gate} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Make it more relaxed' }));
   expect(gate).toHaveBeenCalledOnce();
   expect(submit).not.toHaveBeenCalled();
 });
@@ -71,29 +68,27 @@ it('preserves prose and omits trip claims after failed save', () => {
   expect(screen.getByText('Here is your trip.')).toBeInTheDocument();
   expect(screen.queryByText('Trip created')).not.toBeInTheDocument();
 });
-it('submits a normal user turn and waits for persisted acceptance', async () => {
+it('submits a suggestion as a normal user turn and waits for persisted acceptance', async () => {
   let resolve; const submit = vi.fn(() => new Promise(r => { resolve = r; }));
-  render(<PersonalizeTrip dimensions={PERSONALIZATION} onSubmit={submit} current />);
-  for (const name of ['Fall', 'Family with kids', 'Scenic + relaxed']) fireEvent.click(screen.getByRole('radio', { name }));
-  fireEvent.click(screen.getByRole('button', { name: 'Customize my trip →' }));
-  expect(submit).toHaveBeenCalledWith('Update this trip for fall. I’m traveling with family and kids. I want it scenic and relaxed.');
-  expect(screen.getByRole('button', { name: 'Updating your trip…' })).toBeDisabled();
+  render(<AdjustTrip onSubmit={submit} current />);
+  fireEvent.click(screen.getByRole('button', { name: 'Make it more relaxed' }));
+  expect(submit).toHaveBeenCalledWith(ADJUST_SUGGESTIONS[0][1]);
+  expect(screen.getByRole('button', { name: 'Reduce hiking' })).toBeDisabled();
+  expect(screen.getByRole('status')).toHaveTextContent('Updating your trip…');
   resolve({ persisted: true, canonicalPlan: plan, presentation: { refinement: { isRefinement: true } } });
   await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Trip updated'));
 });
 it('does not label prose-only refinements as success', async () => {
-  render(<PersonalizeTrip dimensions={PERSONALIZATION} onSubmit={vi.fn().mockResolvedValue({ persisted: true })} current />);
-  fireEvent.click(screen.getByRole('radio', { name: 'Fall' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Customize my trip →' }));
+  render(<AdjustTrip onSubmit={vi.fn().mockResolvedValue({ persisted: true })} current />);
+  fireEvent.click(screen.getByRole('button', { name: 'Reduce hiking' }));
   await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Couldn’t update the trip. Your saved trip is unchanged.'));
-  expect(screen.getByRole('button', { name: 'Customize my trip →' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Reduce hiking' })).toBeEnabled();
 });
-it('disables old revisions and demo controls', () => {
-  const submit = vi.fn(); const view = render(<PersonalizeTrip dimensions={PERSONALIZATION} onSubmit={submit} current={false} />);
-  expect(screen.getByRole('radio', { name: 'Fall' })).toBeDisabled();
-  view.rerender(<PersonalizeTrip dimensions={PERSONALIZATION} onSubmit={submit} example />);
-  expect(screen.getByRole('radio', { name: 'Fall' })).toBeDisabled();
-  expect(screen.queryByRole('button')).not.toBeInTheDocument();
+it('locks suggestions on older revisions', () => {
+  const submit = vi.fn();
+  render(<AdjustTrip onSubmit={submit} current={false} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Make it more relaxed' }));
+  expect(screen.getByRole('button', { name: 'Make it more relaxed' })).toBeDisabled();
   expect(submit).not.toHaveBeenCalled();
 });
 it('allows only approved imagery and never mutates the plan', () => {
@@ -116,10 +111,6 @@ it('renders structured comparisons without trip controls', () => {
   expect(screen.queryByLabelText('Trip created')).not.toBeInTheDocument();
 });
 
-it('builds the visible personalization turn from every chosen dimension', () => {
-  expect(personalizationMessage({ party: 'solo', hiking: 'easy' })).toBe('Update this trip. I’m traveling solo. I prefer easy hikes.');
-  expect(personalizationMessage({})).toBe('');
-});
 it('omits images, map and notes when no eligible data exists', () => {
   const model = composeRichTrip({ canonicalPlan: plan, parkImages: [] });
   expect(model.images).toEqual([]);
@@ -137,16 +128,6 @@ it('shows the map only from authoritative canonical coordinates and counts unmap
   expect(model.map?.mappedCount).toBe(1);
   expect(model.unmappedCount).toBe(1);
 });
-it('limits personalization to a few open choices and skips it when little is unknown', () => {
-  expect(personalizationDimensions(plan, null)).toHaveLength(3);
-  expect(personalizationDimensions(plan, { travelers: { adults: 2 }, dates: { startDate: '2026-07-01' }, preferences: { pace: 'relaxed' } })).toEqual([]);
-});
-it('never re-asks a travel month or hiking preference the traveler already stated', () => {
-  const keys = personalizationDimensions(plan, { dates: { travelMonth: 'October' }, preferences: { fitness: 'easy hikes' } }).map(d => d.key);
-  expect(keys).not.toContain('season');
-  expect(keys).not.toContain('hiking');
-});
-
 it('shows official park-wide guidance first and never a rule that does not apply', () => {
   const tripGuidance = [
     { text: 'During the shuttle season, private vehicles aren’t allowed on Zion Canyon Scenic Drive. Check the current shuttle schedule once your travel dates are set.', applicability: 'date_dependent', source: 'https://www.nps.gov/zion/planyourvisit/zion-canyon-shuttle-system.htm' },

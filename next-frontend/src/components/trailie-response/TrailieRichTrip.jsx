@@ -3,9 +3,10 @@ import { useId, useMemo } from 'react';
 import { getSharedDayHeading } from '@/utils/sharedTripFormat';
 import { tripBases, tripTitle } from '@/lib/tripPresentation';
 import { composeRichTrip } from '@/lib/trailieRichPresentation';
+import { daypartLabel } from '@/lib/dayPresentation';
 import useTripImagery from '@/hooks/useTripImagery';
 import ItineraryMapView, { ITINERARY_MAP_PATH_MODE } from '@/components/itinerary/ItineraryMapView';
-import PersonalizeTrip from './PersonalizeTrip';
+import AdjustTrip from './AdjustTrip';
 import DemoTripActions from '@/components/trailie-demo/DemoTripActions';
 
 function ImageStrip({ images, title }) {
@@ -46,10 +47,9 @@ function CompactDays({ plan, days, updated }) {
                   : <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{stops.slice(0, 3).join(' · ')}{stops.length > 3 ? ` · +${stops.length - 3} more` : ''}</p>
               )}
               {experiences.map((block, j) => (
-                <div key={`experience-${j}`} className="mt-2 text-sm text-[var(--text-secondary)]">
-                  <p>{(block.periods || []).join(' → ')} · {block.label}</p>
-                  <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">Flexible experience · not mapped</p>
-                </div>
+                <p key={`experience-${j}`} className="mt-1 text-sm text-[var(--text-secondary)]">
+                  <span className="text-[var(--text-tertiary)]">{daypartLabel(block.periods)}</span> · {block.label}
+                </p>
               ))}
             </li>
           );
@@ -84,20 +84,20 @@ export default function TrailieRichTrip({
   const plan = response?.canonicalPlan;
   const updatedTurn = refinement?.isRefinement === true;
   const imagery = useTripImagery(plan, { enabled: Boolean(plan?.days?.length) && !updatedTurn });
-  const model = useMemo(() => composeRichTrip(response, refinement, { imagery, planningState }), [response, refinement, imagery, planningState]);
+  const model = useMemo(() => composeRichTrip(response, refinement, { imagery }), [response, refinement, imagery]);
   const headingId = useId();
   if (!model) return null;
-  const { updated, days, images, guidance, map, unmappedCount, dimensions, revision } = model;
+  const { updated, days, images, guidance, map, unmappedCount, revision } = model;
   const title = tripTitle(plan);
   const bases = tripBases(plan);
   const flexibleCount = plan.days.reduce((count, day) => count + (day.dayStructure?.blocks || []).filter(block => block.kind === 'experience').length, 0);
-  // Only the latest accepted trip offers choices; older revisions stay quiet.
-  const personalize = example ? showDemoActions && Boolean(onOpen)
-    : !updated && dimensions.length > 0 && current && Boolean(onFollowup);
+  // Only the latest accepted trip offers refinement; older revisions stay quiet.
+  // Samples/Demo get "Make this trip yours"; a live trip is already the traveler's own.
+  const adjust = !example && current && Boolean(onFollowup);
   const status = updated ? 'Trip updated' : 'Trip created';
   return (
     <section aria-label={status} data-presentation-kind="rich_trip"
-      data-blocks-rendered={[...model.blocks.filter(b => b !== 'trip_artifact' || onOpen), ...(personalize ? ['personalize_trip'] : [])].join(',')}
+      data-blocks-rendered={[...model.blocks.filter(b => b !== 'trip_artifact' || onOpen), ...(adjust ? ['adjust_trip'] : [])].join(',')}
       className="w-full min-w-0 border-t pt-5 text-[var(--text-primary)]" style={{ borderColor: 'var(--border)' }}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-green)]" {...(current ? { role: 'status' } : {})}>{status}</p>
       <h3 id={headingId} className="mt-2 text-xl font-semibold leading-tight sm:text-2xl" style={{ fontFamily: 'var(--font-display)' }}>{title}</h3>
@@ -126,9 +126,9 @@ export default function TrailieRichTrip({
 
       {example && showDemoActions && onOpen && <DemoTripActions key={revision} plan={plan} onOpen={onOpen} />}
 
-      {personalize && !example && (
-        <PersonalizeTrip key={revision} dimensions={dimensions} onSubmit={onFollowup} current={current}
-          disabled={disabled} example={example} guestExhausted={guestExhausted} onRequireAccount={onRequireAccount} />
+      {adjust && (
+        <AdjustTrip key={revision} onSubmit={onFollowup} current={current}
+          disabled={disabled} guestExhausted={guestExhausted} onRequireAccount={onRequireAccount} />
       )}
 
       {onOpen && !example && (

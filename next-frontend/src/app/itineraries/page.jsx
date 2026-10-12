@@ -44,9 +44,9 @@ export default function ItinerariesPage() {
     <script type="application/ld+json">{JSON.stringify(schema).replace(/</g, '\u003c')}</script>
     <Header />
     <main className="public-shell min-w-0 py-12 sm:py-16">
-      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent-green)]">Explore with Trailie</p>
-      <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl" style={{ fontFamily: 'var(--font-display)' }}>Sample itineraries for your next trip</h1>
-      <p className="mt-5 max-w-2xl text-lg leading-8 text-[var(--text-secondary)]">Real trips planned with Trailie. Browse one, explore the map, then make it yours.</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent-green)]">Planned with Trailie</p>
+      <h1 className="mt-4 max-w-[48rem] text-4xl font-semibold tracking-tight text-balance sm:text-5xl" style={{ fontFamily: 'var(--font-display)' }}>Sample itineraries for your next trip</h1>
+      <p className="mt-5 max-w-[40rem] text-lg leading-8 text-[var(--text-secondary)]">Real trips planned with Trailie. Browse one, explore the itinerary and map, then make your own version.</p>
       <ItineraryCatalog samples={PUBLIC_ITINERARIES} />
     </main>
     <Footer />

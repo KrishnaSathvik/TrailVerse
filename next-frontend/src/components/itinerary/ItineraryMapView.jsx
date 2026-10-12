@@ -10,6 +10,7 @@ import {
   reportMapsRuntimeReady,
   subscribeMapsRuntimeStatus,
 } from '@/lib/mapsRuntimeStatus';
+import MapFailureBoundary from '@/components/itinerary/MapFailureBoundary';
 
 export const ITINERARY_MAP_PATH_MODE = Object.freeze({
   DIRECTIONS: 'directions',
@@ -68,7 +69,7 @@ function trailieControlOptions(controlsPlacement) {
  * InfoWindows are lightweight — just name + "Open in Maps" link.
  * All stop management (move, remove) is handled via cards.
  */
-export default function ItineraryMapView({
+function ItineraryMapViewInner({
   days,
   activeDayId = 'all',
   parkCenter,
@@ -599,4 +600,8 @@ function escapeHtml(s) {
     '"': '&quot;',
     "'": '&#39;',
   })[c]);
+}
+
+export default function ItineraryMapView(props) {
+  return <MapFailureBoundary><ItineraryMapViewInner {...props} /></MapFailureBoundary>;
 }

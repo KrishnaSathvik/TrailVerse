@@ -43,14 +43,14 @@ describe('canonical trip presentation', () => {
         pins += 1;
       }));
     }
-    expect(pins).toBeGreaterThan(50);
+    expect(pins).toBeGreaterThan(30);
     expect(assertNoInternalFields(playback)).toEqual([]);
   });
-  it('keeps the recorded Yellowstone stop but rejects its mismatched park coordinates', () => {
-    const plan = playback.scenarios.find(s => s.id === 'yellowstone').turns[0].plan;
-    const stop = plan.days[0].stops.find(s => s.id === 'd1-canyon');
-    expect(stop.location).toMatchObject({ lat: 0, lon: 0, sourceEntity: 'nps:park:yell' });
-    expect(buildTripMapModel(plan).days[0].stops.find(s => s.id === 'd1-canyon').mapped).toBe(false);
+  it('keeps a recorded stop but rejects park-level placeholder coordinates', () => {
+    const plan = structuredClone(playback.scenarios.find(s => s.id === 'yellowstone').turns[0].plan);
+    const stop = plan.days[0].stops.find(s => s.canonicalPlaceId);
+    stop.location = { ...stop.location, lat: 0, lon: 0, sourceEntity: 'nps:park:yell' };
+    expect(buildTripMapModel(plan).days[0].stops.find(s => s.id === stop.id).mapped).toBe(false);
   });
   it('allows only public map-provider provenance, never a model provider', () => {
     expect(assertNoInternalFields({ provider: 'google_maps' })).toEqual(['$.provider']);

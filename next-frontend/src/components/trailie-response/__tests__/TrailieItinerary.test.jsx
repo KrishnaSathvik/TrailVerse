@@ -27,19 +27,17 @@ describe('TrailieItinerary', () => {
     vi.unstubAllEnvs();
   });
 
-  it('uses one quiet timeline surface with mobile metadata above stop content', () => {
+  it('uses one quiet timeline surface with the daypart above each activity and no evidence jargon', () => {
     render(<TrailieItinerary plan={PLAN} />);
     const itinerary = screen.getByLabelText('Trip itinerary');
     expect(itinerary).not.toHaveClass('rounded-2xl', 'border');
 
     const stop = screen.getByText('Pa’rus Trail').closest('li');
-    expect(stop).toHaveClass('sm:grid-cols-[9rem_minmax(0,1fr)]');
     expect(stop.firstElementChild).toHaveAttribute('aria-hidden', 'true');
-    const meta = screen.getByText('Late afternoon').closest('div');
-    expect(within(meta).getByText('1h 30m')).toBeInTheDocument();
-    const content = screen.getByText('Pa’rus Trail').parentElement;
-    expect(meta.compareDocumentPosition(content) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText('Official guidance')).toBeInTheDocument();
+    const daypart = within(stop).getByText('Late afternoon');
+    expect(within(stop).getByText(/1 hr 30 min/)).toBeInTheDocument();
+    expect(daypart.compareDocumentPosition(screen.getByText('Pa’rus Trail')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText('Official guidance')).not.toBeInTheDocument();
   });
 
   it('keeps practical guidance visible and only adds textually distinct why copy', () => {
