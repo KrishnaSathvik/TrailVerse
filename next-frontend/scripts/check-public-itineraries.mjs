@@ -4,6 +4,8 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
+// Map tiles have their own readiness checks below; these are editorial images.
+const CONTENT_IMAGES = 'main img:not(.gm-style img)';
 const samples = JSON.parse(readFileSync(join(here, '../src/data/public-itineraries/index.json'), 'utf8'));
 const output = join(here, '../../artifacts/public-itinerary-browser-checks');
 mkdirSync(output, { recursive: true });
@@ -19,14 +21,15 @@ try {
       if (/\/api\/(trips|conversations|ai\/chat)/.test(request.url())) forbiddenRequests.push(new URL(request.url()).pathname);
     });
     for (const path of ['/itineraries', ...samples.filter(sample => !process.env.ITINERARY_CHECK_SLUG || sample.slug === process.env.ITINERARY_CHECK_SLUG).map(sample => `/itineraries/${sample.slug}`)]) {
-      const response = await page.goto(`http://127.0.0.1:3000${path}`, { waitUntil: 'networkidle' });
+      const response = await page.goto(`http://127.0.0.1:3000${path}`, { waitUntil: 'load' });
+      await page.waitForTimeout(1500);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-      for (const image of await page.locator('main img').all()) {
+      for (const image of await page.locator(CONTENT_IMAGES).all()) {
         await image.scrollIntoViewIfNeeded();
         await image.evaluate(async element => { try { await element.decode(); } catch { /* reported below */ } });
       }
       await page.evaluate(() => window.scrollTo(0, 0));
-      const badImages = await page.locator('main img').evaluateAll(images => images.filter(image => !image.complete || image.naturalWidth === 0).map(image => image.src));
+      const badImages = await page.locator(CONTENT_IMAGES).evaluateAll(images => images.filter(image => !image.complete || image.naturalWidth === 0).map(image => image.src));
       const interactionErrors = [];
       const invalidLinks = await page.locator('main a[href*="entry=new-trip"]').evaluateAll(links => links.filter(link => {
         const url = new URL(link.href);
@@ -34,16 +37,26 @@ try {
       }).map(link => link.href));
       if (path !== '/itineraries') {
         const sample = samples.find(item => path === `/itineraries/${item.slug}`);
-        const expectedBlocks = sample.plan.days.reduce((count, day) => count + (day.dayStructure?.blocks?.length || 0), 0);
-        if (await page.locator('[data-day-block]').count() !== expectedBlocks) interactionErrors.push('Day structure missing from public rendering');
+        if (await page.getByRole('tab', { name: 'Overview', exact: true }).getAttribute('aria-selected') !== 'true') interactionErrors.push('Workspace did not open on Overview');
+        // One day at a time; every canonical stop appears exactly once as a traveler-facing item.
+        for (const day of sample.plan.days) {
+          await page.getByRole('tab', { name: `Day ${day.dayNumber}`, exact: true }).click();
+          const items = await page.locator('[data-day-item]').count();
+          if (!items) interactionErrors.push(`Day ${day.dayNumber} rendered no itinerary items`);
+          // A continuous outing may list several places inside one item; each place must still appear.
+          const panel = page.getByRole('tabpanel', { name: `Day ${day.dayNumber}`, exact: true });
+          for (const stop of day.stops) {
+            if (!(await panel.locator('[data-day-item]', { hasText: stop.name }).count())) interactionErrors.push(`Day ${day.dayNumber} is missing ${stop.name}`);
+          }
+          if (await page.getByText(/not mapped|Flexible experience ·/).count()) interactionErrors.push(`Day ${day.dayNumber} shows implementation wording`);
+        }
         const mappedDay = sample.plan.days.find(day => day.stops.some(stop => stop.location?.status === 'resolved'));
         const mappedDayNumber = mappedDay?.dayNumber || 1;
-        const dayButtons = page.getByRole('group', { name: 'Trip days', exact: true });
-        await dayButtons.getByRole('button', { name: 'Day 1', exact: true }).click();
-        if (await dayButtons.getByRole('button', { name: 'Day 1', exact: true }).getAttribute('aria-pressed') !== 'true') interactionErrors.push('Day selection failed');
-        await dayButtons.getByRole('button', { name: 'All', exact: true }).click();
+        const dayButtons = page.getByRole('group', { name: 'Map days', exact: true });
         await page.getByRole('tab', { name: 'Map', exact: true }).click();
         await page.getByRole('region', { name: 'Trip map view' }).waitFor();
+        // Opening the map from a day shows that day; the full-trip assertions need All days.
+        await dayButtons.getByRole('button', { name: 'All days', exact: true }).click();
         try {
           await page.locator('[aria-label="Trip map view"] .gm-style').waitFor({ timeout: 20000 });
           await page.locator('[aria-label="Trip map view"] .gm-style').scrollIntoViewIfNeeded();
@@ -75,8 +88,8 @@ try {
           await page.locator(`[aria-label="Trip map view"] [title^="Day ${mappedDayNumber} · Stop "]`).first().click();
           await page.locator('[aria-label="Selected stop"]').waitFor({ state: 'visible', timeout: 10000 });
         } catch (error) { interactionErrors.push(`Day map: ${error.message.split('\n')[0]}`); }
-        await dayButtons.getByRole('button', { name: 'All', exact: true }).click();
-        await page.getByRole('tab', { name: 'Itinerary', exact: true }).click();
+        await dayButtons.getByRole('button', { name: 'All days', exact: true }).click();
+        await page.getByRole('tab', { name: 'Overview', exact: true }).click();
       }
       await page.screenshot({ path: join(output, `${path.split('/').filter(Boolean).join('-')}-${width}.png`), fullPage: true });
       results.push({ width, path, status: response.status(), overflow, badImages, invalidLinks, interactionErrors, forbiddenRequests: [...forbiddenRequests] });

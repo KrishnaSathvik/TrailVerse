@@ -73,6 +73,9 @@ export function buildPublicSample(capture, concept, review) {
   }
   if (!review?.description?.trim()) errors.push('Missing reviewed card description');
   if (errors.length) throw new Error(errors.join('\n'));
+  // Same rule as the Demo installer (sanitizePlan): owner-facing diagnostics never ship in a public fixture.
+  const plan = exportPublicPlan(capture.plan);
+  delete plan.feasibilityIssues;
   return {
     slug: concept.slug,
     title: concept.title,
@@ -80,6 +83,6 @@ export function buildPublicSample(capture, concept, review) {
     description: review.description,
     tags: shared.strings(concept.tags),
     images: capture.images.map(image),
-    plan: exportPublicPlan(capture.plan),
+    plan,
   };
 }
