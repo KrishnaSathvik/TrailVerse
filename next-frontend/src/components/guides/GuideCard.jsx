@@ -10,9 +10,11 @@ const GuideCard = memo(({ guide, href, ctaLabel = 'Read guide →' }) => {
   return (
     <Link
       href={linkHref}
-      className="public-editorial-section public-discovery-link group flex h-full min-w-0 flex-col py-6"
+      className="public-discovery-link group flex h-full min-w-0 flex-col rounded-xl border p-6"
       style={{
         borderColor: 'var(--border)',
+        backgroundColor: 'var(--surface)',
+        overflowWrap: 'anywhere',
       }}
     >
       {guide.category ? (
@@ -28,13 +30,13 @@ const GuideCard = memo(({ guide, href, ctaLabel = 'Read guide →' }) => {
       ) : null}
 
       <h3
-        className="text-xl sm:text-2xl font-bold line-clamp-2 mb-3 group-hover:text-forest-500 transition"
+        className="text-xl font-semibold leading-snug mb-3 group-hover:text-forest-500 transition"
         style={{ color: 'var(--text-primary)' }}
       >
         {guide.title}
       </h3>
 
-      <p className="text-sm sm:text-base leading-relaxed line-clamp-3 flex-1" style={{ color: 'var(--text-secondary)' }}>
+      <p className="text-sm sm:text-base leading-relaxed flex-1" style={{ color: 'var(--text-secondary)' }}>
         {excerpt}
       </p>
 

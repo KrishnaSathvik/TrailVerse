@@ -5,6 +5,8 @@
 const MEANINGS = Object.freeze({
   traveler_required_place_unresolved: 'A traveler-requested outing was omitted. Do not silently substitute: retain it honestly as a non-spatial experience, ground it as a real stop, or explain the limitation.',
   stop_identity_unresolved: 'One or more new or changed stops could not be matched to grounded place evidence.',
+  us_geography_unsupported: 'Trailie currently saves U.S. trips only. This proposal had no U.S.-grounded places (including experience-only international plans). Explain the U.S. scope naturally and do not present a saved trip.',
+  foreign_place_in_plan: 'A confirmed non-U.S. place cannot be saved on the itinerary. Keep foreign options in conversation only, or build a U.S.-grounded plan without substituting a false domestic pin.',
   stop_name_identity_mismatch: 'A stop name does not match the place its evidence reference identifies.',
   unsupported_experience_map_anchor: 'A mapped stop claims an experience represented by a different place, but no trusted evidence establishes that relationship. Keep the experience pinless, choose another grounded outing, or use a supported experience↔map-anchor link. Do not invent proximity or similar-name links.',
   unsupported_trip_schema_version: 'This saved trip uses a TripPlan schema version this runtime does not support. Do not reinterpret or downgrade it. Keep the trip unchanged and explain the compatibility limitation.',
@@ -32,6 +34,12 @@ const MEANINGS = Object.freeze({
   duration_invalid: 'A stop is missing a positive duration in minutes.',
   duration_exceeds_source: 'A stop duration exceeds what the source supports.',
   official_closure_conflict: 'Official information reports a closure for one of the proposed places.',
+  // Hard traveler restrictions. restrictionFindings names each affected stop and
+  // the evidence behind the verdict; groundedPlaces shows each place's eligibility.
+  constraint_eligibility_unknown: 'The traveler set a hard restriction (activeRestrictions), and the returned evidence does not confirm the stops listed in restrictionFindings meet it. Remove those stops or replace them with grounded places whose restrictionEligibility is "meets" or "not_applicable". Do not re-add the same outing as a flexible experience to avoid the check. If too few eligible places remain, keep fewer outings and say so plainly; tell the traveler what could not be confirmed.',
+  exposure_constraint_violation: 'Official evidence shows exposed terrain for the stops listed in restrictionFindings, which conflicts with the traveler’s restriction. Remove them, and do not re-add them as flexible experiences. Use places whose restrictionEligibility is "meets" or "not_applicable", or explain the limitation.',
+  mobility_eligibility_unknown: 'The traveler set a walking limit, and the returned evidence does not confirm the distance of the stops in restrictionFindings. Replace or remove them; do not restate them as flexible experiences.',
+  mobility_distance_exceeds_limit: 'Official distance for the stops in restrictionFindings exceeds the traveler’s walking limit. Remove them or choose shorter grounded options.',
   walking_minutes_not_grounded: 'A stop’s walking time could not be verified against the traveler’s walking limit.',
   unbound_drive_claim: 'The proposal stated drive times; drive times come only from verified routing.',
   daily_drive_limit_exceeded: 'Verified driving on a day exceeds the traveler’s daily driving limit.',

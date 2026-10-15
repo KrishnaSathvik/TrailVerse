@@ -20,7 +20,7 @@ export default function TestimonialSubmitSection() {
 
   return (
     <section id="submit-testimonial" className="info-section scroll-mt-24 border-t" style={{ borderColor: 'var(--border)' }}>
-      <div className="max-w-2xl">
+      <div className="public-content">
         <h2 className="text-2xl font-bold mb-2 text-left" style={{ color: 'var(--text-primary)' }}>
           Have a TrailVerse story to share?
         </h2>

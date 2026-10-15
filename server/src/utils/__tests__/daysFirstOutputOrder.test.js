@@ -70,7 +70,7 @@ describe('A — the tool asks for days first, and changes nothing else', () => {
     expect(schema.properties.intro.description).toMatch(/traveler-facing opening/i);
     expect(schema.properties.intro.description).toMatch(/1.{0,3}3 sentences/i);
     expect(schema.properties.narrativeSections.description).toMatch(/after_plan/i);
-    expect(schema.properties.narrativeSections.description).toMatch(/why this sequence works/i);
+    expect(schema.properties.narrativeSections.description).toMatch(/material issue/i);
   });
 
   test('the day and stop contracts are untouched', () => {

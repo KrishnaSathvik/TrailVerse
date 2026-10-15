@@ -5,7 +5,9 @@
 const { evaluateHardAccessEligibility, evaluateHardExposureEligibility, evaluateHardMobilityEligibility } = require('./hardConstraintEligibility');
 const { runtimeMobilityField, resolveRuntimeFitness } = require('./canonicalRuntimeProjection');
 const { isAvoidExposureActive } = require('./planningInputContract');
-function evaluateCandidateConstraints({ records = [], name, type, constraints = null, bundle = null }) {
+// `exposureRelevance` ('judged'|'exempt'), when given, is the model-first
+// record-based relevance decision; omitted, the legacy name-based test applies.
+function evaluateCandidateConstraints({ records = [], name, type, constraints = null, bundle = null, exposureRelevance = null }) {
   const values = records.map(row => row.claim?.normalizedValue || {});
     const stop = { name: name, type: type };
     const reasons = [...evaluateHardAccessEligibility(stop, { constraints, bundle }).reasonCodes];
@@ -20,7 +22,7 @@ function evaluateCandidateConstraints({ records = [], name, type, constraints = 
     const suitability = { ...stop, exposureLevel: hardest('exposureLevel', exposures),
       walkingDistanceMiles: distances.length ? Math.max(...distances) : null };
     reasons.push(...evaluateHardExposureEligibility(suitability, {
-      hardConstraintActive: isAvoidExposureActive(constraints, ''),
+      hardConstraintActive: isAvoidExposureActive(constraints, ''), relevance: exposureRelevance,
     }).reasonCodes);
     reasons.push(...evaluateHardMobilityEligibility(suitability, {
       maxWalkMilesPerSegment: runtimeMobilityField(constraints, 'maxWalkMilesPerSegment'),

@@ -36,7 +36,7 @@ function writeSlugs(parks) {
   );
 }
 
-function useExistingFallback(reason) {
+function retainExistingSlugs(reason) {
   const existing = loadExistingSlugs();
   if (!existing) {
     throw new Error(`${reason} and no existing src/data/park-slugs.json to fall back to`);
@@ -55,17 +55,17 @@ async function main() {
       signal: AbortSignal.timeout(120_000),
     });
   } catch (err) {
-    useExistingFallback(`Parks API request failed (${err.message})`);
+    retainExistingSlugs(`Parks API request failed (${err.message})`);
     return;
   }
 
   if (res.status === 429 || res.status >= 500) {
-    useExistingFallback(`Parks API returned ${res.status}`);
+    retainExistingSlugs(`Parks API returned ${res.status}`);
     return;
   }
 
   if (!res.ok) {
-    useExistingFallback(`Parks API returned ${res.status}`);
+    retainExistingSlugs(`Parks API returned ${res.status}`);
     return;
   }
 
@@ -77,7 +77,7 @@ async function main() {
   }));
 
   if (!parks.length) {
-    useExistingFallback('Parks API returned an empty list');
+    retainExistingSlugs('Parks API returned an empty list');
     return;
   }
 

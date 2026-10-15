@@ -16,7 +16,7 @@ import { getSharedDayHeading } from '@/utils/sharedTripFormat';
  */
 export default function TripWorkspaceView({
   plan, title, view = 'itinerary', onViewChange, actions = null, editor = null, initialDayId = 'overview',
-  publicMode = false, eyebrow = null, lead = null, embedded = false, tabsAccessory = null,
+  publicMode = false, eyebrow = null, lead = null, embedded = false, tabsAccessory = null, sampleReadingMode = false,
 }) {
   const map = useMemo(() => buildTripMapModel(plan), [plan]);
   const topRef = useRef(null);
@@ -43,7 +43,7 @@ export default function TripWorkspaceView({
   return (
     <div className={embedded ? 'min-w-0 px-4 pb-12 sm:px-8' : 'public-shell min-w-0 py-6 sm:py-10'} data-trip-workspace>
       <header ref={topRef} className={`flex flex-wrap items-start justify-between gap-4 ${embedded ? 'pt-6' : ''}`}>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent-green)]">{eyebrow || (publicMode ? 'Sample itinerary' : 'Your trip')}</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl" style={{ fontFamily: 'var(--font-display)' }}>{displayTitle}</h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
@@ -62,7 +62,7 @@ export default function TripWorkspaceView({
         {tabsAccessory}
       </div>
 
-      {tab === 'overview' && <TripOverview plan={plan} map={map} title={displayTitle} onOpenDay={openTab} onOpenMap={() => openTab('map')} />}
+      {tab === 'overview' && <TripOverview sampleReadingMode={sampleReadingMode} plan={plan} map={map} title={displayTitle} onOpenDay={openTab} onOpenMap={() => openTab('map')} />}
       {dayIndex >= 0 && <div role="tabpanel" aria-label={`Day ${map.days[dayIndex].dayNumber}`}
         className={`grid gap-8 ${map.days[dayIndex].mappedCount > 0 ? 'lg:grid-cols-[minmax(0,44rem)_minmax(0,1fr)]' : ''}`}>
         <div className="min-w-0 max-w-[44rem]">
@@ -102,42 +102,51 @@ function Tab({ active, children, onClick }) {
 }
 
 /** Trip-wide planning dependencies vs grounded operational rules, each said once. */
-export function TripGuidance({ plan, headingLevel = 'h2' }) {
-  const H = headingLevel;
+export function TripGuidance({ plan, headingLevel = 'h2', collapsible = false, showDateReminder = false }) {
+  const H = collapsible ? 'summary' : headingLevel;
+  const Section = collapsible ? 'details' : 'section';
   const sections = (plan?.narrativeSections || []).filter(s => s?.markdown?.trim());
   const rules = groundedTripGuidance(plan);
   const roadNote = (plan?.days || []).some(hasUnknownRoadAccess);
   const requirements = (plan?.requirements || []).filter(Boolean);
   // Day notes no longer repeat "unconfirmed"; the trip says it once here.
-  const confirmNote = planHasQuietedUncertainty(plan);
+  const confirmNote = showDateReminder || planHasQuietedUncertainty(plan);
   return <>
-    {sections.length > 0 && <section aria-label="Before booking" className="min-w-0">
-      <H className="text-lg font-semibold">Before booking</H>
+    {sections.length > 0 && <Section aria-label="Before booking" className="min-w-0">
+      <H className={collapsible ? "min-h-11 cursor-pointer py-3 text-sm font-semibold" : "text-lg font-semibold"}>Before booking</H>
       <div className="mt-3 space-y-4 text-sm leading-6 text-[var(--text-secondary)]">
         {sections.map((section, i) => <div key={i}>
-          {section.heading && !/^(before booking|things to know)$/i.test(section.heading) && <p className="mb-1 font-semibold text-[var(--text-primary)]">{section.heading}</p>}
+          {section.heading && !/^(before booking|before you book|before you go|things to know)$/i.test(section.heading) && <p className="mb-1 font-semibold text-[var(--text-primary)]">{section.heading}</p>}
           <TrailieMarkdown text={section.markdown} />
         </div>)}
       </div>
-    </section>}
-    {(rules.length > 0 || roadNote || confirmNote || requirements.length > 0) && <section aria-label="Things to know" className="min-w-0">
-      <H className="text-lg font-semibold">Things to know</H>
+    </Section>}
+    {(rules.length > 0 || roadNote || confirmNote || requirements.length > 0) && <Section aria-label="Things to know" className="min-w-0">
+      <H className={collapsible ? "min-h-11 cursor-pointer py-3 text-sm font-semibold" : "text-lg font-semibold"}>Things to know</H>
       <ItineraryRequirements requirements={requirements} compact />
       <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--text-secondary)]">
         {rules.map(item => <li key={item.text}>{item.text} <a href={item.source} target="_blank" rel="noreferrer" className="text-[var(--text-tertiary)] underline underline-offset-2">Source</a></li>)}
         {roadNote && <li>{ROAD_ACCESS_NOTE.replace(/^Getting around: /, '')}</li>}
-        {confirmNote && <li>Trail conditions, opening hours and drive times change. Confirm them for your dates before setting out.</li>}
+        {confirmNote && <li>{showDateReminder ? 'Seasonal access, reservations and conditions change; confirm them for your dates.' : 'Trail conditions, opening hours and drive times change. Confirm them for your dates before setting out.'}</li>}
       </ul>
-    </section>}
+    </Section>}
   </>;
 }
 
-function TripOverview({ plan, map, title, onOpenDay, onOpenMap }) {
+function TripOverview({ plan, map, title, onOpenDay, onOpenMap, sampleReadingMode = false }) {
+  // Paragraph breaks only: preserve Trailie's wording and travel assumptions.
+  const sentences = plan.intro ? Array.from(new Intl.Segmenter('en', { granularity: 'sentence' }).segment(plan.intro), item => item.segment) : [];
+  const overviewParagraphs = [sentences.slice(0, 2).join('').trim(), sentences.slice(2).join('').trim()].filter(Boolean);
   return (
     <div role="tabpanel" aria-label="Trip overview" className="pt-6">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className={sampleReadingMode ? "max-w-[52rem]" : "grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]"}>
         <div className="min-w-0">
-          {plan.intro && <p className="max-w-[var(--public-reading-width)] text-[15px] leading-7 text-[var(--text-secondary)]">{plan.intro}</p>}
+          {plan.intro && (sampleReadingMode
+            ? <section aria-label="Overview" className="max-w-[48rem] text-[15px] leading-7 text-[var(--text-secondary)]">
+                <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Overview</h2>
+                <div className="space-y-3">{overviewParagraphs.map((paragraph, i) => <p key={i}>{paragraph}</p>)}</div>
+              </section>
+            : <p className="max-w-[var(--public-reading-width)] text-[15px] leading-7 text-[var(--text-secondary)]">{plan.intro}</p>)}
           <ol aria-label="Trip days" className={`${plan.intro ? 'mt-6' : ''} divide-y divide-[var(--border)] border-y border-[var(--border)]`}>
             {plan.days.map((day, i) => {
               const heading = getSharedDayHeading(day, i);
@@ -145,7 +154,11 @@ function TripOverview({ plan, map, title, onOpenDay, onOpenMap }) {
                 <button onClick={() => onOpenDay(map.days[i].id)} className="group flex min-h-14 w-full items-baseline gap-4 py-3 text-left">
                   <span className="w-12 shrink-0 text-xs font-semibold uppercase tracking-wider text-[var(--accent-green-dark)]">{heading.badge}</span>
                   <span className="min-w-0 flex-1">
+                    {sampleReadingMode && day.dayStructure?.type && <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">{day.dayStructure.type.replaceAll('_', ' ')} day</span>}
                     <span className="block text-[15px] font-semibold leading-snug group-hover:text-[var(--accent-green)]">{heading.title || day.title || 'Planned day'}</span>
+                    {day.dayStructure?.summary && (
+                      <span className="mt-0.5 block text-sm leading-5 text-[var(--text-secondary)] line-clamp-2">{day.dayStructure.summary}</span>
+                    )}
                     {day.overnightLocation && <span className="mt-0.5 block text-xs text-[var(--text-tertiary)]">Stay · {day.overnightLocation}</span>}
                   </span>
                   <span aria-hidden="true" className="text-[var(--text-tertiary)] group-hover:text-[var(--accent-green)]">→</span>
@@ -155,7 +168,7 @@ function TripOverview({ plan, map, title, onOpenDay, onOpenMap }) {
           </ol>
         </div>
         {/* No map instance here: the interactive (billable) map loads only on the Map tab. */}
-        <aside aria-label="Trip at a glance" className="min-w-0 self-start rounded-xl border border-[var(--border)] p-5">
+        {!sampleReadingMode && <aside aria-label="Trip at a glance" className={`min-w-0 self-start rounded-xl border border-[var(--border)] p-5 ${sampleReadingMode ? "order-first lg:order-last" : ""}`}>
           <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">At a glance</p>
           <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
             <dt className="text-[var(--text-tertiary)]">Length</dt><dd>{plan.days.length} {plan.days.length === 1 ? 'day' : 'days'}</dd>
@@ -163,11 +176,14 @@ function TripOverview({ plan, map, title, onOpenDay, onOpenMap }) {
             <dt className="text-[var(--text-tertiary)]">Map</dt><dd>{map.mappedCount} {map.mappedCount === 1 ? 'place' : 'places'} on the map</dd>
           </dl>
           {map.hasAnyMappedStop && <button onClick={onOpenMap} aria-label={`Open the map for ${title}`} className="mt-4 min-h-10 text-sm font-semibold text-[var(--accent-green)]">Open map →</button>}
-        </aside>
+        </aside>}
       </div>
-      <div className="mt-10 grid gap-8 border-t border-[var(--border)] pt-8 lg:grid-cols-2">
+      {sampleReadingMode ? <section aria-label="Before you go" className="mt-8 border-t border-[var(--border)] pt-6">
+        <h2 className="text-lg font-semibold">Before you go</h2>
+        <div className="mt-4 grid gap-6 lg:grid-cols-2"><TripGuidance plan={plan} headingLevel="h3" showDateReminder /></div>
+      </section> : <div className="mt-10 grid gap-8 border-t border-[var(--border)] pt-8 lg:grid-cols-2">
         <TripGuidance plan={plan} />
-      </div>
+      </div>}
     </div>
   );
 }
@@ -200,7 +216,10 @@ function TripMapPanel({ plan, map, title, mapDay, setMapDay, onSeeDay }) {
         {visibleMapDays.map(d => <span key={d.id} className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full" style={{ background: DAY_COLORS[map.days.indexOf(d) % DAY_COLORS.length] }} />Day {d.dayNumber} · {d.mappedCount} {d.mappedCount === 1 ? 'place' : 'places'}</span>)}
       </div>
       {(hasConnectors || flexible > 0) && <p className="mt-2 text-xs text-[var(--text-secondary)]">
-        {hasConnectors ? 'Dashed lines connect itinerary stops. ' : ''}{flexible > 0 ? `${flexible} flexible ${flexible === 1 ? 'activity isn’t' : 'activities aren’t'} shown on the map.` : ''}
+        {hasConnectors ? 'Dashed lines connect itinerary stops. ' : ''}
+        {flexible > 0
+          ? `${flexible} flexible ${flexible === 1 ? 'experience stays' : 'experiences stay'} in the day plan — not missing map content.`
+          : ''}
       </p>}
       {missingStops.length > 0 && <details className="mt-3 text-sm text-[var(--text-secondary)]">
         <summary className="w-fit cursor-pointer rounded-lg border border-[var(--border)] px-3 py-2">{missingStops.length} {missingStops.length === 1 ? 'place' : 'places'} not shown on map</summary>

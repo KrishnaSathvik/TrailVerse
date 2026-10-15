@@ -184,7 +184,7 @@ const ProfileHero = ({
             </h1>
 
             <p
-              className="mt-4 max-w-3xl text-center text-lg sm:text-xl lg:text-left"
+              className="mt-4 public-content text-center text-lg sm:text-xl lg:text-left"
               style={{ color: 'var(--text-secondary)' }}
             >
               Manage your account details, saved parks, reviews, and planning history in one place.
@@ -241,7 +241,7 @@ const ProfileHero = ({
 
             {profileData.bio && (
               <p
-                className="mt-5 max-w-2xl text-center text-sm leading-7 lg:text-left"
+                className="mt-5 public-content text-center text-sm leading-7 lg:text-left"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 {profileData.bio}

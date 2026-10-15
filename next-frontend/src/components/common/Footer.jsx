@@ -148,14 +148,12 @@ const Footer = () => {
             <FooterLink href="/plan-ai">Plan with Trailie</FooterLink>
             <FooterLink href="/itineraries">Sample Itineraries</FooterLink>
             <FooterLink href="/explore">Explore Parks</FooterLink>
-            <FooterLink href="/where-next">Where Next</FooterLink>
             <FooterLink href="/features">Features</FooterLink>
           </FooterSection>
 
           <FooterSection title="Resources">
             <FooterLink href="/blog">Blog</FooterLink>
             <FooterLink href="/guides">Planning Guides</FooterLink>
-            <FooterLink href="/magazine">Magazine</FooterLink>
             <li>
               <a
                 href={reportHref('/reports/national-parks-2025.html', { from: reportFrom })}
@@ -174,7 +172,7 @@ const Footer = () => {
                 Crowd Calendar
               </a>
             </li>
-            <FooterLink href="/newsletter">Newsletter</FooterLink>
+            <FooterLink href="/where-next">Where Next?</FooterLink>
           </FooterSection>
 
           <FooterSection title="Company">

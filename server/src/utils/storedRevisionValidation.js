@@ -115,6 +115,11 @@ function extractStoredItineraryData(plan) {
     if (PLAN_ONLY_FIELDS.has(k) || k === '_id' || k === '__v') continue;
     out[k] = v;
   }
+  if (out.tripSchemaVersion === require('../../../shared/tripSchemaVersion.cjs').TRIP_SCHEMA_VERSION
+    && hashPayload(out) !== source.itineraryHash) {
+    const { tripSchemaVersion, ...legacyPayload } = out;
+    if (hashPayload(legacyPayload) === source.itineraryHash) return legacyPayload;
+  }
   return out;
 }
 

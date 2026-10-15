@@ -80,6 +80,7 @@ export function buildPublicSample(capture, concept, review) {
     slug: concept.slug,
     title: concept.title,
     prompt: concept.prompt,
+    response: capture.response,
     description: review.description,
     tags: shared.strings(concept.tags),
     images: capture.images.map(image),

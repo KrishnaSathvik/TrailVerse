@@ -783,7 +783,7 @@ const DailyFeedPage = () => {
                 <p className="text-[0.95rem] font-medium text-white/95 [text-shadow:0_1px_12px_rgba(0,0,0,0.55)] sm:text-2xl sm:text-white/90 sm:[text-shadow:none]">
                   Your daily briefing
                 </p>
-                <p className="max-w-3xl text-sm leading-relaxed text-white/90 text-pretty [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] sm:text-lg sm:text-white/78 sm:leading-normal sm:text-balance sm:[text-shadow:none]">
+                <p className="public-content text-sm leading-relaxed text-white/90 text-pretty [text-shadow:0_1px_10px_rgba(0,0,0,0.5)] sm:text-lg sm:text-white/78 sm:leading-normal sm:text-balance sm:[text-shadow:none]">
                   <span className="sm:hidden">
                     Weather, alerts, and tips for today&apos;s featured park.
                   </span>

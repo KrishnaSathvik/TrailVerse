@@ -112,10 +112,25 @@ function campgroundsToGeoJson(campgrounds, selectedCampground) {
   return { type: 'FeatureCollection', features };
 }
 
+function parkCategoryFilter(showNationalParks, showOtherSites) {
+  if (showNationalParks && showOtherSites) return null;
+  if (showNationalParks) return ['==', ['to-number', ['get', 'isNationalPark']], 1];
+  if (showOtherSites) return ['==', ['to-number', ['get', 'isNationalPark']], 0];
+  return ['==', ['get', 'parkCode'], ''];
+}
+
+function parkLayerFilter(isSelected, showNationalParks, showOtherSites) {
+  const selected = ['==', ['get', 'isSelected'], isSelected ? 1 : 0];
+  const category = parkCategoryFilter(showNationalParks, showOtherSites);
+  return category ? ['all', selected, category] : selected;
+}
+
 export default function MapCanvas({
   parks,
   places = [],
   showPlaces = true,
+  showNationalParks = true,
+  showOtherSites = true,
   campgrounds = [],
   showCampgrounds = true,
   selectedPark,
@@ -142,6 +157,8 @@ export default function MapCanvas({
   const selectedPlaceRef = useRef(selectedPlace);
   const selectedCampgroundRef = useRef(selectedCampground);
   const showPlacesRef = useRef(showPlaces);
+  const showNationalParksRef = useRef(showNationalParks);
+  const showOtherSitesRef = useRef(showOtherSites);
   const showCampgroundsRef = useRef(showCampgrounds);
   const onViewportChangeRef = useRef(onViewportChange);
   const onSelectParkRef = useRef(onSelectPark);
@@ -162,6 +179,8 @@ export default function MapCanvas({
     selectedPlaceRef.current = selectedPlace;
     selectedCampgroundRef.current = selectedCampground;
     showPlacesRef.current = showPlaces;
+    showNationalParksRef.current = showNationalParks;
+    showOtherSitesRef.current = showOtherSites;
     showCampgroundsRef.current = showCampgrounds;
     isDarkRef.current = isDark;
   });
@@ -371,7 +390,16 @@ export default function MapCanvas({
     map.on('click', CAMPGROUNDS_LAYER_SELECTED, handleCampgroundClick);
   }, [setCampgroundVisibility]);
 
-  const syncParkLayer = useCallback((map, parkList, selection, darkMode) => {
+  const applyParkFilters = useCallback((map, nationalParksVisible, otherSitesVisible) => {
+    if (map.getLayer(PARKS_LAYER)) {
+      map.setFilter(PARKS_LAYER, parkLayerFilter(false, nationalParksVisible, otherSitesVisible));
+    }
+    if (map.getLayer(PARKS_LAYER_SELECTED)) {
+      map.setFilter(PARKS_LAYER_SELECTED, parkLayerFilter(true, nationalParksVisible, otherSitesVisible));
+    }
+  }, []);
+
+  const syncParkLayer = useCallback((map, parkList, selection, darkMode, nationalParksVisible, otherSitesVisible) => {
     const source = map.getSource(PARKS_SOURCE);
     const geojson = parksToGeoJson(parkList, selection);
     const colors = getParkMarkerColors(darkMode);
@@ -384,6 +412,7 @@ export default function MapCanvas({
       if (map.getLayer(PARKS_LAYER_SELECTED)) {
         map.setPaintProperty(PARKS_LAYER_SELECTED, 'circle-color', colorExpr);
       }
+      applyParkFilters(map, nationalParksVisible, otherSitesVisible);
       return;
     }
 
@@ -393,7 +422,7 @@ export default function MapCanvas({
       id: PARKS_LAYER,
       type: 'circle',
       source: PARKS_SOURCE,
-      filter: ['==', ['get', 'isSelected'], 0],
+      filter: parkLayerFilter(false, nationalParksVisible, otherSitesVisible),
       paint: {
         'circle-radius': [
           'interpolate',
@@ -419,7 +448,7 @@ export default function MapCanvas({
       id: PARKS_LAYER_SELECTED,
       type: 'circle',
       source: PARKS_SOURCE,
-      filter: ['==', ['get', 'isSelected'], 1],
+      filter: parkLayerFilter(true, nationalParksVisible, otherSitesVisible),
       paint: {
         'circle-radius': [
           'interpolate',
@@ -459,7 +488,7 @@ export default function MapCanvas({
 
     map.on('click', PARKS_LAYER, handleParkClick);
     map.on('click', PARKS_LAYER_SELECTED, handleParkClick);
-  }, []);
+  }, [applyParkFilters]);
 
   useEffect(() => {
     let isMounted = true;
@@ -502,7 +531,14 @@ export default function MapCanvas({
             isDarkRef.current,
             showCampgroundsRef.current
           );
-          syncParkLayer(map, parksRef.current, selectedParkRef.current, isDarkRef.current);
+          syncParkLayer(
+            map,
+            parksRef.current,
+            selectedParkRef.current,
+            isDarkRef.current,
+            showNationalParksRef.current,
+            showOtherSitesRef.current,
+          );
           setIsLoading(false);
         });
 
@@ -568,7 +604,14 @@ export default function MapCanvas({
         isDark,
         showCampgroundsRef.current
       );
-      syncParkLayer(map, parksRef.current, selectedParkRef.current, isDark);
+      syncParkLayer(
+        map,
+        parksRef.current,
+        selectedParkRef.current,
+        isDark,
+        showNationalParksRef.current,
+        showOtherSitesRef.current,
+      );
       setIsLoading(false);
     });
   }, [isDark, syncPlaceLayer, syncCampgroundLayer, syncParkLayer]);
@@ -601,8 +644,8 @@ export default function MapCanvas({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-    syncParkLayer(map, parks, selectedPark, isDark);
-  }, [parks, selectedPark, isDark, syncParkLayer]);
+    syncParkLayer(map, parks, selectedPark, isDark, showNationalParks, showOtherSites);
+  }, [parks, selectedPark, isDark, showNationalParks, showOtherSites, syncParkLayer]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -5,13 +5,14 @@ const { BASE_ITINERARY_SCHEMA, PATCH_ITINERARY_TOOL, isValidToolItinerary, isVal
 const { applyPlanPatch, preserveUntouchedDays } = require('../utils/itineraryPlanPatch');
 const { acceptedStopsById, preservedIdentitySource, acceptedEdgesByPair } = require('../utils/stopIdentity');
 const { isAcceptedCanonicalPlan } = require('../utils/canonicalPlanAcceptance');
-const { evaluateCandidateConstraints } = require('../utils/candidateViability');
+const { assessPlaceEligibility } = require('../utils/modelFirstPlaceEligibility');
 const { transitionLodging } = require('../utils/travelerFactTransition');
 const { hashPayload } = require('../utils/canonicalResponse');
 const { usableEvidence } = require('./trailieSimpleTools');
 const { validLocation } = require('../utils/trailieCanonicalLocation');
 const { supportedDurationMaximum } = require('../utils/evidenceActivityDuration');
-const { memoryAdmission } = require('./trailieMemoryAuthority');
+const { memoryAdmission, memoryFactRelationship } = require('./trailieMemoryAuthority');
+const { resolveHardConstraints, serializeHardConstraints } = require('../utils/hardConstraintAuthority');
 const { operationalFactsFromBundle, indexFactsByPlace, factsForStop } = require('../utils/operationalFactExtraction');
 const { resolveOperationalAccess, transferDates } = require('../utils/transferOperationalAccess');
 const { transferRouteMode, drivingProhibited } = require('../utils/transferRouteMode');
@@ -22,6 +23,7 @@ const {
   evaluateTripSchemaVersion,
   stampTripSchemaVersion,
 } = require('../../../shared/tripSchemaVersion.cjs');
+const { evaluateUsPlanGeography } = require('../utils/usPlanGeography');
 
 // Reuse storage shapes, without the old prompt's quality/stance instructions or
 // advanced surfaces this small validator does not yet validate.
@@ -56,13 +58,13 @@ function withoutDescriptions(value) {
 const PROPOSE_TOOL = { name: 'propose_trip_update', description:
   'Required when creating or materially changing the traveler’s trip: prose alone does not create the product itinerary. Also use for source-grounded memory changes. Supply the answer and requested update together. '
   + 'Quote the traveler’s own words from this conversation for memory updates, never your own. Every exact field/value must be explicitly supported; an independent verifier rejects unrelated, negated, hypothetical or uncertain claims. Do not infer an unstated year. Use plan_patch for an accepted plan; otherwise plan for creation. '
-  + 'Stops must reference retrieved evidence. Do not claim a change was saved until this operation succeeds. '
+  + 'Stops must reference retrieved evidence. The response field is published only after acceptance: describe the completed change, not a conditional proposal. '
   + 'Never overwrite dates or constraints using a default or an assumption.',
   input_schema: { type: 'object', additionalProperties: false, required: ['response'], properties: {
     response: { type: 'string', maxLength: 16000 }, memory_updates: { type: 'array', maxItems: 16, items: {
       type: 'object', additionalProperties: false, required: ['field', 'value', 'sourceQuote'], properties: {
         field: { type: 'string', enum: ['dates', 'lodging', 'mobility', 'preferences', 'travelers', 'travelerFacts', 'transportation', 'budget'] },
-        value: { type: 'object', description: 'Fields by memory group: dates {startDate,endDate,durationDays,travelMonth (month name only, e.g. October)}; lodging {baseTown,booked}; mobility {maxWalkMilesPerSegment,maxWalkMinutesPerSegment,wheelchair,stroller,avoidStairs,requiresFrequentBreaks}; preferences {avoidExposure,interests (activities they enjoy),pace (whole-trip pace such as relaxed, only when the traveler describes the whole trip — a request about one day changes that day, not memory),fitness (the hiking difficulty they want, e.g. easy hikes or shorter hikes),maxDailyDriveMinutes}; travelers {adults,children,pets}; travelerFacts {fact}; transportation {mode,rentalCar,drivingPolicy,drivingPolicyReason}; budget {amount,currency,scope}. Omit unknown fields.' }, sourceQuote: { type: 'string' },
+        value: { type: 'object', description: 'Fields by memory group: dates {startDate,endDate,durationDays,travelMonth (month name only, e.g. October)}; lodging {baseTown,booked}; mobility {maxWalkMilesPerSegment,maxWalkMinutesPerSegment,wheelchair,stroller,avoidStairs,requiresFrequentBreaks}; preferences {avoidExposure,interests (activities they enjoy),pace (whole-trip pace such as relaxed, only when the traveler describes the whole trip — a request about one day changes that day, not memory),fitness (the hiking difficulty they want, e.g. easy hikes or shorter hikes),maxDailyDriveMinutes}; travelers {adults,children,pets}; travelerFacts {fact}; transportation {mode,rentalCar,drivingPolicy,drivingPolicyReason} (transportation.mode accepts only drive or fly, and only when supported by the traveler’s journey. rentalCar separately records explicitly stated rental-car availability. A traveler may fly and rent a car. A rental car alone does not establish how the traveler reaches the destination. Omit unsupported or unknown values.); budget {amount,currency,scope}. Omit unknown fields.' }, sourceQuote: { type: 'string' },
   } } }, plan: withoutDescriptions(planSchema), plan_patch: withoutDescriptions(patchSchema),
   } } };
 
@@ -142,8 +144,12 @@ function typed(value, type) {
   return typeof value === type && (type !== 'string' || value.trim().length > 0 && value.length <= 2000);
 }
 
-function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [], scope = null, now = new Date(), memoryAuthority = null }) {
+function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [], scope = null, now = new Date(), memoryAuthority = null,
+  turnConstraints = [], constraintUpdates = null }) {
   const issues = [];
+  // Which stops failed which traveler restriction, and the evidence behind it,
+  // so a correction can repair those stops instead of guessing.
+  const restrictionFindings = [];
   const reject = code => issues.push(code);
   // Unsupported future TripPlan schemas fail closed before any reinterpretation.
   const priorPlan = snapshot.plan || null;
@@ -210,6 +216,21 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
   // Rejected memory is atomic: even a supported sibling must not leak into
   // route authorization or the returned candidate state on a failed proposal.
   if (issues.some(code => code.startsWith('memory_'))) state = clone(snapshot.planningState || {});
+  // Hard restrictions are armed independently of memory admission; memory only
+  // decides what is saved. See utils/hardConstraintAuthority.
+  const armed = resolveHardConstraints({
+    priorValidation: snapshot.planningState?.validationConstraints || null,
+    admittedState: state, turnConstraints,
+    proposedUpdates: Array.isArray(constraintUpdates) ? constraintUpdates : updates, message,
+    relationship: (update, key) => memoryFactRelationship(memoryAuthority, message, update, key),
+    admitted: update => memoryAdmission(memoryAuthority, message, update) === 'explicit',
+  });
+  const constraintState = { ...state,
+    preferences: { ...(state.preferences || {}), avoidExposure: armed.avoidExposure ? true : state.preferences?.avoidExposure },
+    mobility: { ...(state.mobility || {}), ...armed.mobility } };
+  const validationConstraints = serializeHardConstraints(armed);
+  if (validationConstraints) state.validationConstraints = validationConstraints;
+  else delete state.validationConstraints;
   const prior = priorPlan;
   let plan = null;
   let touched = null;
@@ -297,6 +318,9 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
         if (stop.evidenceRef && ![value.name, row.source?.provider === 'named_place' ? value.requestedName : null].some(n => n && n.trim().toLowerCase() === stop.name.trim().toLowerCase())) reject('stop_name_identity_mismatch');
         Object.assign(stop, { evidenceRef: row.evidenceId, name: value.name, canonicalPlaceName: value.canonicalPlaceName || value.name,
           displayName: value.name, canonicalPlaceId: canonicalIdentity, resolutionStatus: 'resolved' });
+        const stopCountry = value.countryCode || value.country || null;
+        if (stopCountry) stop.countryCode = String(stopCountry).trim().toUpperCase();
+        else delete stop.countryCode;
         // Only trusted provider evidence can supply experience/anchor identity.
         delete stop.experience; delete stop.mapAnchor;
         if (value.experience && value.mapAnchor) { stop.experience=clone(value.experience); stop.mapAnchor=clone(value.mapAnchor); }
@@ -318,18 +342,17 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
         }
         const maximum = supportedDurationMaximum(value);
         if (maximum > 0 && stop.duration > maximum) reject('duration_exceeds_source');
-        const records = fresh.filter(r => r.evidenceId === row.evidenceId
-          || r.entityId && r.entityId === row.entityId && r.claim?.normalizedValue?.name === value.name
-          || r.claim?.subjectId === row.claim?.identity && row.claim?.identity);
-        const result = evaluateCandidateConstraints({ records, name: stop.canonicalPlaceName || stop.name,
-          type: value.category || 'custom', constraints: { avoidExposure: state.preferences?.avoidExposure, planningState: {
-            mobility: state.mobility, travelers: state.travelers,
-            preferences: { avoidExposure: state.preferences?.avoidExposure },
-          } }, bundle });
+        const result = assessPlaceEligibility(row, fresh, { avoidExposure: constraintState.preferences?.avoidExposure,
+          planningState: { mobility: constraintState.mobility, travelers: constraintState.travelers,
+            preferences: { avoidExposure: constraintState.preferences?.avoidExposure } } }, stop);
+        const records = result.records;
         issues.push(...result.reasonCodes);
-        if (state.mobility?.maxWalkMinutesPerSegment > 0
-          && !(Number.isFinite(value.walkingDurationMinutes) && value.walkingDurationMinutes <= state.mobility.maxWalkMinutesPerSegment)) {
-          reject('walking_minutes_not_grounded');
+        if (result.reasonCodes.length) {
+          const facts = records.map(r => r.claim?.normalizedValue || {});
+          const first = key => facts.map(f => f[key]).find(v => v != null) ?? null;
+          restrictionFindings.push({ dayNumber: day.dayNumber, stopId: stop.id, stopName: value.name, evidenceRef: row.evidenceId,
+            reasonCodes: [...result.reasonCodes],
+            evidence: { exposureLevel: first('exposureLevel'), difficulty: first('difficulty'), walkingDistanceMiles: first('walkingDistanceMiles') } });
         }
         // The model cannot author verified measurements or coordinates.
         for (const key of ['walkingDistanceMiles', 'exposureLevel', 'difficulty', 'physicalDifficulty']) {
@@ -407,6 +430,9 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
       for (const day of prior.days) if (!touched.includes(day.dayNumber)
         && hashPayload(day) !== hashPayload(plan.days.find(d => d.dayNumber === day.dayNumber))) reject('frozen_day_changed');
     }
+    // U.S. geography: resulting canonical plan must keep confirmed domestic places
+    // and never persist confirmed foreign stops. Experience-only foreign plans fail here.
+    issues.push(...evaluateUsPlanGeography({ plan, evidence: fresh }));
   }
   if (updates.some(u => u.field === 'dates') && prior) {
     plan = plan || clone(prior);
@@ -436,7 +462,8 @@ function validateSimpleMutation({ proposal, snapshot = {}, message, evidence = [
     if (!nextSchema.ok) uniqueIssues.push(nextSchema.code);
     else plan = stampTripSchemaVersion(plan);
   }
-  return { ok: uniqueIssues.length === 0, issues: uniqueIssues, planningState: state, plan, touchedDayNumbers: touched };
+  return { ok: uniqueIssues.length === 0, issues: uniqueIssues, planningState: state, plan, touchedDayNumbers: touched,
+    restrictionFindings, activeRestrictions: validationConstraints };
 }
 
 module.exports = { PROPOSE_TOOL, validateSimpleMutation };

@@ -35,7 +35,7 @@ function NarrativeSections({ sections, placement, parkImages }) {
   const items = (sections || []).filter((section) => section?.placement === placement && section?.markdown);
   if (!items.length) return null;
   return items.map((section, index) => (
-    <section key={`${placement}-${index}`} className="trailie-narrative max-w-[48rem]">
+    <section key={`${placement}-${index}`} className="trailie-narrative max-w-[var(--public-rich-width)]">
       {section.heading ? (
         <h3
           className="mb-2 text-[15px] font-semibold leading-snug sm:text-base"

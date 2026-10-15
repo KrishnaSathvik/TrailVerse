@@ -167,24 +167,18 @@ userSchema.index({ lastActiveAt: -1 });
 
 // Encrypt password before saving.
 //
-// The `return` on the unmodified path is load-bearing. Without it the hook
-// called next() and then kept running, so every save of a document that had its
-// password loaded re-hashed an already-hashed value — and every save of a
-// document loaded through `select('-password')` (which is what `protect` does)
-// hashed `undefined`. Both raced the save's own serialization, which is why the
-// damage was intermittent rather than constant.
-userSchema.pre('save', async function hashPasswordWhenChanged(next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    return next();
-  } catch (error) {
-    return next(error);
-  }
+// Return a Promise (do not mix `async` + `next()`). That mix deadlocked
+// Mongoose document saves and blocked every authenticated model-first turn for
+// ~180s+ inside `addTokenUsage` → `save()` after the model had already finished.
+// Early-return when password is untouched also prevents re-hashing an existing
+// hash and hashing `undefined` on `select('-password')` documents from `protect`.
+userSchema.pre('save', function hashPasswordWhenChanged() {
+  if (!this.isModified('password')) return Promise.resolve();
+  return bcrypt.genSalt(10)
+    .then((salt) => bcrypt.hash(this.password, salt))
+    .then((hash) => {
+      this.password = hash;
+    });
 });
 
 // Compare password method
@@ -244,41 +238,34 @@ userSchema.methods.getVisitedParksCount = function() {
   return this.savedParks.filter(p => p.visited).length;
 };
 
-// Method to check if user has exceeded daily token limit
+// Quota checks are read-only. Reset on the accounting write so a delayed
+// fire-and-forget reset cannot erase tokens recorded by another turn.
 userSchema.methods.hasExceededTokenLimit = function(dailyLimit = 5000) {
-  // Check if we need to reset daily usage (new day)
-  const today = new Date().toDateString();
-  const lastReset = this.tokenUsage.lastResetDate.toDateString();
-  
-  if (today !== lastReset) {
-    // Reset daily usage for new day
-    this.tokenUsage.dailyTokensUsed = 0;
-    this.tokenUsage.lastResetDate = new Date();
-    this.save(); // Save the reset
-  }
-  
-  return this.tokenUsage.dailyTokensUsed >= dailyLimit;
+  const lastReset = this.tokenUsage?.lastResetDate;
+  if (!lastReset || new Date(lastReset).toDateString() !== new Date().toDateString()) return false;
+  return Number(this.tokenUsage?.dailyTokensUsed || 0) >= dailyLimit;
 };
 
-// Method to add token usage
-userSchema.methods.addTokenUsage = function(inputTokens, outputTokens) {
-  const totalTokens = inputTokens + outputTokens;
-  
-  // Check if we need to reset daily usage (new day)
-  const today = new Date().toDateString();
-  const lastReset = this.tokenUsage.lastResetDate.toDateString();
-  
-  if (today !== lastReset) {
-    // Reset daily usage for new day
-    this.tokenUsage.dailyTokensUsed = 0;
-    this.tokenUsage.lastResetDate = new Date();
-  }
-  
-  // Add to daily and total usage
-  this.tokenUsage.dailyTokensUsed += totalTokens;
-  this.tokenUsage.totalTokensUsed += totalTokens;
-  
-  return this.save();
+userSchema.methods.addTokenUsage = async function addTokenUsage(inputTokens, outputTokens) {
+  const totalTokens = Number(inputTokens || 0) + Number(outputTokens || 0);
+  if (!Number.isFinite(totalTokens) || totalTokens <= 0) return this;
+  const now = new Date();
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  // Compare the persisted reset date, never a stale request's User snapshot.
+  // Only one concurrent writer can match this predicate for the new day.
+  await this.constructor.updateOne({
+    _id: this._id,
+    $or: [
+      { 'tokenUsage.lastResetDate': { $lt: dayStart } },
+      { 'tokenUsage.lastResetDate': null },
+    ],
+  }, { $set: { 'tokenUsage.dailyTokensUsed': 0, 'tokenUsage.lastResetDate': now } });
+  const updated = await this.constructor.findOneAndUpdate({ _id: this._id }, {
+    $inc: { 'tokenUsage.dailyTokensUsed': totalTokens, 'tokenUsage.totalTokensUsed': totalTokens },
+  }, { new: true }).select('tokenUsage');
+  if (updated) this.tokenUsage = updated.tokenUsage;
+  return this;
 };
 
 // Method to get remaining daily tokens

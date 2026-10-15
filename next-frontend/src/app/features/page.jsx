@@ -4,13 +4,13 @@ import FeaturesPageClient from './FeaturesPageClient';
 
 export const metadata = {
   title: 'Features — Trailie, Maps, Weather & More | TrailVerse',
-  description: 'Explore TrailVerse features: Trailie outdoor trip planning (5 guest messages per 48 hours; sign in for saved history, live web search, and state parks), itinerary builder, PDF export, maps, weather, and 470+ NPS sites.',
+  description: 'Explore TrailVerse features: Trailie outdoor trip planning (5 guest messages per 48 hours; sign in for saved trips and history), itinerary builder, PDF export, maps, weather, and 470+ NPS sites.',
   alternates: {
     canonical: 'https://www.nationalparksexplorerusa.com/features',
   },
   openGraph: {
     title: 'Features — TrailVerse National Parks',
-    description: 'Trailie trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ NPS parks and sites. Sign in for live web search and state-park planning.',
+    description: 'Trailie trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ NPS parks and sites. Plan U.S. trips with relevant research when available.',
     url: 'https://www.nationalparksexplorerusa.com/features',
     siteName: 'TrailVerse',
     type: 'website',
@@ -19,7 +19,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Features — TrailVerse National Parks',
-    description: 'Trailie trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ NPS parks and sites. Sign in for live web search and state-park planning.',
+    description: 'Trailie trip planning, itinerary builder, PDF export, interactive maps, weather, and community reviews for 470+ NPS parks and sites. Plan U.S. trips with relevant research when available.',
     images: ['/og-image-trailverse.jpg'],
   },
 };
@@ -29,7 +29,7 @@ const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'WebPage',
   name: 'TrailVerse Features',
-  description: 'Trailie trip planning, interactive maps, real-time weather, itinerary builder, PDF export, and community reviews for 470+ NPS parks and sites. Free account unlocks live web search and state parks.',
+  description: 'Trailie trip planning, interactive maps, real-time weather, itinerary builder, PDF export, and community reviews for 470+ NPS parks and sites. Sign in to save trips and use the plan workspace.',
   url: 'https://www.nationalparksexplorerusa.com/features',
   mainEntity: {
     '@type': 'SoftwareApplication',

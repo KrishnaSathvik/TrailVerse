@@ -9,8 +9,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import Button from '@/components/common/Button';
-import Header from '@/components/common/Header';
-import Footer from '@/components/common/Footer';
+import AuthShell from '@/components/auth/AuthShell';
 import { logEvent } from '@/utils/analytics';
 
 const SignupPage = () => {
@@ -174,23 +173,22 @@ const SignupPage = () => {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <Header />
-      <main className="info-page">
-        <section className="info-section" aria-label="Create your account">
-          <div className="info-panel public-form">
-            <div className="mb-7">
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Create your account</h1>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Save your trips, favorites, and Trailie conversations.</p>
-              <p className="mt-3 text-sm text-[var(--text-secondary)]">Already have an account? <Link href="/login" className="font-semibold underline">Sign in</Link></p>
-            </div>
+    <AuthShell
+      desktopTitle="Start your next adventure"
+      desktopDescription="Save favorite parks, keep your Trailie trips, and return to your plans whenever you’re ready."
+    >
+          <div className="mb-7">
+            <h2 className="text-2xl font-semibold tracking-tight lg:text-4xl text-[var(--text-primary)]">Create your account</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Save your trips, favorites, and Trailie conversations.</p>
+            <p className="mt-3 text-sm text-[var(--text-secondary)]">Already have an account? <Link href="/login" className="font-medium text-[var(--accent-green)] hover:opacity-80">Sign in</Link></p>
+          </div>
           {/* Form */}
           <form onSubmit={handleSubmit} className="min-w-0 space-y-5">
             {/* Name Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* First Name */}
               <div>
-                <label htmlFor="signup-firstName" className="block text-sm font-medium mb-2"
+                <label htmlFor="signup-firstName" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   First Name
@@ -240,7 +238,7 @@ const SignupPage = () => {
 
               {/* Last Name */}
               <div>
-                <label htmlFor="signup-lastName" className="block text-sm font-medium mb-2"
+                <label htmlFor="signup-lastName" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   Last Name
@@ -291,7 +289,7 @@ const SignupPage = () => {
 
             {/* Email */}
             <div>
-              <label htmlFor="signup-email" className="block text-sm font-medium mb-2"
+              <label htmlFor="signup-email" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Email Address
@@ -341,7 +339,7 @@ const SignupPage = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="signup-password" className="block text-sm font-medium mb-2"
+              <label htmlFor="signup-password" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Password
@@ -423,7 +421,7 @@ const SignupPage = () => {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="signup-confirmPassword" className="block text-sm font-medium mb-2"
+              <label htmlFor="signup-confirmPassword" className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Confirm Password
@@ -531,12 +529,11 @@ const SignupPage = () => {
               type="submit"
               disabled={isLoading}
               loading={isLoading}
-              variant="success"
+              variant="primary"
               size="lg"
               icon={ArrowRight}
               iconPosition="right"
-              className="public-action w-full"
-              style={{ borderRadius: '12px', boxShadow: 'none', color: '#fff', outline: undefined }}
+              className="w-full"
             >
               {isLoading ? 'Creating account...' : 'Create Account'}
             </Button>
@@ -547,11 +544,7 @@ const SignupPage = () => {
             By creating an account, you agree to TrailVerse&apos;s Terms and Privacy Policy.
           </p>
 
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
+    </AuthShell>
   );
 };
 

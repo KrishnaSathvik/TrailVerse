@@ -390,7 +390,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       <section className="relative overflow-hidden py-4 sm:py-10">
         <div className="relative z-10 public-shell">
           {/* Search Bar */}
-          <div className="max-w-3xl">
+          <div className="public-content">
             <div className="relative">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5"
                 style={{ color: 'var(--text-tertiary)' }}
@@ -833,7 +833,7 @@ const ExploreContent = ({ initialPaginatedData, initialAllParksData }) => {
       {/* Plan CTA — mobile only (desktop users see it in the header nav) */}
       <section className="pb-16 px-4 sm:px-6 lg:hidden">
         <div
-          className="max-w-3xl mx-auto rounded-2xl p-6 sm:p-8 text-left"
+          className="public-content rounded-2xl p-6 sm:p-8 text-left"
           style={{ backgroundColor: 'var(--bg-secondary)', borderWidth: '1px', borderColor: 'var(--border)' }}
         >
           <div className="flex items-start gap-4 mb-4">

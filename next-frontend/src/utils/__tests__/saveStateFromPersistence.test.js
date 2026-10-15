@@ -67,20 +67,24 @@ describe('resolveChatStatus — Phase 6A', () => {
     expect(status.tone).toBe('sync-needed');
   });
 
-  test('saved (via saveState)', () => {
-    expect(resolveChatStatus({ isAnonymous: false, saveState: 'saved', hasTripId: false })).toEqual({
+  test('saved canonical plan', () => {
+    expect(resolveChatStatus({ isAnonymous: false, saveState: 'saved', hasPersistedPlan: true })).toEqual({
       label: 'Saved',
-      description: 'This conversation is stored in your account.',
+      description: 'Your accepted itinerary is stored in your account.',
       tone: 'saved',
     });
   });
 
-  test('saved (via an existing trip id, saveState idle)', () => {
-    expect(resolveChatStatus({ isAnonymous: false, saveState: 'idle', hasTripId: true })).toEqual({
-      label: 'Saved',
-      description: 'This conversation is stored in your account.',
-      tone: 'saved',
-    });
+  test('trip ID or saved conversation alone does not establish a saved itinerary', () => {
+    expect(resolveChatStatus({ hasTripId: true, saveState: 'saved' })).toBeNull();
+  });
+  test('planning, draft and failure override a previously saved canonical plan', () => {
+    const saved = { hasPersistedPlan: true, saveState: 'saved' };
+    expect(resolveChatStatus({ ...saved, isPlanning: true }).label).toBe('Planning your trip…');
+    for (const count of [1, 2, 5]) expect(resolveChatStatus({ ...saved, draftPreview: { status: 'generating', days: Array(count).fill({}) } }).label).toBe('Draft · Not saved');
+    expect(resolveChatStatus({ ...saved, previewOutcome: 'rejected' }).label).toBe('No new itinerary saved');
+    expect(resolveChatStatus({ ...saved, previewOutcome: 'uncertain' }).label).toBe('Check saved trip after reconnecting');
+    expect(resolveChatStatus(saved).label).toBe('Saved');
   });
 
   test('nothing to show yet — no trip, no save activity', () => {

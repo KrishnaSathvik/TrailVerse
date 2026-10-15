@@ -110,11 +110,43 @@ function classifyCandidateExposureSuggestibility(normalizedValue) {
 /**
  * @returns {{ status: string, reasonCodes: string[] }}
  */
-function evaluateHardExposureEligibility(stop, { hardConstraintActive = false } = {}) {
+/**
+ * Model-first exposure relevance from TRUSTWORTHY record properties only.
+ * Evidence beats labels: a record with moderate/high exposure is always judged.
+ * Exemption requires provider-assigned facility types (e.g. Google placeTypes
+ * museum/restaurant/lodging/locality) on a record not also typed as an outdoor
+ * feature. Names, model-authored stop types and name-derived normalizer
+ * categories never exempt (a "Picnic Area" or "Museum" in a name proved nothing).
+ * Official facility records need no exemption: their source text classifies low.
+ * @returns {'judged'|'exempt'}
+ */
+const TYPED_FACILITY = new Set(['museum', 'art_gallery', 'library', 'restaurant', 'cafe', 'bakery', 'bar', 'food', 'meal_takeaway',
+  'meal_delivery', 'lodging', 'rv_park', 'store', 'supermarket', 'grocery_or_supermarket', 'convenience_store', 'gas_station',
+  'parking', 'transit_station', 'bus_station', 'train_station', 'light_rail_station', 'subway_station', 'airport', 'car_rental',
+  'locality', 'sublocality', 'neighborhood', 'postal_town', 'administrative_area_level_1', 'administrative_area_level_2']);
+const TYPED_OUTDOOR = new Set(['natural_feature', 'park', 'hiking_area', 'campground', 'national_park', 'state_park']);
+
+function exposureRelevanceFromRecord(value) {
+  if (classifyExposureEligibility(value?.exposureLevel ?? value?.exposure) === ELIGIBILITY.INCOMPATIBLE) return 'judged';
+  // Facility metadata does not certify an outdoor activity associated with it.
+  const activities = [value?.category, ...(Array.isArray(value?.activityTypes) ? value.activityTypes : [])];
+  if (activities.some(type => /(?:trail|hik|walk|overlook|viewpoint|climb|boardwalk)/i.test(String(type || '')))
+    || Number(value?.walkingDistanceMiles) > 0 || Number(value?.walkingDurationMinutes) > 0) return 'judged';
+  const types = (Array.isArray(value?.placeTypes) ? value.placeTypes : []).map((t) => String(t).toLowerCase());
+  if (types.some((t) => TYPED_FACILITY.has(t)) && !types.some((t) => TYPED_OUTDOOR.has(t))) return 'exempt';
+  return 'judged';
+}
+
+/**
+ * @param {object} stop
+ * @param {{ hardConstraintActive?: boolean, relevance?: 'judged'|'exempt' }} options
+ *   `relevance` (model-first) replaces the legacy name-based relevance test.
+ */
+function evaluateHardExposureEligibility(stop, { hardConstraintActive = false, relevance = null } = {}) {
   if (!hardConstraintActive) {
     return { status: ELIGIBILITY.NOT_APPLICABLE, reasonCodes: [] };
   }
-  if (!isExposureRelevantStop(stop)) {
+  if (relevance === 'exempt' || (relevance !== 'judged' && !isExposureRelevantStop(stop))) {
     return { status: ELIGIBILITY.NOT_APPLICABLE, reasonCodes: [] };
   }
   const status = classifyExposureEligibility(stop?.exposureLevel ?? stop?.exposure);
@@ -389,6 +421,7 @@ module.exports = {
   isExposureJudgedCandidate,
   classifyCandidateExposureSuggestibility,
   evaluateHardExposureEligibility,
+  exposureRelevanceFromRecord,
   enrichItineraryExposureFromEvidenceBundle,
   inferWalkingDistanceMiles,
   walkingDistanceFields,

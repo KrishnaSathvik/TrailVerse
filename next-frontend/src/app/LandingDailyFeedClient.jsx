@@ -58,7 +58,7 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               Park of the day
             </h2>
-            <p className="text-base sm:text-lg mt-2 max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base sm:text-lg mt-2 public-content" style={{ color: 'var(--text-secondary)' }}>
               Today&apos;s park pick with why to go, best season, top activity, and a planning tip.
             </p>
           </div>
@@ -116,11 +116,11 @@ export default function LandingDailyFeedClient({ initialDailyFeed = null }) {
                   </div>
                 )}
                 {feed.parkOfDay.mustDo?.[0] ? (
-                  <p className="text-sm sm:text-base text-white/80 max-w-2xl line-clamp-2 mb-2">
+                  <p className="text-sm sm:text-base text-white/80 public-content line-clamp-2 mb-2">
                     Don&apos;t miss: {feed.parkOfDay.mustDo[0]}
                   </p>
                 ) : null}
-                <p className="text-sm sm:text-base text-white/75 max-w-2xl line-clamp-2">
+                <p className="text-sm sm:text-base text-white/75 public-content line-clamp-2">
                   Check live weather, alerts, and reviews — then plan your visit with Trailie.
                 </p>
               </div>

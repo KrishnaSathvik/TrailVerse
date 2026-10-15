@@ -144,6 +144,17 @@ conversation → Trailie model → proposed canonical change → trust boundary 
 
 Both stores call shared `prepareCanonicalStoreCommit` (write-candidate + response-identity) before durable persistence. Ownership/CAS/ledger differ; mutation trust and commit validation do not. Streaming, non-streaming, and `/plan-itinerary` share one `handle` → `createSimpleRuntime` → `store.commit`. The client must not become a second authority when `persisted: true`.
 
+Owner structural edits (PlanWorkspace) use a separate typed path that shares the same write-candidate + CAS fence, not AI chat-turn persistence:
+
+```text
+POST /api/trips/:tripId/manual-mutations
+  → applyManualMutation → validateManualPlanIntegrity
+  → prepareManualPlanCommit (rehash itineraryHash; no fabricated chat turns)
+  → validateTripWriteCandidate → CAS write
+```
+
+AI still owns travel judgment. Manual ops: `remove_stop`, `move_stop`, `add_day`, `remove_day`, `add_place`. `add_place` uses the same `named_place` identity stack (query-only client input; `place_ambiguous` / `place_unresolved`; no client-authored pins). Plan-only `PUT /api/trips/:id` is rejected (`manual_mutation_required`); conversation+plan response saves remain on PUT. See `docs/audits/manual-add-place-phase2-2026-10-11.md`.
+
 ### Legacy judgment stays off the live path
 
 Model-first must not call:

@@ -115,3 +115,9 @@ describe('buildCanonicalTrailieResponse', () => {
     expect(hashPayload('abc')).toMatch(/^[0-9a-f]{16,}$/);
   });
 });
+
+test('Mongo-style cross-realm Dates hash identically to their JSON transport value', () => {
+  const crossRealmDate = require('node:vm').runInNewContext("new Date('2026-10-14T12:00:00Z')");
+  const { hashPayload } = require('../canonicalResponse');
+  expect(hashPayload({ observedAt: crossRealmDate })).toBe(hashPayload({ observedAt: '2026-10-14T12:00:00.000Z' }));
+});

@@ -208,9 +208,9 @@ describe('11A.1 Trailie evidence refresh secret boot path', () => {
     expect(JSON.stringify(readiness)).not.toContain('must-never-appear-in-readiness');
   });
 
-  test('readiness is not required when Trailie V2 is disabled', () => {
+  test('readiness is not required when the production runtime is disabled', () => {
     const readiness = assessTrailieEvidenceRefreshReadiness({
-      env: { TRAILIE_V2_RUNTIME_ENABLED: 'false' },
+      env: { NODE_ENV: 'production', TRAILIE_V2_RUNTIME_ENABLED: 'false' },
     });
     expect(readiness).toMatchObject({ required: false, ready: true, status: 'not_required' });
   });

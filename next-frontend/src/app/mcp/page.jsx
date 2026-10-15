@@ -84,7 +84,7 @@ export default function MCPPage() {
               >
                 Five tools for your trip
               </h2>
-              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
                 Five MCP tools on the same server as the ChatGPT app. Park details, search, compare,
                 and events cover the <strong>NPS catalog</strong>; Plan a trip also works for{' '}
                 <strong>state parks, cities, and road trips</strong> using relevant sources when available. Coverage varies, and generated details need checking.
@@ -95,7 +95,7 @@ export default function MCPPage() {
               {tools.map((tool) => (
                 <div
                   key={tool.title}
-                  className="public-editorial-section py-6 space-y-4"
+                  className="info-panel space-y-4"
                   style={{
                     borderColor: 'var(--border)',
                   }}
@@ -118,254 +118,8 @@ export default function MCPPage() {
           </div>
         </section>
 
-        {/* See It in Action */}
-        <section className="info-section">
-          <div className="w-full">
-            <div className="mb-8">
-              <InfoSectionLabel>See It in Action</InfoSectionLabel>
-              <h2
-                className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Example conversations
-              </h2>
-              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
-                These screenshots illustrate earlier conversations, not current park conditions. Dates, closures, weather, and event listings shown here may have changed.
-              </p>
-            </div>
-
-            {/* Plan a Trip */}
-            <div className="mb-16">
-              <h3
-                className="text-xl font-semibold mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Plan a Trip
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-screenshot1.png"
-                    alt="Claude checking live Yosemite conditions — road closures and seasonal alerts before building the itinerary"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Live conditions check
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Claude pulls real-time road closures and alerts before planning &mdash; Tioga Road
-                      and Glacier Point Road are closed, so it routes around them automatically.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-screenshot2.png"
-                    alt="Completed itinerary with packing list, driving warnings, and Google Maps links for each day"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Actionable itinerary
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Packing lists based on real weather, driving time warnings, and
-                      Google Maps links for each day of your trip.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Compare Parks */}
-            <div className="mt-16">
-              <h3
-                className="text-xl font-semibold mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Compare Parks
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-compare1.png"
-                    alt="Side-by-side comparison of Death Valley and Joshua Tree — live weather, crowds, fees, and activities"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Side-by-side with live data
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Real-time temperature, crowd levels, entry fees, and top activities
-                      pulled from both parks at once.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-compare2.png"
-                    alt="Detailed recommendation on which park is better with kids — trail suggestions, heat risk, and wow factor"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Opinionated recommendation
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Not just data &mdash; Claude picks the better option for your situation
-                      with kid-friendly trails, heat risk, and specific reasons why.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Search & Park Details */}
-            <div className="mt-16">
-              <h3
-                className="text-xl font-semibold mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Search &amp; Park Details
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-searchpark.png"
-                    alt="Claude listing all 17 NPS sites in Washington state — Mount Rainier, North Cascades, Olympic, and more"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Browse parks by state
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Ask &ldquo;what parks are in Washington state?&rdquo; and browse matching NPS sites &mdash;
-                      ranked with insider takes on what makes each one worth visiting.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-parkdetails.png"
-                    alt="Claude pulling live details for Olympic National Park — three ecosystems, 44°F weather, road closures, and fire impacts"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Deep dive on any park
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      &ldquo;Tell me more about Olympic&rdquo; pulls live weather, active road closures,
-                      fire impacts, and current conditions &mdash; not stale training data.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Find Events */}
-            <div className="mt-16">
-              <h3
-                className="text-xl font-semibold mb-6"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Find Events
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-events2.png"
-                    alt="Grand Canyon events next week — daily ranger programs and special events with times and locations"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Ranger programs and special events
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      Daily ranger talks, guided rim walks, comedy nights, and film screenings &mdash;
-                      with times, locations, and whether they&rsquo;re free.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    borderWidth: '1px',
-                    borderColor: 'var(--border)',
-                  }}
-                >
-                  <img
-                    src="/mcp-events1.png"
-                    alt="Death Valley events — no scheduled programs, with contextual advice about heat, self-guided options, and astrophotography"
-                    className="w-full h-auto"
-                  />
-                  <div className="p-4" style={{ backgroundColor: 'var(--surface)' }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Context when there&rsquo;s nothing scheduled
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                      No events? Claude explains why and suggests what you can still do &mdash;
-                      self-guided stops, dark sky windows, and heat safety tips.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Install */}
-        <section id="install" className="py-16 px-4 sm:px-6 lg:px-8 scroll-mt-20">
+        <section id="install" className="info-section scroll-mt-20">
           <div className="w-full">
             <div className="mb-8">
               <InfoSectionLabel>Setup</InfoSectionLabel>
@@ -537,7 +291,7 @@ export default function MCPPage() {
               >
                 Example Prompts
               </h2>
-              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
                 Once installed, try asking Claude any of these.
               </p>
             </div>
@@ -546,7 +300,7 @@ export default function MCPPage() {
               {examplePrompts.map((prompt) => (
                 <div
                   key={prompt}
-                  className="public-editorial-section py-6 space-y-4"
+                  className="info-panel space-y-4"
                   style={{
                     borderColor: 'var(--border)',
                   }}
@@ -570,7 +324,7 @@ export default function MCPPage() {
         <section className="info-section">
           <div className="w-full">
             <div
-              className="public-editorial-section py-6 space-y-4"
+              className="info-panel space-y-4"
               style={{
                 borderColor: 'var(--border)',
               }}

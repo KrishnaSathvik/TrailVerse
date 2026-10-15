@@ -97,8 +97,8 @@ export default function TrailieDemoPlaybackStage({
       {openPlan && <dialog ref={dialogRef} onClose={() => setOpenPlan(null)} aria-label="Sample trip"
         className="m-0 h-[100dvh] max-h-none w-full max-w-none overflow-y-auto overscroll-contain bg-[var(--bg-primary)] p-0 text-[var(--text-primary)] backdrop:bg-black/60">
         <div className="mx-auto w-full max-w-[1280px]">
-          <TripWorkspaceView plan={openPlan} view={view} onViewChange={setView} embedded eyebrow="Sample trip"
-            tabsAccessory={<button autoFocus className="min-h-10 shrink-0 rounded-full border border-[var(--border)] px-4 text-sm font-semibold hover:border-[var(--accent-green)]" onClick={() => dialogRef.current?.close()}>Close</button>} />
+          <TripWorkspaceView plan={openPlan} view={view} onViewChange={setView} embedded sampleReadingMode eyebrow="Sample trip"
+            actions={<button autoFocus type="button" aria-label="Close sample trip" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--text-secondary)] hover:bg-[var(--surface)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-green)]" onClick={() => dialogRef.current?.close()}><span aria-hidden="true" className="text-2xl leading-none">×</span></button>} />
         </div>
       </dialog>}
       {(showMessagePane || isFollowUpTyping) && (

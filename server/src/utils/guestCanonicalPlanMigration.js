@@ -18,6 +18,13 @@ function ownedPlan(message, { parkName = null, parkCode = null } = {}) {
     if (payload.parkName == null) delete payload.parkName;
     if (Array.isArray(payload.feasibilityIssues) && !payload.feasibilityIssues.length) delete payload.feasibilityIssues;
   }
+  // Older payload hashes predate the schema stamp added by buildPlanDocument.
+  // Recover only when removing that current-version stamp reproduces the hash.
+  if (hashPayload(payload) !== message.itineraryHash
+    && payload.tripSchemaVersion === require('../../../shared/tripSchemaVersion.cjs').TRIP_SCHEMA_VERSION) {
+    const { tripSchemaVersion, ...legacyPayload } = payload;
+    if (hashPayload(legacyPayload) === message.itineraryHash) payload = legacyPayload;
+  }
   const computedItineraryHash = hashPayload(payload);
   if (computedItineraryHash !== message.itineraryHash) return null;
   const computedContentHash = hashPayload(message.content || '');

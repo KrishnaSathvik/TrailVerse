@@ -1,4 +1,5 @@
 'use strict';
+const { projectDraftDay } = require('./trailieDraftPreview');
 
 /**
  * WP10 — Trailie transport/client compatibility adapter.
@@ -200,6 +201,7 @@ function createTrailieTransportAdapter({ dialect, emit, mode = 'stream' } = {}) 
   let sawContentDelta = false;
   let streamEnded = false;
   let publishedItineraryHash = null;
+  let draftResponseId = null, draftSequence = 0, draftWithdrawn = false;
 
   const write = (payload) => { emit(payload); return true; };
 
@@ -227,6 +229,28 @@ function createTrailieTransportAdapter({ dialect, emit, mode = 'stream' } = {}) 
     dialect,
     mode,
     sentTerminal: () => sealed,
+
+    draftStarted({ responseId }) {
+      return intermediate(() => {
+        if (draftResponseId) return false;
+        draftResponseId = responseId;
+        return write({ type: 'draft_started', responseId, sequence: ++draftSequence });
+      });
+    },
+    draftDay({ day, index }) {
+      return intermediate(() => {
+        const safe = projectDraftDay(day, index);
+        if (!draftResponseId || draftWithdrawn || !safe) return false;
+        return write({ type: 'draft_day', responseId: draftResponseId, sequence: ++draftSequence, day: safe });
+      });
+    },
+    draftWithdrawn() {
+      return intermediate(() => {
+        if (!draftResponseId || draftWithdrawn) return false;
+        draftWithdrawn = true;
+        return write({ type: 'draft_withdrawn', responseId: draftResponseId, sequence: ++draftSequence });
+      });
+    },
 
     responseStarted(payload = {}) {
       return intermediate(() => {

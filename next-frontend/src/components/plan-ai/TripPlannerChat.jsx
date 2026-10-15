@@ -1,3 +1,5 @@
+import TrailieDraftPreview from '@/components/itinerary/TrailieDraftPreview';
+import { draftPreviewEnabled, reduceDraftPreview } from '@/lib/trailieDraftPreview';
 import { applyTerminalOwnership } from '@/utils/terminalOwnership';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -27,10 +29,7 @@ import Button from '../common/Button';
 import SaveTripModal from './SaveTripModal';
 import GuestAccountCard from './GuestAccountCard';
 import { tripSurfacePath } from '@/lib/tripSurfacePath';
-import DiscoveryPlanCta from './DiscoveryPlanCta';
-import { buildDayByDayPlanFollowUp } from '@/lib/buildDayByDayPlanFollowUp';
 import { formatIntentGuideContextForPrompt } from '@/lib/intentPlanAi';
-import { findDiscoveryPlanCtaMessage, messageMatchesDiscoveryPlanCta } from '@/lib/discoveryPlanCta';
 import { buildGuestLimitIntro } from '@/lib/guestLimitMessage';
 import { TRAILIE_DEMO_PROMPTS, TRAILIE_PERSONALIZED_PROMPTS } from '@/lib/trailieDemoPrompts';
 import {
@@ -228,6 +227,10 @@ const TripPlannerChat = ({
   const [currentTripId, setCurrentTripId] = useState(existingTripId);
   const [providers, setProviders] = useState([]);
   const abortControllerRef = useRef(null);
+  const urlTripRestoreKeyRef = useRef(null);
+  const [draftPreview, setDraftPreview] = useState(null);
+  const [previewOutcome, setPreviewOutcome] = useState(null);
+  useEffect(() => () => { const active = abortControllerRef.current; abortControllerRef.current = null; active?.abort(); }, []);
   const streamFlushRafRef = useRef(null);
   const rawStreamedContentRef = useRef('');
   const streamIdleTimerRef = useRef(null);
@@ -320,8 +323,8 @@ const TripPlannerChat = ({
   const [saveModalSurface, setSaveModalSurface] = useState(null);
 
   const messagesEndRef = useRef(null);
-  const discoveryPlanCtaRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const draftPreviewRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
   const messagesRef = useRef(messages);
   const currentTripIdRef = useRef(currentTripId);
@@ -390,9 +393,11 @@ const TripPlannerChat = ({
     setShowScrollToLatest(false);
   }, []);
 
-  // Phase 6A — extracted to resolveChatStatus (saveStateFromPersistence.js)
-  // for direct unit testing; behavior unchanged, now includes 'sync-needed'.
-  const chatStatus = resolveChatStatus({ isAnonymous, saveState, hasTripId: Boolean(currentTripId) });
+  // Presentation follows canonical persistence and the current provisional turn.
+  const chatStatus = resolveChatStatus({ isAnonymous, saveState,
+    hasPersistedPlan: Boolean(currentTripId && currentPlan?.days?.length && saveState === 'saved'),
+    draftPreview, previewOutcome, isPlanning: draftPreviewEnabled() && isGenerating,
+  });
   const anonymousMessagesRemaining = Math.max(0, ANONYMOUS_MESSAGE_LIMIT - messageCount);
   const getWelcomePlaceholderContent = useCallback(
     () =>
@@ -450,10 +455,6 @@ const TripPlannerChat = ({
   const showComposerToolbar =
     !isWelcomeState && messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
 
-  const discoveryPlanCtaMessage = useMemo(
-    () => findDiscoveryPlanCtaMessage(messages),
-    [messages]
-  );
 
   const hasUserMessages = messages.some((m) => m.role === 'user' && !m.hiddenFromUi);
 
@@ -532,13 +533,6 @@ const TripPlannerChat = ({
     lastMessageCountRef.current = messages.length;
   }, [messages.length, isGenerating]);
 
-  useEffect(() => {
-    if (!discoveryPlanCtaMessage || isGenerating) return undefined;
-    const timer = window.setTimeout(() => {
-      discoveryPlanCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [discoveryPlanCtaMessage?.id, isGenerating]);
 
   // Only offer jump-to-latest when new content arrives below — not when reading older messages
   useEffect(() => {
@@ -1289,6 +1283,11 @@ const TripPlannerChat = ({
   // (Component stays mounted when using "Start New Chat" or "Personalized Recommendations")
   useEffect(() => {
     const previousTripId = previousExistingTripIdRef.current;
+    if (draftPreviewEnabled() && (isNewChat || isPersonalized || existingTripId !== previousTripId)) {
+      abortControllerRef.current?.abort();
+      setDraftPreview(null);
+      setPreviewOutcome(null);
+    }
     
     // Reset when explicitly starting new chat (isNewChat or isPersonalized URL flags)
     // These flags indicate user clicked "Start New Chat" or "Get Recommendations"
@@ -1296,6 +1295,8 @@ const TripPlannerChat = ({
       console.log('🆕 Starting NEW chat (explicit action) - resetting currentTripId');
       setCurrentTripId(null);
       setCurrentPlan(null);
+      setDraftPreview(null);
+      setPreviewOutcome(null);
       setSaveState('idle');
       localStorage.removeItem('planai-chat-state');
     }
@@ -1387,6 +1388,13 @@ const TripPlannerChat = ({
 
     if (providersLoaded) {
       if (existingTripId) {
+        // Restoration changes authRestoreStatus, which is a dependency of
+        // this effect. Do not restart the same load on pending/restored/error.
+        const ownerId = user?._id || user?.id;
+        if (!isAuthenticated || !ownerId) return;
+        const restoreKey = `${ownerId}:${existingTripId}`;
+        if (urlTripRestoreKeyRef.current === restoreKey) return;
+        urlTripRestoreKeyRef.current = restoreKey;
         console.log('🔄 Loading existing trip from URL:', existingTripId);
         loadExistingTrip(existingTripId);
       } else {
@@ -1439,6 +1447,8 @@ const TripPlannerChat = ({
     showWelcomeMessage,
     loadExistingTrip,
     guestConversationId,
+    user?._id,
+    user?.id,
   ]);
 
   // Safety net: never leave the thread blank when welcome should show
@@ -1587,6 +1597,14 @@ const TripPlannerChat = ({
     earlyCoordinatorRef.current = null;
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    setDraftPreview(null);
+    setPreviewOutcome(null);
+    controller.signal.addEventListener('abort', () => {
+      if (abortControllerRef.current === controller) {
+        setDraftPreview(state => reduceDraftPreview(state, { type: 'draft_closed' }));
+        if (draftPreviewEnabled()) setPreviewOutcome('uncertain');
+      }
+    }, { once: true });
 
     // Stage 14.8A.2 §5/§9 — one stable id per submission. The server uses it to
     // de-duplicate a retry or a second tab; the browser uses it to find and
@@ -1982,6 +2000,10 @@ const TripPlannerChat = ({
       };
 
       const streamCallbacks = {
+        onDraftEvent: draftPreviewEnabled() ? event => {
+          if (abortControllerRef.current === controller && !controller.signal.aborted)
+            setDraftPreview(state => reduceDraftPreview(state, event));
+        } : undefined,
         // Stage 14.3 — typed early events. Presence of these events (not any
         // client-side flag) is what activates the persist-before-reveal path.
         onEarlyEvent: (event) => {
@@ -2101,6 +2123,14 @@ const TripPlannerChat = ({
           markStreamFinalizing();
         },
         onDone: (result) => {
+          if (controller.signal.aborted || abortControllerRef.current !== controller) return;
+          if (draftPreviewEnabled() && abortControllerRef.current === controller && !controller.signal.aborted) {
+            if (result.persisted === true && result.canonicalPlan?.days?.length) {
+              setCurrentPlan(result.canonicalPlan);
+              setDraftPreview(null);
+              setPreviewOutcome(null);
+            } else setDraftPreview(state => reduceDraftPreview(state, { type: 'draft_closed' }));
+          }
           clearStreamIdleTimer();
           cancelStreamFlush();
 
@@ -2146,7 +2176,6 @@ const TripPlannerChat = ({
             messageCount: result.messageCount,
             canSendMore: result.canSendMore,
             isConversionMessage: result.isConversionMessage,
-            showDayByDayPlanCta: result.showDayByDayPlanCta === true,
             activeTripContext: result.activeTripContext,
             // WP-TU Phase 3 Task 8 — the authoritative active-trip destination
             // for THIS turn (Task 7B). Threaded the same way parkName/
@@ -2243,7 +2272,6 @@ const TripPlannerChat = ({
                     // activeTripPresentation (Task 7B) immediately above.
                     targetTripId: result.targetTripId || null,
                     parkImages: result.parkImages || [],
-                    showDayByDayPlanCta: result.showDayByDayPlanCta === true,
                   }
                 : m
             )
@@ -2306,7 +2334,7 @@ const TripPlannerChat = ({
           });
         }
       } catch (streamErr) {
-        if (streamErr.name === 'AbortError' || streamErr.noAutomaticRetry) throw streamErr;
+        if (streamErr.name === 'AbortError' || streamErr.noAutomaticRetry || draftPreviewEnabled()) throw streamErr;
         console.error('Streaming failed, falling back to non-streaming:', streamErr.message);
       } finally {
         clearStreamIdleTimer();
@@ -2485,7 +2513,6 @@ const TripPlannerChat = ({
         // activeTripPresentation (Task 7B) immediately above.
         targetTripId: data.targetTripId || null,
         parkImages: data.parkImages || [],
-        showDayByDayPlanCta: data.showDayByDayPlanCta === true,
         // Phase 6A — display-only classification, stashed for future use;
         // never rendered as a raw string anywhere (see trailieTurnOutcome.js).
         outcomeClass,
@@ -2526,7 +2553,6 @@ const TripPlannerChat = ({
                   // activeTripPresentation (Task 7B) immediately above.
                   targetTripId: data.targetTripId || null,
                   parkImages: data.parkImages || [],
-                  showDayByDayPlanCta: data.showDayByDayPlanCta === true,
                   // Phase 6A — display-only classification, stashed for
                   // future use; never rendered as a raw string (see
                   // trailieTurnOutcome.js).
@@ -2564,7 +2590,6 @@ const TripPlannerChat = ({
             // activeTripPresentation (Task 7B) immediately above.
             targetTripId: data.targetTripId || null,
             parkImages: data.parkImages || [],
-            showDayByDayPlanCta: data.showDayByDayPlanCta === true,
             // Phase 6A — display-only classification, stashed for future
             // use; never rendered as a raw string (see trailieTurnOutcome.js).
             outcomeClass,
@@ -2656,6 +2681,9 @@ const TripPlannerChat = ({
       return data;
 
     } catch (error) {
+      if (draftPreviewEnabled() && abortControllerRef.current === controller) {
+        setPreviewOutcome(error.serverResolvedFailure && error.code === 'mutation_rejected' ? 'rejected' : 'uncertain');
+      }
       // Log detailed error information for debugging
       console.error('Trailie request failed', {
         responseId: error.responseId || null,
@@ -3029,6 +3057,7 @@ ${[
   };
 
   const startFreshConversation = (customMessage = null, parkName = null) => {
+    if (draftPreviewEnabled()) abortControllerRef.current?.abort();
     // Set flag to prevent restoration
     setIsStartingFresh(true);
     
@@ -3037,6 +3066,8 @@ ${[
     setCurrentTripId(null);
     setHasShownWelcome(false);
     setCurrentPlan(null);
+    setDraftPreview(null);
+    setPreviewOutcome(null);
     
     // Clear any saved session state
     localStorage.removeItem('planai-chat-state');
@@ -3499,7 +3530,7 @@ ${[
       <div className="min-h-screen flex items-center justify-center" 
         style={{ backgroundColor: 'var(--bg-primary)' }}
       >
-        <div className="max-w-2xl w-full mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+        <div className="public-content w-full px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="rounded-2xl p-8 backdrop-blur text-center"
             style={{
               backgroundColor: 'var(--surface)',
@@ -3622,7 +3653,7 @@ ${[
                     guestExhausted={isAnonymous && !canSendMore}
                     onRequireAccount={() => openGuestAuthGate({ reason: SIGNUP_PROMPT_REASONS.LIMIT_WITH_TRIP })}
                     footer={message.artifactStatus?.status === 'save_failed' ? (
-                      <p role="status" className="max-w-[48rem] border-l-2 pl-3 text-sm leading-6 text-[var(--text-secondary)]"
+                      <p role="status" className="max-w-[var(--public-rich-width)] border-l-2 pl-3 text-sm leading-6 text-[var(--text-secondary)]"
                         style={{ borderColor: 'color-mix(in srgb, #b7791f 55%, var(--border))' }}>
                         {message.artifactStatus.notice || 'I answered your request, but couldn’t save the trip update.'}
                       </p>
@@ -3645,27 +3676,7 @@ ${[
                         >
                           Try again
                         </Button>
-                      ) : messageMatchesDiscoveryPlanCta(message, discoveryPlanCtaMessage) ? (
-                      <div ref={discoveryPlanCtaRef}>
-                        <DiscoveryPlanCta
-                          insideBubble
-                          disabled={isGenerating}
-                          onRequestPlan={() =>
-                            handleSendMessage(
-                              buildDayByDayPlanFollowUp({
-                                parkName: message.parkName,
-                                parkNames: message.parkNames,
-                              }),
-                              {
-                                dayByDayPlanIntake: true,
-                                intakeParkName: message.parkName,
-                                intakeParkNames: message.parkNames,
-                              }
-                            )
-                          }
-                        />
-                      </div>
-                    ) : null}
+                      ) : null}
                   />
                 ) : presentation.showProseBubble ? (
                 <MessageBubble
@@ -3692,29 +3703,6 @@ ${[
                     (isWelcomeState &&
                     message.role === 'assistant' &&
                     index === 0)
-                  }
-                  afterContent={
-                    messageMatchesDiscoveryPlanCta(message, discoveryPlanCtaMessage) ? (
-                      <div ref={discoveryPlanCtaRef}>
-                        <DiscoveryPlanCta
-                          insideBubble
-                          disabled={isGenerating}
-                          onRequestPlan={() =>
-                            handleSendMessage(
-                              buildDayByDayPlanFollowUp({
-                                parkName: message.parkName,
-                                parkNames: message.parkNames,
-                              }),
-                              {
-                                dayByDayPlanIntake: true,
-                                intakeParkName: message.parkName,
-                                intakeParkNames: message.parkNames,
-                              }
-                            )
-                          }
-                        />
-                      </div>
-                    ) : null
                   }
                   compact={
                     isWelcomeState &&
@@ -3910,7 +3898,7 @@ ${[
               })}
 
               {isWelcomeState && (
-                <div className="max-w-[48rem] pt-1 sm:pt-2">
+                <div className="max-w-[var(--public-rich-width)] pt-1 sm:pt-2">
                   {isPersonalized && (
                     <p
                       className="mb-2 text-xs leading-relaxed sm:mb-3 sm:text-sm"
@@ -3963,6 +3951,9 @@ ${[
                 inlineAvatarLayout
               />)}
 
+              {draftPreviewEnabled() && draftPreview && <div ref={draftPreviewRef} className="pb-8">
+                <TrailieDraftPreview preview={draftPreview} onCancel={() => abortControllerRef.current?.abort()} />
+              </div>}
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -4001,12 +3992,30 @@ ${[
           }}
         >
           <div className="trailie-composer-column mx-auto w-full px-4 pb-1.5 pt-1.5 sm:px-6 sm:pb-4 sm:pt-3">
+            {draftPreviewEnabled() && draftPreview?.status === 'generating' && (
+              <div className="mb-2 flex min-h-14 items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2" aria-label="Draft preview availability">
+                <p role="status" className="min-w-0 text-xs leading-5 text-[var(--text-secondary)]">
+                  <span className="block font-semibold text-[var(--text-primary)]">{draftPreview.days.length ? `${draftPreview.days.length} ${draftPreview.days.length === 1 ? 'day' : 'days'} ready to preview` : 'Preparing draft preview'}</span>
+                  Not validated or saved
+                </p>
+                <button type="button" disabled={!draftPreview.days.length}
+                  className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-semibold text-[var(--accent-green)] disabled:opacity-40"
+                  onClick={() => {
+                    const day = draftPreviewRef.current?.querySelector('article');
+                    const container = chatContainerRef.current;
+                    if (!day || !container) return;
+                    container.scrollTo({ top: container.scrollTop + day.getBoundingClientRect().top - container.getBoundingClientRect().top - 16, behavior: 'instant' });
+                    day.focus({ preventScroll: true });
+                  }}>View draft</button>
+              </div>
+            )}
             {!isWelcomeState && showComposerToolbar && (
             <div className="trailie-composer-utilities mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:mb-3 sm:gap-x-4 sm:gap-y-2">
                 {chatStatus && (
                   <div
                     className="inline-flex min-w-0 max-w-full items-center text-[11px] font-medium leading-snug sm:text-xs"
-                    role={chatStatus.tone === 'sync-needed' ? 'status' : undefined}
+                    role="status"
+                    aria-label="Trip save status"
                     data-testid={chatStatus.tone === 'sync-needed' ? 'sync-needed-status' : undefined}
                     style={{
                       color: chatStatus.tone === 'saved'

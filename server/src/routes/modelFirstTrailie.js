@@ -14,8 +14,25 @@ const { openGuestTurn, GUEST_TURN_FAILURE_CODES, GUEST_ROUTE_CODES } = require('
 const { createTrailieTransportAdapter } = require('../utils/trailieTransportAdapter');
 const { resolveTrailieTransportDialect } = require('../utils/trailieTransportDialect');
 const { attachClientDisconnectAbort, setSseHeaders, writeSseEvent } = require('../utils/sseStream');
+const { previewEnabled } = require('../utils/trailieDraftPreview');
+const { recordModelFirstTurn } = require('../services/trailieTurnLedger');
 
 const PATHS = ['/chat', '/chat-stream', '/chat-anonymous', '/chat-anonymous-stream', '/plan-itinerary'];
+
+function defaultObserve(event) {
+  console.info('[Trailie model_first]', JSON.stringify(event));
+}
+
+function stageLog(responseId, stage, startedAt, extra = {}) {
+  try {
+    console.info('[Trailie model_first stage]', JSON.stringify({
+      responseId,
+      stage,
+      elapsedMs: Date.now() - startedAt,
+      ...extra,
+    }));
+  } catch { /* stage logs never affect the turn */ }
+}
 
 // Construct providers only after ownership, quota and input admission. Tests
 // inject this boundary: no SDK or travel-provider client is needed offline.
@@ -43,8 +60,9 @@ function createDependencies() {
 function createModelFirstRouter({ dependencies = createDependencies,
   TripPlan = require('../models/TripPlan'), AnonymousSession = require('../models/AnonymousSession'),
   authenticate = protect, authenticateOptional = optionalAuth, tokenAdmission = checkTokenLimit,
-  observe = event => console.info('[Trailie model_first]', JSON.stringify(event)),
+  observe = defaultObserve,
   recordMutationOutcome = require('../services/trailieMutationOutcome').recordMutationOutcome,
+  recordTurn = recordModelFirstTurn,
 } = {}) {
   const router = express.Router();
   router.use((req, res, next) => {
@@ -62,9 +80,11 @@ function createModelFirstRouter({ dependencies = createDependencies,
   });
 
   async function handle(req, res) {
+    const handleStartedAt = Date.now();
     const { signal, cleanup } = attachClientDisconnectAbort(req, res);
     const streaming = req.route.path.endsWith('-stream');
     const planner = req.route.path === '/plan-itinerary';
+    const routeName = req.route.path.replace(/^\//, '');
     let turn, anonymousId, transport, heartbeat;
     const responseId = randomUUID();
     const fail = (status, code, content = null) => {
@@ -130,9 +150,19 @@ function createModelFirstRouter({ dependencies = createDependencies,
       const run = createSimpleRuntime({ ...dependencies(),
         store: { ...store, load: async () => snapshot }, observe });
       const runtimeStartedAt = Date.now();
+      const preview = streaming && previewEnabled(req) && !snapshot.plan?.days?.length;
+      if (preview) transport.draftStarted({ responseId });
       const result = await run({ userId, tripId: requestedTrip, message, signal, responseId,
+        onPreview: preview ? event => event.withdrawn ? transport.draftWithdrawn()
+          : transport.draftDay(event) : null,
         scope: metadata.editScope || null, onProgress: event => transport?.progress(event) || false,
         requestContext: { formData: metadata.formData || null, entryContext: metadata.entryContext || null } });
+      stageLog(responseId, 'runtime_done', handleStartedAt, {
+        status: result.status,
+        modelLatencyMs: result.telemetry?.latencyMs ?? null,
+        persistenceMs: result.telemetry?.timings?.persistenceMs ?? null,
+        mutationAccepted: result.telemetry?.mutationAccepted === true,
+      });
       if (result.telemetry?.mutationOutcome) {
         // Diagnostics only: never delays or changes the traveler's response.
         Promise.resolve().then(() => recordMutationOutcome({ responseId, userId: req.user?._id ? String(req.user._id) : null,
@@ -147,6 +177,10 @@ function createModelFirstRouter({ dependencies = createDependencies,
         await turn?.fail(GUEST_TURN_FAILURE_CODES.BACKEND_EXCEPTION);
         return fail(503, 'persistence_failed');
       }
+      stageLog(responseId, 'commit_done', handleStartedAt, {
+        tripId: result.tripId || null,
+        persisted: true,
+      });
       const quota = result.quota;
       const payload = { ...result.response, ...(result.telemetry?.mutationOutcome || {}), canonicalPlan: result.canonicalPlan,
         itinerary: result.response.itineraryData, hasItinerary: !!result.response.itineraryData,
@@ -154,11 +188,40 @@ function createModelFirstRouter({ dependencies = createDependencies,
         ...(anonymousId ? { anonymousId, sessionId: anonymousId,
           messageCount: quota.completedGuestTurns, remainingAllowance: quota.remainingAllowance,
           canSendMore: quota.remainingAllowance > 0 } : {}) };
+      // Ledger + token bookkeeping must never delay the traveler-visible flush.
+      const ledgerStartedAt = Date.now();
+      Promise.resolve().then(async () => {
+        stageLog(responseId, 'ledger_write_start', handleStartedAt);
+        try {
+          await recordTurn({
+            telemetry: result.telemetry,
+            route: routeName,
+            userId: req.user?._id ? String(req.user._id) : null,
+            responseVersion: result.response?.responseVersion || 1,
+            persisted: true,
+            tripId: result.tripId || null,
+          });
+          stageLog(responseId, 'ledger_write_end', handleStartedAt, {
+            ledgerMs: Date.now() - ledgerStartedAt,
+          });
+        } catch (err) {
+          console.error('[Trailie] Ledger write failed', { responseId, code: err?.code || 'ledger_write_failed' });
+          stageLog(responseId, 'ledger_write_end', handleStartedAt, {
+            ledgerMs: Date.now() - ledgerStartedAt,
+            error: err?.message || 'ledger_failed',
+          });
+        }
+      }).catch((error) => {
+        console.error('[Trailie] Ledger bookkeeping failed', { responseId, code: error?.code || 'ledger_write_failed' });
+      });
       if (req.user?.addTokenUsage) {
         const usage = result.telemetry.calls.reduce((a, c) => ({ input: a.input + (c.usage?.inputTokens || 0),
           output: a.output + (c.usage?.outputTokens || 0) }), { input: 0, output: 0 });
-        // Accounting cannot turn a durably accepted write into a failed answer.
-        try { await req.user.addTokenUsage(usage.input, usage.output); } catch { /* recorded in turn telemetry */ }
+        Promise.resolve()
+          .then(() => req.user.addTokenUsage(usage.input, usage.output))
+          .catch((error) => {
+            console.error('[Trailie] Token usage write failed', { responseId, code: error?.code || 'token_usage_write_failed' });
+          });
       }
       if (signal.aborted || res.destroyed) return;
       if (transport) {
@@ -168,9 +231,15 @@ function createModelFirstRouter({ dependencies = createDependencies,
         try { observe({runtime:'model_first', contract:'MODEL_FIRST_FINAL', responseId, event:'content_published',
           firstUsefulVisibleContentMs: emitted ? Date.now() - runtimeStartedAt : null, timingBoundary:'server_write_not_client_paint'}); } catch { /* telemetry cannot affect acceptance */ }
         transport.responseFinalized(payload);
-      } else if (planner) res.json({ success: true, data: payload });
-      else createTrailieTransportAdapter({ dialect: resolveTrailieTransportDialect(req), mode: 'terminal',
-        emit: value => res.json(value) }).responseFinalized(payload);
+        stageLog(responseId, 'response_flushed', handleStartedAt, { mode: 'stream', emitted: Boolean(emitted) });
+      } else if (planner) {
+        res.json({ success: true, data: payload });
+        stageLog(responseId, 'response_flushed', handleStartedAt, { mode: 'planner' });
+      } else {
+        createTrailieTransportAdapter({ dialect: resolveTrailieTransportDialect(req), mode: 'terminal',
+          emit: value => res.json(value) }).responseFinalized(payload);
+        stageLog(responseId, 'response_flushed', handleStartedAt, { mode: 'terminal' });
+      }
     } catch (error) {
       try { observe({ runtime: 'model_first', responseId, status: 'request_failed', code: error.code || 'request_failed' }); } catch { /* logging only */ }
       fail([400, 403, 404, 409].includes(error.status) ? error.status : 503,

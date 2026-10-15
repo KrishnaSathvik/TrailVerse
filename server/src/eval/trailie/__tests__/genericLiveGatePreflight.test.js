@@ -35,7 +35,6 @@ describe('generic live gate zero-cost preflight', () => {
   });
 
   test.each([
-    ['TRAILIE_V2_RUNTIME_ENABLED', 'runtimeEnabled'],
     ['TRAILIE_EVIDENCE_REFRESH_HASH_SECRET', 'evidenceRefreshSecretPresent'],
     ['OPENAI_API_KEY', 'modelProviderConfigured'],
     ['NPS_API_KEY', 'npsEvidenceConfigured'],
@@ -47,6 +46,11 @@ describe('generic live gate zero-cost preflight', () => {
     const result = buildGenericLiveGatePreflight({ env, authenticated: true });
     expect(result.ready).toBe(false);
     expect(result.blockers).toContain(blocker);
+  });
+
+  test('default runtime remains enabled without the legacy flag', () => {
+    const env = { ...readyEnv }; delete env.TRAILIE_V2_RUNTIME_ENABLED;
+    expect(buildGenericLiveGatePreflight({ env, authenticated: true }).ready).toBe(true);
   });
 
   test('invalid auth blocks before spend', () => {

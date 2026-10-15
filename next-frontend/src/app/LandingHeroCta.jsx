@@ -71,7 +71,7 @@ function HeroPrimaryActions() {
 
 export default function LandingHeroCta() {
   return (
-    <div className="animate-fade-in w-full max-w-2xl mx-auto">
+    <div className="animate-fade-in w-full public-content">
       <div className="flex flex-col items-center gap-6">
         <HeroPrimaryActions />
 

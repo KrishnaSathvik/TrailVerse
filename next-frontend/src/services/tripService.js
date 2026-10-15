@@ -19,9 +19,16 @@ const tripService = {
     return response.data;
   },
 
-  // Update trip
+  // Update trip (conversation+plan response saves). Plan-only editor writes
+  // must use applyManualMutation instead.
   updateTrip: async (tripId, tripData) => {
     const response = await api.put(`/trips/${tripId}`, tripData);
+    return response.data;
+  },
+
+  // Typed owner structural edits (remove/move stop, add/remove day).
+  applyManualMutation: async (tripId, body) => {
+    const response = await api.post(`/trips/${tripId}/manual-mutations`, body);
     return response.data;
   },
 

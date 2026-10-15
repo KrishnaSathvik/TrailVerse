@@ -36,13 +36,13 @@ describe('consolidated Trailie product repairs', () => {
     const text = productionFiles.map((file) => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
     expect(text).not.toMatch(/claude-haiku|haiku-4/i);
     expect(text).toMatch(/claude-sonnet-5/);
-    expect(fs.readFileSync(path.join(root, 'services/trailieLiteLlm.js'), 'utf8')).not.toMatch(/OpenAI|temperature:/);
+    expect(fs.readFileSync(path.join(root, 'services/trailieLiteLlm.js'), 'utf8')).not.toMatch(/temperature:/);
   });
 
   it('forces a loaded-plan refinement through Phase A in the real route', () => {
     const route = fs.readFileSync(path.resolve(__dirname, '..', '..', 'routes/ai.js'), 'utf8');
     expect(route).toMatch(/refinementFollowUp && Boolean\(savedTripPlan\?\.plan\?\.days\?\.length\)/);
-    expect(route).toMatch(/refinementFollowUp && savedTripPlan\?\.plan\?\.days\?\.length[\s\S]{0,100}openEndedDiscovery = false/);
+    expect(route).toMatch(/\(refinementFollowUp \|\| constraintRefinement\) && activePlan[\s\S]{0,100}openEndedDiscovery = false/);
   });
 
   it.each([

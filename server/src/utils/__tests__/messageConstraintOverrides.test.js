@@ -12,6 +12,7 @@ describe('messageConstraintOverrides', () => {
     parkCode: 'yose',
     startDate: '2026-08-10',
     endDate: '2026-08-12',
+    numDays: 3,
     groupSize: 2,
     budget: 'moderate',
     fitnessLevel: 'easy',

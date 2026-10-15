@@ -178,6 +178,16 @@ describe('provider-call pricing', () => {
     });
     expect(priced).toMatchObject({ costStatus: 'cost_unknown', costUsd: null });
   });
+
+  test('prices GPT-6.1 Sol usage with its verified cached-input rate', () => {
+    const priced = priceProviderCall({
+      provider: 'openai', model: 'gpt-6.1-sol',
+      usage: { inputTokens: 1000, outputTokens: 100, cachedInputTokens: 200 },
+      at: new Date('2026-10-13T12:00:00.000Z'),
+    });
+    expect(priced).toMatchObject({ costStatus: 'priced', pricingVersion: 'pricing-2026-10-13' });
+    expect(priced.costUsd).toBeCloseTo((800 * 2 + 200 * 0.1 + 100 * 10) / 1_000_000, 8);
+  });
 });
 
 describe('route-neutral sanitized turn contract', () => {

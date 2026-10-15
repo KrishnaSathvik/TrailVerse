@@ -1,7 +1,5 @@
-import { buildTripMapModel } from './itineraryMapStops';
-
 // A frontend-owned vocabulary. No model-supplied component names or HTML.
-export const RICH_BLOCKS = Object.freeze(['prose', 'image_strip', 'trip_overview', 'compact_days', 'map_preview', 'things_to_know', 'adjust_trip', 'comparison', 'trip_artifact']);
+export const RICH_BLOCKS = Object.freeze(['prose', 'image_strip', 'trip_overview', 'day_purposes', 'things_to_know', 'adjust_trip', 'comparison', 'trip_artifact']);
 export function tripRevision(plan) {
   if (!plan?.days?.length) return null;
   // Legacy plans have no identity stamps. A structural key keeps those safe too.
@@ -46,20 +44,46 @@ function dedupeImages(list) {
   const seen = new Set();
   return list.filter(image => imageAllowed(image?.url) && !seen.has(image.url) && seen.add(image.url));
 }
+/** One-line day identity for chat confirmations — never a stop list. */
+export function dayPurposeLine(day, index = 0) {
+  const number = Number(day?.dayNumber) > 0 ? Number(day.dayNumber) : index + 1;
+  const summary = String(day?.dayStructure?.summary || '').trim();
+  const label = String(day?.label || '').trim().replace(new RegExp(`^day\\s*${number}\\s*(?:[·•—–\\-:|]\\s*)?`, 'i'), '').trim();
+  const purpose = summary || label || null;
+  return { dayNumber: number, purpose, type: day?.dayStructure?.type || null };
+}
+
 /**
  * Deterministic presentation for an accepted canonical trip turn.
  * Created vs updated comes only from the server's accepted-mutation refinement.
+ * Chat stays a shape confirmation; the Trip Workspace owns the full day timeline.
  */
 export function composeRichTrip(response, refinement, { imagery = [] } = {}) {
   const plan = response.canonicalPlan;
+  // Acceptance is runtime state: a failed save must never claim a trip card.
   if (!plan?.days?.length || response.artifactStatus?.status === 'save_failed') return null;
   const updated = refinement?.isRefinement === true;
   const days = plan.days.filter((day, i) => !updated || refinement.changedDayNumbers?.includes(day.dayNumber || i + 1));
+  const dayPurposes = days.map((day, i) => dayPurposeLine(day, plan.days.indexOf(day) >= 0 ? plan.days.indexOf(day) : i));
   const images = updated ? [] : dedupeImages([...(response.parkImages || []), ...imagery]).slice(0, 3);
   const guidance = updated ? [] : groundedTripGuidance(plan);
-  const fullMap = updated ? null : buildTripMapModel(plan);
-  const map = fullMap?.hasAnyMappedStop ? fullMap : null;
-  const unmappedCount = map ? Math.max(0, map.mappableCount - map.mappedCount) : 0;
-  return { plan, updated, days, images, guidance, map, unmappedCount, revision: tripRevision(plan),
-    blocks: ['trip_overview', ...(images.length ? ['image_strip'] : []), 'compact_days', ...(map ? ['map_preview'] : []), ...(guidance.length ? ['things_to_know'] : []), 'trip_artifact'] };
+  // No map preview in chat — workspace Map tab is the single map surface.
+  return {
+    plan,
+    updated,
+    days,
+    dayPurposes,
+    images,
+    guidance,
+    map: null,
+    unmappedCount: 0,
+    revision: tripRevision(plan),
+    blocks: [
+      'trip_overview',
+      ...(images.length ? ['image_strip'] : []),
+      'day_purposes',
+      ...(guidance.length ? ['things_to_know'] : []),
+      'trip_artifact',
+    ],
+  };
 }

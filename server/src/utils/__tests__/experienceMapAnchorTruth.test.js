@@ -69,7 +69,7 @@ function validate(plan, evidence) {
   return validateSimpleMutation({
     proposal: { response: 'Here is the day.', plan },
     message: 'Plan a day',
-    evidence: Array.isArray(evidence) ? evidence : evidence ? [evidence] : [],
+    evidence: [{ evidenceId: 'destination-us', topic: 'destination_identity', claim: { normalizedValue: { countryCode: 'US' } }, source: { provider: 'named_place', sourceClass: 'commercial_structured' }, observation: { observedAt: now.toISOString(), expiresAt: new Date(+now + 86400000).toISOString() } }, ...(Array.isArray(evidence) ? evidence : evidence ? [evidence] : [])],
     now,
   });
 }

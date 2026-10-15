@@ -81,7 +81,7 @@ const NotFound = () => {
             Lost in the Wilderness?
           </h2>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed text-white/90 mb-12">
+          <p className="mx-auto mt-6 public-content text-lg sm:text-xl leading-relaxed text-white/90 mb-12">
             The trail you&apos;re looking for seems to have disappeared.
             Don&apos;t worry—every explorer gets lost sometimes. Let&apos;s get you back on track.
           </p>
@@ -139,7 +139,7 @@ const NotFound = () => {
             >
               Need Help Finding Your Way?
             </h3>
-            <p className="text-base sm:text-lg mb-8 max-w-2xl mx-auto"
+            <p className="text-base sm:text-lg mb-8 public-content mx-auto"
               style={{ color: 'var(--text-secondary)' }}
             >
               Check out our most popular destinations or plan your next adventure with Trailie.

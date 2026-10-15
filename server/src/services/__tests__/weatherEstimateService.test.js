@@ -6,6 +6,8 @@ const {
 } = require('../weatherEstimateService');
 
 describe('weatherEstimateService', () => {
+  beforeEach(() => jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance', 'hrtime'] }).setSystemTime(new Date('2026-08-01T12:00:00Z')));
+  afterEach(() => jest.useRealTimers());
   test('October Arches trip uses estimate mode', () => {
     const window = resolveTripWeatherWindow(
       { startDate: '2026-10-10', endDate: '2026-10-12' },

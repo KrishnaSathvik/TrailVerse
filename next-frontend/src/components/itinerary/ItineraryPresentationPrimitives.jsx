@@ -67,7 +67,7 @@ export function ItineraryDayHeading({ day, index, action = null }) {
             {title}
           </h3>
         ) : null}
-        {day.dayStructure?.summary && <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{day.dayStructure.summary}</p>}
+        {day.dayStructure?.summary && <p className="mt-2 max-w-[var(--public-rich-width)] text-sm leading-6 text-[var(--text-secondary)]">{day.dayStructure.summary}</p>}
       </div>
       {day.date ? (
         <p className="pb-0.5 text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>

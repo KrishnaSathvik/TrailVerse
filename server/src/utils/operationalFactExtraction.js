@@ -26,6 +26,7 @@
  * between a traveller and a 4WD-only district.
  */
 
+const { TEXT_FIELDS, sourceText, explicitCurrentClosure } = require('./npsSourceDetails');
 const { CONSTRAINT_TYPE } = require('./trailieOperationalConstraints');
 const { parseVehicleLengthLimit, namedRoadNearLimit } = require('./vehicleDimensionContract');
 const {
@@ -103,11 +104,7 @@ const TEXT_RULES = Object.freeze([
 ]);
 
 function officialText(item) {
-  // longDescription FIRST: it is where NPS puts access and requirement detail,
-  // and it is precisely the field the evidence projection was dropping.
-  return [item?.longDescription, item?.shortDescription, item?.description, item?.reservationDescription]
-    .filter((v) => typeof v === 'string' && v.trim())
-    .join(' \n');
+  return TEXT_FIELDS.map(field => sourceText(item?.[field])).filter(Boolean).join(' \n');
 }
 
 function truthy(value) {
@@ -147,6 +144,12 @@ function extractOperationalFacts({ item = null, parkCode = '', observedAt = null
     facts.push(Object.freeze(fact));
   };
 
+  const closure = explicitCurrentClosure(item);
+  if (closure) push({ subject, type: closure.type, requirement: closure.excerpt,
+    text: closure.excerpt, confidence: OPERATIONAL_FACT_CONFIDENCE.OFFICIAL_TEXT,
+    provenance: { authority: 'official_owner', field: closure.field, sourceUrl: url, excerpt: closure.excerpt },
+    observedAt, subjects: [name] });
+
   // 1. Structured official fields beat prose.
   if (truthy(item?.isReservationRequired)) {
     push({
@@ -176,7 +179,7 @@ function extractOperationalFacts({ item = null, parkCode = '', observedAt = null
         plannerRule: `${name} prohibits vehicles longer than ${lengthLimit.maxLengthFeet} ft. If the traveler's vehicle exceeds that limit, do not build any part of a day around driving it there — use shuttle or alternate access instead.`,
         dimension: { kind: 'length', maxLengthFeet: lengthLimit.maxLengthFeet },
         confidence: OPERATIONAL_FACT_CONFIDENCE.OFFICIAL_TEXT,
-        provenance: { authority: 'official_owner', field: 'longDescription', sourceUrl: url, excerpt: lengthLimit.raw },
+        provenance: { authority: 'official_owner', field: TEXT_FIELDS.find(field => parseVehicleLengthLimit(sourceText(item?.[field]))) || 'officialText', sourceUrl: url, excerpt: lengthLimit.raw },
         observedAt: observedAt || null,
         subjects: [name],
       });
@@ -196,10 +199,7 @@ function extractOperationalFacts({ item = null, parkCode = '', observedAt = null
         confidence: OPERATIONAL_FACT_CONFIDENCE.OFFICIAL_TEXT,
         provenance: {
           authority: 'official_owner',
-          field: item?.longDescription && rule.pattern.test(item.longDescription)
-            ? 'longDescription'
-            : (item?.reservationDescription && rule.pattern.test(item.reservationDescription)
-              ? 'reservationDescription' : 'shortDescription'),
+          field: TEXT_FIELDS.find(field => rule.pattern.test(sourceText(item?.[field]))) || 'officialText',
           sourceUrl: url,
           excerpt: match[0],
         },

@@ -6,7 +6,7 @@ const { getTaskContractV2 } = require('../trailieTaskContractsV2');
 describe('generic constrained full-day construction inputs', () => {
   test('architect contract requires geographic day structure, not stop-row counting', () => {
     const contract = getTaskContractV2('architect').text;
-    expect(contract).toMatch(/morning/i);
+    expect(contract).toMatch(/group nearby experiences geographically/i);
     expect(contract).toMatch(/afternoon/i);
     expect(contract).toMatch(/geographic/i);
     expect(contract).toMatch(/lunch|rest/i);

@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { getTestimonialBadge } from '../testimonialBadge';
 
 describe('getTestimonialBadge', () => {
+  it('identifies admin-added stories without implying a verified traveler review', () => {
+    expect(getTestimonialBadge({ source: 'admin-created', featured: true })).toEqual({
+      label: 'Admin-added story', variant: 'muted', showAward: false,
+    });
+  });
   it('returns press badge for press source', () => {
     expect(getTestimonialBadge({ source: 'press', featured: true })).toEqual({
       label: 'Press mention',

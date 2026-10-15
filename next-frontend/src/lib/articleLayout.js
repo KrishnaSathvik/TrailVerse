@@ -12,7 +12,7 @@ export const ARTICLE_HERO =
   'article-hero mb-8 pb-8 w-full border-b';
 
 export const ARTICLE_HERO_WIDE =
-  'article-hero mb-8 pb-8 public-reading border-b';
+  'article-hero mb-8 pb-8 public-content border-b';
 
 export const ARTICLE_TITLE =
   'text-3xl sm:text-4xl lg:text-[2.75rem] font-bold mb-4 leading-[1.12] tracking-tight';

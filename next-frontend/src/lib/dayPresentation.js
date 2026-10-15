@@ -71,40 +71,60 @@ function stopTiming(stop) {
   return { daypart: stop.timeWindow || null, clock, timingReason: clock ? stop.timingReason : null };
 }
 
+/** Practical note first, optional why/framing second — never restating the activity title. */
+function activityCopy(title, practicalParts, whyPart) {
+  const notes = distinctText(practicalParts).filter(part => !restates(title, part));
+  const practical = notes[0] || null;
+  const whyCandidate = whyPart && !restates(title, whyPart) && !notes.some(note => restates(note, whyPart))
+    ? quietUncertainty(whyPart)
+    : null;
+  const why = whyCandidate || notes[1] || null;
+  return {
+    practical,
+    why,
+    text: [practical, why].filter(Boolean),
+  };
+}
+
 function activityFromStops(block, stops) {
   if (stops.length === 1) {
     const [stop] = stops;
     const timing = stopTiming(stop);
+    const copy = activityCopy(stop.name, [stop.note, block?.note], stop.why);
     return {
       type: 'activity', key: `stop-${stop.id}`, title: stop.name,
       daypart: timing.daypart || daypartLabel(block?.periods), clock: timing.clock, timingReason: timing.timingReason,
       duration: stop.duration > 0 ? stop.duration : null, difficulty: stop.physicalDifficulty || stop.difficulty || null,
       exposure: stop.exposureLevel || stop.exposure || null,
-      text: distinctText([stop.note, block?.note, stop.why]).slice(0, 2),
+      ...copy,
       requirements: stop.requirements || [], alternatives: stop.alternatives || [],
       stops: [stop],
     };
   }
   // One continuous outing over several places keeps the traveler's label and
   // lists the places inside it rather than splitting into separate activities.
+  const copy = activityCopy(block.label, [block.note], null);
   return {
     type: 'activity', key: `block-${stops.map(s => s.id).join('-')}`, title: block.label,
     daypart: daypartLabel(block.periods), clock: null, timingReason: null,
     duration: stops.reduce((sum, s) => sum + (Number(s.duration) || 0), 0) || null, difficulty: null, exposure: null,
-    text: distinctText([block.note]),
+    ...copy,
     requirements: stops.flatMap(s => s.requirements || []), alternatives: [],
     stops,
   };
 }
 
 function blockItem(block, index) {
-  const base = { key: `block-${index}`, title: block.label, daypart: daypartLabel(block.periods),
+  const copy = activityCopy(block.label, [block.note], null);
+  const base = {
+    key: `block-${index}`, title: block.label, daypart: daypartLabel(block.periods),
     clock: block.startTime && block.timingReason ? formatTime12(block.startTime) : null,
     timingReason: block.startTime && block.timingReason ? block.timingReason : null,
-    duration: block.duration > 0 ? block.duration : null, text: distinctText([block.note]), stops: [] };
+    duration: block.duration > 0 ? block.duration : null, ...copy, stops: [], kind: block.kind,
+  };
   if (block.kind === 'transfer') return { ...base, type: 'travel' };
   if (block.kind === 'experience') return { ...base, type: 'flexible' };
-  return { ...base, type: SUPPORTING_KINDS.has(block.kind) ? 'supporting' : 'flexible', kind: block.kind };
+  return { ...base, type: SUPPORTING_KINDS.has(block.kind) ? 'supporting' : 'flexible' };
 }
 
 function legacyStopItem(stop) {

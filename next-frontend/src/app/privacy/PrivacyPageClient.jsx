@@ -24,7 +24,7 @@ const policySections = [
     "id": "ai",
     "title": "Trailie, voice, and connected apps",
     "paragraphs": [
-      "To answer a request, TrailVerse sends relevant messages, trip preferences, conversation history, and supporting context to AI services. The website planner uses Anthropic, and voice uses OpenAI Realtime. Other configured AI and research services may process requests or supporting queries. Do not enter information that you do not want those services to process; text and audio are not guaranteed to be anonymized.",
+      "To answer a request, TrailVerse sends relevant messages, trip preferences, conversation history, and supporting context to AI services. The current website planner uses OpenAI, and voice uses OpenAI Realtime. Anthropic may process requests through other configured AI features. Other configured AI and research services may process requests or supporting queries. Do not enter information that you do not want those services to process; text and audio are not guaranteed to be anonymized.",
       "Voice requires microphone access. Your audio is sent to OpenAI for realtime processing. Park context and, when you grant location permission, location context may also be used to answer nearby-place questions.",
       "ChatGPT and Claude send the parameters of the TrailVerse tools they call, including destination names, dates, preferences, and planning requests. Planning requests and relevant follow-up context reach our planner and AI providers. No TrailVerse account is needed, but this does not make the request anonymous in every sense.",
       "Connected-app planning maintains temporary follow-up context and backend planning-session records. Temporary connector context expires separately from backend records and operational logs. The host app also handles your conversation under its own policies."
@@ -116,15 +116,6 @@ export default function PrivacyPageContent() {
   return (
     <main className="info-page info-legal">
       <InfoPageHeader title="Privacy Policy" description="What we collect, how planning requests are processed, and the controls available to you." />
-      <section className="info-section" aria-label="Privacy summary">
-        <div className="info-card-grid">
-          {[
-            ['Your account', 'Saved trips and favorites are account-linked. Event bookmarks and some guest state stay in your browser.'],
-            ['AI and public content', 'AI services process planning context. Reviews, approved stories, and trips you share can be public.'],
-            ['Your controls', 'Manage your profile, delete your account, unsubscribe from emails, or contact us about your information.'],
-          ].map(([title, text]) => <div key={title} className="info-panel"><h2 className="mb-3">{title}</h2><p className="text-sm leading-7 text-[var(--text-secondary)]">{text}</p></div>)}
-        </div>
-      </section>
       <LegalSections sections={sections} />
       <section className="info-section">
         <h2 className="mb-4">Questions about your information?</h2>

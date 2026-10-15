@@ -45,6 +45,7 @@ const makeReq = (headers = {}) => ({ headers });
 
 const makeRes = () => {
   const res = { statusCode: null, body: null };
+  res.set = jest.fn(() => res);
   res.status = (code) => { res.statusCode = code; return res; };
   res.json = (payload) => { res.body = payload; return res; };
   return res;

@@ -59,7 +59,7 @@ const FeaturesPage = () => {
     {
       category: 'Build your itinerary with Trailie',
       icon: Sparkles,
-      description: 'Turn a rough trip idea into a practical day-by-day plan. Guests get 5 completed Trailie messages in a 48-hour window for NPS catalog trips. Sign in for saved history, relevant web search, and broader outdoor planning.',
+      description: 'Turn a rough trip idea into a practical day-by-day plan. Guests get 5 completed Trailie messages in a 48-hour window. Plan U.S. park and city trips with relevant research when available; sign in for saved trips and history.',
       items: [
         {
           icon: Bot,
@@ -70,14 +70,14 @@ const FeaturesPage = () => {
         {
           icon: Route,
           title: 'Trailie day-by-day itineraries',
-          description: 'Trailie builds day-by-day plans from your dates, budget, group size, fitness level, and interests — NPS catalog as a guest, broader outdoor destinations when signed in.',
-          benefits: ['Personalized preferences', 'Budget & fitness matching', 'Day-by-day structure', 'State parks when signed in'],
+          description: 'Trailie builds day-by-day U.S. trip plans around your dates, budget, group size, fitness level, and interests. Coverage is strongest for NPS parks; broader destinations depend on available sources.',
+          benefits: ['Personalized preferences', 'Pace & budget preferences', 'Day-by-day structure', 'Broader U.S. destinations'],
         },
         {
           icon: Mountain,
           title: 'Live NPS data in Trailie',
-          description: 'Trailie weaves closures, events, and permit notes into chat — catalog data for all guests; signed-in users also get live web search for state parks and current local conditions.',
-          benefits: ['Closure-aware answers', 'Live web search (signed in)', 'State-park planning (signed in)', 'Visitor center hours'],
+          description: 'Trailie can look up park details, closures, events, weather, and other relevant information. Available sources vary by destination; confirm essential arrangements before traveling.',
+          benefits: ['NPS park information', 'Relevant web research', 'U.S. destination planning', 'Available visitor center hours'],
         },
         {
           icon: ArchiveRestore,
@@ -100,9 +100,9 @@ const FeaturesPage = () => {
       items: [
         {
           icon: GripVertical,
-          title: 'Drag-and-Drop Itinerary Builder',
-          description: 'Open the plan workspace to turn Trailie day-by-day output into a visual timeline. Reorder stops, add custom activities, and edit details.',
-          benefits: ['Visual day timeline', 'Drag to reorder', 'Add custom stops', 'Edit descriptions'],
+          title: 'Itinerary Workspace',
+          description: 'Open a saved trip to view its day-by-day itinerary and map. Add or remove days, add places by name, and move stops between days.',
+          benefits: ['Itinerary & map views', 'Add places by name', 'Move stops between days', 'Add or remove days'],
         },
         {
           icon: Download,
@@ -181,11 +181,11 @@ const FeaturesPage = () => {
     <main className="info-page">
       <InfoPageHeader title="Plan national park trips without juggling a dozen tabs" description={<>
             TrailVerse covers 470+ NPS parks and sites — research, live conditions, and Trailie in one place.
-            Browse without an account; sign in for saved trips, relevant web search, and broader outdoor planning.
+            Browse without an account; sign in to save trips and keep your planning history.
           </>}>
         <div className="info-note">            <strong style={{ color: 'var(--text-primary)' }}>Trailie on the website:</strong>{' '}
-            Guests get 5 completed messages in a 48-hour window for NPS catalog planning. A free account unlocks
-            chat, saved trips, live web search, and state-park itineraries.</div>
+            Guests get 5 completed messages in a 48-hour window. Trailie supports U.S. trip advice and planning,
+            with the deepest coverage for NPS parks. Sign in to keep your trips and use the plan workspace.</div>
       </InfoPageHeader>
 
       {/* Features Grid */}
@@ -201,7 +201,7 @@ const FeaturesPage = () => {
                   <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
                     {category.category}
                   </h2>
-                  <p className="text-lg max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
                     {category.description}
                   </p>
                 </div>
@@ -209,7 +209,7 @@ const FeaturesPage = () => {
                 <div className="info-card-grid">
                   {category.items.map((item, itemIndex) => (
                     <div key={itemIndex} className="group">
-                      <div className="public-editorial-section py-6 h-full"
+                      <div className="info-panel h-full"
                         style={{
                           borderColor: 'var(--border)'
                         }}
@@ -257,7 +257,7 @@ const FeaturesPage = () => {
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
               Also Available Outside the Website
             </h2>
-            <p className="text-lg max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
               The same NPS-focused Trailie tools power ChatGPT and Claude — handy when you already live in those apps.
               Connected-app planning can also use relevant web evidence. Website account history and the editable workspace are separate.
             </p>
@@ -267,7 +267,7 @@ const FeaturesPage = () => {
             {alsoAvailable.map((item) => (
               <div
                 key={item.href}
-                className="public-editorial-section py-6 h-full"
+                className="info-panel h-full"
                 style={{
                   borderColor: 'var(--border)',
                 }}
@@ -317,7 +317,7 @@ const FeaturesPage = () => {
             <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
               Know before you plan
             </h2>
-            <p className="text-lg max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
               Useful planning tools, with clear limits on data, access, and sharing.
             </p>
           </div>
@@ -369,7 +369,7 @@ const FeaturesPage = () => {
             <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               Ready to plan your next trip?
             </h2>
-            <p className="text-base mb-8 max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base mb-8 public-content" style={{ color: 'var(--text-secondary)' }}>
               Start with Trailie or explore the park directory. Free account, no credit card.
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-4">

@@ -28,7 +28,7 @@ describe('public itinerary library', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fall' }));
     expect(screen.getByRole('link', { name: 'View itinerary →' })).toBeInTheDocument();
   });
-  it('uses public workspace mode, shows the exact public question, and starts a version from it', () => {
+  it('uses public workspace mode, shows the exact public question without a personalization form', () => {
     const before = JSON.stringify(sample);
     render(<PublicItinerary sample={sample} />);
     expect(screen.getByTestId('workspace')).toHaveAttribute('data-public', 'true');
@@ -36,11 +36,20 @@ describe('public itinerary library', () => {
     expect(screen.getByTestId('workspace')).toHaveTextContent('map');
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Sample itineraries');
     expect(screen.getByText(`“${sample.prompt}”`)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Plan my version/ })).toBeDisabled();
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Family' }));
-    const ask = new URL(screen.getByRole('link', { name: /Plan my version/ }).getAttribute('href'), 'https://example.com').searchParams.get('ask');
-    expect(ask).toBe('Plan a 2-day Example park trip for a family with kids, similar to this sample. The sample I’m looking at: Day 1: Coast; Day 2: Mountains.');
+    expect(screen.getByText('What we asked Trailie')).toBeVisible();
+    expect(screen.getByText('What we asked Trailie').closest('details')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Make this trip yours' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Browse more sample/ })).toHaveAttribute('href', '/itineraries');
     expect(JSON.stringify(sample)).toBe(before);
+  });
+  it('keeps the captured answer available without replacing the itinerary', () => {
+    render(<PublicItinerary sample={{ ...sample, response: 'Arrival travel is outside these two days.', plan: { ...sample.plan, generatedAt: '2026-10-15T12:00:00Z' } }} />);
+    const answer = screen.getByText('Trailie’s original answer').closest('details');
+    expect(answer).not.toHaveAttribute('open');
+    expect(answer).toHaveTextContent('Arrival travel is outside these two days.');
+    expect(answer).toHaveTextContent('Recorded October 15, 2026.');
+    expect(screen.getByTestId('workspace')).toBeInTheDocument();
   });
   it('returns 404 for unpublished samples without querying account APIs', async () => {
     await expect(ItineraryPage({ params: Promise.resolve({ slug: 'unpublished' }) })).rejects.toThrow('not-found');

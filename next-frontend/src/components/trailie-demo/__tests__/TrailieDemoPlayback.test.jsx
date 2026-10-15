@@ -83,12 +83,14 @@ describe('TrailieDemoPlaybackStage', () => {
     act(() => screen.getByRole('button', { name: 'Explore this sample' }).click());
     const dialog = screen.getByRole('dialog', { name: 'Sample trip' });
     expect(within(dialog).getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+    expect(within(dialog).queryByLabelText('Trip at a glance')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Close sample trip' }).closest('header')).not.toBeNull();
     act(() => within(dialog).getByRole('tab', { name: 'Day 1' }).click());
     expect(within(dialog).getByText('Riverside Walk')).toBeInTheDocument();
     expect(within(dialog).queryByText('Pa’rus Trail')).not.toBeInTheDocument();
     expect(within(dialog).getByRole('tab', { name: 'Map' })).toBeInTheDocument();
     expect(dialog.querySelector('a[href*="/plan-ai/"]')).toBeNull();
-    act(() => within(dialog).getByRole('button', { name: 'Close' }).click());
+    act(() => within(dialog).getByRole('button', { name: 'Close sample trip' }).click());
     expect(close).toHaveBeenCalled();
     delete HTMLDialogElement.prototype.showModal; delete HTMLDialogElement.prototype.close;
   });

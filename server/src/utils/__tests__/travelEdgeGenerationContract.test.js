@@ -240,8 +240,8 @@ describe('(10) malformed / invalid generated edges are still dropped by existing
 
   test('a cross-destination edge on one day is dropped', async () => {
     const stops = [
-      { id: 'zion-narrows', order: 0, type: 'trail', name: 'The Narrows', note: 'n', duration: 180, parkCode: 'zion' },
-      { id: 'bryce-sunset', order: 1, type: 'viewpoint', name: 'Sunset Point', note: 'n', duration: 45, parkCode: 'brca' },
+      { id: 'zion-narrows', order: 0, type: 'trail', name: 'The Narrows', note: 'n', duration: 180, parkCode: 'zion', evidenceEntityId: 'nps:park:zion' },
+      { id: 'bryce-sunset', order: 1, type: 'viewpoint', name: 'Sunset Point', note: 'n', duration: 45, parkCode: 'brca', evidenceEntityId: 'nps:park:brca' },
     ];
     const res = await finalizeGenerated(generatedArtifact({ stops, travelEdges: [T('zion-narrows', 'bryce-sunset')] }));
     expect(res.itineraryData.days[0].travelEdges).toEqual([]);

@@ -265,7 +265,7 @@ describe('Stage 14.2A §5 — final event ordering (route source, WP12 Phase 4)'
 
   it('response_started is emitted before WP11A generation', () => {
     const started = streaming.indexOf('transport.responseStarted');
-    const v2 = streaming.indexOf('runTrailieV2FromPreparedContext');
+    const v2 = streaming.indexOf('runTrailieFromPreparedContext');
     expect(started).toBeGreaterThan(-1);
     expect(v2).toBeGreaterThan(-1);
     expect(started).toBeLessThan(v2);
@@ -291,7 +291,7 @@ describe('Stage 14.2A §5 — final event ordering (route source, WP12 Phase 4)'
   it('runtime kill-switch emits transport.error without a conflicting finalized success path first', () => {
     const disabledIdx = streaming.indexOf("code: 'trailie_runtime_disabled'");
     expect(disabledIdx).toBeGreaterThan(-1);
-    const blockStart = streaming.lastIndexOf('if (!isTrailieV2RuntimeEnabled())', disabledIdx);
+    const blockStart = streaming.lastIndexOf('if (!isTrailieRuntimeEnabled())', disabledIdx);
     const block = streaming.slice(blockStart, disabledIdx + 200);
     expect(block).toMatch(/transport\.error\(/);
     expect(block).toMatch(/res\.end\(\)/);

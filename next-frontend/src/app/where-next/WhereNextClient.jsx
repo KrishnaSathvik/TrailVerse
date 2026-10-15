@@ -1,5 +1,4 @@
 'use client';
-import InfoPageHeader from '@/components/info/InfoPageHeader';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -27,7 +26,7 @@ function pickLabel(pick) {
   return (pick?.canonicalName || pick?.displayName || pick?.rawInput || '').trim();
 }
 
-export default function WhereNextClient() {
+export default function WhereNextClient({ children }) {
   const searchParams = useSearchParams();
   const inputRef = useRef(null);
   const [step, setStep] = useState('search');
@@ -168,12 +167,18 @@ export default function WhereNextClient() {
   const displayName = selectedName;
 
   return (
-    <main className="info-page">
-      <InfoPageHeader title="Where do you want to go next?" description="Tell us the one place you’d love to visit next." />
-      <section className="info-section">
-        <div className="w-full min-w-0">
-        <div className="public-reading relative text-left lg:!mx-0">
-          <label className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
+    <main className="info-page where-next-page">
+      <header className="where-next-heading">
+        <h1>Where Next?</h1>
+        <p>A place you’ve been dreaming of. A trip you haven’t planned yet. Start here.</p>
+      </header>
+      <div className="where-next-layout">
+      <section className="where-next-picker" aria-label="Choose your next destination">
+        {step === 'search' && <>
+        <h2 id="destination-heading">Where would you love to go?</h2>
+        <p className="where-next-description">Pick one destination. Add a season if you have one in mind.</p>
+        <div className="relative min-w-0 text-left">
+          <label className="where-next-search flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
             <Search size={22} className="shrink-0" style={{ color: 'var(--text-secondary)' }} />
             <input
               ref={inputRef}
@@ -251,43 +256,30 @@ export default function WhereNextClient() {
           ) : null}
         </div>
 
+        </>}
+
         {step === 'when' && displayName ? (
-          <div className="public-form mt-10 lg:!mx-0">
-            <p className="text-xl" style={{ color: 'var(--text-primary)' }}>
-              Great pick.
-            </p>
-            <p className="mt-2 text-lg" style={{ color: 'var(--text-secondary)' }}>
-              You&apos;re dreaming of {displayName}.
-            </p>
-            <h2
-              className="mt-10 text-2xl sm:text-3xl"
-              style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}
-            >
-              When would you like to go?
-            </h2>
-            <div className="mt-6 flex w-full flex-col gap-3">
-              {TRAVEL_WINDOWS.map((window) => (
-                <button
-                  key={window.id}
-                  type="button"
-                  disabled={saving}
-                  onClick={() => saveWindow(window.id)}
-                  className="rounded-xl border px-5 py-4 text-lg"
-                  style={{ borderColor: 'var(--text-secondary)', color: 'var(--text-primary)' }}
-                >
-                  {window.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => saveWindow(null)}
-                className="py-3 text-base underline"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Skip
-              </button>
+          <div className="where-next-timing">
+            <div className="where-next-selection">
+              <div>
+                <p className="where-next-caption">Your destination</p>
+                <h2 id="destination-heading">{displayName}</h2>
+              </div>
+              <button type="button" className="where-next-text-button" disabled={saving} onClick={() => { setQuery(''); setResults([]); setStep('search'); }}>Change</button>
             </div>
+            <fieldset disabled={saving} className="where-next-seasons">
+              <legend>When would you like to go?</legend>
+              <p className="where-next-description">A rough season is enough. You can also leave this open.</p>
+              <div className="where-next-season-grid">
+                {TRAVEL_WINDOWS.map((window) => (
+                  <button key={window.id} type="button" onClick={() => saveWindow(window.id)} className={`where-next-season ${window.id === 'someday' ? 'where-next-season-flexible' : ''}`}>
+                    {window.label}
+                    <span aria-hidden="true">→</span>
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => saveWindow(null)} className="where-next-text-button where-next-skip">Skip for now</button>
+            </fieldset>
           </div>
         ) : null}
 
@@ -308,30 +300,16 @@ export default function WhereNextClient() {
           </div>
         ) : null}
 
-        {step === 'search' ? (
-          <a
-            href="#others"
-            className="mt-6 inline-flex min-h-11 items-center text-sm"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            See what travelers are choosing right now ↓
-          </a>
-        ) : null}
-        </div>
+        {step === 'search' && (
+          <div className="where-next-community">
+            <h3>From the community</h3>
+            <p>{landingCopy(stats?.volumeTier)}</p>
+          </div>
+        )}
+        {error && <p role="alert" className="mt-4 text-sm text-[var(--text-secondary)]">{error}</p>}
       </section>
-
-      <section id="others" className="info-section">
-        {step === 'search' ? (
-          <p style={{ color: 'var(--text-secondary)' }}>
-            {landingCopy(stats?.volumeTier)}
-          </p>
-        ) : null}
-        {error ? (
-          <p className="mt-4 text-sm" style={{ color: 'var(--accent-green)' }}>
-            {error}
-          </p>
-        ) : null}
-      </section>
+      {children}
+      </div>
     </main>
   );
 }

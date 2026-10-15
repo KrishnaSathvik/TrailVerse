@@ -1,3 +1,5 @@
+'use client';
+
 import { Award } from '@components/icons';
 import { getTestimonialBadge } from './testimonialBadge';
 

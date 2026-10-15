@@ -98,7 +98,7 @@ Even with HTML widgets disabled (`MCP_ENABLE_WIDGETS=false`), successful `plan_t
 responses still include slim structured output with `session_id`, `planner_mode`,
 `status`, and `days` for reliable multi-turn revisions.
 
-`plan_trip` uses a **30s** bounded timeout (`PLAN_TRIP_TIMEOUT`) and returns `UPSTREAM_TIMEOUT` with optional `partial` context instead of hanging ~70s.
+`plan_trip` uses a **180s** bounded HTTP timeout (`PLAN_TRIP_TIMEOUT`) to accommodate model-first planning. Ordinary reads retain the separate 30s `BACKEND_TIMEOUT`. Timeout failures return `UPSTREAM_TIMEOUT` with optional `partial` context; hosting and client deadlines must also allow the planning budget.
 
 ### Canonical tool surface (no duplicates)
 

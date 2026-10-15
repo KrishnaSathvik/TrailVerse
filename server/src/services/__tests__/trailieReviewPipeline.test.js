@@ -512,7 +512,7 @@ describe('itinerary park identity enrichment', () => {
             id: 'day-1',
             label: 'Day 1',
             stops: [
-              { id: 's1', name: 'Hall of Mosses', type: 'trail' },
+              { id: 's1', name: 'Hall of Mosses', type: 'trail', evidenceEntityId: 'nps:park:olym:place:hall-of-mosses' },
               { id: 's2', name: 'Kalaloch Lodge', type: 'lodging' },
             ],
           },
@@ -538,7 +538,7 @@ describe('itinerary park identity enrichment', () => {
     expect(coverage.stopsUnknownPark).toBe(1);
   });
 
-  test('an exact park name in the day label assigns that park', () => {
+  test('a day label cannot assign park containment without evidence', () => {
     const { itineraryData } = enrichItineraryParkIdentity({
       itineraryData: {
         days: [
@@ -548,14 +548,14 @@ describe('itinerary park identity enrichment', () => {
       allExtractedParks: [{ parkCode: 'olym' }, { parkCode: 'glac' }],
     });
 
-    expect(itineraryData.days[0].stops[0].parkCode).toBe('glac');
-    expect(itineraryData.days[0].parkCodes).toEqual(['glac']);
+    expect(itineraryData.days[0].stops[0].parkCode).toBeNull();
+    expect(itineraryData.days[0].parkCodes).toEqual([]);
   });
 
   test('identity already attached upstream is never overwritten', () => {
     const { itineraryData } = enrichItineraryParkIdentity({
       itineraryData: {
-        days: [{ id: 'day-1', label: 'Day 1', stops: [{ id: 's1', name: 'Somewhere', parkCode: 'glac' }] }],
+        days: [{ id: 'day-1', label: 'Day 1', stops: [{ id: 's1', name: 'Somewhere', parkCode: 'glac', parkIdentityEvidenceId: 'ev-glacier' }] }],
       },
       resolvedMetadata: { parkCode: 'olym' },
     });
@@ -566,7 +566,7 @@ describe('itinerary park identity enrichment', () => {
   test('coverage measurement matches the enriched itinerary', () => {
     const { itineraryData } = enrichItineraryParkIdentity({
       itineraryData: {
-        days: [{ id: 'day-1', label: 'Day 1', stops: [{ id: 's1', name: 'Hoh', type: 'trail' }, { id: 's2', name: 'Diner', type: 'restaurant' }] }],
+        days: [{ id: 'day-1', label: 'Day 1', stops: [{ id: 's1', name: 'Hoh', type: 'trail', evidenceEntityId: 'nps:park:olym:place:hoh' }, { id: 's2', name: 'Diner', type: 'restaurant' }] }],
       },
       resolvedMetadata: { parkCode: 'olym' },
     });

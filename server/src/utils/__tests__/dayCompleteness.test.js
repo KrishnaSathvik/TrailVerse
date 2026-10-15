@@ -1,8 +1,30 @@
 'use strict';
 const { validateDayCompleteness } = require('../dayCompleteness');
 const { validateSimpleMutation, PROPOSE_TOOL } = require('../../services/trailieSimpleGuard');
+const { normalizeEvidenceLocation } = require('../trailieCanonicalLocation');
 const block = (kind, periods, stopIds = []) => ({ kind, periods, stopIds, label: kind, note: 'Intentional time for this part of the day.' });
 const hike = () => ({ dayNumber: 1, id: 'd1', label: 'A long outing', stops: [{ id: 'hike', duration: 360, startTime: '', timeWindow: 'Morning through afternoon' }], dayStructure: {startPeriod: 'morning', endPeriod: 'evening', type: 'sightseeing', summary: 'A full hiking day with a quiet evening.', blocks: [block('outing', ['morning', 'afternoon'], ['hike']), block('downtime', ['evening'])] } });
+const now = new Date('2026-10-05T12:00:00Z');
+const usDestinationEvidence = () => [normalizeEvidenceLocation({
+  evidenceId: 'dest-us',
+  topic: 'destination_identity',
+  entityId: 'nps:park:test',
+  claim: {
+    identity: 'nps:park:test',
+    normalizedValue: { name: 'Test National Park', countryCode: 'US', latitude: 38.5, longitude: -78.4 },
+  },
+  source: { provider: 'nps', sourceClass: 'official_owner', sourceId: 'nps:park:test' },
+  observation: {
+    observedAt: now.toISOString(),
+    expiresAt: new Date(+now + 86400000).toISOString(),
+  },
+})];
+const acceptPinless = (proposal) => validateSimpleMutation({
+  proposal,
+  message: 'Plan a U.S. day',
+  evidence: usDestinationEvidence(),
+  now,
+});
 test('a single long outing is complete without a fixed stop count', () => {
  expect(validateDayCompleteness(hike())).toEqual([]);
 });
@@ -18,7 +40,7 @@ test('an unexplained afternoon is rejected, even with multiple attractions', () 
 test.each(['transfer', 'rest', 'arrival', 'departure'])('a %s day can be complete without fake place pins', type => {
  const day = { stops: [], dayStructure: {startPeriod: 'morning', endPeriod: 'evening', type, summary: 'A deliberate logistics day.', blocks: [block(type === 'rest' ? 'downtime' : type, ['morning', 'afternoon', 'evening'])] } };
  expect(validateDayCompleteness(day)).toEqual([]);
- expect(validateSimpleMutation({ proposal: { response: 'A day for logistics.', plan: { intro: 'Logistics', days: [{ ...day, id: 'd1', label: 'Travel', dayNumber: 1 }] } } }).ok).toBe(true);
+ expect(acceptPinless({ response: 'A day for logistics.', plan: { intro: 'Logistics', days: [{ ...day, id: 'd1', label: 'Travel', dayNumber: 1 }] } }).ok).toBe(true);
 });
 test('accidental empty sightseeing and untyped new days are rejected by the ordinary guard', () => {
  const day = { dayNumber: 1, stops: [], dayStructure: {startPeriod: 'morning', endPeriod: 'evening', type: 'sightseeing', summary: 'Empty', blocks: [block('downtime', ['morning', 'afternoon', 'evening'])] } };
@@ -85,7 +107,7 @@ test('changing overnight bases needs a represented transfer, not invented route 
 test('a real service experience can be sightseeing without a fake place pin', () => {
  const day={dayNumber:1,id:'d',label:'Glacier cruise',stops:[],dayStructure:{type:'sightseeing',startPeriod:'morning',endPeriod:'evening',summary:'Protect the day for the cruise.',blocks:[{...block('experience',['morning','afternoon']),duration:420,label:'National park cruise',note:'Select a sailing; schedule and operator remain unconfirmed.'},block('downtime',['evening'])]}};
  expect(validateDayCompleteness(day)).toEqual([]);
- expect(validateSimpleMutation({proposal:{response:'A full cruise day.',plan:{intro:'Sea and glaciers.',days:[day]}}}).ok).toBe(true);
+ expect(acceptPinless({response:'A full cruise day.',plan:{intro:'Sea and glaciers.',days:[day]}}).ok).toBe(true);
 });
 test('a rejected patch reports the actual missing-day target to the correction model', () => {
  const prior={days:[{id:'d1',dayNumber:1,label:'Original',stops:[{id:'x',name:'View'}]}]};
@@ -97,7 +119,7 @@ test('a rejected patch reports the actual missing-day target to the correction m
 test('a flexible non-spatial experience needs no duration or canonical pin', () => {
  const day={dayNumber:1,id:'flex',label:'A gentle day',stops:[],dayStructure:{type:'sightseeing',startPeriod:'morning',endPeriod:'evening',summary:'Explore at your own pace.',blocks:[{...block('experience',['morning','afternoon']),label:'Easy riverside time',note:'Consider an easy walk around the river area; choose your route locally.'},block('downtime',['evening'])]}};
  expect(validateDayCompleteness(day)).toEqual([]);
- const result=validateSimpleMutation({proposal:{response:'Flexible river time, not a mapped route.',plan:{intro:'A relaxed day.',days:[day]}}});
+ const result=acceptPinless({response:'Flexible river time, not a mapped route.',plan:{intro:'A relaxed day.',days:[day]}});
  expect(result.ok).toBe(true);expect(result.plan.days[0].stops).toEqual([]);expect(result.plan.days[0].travelEdges).toEqual([]);
 });
 test('non-spatial experiences cannot carry a pin or reference a mapped stop', () => {

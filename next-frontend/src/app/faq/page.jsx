@@ -62,7 +62,7 @@ export default function FAQPage() {
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>
                   Still have questions?
                 </h2>
-                <p className="text-base mb-6 max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-base mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
                   Can&apos;t find the answer you&apos;re looking for? Our support team is here to help.
                 </p>
                 <Button href="mailto:trailverseteam@gmail.com" variant="secondary" size="md" className="public-action" style={{ borderRadius: '12px', boxShadow: 'none', outline: undefined }}>

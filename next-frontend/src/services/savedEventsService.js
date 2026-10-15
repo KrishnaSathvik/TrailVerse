@@ -3,6 +3,7 @@ const SAVED_EVENTS_KEY = 'savedEvents';
 export const savedEventsService = {
   // Get all saved events from localStorage
   getSavedEvents: () => {
+    if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem(SAVED_EVENTS_KEY);
       return saved ? JSON.parse(saved) : [];

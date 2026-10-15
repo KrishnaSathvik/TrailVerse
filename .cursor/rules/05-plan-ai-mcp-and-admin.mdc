@@ -38,8 +38,11 @@ Filenames still say `simple` / `modelFirst` for historical reasons — those mod
 
 - `POST /api/ai/chat` or `chat-stream` (SSE) — model-first by default; legacy only if `TRAILIE_RUNTIME=legacy`
 - Trips: `GET|POST|PUT|DELETE /api/trips`
+- Owner structural edits: `POST /api/trips/:tripId/manual-mutations` (`remove_stop` | `move_stop` | `add_day` | `remove_day` | `add_place`) — not whole-plan PUT
+- `add_place`: client sends `{ dayId, query, index?, candidateId? }` only; server resolves via `named_place` (ambiguous → `place_ambiguous` choices; never client coords)
+- Plan-only `PUT /api/trips/:id` → `400 manual_mutation_required` (conversation+plan chat/AI saves still use PUT)
 - Share: `POST /api/trips/:tripId/share` → public `/plan-ai/shared/[shareId]` (noindex)
-- Owner itinerary/map: `TripWorkspaceView` via `PlanWorkspace` (manual edit is a separate write path — see hygiene audit)
+- Owner itinerary/map: `TripWorkspaceView` via `PlanWorkspace` (typed manual mutations + grounded Add place)
 
 ### AI capabilities (server)
 

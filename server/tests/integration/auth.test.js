@@ -1,5 +1,20 @@
+jest.mock('../../src/services/resendEmailService', () => ({
+  sendEmailVerification: jest.fn().mockResolvedValue({}),
+  sendAdminNewUserNotification: jest.fn().mockResolvedValue({}),
+  sendPasswordReset: jest.fn().mockResolvedValue({}),
+  sendWelcomeEmail: jest.fn().mockResolvedValue({}),
+}));
+
 const request = require('supertest');
-const app = require('../../src/app');
+// Exercise real auth/profile routes with local MongoDB; unrelated app services
+// start schedulers and provider clients and are outside this auth regression.
+const express = require('express');
+const app = express();
+app.use(require('helmet')());
+app.use(express.json());
+app.use('/api/auth', require('express-rate-limit')({ windowMs: 900000, max: 100 }), require('../../src/routes/auth'));
+app.use('/api/users', require('../../src/routes/users'));
+app.use(require('../../src/middleware/errorHandler'));
 const User = require('../../src/models/User');
 
 describe('Auth Integration Tests', () => {
@@ -7,6 +22,7 @@ describe('Auth Integration Tests', () => {
     it('should register a new user successfully', async () => {
       const userData = {
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       };
@@ -34,6 +50,7 @@ describe('Auth Integration Tests', () => {
     it('should return error for duplicate email', async () => {
       const userData = {
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'duplicate@example.com',
         password: 'password123'
       };
@@ -71,6 +88,7 @@ describe('Auth Integration Tests', () => {
         .post('/api/auth/signup')
         .send({
           name: 'Test User',
+        firstName: 'Test', lastName: 'User',
           email: 'invalid-email',
           password: 'password123'
         })
@@ -84,6 +102,7 @@ describe('Auth Integration Tests', () => {
         .post('/api/auth/signup')
         .send({
           name: 'Test User',
+        firstName: 'Test', lastName: 'User',
           email: 'test@example.com',
           password: '123' // Too short
         })
@@ -100,6 +119,7 @@ describe('Auth Integration Tests', () => {
       // Create a test user
       testUser = await User.create({
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
@@ -220,6 +240,7 @@ describe('Auth Integration Tests', () => {
       // Create a test user
       testUser = await User.create({
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
@@ -273,6 +294,7 @@ describe('Auth Integration Tests', () => {
       // Create a test user
       testUser = await User.create({
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
@@ -314,6 +336,7 @@ describe('Auth Integration Tests', () => {
       // Create a test user
       testUser = await User.create({
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
@@ -366,6 +389,7 @@ describe('Auth Integration Tests', () => {
       // Create a test user
       testUser = await User.create({
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
@@ -442,6 +466,7 @@ describe('Auth Integration Tests', () => {
       // Create a test user
       testUser = await User.create({
         name: 'Test User',
+        firstName: 'Test', lastName: 'User',
         email: 'test@example.com',
         password: 'password123'
       });
@@ -489,6 +514,39 @@ describe('Auth Integration Tests', () => {
     });
   });
 
+  describe('Security headers', () => {
+    it('should include security headers in responses', async () => {
+      const response = await request(app)
+        .get('/api/auth/me')
+        .expect(401);
+
+      expect(response.headers).toHaveProperty('x-content-type-options');
+      expect(response.headers).toHaveProperty('x-frame-options');
+      expect(response.headers).toHaveProperty('x-xss-protection');
+    });
+  });
+  it('preserves credentials through signup, login, reset, profile edit and login', async () => {
+    const email = 'lifecycle@example.com';
+    await request(app).post('/api/auth/signup').send({ firstName: 'Local', lastName: 'User', email, password: 'initial-password' }).expect(201);
+    await request(app).post('/api/auth/login').send({ email, password: 'initial-password' }).expect(200);
+    await request(app).post('/api/auth/forgot-password').send({ email }).expect(200);
+    const emailService = require('../../src/services/resendEmailService');
+    const resetUrl = emailService.sendPasswordReset.mock.calls.at(-1)[1];
+    await request(app).put('/api/auth/reset-password/' + resetUrl.split('/').pop()).send({ password: 'replacement-password' }).expect(200);
+    await request(app).post('/api/auth/login').send({ email, password: 'initial-password' }).expect(401);
+    const login = await request(app).post('/api/auth/login').send({ email, password: 'replacement-password' }).expect(200);
+    const before = await User.findOne({ email }).select('+password');
+    await request(app).put('/api/users/profile').set('Authorization', 'Bearer ' + login.body.token).send({ firstName: 'Updated' }).expect(200);
+    const withoutPassword = await User.findOne({ email }).select('-password');
+    expect(withoutPassword.password).toBeUndefined();
+    withoutPassword.bio = 'Local regression check';
+    await withoutPassword.save();
+    const after = await User.findOne({ email }).select('+password');
+    expect(after.password).toBe(before.password);
+    expect(after.name).toBe('Updated User');
+    await request(app).post('/api/auth/login').send({ email, password: 'replacement-password' }).expect(200);
+  });
+
   describe('Rate limiting', () => {
     it('should rate limit login attempts', async () => {
       const userData = {
@@ -497,7 +555,7 @@ describe('Auth Integration Tests', () => {
       };
 
       // Make multiple failed login attempts
-      const promises = Array(10).fill().map(() =>
+      const promises = Array(105).fill().map(() =>
         request(app)
           .post('/api/auth/login')
           .send(userData)
@@ -511,15 +569,5 @@ describe('Auth Integration Tests', () => {
     });
   });
 
-  describe('Security headers', () => {
-    it('should include security headers in responses', async () => {
-      const response = await request(app)
-        .get('/api/auth/me')
-        .expect(401);
 
-      expect(response.headers).toHaveProperty('x-content-type-options');
-      expect(response.headers).toHaveProperty('x-frame-options');
-      expect(response.headers).toHaveProperty('x-xss-protection');
-    });
-  });
 });

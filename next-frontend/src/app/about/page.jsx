@@ -122,7 +122,7 @@ export default function AboutPage() {
               <div className="mb-8">
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>My Story</h2>
               </div>
-              <div className="max-w-3xl space-y-6 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              <div className="public-content space-y-6 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
 <p className="text-lg leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
                     I&apos;m Krishna, an astrophotographer and traveler who enjoys exploring national parks. TrailVerse is the all-in-one trip planning tool I always wished existed while planning my own park adventures.
                   </p>
@@ -247,17 +247,17 @@ export default function AboutPage() {
             <div className="w-full mb-16">
               <div className="mb-8">
                 <h3 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Why TrailVerse?</h3>
-                <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
                   Built by a traveler, for travelers. The strongest parts of TrailVerse are the ones I wanted myself while planning park trips.
                 </p>
               </div>
               <div className="info-card-grid">
-                {productHighlights.map(([iconName, title, description], index) => (
-                  <div key={title} className="group public-editorial-section py-6 h-full  transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderWidth: '1px', borderColor: 'var(--border)' }}>
+                {productHighlights.map(([iconName, title, description]) => (
+                  <div key={title} className="info-panel h-full">
                     <div className="info-icon">
                       <IconGlyph name={iconName} className="h-6 w-6 text-current" />
                     </div>
-                    <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{title}</h4>
+                    <h4 className="text-xl font-semibold leading-snug mb-3" style={{ color: 'var(--text-primary)' }}>{title}</h4>
                     <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{description}</p>
                   </div>
                 ))}

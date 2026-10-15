@@ -1,11 +1,8 @@
 'use client';
 import { useId, useMemo } from 'react';
-import { getSharedDayHeading } from '@/utils/sharedTripFormat';
 import { tripBases, tripTitle } from '@/lib/tripPresentation';
 import { composeRichTrip } from '@/lib/trailieRichPresentation';
-import { daypartLabel } from '@/lib/dayPresentation';
 import useTripImagery from '@/hooks/useTripImagery';
-import ItineraryMapView, { ITINERARY_MAP_PATH_MODE } from '@/components/itinerary/ItineraryMapView';
 import AdjustTrip from './AdjustTrip';
 import DemoTripActions from '@/components/trailie-demo/DemoTripActions';
 
@@ -26,53 +23,26 @@ function ImageStrip({ images, title }) {
   );
 }
 
-function CompactDays({ plan, days, updated }) {
-  // A focused update lists each changed stop; a broad one stays one line per day.
-  const detailed = updated && days.length <= 2;
+/** Shape confirmation only — day purposes, never a second stop-by-stop itinerary. */
+function DayPurposeList({ dayPurposes, updated, totalDays }) {
   return (
     <div className="min-w-0">
-      {!updated && <h4 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">Your {plan.days.length}-day trip</h4>}
-      <ol aria-label={updated ? 'Changed days' : 'Trip days'} className={`${updated ? '' : 'mt-3'} divide-y divide-[var(--border)]`}>
-        {days.map((day, i) => {
-          const index = plan.days.indexOf(day);
-          const stops = (day.stops || []).map(s => s.name).filter(Boolean);
-          const experiences = (day.dayStructure?.blocks || []).filter(block => block.kind === 'experience');
-          return (
-            <li key={day.id || day.dayNumber || i} className="py-3 first:pt-0 last:pb-0">
-              <p className="text-xs font-medium text-[var(--text-tertiary)]">Day {day.dayNumber || index + 1}</p>
-              <p className="mt-0.5 text-[15px] font-semibold leading-snug">{getSharedDayHeading(day, index).title || day.title || 'Your planned stops'}</p>
-              {!!stops.length && (
-                detailed
-                  ? <ul className="mt-1.5 space-y-0.5 text-sm text-[var(--text-secondary)]">{stops.map((name, j) => <li key={`${name}-${j}`}>{name}</li>)}</ul>
-                  : <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{stops.slice(0, 3).join(' · ')}{stops.length > 3 ? ` · +${stops.length - 3} more` : ''}</p>
-              )}
-              {experiences.map((block, j) => (
-                <p key={`experience-${j}`} className="mt-1 text-sm text-[var(--text-secondary)]">
-                  <span className="text-[var(--text-tertiary)]">{daypartLabel(block.periods)}</span> · {block.label}
-                </p>
-              ))}
-            </li>
-          );
-        })}
+      {!updated && (
+        <h4 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+          Your {totalDays}-day trip
+        </h4>
+      )}
+      <ol aria-label={updated ? 'Changed days' : 'Trip shape'} className={`${updated ? '' : 'mt-3'} divide-y divide-[var(--border)]`}>
+        {dayPurposes.map((day) => (
+          <li key={`day-purpose-${day.dayNumber}`} className="py-3 first:pt-0 last:pb-0">
+            <p className="text-xs font-medium text-[var(--text-tertiary)]">Day {day.dayNumber}</p>
+            <p className="mt-0.5 text-[15px] font-semibold leading-snug">
+              {day.purpose || 'Open the trip for the full day plan'}
+            </p>
+          </li>
+        ))}
       </ol>
     </div>
-  );
-}
-
-function MapPreview({ map, unmappedCount, flexibleCount, title }) {
-  return (
-    <figure className="min-w-0">
-      <div role="img" aria-label={`Map preview of ${title}: ${map.mappedCount} mapped ${map.mappedCount === 1 ? 'stop' : 'stops'}`}
-        className="h-60 overflow-hidden rounded-lg border sm:h-72 lg:h-full lg:min-h-[18rem]" style={{ borderColor: 'var(--border)' }}>
-        <ItineraryMapView days={map.days} pathMode={ITINERARY_MAP_PATH_MODE.NONE} preview />
-      </div>
-      {(unmappedCount > 0 || flexibleCount > 0) && (
-        <figcaption className="mt-2 text-xs text-[var(--text-tertiary)]">
-          {unmappedCount > 0 && <p>{unmappedCount} {unmappedCount === 1 ? 'stop isn’t' : 'stops aren’t'} shown on the map</p>}
-          {flexibleCount > 0 && <p>{flexibleCount} {flexibleCount === 1 ? 'flexible activity isn’t' : 'flexible activities aren’t'} shown on the map</p>}
-        </figcaption>
-      )}
-    </figure>
   );
 }
 
@@ -87,10 +57,13 @@ export default function TrailieRichTrip({
   const model = useMemo(() => composeRichTrip(response, refinement, { imagery }), [response, refinement, imagery]);
   const headingId = useId();
   if (!model) return null;
-  const { updated, days, images, guidance, map, unmappedCount, revision } = model;
+  const { updated, dayPurposes, images, guidance, revision } = model;
   const title = tripTitle(plan);
   const bases = tripBases(plan);
-  const flexibleCount = plan.days.reduce((count, day) => count + (day.dayStructure?.blocks || []).filter(block => block.kind === 'experience').length, 0);
+  const flexibleCount = plan.days.reduce(
+    (count, day) => count + (day.dayStructure?.blocks || []).filter(block => block.kind === 'experience').length,
+    0,
+  );
   // Only the latest accepted trip offers refinement; older revisions stay quiet.
   // Samples/Demo get "Make this trip yours"; a live trip is already the traveler's own.
   const adjust = !example && current && Boolean(onFollowup);
@@ -107,11 +80,15 @@ export default function TrailieRichTrip({
 
       <ImageStrip images={images} title={title} />
 
-      <div className={`mt-6 ${map ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8' : ''}`}>
-        <CompactDays plan={plan} days={days} updated={updated} />
-        {map && <MapPreview map={map} unmappedCount={unmappedCount} flexibleCount={flexibleCount} title={title} />}
+      <div className="mt-6">
+        <DayPurposeList dayPurposes={dayPurposes} updated={updated} totalDays={plan.days.length} />
+        {flexibleCount > 0 && !updated && (
+          <p className="mt-3 text-xs leading-5 text-[var(--text-tertiary)]">
+            {flexibleCount} flexible {flexibleCount === 1 ? 'experience stays' : 'experiences stay'} in the day plan — not missing map content.
+          </p>
+        )}
       </div>
-      {updated && !days.length && <p className="mt-2 text-sm text-[var(--text-secondary)]">Trip preferences updated. Your day-by-day plan is unchanged.</p>}
+      {updated && !dayPurposes.length && <p className="mt-2 text-sm text-[var(--text-secondary)]">Trip preferences updated. Your day-by-day plan is unchanged.</p>}
 
       {supplement ? <div className="mt-6 space-y-5">{supplement}</div> : null}
 

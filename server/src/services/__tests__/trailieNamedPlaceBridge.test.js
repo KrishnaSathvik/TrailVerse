@@ -6,6 +6,7 @@ const { createSimpleRuntime } = require('../trailieSimpleRuntime');
 const { createSimpleTripStore } = require('../trailieSimpleStore');
 const TripPlan = require('../../models/TripPlan');
 const mongoose = require('mongoose');
+const dayStructure = ids => ({ type: 'rest', startPeriod: 'morning', endPeriod: 'evening', summary: 'A short outing and rest.', blocks: [{ kind: 'outing', periods: ['morning'], label: 'Visit', note: 'Enjoy the visit.', stopIds: ids }, { kind: 'downtime', periods: ['midday', 'afternoon', 'evening'], label: 'Rest', note: 'Free time.', stopIds: [] }] });
 const NOW=new Date('2026-09-30T12:00:00Z');
 const point=(name,id,types=['park'])=>({name,place_id:id,types,address_components:[{short_name:'US',types:['country']}],formatted_address:'Example County, CO, USA',geometry:{location:{lat:39.8,lng:-105.5}}});
 function fixtures(results, options={}, toolOptions={}) {
@@ -37,10 +38,10 @@ test('document-only search plus explicit names produces a persisted canonical it
     const facts=JSON.parse(input.at(-1).output).facts;
     const named=facts.filter(f=>f.value?.placeKind);
     expect(named).toHaveLength(3);
-    return generation('propose_trip_update',{response:'Your weekend is ready.',plan:{parkName:req.destination,intro:'A relaxed weekend',days:[{id:'d1',dayNumber:1,label:'First day',stops:named.map((f,i)=>({id:`s${i}`,order:i+1,type:i===2?'lodging':'viewpoint',name:f.value.name,evidenceRef:f.evidenceId,duration:30,note:'Adapt the loop to conditions.',startTime:''}))}]}});
+    return generation('propose_trip_update',{response:'Your weekend is ready.',plan:{parkName:req.destination,intro:'A relaxed weekend',days:[{id:'d1',dayNumber:1,label:'First day',dayStructure:dayStructure(named.map((_,i)=>`s${i}`)),stops:named.map((f,i)=>({id:`s${i}`,order:i+1,type:i===2?'lodging':'viewpoint',name:f.value.name,evidenceRef:f.evidenceId,duration:30,note:'Adapt the loop to conditions.',startTime:'',timeWindow:'Morning'}))}]}});
   });
   const result=await createSimpleRuntime({model,travelTools:b.tools,now:()=>NOW,store:createSimpleTripStore({TripPlan})})({userId:String(new mongoose.Types.ObjectId()),message:'Build a weekend',snapshot:{}});
-  expect(result.status).toBe('complete'); expect(model).toHaveBeenCalledTimes(2);
+  expect(result.telemetry.mutationRounds).toEqual([{ issues: [] }]); expect(result.status).toBe('complete'); expect(model).toHaveBeenCalledTimes(2);
   expect(result.telemetry.mutationAccepted).toBe(true);
   const saved=await TripPlan.findById(result.tripId).lean();
   expect(saved.plan.itineraryHash).toBe(result.response.itineraryHash);
@@ -48,8 +49,9 @@ test('document-only search plus explicit names produces a persisted canonical it
   expect(saved.plan.days[0].stops.every(s=>s.location.status==='resolved' && s.location.source==='geocoder')).toBe(true);
   expect(saved.plan.days[0].stops[2]).toMatchObject({name:'Example Town',type:'custom',placeKind:'area'});
   expect(saved.plan.days[0].travelEdges).toHaveLength(2);
-  // Driving was only a research assumption: no saved car authority was invented.
-  expect(saved.plan.days[0].travelEdges.every(e=>e.status==='unverified')).toBe(true);
+  // A practical driving default can use measured routes without inventing traveler car ownership.
+  expect(saved.plan.days[0].travelEdges.every(e=>e.status==='verified' && e.modeAuthority==='practical_default')).toBe(true);
+  expect(saved.planningState?.transportation?.rentalCar).not.toBe(true);
   expect(b.route.fetch).toHaveBeenCalledTimes(2);
   expect(b.lookup).toHaveBeenCalledTimes(3);
 });
@@ -57,14 +59,14 @@ test('search titles alone cannot create identities and vague lodging cannot inve
   const b=fixtures([point('Example Hotel','hotel',['lodging'])]);
   b.lookup.mockResolvedValue([point('Example Hotel','hotel',['lodging'])]);
   const r=await b.tools.execute('read_travel',{...req,places:['hotel or motel in Example Town','a shorter marked loop']},input);
-  expect(r.evidence.some(e=>e.source.provider==='named_place')).toBe(false);
+  expect(r.namedPlaceResolutions.every(row=>row.status!=='resolved')).toBe(true);
   expect(r.unresolved.filter(u=>u.place)).toHaveLength(2);
   expect(b.route.fetch).not.toHaveBeenCalled();
 });
 test('ambiguous exact identities remain unresolved rather than selecting the first',async()=>{
   const b=fixtures([point('Pine Loop','one'),point('Pine Loop','two')]);
   const r=await b.tools.execute('read_travel',{...req,places:['Pine Loop']},input);
-  expect(r.evidence.some(e=>e.source.provider==='named_place')).toBe(false);
+  expect(r.namedPlaceResolutions.every(row=>row.status!=='resolved')).toBe(true);
   expect(r.unresolved.some(u=>u.place==='Pine Loop')).toBe(true);
 });
 test('context geography remains contextual; explicit traveler geography can override it',async()=>{
@@ -74,17 +76,22 @@ test('context geography remains contextual; explicit traveler geography can over
   expect(row.claim.identity).toBe('google:place:ut');
   expect(row.provenance.queryProvenance).toMatchObject({explicitTravelerRegion:{name:'Utah'},contextualRegions:[],destinationNames:['Example foothills, Colorado']});
 });
-test('invalid coordinates and non-US lookalikes cannot become map identities',async()=>{
-  const b=fixtures([{...point('Pine Loop','bad'),geometry:{location:{lat:null,lng:null}}}, {...point('Pine Loop','abroad'),address_components:[{short_name:'GB',types:['country']}],formatted_address:'London, UK'}]);
-  const r=await b.tools.execute('read_travel',{...req,places:['Pine Loop']},input);
-  expect(r.evidence.some(e=>e.source.provider==='named_place')).toBe(false);
+test('invalid coordinates stay unresolved; foreign lookalikes survive as foreign evidence',async()=>{
+  const bad=fixtures([{...point('Pine Loop','bad'),geometry:{location:{lat:null,lng:null}}}]);
+  const badResult=await bad.tools.execute('read_travel',{...req,places:['Pine Loop']},input);
+  expect(badResult.evidence.some(e=>e.source.provider==='named_place')).toBe(false);
+  const abroad=fixtures([{...point('Pine Loop','abroad'),address_components:[{short_name:'GB',types:['country']}],formatted_address:'London, UK'}],{},{destinationResolver:async()=>({entityId:'place:query:area',displayName:'Example foothills, Colorado'})});
+  const abroadResult=await abroad.tools.execute('read_travel',{...req,places:['Pine Loop']},input);
+  const row=abroadResult.evidence.find(e=>e.source.provider==='named_place');
+  expect(row).toBeTruthy();
+  expect(row.claim.normalizedValue.countryCode).toBe('GB');
 });
 test('proposal-selected names resolve without another model research round',async()=>{
   const b=fixtures([point('Cedar Preserve','cedar')]);
-  const proposal={response:'Ready',plan:{parkName:req.destination,intro:'A visit',days:[{id:'d',dayNumber:1,label:'Day',stops:[{id:'s',order:1,name:'Cedar Preserve',type:'viewpoint',duration:30,note:'',startTime:''}]}]}};
+  const proposal={response:'Ready',plan:{parkName:req.destination,intro:'A visit',days:[{id:'d',dayNumber:1,label:'Day',dayStructure:dayStructure(['s']),stops:[{id:'s',order:1,name:'Cedar Preserve',type:'viewpoint',duration:30,note:'',startTime:'',timeWindow:'Morning'}]}]}};
   const model=jest.fn(async()=>generation('propose_trip_update',proposal));
   const r=await createSimpleRuntime({model,travelTools:b.tools,now:()=>NOW})({message:'Create my trip'});
-  expect(r.status).toBe('complete'); expect(model).toHaveBeenCalledTimes(1);
+  expect(r.telemetry.mutationRounds).toEqual([{ issues: [] }]); expect(r.status).toBe('complete'); expect(model).toHaveBeenCalledTimes(1);
   expect(r.response.itineraryData.days[0].stops[0].canonicalPlaceId).toBe('google:place:cedar');
 });
 
@@ -136,12 +143,16 @@ test.each(['Zion National Park','Zion National Park and Bryce Canyon National Pa
  expect(r.namedPlaceResolutions[0].status).toBe('resolved');
  expect(r.evidence.find(e=>e.source.provider==='named_place').provenance.queryProvenance).toMatchObject({contextualRegions:[{code:'UT'}],destinationNames:[destination]});
 });
-test('candidate rejection diagnostics survive to terminal telemetry',async()=>{
+test('foreign named-place evidence reaches telemetry for the geography guard',async()=>{
  const b=fixtures([{...point('Cedar Preserve','foreign'),address_components:[{short_name:'CA',types:['country']}]}]);
  const model=jest.fn().mockResolvedValueOnce(generation('read_travel',{...req,places:['Cedar Preserve']}))
  .mockResolvedValueOnce({completionStatus:'completed',outputText:'That place remains unverified.',toolCalls:[]});
  const r=await createSimpleRuntime({model,travelTools:b.tools,now:()=>NOW})({message:'Build a trip'});
- expect(r.telemetry.tools[0].namedPlaceDiagnostics[0]).toMatchObject({inputName:'Cedar Preserve',resolutionStatus:'unresolved',candidates:[expect.objectContaining({rejectionReason:'country_mismatch'})]});
+ expect(r.telemetry.tools[0].namedPlaceDiagnostics[0]).toMatchObject({
+   inputName:'Cedar Preserve',
+   resolutionStatus:'resolved',
+   candidates:[expect.objectContaining({country:'CA',rejectionReason:null})],
+ });
 });
 test('research timeout preserves earlier identities and marks unattempted names',async()=>{
  const b=fixtures([point('Cedar Preserve','cedar')],{}, {placeBatchSize:1,phaseTimeoutMs:60,providerTimeoutMs:1000});

@@ -91,7 +91,7 @@ export default async function BlogCategoryPage({ params }) {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
                 {cat.name}
               </h1>
-              <p className="text-lg mb-6 max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg mb-6 public-content" style={{ color: 'var(--text-secondary)' }}>
                 {cat.description}
               </p>
               <p className="text-sm mb-8" style={{ color: 'var(--text-tertiary)' }}>

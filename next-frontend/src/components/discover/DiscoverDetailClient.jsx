@@ -287,7 +287,7 @@ export default function DiscoverDetailClient({ detail: initialDetail, dimension 
                 <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                   Upcoming events
                 </h2>
-                <p className="text-sm mt-1 max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-sm mt-1 public-content" style={{ color: 'var(--text-secondary)' }}>
                   {eventsSectionSubtitle(dimension, detail.nps?.parkCount ?? pagination.total)}
                 </p>
               </div>

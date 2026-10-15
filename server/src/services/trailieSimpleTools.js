@@ -5,6 +5,8 @@ const { materializeCandidate } = require('./evidenceBrokerService');
 const { hashPayload } = require('../utils/canonicalResponse');
 const { normalizeEvidenceLocation, validLocation } = require('../utils/trailieCanonicalLocation');
 const { AUTHORITY_ORDER } = require('./evidenceCoverageEvaluator');
+const { orderEvidenceForRead } = require('../utils/evidenceReadRelevance');
+const { modelEvidenceRow } = require('../utils/modelEvidenceView');
 
 const PROVIDERS = ['nps', 'ridb', 'weather', 'google_maps', 'astronomy_compute', 'fee_free_calendar',
   'known_place', 'named_place', 'brave', 'serper', 'tavily', 'direct_official_page', 'geocode_coordinate'];
@@ -98,16 +100,21 @@ function createEvidenceReader({ broker, now = () => new Date() } = {}) {
       if (usableEvidence(row, receivedAt)) evidence.push(normalizeEvidenceLocation(row));
     }
     // Keep individual reads bounded; never cut a fact or imply omitted records
-    // were absent from the provider's response.
+    // were absent from the provider's response. Rows are ordered by relevance
+    // to the model's structured request BEFORE the budget applies.
     const selected = [];
+    const reserve = [];
     let bytes = 2;
-    for (const row of evidence) {
-      const size = Buffer.byteLength(JSON.stringify(row), 'utf8') + 1;
-      if (selected.length >= 8 || bytes + size > 12000) continue;
+    for (const row of orderEvidenceForRead(evidence, { query: args.query, ...(args.relevance || {}) })) {
+      const size = Buffer.byteLength(JSON.stringify(modelEvidenceRow(row)), 'utf8') + 1;
+      if (selected.length >= 8 || bytes + size > 12000) { reserve.push(row); continue; }
       selected.push(row); bytes += size;
     }
     const omitted = evidence.length - selected.length;
     return { status: result.status, evidence: selected,
+      // Over-budget rows never reach the model through this read. They remain
+      // available only for exact identity binding of model-named places.
+      reserve,
       reasonCode: result.reasonCode || null,
       ...(args.provider === 'named_place' ? { placeDiagnostics: { querySent: args.entity.displayName, ...(result.metadata || {}) } } : {}),
       ...(result.status === 'unsupported' ? { reason: 'No configured provider supports this request. Use available information and explain important uncertainty naturally; do not widen research.',

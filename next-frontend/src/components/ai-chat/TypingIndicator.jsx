@@ -52,7 +52,7 @@ const TypingIndicator = ({ text = 'Working on that…', sources = [], inlineAvat
 
   if (inlineAvatarLayout) {
     return (
-      <div className="trailie-status-row group w-full max-w-[48rem] py-1" role="status" aria-live="polite" aria-label={text}>
+      <div className="trailie-status-row group w-full max-w-[var(--public-rich-width)] py-1" role="status" aria-live="polite" aria-label={text}>
         <div className="flex items-start gap-3">
           <div className="pt-0.5">
             <TrailieAvatar className="!h-8 !w-8 shrink-0 sm:!h-9 sm:!w-9" />

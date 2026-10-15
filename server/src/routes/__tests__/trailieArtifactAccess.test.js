@@ -36,6 +36,7 @@ afterEach(()=>{delete process.env.TRAILIE_RUNTIME;});
 const { createNamedPlaceEvidenceProvider } = require('../../services/providers/namedPlaceEvidenceProvider');
 const { createEvidenceBroker } = require('../../services/evidenceBrokerService');
 const { createSimpleTravelTools } = require('../../services/trailieTravelData');
+const dayStructure = ids => ({ type: 'rest', startPeriod: 'morning', endPeriod: 'evening', summary: 'A short outing and rest.', blocks: [{ kind: 'outing', periods: ['morning'], label: 'Visit', note: 'Enjoy the visit.', stopIds: ids }, { kind: 'downtime', periods: ['midday', 'afternoon', 'evening'], label: 'Rest', note: 'Free time.', stopIds: [] }] });
 const NOW=new Date();
 const point=(name,id,types=['park'])=>({name,place_id:id,types,address_components:[{short_name:'US',types:['country']}],formatted_address:'Example County, CO, USA',geometry:{location:{lat:39.8,lng:-105.5}}});
 function fixtures(results, options={}) {
@@ -59,11 +60,11 @@ function fixtures(results, options={}) {
 
 test.each(['/chat','/chat-anonymous','/chat-stream','/chat-anonymous-stream'])('parity %s',async endpoint=>{
  const fixture=fixtures([point('Cedar Preserve','cedar'),point('Pine Loop','pine'),point('Example Town','town',['locality'])]);
- mockDependencies.mockImplementation(()=>({model:mockModel,travelTools:fixture.tools}));
+ mockDependencies.mockImplementation(()=>({model:mockModel,travelTools:fixture.tools,verifyMemory:require('../../../tests/helpers/memoryAuthority').stubMemoryVerifier()}));
  const read={destination:'Example foothills, Colorado',question:'Build a day',topics:['activities'],places:['Cedar Preserve','Pine Loop','Example Town'],travelMode:'driving'};
  mockModel.mockResolvedValueOnce(tool('read_travel',read)).mockImplementationOnce(async({input})=>{
   const named=JSON.parse(input.at(-1).output).facts.filter(f=>f.value?.placeKind);
-  return tool('propose_trip_update',{response:'Your trip is ready.',memory_updates:[{field:'transportation',value:{rentalCar:true},sourceQuote:'I have a rental car'}],plan:{parkName:read.destination,intro:'A relaxed day',days:[{id:'d1',dayNumber:1,label:'First day',stops:named.map((f,i)=>({id:`s${i}`,order:i+1,type:i===2?'lodging':'viewpoint',name:f.value.name,evidenceRef:f.evidenceId,duration:30,note:'',startTime:''}))}]}});
+  return tool('propose_trip_update',{response:'Your trip is ready.',memory_updates:[{field:'transportation',value:{rentalCar:true},sourceQuote:'I have a rental car'}],plan:{parkName:read.destination,intro:'A relaxed day',days:[{id:'d1',dayNumber:1,label:'First day',dayStructure:dayStructure(named.map((_,i)=>`s${i}`)),stops:named.map((f,i)=>({id:`s${i}`,order:i+1,type:i===2?'lodging':'viewpoint',name:f.value.name,evidenceRef:f.evidenceId,duration:30,note:'',startTime:'',timeWindow:'Morning'}))}]}});
  });
  let r=request(app).post('/api/ai'+endpoint);
  if(!endpoint.includes('anonymous'))r=r.set('Authorization','Bearer '+token);
@@ -71,6 +72,7 @@ test.each(['/chat','/chat-anonymous','/chat-stream','/chat-anonymous-stream'])('
 
  expect(res.status).toBe(200);
  const body=endpoint.endsWith('-stream')?events(res).find(e=>e.type==='done'):res.body.data;
+ expect(mockObserve.mock.calls.map(c=>c[0]).filter(e=>e.runtime==='model_first')).toEqual(expect.arrayContaining([expect.objectContaining({mutationAccepted:true})]));
  expect(body.presentation.primaryArtifact).toEqual({kind:'itinerary',source:'canonicalPlan'});
  expect(body.canonicalPlan.days[0].stops).toHaveLength(3);
  expect(body.canonicalPlan.days[0].stops.every(s=>s.location.status==='resolved')).toBe(true);
@@ -82,6 +84,7 @@ test.each(['/chat','/chat-anonymous','/chat-stream','/chat-anonymous-stream'])('
   const session=await AnonymousSession.findOne({anonymousId:body.anonymousId}).lean();
   const last=session.messages.at(-1);
   expect(last.presentation).toEqual(body.presentation);
+  expect(JSON.parse(JSON.stringify(last.canonicalPlan))).toEqual(body.itinerary);
   expect(hashPayload(last.canonicalPlan)).toBe(body.itineraryHash);
   const migrated=require('../../utils/guestCanonicalPlanMigration').buildGuestTripMigrationPayload({session,userId:owner._id});
   expect(migrated.plan.itineraryHash).toBe(body.itineraryHash);
@@ -94,4 +97,23 @@ test.each(['/chat','/chat-anonymous','/chat-stream','/chat-anonymous-stream'])('
   expect(saved.conversation.at(-1).presentation).toEqual(body.presentation);
  }
 
+});
+
+test('ledger and token failures are logged without failing a completed turn', async () => {
+ const log=jest.spyOn(console,'error').mockImplementation(()=>{});
+ const tokenWrite=jest.spyOn(User.prototype,'addTokenUsage').mockRejectedValue(Object.assign(new Error('private database detail'),{code:'TOKEN_WRITE_TEST'}));
+ const recordTurn=jest.fn().mockRejectedValue(Object.assign(new Error('private ledger detail'),{code:'LEDGER_WRITE_TEST'}));
+ const isolated=express();isolated.use(express.json());
+ isolated.use('/api/ai',require('../modelFirstTrailie').createModelFirstRouter({
+  dependencies:()=>({model:async()=>answer('A useful answer.'),travelTools:{definitions:[],execute:jest.fn()}}),recordTurn,observe:()=>{},
+ }));
+ try {
+  const res=await request(isolated).post('/api/ai/chat').set('Authorization','Bearer '+token).send({message:'Hello',clientTurnId:'bookkeeping-failure'});
+  expect(res.status).toBe(200);
+  await new Promise(resolve=>setImmediate(resolve));
+  expect(recordTurn).toHaveBeenCalledTimes(1);expect(tokenWrite).toHaveBeenCalledTimes(1);
+  expect(log).toHaveBeenCalledWith('[Trailie] Ledger write failed',expect.objectContaining({code:'LEDGER_WRITE_TEST'}));
+  expect(log).toHaveBeenCalledWith('[Trailie] Token usage write failed',expect.objectContaining({code:'TOKEN_WRITE_TEST'}));
+  expect(JSON.stringify(log.mock.calls)).not.toContain('private');
+ } finally {log.mockRestore();tokenWrite.mockRestore();}
 });

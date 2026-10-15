@@ -63,7 +63,7 @@ export default function FAQAccordionClient() {
                     </button>
 
                     <div id={`faq-answer-${uniqueId}`} role="region" aria-labelledby={`faq-question-${uniqueId}`} hidden={!isOpen}>
-                      <div className="max-w-3xl pb-6 pr-6 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                      <div className="public-content pb-6 pr-6 text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                         {item.answer}
                       </div>
                     </div>

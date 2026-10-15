@@ -417,7 +417,7 @@ body.mobile-nav-open {
 }
 
 .trailie-opening .prose {
-  max-width: 48rem;
+  max-width: var(--public-rich-width);
 }
 
 .trailie-opening .prose h2 {
@@ -431,7 +431,7 @@ body.mobile-nav-open {
 }
 
 .trailie-opening .prose p {
-  max-width: 36rem;
+  max-width: var(--public-rich-width);
   margin: 0;
   color: var(--text-secondary);
   font-size: 1rem;
@@ -971,7 +971,7 @@ section {
   text-wrap: balance;
 }
 .public-page-intro {
-  max-width: 48rem;
+  max-width: var(--public-rich-width);
   color: var(--text-secondary);
   font-size: 1rem;
   line-height: 1.6;
@@ -1042,7 +1042,7 @@ section {
 .info-width, .info-section, .info-page > .info-legal-content {
   width: 100%; max-width: var(--public-shell-width); margin-inline: auto; padding-inline: var(--public-gutter);
 }
-.info-introduction { padding-block: 2rem; max-width: 48rem; }
+.info-introduction { padding-block: 2rem; max-width: var(--public-rich-width); }
 .info-introduction h1 { margin-bottom: 1rem; }
 .info-label { margin-bottom: 1rem; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
 .info-description { font-size: 18px; line-height: 1.7; color: var(--text-secondary); }
@@ -1099,32 +1099,37 @@ section {
 .info-legal .info-introduction { max-width: var(--public-reading-width); margin-inline: auto; }
 
 
-/* Width hierarchy shared by live, restored and public recorded responses. */
+/* One content canvas for live, restored, and public recorded responses. */
 .responsive-content { max-width: var(--public-rich-width); margin-inline: auto; }
-.responsive-content > div:first-child,
-.responsive-content > div > section:not([data-presentation-kind="rich_trip"]):not([aria-label="Destination comparison"]):not(.trailie-narrative):not([aria-label="Trip itinerary"]),
-.responsive-content .prose > :not(.trailie-table-breakout),
-.responsive-content .trailie-narrative > h3 {
-  max-width: var(--public-reading-width);
-  margin-inline: auto;
-}
-.responsive-content .trailie-narrative { max-width: var(--public-rich-width); margin-inline: auto; }
+.responsive-content .trailie-narrative,
 .responsive-content .trailie-table-breakout,
 .responsive-content [data-presentation-kind="rich_trip"],
-.responsive-content [aria-label="Destination comparison"] { max-width: var(--public-rich-width); margin-inline: auto; }
-.trailie-composer-column { max-width: calc(var(--public-reading-width) + 2 * var(--public-gutter)); }
-.trailie-message > :not(.trailie-response), .plan-ai-shell .trailie-opening { max-width: var(--public-reading-width); margin-inline: auto; }
+.responsive-content [aria-label="Destination comparison"],
+.responsive-content [aria-label="Trip itinerary"] {
+  max-width: var(--public-rich-width);
+  margin-inline: auto;
+}
+.trailie-composer-column { max-width: calc(var(--public-rich-width) + 2 * var(--public-gutter)); }
+.trailie-message > :not(.trailie-response), .plan-ai-shell .trailie-opening {
+  max-width: var(--public-rich-width);
+  margin-inline: auto;
+}
 
-/* Article prose is readable; tables, figures and related grids have their own canvas. */
-.article-reading > .article-hero { max-width: var(--public-reading-width); margin-inline: auto; }
-.article-reading > .article-content, .article-reading .article-body { max-width: var(--public-rich-width); margin-inline: auto; }
-.article-reading > .article-callout { max-width: var(--public-reading-width); margin-inline: auto; }
-.article-reading .article-section > :is(h2, h3, p, ul, ol, blockquote) { max-width: var(--public-reading-width); margin-inline: auto; }
-.article-reading .article-section > div:not(.responsive-rich) { max-width: var(--public-reading-width); margin-inline: auto; }
-.article-reading > div:has(> img), .article-reading > div:has(> picture) { max-width: var(--public-rich-width); margin-inline: auto; }
-.article-reading .blog-prose > :is(p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, hr) { max-width: var(--public-reading-width); margin-inline: auto; }
+/* Articles share the same rich content canvas; media and tables stay full-width within it. */
+.article-reading > .article-hero,
+.article-reading > .article-content,
+.article-reading .article-body,
+.article-reading > .article-callout,
+.article-reading .article-section > :is(h2, h3, p, ul, ol, blockquote),
+.article-reading .article-section > div:not(.responsive-rich),
+.article-reading > div:has(> img),
+.article-reading > div:has(> picture),
+.article-reading .blog-prose > :is(p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, hr),
 .article-reading .blog-prose > :is(figure, pre, .blog-table-wrap),
-.article-reading .blog-prose > p:has(> img) { max-width: var(--public-rich-width); margin-inline: auto; }
+.article-reading .blog-prose > p:has(> img) {
+  max-width: var(--public-rich-width);
+  margin-inline: auto;
+}
 .article-reading .blog-prose pre, .article-reading .blog-prose .blog-table-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
 .article-reading .blog-prose :is(td, th) { font-size: 14px; }
 .article-wide > .article-hero { margin-inline: 0; }
@@ -1155,4 +1160,61 @@ section {
 /* Account overlays and inline account actions keep the same touch contract. */
 :where(.public-account-page, [role="dialog"]) button { min-height: var(--public-control-height); }
 
-.responsive-content [aria-label="Trip itinerary"] { max-width: var(--public-rich-width); margin-inline: auto; }
+/* Keep legal summaries, notices, and body copy on one reading column. */
+.info-legal .info-section { max-width: calc(var(--public-reading-width) + 2 * var(--public-gutter)); }
+
+/* Where Next keeps the picker and newsletter in one compact reading space. */
+.where-next-page { max-width: 1120px; margin-inline: auto; padding: 48px 32px 64px; }
+.where-next-heading { max-width: 640px; margin-bottom: 36px; }
+.where-next-heading h1 { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 650; letter-spacing: -.035em; line-height: 1.15; margin-bottom: 12px; }
+.where-next-heading > p { color: var(--text-secondary); font-size: 17px; line-height: 1.65; max-width: 54ch; }
+.where-next-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.where-next-picker { min-width: 0; padding-top: 12px; }
+.info-page .where-next-search input:focus-visible { outline: none !important; box-shadow: none !important; }
+.where-next-search:focus-within { border-color: var(--text-secondary); }
+.where-next-page :is(.where-next-picker, .where-next-newsletter) > h2 { font-size: 24px; line-height: 1.3; letter-spacing: -.025em; margin-bottom: 10px; }
+.where-next-description { color: var(--text-secondary); font-size: 15px; line-height: 1.7; margin-bottom: 24px; }
+.where-next-community { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
+.where-next-community h3 { font-size: 15px; margin-bottom: 8px; }
+.where-next-community p, .where-next-consent { color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
+.where-next-newsletter { min-width: 0; padding: 28px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px; }
+.where-next-launch { display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent-green); margin-bottom: 14px; }
+.where-next-signup { background: transparent !important; }
+.where-next-signup form { display: flex; flex-direction: column; gap: 12px; }
+.where-next-signup form :is(input, button) { width: 100%; }
+.where-next-consent { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.where-next-picker .where-next-result { width: 100%; display: flex; flex-direction: column; text-align: left; }
+.where-next-picker .where-next-result > section { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 20px; }
+@media (max-width: 767px) {
+  .where-next-page { padding: 28px 20px 40px; }
+  .where-next-heading { margin-bottom: 28px; }
+  .where-next-heading > p { font-size: 16px; }
+  .where-next-layout { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .where-next-picker { padding-top: 0; }
+  .where-next-newsletter { padding: 22px; }
+}
+
+/* Destination timing and result use the same compact hierarchy as the picker. */
+.where-next-selection { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.where-next-caption { margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.where-next-page .where-next-selection h2, .where-next-page .where-next-saved h2 { font-size: 26px; line-height: 1.25; overflow-wrap: anywhere; }
+.where-next-seasons { min-width: 0; }
+.where-next-seasons legend { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.where-next-seasons .where-next-description { font-size: 14px; margin-bottom: 18px; }
+.where-next-season-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.where-next-season { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-size: 14px; text-align: left; cursor: pointer; }
+.where-next-season span { color: var(--text-secondary); }
+.where-next-season-flexible { grid-column: 1 / -1; }
+.where-next-season:hover { border-color: var(--text-secondary); background: var(--surface-hover); }
+.where-next-seasons:disabled { opacity: .6; }
+.where-next-text-button { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--text-secondary); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.where-next-skip { margin-top: 8px; }
+.where-next-window { margin-top: 12px; color: var(--text-secondary); font-size: 15px; }
+.where-next-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; margin-bottom: 8px; }
+.where-next-action { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 14px; font-weight: 600; text-align: center; }
+.where-next-action-primary { background: var(--accent-green); border-color: var(--accent-green); color: white; }
+.where-next-picker .where-next-result { gap: 0; }
+.where-next-leaders { margin-top: 16px; display: grid; gap: 10px; font-size: 14px; }
+.where-next-leaders li { display: flex; justify-content: space-between; gap: 12px; }
+.where-next-season:focus-visible, .where-next-text-button:focus-visible { outline: 2px solid var(--text-secondary); outline-offset: 3px; }
+@media (max-width: 400px) { .where-next-season { padding: 12px; } .where-next-actions { flex-direction: column; } }

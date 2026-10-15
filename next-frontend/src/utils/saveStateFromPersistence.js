@@ -20,20 +20,20 @@ export function shouldAutoRetrySave(planPersistence) {
 }
 
 /**
- * Phase 6A — the traveler-facing chat-header save status, extracted so it is
- * directly testable (TripPlannerChat.jsx is too large/stateful to mount in
- * isolation — see its own smoke-test comment). Pure, no React.
- *
- * `sync-needed` (a stale/conflicting write) is checked BEFORE the
- * `hasTripId`/`'saved'` fallback, which would otherwise still read as
- * "Saved" even though this particular change was rejected — a stale write
- * must never look identical to a successful one. No retry action is
- * attached here; that is explicitly deferred (Phase 6B/6C).
- *
- * @returns {{label: string, description: string, tone: 'saving'|'sync-needed'|'saved'}|null}
+ * Current-turn presentation only; never promotes a draft to canonical state.
+ * A loaded/persisted canonical plan supplies hasPersistedPlan. A trip ID or
+ * successful conversation save alone is insufficient. An uncertain connection
+ * must remain uncertain until authoritative reload reconciles persistence.
  */
-export function resolveChatStatus({ isAnonymous, saveState, hasTripId } = {}) {
+export function resolveChatStatus({ isAnonymous, saveState, hasPersistedPlan = false, draftPreview, previewOutcome, isPlanning = false } = {}) {
   if (isAnonymous) return null;
+
+  // Draft events never establish canonical persistence, including after a
+  // disconnect: the server may already have committed before transport failed.
+  if (previewOutcome === 'rejected') return { label: 'No new itinerary saved', description: hasPersistedPlan ? 'Your previous saved trip is unchanged.' : 'The proposal was not saved.', tone: 'draft' };
+  if (previewOutcome === 'uncertain' || draftPreview?.status === 'withdrawn') return { label: 'Check saved trip after reconnecting', description: 'Reload to confirm whether the completed plan was saved.', tone: 'draft' };
+  if (draftPreview?.status === 'generating' && draftPreview.days.length) return { label: 'Draft · Not saved', description: 'The itinerary preview is not validated or saved.', tone: 'draft' };
+  if (isPlanning || draftPreview?.status === 'generating') return { label: 'Planning your trip…', description: 'The new itinerary is not saved yet.', tone: 'draft' };
 
   if (saveState === 'saving') {
     return { label: 'Saving...', description: 'Updating your trip history.', tone: 'saving' };
@@ -47,8 +47,8 @@ export function resolveChatStatus({ isAnonymous, saveState, hasTripId } = {}) {
     };
   }
 
-  if (hasTripId || saveState === 'saved') {
-    return { label: 'Saved', description: 'This conversation is stored in your account.', tone: 'saved' };
+  if (hasPersistedPlan) {
+    return { label: 'Saved', description: 'Your accepted itinerary is stored in your account.', tone: 'saved' };
   }
 
   return null;

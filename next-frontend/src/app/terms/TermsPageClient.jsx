@@ -148,7 +148,7 @@ export default function TermsPageContent() {
               <strong>Google:</strong> Maps and Analytics where configured; map services may also use MapTiler. These providers have their own terms and privacy policies.
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
-              <strong>AI:</strong> Anthropic and OpenAI process planning context and, for voice, microphone audio. Requests are not guaranteed to be anonymous; their terms and privacy policies also apply.
+              <strong>AI:</strong> OpenAI processes current website planning requests and voice audio. Anthropic may process requests through other configured AI features. Requests are not guaranteed to be anonymous; their terms and privacy policies also apply.
             </div>
             <div className="p-3 rounded-lg border text-sm" style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)' }}>
               <strong>APIs:</strong> National Park Service API, OpenWeather API (public data, subject to their terms)
@@ -239,44 +239,14 @@ export default function TermsPageContent() {
       <main className="info-page info-legal">
         <InfoPageHeader title="Terms of Service" description="Please read these terms carefully before using TrailVerse." />
 
-        {/* Quick Summary Box */}
-        <section className="info-section">
-          <div className="max-w-6xl mx-auto">
-            <div className="rounded-xl p-6 sm:p-8 border"
-              style={{
-                backgroundColor: 'var(--surface-active)',
-                borderColor: 'var(--border-hover)'
-              }}
-            >
-              <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-                Terms Summary
-              </h2>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>You Can</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Use for personal trips, save parks, write reviews, use AI planning</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>You Cannot</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>Use commercially, scrape data, post false content, harass users</p>
-                </div>
-                <div>
-                  <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Important</p>
-                  <p style={{ color: 'var(--text-secondary)' }}>AI suggestions are guidance only - verify before trips</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <LegalSections sections={sections} />
 
         {/* Safety Notice */}
         <section className="info-section">
           <div className="max-w-6xl mx-auto">
-            <div className="rounded-xl p-6 sm:p-8 border"
+            <div className="info-panel"
               style={{
-                backgroundColor: 'var(--accent-orange)/5',
+                backgroundColor: 'var(--surface)',
                 borderColor: 'var(--accent-orange)'
               }}
             >
@@ -311,7 +281,7 @@ export default function TermsPageContent() {
               >
                 Questions About Terms?
               </h2>
-              <p className="text-base mb-6 max-w-2xl"
+              <p className="text-base mb-6 public-content"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 Need clarification on our terms? We&apos;re here to help.

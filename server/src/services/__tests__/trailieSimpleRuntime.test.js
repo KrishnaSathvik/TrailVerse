@@ -1,4 +1,5 @@
 'use strict';
+jest.mock('openai', () => jest.fn(() => ({ responses: { create: jest.fn(() => { throw new Error('Unexpected OpenAI call in offline runtime test'); }) } })));
 
 const { createSimpleRuntime } = require('../trailieSimpleRuntime');
 const { stubMemoryVerifier } = require('../../../tests/helpers/memoryAuthority');
@@ -29,6 +30,77 @@ function harness(outputs, options = {}) {
   const travelTools = tools();
   return { model, travelTools, run: createSimpleRuntime({ model, travelTools, verifyMemory: stubMemoryVerifier(), now: () => NOW, ...options }) };
 }
+
+test.each(['success', 'conflict', 'failure'])('completed-action reply is withheld until commit: %s', async outcome => {
+  let release, entered;
+  const waiting = new Promise(resolve => { release = resolve; });
+  const committing = new Promise(resolve => { entered = resolve; });
+  const store = { load: async () => ({ plan: null, planningState: null, conversation: [] }),
+    commit: jest.fn(async () => { entered(); await waiting;
+      if (outcome === 'failure') throw new Error('write failed');
+      return outcome === 'success' ? { ok: true, tripId: 'saved' } : { ok: false, status: 409 };
+    }) };
+  const h = harness([call('read_travel', {}), proposal({ response: 'I created your trip.', plan: plan() })], { store });
+  h.travelTools.execute.mockResolvedValue({ status: 'fulfilled', evidence: [source()] });
+  let published = false;
+  const pending = h.run({ message: 'Create a short trip.' }).then(result => { published = true; return result; });
+  await committing;
+  expect(published).toBe(false);
+  release();
+  const result = await pending;
+  if (outcome === 'success') {
+    expect(result).toMatchObject({ persisted: true, response: { content: 'I created your trip.' } });
+  } else {
+    expect(result.response).toBeNull();
+    expect(result.status).toBe(outcome === 'conflict' ? 'conflict' : 'persistence_failed');
+  }
+});
+
+test('private diagnosis preserves rejection details without changing model input or accepted plan', async () => {
+  const fs = require('fs');
+  const path = require('path');
+  const { PRIVATE_DIR } = require('../../utils/trailieDiagnosisCapture');
+  const responseId = 'runtime-day-type-diagnosis-test';
+  const previous = process.env.TRAILIE_DIAGNOSIS_CAPTURE;
+  const withoutTimestamp = ({ createdAt, ...response }) => response;
+  const run = async enabled => {
+    process.env.TRAILIE_DIAGNOSIS_CAPTURE = enabled ? 'true' : 'false';
+    const rejected = plan();
+    rejected.days[0].dayStructure.type = 'arrival'; // No arrival block.
+    const h = harness([call('read_travel', {}), proposal({ response: 'A visit.', plan: rejected }),
+      proposal({ response: 'A visit.', plan: plan() })]);
+    h.travelTools.execute.mockResolvedValue({ status: 'fulfilled', evidence: [source()] });
+    const result = await h.run({ message: 'Plan a short visit.', responseId });
+    return { result, modelInputs: h.model.mock.calls.map(([input]) => input) };
+  };
+  try {
+    const off = await run(false);
+    const on = await run(true);
+    expect(on.result.status).toBe('complete');
+    expect(on.result.telemetry.mutationRounds).toEqual([{ issues: ['day_type_inconsistent'] }, { issues: [] }]);
+    expect(on.modelInputs).toEqual(off.modelInputs);
+    expect(withoutTimestamp(on.result.response)).toEqual(withoutTimestamp(off.result.response));
+    expect(on.result.mutation).toEqual(off.result.mutation);
+    const captured = JSON.parse(fs.readFileSync(path.join(PRIVATE_DIR, `${responseId}__proposal.json`), 'utf8'));
+    expect(captured.proposalRounds).toHaveLength(2);
+    expect(captured.proposalRounds[0].dayTypeDiagnosis).toMatchObject({ source: 'guard_candidate', days: [{
+      dayNumber: 1, conflicts: [{ rule: 'missing_matching_block', expected: { requiredBlockKind: 'arrival' } }],
+    }] });
+    expect(captured.proposalRounds[1].dayTypeDiagnosis.days[0].conflicts).toEqual([]);
+    const write = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => { throw new Error('disk unavailable'); });
+    let failedCapture;
+    try { failedCapture = await run(true); } finally { write.mockRestore(); }
+    expect(failedCapture.modelInputs).toEqual(off.modelInputs);
+    expect(withoutTimestamp(failedCapture.result.response)).toEqual(withoutTimestamp(off.result.response));
+    expect(failedCapture.result.mutation).toEqual(off.result.mutation);
+  } finally {
+    if (previous == null) delete process.env.TRAILIE_DIAGNOSIS_CAPTURE;
+    else process.env.TRAILIE_DIAGNOSIS_CAPTURE = previous;
+    for (const kind of ['research', 'proposal', 'terminal']) {
+      try { fs.unlinkSync(path.join(PRIVATE_DIR, `${responseId}__${kind}.json`)); } catch { /* absent */ }
+    }
+  }
+});
 
 test('ordinary conversation reaches the model unchanged without preparation or state writes', async () => {
   const snapshot = { planningState: { dates: { startDate: '2026-09-01' } } };
@@ -335,7 +407,14 @@ test('correction prose is surfaced without saving or another grounding pass',asy
  expect(r.response.content).toBe('I could not verify the trail identity, so I have not saved this itinerary.');
  expect(h.travelTools.finalizeProposal).toHaveBeenCalledTimes(1);
  const feedback=JSON.parse(h.model.mock.calls[1][0].input.at(-1).output);
- expect(feedback).toMatchObject({originalProposal:{plan:plan()},existingCanonicalPlan:null,unresolvedPlaces:[{place:'Trail',reason:'unknown identity'}]});
+ expect(feedback).toMatchObject({existingCanonicalPlan:null,unresolvedPlaces:[{place:'Trail',reason:'unknown identity'}]});
+ expect(feedback).not.toHaveProperty('originalProposal');
+ expect(feedback.placeRecovery).not.toHaveProperty('groundedPlaces');
+ // The proposal remains available exactly once in the prior model function call.
+ const priorProposals=h.model.mock.calls[1][0].input.filter(row=>row.type==='function_call' && row.name==='propose_trip_update')
+   .map(row=>JSON.parse(row.arguments));
+ expect(priorProposals).toHaveLength(1);
+ expect(priorProposals).toContainEqual(expect.objectContaining({plan:plan()}));
  expect(r.telemetry.finalization.namedPlaceDiagnostics).toHaveLength(1);
 });
 test('corrected artifact reuses evidence; correction grounding is narrow (no research)',async()=>{
@@ -391,7 +470,8 @@ describe('grounding correction recovery', () => {
       unresolved: [{ place: 'Unrecorded Creek', reason: 'identity_not_found' }] }));
     return harness(outputs, { travelTools });
   }
-  const feedback = h => JSON.parse(h.model.mock.calls[1][0].input.at(-1).output).placeRecovery;
+  const feedback = h => { const value=JSON.parse(h.model.mock.calls[1][0].input.at(-1).output);
+    return {...value.placeRecovery,groundedPlaces:value.groundedPlaces}; };
   test('optional planner selection can be replaced by a model-chosen grounded outing', async () => {
     const h = recovery([proposal({response:'Trip',plan:failed()}),proposal({response:'Enjoy the overlook.',plan:plan()})]);
     const r = await h.run({message:'Plan an easy day',history:[{role:'assistant',content:'Try Unrecorded Creek.'}]});
@@ -432,7 +512,15 @@ describe('grounding correction recovery', () => {
 test('recovery may retain a traveler-requested outing as an explicitly non-spatial experience', async () => {
  const original=plan();original.days[0].stops[0].name='Unrecorded Creek';
  const flexible=plan();flexible.days[0].stops=[];flexible.days[0].dayStructure.blocks[0]={kind:'experience',periods:['morning'],label:'Unrecorded Creek area',note:'Consider an easy nature outing; the specific route and access are unconfirmed.',stopIds:[]};
- const travelTools=tools();travelTools.finalizeProposal=async()=>({evidence:[source()],unresolved:[{place:'Unrecorded Creek',reason:'identity_not_found'}]});
+ const travelTools=tools();
+ const usDestination = normalizeEvidenceLocation({
+   evidenceId: 'dest-us', entityId: 'nps:park:test', topic: 'destination_identity',
+   claim: { identity: 'nps:park:test', normalizedValue: { name: 'Test National Park', countryCode: 'US', latitude: 40, longitude: -110 } },
+   source: { provider: 'nps', sourceClass: 'official_owner', url: 'https://www.nps.gov/' },
+   observation: { observedAt: NOW.toISOString(), expiresAt: '2026-09-30T12:00:00Z' },
+   quality: { authorityClass: 'official_owner', conflictStatus: 'none' },
+ });
+ travelTools.finalizeProposal=async()=>({evidence:[source(), usDestination],unresolved:[{place:'Unrecorded Creek',reason:'identity_not_found'}]});
  const h=harness([proposal({response:'Trip',plan:original}),proposal({response:'A flexible outing, not a verified mapped trail.',plan:flexible})],{travelTools});
  const r=await h.run({message:'I want to visit Unrecorded Creek'});
  expect(r.telemetry.mutationAccepted).toBe(true);expect(r.mutation.plan.days[0].stops).toEqual([]);expect(r.mutation.plan.days[0].travelEdges).toEqual([]);

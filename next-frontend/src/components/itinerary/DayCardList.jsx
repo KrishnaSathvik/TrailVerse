@@ -330,7 +330,7 @@ export default function DayCardList({
           <div>
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>No stops yet</p>
             <p className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              Add stops below or ask Trailie in chat to build this day.
+              Add a place by name below, or ask Trailie in chat.
             </p>
           </div>
           <div className="mt-1 flex gap-2">
@@ -342,14 +342,16 @@ export default function DayCardList({
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to Chat
             </button>
-            <button
-              onClick={() => onRequestAddStop(day.id)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Stop
-            </button>
+            {typeof onRequestAddStop === 'function' && (
+              <button
+                onClick={() => onRequestAddStop(day.id)}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:opacity-90"
+                style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Stop
+              </button>
+            )}
           </div>
         </div>
       )}

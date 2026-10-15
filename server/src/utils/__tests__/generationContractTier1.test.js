@@ -355,6 +355,8 @@ describe('server restoration of the reduced model artifact', () => {
     walk(srcRoot);
 
     expect(hits.sort()).toEqual([
+      // Current guard restores source-grounded difficulty, never model-authored difficulty.
+      'services/trailieSimpleGuard.js',
       // Writer of the compatibility projection.
       'utils/generationContractBinding.js',
       // Generic field-name lists that guard the field, never read its meaning.

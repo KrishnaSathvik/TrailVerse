@@ -4,7 +4,7 @@ const { createResponsesRequest } = require('../responsesAdapter');
 const { buildOpenAIRequest } = require('../providers/openaiResponsesAdapter');
 const { resolveModelPrice } = require('../../config/trailiePricingRegistry');
 
-test('a failed quick request climbs Luna, Sol low, Sol medium, then Astra without another provider', async () => {
+test('a non-repairable quick request stops after Luna without spending on escalation', async () => {
   const result = await runTrailieModelRouting({
     enabled: true,
     context: { signals: { intent: 'general_qa', depth: 'quick', evidenceCompleteness: 'complete' } },
@@ -12,9 +12,9 @@ test('a failed quick request climbs Luna, Sol low, Sol medium, then Astra withou
     validateAttempt: async () => ({ status: 'fail', locallyRepairable: false, reasonCodes: ['schema_invalid'] }),
   });
   expect(result.attempts.map(a => [a.model, a.reasoningEffort])).toEqual([
-    ['gpt-6-luna', 'low'], ['gpt-6-sol', 'low'], ['gpt-6-sol', 'medium'], ['gpt-6-astra', 'medium'],
+    ['gpt-6-luna', 'low'],
   ]);
-  expect(result.reasonCode).toBe('model_escalation_exhausted');
+  expect(result.reasonCode).toBe('deterministic_blocker');
 });
 
 test.each(['gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra'])('%s omits sampling parameters with reasoning and preserves tools/storage', model => {
@@ -34,4 +34,15 @@ test('Astra rejects unsupported reasoning locally before SDK dispatch', () => {
   const request = createResponsesRequest({ provider: 'openai', model: 'gpt-6-astra',
     input: [{ role: 'user', content: 'hello' }], maxOutputTokens: 100, reasoning: { effort: 'none' } });
   expect(() => buildOpenAIRequest(request)).toThrow('responses_invalid_request');
+});
+
+test('GPT-6.1 Sol uses its verified rate rather than a neighboring model price', () => {
+  expect(resolveModelPrice({ provider: 'openai', model: 'gpt-6.1-sol', at: '2026-10-13' }))
+    .toMatchObject({
+      inputPerMillion: 2,
+      cacheReadPerMillion: 0.1,
+      cacheWritePerMillion: 2.5,
+      outputPerMillion: 10,
+      inputIncludesCachedTokens: true,
+    });
 });

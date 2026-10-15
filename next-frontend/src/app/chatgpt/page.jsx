@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import IntegrationDetails from '@/components/info/IntegrationDetails';
 import { INTEGRATION_CAPABILITIES } from '@/data/integrationCapabilities';
 import InfoPageHeader, { InfoSectionLabel } from '@/components/info/InfoPageHeader';
@@ -32,11 +33,11 @@ export const metadata = {
   },
 };
 
-const CHATGPT_APPS_DIRECTORY = 'https://chatgpt.com/apps';
+const CHATGPT_PLUGIN_DIRECTORY = 'https://chatgpt.com/plugins';
 /** Published app page — OpenAI dashboard → View in Directory */
 const CHATGPT_APP_URL =
   process.env.NEXT_PUBLIC_CHATGPT_APP_URL ||
-  'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe';
+  'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe';
 
 const tools = INTEGRATION_CAPABILITIES;
 
@@ -65,13 +66,13 @@ export default function ChatGPTPage() {
             <TrackedOutboundLink
               channel={DIST_CHANNEL}
               ctaId="hero_start_chat"
-              label="Start chat"
+              label="Open in ChatGPT"
               href={CHATGPT_APP_URL}
               className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
               style={{ backgroundColor: 'var(--accent-green)' }}
             >
-              <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
-              Start chat
+              <Image src="/brand/chatgpt.png" alt="" width={24} height={24} className="rounded bg-white p-0.5" />
+              Open in ChatGPT
             </TrackedOutboundLink>
         </InfoPageHeader>
 
@@ -85,7 +86,7 @@ export default function ChatGPTPage() {
               >
                 Five tools for your trip
               </h2>
-              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
                 Ask for park information or a trip plan, then refine your dates, pace, or interests. Tool results can use current sources when available; generated answers still need checking before you travel.
               </p>
             </div>
@@ -94,7 +95,7 @@ export default function ChatGPTPage() {
               {tools.map((tool) => (
                 <div
                   key={tool.title}
-                  className="public-editorial-section py-6 space-y-4"
+                  className="info-panel space-y-4"
                   style={{
                     borderColor: 'var(--border)',
                   }}
@@ -117,8 +118,8 @@ export default function ChatGPTPage() {
           </div>
         </section>
 
-        <section id="install" className="py-16 px-4 sm:px-6 lg:px-8 scroll-mt-20">
-          <div className="max-w-3xl">
+        <section id="install" className="info-section scroll-mt-20">
+          <div className="public-content">
             <div className="mb-8">
               <InfoSectionLabel>Setup</InfoSectionLabel>
               <h2
@@ -156,7 +157,7 @@ export default function ChatGPTPage() {
                     </TrackedOutboundLink>{' '}
                     (sign in if prompted)
                   </>,
-                  <>Click <strong>Start chat</strong> on the app page</>,
+                  <>Choose <strong>Install plugin</strong> on the listing, then start a chat</>,
                   <>
                     Ask for a trip plan, park details, a comparison, or upcoming ranger events
                   </>,
@@ -194,13 +195,13 @@ export default function ChatGPTPage() {
               <TrackedOutboundLink
                 channel={DIST_CHANNEL}
                 ctaId="install_start_chat"
-                label="Start chat"
+                label="Open in ChatGPT"
                 href={CHATGPT_APP_URL}
                 className="mt-6 inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent-green)' }}
               >
                 <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
-                Start chat
+                Open in ChatGPT
               </TrackedOutboundLink>
 
               <p className="mt-4 text-sm"><a href="https://help.openai.com/en/articles/11487775-connected-apps-in-chatgpt" className="underline" target="_blank" rel="noopener noreferrer">ChatGPT app access and data settings</a></p>
@@ -209,11 +210,11 @@ export default function ChatGPTPage() {
                 <TrackedOutboundLink
                   channel={DIST_CHANNEL}
                   ctaId="apps_directory_fallback"
-                  label="ChatGPT Apps"
-                  href={CHATGPT_APPS_DIRECTORY}
+                  label="ChatGPT plugins"
+                  href={CHATGPT_PLUGIN_DIRECTORY}
                   className="underline underline-offset-2"
                 >
-                  ChatGPT Apps
+                  ChatGPT plugins
                 </TrackedOutboundLink>{' '}
                 and search <strong>TrailVerse</strong>, or type <strong>@TrailVerse</strong> in a new chat.
               </p>
@@ -245,7 +246,7 @@ export default function ChatGPTPage() {
               >
                 Example Prompts
               </h2>
-              <p className="text-lg max-w-3xl" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-lg public-content" style={{ color: 'var(--text-secondary)' }}>
                 Once the app is open, try asking ChatGPT any of these.
               </p>
             </div>
@@ -254,7 +255,7 @@ export default function ChatGPTPage() {
               {examplePrompts.map((prompt) => (
                 <div
                   key={prompt}
-                  className="public-editorial-section py-6 space-y-4"
+                  className="info-panel space-y-4"
                   style={{
                     borderColor: 'var(--border)',
                   }}
@@ -276,7 +277,7 @@ export default function ChatGPTPage() {
         <section className="info-section">
           <div className="w-full">
             <div
-              className="public-editorial-section py-6 space-y-4"
+              className="info-panel space-y-4"
               style={{
                 borderColor: 'var(--border)',
               }}
@@ -298,13 +299,13 @@ export default function ChatGPTPage() {
                 <TrackedOutboundLink
                   channel={DIST_CHANNEL}
                   ctaId="footer_start_chat"
-                  label="Start chat"
+                  label="Open in ChatGPT"
                   href={CHATGPT_APP_URL}
                   className="inline-flex items-center gap-2 public-action rounded-xl px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                   style={{ backgroundColor: 'var(--accent-green)' }}
                 >
                   <IconGlyph name="ArrowRight" className="h-4 w-4 text-white" />
-                  Start chat
+                  Open in ChatGPT
                 </TrackedOutboundLink>
                 <TrackedCtaLink
                   channel={DIST_CHANNEL}

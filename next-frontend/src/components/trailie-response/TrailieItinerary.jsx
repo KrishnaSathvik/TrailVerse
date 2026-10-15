@@ -43,11 +43,20 @@ const MARKER = {
   supportingStop: 'left-[0.3rem] top-0.5 h-4 w-4 bg-[var(--text-tertiary)] text-[9px] font-semibold text-[var(--surface)]',
 };
 
-function ItemText({ text, compact }) {
-  const [lead, extra] = text;
+const SUPPORTING_KIND_LABEL = {
+  arrival: 'Arrival',
+  departure: 'Departure',
+  meal: 'Meal',
+  downtime: 'Downtime',
+  outside_trip: 'Outside this day',
+};
+
+function ItemText({ item, compact }) {
+  const lead = item.practical || item.text?.[0];
+  const why = item.why || item.text?.[1];
   return <>
     {lead && <p className={`mt-1 ${compact ? 'text-[13px] leading-5' : 'text-sm leading-6'} text-[var(--text-secondary)]`}>{lead}</p>}
-    {extra && <p className="mt-1 text-[13px] leading-5 text-[var(--text-tertiary)]">{extra}</p>}
+    {why && <p className="mt-1 text-[13px] leading-5 text-[var(--text-tertiary)]">{why}</p>}
   </>;
 }
 
@@ -70,6 +79,7 @@ function DayItem({ item, day, dayMapModel, instanceId, flashStopId, onFocusOnMap
   const placeType = item.stops.length === 1 ? groundedPlaceType(stop) : null;
   const meta = [placeType, item.duration > 0 ? formatTravelMinutes(item.duration) : null, item.difficulty, item.exposure ? `${item.exposure} exposure` : null].filter(Boolean);
   const compact = item.type === 'supporting';
+  const kindLabel = compact ? SUPPORTING_KIND_LABEL[item.kind] : null;
   return (
     <li
       id={stopKey && instanceId ? `trailie-stop-${instanceId}-${stopKey}` : undefined}
@@ -83,6 +93,12 @@ function DayItem({ item, day, dayMapModel, instanceId, flashStopId, onFocusOnMap
         {stopIndex >= 0 ? stopIndex + 1 : ''}
       </span>
       {item.showDaypart && <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-green-dark)]">{item.daypart}</p>}
+      {kindLabel && !item.showDaypart && (
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">{kindLabel}</p>
+      )}
+      {kindLabel && item.showDaypart && (
+        <p className="mb-1 text-[11px] font-medium text-[var(--text-tertiary)]">{kindLabel}</p>
+      )}
       {item.clock && <p className="text-xs font-semibold text-[var(--text-primary)]">{item.clock}{item.timingReason ? <span className="font-normal text-[var(--text-secondary)]"> · {item.timingReason}</span> : null}</p>}
       <h4 className={`${compact ? 'text-sm' : 'text-base'} font-semibold leading-snug text-[var(--text-primary)]`}>
         {item.title}
@@ -92,7 +108,7 @@ function DayItem({ item, day, dayMapModel, instanceId, flashStopId, onFocusOnMap
       {item.stops.length > 1 && <ul className="mt-1.5 space-y-0.5 text-[13px] text-[var(--text-secondary)]">
         {item.stops.map(s => <li key={s.id}>{s.name}{s.duration ? ` · ${formatTravelMinutes(s.duration)}` : ''}</li>)}
       </ul>}
-      <ItemText text={item.text} compact={compact} />
+      <ItemText item={item} compact={compact} />
       <ItineraryRequirements requirements={item.requirements} compact />
       {item.alternatives?.length > 0 && <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
         <span className="font-semibold text-[var(--text-primary)]">If this doesn’t work: </span>

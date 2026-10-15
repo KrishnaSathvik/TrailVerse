@@ -13,8 +13,9 @@ try { fs.writeFileSync(tripwireFile, '', { encoding: 'utf8', mode: 0o600 }); } c
 const args = process.argv.slice(2);
 const jestArgs = [
   require.resolve('jest/bin/jest'),
-  '--config', path.join(SERVER_ROOT, 'jest.config.js'),
-  ...(args.length ? args : ['src', '--runInBand']),
+  ...(args.some(arg => arg === '--config' || arg.startsWith('--config='))
+    ? [] : ['--config', path.join(SERVER_ROOT, 'jest.config.js')]),
+  ...(args.length ? args : ['src', 'tests/integration/auth.test.js', '--runInBand']),
 ];
 const env = {
   ...process.env,

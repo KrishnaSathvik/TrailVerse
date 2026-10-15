@@ -44,7 +44,7 @@ describe('WP6 runtime provider registration', () => {
     const providers = createDefaultEvidenceProviders();
     expect(providers.map((provider) => provider.id)).toEqual([
       'nps', 'ridb', 'weather', 'google_maps', 'astronomy_compute', 'fee_free_calendar', 'known_place',
-      'brave', 'serper', 'tavily', 'direct_official_page', 'geocode_coordinate',
+      'brave', 'serper', 'tavily', 'direct_official_page', 'geocode_coordinate', 'named_place',
     ]);
   });
 });

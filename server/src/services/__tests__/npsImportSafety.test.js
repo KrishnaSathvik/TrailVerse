@@ -11,6 +11,10 @@
  * No test here supplies a fake NPS key to satisfy an import.
  */
 
+// Jest owns transforms. Do not let an app import install a process-global
+// Babel loader referencing a test environment after that environment is gone.
+jest.mock('@babel/register', () => jest.fn());
+
 const fs = require('fs');
 const path = require('path');
 
@@ -85,8 +89,8 @@ describe('Stage 14.7D1 §7 — import safety without NPS_API_KEY', () => {
   // for a reason that predates and is independent of this refactor:
   // src/app.js → routes/auth → authController → resendEmailService →
   // reactEmailRenderer → emails/*.jsx, and jest.config.js has no transform for
-  // ESM .jsx, so it throws SyntaxError "Cannot use import statement outside a
-  // module". None of those files reference NPS, so the NPS dimension is pinned
+  // email JSX, so it throws a syntax/transform error. None of those files
+  // reference NPS, so the NPS dimension is pinned
   // directly: app.js must carry no eager NPS import, and whatever it does throw
   // must not be nps_not_configured.
   test('3. the Express application factory is not blocked by NPS configuration', () => {
@@ -100,7 +104,7 @@ describe('Stage 14.7D1 §7 — import safety without NPS_API_KEY', () => {
         expect(e.message).not.toMatch(/nps_not_configured/);
         expect(e.code).not.toBe('nps_not_configured');
         // Confirm the known, unrelated cause rather than swallowing anything.
-        expect(e.message).toMatch(/Cannot use import statement outside a module/);
+        expect(e.message).toMatch(/Cannot use import statement outside a module|experimental syntax 'jsx' isn't currently enabled/);
       }
     });
   });

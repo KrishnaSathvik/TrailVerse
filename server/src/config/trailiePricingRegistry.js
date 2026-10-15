@@ -3,15 +3,16 @@
 /**
  * Versioned PAYG token prices in USD per one million tokens.
  *
- * Sources reviewed 2026-08-09:
+ * Sources reviewed through 2026-10-13:
  * - Claude Sonnet 5: https://platform.claude.com/docs/en/about-claude/models/whats-new-sonnet-5
  * - GPT-5.4 mini: https://openai.com/index/introducing-gpt-5-4-mini-and-nano/
  * - GPT-5.6 family: https://developers.openai.com/api/docs/guides/latest-model
+ * - GPT-6.1 Sol: https://developers.openai.com/api/docs/models/gpt-6.1-sol
  *
  * A missing model/date is deliberately unpriced. Consumers must emit
  * `cost_unknown`; they may never silently substitute zero or a nearby model.
  */
-const PRICING_REGISTRY_VERSION = 'pricing-2026-09-23';
+const PRICING_REGISTRY_VERSION = 'pricing-2026-10-13';
 
 // GPT-6 rates verified in the existing 2026-09-23 audit; historical entries retained.
 const MODEL_PRICES = Object.freeze([
@@ -26,6 +27,13 @@ const MODEL_PRICES = Object.freeze([
     provider: 'openai', model: 'gpt-6-sol',
     effectiveFrom: '2026-09-23T00:00:00.000Z', effectiveThrough: null,
     inputPerMillion: 2, cacheReadPerMillion: 0.2,
+    cacheWritePerMillion: 2.5, outputPerMillion: 10,
+    inputIncludesCachedTokens: true,
+  },
+  {
+    provider: 'openai', model: 'gpt-6.1-sol',
+    effectiveFrom: '2026-09-29T00:00:00.000Z', effectiveThrough: null,
+    inputPerMillion: 2, cacheReadPerMillion: 0.1,
     cacheWritePerMillion: 2.5, outputPerMillion: 10,
     inputIncludesCachedTokens: true,
   },

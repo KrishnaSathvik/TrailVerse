@@ -33,7 +33,7 @@ export default function TestimonialsSectionSkeleton({ showTitle = true }) {
             <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               {TESTIMONIALS_SECTION_TITLE}
             </h2>
-            <p className="text-base sm:text-lg max-w-2xl mx-auto px-1" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base sm:text-lg public-content px-1" style={{ color: 'var(--text-secondary)' }}>
               {TESTIMONIALS_SECTION_SUBTITLE}
             </p>
           </div>

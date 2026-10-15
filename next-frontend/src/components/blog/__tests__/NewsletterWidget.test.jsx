@@ -50,7 +50,7 @@ describe('NewsletterWidget', () => {
     expect(screen.getByLabelText(/your email address/i)).toHaveAttribute('type', 'email');
     expect(screen.getByLabelText(/your email address/i)).toHaveAttribute('autocomplete', 'email');
     expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /get where next\?/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /join the upcoming newsletter/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /join free/i })).toBeInTheDocument();
   });
 

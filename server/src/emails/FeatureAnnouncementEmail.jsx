@@ -20,7 +20,7 @@ const FeatureAnnouncementEmail = ({
   exploreByActivityUrl = 'https://www.nationalparksexplorerusa.com/discover',
   mapUrl = 'https://www.nationalparksexplorerusa.com/map',
   compareUrl = 'https://www.nationalparksexplorerusa.com/compare',
-  chatgptUrl = 'https://chatgpt.com/apps/trailverse/asdk_app_69e9c67943c08191a37c464b803ebdbe',
+  chatgptUrl = 'https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe',
   planUrl = 'https://www.nationalparksexplorerusa.com/plan-ai',
   exploreUrl = 'https://www.nationalparksexplorerusa.com/explore',
   testimonialsUrl = 'https://www.nationalparksexplorerusa.com/testimonials',
@@ -65,7 +65,8 @@ const FeatureAnnouncementEmail = ({
               <Text style={{ margin: '0 0 20px', fontSize: '15px', lineHeight: '1.65', color: '#111827' }}>
                 After a long wait, <strong>TrailVerse is officially a ChatGPT app</strong>. Open ChatGPT → <strong>Apps</strong> → search <strong>TrailVerse</strong> (or{' '}
                 <Link href={chatgptUrl} style={linkStyle}>
-                  try here
+                  <Img src="https://www.nationalparksexplorerusa.com/brand/chatgpt.png" alt="" width="20" height="20" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                  Open TrailVerse in ChatGPT
                 </Link>
                 ). From there you can plan trips, get park details (weather, alerts, fees, campgrounds), compare parks, search 470+ NPS sites, and find ranger programs — the same stuff you get on TrailVerse, just inside ChatGPT.
               </Text>

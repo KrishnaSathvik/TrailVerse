@@ -69,11 +69,13 @@ function stop(value) {
     ...(value.mapAnchor
       ? { mapAnchor: pick(value.mapAnchor, ['canonicalPlaceId', 'name', 'relationship', 'sourceUrl']) }
       : {}),
-    placeTypes: strings(value.placeTypes),
-    location: pick(value.location, ['lat', 'lon', 'source', 'authority', 'status', 'sourceRef', 'sourceEntity']),
-    sourceReferences: list(value.sourceReferences, source),
-    requirements: list(value.requirements, requirement),
-    alternatives: list(value.alternatives, alternative),
+    ...(hasOwn(value, 'placeTypes') ? { placeTypes: strings(value.placeTypes) } : {}),
+    ...(hasOwn(value, 'location')
+      ? { location: pick(value.location, ['lat', 'lon', 'source', 'authority', 'status', 'sourceRef', 'sourceEntity']) }
+      : {}),
+    ...(hasOwn(value, 'sourceReferences') ? { sourceReferences: list(value.sourceReferences, source) } : {}),
+    ...(hasOwn(value, 'requirements') ? { requirements: list(value.requirements, requirement) } : {}),
+    ...(hasOwn(value, 'alternatives') ? { alternatives: list(value.alternatives, alternative) } : {}),
   };
 }
 
@@ -158,7 +160,7 @@ function buildPublicPlanObject(plan) {
   }
 
   out.days = list(plan.days, (day) => ({
-    ...pick(day, ['dayNumber', 'label', 'date', 'overnightLocation']),
+    ...pick(day, ['id', 'day', 'title', 'dayNumber', 'label', 'date', 'overnightLocation']),
     ...(day.dayStructure
       ? {
         dayStructure: {
@@ -171,13 +173,17 @@ function buildPublicPlanObject(plan) {
         },
       }
       : {}),
-    stops: list(day.stops, stop),
-    travelEdges: list(day.travelEdges, edge),
-    requirements: list(day.requirements, requirement),
-    activityGroups: list(day.activityGroups, (value) => ({
-      ...pick(value, ['id', 'label']),
-      stopIds: strings(value.stopIds),
-    })),
+    ...(hasOwn(day, 'stops') ? { stops: list(day.stops, stop) } : {}),
+    ...(hasOwn(day, 'travelEdges') ? { travelEdges: list(day.travelEdges, edge) } : {}),
+    ...(hasOwn(day, 'requirements') ? { requirements: list(day.requirements, requirement) } : {}),
+    ...(hasOwn(day, 'activityGroups')
+      ? {
+        activityGroups: list(day.activityGroups, (value) => ({
+          ...pick(value, ['id', 'label']),
+          ...(hasOwn(value, 'stopIds') ? { stopIds: strings(value.stopIds) } : {}),
+        })),
+      }
+      : {}),
   }));
 
   return publicEvidenceReferences(out);

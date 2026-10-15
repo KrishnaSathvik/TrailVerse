@@ -121,7 +121,7 @@ export default function TrailieMarkdown({
 
   return (
     <div
-      className={`prose prose-sm max-w-none min-w-0 break-words sm:prose-base [&>:not(.trailie-table-breakout)]:max-w-[48rem] ${className}`}
+      className={`prose prose-sm max-w-none min-w-0 break-words sm:prose-base [&>:not(.trailie-table-breakout)]:max-w-[var(--public-rich-width)] ${className}`}
       style={{
         color: 'var(--text-primary)',
         '--tw-prose-bullets': 'var(--text-primary)',

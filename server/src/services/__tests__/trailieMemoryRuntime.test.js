@@ -114,7 +114,9 @@ test('correction cannot use an earlier approval to change values or trigger anot
   const model = jest.fn().mockResolvedValueOnce(propose({ response: 'Proposed', memory_updates: [update(message)], plan: badPlan }))
     .mockResolvedValueOnce(propose({ response: 'Changed', memory_updates: [{ ...update(message), value: { rentalCar: false } }], plan: plan() }));
   const result = await createSimpleRuntime({ model, travelTools: tools(), verifyMemory, now: () => now })({ message });
-  expect(result.status).toBe('mutation_rejected');
+  expect(result.status).toBe('complete');
+  expect(result.telemetry.memoryFactsDropped).toBe(1);
+  expect(result.planningState.transportation?.rentalCar).toBeUndefined();
   expect(verifyMemory).toHaveBeenCalledTimes(1);
   expect(result.telemetry.mutationIssues).toContain('memory_authority_unverified');
 });
@@ -211,4 +213,31 @@ describe('a rejected memory fact never costs the trip a correction round', () =>
     const without = validateSimpleMutation({ message, evidence, now, proposal: { response: 'Plan.', plan: plan() } });
     expect(result.mutation.plan.days[0].travelEdges).toEqual(without.plan.days[0].travelEdges);
   });
+});
+
+test.each(['low', 'high', null])('correction memory recovery preserves restrictions and independently validates %s exposure', async exposureLevel => {
+  const message = 'No exposed hikes. Plan a day.';
+  const safeEvidence = evidence.map(row => row.topic === 'activities'
+    ? { ...row, claim: { ...row.claim, normalizedValue: { ...row.claim.normalizedValue, exposureLevel } } } : row);
+  const invalid = plan();
+  delete invalid.days[0].dayStructure;
+  const memory = { field: 'preferences', value: { avoidExposure: false }, sourceQuote: message };
+  const model = jest.fn()
+    .mockResolvedValueOnce(propose({ response: 'A day.', plan: invalid }))
+    .mockResolvedValueOnce(propose({ response: 'A day.', plan: plan(), memory_updates: [memory] }));
+  const store = { load: async () => ({ planningState: { validationConstraints: { avoidExposure: true } } }), commit: jest.fn(async () => ({ ok: true })) };
+  const result = await createSimpleRuntime({ model, travelTools: { definitions: [], execute: jest.fn(),
+    finalizeProposal: async () => ({ evidence: safeEvidence }) }, store,
+    verifyMemory: stubMemoryVerifier('unsupported'), now: () => now })({ message,
+    snapshot: { planningState: { validationConstraints: { avoidExposure: true } } } });
+  if (exposureLevel === 'low') {
+    expect(result.status).toBe('complete');
+    expect(result.telemetry.memoryFactsDropped).toBe(1);
+    expect(result.telemetry.memoryAfter.validationConstraints).toEqual({ avoidExposure: true });
+    expect(result.telemetry.memoryAfter.preferences?.avoidExposure).not.toBe(false);
+    expect(store.commit).toHaveBeenCalledTimes(1);
+  } else {
+    expect(result.telemetry.memoryFactsDropped).toBeUndefined();
+    expect(store.commit).not.toHaveBeenCalled();
+  }
 });

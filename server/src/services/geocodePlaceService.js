@@ -1,6 +1,7 @@
 'use strict';
 
 const { fetchGoogleMaps: fetch } = require('./googleMapsTransport');
+const { isUsJurisdiction } = require('../utils/usPlanGeography');
 
 const geocodeCache = new Map();
 const GEOCODE_CACHE_MAX = 200;
@@ -44,6 +45,7 @@ const US_STATE_NAMES = Object.freeze({
   ri: 'rhode island', sc: 'south carolina', sd: 'south dakota', tn: 'tennessee',
   tx: 'texas', ut: 'utah', vt: 'vermont', va: 'virginia', wa: 'washington',
   wv: 'west virginia', wi: 'wisconsin', wy: 'wyoming', dc: 'district of columbia',
+  vi: 'us virgin islands', pr: 'puerto rico', gu: 'guam', as: 'american samoa', mp: 'northern mariana islands',
 });
 
 const US_STATE_NAME_TO_CODE = Object.freeze(
@@ -189,6 +191,9 @@ function barePlaceName(placeText) {
 
 function candidateRegionTokens(candidate = {}) {
   const parts = [
+    // Providers encode territories as countries, with an island (not the
+    // territory) at admin level 1. Preserve both levels for region matching.
+    isUsJurisdiction(candidate.countryCode) && candidate.countryCode !== 'US' ? candidate.countryCode : null,
     candidate.admin1,
     candidate.state,
     candidate.stateCode,
@@ -492,8 +497,8 @@ function rankGeocodeCandidates(candidates, tripContext, {
       ? regionsCompatible(regions, [explicitRegion])
       : false;
     const countryOk = !candidate.countryCode
-      || String(candidate.countryCode).toUpperCase() === 'US'
-      || String(candidate.country || '').toLowerCase().includes('united states');
+      || isUsJurisdiction(candidate.countryCode)
+      || isUsJurisdiction(candidate.country);
     let proximity = null;
     if (coordBias && isUsableCoordinatePair(candidate.lat, candidate.lon, { allowZeroIsland: true })) {
       proximity = squaredDistance(coordBias.lat, coordBias.lon, Number(candidate.lat), Number(candidate.lon));

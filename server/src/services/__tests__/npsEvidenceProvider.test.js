@@ -106,7 +106,7 @@ describe('WP5A NPS evidence provider contract', () => {
     expect(candidates[0].claim.normalizedValue.currentStatus).toBe('unknown');
     expect(candidates[0].claim.normalizedValue.difficulty).toBe('easy');
     expect(candidates[0].claim.normalizedValue.exposureLevel).toBe('low');
-    expect(candidates[0].provenance.extractorVersion).toBe('nps-activities-v8');
+    expect(candidates[0].provenance.extractorVersion).toBe('nps-activities-v11');
     expect(candidates[0].claim.qualifiers).toEqual(
       expect.arrayContaining(['named_activity_candidate', 'static_suitability_only'])
     );

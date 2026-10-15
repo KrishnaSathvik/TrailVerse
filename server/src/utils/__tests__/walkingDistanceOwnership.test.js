@@ -15,6 +15,29 @@ function milesOf(text, entity = {}) {
   return resolveWalkingDistance({ text, ...entity }).miles;
 }
 
+describe('measurement belongs to the selected experience', () => {
+  test.each(['Sunrise Point', 'Canyon Overlook', 'Alpine Lake'])('%s does not inherit a connected trail length from inferred hike tags', name => {
+    expect(milesOf('The 5.5 mile Rim Trail connects this view to other points. A 0.5 mile section is paved.', {
+      name, category: 'place', activityTypes: ['hike', 'viewpoint'],
+    })).toBeNull();
+  });
+  test('the named trail retains its own distance but ignores a neighboring loop', () => {
+    expect(milesOf('The Cedar Trail is 2 miles round trip. Nearby Aspen Loop is a 7-mile loop.', {
+      name: 'Cedar Trail', category: 'place', activityTypes: ['hike'],
+    })).toBe(2);
+  });
+  test('a mixed-route sentence cannot certify either route distance', () => {
+    expect(milesOf('Cedar Trail joins Aspen Loop for a 7-mile loop.', {
+      name: 'Cedar Trail', category: 'place', activityTypes: ['hike'],
+    })).toBeNull();
+  });
+  test('trusted activity-specific structured distance survives contextual prose', () => {
+    expect(resolveWalkingDistance({ name: 'Canyon Overlook', category: 'place',
+      text: 'The 5.5 mile Rim Trail connects the viewpoints.', structuredMiles: 0.2,
+    })).toMatchObject({ miles: 0.2, source: 'structured', conflict: false });
+  });
+});
+
 describe('valid activity-owned distances', () => {
   test('the trail is 4.2 miles round trip', () => {
     const result = resolveWalkingDistance({

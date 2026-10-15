@@ -14,7 +14,8 @@ export async function getApprovedTestimonialsServer({ limit = 20, featured } = {
     }
 
     const response = await fetch(`${getApiBaseUrl()}/testimonials?${query.toString()}`, {
-      next: { revalidate: 300 },
+      // Keep the local page in sync with local moderation/data changes.
+      ...(process.env.NODE_ENV === 'development' ? { cache: 'no-store' } : { next: { revalidate: 300 } }),
     });
 
     if (!response.ok) {

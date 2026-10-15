@@ -47,7 +47,7 @@ it('scopes missing locations to the selected map day and never invents transfer 
   expect(screen.getByText('Day 1 · 1 place')).toBeInTheDocument();
   expect(screen.getByText('Day 2 · 2 places')).toBeInTheDocument();
   expect(screen.queryByText(/not shown on map/)).not.toBeInTheDocument();
-  expect(screen.getByText(/1 flexible activity isn’t shown on the map/)).toBeInTheDocument();
+  expect(screen.getByText(/1 flexible experience stays in the day plan/)).toBeInTheDocument();
   const days = screen.getByRole('group', { name: 'Map days' });
   fireEvent.click(within(days).getByRole('button', { name: 'Day 1' }));
   expect(screen.getByText('1 place not shown on map')).toBeInTheDocument();
@@ -80,4 +80,32 @@ it('lists grounded park rules once under Things to know with their sources', () 
   const section = screen.getByRole('region', { name: 'Things to know' });
   expect(within(section).getByText(/Check park access\./)).toBeInTheDocument();
   expect(within(section).getByRole('link', { name: 'Source' })).toHaveAttribute('href', 'https://www.nps.gov/');
+});
+
+it('sample reading mode retains assumptions and guidance without changing the saved plan', () => {
+  const before = JSON.stringify(plan);
+  render(<TripWorkspaceView plan={plan} publicMode sampleReadingMode />);
+  expect(screen.getByRole('region', { name: 'Overview', exact: true })).toBeVisible();
+  expect(screen.queryByLabelText('Trip at a glance')).not.toBeInTheDocument();
+  expect(screen.getByText('Seasonal access, reservations and conditions change; confirm them for your dates.')).toBeVisible();
+  expect(screen.getByText('Two easy days.')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Before you go' })).toBeInTheDocument();
+  expect(screen.getByText('Reserve lodging early.')).toBeVisible();
+  expect(screen.getByText('Reserve lodging early.').closest('details')).toBeNull();
+  expect(screen.getByText('sightseeing day')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Canyon day'));
+  expect(screen.getByTestId('itinerary')).toHaveTextContent('Day 2');
+  expect(JSON.stringify(plan)).toBe(before);
+});
+
+
+it('keeps owner controls available with the clean overview and no At a glance card', () => {
+  render(<TripWorkspaceView plan={plan} sampleReadingMode actions={<button>Export PDF</button>} editor={<button>Edit trip</button>} />);
+  expect(screen.queryByLabelText('Trip at a glance')).not.toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Overview', exact: true })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Export PDF' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Edit trip' })).toBeVisible();
+  fireEvent.click(screen.getByRole('tab', { name: 'Day 1', exact: true }));
+  expect(screen.getByTestId('itinerary')).toHaveTextContent('Day 1');
+  expect(screen.getByRole('button', { name: 'Edit trip' })).toBeVisible();
 });

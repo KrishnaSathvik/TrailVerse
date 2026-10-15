@@ -3,6 +3,7 @@ import { getAuthBearerToken } from './authService';
 import { getApiBaseUrl } from '@/lib/apiBase';
 import { createTransportEventNormalizer, CLIENT_EVENT } from '@/utils/transportEventNormalizer';
 import { trailieV2NegotiationHeaders } from '@/lib/trailieTransport';
+import { draftPreviewHeaders } from '@/lib/trailieDraftPreview';
 
 /** Prefer explicit systemPrompt; else peel legacy messages[0].role=system */
 function getAiApiBaseUrl() {
@@ -99,7 +100,19 @@ export async function consumeAiSseStream(response, callbacks = {}) {
     } catch {
       return;
     }
+    if (['draft_started', 'draft_day', 'draft_withdrawn'].includes(parsed.type)) {
+      if (!marks.sawDone) {
+        if (parsed.type === 'draft_started' && parsed.sequence === 1 && typeof parsed.responseId === 'string')
+          marks.draftResponseId ||= parsed.responseId;
+        callbacks.onDraftEvent?.(parsed);
+      }
+      return;
+    }
     for (const ev of normalizer.normalize(parsed)) {
+      if (ev.kind === CLIENT_EVENT.FINALIZED && callbacks.onDraftEvent && marks.draftResponseId &&
+          ev.payload.responseId !== marks.draftResponseId) {
+        throw Object.assign(new Error('Trailie received a final response for a different draft.'), { noAutomaticRetry: true });
+      }
       dispatchNormalizedEvent(ev, callbacks, marks);
     }
     if (parsed.type === 'error' && (modelFirst || parsed.retryable === false)) {
@@ -131,6 +144,7 @@ export async function consumeAiSseStream(response, callbacks = {}) {
     if (modelFirst) error.noAutomaticRetry = true;
     throw error;
   } finally {
+    if (!marks.sawDone) callbacks.onDraftEvent?.({ type: 'draft_closed' });
     callbacks.onClose?.({ sawStreamEnd: marks.sawStreamEnd, sawDone: marks.sawDone });
   }
 }
@@ -270,6 +284,7 @@ class AIService {
     // WP10F-2/3 — first-class v2 presentation updates (park imagery). Legacy
     // display folds here too, split out of the overloaded `thinking` event.
     onDisplayContext,
+    onDraftEvent,
   }) {
     const resolved = resolveChatPayload(messages, systemPrompt);
     const token = typeof window !== 'undefined' ? getAuthBearerToken() : null;
@@ -283,6 +298,7 @@ class AIService {
         // WP10F-3 — v2 negotiation, dual-gated: the header is sent only when the
         // client flag is on; the server still independently checks its own switch.
         ...trailieV2NegotiationHeaders(),
+        ...draftPreviewHeaders(),
       },
       body: JSON.stringify({
         messages: resolved.messages,
@@ -318,7 +334,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onEarlyEvent, onDisplayContext });
+    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onEarlyEvent, onDisplayContext, onDraftEvent });
   }
 
   /**
@@ -347,6 +363,7 @@ class AIService {
     // WP10F-3 — the anonymous stream shares the same normalizer; display context
     // rides its own callback here too. No early events / no authenticated semantics.
     onDisplayContext,
+    onDraftEvent,
   }) {
     const resolved = resolveChatPayload(messages, systemPrompt);
 
@@ -356,6 +373,7 @@ class AIService {
         'Content-Type': 'application/json',
         // WP10F-3 — v2 negotiation, dual-gated (client flag + server switch).
         ...trailieV2NegotiationHeaders(),
+        ...draftPreviewHeaders(),
       },
       body: JSON.stringify({
         messages: resolved.messages,
@@ -393,7 +411,7 @@ class AIService {
       return;
     }
 
-    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onDisplayContext });
+    await consumeAiSseStream(response, { onChunk, onContentReset, onStreamEnd, onDone, onError, onThinking, onClose, onDisplayContext, onDraftEvent });
   }
 
   /**

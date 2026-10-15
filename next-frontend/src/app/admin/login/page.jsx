@@ -87,7 +87,7 @@ const AdminLoginPage = () => {
             >
               Secure Admin Portal
             </h1>
-            <p className="text-lg sm:text-xl max-w-3xl mx-auto"
+            <p className="text-lg sm:text-xl public-content"
               style={{ color: 'var(--text-secondary)' }}
             >
               Access the TrailVerse admin dashboard with secure authentication.

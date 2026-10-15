@@ -3431,7 +3431,7 @@ const ParkDetailInner = ({
           }}
           aria-label="Park planning questions"
         >
-          <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="public-content px-3 sm:px-4 lg:px-6 xl:px-8">
             <ParkPlanningFaqSection
               faqItems={faqItemsForDisplay}
               parkCode={npsParkCode}

@@ -659,12 +659,12 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
               </div>
             </div>
 
-            <div className="public-selector mb-4">
+            <div className="mb-4 flex flex-wrap gap-2">
               {COMPARE_LANDINGS.map((preset) => (
                 <Link
                   key={preset.slug}
                   href={`/compare/${preset.slug}`}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium transition hover:opacity-80"
+                  className="inline-flex items-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition hover:opacity-80"
                   style={{
                     backgroundColor: 'var(--bg-secondary)',
                     borderWidth: '1px',
@@ -1340,7 +1340,7 @@ const ComparePageInner = ({ initialParkCodes = [] }) => {
                   </p>
                 </div>
               </div>
-              <p className="text-sm mb-5 lg:max-w-xl lg:mx-auto" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-sm mb-5 public-content" style={{ color: 'var(--text-secondary)' }}>
                 {roadTripCta.subtitle}
               </p>
               <Link

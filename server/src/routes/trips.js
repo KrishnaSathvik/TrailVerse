@@ -10,6 +10,7 @@ const {
   updateMessageFeedback,
   updateTripMetadata
 } = require('../controllers/tripController');
+const { applyManualTripMutation } = require('../controllers/manualTripMutationController');
 const { protect } = require('../middleware/auth');
 const { createProseRecoveryRouter } = require('./proseRecovery');
 const TripPlan = require('../models/TripPlan');
@@ -70,6 +71,7 @@ router.get('/user/:userId', getUserTrips);
 router.get('/:tripId', getTrip);
 router.post('/', createTrip);
 router.put('/:tripId', updateTrip);
+router.post('/:tripId/manual-mutations', applyManualTripMutation);
 router.delete('/:tripId', deleteTrip);
 router.post('/:tripId/messages', addMessage);
 router.patch('/:tripId/messages/:messageId/feedback', updateMessageFeedback);

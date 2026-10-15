@@ -17,10 +17,10 @@ export default function CompareLandingSeo({ landing }) {
           >
             {landing.headline}
           </h1>
-          <p className="text-base sm:text-lg lg:text-xl max-w-3xl mb-6" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base sm:text-lg lg:text-xl public-content mb-6" style={{ color: 'var(--text-secondary)' }}>
             {landing.intro}
           </p>
-          <p className="text-sm max-w-3xl" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-sm public-content" style={{ color: 'var(--text-tertiary)' }}>
             Compare entrance fees, parking, crowd levels, weather, and top activities side by side — then plan the winner with Trailie.
           </p>
         </div>

@@ -2,6 +2,14 @@
 
 Beehiiv is **delivery infrastructure**. Mongo `Subscriber` remains the consent source of truth. Resend remains the double opt-in mailer.
 
+## Public page structure (local update, October 15, 2026)
+
+- `/where-next` combines the destination picker and a separate newsletter signup section.
+- `/newsletter` permanently redirects to `/where-next#newsletter`, preserving query parameters for confirmation, unsubscribe, errors, and attribution.
+- Picking a destination does not subscribe the visitor; email signup still requires confirmation.
+- The page describes an upcoming newsletter. The illustrative issue preview has been removed; a future preview must reflect the redesigned email itself.
+- Email-template redesign, issue production, and the Sunday schedule remain separate, unfinished work. This page merge does not activate sending, change DNS, or sync subscribers.
+
 Do not deploy, change DNS, or sync the existing five confirmed subscribers from this document.
 
 ## Required environment (backend only)

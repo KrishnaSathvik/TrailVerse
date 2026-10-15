@@ -6,6 +6,7 @@ const {
   NPS_ACTIVITY_TAXONOMY_EXTRACTOR_VERSION,
   OPERATIONAL_NORMALIZATION_QUALIFIER,
 } = require('../../utils/evidenceContractVersions');
+const { npsSourceDetails, explicitCurrentClosure } = require('../../utils/npsSourceDetails');
 const { extractOperationalFacts } = require('../../utils/operationalFactExtraction');
 const { isScenicDriveSubject } = require('../../utils/scenicDriveSubject');
 const {
@@ -149,27 +150,115 @@ function htmlToInferenceText(value) {
 }
 
 function inferFacilityKind(name, description = '', category = '') {
-  const hay = `${name || ''} ${description || ''} ${category || ''}`.toLowerCase();
-  if (/\bvisitor centers?\b/.test(hay) || /\bnature centers?\b/.test(hay)) return 'visitor_center';
-  if (/\bmuseum\b/.test(hay)) return 'museum';
-  if (/\blodge\b/.test(hay) && !/\btrail\b/.test(hay)) return 'lodging';
-  if (/\bpicnic\b/.test(hay)) return 'picnic';
+  const title = String(name || '').toLowerCase();
+  const kind = String(category || '').toLowerCase();
+  // NPS place prose routinely mentions nearby facilities ("Lodge visitors",
+  // "across from the Visitor Center"). Those words describe context, not the
+  // record's identity. Strong structural titles win before facility names.
+  if (kind === 'place' && /\b(shuttle stop|trailhead|wayside|overlook|point|shelter|station|parking|bike stand|charging station)\b/.test(title)) return null;
+  if (/\bvisitor centers?\b/.test(title) || /\bnature centers?\b/.test(title)) return 'visitor_center';
+  if (/\bmuseum\b/.test(title)) return 'museum';
+  if (/\b(lodge|lodging|hotel|motel|cabins?)\b/.test(title) && !/\btrail\b/.test(title)) return 'lodging';
+  if (/\bpicnic\b/.test(title)) return 'picnic';
+  // Non-place activity articles may have generic titles, so their concise
+  // descriptions can still identify an indoor/facility experience. A place
+  // record stays a place unless its own title establishes the facility kind.
+  if (kind !== 'place') {
+    const hay = `${title} ${description || ''}`.toLowerCase();
+    if (/\bvisitor centers?\b/.test(hay) || /\bnature centers?\b/.test(hay)) return 'visitor_center';
+    if (/\bmuseum\b/.test(hay)) return 'museum';
+    if (/\blodge\b/.test(hay) && !/\btrail\b/.test(hay)) return 'lodging';
+    if (/\bpicnic\b/.test(hay)) return 'picnic';
+  }
   return null;
+}
+
+// ---- Exposure cues, read per sentence of official text ----------------------
+// A cue must describe the visitor's walking edge. Not cues: transport "drop off",
+// geology/skin/sun/tide "exposed", proper-noun "Cliffs", measured "height", and
+// park-wide safety boilerplate repeated on every record (removed by the caller).
+const TRANSPORT_CONTEXT = /\b(pick(?:s|ing)?[- ]?up|passengers?|bus(?:es)?|shuttles?|bicycles?|bikes?|boats?|ferry|vehicles?|point|location|zone|luggage)\b/;
+const NON_TERRAIN_EXPOSED = /\bexpos(?:ed|ure)\b.{0,25}\b(skin|sun|sunlight|wind|weather|waves?|tides?|elements|cold|heat|radiation|ingestion|inhalation|people|visitors?)\b|\b(sun|uv|heat|cold|wind|chemical|smoke)\s+exposure\b|\bexposed (?:at|during) (?:low|high) tide\b|\b(?:rock|rocks|layers?|strata|bedrock|formations?|geology|roots?|root system|trusses|beams|timbers|logs?|concrete|foundations?|surface)\b.{0,30}\bexpos(?:ed|ure)\b|\bexpos(?:ed|ure)\b.{0,30}\b(?:rock|rocks|layers?|strata|bedrock|formations?|geology|roots?|root system|trusses|beams|ceiling|granite|basalt|greenstone|landscape|grand staircase)\b|\bexposure can occur\b|\blandscape exposed\b/;
+const EDGE_CUES = [
+  /\bdrop[- ]?offs\b|\bdrop[- ]?off\b(?!\s+(?:into|and|the|passengers|bicycles|point|location))/,
+  /\b(?:considerable|steep|sheer|long|sudden|vertical|large|big|major)\s+drops?\b/,
+  /\bcliff[- ]?(?:edges?|faces?)\b|\bedges? of (?:the )?cliffs?\b|\b(?:climbs?|climbing|along|near|above)\s+(?:the |sheer |steep )?cliffs?\b/,
+  /\b(?:narrow|sandstone|rock|exposed|open)\s+ledges?\b|\balong (?:a |the )?(?:\w+ )?ledges?\b|\bledges?\b.{0,25}\b(?:above|drop)/,
+  /\b(?:fear|afraid) of heights\b|\bexposure to heights\b|\bvertigo\b|\bacrophob/,
+  /\biron rungs?\b|\bchains? (?:anchored|bolted|along|to hold)\b|\b(?:handholds|ladders?) (?:up|on|bolted)\b/,
+  /\brisk of falling\b|\bfall(?:ing)? hazards?\b|\bfalls? (?:can|could) be fatal\b|\bunfenced\b|\bunguarded edges?\b/,
+  /\bexposed (?:ridge|ridgeline|ridges|edges?|ledges?|cliff|cliffs|cliff faces|summits?|slickrock|sections? near|viewpoints?|traverse)\b|\bsteep exposures?\b|\bexposure to (?:a |the )?(?:considerable |steep |sheer |long )?(?:drop|edge|cliff)/,
+];
+// Severity is judged in the cue's own sentence, never anywhere in the record.
+const HIGH_SEVERITY = /\b(sheer|long|steep|significant|severe|scary|extreme|vertical|hundreds of feet|thousands? of feet|no (?:railings?|guardrails?|fences?)|unfenced|narrow ledges?|narrow ridge|exposed edges|iron rungs?|chains?|fatal)\b|\b\d{2,}[,\d]*\s?(?:feet|ft|foot|meters|m)\b/;
+// Edge drops that describe a path surface, not a fall hazard.
+const PATH_EDGE = /\b(minor|small|slight|low|short|shallow)\s+drop[- ]?offs?\b|\bdrop[- ]?offs?\b.{0,40}\b(pav(?:ed|ing|ement)|curbs?|surface|grade|wheelchair|accessib)|\b(pav(?:ed|ing|ement)|curbs?|surface|wheelchair|accessib)\w*\b.{0,60}\bdrop[- ]?offs?\b/;
+const AMBIGUOUS_EXPOSED = /\bexpos(?:ed|ure)\b/;
+
+/** Official HTML → text that keeps paragraph/line breaks as sentence boundaries. */
+function htmlToSentenceText(value) {
+  return String(value || '')
+    .replace(/<br\s*\/?>|<\/(?:p|li|h[1-6]|div|tr)>/gi, '. ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*(?:\.\s*){2,}/g, '. ')
+    .trim();
+}
+
+/** Every official text field of one record, for exposure inference only. */
+function exposureSourceText(item) {
+  return [item?.longDescription, item?.bodyText, item?.shortDescription, item?.description, item?.listingDescription]
+    .filter((v) => typeof v === 'string' && v.trim()).map(htmlToSentenceText).join(' ');
+}
+
+function inferenceSentences(text) {
+  return String(text || '').split(/(?<=[.!?])\s+/).map((sentence) => sentence.trim()).filter(Boolean);
+}
+
+/** Sentences repeated across many records of one park are boilerplate, not a property of a place. */
+function boilerplateSentences(texts, { minCount = 5, minShare = 0.1 } = {}) {
+  const counts = new Map();
+  for (const text of texts) {
+    for (const sentence of new Set(inferenceSentences(text).map((s) => s.toLowerCase()))) {
+      if (sentence.length >= 30) counts.set(sentence, (counts.get(sentence) || 0) + 1);
+    }
+  }
+  const threshold = Math.max(minCount, Math.ceil(texts.length * minShare));
+  return new Set([...counts].filter(([, count]) => count >= threshold).map(([sentence]) => sentence));
+}
+
+function exposureCues(sentence) {
+  const s = sentence.toLowerCase();
+  let edge = EDGE_CUES.some((cue) => cue.test(s));
+  if (edge && /\bdrop[- ]?offs?\b/.test(s) && TRANSPORT_CONTEXT.test(s)
+    && !EDGE_CUES.slice(1).some((cue) => cue.test(s))) edge = false;
+  if (edge && PATH_EDGE.test(s) && !EDGE_CUES.slice(1).some((cue) => cue.test(s)) && !HIGH_SEVERITY.test(s)) {
+    return { pathEdge: true };
+  }
+  if (edge) return { edge: true, high: HIGH_SEVERITY.test(s) };
+  if (AMBIGUOUS_EXPOSED.test(s) && !NON_TERRAIN_EXPOSED.test(s)
+    && !/\b(no|minimal|without|low|little|limited)\s+exposure\b|\bnot\s+exposed\b|\bunexposed\b/.test(s)) return { ambiguous: true };
+  return {};
 }
 
 /**
  * Derive exposure only from authoritative description text.
  * Difficulty is NOT exposure. Canyon scenery words like "sheer walls" alone do
  * not prove trail exposure when the surface is paved/flat/accessible.
- * Returns null when unsupported (unknown — never silently treated as low by callers).
+ * Returns null when unsupported or ambiguous (unknown — never silently low).
+ * `options.boilerplate`: park-wide repeated sentences to ignore.
  */
 function inferExposure(text, options = {}) {
-  const t = String(text || '').toLowerCase();
-  const facilityKind = options.facilityKind || inferFacilityKind(options.name, text, options.category);
-  // Structural trail-exposure cues (not scenery words like "sheer walls").
-  const structuralExposure = /\b(drop[- ]?offs?|cliff[- ]edges?|heights?|vertigo|unfenced|narrow ledges?)\b/.test(t)
-    || /\blong drop[- ]?offs?\b/.test(t);
-  const exposedMention = /\b(exposure|exposed)\b/.test(t);
+  const boilerplate = options.boilerplate instanceof Set ? options.boilerplate : null;
+  const sentences = inferenceSentences(text).filter((s) => !boilerplate?.has(s.toLowerCase()));
+  const t = sentences.join(' ').toLowerCase();
+  // A name-derived facility category is not exposure evidence. Use official
+  // activity text without the title, so a misleading facility name cannot certify low.
+  const body = options.name && String(text).startsWith(`${options.name}. `)
+    ? String(text).slice(String(options.name).length + 2).toLowerCase() : t;
+  const indoorVisit = /\b(?:indoor exhibits?|indoor galleries|inside (?:the )?(?:museum|visitor center)|interior exhibits?)\b/.test(body);
+  const cues = sentences.map(exposureCues);
   const exposureNegated = /\b(no|minimal|without|low|little|limited)\s+exposure\b/.test(t)
     || /\bnot\s+exposed\b/.test(t)
     || /\bunexposed\b/.test(t);
@@ -183,16 +272,13 @@ function inferExposure(text, options = {}) {
     || /\bclimbs?\b.{0,40}\bviewpoint\b/.test(t)
     || /\bunpaved\b.{0,40}\bclimbs?\b/.test(t);
 
-  if (structuralExposure) {
-    if (/\b(long|significant|high|scary|severe)\b/.test(t) || /\blong drop[- ]?offs?\b/.test(t)) {
-      return 'high';
-    }
-    return 'moderate';
-  }
-  if (facilityKind && !/\b(trail|hike|scrambl|cables?|chains?)\b/.test(t)) return 'low';
-  // "no exposure" / "minimal exposure" must win over a bare "exposure" token.
+  if (cues.some((c) => c.edge)) return cues.some((c) => c.edge && c.high) ? 'high' : 'moderate';
+  // An exposure word whose sense the text does not settle stays unknown.
+  if (cues.some((c) => c.ambiguous)) return null;
+  if (indoorVisit && !/\b(trail|hike|scrambl|cables?|chains?)\b/.test(t)) return 'low';
+  // Minor path-edge drops neither prove nor disprove low; positive surface
+  // evidence must still be present for low.
   if ((exposureNegated || lowSurface || roadside) && !hardTerrain) return 'low';
-  if (exposedMention && !exposureNegated) return 'moderate';
   return null;
 }
 
@@ -284,6 +370,8 @@ function normalizeNamedActivities(raw, request, observedAt, metadata = {}) {
     parkCode
   );
   const candidates = [];
+  // Park-wide safety copy repeated on many records describes the park, not the place.
+  const boilerplate = boilerplateSentences([...thingstodo, ...places].map(exposureSourceText));
   const ingestionComplete = metadata.sourceIngestionComplete === true;
   const baseQualifiers = ingestionComplete
     ? ['source_ingestion_complete']
@@ -307,10 +395,11 @@ function normalizeNamedActivities(raw, request, observedAt, metadata = {}) {
     const difficulty = inferDifficulty(`${name} ${officialDetail}`);
     const scenicDriveSubject = isScenicDriveSubject(item);
     const facilityKind = scenicDriveSubject ? 'scenic_drive' : inferFacilityKind(name, description, 'thingstodo');
-    const exposureLevel = inferExposure(`${name} ${officialDetail}`, {
+    const exposureLevel = inferExposure(`${name}. ${exposureSourceText(item)}`, {
       name,
       category: 'thingstodo',
       facilityKind,
+      boilerplate,
     });
     candidates.push(baseCandidate({
       parkCode,
@@ -344,6 +433,8 @@ function normalizeNamedActivities(raw, request, observedAt, metadata = {}) {
         // mapped onto the operational vocabulary that already existed and had
         // nothing writing to it.
         operationalFacts: extractOperationalFacts({ item, parkCode, observedAt }),
+        sourceDetails: npsSourceDetails(item),
+        closureStatus: explicitCurrentClosure(item) ? 'closed' : 'unknown',
         seasonalStatus: null,
         currentStatus: 'unknown',
         viewpointTraits: activityTypes.filter((t) => /view|scenic|overlook|sunset|sunrise/.test(t)),
@@ -412,13 +503,16 @@ function normalizeNamedActivities(raw, request, observedAt, metadata = {}) {
           facilityKind,
           item,
         }),
-        exposureLevel: inferExposure(`${name} ${officialDetail}`, {
+        exposureLevel: inferExposure(`${name}. ${exposureSourceText(item)}`, {
           name,
           category: 'place',
           facilityKind,
+          boilerplate,
         }),
         accessibility: item.accessibilityInformation || null,
         operationalFacts: extractOperationalFacts({ item, parkCode, observedAt }),
+        sourceDetails: npsSourceDetails(item),
+        closureStatus: explicitCurrentClosure(item) ? 'closed' : 'unknown',
         seasonalStatus: null,
         currentStatus: 'unknown',
         viewpointTraits: activityTypes.filter((t) => /view|scenic|overlook|sunset|sunrise/.test(t)),

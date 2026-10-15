@@ -115,7 +115,7 @@ const ImageLightbox = ({ images, initialIndex, onClose }) => {
       {/* Caption */}
       {(current.altText || current.title) && (
         <div className="absolute bottom-0 left-0 right-0 text-center px-6 py-4 z-10">
-          <p className="text-white/80 text-sm leading-relaxed max-w-2xl mx-auto">
+          <p className="text-white/80 text-sm leading-relaxed public-content">
             {current.altText || current.title}
           </p>
         </div>
@@ -440,7 +440,7 @@ const MessageBubble = ({
                 : isOpenAssistant
                   ? `${isOpening ? 'trailie-opening' : 'trailie-open-message'} w-full max-w-[68rem]`
                   : isConversion
-                    ? 'trailie-conversion-message w-full max-w-[48rem] rounded-2xl px-4 py-4 sm:px-5 sm:py-5'
+                    ? 'trailie-conversion-message w-full max-w-[var(--public-rich-width)] rounded-2xl px-4 py-4 sm:px-5 sm:py-5'
                     : useInlineLayout
                       ? 'w-full !max-w-full'
                 : isUser

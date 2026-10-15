@@ -53,6 +53,7 @@ describe('public itinerary export boundary', () => {
   });
   it('exports only the reviewed traveler-facing sample without capture identifiers', () => {
     const sample = buildPublicSample(capture, concept, review);
+    expect(sample.response).toBe(capture.response);
     expect(sample.slug).toBe(concept.slug);
     expect(sample.images[0]).not.toHaveProperty('verified');
     expect(JSON.stringify(sample)).not.toMatch(/PRIVATE|itineraryHash|tripId|checks|latencyMs/);

@@ -52,6 +52,7 @@ export default function VoiceButton() {
   // Hide on pages where voice chat is not relevant.
   const hiddenOnChat =
     pathname?.startsWith('/plan-ai') ||
+    pathname === '/dev/trailie-preview' ||
     pathname === '/trailie-demo' ||
     pathname?.startsWith('/blog') ||
     pathname?.startsWith('/map') ||

@@ -110,6 +110,13 @@ const WelcomeEmail = ({
                 </Button>
               </div>
 
+              <Text style={{ margin: '0 0 24px', fontSize: '15px', lineHeight: '1.6', textAlign: 'center' }}>
+                <Link href="https://chatgpt.com/plugins/plugin_asdk_app_69e9c67943c08191a37c464b803ebdbe" style={{ color: '#06B569', textDecoration: 'underline' }}>
+                  <Img src="https://www.nationalparksexplorerusa.com/brand/chatgpt.png" alt="" width="20" height="20" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                  Open TrailVerse in ChatGPT
+                </Link>
+              </Text>
+
               {/* Divider */}
               <Hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '40px 0 32px' }} />
 

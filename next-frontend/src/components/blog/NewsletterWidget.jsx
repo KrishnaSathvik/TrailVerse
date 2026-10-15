@@ -26,8 +26,8 @@ function signupAttribution({ pagePath, parkCode }) {
 function copyForSource(source) {
   if (source === 'newsletter-page') {
     return {
-      title: 'Get Where Next?',
-      body: 'One timely destination every week — why now, what changed, what to avoid, and how to do it.',
+      title: 'Join the upcoming newsletter',
+      body: 'Leave your email and confirm your subscription to hear from us when Where Next? launches.',
       cta: 'Join free →',
       loading: 'Joining…',
     };
@@ -35,7 +35,7 @@ function copyForSource(source) {
 
   return {
     title: 'Not sure where to go next?',
-    body: 'Get one destination worth considering every week — why now, what changed, and how to do it.',
+    body: 'Join our upcoming newsletter for timely destinations, useful travel updates, and trip ideas.',
     cta: 'Join Where Next? →',
     loading: 'Joining…',
   };
@@ -57,6 +57,7 @@ export default function NewsletterWidget({
   pagePath = null,
   parkCode = null,
   embedded = false,
+  hideIntro = false,
   containerClassName = 'rounded-[2rem] p-6 sm:p-8',
 }) {
   const [email, setEmail] = useState('');
@@ -210,7 +211,7 @@ export default function NewsletterWidget({
 
   const formContent = (
     <>
-      <div className={embedded ? 'mb-4' : 'mb-6'}>
+      {!hideIntro && <div className={embedded ? 'mb-4' : 'mb-6'}>
         {embedded ? (
           <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
             {copy.title}
@@ -223,10 +224,10 @@ export default function NewsletterWidget({
         <p className={`leading-relaxed ${embedded ? 'text-sm' : 'text-sm sm:text-base mt-1'}`} style={{ color: 'var(--text-secondary)' }}>
           {copy.body}
         </p>
-      </div>
+      </div>}
       {form}
       <p className={`text-xs sm:text-sm ${embedded ? 'mt-3' : 'mt-4'}`} style={{ color: 'var(--text-secondary)' }}>
-        Free. One email a week. Unsubscribe anytime.
+        Free. Confirm by email. Unsubscribe anytime.
       </p>
       {status === 'error' && message ? (
         <p id={errorId} role="alert" className="text-sm mt-2" style={{ color: 'var(--error, #ef4444)' }}>

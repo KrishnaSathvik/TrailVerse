@@ -94,4 +94,14 @@ function memoryAdmission(receipt, message, update) {
   return verdicts.find(verdict => verdict !== 'explicit') || 'explicit';
 }
 
-module.exports = { createMemoryAuthorityVerifier, memoryAdmission, MEMORY_VERIFIER_INSTRUCTIONS, MEMORY_VERDICT_SCHEMA };
+// Verdict for ONE key of an update. Admission stays whole-update (above); this
+// lets a hard restriction be judged on its own words instead of disappearing
+// with an unsupported sibling key.
+function memoryFactRelationship(receipt, message, update, key) {
+  if (!update?.value || !Object.hasOwn(update.value, key)) return 'unverified';
+  return receipts.get(receipt)?.get(binding(message, {
+    field: `${update.field}.${key}`, value: update.value[key], sourceQuote: update.sourceQuote,
+  })) || 'unverified';
+}
+
+module.exports = { createMemoryAuthorityVerifier, memoryAdmission, memoryFactRelationship, MEMORY_VERIFIER_INSTRUCTIONS, MEMORY_VERDICT_SCHEMA };

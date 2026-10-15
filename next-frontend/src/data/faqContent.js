@@ -1,4 +1,4 @@
-// Shared by the visible FAQ and FAQPage structured data. Audited against local code, October 5, 2026.
+// Shared by the visible FAQ and FAQPage structured data. Audited against local code, October 15, 2026.
 export const FAQ_CATEGORIES = [
   {
     "category": "Getting started",
@@ -28,15 +28,23 @@ export const FAQ_CATEGORIES = [
     "questions": [
       {
         "question": "What can Trailie plan?",
-        "answer": "Ask for park suggestions, comparisons, day-by-day itineraries, or changes to an existing trip. Trailie can use NPS, weather, and other relevant sources when available. Signed-in website users can request named state parks and other outdoor destinations with relevant web research. Coverage and the detail available vary by destination; check important arrangements with the official source."
+        "answer": "Trailie helps with U.S. travel, including U.S. territories: destination advice, park and city comparisons, day-by-day itineraries, and changes to an existing trip. NPS parks have the deepest coverage. Other destinations depend on available place and research data. You can ask a question without creating a trip; check important arrangements with official sources."
       },
       {
         "question": "Does Trailie search the web for every answer?",
-        "answer": "No. The website guest experience does not use live web search. Signed-in requests can use web research when it is relevant; NPS questions can rely on park data instead. ChatGPT and Claude use a separate connector route that can also fetch relevant evidence. A reply is not a guarantee that every source is current or every detail has been verified."
+        "answer": "No. Trailie can look up relevant park, weather, place, or web information when needed, including during guest chat. Some answers do not require research. Coverage varies, and a reply does not mean every detail has been checked live. Confirm closures, permits, reservations, and conditions with the responsible source."
       },
       {
         "question": "What AI powers Trailie?",
-        "answer": "The current website planner is configured around Anthropic Claude. Talk to Trailie uses OpenAI Realtime for voice. The service handles model selection; you do not need to choose a model. Your request and relevant conversation or trip context are processed by AI services."
+        "answer": "The current website planner uses OpenAI. Talk to Trailie uses OpenAI Realtime through a separate voice experience. The service handles model selection; you do not need to choose a model. Your request and relevant conversation or trip context are processed by AI services."
+      },
+      {
+        "question": "Can Trailie book a hotel, restaurant, or permit?",
+        "answer": "No. Trailie can help you plan and identify what to check, but it cannot make reservations, buy permits, hold rooms, or guarantee availability. Complete bookings with the responsible operator or booking service."
+      },
+      {
+        "question": "Are the demos and sample itineraries real Trailie answers?",
+        "answer": "The demos replay recorded Trailie conversations, and sample itineraries present captured plans in a readable layout. They are examples, not fresh research for your travel dates. Review seasonal access, reservations, and current conditions before using them for your own trip."
       },
       {
         "question": "What is Quick Fill?",

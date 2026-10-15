@@ -194,6 +194,9 @@ exports.logout = async (req, res, next) => {
 exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Please provide an email' });
+    }
     
     const user = await User.findOne({ email });
     

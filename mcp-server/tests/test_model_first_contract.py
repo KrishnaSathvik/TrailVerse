@@ -65,3 +65,40 @@ def test_mcp_followup_keeps_backend_session_authority():
             assert client.plan_trip_anonymous.call_args.kwargs["anonymous_id"] == fixture["anonymousId"]
 
     asyncio.run(run())
+
+
+def test_planning_has_separate_bounded_timeout_over_real_http():
+    """A delayed local HTTP response outlives the read budget, not the plan budget."""
+    from server.client import TrailVerseAPIError
+
+    async def run():
+        async def respond(reader, writer):
+            try:
+                await reader.readuntil(b"\r\n\r\n")
+                await asyncio.sleep(0.15)
+                payload = b'{"success":true,"data":{}}'
+                writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " + str(len(payload)).encode() + b"\r\nConnection: close\r\n\r\n" + payload)
+                await writer.drain()
+            finally:
+                writer.close()
+                await writer.wait_closed()
+
+        server = await asyncio.start_server(respond, '127.0.0.1', 0)
+        try:
+            port = server.sockets[0].getsockname()[1]
+            async with TrailVerseClient(base_url=f'http://127.0.0.1:{port}', timeout=0.05, plan_trip_timeout=1) as client:
+                result = await client.plan_trip_anonymous(message='Hello', anonymous_id='timeout-fixture')
+                assert result['success']
+                client.plan_trip_timeout = 0.05
+                try:
+                    await client.plan_trip_anonymous(message='Hello', anonymous_id='timeout-fixture')
+                except TrailVerseAPIError as error:
+                    assert 'timed out' in str(error)
+                else:
+                    raise AssertionError('Planning timeout must remain bounded')
+        finally:
+            server.close()
+            await server.wait_closed()
+            await asyncio.sleep(0.2)
+
+    asyncio.run(run())

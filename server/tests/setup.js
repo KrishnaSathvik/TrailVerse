@@ -1,8 +1,7 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { randomUUID } = require('node:crypto');
 const mongoose = require('mongoose');
 const { installOutboundNetworkGuard } = require('../src/eval/bootstrap/outboundNetworkGuard');
 
-let mongod;
 let outboundGuard;
 
 // Ordinary regression tests are network-denied even if a test loads .env.
@@ -19,9 +18,9 @@ beforeAll(() => {
 
 // Setup before all tests
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  const uri = mongod.getUri();
-  await mongoose.connect(uri);
+  const uri = process.env.TRAILVERSE_TEST_MONGO_URI;
+  if (!uri || !/^mongodb:\/\/127\.0\.0\.1:\d+\//.test(uri)) throw new Error('Disposable local test MongoDB is required');
+  await mongoose.connect(uri, { dbName: `suite_${randomUUID().replace(/-/g, '')}` });
 });
 
 // Cleanup after each test
@@ -37,7 +36,6 @@ afterEach(async () => {
 afterAll(async () => {
   await mongoose.connection.dropDatabase();
   await mongoose.connection.close();
-  await mongod.stop();
   if (outboundGuard) outboundGuard.uninstall();
 });
 

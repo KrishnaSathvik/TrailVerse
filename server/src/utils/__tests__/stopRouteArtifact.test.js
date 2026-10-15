@@ -16,7 +16,7 @@ const evidence = ['a', 'b', 'c'].map((id) => ({ evidenceId: `ev:${id}`, evidence
 const bundle = Object.freeze({ evidence: Object.freeze(evidence) });
 const beforeBundle = JSON.stringify(bundle);
 const stop = (id) => ({ id, name: `Example ${id}`, canonicalPlaceName: `Example ${id}`, evidenceRef: `ev:${id}`,
-  parkCode: 'yose', latitude: 37.7 + (id.charCodeAt(0) - 97) / 100, longitude: -119.6,
+  parkCode: 'yose', evidenceEntityId: 'nps:park:yose', latitude: 37.7 + (id.charCodeAt(0) - 97) / 100, longitude: -119.6,
   coordinateSource: 'resolved_metadata', duration: 60, drivingTimeFromPreviousMin: null });
 const edge = (sourceStopId, targetStopId) => ({ sourceStopId, targetStopId, relationship: 'transfer', modeIntent: 'drive' });
 function plan() { return { days: [{ id: 'd1', dayNumber: 1, stops: [stop('a'), stop('b')], travelEdges: [edge('a', 'b')] }] }; }
@@ -66,7 +66,8 @@ test.each([
   ['unknown target', (h) => { h.candidate.days[0].stops[1].evidenceRef = 'missing'; }, 'ineligibleMissingIdentity'],
   ['missing coordinates', (h) => { h.candidate.days[0].stops[0].latitude = null; }, 'ineligibleMissingCoordinates'],
   ['tool coordinates', (h) => { h.candidate.days[0].stops[1].coordinateSource = 'tool'; }, 'ineligibleMissingCoordinates'],
-  ['cross destination', (h) => { h.candidate.days[0].stops[1].parkCode = 'sequ'; }, 'ineligibleMissingIdentity'],
+  ['cross destination', (h) => { h.candidate.days[0].stops[1].parkCode = 'sequ';
+  h.candidate.days[0].stops[1].evidenceEntityId = 'nps:park:sequ'; }, 'ineligibleMissingIdentity'],
   ['null destinations', (h) => { h.candidate.days[0].stops.forEach((s) => { delete s.parkCode; }); }, 'ineligibleMissingIdentity'],
   ['non-adjacent', (h) => { h.candidate.days[0].stops.splice(1, 0, stop('c')); }, 'ineligibleProjection'],
   ['ambiguous incoming', (h) => { h.candidate.days[0].stops.unshift(stop('c')); h.candidate.days[0].travelEdges.push(edge('c', 'b')); }, 'ineligibleProjection'],
@@ -228,6 +229,7 @@ test('activity-group mutation invalidates an in-flight edge via the canonical ed
 test('finalizer removes invalid edges before any route request', async () => {
   const h = harness();
   h.candidate.days[0].stops[1].parkCode = 'sequ';
+  h.candidate.days[0].stops[1].evidenceEntityId = 'nps:park:sequ';
   const result = await finalizeStructuredItinerary({ itineraryData: h.candidate,
     constraints: { planningState: { transportation: h.transportation } }, verifyStopRoutes: (args) => h.run(args) });
   expect(result.itineraryData.days[0].travelEdges).toEqual([]);

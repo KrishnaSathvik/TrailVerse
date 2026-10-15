@@ -29,7 +29,7 @@ const { jointScopeFor } = require('./npsJointUnitActivityScope');
  */
 
 const REQUIRED_EXTRACTOR_VERSIONS = Object.freeze({
-  'nps:activities': Object.freeze(['nps-activities-v8']),
+  'nps:activities': Object.freeze(['nps-activities-v11']),
 });
 
 /**
@@ -54,8 +54,9 @@ const REQUIRED_EXTRACTOR_VERSIONS = Object.freeze({
  *
  * opnorm-v1 — implicit/unstamped: surface wording alone created a restriction.
  * opnorm-v2 — capability creates, surface only corroborates.
+ * opnorm-v3 — all source text fields; explicit present closures, accurate field provenance.
  */
-const OPERATIONAL_NORMALIZATION_CONTRACT_VERSION = 'opnorm-v2';
+const OPERATIONAL_NORMALIZATION_CONTRACT_VERSION = 'opnorm-v3';
 
 /** Stamp lives on claim.qualifiers; provenance is strict and cannot take it. */
 const OPERATIONAL_NORMALIZATION_QUALIFIER_PREFIX = 'operational_normalization:';
@@ -72,9 +73,10 @@ const OPERATIONAL_NORMALIZATION_CONTRACTS = Object.freeze({
   'nps:activities': OPERATIONAL_NORMALIZATION_CONTRACT_VERSION,
 });
 
-// v8: cliff-edge warnings override paved/facility low-exposure inference.
-const NPS_NAMED_ACTIVITIES_EXTRACTOR_VERSION = 'nps-activities-v8';
-const NPS_JOINT_UNIT_ACTIVITY_EXTRACTOR_VERSION = 'nps-activities-v8+joint-scope-v2';
+// v11: contextual trail mileage cannot become a viewpoint/place's walking distance.
+// Older normalized evidence must refresh; its source may still be chronologically fresh.
+const NPS_NAMED_ACTIVITIES_EXTRACTOR_VERSION = 'nps-activities-v11';
+const NPS_JOINT_UNIT_ACTIVITY_EXTRACTOR_VERSION = 'nps-activities-v11+joint-scope-v2';
 const NPS_ACTIVITY_TAXONOMY_EXTRACTOR_VERSION = 'nps-activity-taxonomy-v1';
 
 function isJointUnitActivityCandidate(candidate) {

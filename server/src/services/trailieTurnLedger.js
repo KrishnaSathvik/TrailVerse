@@ -659,6 +659,128 @@ async function recordEvidenceBrokerShadowOutcome({ responseId, outcome } = {}) {
   return saved;
 }
 
+/**
+ * Persist model-first turn cost/telemetry. Always on (not gated by the V2
+ * TRAILIE_V2_TELEMETRY_ENABLED flag) — production cost tracking for Sol.
+ * Callers must fire-and-forget; this never belongs on the traveler flush path.
+ */
+async function recordModelFirstTurn({
+  telemetry,
+  route,
+  userId = null,
+  responseVersion = 1,
+  persisted = false,
+  tripId = null,
+  now = () => new Date(),
+} = {}) {
+  if (!telemetry?.responseId || !CHAT_ROUTES.has(route)) return null;
+  const createdAt = new Date(now());
+  const durationMs = finiteOrNull(telemetry.latencyMs);
+  const startedAt = offsetDate(createdAt, durationMs) || createdAt;
+  const calls = (Array.isArray(telemetry.calls) ? telemetry.calls : []).map((call, index) => {
+    const attempt = Number(call.attemptNumber) || (index + 1);
+    const phase = boundedSlug(
+      call.purpose
+        || (attempt > 1 ? 'generation_retry' : 'generation'),
+      'generation',
+    );
+    return {
+      ...buildCall({
+        phase,
+        provider: 'openai',
+        model: call.model || 'gpt-6.1-sol',
+        usage: call.usage,
+        ttftMs: call.timeToFirstUsableResponseMs ?? call.timeToResponseHeadersMs,
+        durationMs: call.latencyMs,
+        status: call.status === 'success' ? 'complete' : 'failed',
+        attempt,
+        errorCode: call.errorCode || call.errorClass || null,
+        at: createdAt,
+      }),
+      startedAt: call.requestStartedAt ? new Date(call.requestStartedAt) : null,
+    };
+  });
+  const costKnown = calls.length > 0 && calls.every((call) => call.costStatus === 'priced');
+  const entry = {
+    responseId: String(telemetry.responseId),
+    responseVersion: Number.isFinite(Number(responseVersion)) ? Number(responseVersion) : 1,
+    route,
+    userTier: userId ? 'authenticated' : 'guest',
+    principalHash: hashPrincipal(userId),
+    intent: {
+      primary: telemetry.mutationProposed ? 'plan' : 'answer',
+      verticals: [],
+      depth: null,
+      freshness: null,
+      actionability: null,
+      scope: null,
+      entities: [],
+      confidence: null,
+      reasonCodes: telemetry.runtime ? [boundedSlug(telemetry.runtime, 'model_first')] : ['model_first'],
+      compound: false,
+      shadowEligible: false,
+      shadow: null,
+      version: 'model_first',
+    },
+    destinations: [],
+    evidence: {
+      requirementCount: Number(telemetry.toolCalls || 0),
+      hardCoverage: null,
+      requiredCoverage: null,
+      evidenceIds: [],
+      cacheHits: 0,
+      staleHits: 0,
+      misses: 0,
+      refreshes: 0,
+      coalesced: 0,
+      conflicts: 0,
+      missingReasonCodes: [],
+    },
+    calls,
+    validation: {
+      structuredStatus: telemetry.mutationAccepted ? 'accepted'
+        : telemetry.mutationProposed ? 'rejected' : null,
+      issueCodes: Array.isArray(telemetry.mutationIssues)
+        ? telemetry.mutationIssues.map((issue) => boundedSlug(issue?.code || issue, 'unknown')).filter(Boolean).slice(0, 40)
+        : [],
+      corrections: [],
+      planScore: null,
+      consistencyStatus: null,
+      deterministicFallback: false,
+    },
+    delivery: {
+      startedAt,
+      firstProgressAt: offsetDate(createdAt,
+        durationMs != null && telemetry.timings?.firstVisibleProgressMs != null
+          ? Math.max(0, durationMs - telemetry.timings.firstVisibleProgressMs)
+          : null),
+      firstUsefulAt: offsetDate(createdAt,
+        durationMs != null && telemetry.timings?.contentReadyMs != null
+          ? Math.max(0, durationMs - telemetry.timings.contentReadyMs)
+          : null),
+      finalizedAt: createdAt,
+      aborted: telemetry.terminalStatus === 'cancelled',
+    },
+    persistence: {
+      attempted: persisted === true,
+      status: persisted === true ? 'persisted' : 'not_persisted',
+      responseRevision: null,
+      hashMatch: null,
+      tripId: tripId || null,
+    },
+    feedback: null,
+    costUsd: costKnown ? calls.reduce((sum, call) => sum + Number(call.costUsd || 0), 0) : null,
+    costStatus: costKnown ? 'priced' : 'cost_unknown',
+    schemaVersion: LEDGER_SCHEMA_VERSION,
+    createdAt,
+  };
+  return TrailieAiTurn.findOneAndUpdate(
+    { responseId: entry.responseId },
+    { $setOnInsert: entry },
+    { upsert: true, new: true },
+  );
+}
+
 module.exports = {
   CHAT_ROUTES,
   LEDGER_SCHEMA_VERSION,
@@ -671,6 +793,7 @@ module.exports = {
   recordIntentShadowOutcome,
   recordEvidenceBrokerShadowOutcome,
   recordAuxiliaryCall,
+  recordModelFirstTurn,
   recordTurnFromAiLog,
   runWithTurnTelemetry,
   trailieTurnTelemetryScope,

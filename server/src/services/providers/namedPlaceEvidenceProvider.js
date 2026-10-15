@@ -9,6 +9,7 @@ const { PLACE_ENDPOINT, namedPlaceDiagnostics } = require('./namedPlaceDiagnosti
 const { lexical:key, vague, trustedAnchors, matchName } = require('./namedPlaceEquivalence');
 const { supportedExperienceAnchor } = require('./namedPlaceExperience');
 const { createOfficialRecordsLookup } = require('./namedPlaceOfficialRecords');
+const { isUsJurisdiction } = require('../../utils/usPlanGeography');
 const AREA_TYPES = new Set(['locality', 'sublocality', 'administrative_area_level_3']);
 const SUPPORTED_TYPES = new Set([...AREA_TYPES, 'park', 'natural_feature', 'route', 'campground', 'lodging', 'point_of_interest', 'establishment', 'tourist_attraction']);
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -143,18 +144,20 @@ function createNamedPlaceEvidenceProvider({ lookup = defaultLookup(), officialLo
           const match=matchName(name,p,anchors);
           const relationship=supportedExperienceAnchor(name,p,anchors);
           const nameMatch = match.type !== 'none' || Boolean(relationship);
+          const domestic = isUsJurisdiction(countryCode);
           const reason = !p.place_id ? 'missing_place_id' : p.partial_match ? 'partial_match'
             : !nameMatch ? 'name_mismatch' : !p.types?.some(t => SUPPORTED_TYPES.has(t)) ? 'unsupported_type'
             : p.detailsIdentityMismatch ? 'details_identity_mismatch'
-            : !countryCode ? 'country_unknown' : countryCode !== 'US' ? 'country_mismatch' : null;
+            : !countryCode ? 'country_unknown'
+              : !domestic ? 'country_mismatch' : null;
           const diagnostic = { name: p.name, candidateName:p.name, placeId: p.place_id, canonicalPlaceId:p.officialParkCode ? p.place_id : p.place_id ? `google:place:${p.place_id}` : null, nameMatch, nameMatchType:match.type, destinationAnchor:match.anchor || (p.officialParkCode ? `nps:park:${p.officialParkCode}` : null), country:countryCode, adminRegion:addressComponent(p,'administrative_area_level_1')?.short_name || null, sourceAttempted:p.officialParkCode ? 'nps' : 'google',
             countryEvidence: { countryCode, source: countryCode ? 'provider_address_component' : 'unknown' },
             regionMatch: null, contextMatch: null, rejectionReason: reason };
           diagnostics.push(diagnostic);
-          if (reason && reason !== 'name_mismatch') return [];
-          // A differently named candidate needs the same independent geographic
-          // and coordinate authority as an exact match, never a name shortcut.
-          if (!p.types?.some(t=>SUPPORTED_TYPES.has(t)) || p.detailsIdentityMismatch || countryCode!=='US') return [];
+          // Hard failures stay out. Foreign countries are kept as explicit evidence
+          // (country preserved) so the plan guard can reject them; never drop silently.
+          if (reason && reason !== 'name_mismatch' && reason !== 'country_mismatch') return [];
+          if (!p.types?.some(t=>SUPPORTED_TYPES.has(t)) || p.detailsIdentityMismatch) return [];
           const region = addressComponent(p, 'administrative_area_level_1');
           return [{ name:relationship?.experience.name || p.name, canonicalPlaceName:p.name, exactMatch:nameMatch, ...(relationship || {}), lat:p.geometry?.location?.lat, lon:p.geometry?.location?.lng,
             canonicalId:p.officialParkCode ? p.place_id : `google:place:${p.place_id}`, providerId:p.place_id, source:p.officialParkCode ? 'nps' : 'google', sourceUrl:p.officialUrl, types:p.types,
@@ -166,20 +169,31 @@ function createNamedPlaceEvidenceProvider({ lookup = defaultLookup(), officialLo
       const bias={states:normalizeRegionList((provenance.contextualRegions || []).map(v=>v.name || v.code))};
       const ranked=rankGeocodeCandidates(valid, null, {query:name, bias,
         explicitRegion:normalizeRegionList(provenance.explicitTravelerRegion?.code || provenance.explicitTravelerRegion?.name)[0] || null, explicitCountry:provenance.explicitTravelerCountry || null});
-      // A unique exact identity within the allowed geography, never top-result guessing.
-      const eligible=ranked.scored.filter(p => p.countryOk && (provenance.explicitTravelerRegion ? p.explicitMatch : !bias.states.length || p.regionMatch));
+      // Prefer a unique domestic identity. If none, a unique foreign identity still
+      // becomes evidence (guard rejects foreign stops) rather than vanishing.
+      const regionOk = (p) => (provenance.explicitTravelerRegion ? p.explicitMatch : !bias.states.length || p.regionMatch);
+      const domesticEligible = ranked.scored.filter(p => p.countryOk && regionOk(p));
+      const foreignEligible = ranked.scored.filter(p => !p.countryOk && p.candidate.countryCode && regionOk(p));
+      const eligible = domesticEligible.length ? domesticEligible : foreignEligible;
       const unique=new Map(eligible.filter(p=>p.candidate.exactMatch!==false).map(p=>[p.candidate.canonicalId,p.candidate]));
       const alternatives=[...new Map(eligible.map(p=>[p.candidate.canonicalId,p.candidate])).values()].slice(0,4);
       const selected=unique.size===1 ? [...unique.values()][0] : colocatedFeature([...unique.values()]);
       for (const diagnostic of diagnostics) {
-        if (diagnostic.rejectionReason) continue;
+        if (diagnostic.rejectionReason && diagnostic.rejectionReason !== 'country_mismatch') continue;
         const candidate = candidates.find(c => c.providerId === diagnostic.placeId);
         const rank = ranked.scored.find(r => r.candidate === candidate);
         diagnostic.regionMatch = rank?.regionMatch ?? null;
-        diagnostic.contextMatch = rank ? (provenance.explicitTravelerRegion ? rank.explicitMatch : !bias.states.length || rank.regionMatch) : null;
+        diagnostic.contextMatch = rank ? regionOk(rank) : null;
+        if (selected && candidate === selected) {
+          // Selected foreign identity keeps country_mismatch only as provenance,
+          // not as a hard rejection — evidence must reach the guard.
+          diagnostic.rejectionReason = null;
+          continue;
+        }
         diagnostic.rejectionReason = !valid.includes(candidate) ? 'invalid_coordinates'
           : !rank ? 'explicit_country_mismatch' : !diagnostic.contextMatch ? 'region_mismatch'
-          : unique.size > 1 && candidate !== selected ? (selected ? 'colocated_locality_of_feature' : 'ambiguous_identity') : null;
+          : unique.size > 1 && candidate !== selected ? (selected ? 'colocated_locality_of_feature' : 'ambiguous_identity')
+            : (diagnostic.rejectionReason === 'country_mismatch' ? 'country_mismatch' : null);
       }
       return {raw:selected, metadata:{alternatives:selected?[]:alternatives,observedAt:now().toISOString(), unresolvedReason:selected ? null : unique.size>1?'ambiguous_identity':'identity_not_found', querySent:request.parameters.query, candidateDiagnostics:diagnostics,sourceAttempts:[...(known?['catalog']:[]),...(anchors.length?[`nps:${officialStatus}`]:[]),...(!known && !officialMatches.length?['google']:[])]},
         completeness:{isComplete:false,topics:[],emptyMeans:'unknown'},providerAttempts:known || officialMatches.length?0:(results.providerAttempts || 1)};
@@ -198,6 +212,7 @@ function createNamedPlaceEvidenceProvider({ lookup = defaultLookup(), officialLo
           text:`${raw.name}: place identity and location resolved; access and availability are not confirmed.`,
           normalizedValue:{name:raw.name, canonicalPlaceName:raw.canonicalPlaceName || raw.name, ...(alternatives?{alternativeFor:request.parameters.name,resolutionKind:'grounded_alternative'}:{requestedName:request.parameters.name,resolutionKind:raw.mapAnchor?'supported_map_anchor':'exact'}), ...(raw.experience?{experience:raw.experience,mapAnchor:raw.mapAnchor}:{}), placeKind:area?'area':'place',
             placeTypes:raw.types, latitude:raw.lat, longitude:raw.lon, providerSource:raw.source,
+            ...(raw.countryCode ? { countryCode: String(raw.countryCode).trim().toUpperCase() } : {}),
             currentAccess:'unknown', lodgingAvailability:'unknown'}},
         source:{provider:'named_place',sourceClass:raw.source==='nps'?'official_owner':raw.source==='google'?'commercial_structured':'trusted_specialist',sourceId:raw.canonicalId,
           url:raw.sourceUrl || (raw.providerId?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw.name)}&query_place_id=${encodeURIComponent(raw.providerId)}`:null)},

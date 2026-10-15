@@ -23,7 +23,7 @@ export default function TrailieDemoPage() {
               See how Trailie plans in real conversations.
             </h1>
             <p
-              className="mx-auto max-w-3xl text-sm leading-relaxed text-pretty sm:text-base"
+              className="mx-auto max-w-[var(--public-rich-width)] text-sm leading-relaxed text-pretty sm:text-base"
               style={{ color: 'var(--text-secondary)' }}
             >
               Explore five real Trailie conversations: choosing a park, combining Zion and Bryce,

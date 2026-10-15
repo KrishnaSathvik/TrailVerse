@@ -1,3 +1,5 @@
+import TestimonialBadge from './TestimonialBadge.jsx';
+
 function StarRating({ rating }) {
   const value = Math.min(5, Math.max(0, Number(rating) || 0));
   const stars = '★★★★★'.slice(0, value) + '☆☆☆☆☆'.slice(0, 5 - value);
@@ -14,7 +16,7 @@ function StarRating({ rating }) {
 function TestimonialStaticCard({ testimonial }) {
   return (
     <article
-      className="flex h-full flex-col border-t py-6"
+      className="info-panel flex h-full min-w-0 flex-col break-words"
       style={{
         borderColor: 'var(--border)',
       }}
@@ -26,7 +28,7 @@ function TestimonialStaticCard({ testimonial }) {
       >
         &quot;{testimonial.content}&quot;
       </blockquote>
-      <footer className="mt-auto">
+      <footer className="mt-auto flex flex-col items-start">
         <cite className="not-italic">
           <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
             {testimonial.name}
@@ -42,6 +44,12 @@ function TestimonialStaticCard({ testimonial }) {
             {testimonial.parkName}
           </p>
         ) : null}
+        {/^https?:\/\//i.test(testimonial.sourceUrl || '') && (
+          <a href={testimonial.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-[var(--accent-green)] underline underline-offset-2">
+            {testimonial.sourceLabel || 'View source'}
+          </a>
+        )}
+        <TestimonialBadge testimonial={testimonial} />
       </footer>
     </article>
   );
@@ -73,7 +81,7 @@ export default function TestimonialsServerList({ testimonials = [], error = fals
         <h2 id="testimonials-list-heading" className="sr-only">
           Published traveler reviews
         </h2>
-        <ul className="grid list-none gap-8 p-0 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid list-none gap-6 p-0 md:grid-cols-2">
           {testimonials.map((testimonial) => (
             <li key={testimonial._id}>
               <TestimonialStaticCard testimonial={testimonial} />

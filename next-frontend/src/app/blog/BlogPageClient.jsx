@@ -62,8 +62,8 @@ const FeaturedLeadCard = ({ post, badge = 'Featured Story' }) => (
       <span className="inline-flex w-fit px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white mb-4">
         {badge}
       </span>
-      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3 sm:mb-4 max-w-2xl">{post.title}</h2>
-      <p className="text-white/80 text-sm sm:text-base md:text-lg max-w-2xl line-clamp-3 mb-4 sm:mb-6">{post.excerpt}</p>
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3 sm:mb-4 public-content">{post.title}</h2>
+      <p className="text-white/80 text-sm sm:text-base md:text-lg public-content line-clamp-3 mb-4 sm:mb-6">{post.excerpt}</p>
       <div className="flex items-center gap-4 text-sm text-white/80">
         <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{post.readTime} min</span>
         <BlogViewCount views={post.views} className="flex items-center gap-1" />

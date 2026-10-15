@@ -301,6 +301,18 @@ exports.updateTrip = async (req, res, next) => {
       }
     });
 
+    // Owner structural edits must use POST …/manual-mutations. Plan-only PUTs
+    // previously could return success while resolveCanonicalResponsePersistence
+    // stripped the plan as IDEMPOTENT (stale itineraryHash). Conversation+plan
+    // chat/AI saves remain allowed on this route.
+    if (updateData.plan !== undefined && updateData.conversation === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Plan-only updates require the manual mutation endpoint',
+        code: 'manual_mutation_required',
+      });
+    }
+
     // Pass #5 — on accepted response-coupled writes, freeze normalized planningState.
     // Rebuild from conversation last-user patch + previous even when the client
     // does not echo planningState/formData (current responseSavePayload shape).

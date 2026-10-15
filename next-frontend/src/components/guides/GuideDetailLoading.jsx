@@ -8,7 +8,7 @@ export default function GuideDetailLoading() {
       <Header />
       <main className="public-shell py-12">
         <div
-          className="mb-10 rounded-[2rem] border px-5 py-8 sm:px-8 animate-pulse max-w-4xl mx-auto"
+          className="public-content mb-10 rounded-[2rem] border px-5 py-8 sm:px-8 animate-pulse"
           style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
           aria-hidden="true"
         >

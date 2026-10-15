@@ -147,10 +147,34 @@ function structuredDistance(structuredMiles) {
   return Math.round(miles * 100) / 100;
 }
 
-function ownedTextDistances(text) {
-  const sentences = splitSentences(String(text || '').toLowerCase().replace(/\bone[- ]mile\b/g, '1 mile'));
+function routeStem(name) {
+  return oneLine(name).toLowerCase().replace(/\b(?:trailhead|trail|hike|walk|loop|path|boardwalk|route)\b/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function ownsNarrativeRoute(sentence, { name = '', category = '', activityTypes = [] } = {}) {
+  // A place listing can mention many optional hikes. Inferred activity tags
+  // describe its body, not ownership of those hikes by the listed place.
+  // Without an activity identity, retain the source prose but leave mileage unknown.
+  if (!name) return true; // Legacy text-only callers have no entity assertion.
+  const routeEntity = /\b(?:trailhead|trail|hike|hiking|walk|walking|loop|path|boardwalk|route)\b/i.test(name);
+  const activityEntity = category === 'thingstodo'
+    && typesOf(activityTypes).some(t => /^(?:hike|walk|hiking|walking)$/.test(t))
+    && !/\b(?:point|overlook|viewpoint|museum|lake|falls)\b/i.test(name);
+  if (!routeEntity && !activityEntity) return false;
+  // A named neighboring route is not this route, even on a trail's own page.
+  // Ambiguous multi-route sentences are deliberately left unmeasured.
+  const namedRoutes = [...sentence.matchAll(/\b((?:[A-Z][a-zA-Z'’]+[ -]){1,5})(?:Trail|Loop|Path|Boardwalk|Route)\b/g)]
+    .map(m => routeStem(m[0]).replace(/^(?:the|this|nearby|a|an) /, ''));
+  const owner = routeStem(name);
+  return namedRoutes.every(route => !route || route === owner);
+}
+
+function ownedTextDistances(text, entity) {
+  const sentences = splitSentences(String(text || '').replace(/\bone[- ]mile\b/gi, '1 mile'));
   const owned = [];
   for (const sentence of sentences) {
+    if (!ownsNarrativeRoute(sentence, entity)) continue;
     const matches = [...sentence.matchAll(MILE_TOKEN)];
     for (const match of matches) {
       const miles = parseMileToken(match[1]);
@@ -205,7 +229,7 @@ function resolveWalkingDistance({
 } = {}) {
   const structured = structuredDistance(structuredMiles);
   const ineligible = isNarrativeIneligibleEntity({ name, activityTypes, category, facilityKind });
-  const owned = ownedTextDistances(text);
+  const owned = ownedTextDistances(text, { name, category, activityTypes });
   const selected = selectOwnedText(owned);
 
   if (structured != null) {

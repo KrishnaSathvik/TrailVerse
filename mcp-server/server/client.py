@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 API_BASE = os.getenv("TRAILVERSE_API_BASE", "https://trailverse.onrender.com").rstrip("/")
 TIMEOUT = float(os.getenv("BACKEND_TIMEOUT", "30"))
-PLAN_TRIP_TIMEOUT = float(os.getenv("PLAN_TRIP_TIMEOUT", "30"))
+PLAN_TRIP_TIMEOUT = float(os.getenv("PLAN_TRIP_TIMEOUT", "180"))
 USER_AGENT = os.getenv("BACKEND_USER_AGENT", "TrailVerse-MCP/1.0")
 MCP_BYPASS_KEY = os.getenv("MCP_BYPASS_KEY", "")
 

@@ -1,332 +1,190 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Search, MapPin, Check, X, ArrowRight } from '@components/icons';
+import { useEffect, useState } from 'react';
+import { Search, MapPin, Check, X } from '@components/icons';
 import Spinner from '../common/Spinner';
 
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
 /**
- * Polished Google Places search input with custom dropdown.
- *
- * Three states: Idle → Active (typing + suggestions) → Pending (place selected, pick day).
- * Uses AutocompleteService + PlacesService for full styling control.
- * Session tokens keep billing efficient.
+ * Phase 2 grounded Add place — query-only.
+ * The browser never sends coordinates, provider IDs, or provenance.
+ * Server resolves via named_place; ambiguity returns structured choices.
  *
  * Props:
- *   - days:        current days array
- *   - onAdd:       (stop, dayId) => void
- *   - biasCenter:  { lat, lng } — soft-biases suggestions toward trip area
- *   - biasRadius:  meters (default 50km)
- *   - activeDayId: pre-selected day id (optional, defaults to first day)
- *   - placeholder:  input placeholder text
+ *   - days
+ *   - onAddQuery: async ({ dayId, query, candidateId? }) =>
+ *       { ok: true } | { ok: false, code, choices?, query? }
+ *   - activeDayId
+ *   - placeholder
+ *   - disabled
  */
 export default function AddPlaceInput({
   days,
-  onAdd,
-  biasCenter,
-  biasRadius = 50000,
+  onAddQuery,
   activeDayId: externalDayId,
-  placeholder = 'Add a place to your trip...',
+  placeholder = 'Add a place…',
+  disabled = false,
 }) {
-  const [ready, setReady] = useState(false);
   const [query, setQuery] = useState('');
-  const [predictions, setPredictions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState(null);
   const [selectedDayId, setSelectedDayId] = useState(externalDayId || days?.[0]?.id || null);
-  const [isFocused, setIsFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [choices, setChoices] = useState(null);
+  const [pendingQuery, setPendingQuery] = useState('');
+  const [error, setError] = useState(null);
 
-  const autocompleteServiceRef = useRef(null);
-  const placesServiceRef = useRef(null);
-  const sessionTokenRef = useRef(null);
-  const containerRef = useRef(null);
-  const inputRef = useRef(null);
-  const debounceRef = useRef(null);
-
-  // Sync external day selection
   useEffect(() => {
     if (externalDayId) setSelectedDayId(externalDayId);
   }, [externalDayId]);
 
-  // Wait for Google Maps to load
   useEffect(() => {
-    if (window.google?.maps?.places) {
-      setReady(true);
-      return;
-    }
-    const interval = setInterval(() => {
-      if (window.google?.maps?.places) {
-        setReady(true);
-        clearInterval(interval);
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Initialize Google Places services
-  useEffect(() => {
-    if (!ready) return;
-    autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
-    const dummyDiv = document.createElement('div');
-    placesServiceRef.current = new window.google.maps.places.PlacesService(dummyDiv);
-    sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
-  }, [ready]);
-
-  // Update default day when days change
-  useEffect(() => {
-    if (!selectedDayId && days?.[0]?.id) {
-      setSelectedDayId(days[0].id);
-    }
+    if (!selectedDayId && days?.[0]?.id) setSelectedDayId(days[0].id);
   }, [days, selectedDayId]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsFocused(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const resetAmbiguity = () => {
+    setChoices(null);
+    setPendingQuery('');
+  };
 
-  // Fetch predictions (debounced)
-  const fetchPredictions = useCallback(
-    (input) => {
-      if (!input.trim() || !autocompleteServiceRef.current) {
-        setPredictions([]);
-        setLoading(false);
+  const submit = async ({ candidateId } = {}) => {
+    const text = (candidateId ? pendingQuery : query).trim();
+    if (!text || !selectedDayId || typeof onAddQuery !== 'function' || disabled) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await onAddQuery({
+        dayId: selectedDayId,
+        query: text,
+        ...(candidateId ? { candidateId } : {}),
+      });
+      if (result?.ok) {
+        setQuery('');
+        resetAmbiguity();
         return;
       }
-
-      setLoading(true);
-      const request = {
-        input,
-        sessionToken: sessionTokenRef.current,
-        types: ['establishment', 'geocode'],
-      };
-
-      if (biasCenter) {
-        request.location = new window.google.maps.LatLng(biasCenter.lat, biasCenter.lng);
-        request.radius = biasRadius;
+      if (result?.code === 'place_ambiguous' && Array.isArray(result.choices) && result.choices.length) {
+        setPendingQuery(result.query || text);
+        setChoices(result.choices);
+        return;
       }
-
-      autocompleteServiceRef.current.getPlacePredictions(request, (results, status) => {
-        setLoading(false);
-        if (status !== 'OK' || !results) {
-          setPredictions([]);
-          return;
-        }
-        setPredictions(results.slice(0, 5));
-      });
-    },
-    [biasCenter, biasRadius]
-  );
-
-  function handleQueryChange(e) {
-    const value = e.target.value;
-    setQuery(value);
-    setSelectedPlace(null);
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchPredictions(value), 200);
-  }
-
-  function handlePredictionSelect(prediction) {
-    if (!placesServiceRef.current) return;
-
-    placesServiceRef.current.getDetails(
-      {
-        placeId: prediction.place_id,
-        fields: ['place_id', 'name', 'geometry', 'formatted_address', 'photos', 'types'],
-        sessionToken: sessionTokenRef.current,
-      },
-      (place, status) => {
-        if (status !== 'OK' || !place?.geometry?.location) return;
-
-        const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 600 });
-        setSelectedPlace({
-          name: place.name,
-          address: place.formatted_address,
-          latitude: place.geometry.location.lat(),
-          longitude: place.geometry.location.lng(),
-          placeId: place.place_id,
-          photoUrl,
-        });
-        setQuery(place.name);
-        setPredictions([]);
-        setIsFocused(false);
-
-        // Refresh session token after a successful place lookup
-        sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
-      }
-    );
-  }
-
-  function commitPlace() {
-    if (!selectedPlace || !selectedDayId) return;
-    const targetDay = days.find((d) => d.id === selectedDayId);
-    if (!targetDay) return;
-
-    const stop = {
-      id: `stop-${uid()}`,
-      order: targetDay.stops.length,
-      name: selectedPlace.name,
-      type: 'custom',
-      startTime: '',
-      duration: 60,
-      difficulty: 'easy',
-      latitude: selectedPlace.latitude,
-      longitude: selectedPlace.longitude,
-      why: '',
-      drivingTimeFromPreviousMin: null,
-      alternatives: [],
-      source: 'user',
-      _placeId: selectedPlace.placeId,
-      _photoUrl: selectedPlace.photoUrl,
-    };
-
-    onAdd(stop, selectedDayId);
-    reset();
-  }
-
-  function reset() {
-    setQuery('');
-    setPredictions([]);
-    setSelectedPlace(null);
-    setIsFocused(false);
-    if (inputRef.current) inputRef.current.blur();
-  }
-
-  const showDropdown = isFocused && (predictions.length > 0 || loading) && !selectedPlace;
-  const showConfirm = !!selectedPlace;
+      setError(
+        result?.code === 'place_unresolved'
+          ? 'Could not find that place. Try a more specific name.'
+          : result?.error || 'Could not add that place.',
+      );
+      resetAmbiguity();
+    } catch {
+      setError('Could not add that place.');
+      resetAmbiguity();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      {/* Main input row */}
+    <div className="space-y-3">
       <div
-        className="flex items-center gap-2 rounded-xl border px-3 py-2 transition-all"
-        style={{
-          backgroundColor: 'var(--surface)',
-          borderColor: showDropdown || showConfirm ? 'var(--accent-green)' : 'var(--border)',
-          boxShadow: showDropdown || showConfirm ? '0 0 0 3px rgba(67,160,106,0.15)' : 'none',
-        }}
+        className="flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2"
+        style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
       >
-        {/* Leading icon */}
-        <div className="shrink-0">
-          {selectedPlace ? (
-            <Check className="h-4 w-4" style={{ color: 'var(--accent-green)' }} />
-          ) : loading ? (
-            <Spinner size={16} />
-          ) : (
-            <Search className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} />
-          )}
-        </div>
-
-        {/* Input */}
+        <Search className="h-4 w-4 shrink-0" style={{ color: 'var(--text-tertiary)' }} />
         <input
-          ref={inputRef}
-          type="text"
+          type="search"
           value={query}
-          onChange={handleQueryChange}
-          onFocus={() => setIsFocused(true)}
+          disabled={disabled || loading || Boolean(choices)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setError(null);
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') reset();
-            if (e.key === 'Enter' && selectedPlace) commitPlace();
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              submit();
+            }
           }}
           placeholder={placeholder}
-          readOnly={!ready || !!selectedPlace}
-          autoComplete="off"
-          className="flex-1 min-w-0 border-0 bg-transparent text-sm shadow-none outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0 read-only:cursor-default placeholder:text-[var(--text-tertiary)] [appearance:textfield]"
-          style={{ color: 'var(--text-primary)', boxShadow: 'none' }}
+          className="min-w-[12rem] flex-1 bg-transparent text-sm outline-none"
+          style={{ color: 'var(--text-primary)' }}
+          aria-label="Place name"
         />
-
-        {/* Confirm controls (place selected) */}
-        {showConfirm && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <select
-              value={selectedDayId || ''}
-              onChange={(e) => setSelectedDayId(e.target.value)}
-              className="cursor-pointer rounded-lg border-0 px-1.5 py-1 text-[11px] font-medium shadow-none outline-none ring-0 focus:outline-none focus:ring-0"
-              style={{
-                backgroundColor: 'var(--surface-hover)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {days.map((d, i) => (
-                <option key={d.id} value={d.id}>Day {i + 1}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={commitPlace}
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent-green)', color: '#fff' }}
-            >
-              Add
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-
-        {/* Clear button */}
-        {(query || selectedPlace) && (
-          <button
-            type="button"
-            onClick={reset}
-            className="shrink-0 rounded-full p-0.5 transition hover:bg-[var(--surface-hover)]"
-            aria-label="Clear"
+        {days?.length > 1 && (
+          <select
+            value={selectedDayId || ''}
+            disabled={disabled || loading}
+            onChange={(e) => setSelectedDayId(e.target.value)}
+            className="rounded-lg border px-2 py-1 text-xs"
+            style={{ borderColor: 'var(--border)', background: 'var(--bg-primary)', color: 'var(--text-secondary)' }}
+            aria-label="Day"
           >
-            <X className="h-3.5 w-3.5" style={{ color: 'var(--text-secondary)' }} />
-          </button>
+            {days.map((day) => (
+              <option key={day.id} value={day.id}>
+                {day.label || `Day ${day.dayNumber}`}
+              </option>
+            ))}
+          </select>
         )}
+        <button
+          type="button"
+          disabled={disabled || loading || !query.trim() || Boolean(choices)}
+          onClick={() => submit()}
+          className="inline-flex min-h-9 items-center gap-1 rounded-full px-3 text-xs font-medium text-white disabled:opacity-50"
+          style={{ backgroundColor: 'var(--accent-green)' }}
+        >
+          {loading ? <Spinner size={14} /> : <Check className="h-3.5 w-3.5" />}
+          Add
+        </button>
       </div>
 
-      {/* Predictions dropdown */}
-      {showDropdown && (
+      {choices && (
         <div
-          className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border shadow-lg"
-          style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border)' }}
+          className="rounded-xl border p-3"
+          style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
+          role="listbox"
+          aria-label="Which place did you mean?"
         >
-          {predictions.length === 0 && loading && (
-            <div className="px-3 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              Searching...
-            </div>
-          )}
-          {predictions.map((p, idx) => {
-            const main = p.structured_formatting?.main_text || p.description;
-            const secondary = p.structured_formatting?.secondary_text || '';
-            return (
-              <button
-                key={p.place_id}
-                type="button"
-                onClick={() => handlePredictionSelect(p)}
-                className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition hover:bg-[var(--surface-hover)]"
-                style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}
-              >
-                <MapPin
-                  className="mt-0.5 h-4 w-4 shrink-0"
-                  style={{ color: 'var(--text-tertiary)' }}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {main}
-                  </div>
-                  {secondary && (
-                    <div className="truncate text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {secondary}
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+              Which one did you mean for “{pendingQuery}”?
+            </p>
+            <button
+              type="button"
+              onClick={resetAmbiguity}
+              className="min-h-8 rounded p-1"
+              aria-label="Cancel place choices"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <ul className="space-y-1.5">
+            {choices.map((choice) => (
+              <li key={choice.candidateId}>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => submit({ candidateId: choice.candidateId })}
+                  className="flex w-full min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:opacity-90"
+                  style={{ background: 'var(--surface-hover)', color: 'var(--text-primary)' }}
+                >
+                  <MapPin className="h-4 w-4 shrink-0" style={{ color: 'var(--accent-green)' }} />
+                  <span>
+                    <span className="font-medium">{choice.name}</span>
+                    {choice.subtitle && (
+                      <span className="mt-0.5 block text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {choice.subtitle}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
+      {error && (
+        <p className="text-xs" style={{ color: 'var(--accent-red, #b91c1c)' }} role="status">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -34,7 +34,8 @@
     "test:evidence-persistence": "TRAILIE_TRANSACTIONAL_MONGO=1 jest src/services/__tests__/evidenceStorePersistenceTopology.test.js",
     "indexes:inventory": "node scripts/provision-application-indexes.js --inventory",
     "indexes:check": "node scripts/provision-application-indexes.js --check",
-    "indexes:apply": "node scripts/provision-application-indexes.js --apply"
+    "indexes:apply": "node scripts/provision-application-indexes.js --apply",
+    "verify:release-transport": "node scripts/verify-release-transport.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
@@ -43,34 +44,34 @@
     "@babel/register": "^7.28.3",
     "@react-email/components": "^0.5.7",
     "@react-email/render": "^1.4.0",
-    "axios": "^1.18.0",
+    "axios": "^1.20.0",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.2.0",
-    "compression": "^1.8.1",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "csv-parse": "^7.0.2",
     "dotenv": "^16.3.1",
     "express": "^4.22.3",
     "express-rate-limit": "^7.5.1",
     "express-validator": "^7.2.1",
-    "handlebars": "^4.7.9",
+    "handlebars": "^4.7.10",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.10.0",
     "mongoose": "^7.8.12",
-    "morgan": "^1.12.0",
-    "multer": "^2.3.0",
+    "morgan": "^1.12.1",
+    "multer": "^2.4.0",
     "node-cache": "^5.1.2",
     "node-fetch": "2.7.0",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "10.1.1",
     "openai": "7.4.0",
     "resend": "^6.1.2",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "unzipper": "^0.12.3",
-    "uuid": "^8.3.2"
+    "uuid": "11.1.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -85,5 +86,8 @@
     "express-validator": {
       "validator": "^13.15.15"
     }
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

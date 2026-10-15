@@ -10,6 +10,9 @@ function matchName(requested, candidate, anchors, { requireGeography = true } = 
   const a = lexical(requested), b = lexical(candidate.name);
   if (!a || vague(requested)) return { type: 'none', anchor: null };
   if (a === b) return { type: requested === candidate.name ? 'exact' : 'normalized_exact', anchor: null };
+  // A leading definite article is an orthographic variant, not a different
+  // attraction. All remaining words, geography and uniqueness still apply.
+  if (a.replace(/^the /, '') === b.replace(/^the /, '')) return { type: 'normalized_exact', anchor: null };
   for (const anchor of anchors) {
     const full = lexical(anchor.name), short = lexical(anchor.shortName);
     // Only whole verified qualifiers at an edge, never arbitrary token deletion.

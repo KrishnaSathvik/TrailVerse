@@ -1,7 +1,7 @@
 'use strict';
 
 const { buildEvidenceKeys } = require('../../utils/evidenceKey');
-const { OPERATIONAL_NORMALIZATION_QUALIFIER } = require('../../utils/evidenceContractVersions');
+const { OPERATIONAL_NORMALIZATION_QUALIFIER, NPS_NAMED_ACTIVITIES_EXTRACTOR_VERSION } = require('../../utils/evidenceContractVersions');
 const { createEvidenceBroker } = require('../evidenceBrokerService');
 const { publicRefreshHash } = require('../evidenceBrokerService');
 
@@ -33,7 +33,7 @@ function requirement(topic, ordinal = 0, overrides = {}) {
 }
 
 function stored(topic, identity = topic, observedAt = NOW) {
-  const extractorVersion = topic === 'activities' ? 'nps-activities-v8' : 'nps-evidence-v1';
+  const extractorVersion = topic === 'activities' ? NPS_NAMED_ACTIVITIES_EXTRACTOR_VERSION : 'nps-evidence-v1';
   // Fix Pass #3E: nps-activities-v8 is only coverage-eligible when stamped
   // source_ingestion_complete (production npsEvidenceProvider does this).
   // ...and, since the operational fact producer runs on this family, the

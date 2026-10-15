@@ -222,7 +222,7 @@ describe('exact demo Q1 evidence scoping (offline)', () => {
     expect(candidates.every((c) => c.entityId === 'nps:park:sequ')).toBe(true);
     expect(candidates.length).toBeGreaterThan(0);
     expect(candidates.every((c) =>
-      c.provenance.extractorVersion === 'nps-activities-v8+joint-scope-v2'
+      c.provenance.extractorVersion === require('../evidenceContractVersions').NPS_JOINT_UNIT_ACTIVITY_EXTRACTOR_VERSION
     )).toBe(true);
   });
 
